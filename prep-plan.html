@@ -1,0 +1,1188 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>План подготовки к собесу — Java Backend Bible</title>
+  <style>
+    :root { --bg:#fff; --fg:#1b1b1b; --muted:#6a6a6a; --line:#e5e7eb; --panel:#f7f8fa; --accent:#0b5fa5; --accent-soft:#e8f3ff; --ok:#136b3d; --ok-soft:#eafaf0; --warn:#8c5b00; --warn-soft:#fff4d6; --shadow:0 14px 30px rgba(15,23,42,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; font:16px/1.65 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--fg); }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .wrap { max-width:1200px; margin:0 auto; padding:32px 18px 80px; }
+    .topbar { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px; }
+    .brand { font-size:1.9rem; font-weight:700; line-height:1.2; margin:0; }
+    .mast { color:var(--muted); margin:6px 0 0; }
+    .top-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .btn { border:1px solid var(--line); background:#fff; color:var(--fg); padding:10px 14px; border-radius:10px; cursor:pointer; font:inherit; }
+    .btn.primary { background:var(--accent-soft); border-color:#cfe0f3; color:var(--accent); }
+    .summary-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:24px 0 14px; }
+    .summary-box { background:linear-gradient(180deg, var(--panel) 0%, rgba(248,250,252,.98) 100%); border:1px solid var(--line); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); }
+    .summary-box .label { display:block; color:var(--muted); font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; }
+    .summary-box strong { display:block; font-size:1.9rem; margin-top:8px; line-height:1; }
+    .progress-bar { position:relative; height:14px; border-radius:999px; background:linear-gradient(180deg, #edf2fb, #e9eef8); border:1px solid var(--line); overflow:hidden; box-shadow:inset 0 1px 1px rgba(15,23,42,.04); }
+    .progress-bar span { position:relative; display:block; height:100%; width:0%; background:linear-gradient(90deg, #0b5fa5 0%, #3e97ff 45%, #6fd3ff 100%); border-radius:inherit; transition:width .28s ease; box-shadow:0 0 16px rgba(59,130,246,.35); }
+    .progress-bar span::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(255,255,255,.35), rgba(255,255,255,0) 38%, rgba(255,255,255,.18) 100%); }
+    .part-block { margin-top:30px; }
+    .part-block h2 { margin:0 0 14px; font-size:1.4rem; }
+    .chapter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+    .chapter-card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 14px 12px; box-shadow:var(--shadow); border-top:4px solid var(--line); }
+    .chapter-card[data-state="read"] { border-top-color:var(--ok); background:var(--ok-soft); }
+    .chapter-card[data-state="active"] { border-top-color:var(--warn); background:var(--warn-soft); }
+    .card-topline { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+    .chapter-index { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:30px; border-radius:8px; background:#fff; border:1px solid var(--line); font-weight:700; }
+    .status-badge { font-size:.72rem; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+    .chapter-card[data-state="read"] .status-badge { color:var(--ok); }
+    .chapter-card[data-state="active"] .status-badge { color:var(--warn); }
+    .chapter-card h3 { margin:4px 0 14px; font-size:1.05rem; line-height:1.45; }
+    .chapter-card h3 a { color:var(--fg); }
+    .chapter-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .chapter-actions button { cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--fg); border-radius:9px; padding:7px 10px; font:inherit; }
+    .chapter-actions button.secondary { opacity:.9; }
+    .chapter-card[data-state="read"] .chapter-actions [data-status="read"] { background:var(--ok); color:#fff; border-color:var(--ok); }
+    .chapter-card[data-state="active"] .chapter-actions [data-status="active"] { background:var(--warn); color:#fff; border-color:var(--warn); }
+    .note { margin-top:26px; color:var(--muted); font-size:.96rem; }
+    @media (max-width: 700px) { .wrap { padding:20px 14px 60px; } .brand { font-size:1.5rem; } .chapter-grid { grid-template-columns:1fr; } .summary-grid { grid-template-columns:repeat(2, minmax(120px, 1fr)); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1 class="brand">План подготовки к собесу</h1>
+        <p class="mast">Java Backend Bible · сохраняется в браузере через localStorage</p>
+      </div>
+      <div class="top-actions">
+        <a class="btn" href="index.html">Оглавление</a>
+        <button class="btn primary" id="reset-plan">Сбросить прогресс</button>
+      </div>
+    </div>
+
+    
+      <div class="summary-grid">
+        <div class="summary-box"><span class="label">Глав в плане</span><strong id="total-count">0</strong></div>
+        <div class="summary-box"><span class="label">Прочитано</span><strong id="read-count">0</strong></div>
+        <div class="summary-box"><span class="label">Сейчас читаю</span><strong id="active-count">0</strong></div>
+        <div class="summary-box"><span class="label">Прогресс</span><strong id="progress-value">0%</strong></div>
+      </div>
+      <div class="progress-bar"><span id="progress-bar-fill"></span></div>
+    
+
+    <section class="part-block"><h2>I. Язык</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="01-java-core-classics.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">1</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="01-java-core-classics.html">Java Core: классика собеседований</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="01-java-core-classics.md">Прочитано</button>
+                  <button data-status="active" data-chapter="01-java-core-classics.md">Читаю</button>
+                  <button data-status="unread" data-chapter="01-java-core-classics.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="02-modern-java.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">2</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="02-modern-java.html">Современная Java 17→25</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="02-modern-java.md">Прочитано</button>
+                  <button data-status="active" data-chapter="02-modern-java.md">Читаю</button>
+                  <button data-status="unread" data-chapter="02-modern-java.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="03-collections-and-streams.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">3</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="03-collections-and-streams.html">Коллекции и Stream API под капотом</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="03-collections-and-streams.md">Прочитано</button>
+                  <button data-status="active" data-chapter="03-collections-and-streams.md">Читаю</button>
+                  <button data-status="unread" data-chapter="03-collections-and-streams.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="04-time-money-text.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">4</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="04-time-money-text.html">Время, деньги и текст</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="04-time-money-text.md">Прочитано</button>
+                  <button data-status="active" data-chapter="04-time-money-text.md">Читаю</button>
+                  <button data-status="unread" data-chapter="04-time-money-text.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="05-kotlin-backend.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">5</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="05-kotlin-backend.html">Kotlin для бэкенда</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="05-kotlin-backend.md">Прочитано</button>
+                  <button data-status="active" data-chapter="05-kotlin-backend.md">Читаю</button>
+                  <button data-status="unread" data-chapter="05-kotlin-backend.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>II. Платформа JVM</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="06-jvm-internals.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">6</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="06-jvm-internals.html">JVM изнутри</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="06-jvm-internals.md">Прочитано</button>
+                  <button data-status="active" data-chapter="06-jvm-internals.md">Читаю</button>
+                  <button data-status="unread" data-chapter="06-jvm-internals.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="07-memory-and-gc.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">7</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="07-memory-and-gc.html">Память и GC</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="07-memory-and-gc.md">Прочитано</button>
+                  <button data-status="active" data-chapter="07-memory-and-gc.md">Читаю</button>
+                  <button data-status="unread" data-chapter="07-memory-and-gc.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="08-concurrency.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">8</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="08-concurrency.html">Многопоточность</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="08-concurrency.md">Прочитано</button>
+                  <button data-status="active" data-chapter="08-concurrency.md">Читаю</button>
+                  <button data-status="unread" data-chapter="08-concurrency.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>III. Spring</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="09-spring-core.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">9</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="09-spring-core.html">Spring Core под капотом</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="09-spring-core.md">Прочитано</button>
+                  <button data-status="active" data-chapter="09-spring-core.md">Читаю</button>
+                  <button data-status="unread" data-chapter="09-spring-core.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="10-spring-boot.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">10</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="10-spring-boot.html">Spring Boot</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="10-spring-boot.md">Прочитано</button>
+                  <button data-status="active" data-chapter="10-spring-boot.md">Читаю</button>
+                  <button data-status="unread" data-chapter="10-spring-boot.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="11-reactive.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">11</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="11-reactive.html">Реактивное программирование</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="11-reactive.md">Прочитано</button>
+                  <button data-status="active" data-chapter="11-reactive.md">Читаю</button>
+                  <button data-status="unread" data-chapter="11-reactive.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="12-spring-data-jpa-hibernate.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">12</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="12-spring-data-jpa-hibernate.html">Spring Data JPA и Hibernate</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="12-spring-data-jpa-hibernate.md">Прочитано</button>
+                  <button data-status="active" data-chapter="12-spring-data-jpa-hibernate.md">Читаю</button>
+                  <button data-status="unread" data-chapter="12-spring-data-jpa-hibernate.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="13-spring-security.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">13</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="13-spring-security.html">Spring Security</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="13-spring-security.md">Прочитано</button>
+                  <button data-status="active" data-chapter="13-spring-security.md">Читаю</button>
+                  <button data-status="unread" data-chapter="13-spring-security.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="14-spring-web.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">14</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="14-spring-web.html">Spring Web: MVC и WebFlux</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="14-spring-web.md">Прочитано</button>
+                  <button data-status="active" data-chapter="14-spring-web.md">Читаю</button>
+                  <button data-status="unread" data-chapter="14-spring-web.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>IV. Данные</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="15-storage-os-memory-filesystems.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">15</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="15-storage-os-memory-filesystems.html">Как компьютер хранит данные: память, диски, файловые системы</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="15-storage-os-memory-filesystems.md">Прочитано</button>
+                  <button data-status="active" data-chapter="15-storage-os-memory-filesystems.md">Читаю</button>
+                  <button data-status="unread" data-chapter="15-storage-os-memory-filesystems.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="16-databases-fundamentals.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">16</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="16-databases-fundamentals.html">Базы данных: модели, виды и общие понятия</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="16-databases-fundamentals.md">Прочитано</button>
+                  <button data-status="active" data-chapter="16-databases-fundamentals.md">Читаю</button>
+                  <button data-status="unread" data-chapter="16-databases-fundamentals.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="17-postgresql-internals.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">17</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="17-postgresql-internals.html">PostgreSQL изнутри</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="17-postgresql-internals.md">Прочитано</button>
+                  <button data-status="active" data-chapter="17-postgresql-internals.md">Читаю</button>
+                  <button data-status="unread" data-chapter="17-postgresql-internals.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="18-transactions-isolation-locking.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">18</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="18-transactions-isolation-locking.html">Транзакции, изоляция, блокировки</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="18-transactions-isolation-locking.md">Прочитано</button>
+                  <button data-status="active" data-chapter="18-transactions-isolation-locking.md">Читаю</button>
+                  <button data-status="unread" data-chapter="18-transactions-isolation-locking.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="19-schema-design-migrations.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">19</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="19-schema-design-migrations.html">Проектирование схем и миграции</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="19-schema-design-migrations.md">Прочитано</button>
+                  <button data-status="active" data-chapter="19-schema-design-migrations.md">Читаю</button>
+                  <button data-status="unread" data-chapter="19-schema-design-migrations.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="20-advanced-sql.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">20</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="20-advanced-sql.html">SQL продвинутый и оптимизация</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="20-advanced-sql.md">Прочитано</button>
+                  <button data-status="active" data-chapter="20-advanced-sql.md">Читаю</button>
+                  <button data-status="unread" data-chapter="20-advanced-sql.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="21-oracle-and-legacy.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">21</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="21-oracle-and-legacy.html">Oracle и enterprise-легаси</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="21-oracle-and-legacy.md">Прочитано</button>
+                  <button data-status="active" data-chapter="21-oracle-and-legacy.md">Читаю</button>
+                  <button data-status="unread" data-chapter="21-oracle-and-legacy.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="22-nosql-and-inmemory.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">22</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="22-nosql-and-inmemory.html">NoSQL и in-memory хранилища</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="22-nosql-and-inmemory.md">Прочитано</button>
+                  <button data-status="active" data-chapter="22-nosql-and-inmemory.md">Читаю</button>
+                  <button data-status="unread" data-chapter="22-nosql-and-inmemory.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="23-caching.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">23</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="23-caching.html">Кэширование</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="23-caching.md">Прочитано</button>
+                  <button data-status="active" data-chapter="23-caching.md">Читаю</button>
+                  <button data-status="unread" data-chapter="23-caching.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="24-batch-and-scheduling.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">24</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="24-batch-and-scheduling.html">Пакетная обработка и планировщики</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="24-batch-and-scheduling.md">Прочитано</button>
+                  <button data-status="active" data-chapter="24-batch-and-scheduling.md">Читаю</button>
+                  <button data-status="unread" data-chapter="24-batch-and-scheduling.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="25-analytics-olap.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">25</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="25-analytics-olap.html">Аналитические хранилища, витрины и OLAP</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="25-analytics-olap.md">Прочитано</button>
+                  <button data-status="active" data-chapter="25-analytics-olap.md">Читаю</button>
+                  <button data-status="unread" data-chapter="25-analytics-olap.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>V. Интеграции и сообщения</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="26-computer-networks.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">26</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="26-computer-networks.html">Компьютерные сети: модели OSI и TCP/IP</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="26-computer-networks.md">Прочитано</button>
+                  <button data-status="active" data-chapter="26-computer-networks.md">Читаю</button>
+                  <button data-status="unread" data-chapter="26-computer-networks.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="27-http-and-rest.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">27</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="27-http-and-rest.html">HTTP и REST</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="27-http-and-rest.md">Прочитано</button>
+                  <button data-status="active" data-chapter="27-http-and-rest.md">Читаю</button>
+                  <button data-status="unread" data-chapter="27-http-and-rest.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="28-grpc-jsonrpc-graphql-soap.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">28</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="28-grpc-jsonrpc-graphql-soap.html">gRPC, JSON-RPC, GraphQL, SOAP</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="28-grpc-jsonrpc-graphql-soap.md">Прочитано</button>
+                  <button data-status="active" data-chapter="28-grpc-jsonrpc-graphql-soap.md">Читаю</button>
+                  <button data-status="unread" data-chapter="28-grpc-jsonrpc-graphql-soap.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="29-kafka-internals.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">29</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="29-kafka-internals.html">Apache Kafka изнутри</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="29-kafka-internals.md">Прочитано</button>
+                  <button data-status="active" data-chapter="29-kafka-internals.md">Читаю</button>
+                  <button data-status="unread" data-chapter="29-kafka-internals.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="30-other-brokers.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">30</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="30-other-brokers.html">Другие брокеры: RabbitMQ, NATS, Pulsar, ActiveMQ</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="30-other-brokers.md">Прочитано</button>
+                  <button data-status="active" data-chapter="30-other-brokers.md">Читаю</button>
+                  <button data-status="unread" data-chapter="30-other-brokers.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="31-integration-patterns-consistency.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">31</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="31-integration-patterns-consistency.html">Паттерны интеграции и согласованность</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="31-integration-patterns-consistency.md">Прочитано</button>
+                  <button data-status="active" data-chapter="31-integration-patterns-consistency.md">Читаю</button>
+                  <button data-status="unread" data-chapter="31-integration-patterns-consistency.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>VI. Архитектура</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="32-design-patterns-clean-architecture.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">32</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="32-design-patterns-clean-architecture.html">Паттерны проектирования и архитектура приложения</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="32-design-patterns-clean-architecture.md">Прочитано</button>
+                  <button data-status="active" data-chapter="32-design-patterns-clean-architecture.md">Читаю</button>
+                  <button data-status="unread" data-chapter="32-design-patterns-clean-architecture.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="33-microservices-ddd.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">33</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="33-microservices-ddd.html">Микросервисы и DDD</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="33-microservices-ddd.md">Прочитано</button>
+                  <button data-status="active" data-chapter="33-microservices-ddd.md">Читаю</button>
+                  <button data-status="unread" data-chapter="33-microservices-ddd.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="34-distributed-systems.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">34</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="34-distributed-systems.html">Распределённые системы</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="34-distributed-systems.md">Прочитано</button>
+                  <button data-status="active" data-chapter="34-distributed-systems.md">Читаю</button>
+                  <button data-status="unread" data-chapter="34-distributed-systems.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="35-resilience.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">35</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="35-resilience.html">Отказоустойчивость</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="35-resilience.md">Прочитано</button>
+                  <button data-status="active" data-chapter="35-resilience.md">Читаю</button>
+                  <button data-status="unread" data-chapter="35-resilience.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="36-system-design.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">36</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="36-system-design.html">System Design: метод и разборы</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="36-system-design.md">Прочитано</button>
+                  <button data-status="active" data-chapter="36-system-design.md">Читаю</button>
+                  <button data-status="unread" data-chapter="36-system-design.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="37-architect-role.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">37</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="37-architect-role.html">Роль архитектора приложения</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="37-architect-role.md">Прочитано</button>
+                  <button data-status="active" data-chapter="37-architect-role.md">Читаю</button>
+                  <button data-status="unread" data-chapter="37-architect-role.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="38-requirements-and-diagrams.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">38</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="38-requirements-and-diagrams.html">Требования, документация и схемы</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="38-requirements-and-diagrams.md">Прочитано</button>
+                  <button data-status="active" data-chapter="38-requirements-and-diagrams.md">Читаю</button>
+                  <button data-status="unread" data-chapter="38-requirements-and-diagrams.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>VII. Безопасность</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="39-cryptography.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">39</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="39-cryptography.html">Криптография для бэкендера</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="39-cryptography.md">Прочитано</button>
+                  <button data-status="active" data-chapter="39-cryptography.md">Читаю</button>
+                  <button data-status="unread" data-chapter="39-cryptography.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="40-pki-signatures.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">40</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="40-pki-signatures.html">PKI, сертификаты, электронная подпись</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="40-pki-signatures.md">Прочитано</button>
+                  <button data-status="active" data-chapter="40-pki-signatures.md">Читаю</button>
+                  <button data-status="unread" data-chapter="40-pki-signatures.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="41-appsec-oauth-keycloak.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">41</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="41-appsec-oauth-keycloak.html">Безопасность приложений, OAuth2/OIDC, Keycloak</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="41-appsec-oauth-keycloak.md">Прочитано</button>
+                  <button data-status="active" data-chapter="41-appsec-oauth-keycloak.md">Читаю</button>
+                  <button data-status="unread" data-chapter="41-appsec-oauth-keycloak.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>VIII. Качество</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="42-testing.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">42</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="42-testing.html">Тестирование</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="42-testing.md">Прочитано</button>
+                  <button data-status="active" data-chapter="42-testing.md">Читаю</button>
+                  <button data-status="unread" data-chapter="42-testing.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="43-code-review-quality.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">43</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="43-code-review-quality.html">Код-ревью и качество кода</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="43-code-review-quality.md">Прочитано</button>
+                  <button data-status="active" data-chapter="43-code-review-quality.md">Читаю</button>
+                  <button data-status="unread" data-chapter="43-code-review-quality.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="44-performance.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">44</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="44-performance.html">Производительность</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="44-performance.md">Прочитано</button>
+                  <button data-status="active" data-chapter="44-performance.md">Читаю</button>
+                  <button data-status="unread" data-chapter="44-performance.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>IX. Эксплуатация</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="45-docker-jvm.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">45</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="45-docker-jvm.html">Docker и сборка JVM-приложений</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="45-docker-jvm.md">Прочитано</button>
+                  <button data-status="active" data-chapter="45-docker-jvm.md">Читаю</button>
+                  <button data-status="unread" data-chapter="45-docker-jvm.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="46-kubernetes-openshift.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">46</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="46-kubernetes-openshift.html">Kubernetes и OpenShift для разработчика</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="46-kubernetes-openshift.md">Прочитано</button>
+                  <button data-status="active" data-chapter="46-kubernetes-openshift.md">Читаю</button>
+                  <button data-status="unread" data-chapter="46-kubernetes-openshift.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="47-kubernetes-internals.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">47</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="47-kubernetes-internals.html">Kubernetes изнутри: устройство оркестратора</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="47-kubernetes-internals.md">Прочитано</button>
+                  <button data-status="active" data-chapter="47-kubernetes-internals.md">Читаю</button>
+                  <button data-status="unread" data-chapter="47-kubernetes-internals.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="48-service-mesh-networking.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">48</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="48-service-mesh-networking.html">Service mesh и сетевое взаимодействие</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="48-service-mesh-networking.md">Прочитано</button>
+                  <button data-status="active" data-chapter="48-service-mesh-networking.md">Читаю</button>
+                  <button data-status="unread" data-chapter="48-service-mesh-networking.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="49-linux-and-networking.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">49</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="49-linux-and-networking.html">Linux и сеть для бэкендера</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="49-linux-and-networking.md">Прочитано</button>
+                  <button data-status="active" data-chapter="49-linux-and-networking.md">Читаю</button>
+                  <button data-status="unread" data-chapter="49-linux-and-networking.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="50-observability.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">50</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="50-observability.html">Observability</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="50-observability.md">Прочитано</button>
+                  <button data-status="active" data-chapter="50-observability.md">Читаю</button>
+                  <button data-status="unread" data-chapter="50-observability.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="51-observability-stack.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">51</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="51-observability-stack.html">Эксплуатация observability-стека</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="51-observability-stack.md">Прочитано</button>
+                  <button data-status="active" data-chapter="51-observability-stack.md">Читаю</button>
+                  <button data-status="unread" data-chapter="51-observability-stack.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>X. Процесс и инструменты</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="52-cicd-process.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">52</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="52-cicd-process.html">CI/CD и инженерный процесс</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="52-cicd-process.md">Прочитано</button>
+                  <button data-status="active" data-chapter="52-cicd-process.md">Читаю</button>
+                  <button data-status="unread" data-chapter="52-cicd-process.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="53-cicd-platforms.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">53</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="53-cicd-platforms.html">CI/CD на практике: GitLab, Bitbucket, Jenkins</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="53-cicd-platforms.md">Прочитано</button>
+                  <button data-status="active" data-chapter="53-cicd-platforms.md">Читаю</button>
+                  <button data-status="unread" data-chapter="53-cicd-platforms.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="54-build-and-dependencies.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">54</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="54-build-and-dependencies.html">Сборка и зависимости</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="54-build-and-dependencies.md">Прочитано</button>
+                  <button data-status="active" data-chapter="54-build-and-dependencies.md">Читаю</button>
+                  <button data-status="unread" data-chapter="54-build-and-dependencies.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="55-git-in-practice.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">55</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="55-git-in-practice.html">Git на практике</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="55-git-in-practice.md">Прочитано</button>
+                  <button data-status="active" data-chapter="55-git-in-practice.md">Читаю</button>
+                  <button data-status="unread" data-chapter="55-git-in-practice.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="56-intellij-idea.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">56</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="56-intellij-idea.html">IntelliJ IDEA: приёмы, которыми не пользуются</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="56-intellij-idea.md">Прочитано</button>
+                  <button data-status="active" data-chapter="56-intellij-idea.md">Читаю</button>
+                  <button data-status="unread" data-chapter="56-intellij-idea.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="57-llm-in-backend.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">57</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="57-llm-in-backend.html">LLM и AI в бэкенд-сервисах</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="57-llm-in-backend.md">Прочитано</button>
+                  <button data-status="active" data-chapter="57-llm-in-backend.md">Читаю</button>
+                  <button data-status="unread" data-chapter="57-llm-in-backend.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="58-llm-agents-quality.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">58</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="58-llm-agents-quality.html">Большие языковые модели и агенты</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="58-llm-agents-quality.md">Прочитано</button>
+                  <button data-status="active" data-chapter="58-llm-agents-quality.md">Читаю</button>
+                  <button data-status="unread" data-chapter="58-llm-agents-quality.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>XI. Алгоритмы и структуры данных</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="59-algorithms-analysis.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">59</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="59-algorithms-analysis.html">Анализ алгоритмов и метод решения задач</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="59-algorithms-analysis.md">Прочитано</button>
+                  <button data-status="active" data-chapter="59-algorithms-analysis.md">Читаю</button>
+                  <button data-status="unread" data-chapter="59-algorithms-analysis.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="60-arrays-hashing-two-pointers.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">60</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="60-arrays-hashing-two-pointers.html">Массивы, хеширование, два указателя, скользящее окно</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="60-arrays-hashing-two-pointers.md">Прочитано</button>
+                  <button data-status="active" data-chapter="60-arrays-hashing-two-pointers.md">Читаю</button>
+                  <button data-status="unread" data-chapter="60-arrays-hashing-two-pointers.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="61-sorting-and-searching.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">61</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="61-sorting-and-searching.html">Сортировка и поиск</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="61-sorting-and-searching.md">Прочитано</button>
+                  <button data-status="active" data-chapter="61-sorting-and-searching.md">Читаю</button>
+                  <button data-status="unread" data-chapter="61-sorting-and-searching.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="62-lists-stacks-queues.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">62</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="62-lists-stacks-queues.html">Связные списки, стеки, очереди и деки</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="62-lists-stacks-queues.md">Прочитано</button>
+                  <button data-status="active" data-chapter="62-lists-stacks-queues.md">Читаю</button>
+                  <button data-status="unread" data-chapter="62-lists-stacks-queues.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="63-heaps-intervals-greedy.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">63</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="63-heaps-intervals-greedy.html">Кучи, интервалы и жадные алгоритмы</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="63-heaps-intervals-greedy.md">Прочитано</button>
+                  <button data-status="active" data-chapter="63-heaps-intervals-greedy.md">Читаю</button>
+                  <button data-status="unread" data-chapter="63-heaps-intervals-greedy.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="64-trees-bst.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">64</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="64-trees-bst.html">Деревья и деревья поиска</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="64-trees-bst.md">Прочитано</button>
+                  <button data-status="active" data-chapter="64-trees-bst.md">Читаю</button>
+                  <button data-status="unread" data-chapter="64-trees-bst.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="65-advanced-data-structures.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">65</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="65-advanced-data-structures.html">Продвинутые структуры данных</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="65-advanced-data-structures.md">Прочитано</button>
+                  <button data-status="active" data-chapter="65-advanced-data-structures.md">Читаю</button>
+                  <button data-status="unread" data-chapter="65-advanced-data-structures.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="66-graphs-traversal.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">66</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="66-graphs-traversal.html">Графы: представление и обходы</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="66-graphs-traversal.md">Прочитано</button>
+                  <button data-status="active" data-chapter="66-graphs-traversal.md">Читаю</button>
+                  <button data-status="unread" data-chapter="66-graphs-traversal.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="67-graphs-shortest-paths-mst.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">67</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="67-graphs-shortest-paths-mst.html">Кратчайшие пути, остовные деревья и потоки</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="67-graphs-shortest-paths-mst.md">Прочитано</button>
+                  <button data-status="active" data-chapter="67-graphs-shortest-paths-mst.md">Читаю</button>
+                  <button data-status="unread" data-chapter="67-graphs-shortest-paths-mst.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="68-recursion-backtracking.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">68</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="68-recursion-backtracking.html">Рекурсия, перебор и поиск с возвратом</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="68-recursion-backtracking.md">Прочитано</button>
+                  <button data-status="active" data-chapter="68-recursion-backtracking.md">Читаю</button>
+                  <button data-status="unread" data-chapter="68-recursion-backtracking.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="69-dynamic-programming.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">69</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="69-dynamic-programming.html">Динамическое программирование</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="69-dynamic-programming.md">Прочитано</button>
+                  <button data-status="active" data-chapter="69-dynamic-programming.md">Читаю</button>
+                  <button data-status="unread" data-chapter="69-dynamic-programming.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="70-string-algorithms.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">70</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="70-string-algorithms.html">Алгоритмы на строках</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="70-string-algorithms.md">Прочитано</button>
+                  <button data-status="active" data-chapter="70-string-algorithms.md">Читаю</button>
+                  <button data-status="unread" data-chapter="70-string-algorithms.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="71-math-bits-probability.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">71</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="71-math-bits-probability.html">Математика, битовые операции и вероятность</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="71-math-bits-probability.md">Прочитано</button>
+                  <button data-status="active" data-chapter="71-math-bits-probability.md">Читаю</button>
+                  <button data-status="unread" data-chapter="71-math-bits-probability.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="72-algorithms-in-backend.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">72</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="72-algorithms-in-backend.html">Алгоритмы в работе бэкенд-разработчика</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="72-algorithms-in-backend.md">Прочитано</button>
+                  <button data-status="active" data-chapter="72-algorithms-in-backend.md">Читаю</button>
+                  <button data-status="unread" data-chapter="72-algorithms-in-backend.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>XII. ИИ на предприятии и практикум</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="74-enterprise-llm-platform.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">74</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="74-enterprise-llm-platform.html">Платформа LLM в компании</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="74-enterprise-llm-platform.md">Прочитано</button>
+                  <button data-status="active" data-chapter="74-enterprise-llm-platform.md">Читаю</button>
+                  <button data-status="unread" data-chapter="74-enterprise-llm-platform.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="75-ai-assisted-development.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">75</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="75-ai-assisted-development.html">ИИ-ассистенты разработки: использование и раскатка в компании</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="75-ai-assisted-development.md">Прочитано</button>
+                  <button data-status="active" data-chapter="75-ai-assisted-development.md">Читаю</button>
+                  <button data-status="unread" data-chapter="75-ai-assisted-development.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="76-mcp-and-agents-in-production.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">76</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="76-mcp-and-agents-in-production.html">MCP и агенты в продакшене</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="76-mcp-and-agents-in-production.md">Прочитано</button>
+                  <button data-status="active" data-chapter="76-mcp-and-agents-in-production.md">Читаю</button>
+                  <button data-status="unread" data-chapter="76-mcp-and-agents-in-production.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="77-practicum-backend-portfolio.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">77</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="77-practicum-backend-portfolio.html">Практикум I: платёжный сервис-портфолио на домашнем стенде</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="77-practicum-backend-portfolio.md">Прочитано</button>
+                  <button data-status="active" data-chapter="77-practicum-backend-portfolio.md">Читаю</button>
+                  <button data-status="unread" data-chapter="77-practicum-backend-portfolio.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="78-practicum-ai-portfolio.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">78</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="78-practicum-ai-portfolio.html">Практикум II: ИИ-слой поверх своего сервиса</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="78-practicum-ai-portfolio.md">Прочитано</button>
+                  <button data-status="active" data-chapter="78-practicum-ai-portfolio.md">Читаю</button>
+                  <button data-status="unread" data-chapter="78-practicum-ai-portfolio.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>XIV. Предметная область: заказы и e-commerce</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="80-oms-ecommerce.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">80</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="80-oms-ecommerce.html">OMS и e-commerce: заказы, остатки, возвраты, интеграции с магазином, складом, маркетплейсом и ERP</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="80-oms-ecommerce.md">Прочитано</button>
+                  <button data-status="active" data-chapter="80-oms-ecommerce.md">Читаю</button>
+                  <button data-status="unread" data-chapter="80-oms-ecommerce.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section><section class="part-block"><h2>XV. Люди, команды и организация</h2><div class="chapter-grid">
+              <article class="chapter-card" data-chapter="81-team-process-business.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">81</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="81-team-process-business.html">Команда, процесс и бизнес: трекеры, Scrum и Kanban на практике, тимлидство</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="81-team-process-business.md">Прочитано</button>
+                  <button data-status="active" data-chapter="81-team-process-business.md">Читаю</button>
+                  <button data-status="unread" data-chapter="81-team-process-business.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            
+              <article class="chapter-card" data-chapter="82-roles-and-organizations.md" data-state="unread">
+                <div class="card-topline">
+                  <span class="chapter-index">82</span>
+                  <span class="status-badge">Не начато</span>
+                </div>
+                <h3><a href="82-roles-and-organizations.html">Смежные специальности и устройство организаций: фронтенд, тестирование, эксплуатация, аналитика, грейды, оргструктуры</a></h3>
+                <div class="chapter-actions">
+                  <button data-status="read" data-chapter="82-roles-and-organizations.md">Прочитано</button>
+                  <button data-status="active" data-chapter="82-roles-and-organizations.md">Читаю</button>
+                  <button data-status="unread" data-chapter="82-roles-and-organizations.md" class="secondary">Сброс</button>
+                </div>
+              </article>
+            </div></section>
+
+    <p class="note">Состояние хранится только в браузере, в котором вы это открываете. Это удобно для шагового прохождения главы за главой: можно помечать "Прочитано" и "Читаю", а потом легко продолжить в следующий раз.</p>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'jbb-prep-plan-v1';
+    const cards = Array.from(document.querySelectorAll('.chapter-card'));
+    const bar = document.getElementById('progress-bar-fill');
+    const totalCount = document.getElementById('total-count');
+    const readCount = document.getElementById('read-count');
+    const activeCount = document.getElementById('active-count');
+    const progressValue = document.getElementById('progress-value');
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function persistState(state) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+
+    function statusOf(chapter) {
+      return loadState()[chapter] || 'unread';
+    }
+
+    function render() {
+      const state = loadState();
+      let read = 0; let active = 0;
+      cards.forEach((card) => {
+        const chapter = card.dataset.chapter;
+        const current = state[chapter] || 'unread';
+        card.dataset.state = current;
+        const badge = card.querySelector('.status-badge');
+        const label = current === 'read' ? 'Прочитано' : current === 'active' ? 'Читаю' : 'Не начато';
+        badge.textContent = label;
+        if (current === 'read') read += 1;
+        if (current === 'active') active += 1;
+      });
+
+      const total = cards.length;
+      const percent = total ? Math.round((read / total) * 100) : 0;
+      totalCount.textContent = String(total);
+      readCount.textContent = String(read);
+      activeCount.textContent = String(active);
+      progressValue.textContent = percent + '%';
+      bar.style.width = percent + '%';
+    }
+
+    cards.forEach((card) => {
+      card.querySelectorAll('[data-status]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const chapter = button.dataset.chapter;
+          const status = button.dataset.status;
+          const state = loadState();
+          state[chapter] = status;
+          persistState(state);
+          render();
+        });
+      });
+    });
+
+    document.getElementById('reset-plan').addEventListener('click', () => {
+      if (confirm('Сбросить прогресс по плану подготовки?')) {
+        persistState({});
+        render();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
