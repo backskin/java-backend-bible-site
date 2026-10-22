@@ -1206,8 +1206,8 @@ Max realtime timeout      unlimited            unlimited            us
 <hr>
 <h2 id="4-файловые-дескрипторы-и-ввод-вывод">4. Файловые дескрипторы и ввод-вывод</h2>
 <h3 id="41-файловые-дескрипторы">4.1 Файловые дескрипторы</h3>
-<p>Файловый дескриптор — маленькое неотрицательное целое, индекс в таблице открытых файлов процесса. Дескриптором в Unix является всё: обычный файл, сокет, пайп, eventfd, timerfd, epoll-инстанс, inotify-watch, memfd, <code>/dev/null</code>, unix-сокет, даже открытый каталог.</p>
-<p>Для Java-приложения главный потребитель — <strong>сокеты</strong>. Каждое входящее HTTP-соединение — fd. Каждое соединение в пуле к БД — fd. Каждое соединение HTTP-клиента к внешнему API — fd. Каждый Kafka-брокер в кластере — fd на соединение. Плюс jar-файлы (JVM держит их открытыми), файлы логов, <code>epoll</code>-инстансы Netty (по одному на event loop), <code>eventfd</code> для пробуждения селекторов.</p>
+<p>Файловый дескриптор — маленькое неотрицательное целое, индекс в таблице открытых файлов процесса. Дескриптором в Unix является всё: обычный файл, сокет, пайп, eventfd, timerfd, epoll-экземпляр, inotify-watch, memfd, <code>/dev/null</code>, unix-сокет, даже открытый каталог.</p>
+<p>Для Java-приложения главный потребитель — <strong>сокеты</strong>. Каждое входящее HTTP-соединение — fd. Каждое соединение в пуле к БД — fd. Каждое соединение HTTP-клиента к внешнему API — fd. Каждый Kafka-брокер в кластере — fd на соединение. Плюс jar-файлы (JVM держит их открытыми), файлы логов, <code>epoll</code>-экземпляры Netty (по одному на event loop), <code>eventfd</code> для пробуждения селекторов.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Сколько открыто</span>
 ls /proc/12345/fd <span class="p">|</span> wc -l
 
@@ -1342,7 +1342,7 @@ kubectl <span class="nb">exec</span> -it mypod -- sh -c <span class="s1">'cat /p
 <li><strong>Неблокирующая с мультиплексированием (<code>epoll</code>).</strong> Один поток обслуживает тысячи сокетов: спрашивает у ядра «кто готов», обрабатывает готовых. Java NIO <code>Selector</code>, Netty, WebFlux/Reactor Netty, Tomcat NIO-коннектор.</li>
 <li><strong>Асинхронная (<code>io_uring</code>, Windows IOCP).</strong> Ядро само выполняет операцию и сообщает о завершении.</li>
 </ol>
-<p><code>epoll</code> — Linux-специфичный мультиплексор (<a href="https://man7.org/linux/man-pages/man7/epoll.7.html">man7.org</a>). Три вызова: <code>epoll_create1()</code> создаёт инстанс (сам по себе fd!), <code>epoll_ctl()</code> добавляет/меняет/удаляет наблюдаемые дескрипторы, <code>epoll_wait()</code> блокируется до готовности.</p>
+<p><code>epoll</code> — Linux-специфичный мультиплексор (<a href="https://man7.org/linux/man-pages/man7/epoll.7.html">man7.org</a>). Три вызова: <code>epoll_create1()</code> создаёт экземпляр (сам по себе fd!), <code>epoll_ctl()</code> добавляет/меняет/удаляет наблюдаемые дескрипторы, <code>epoll_wait()</code> блокируется до готовности.</p>
 <p>Два режима:</p>
 <ul>
 <li><strong>Level-triggered</strong> (по умолчанию) — «epoll is simply a faster poll(2), and can be used wherever the latter is used since it shares the same semantics». Пока в буфере есть данные, <code>epoll_wait</code> будет их возвращать снова и снова.</li>
@@ -1573,7 +1573,7 @@ MiB Swap:   4096.0 total,   4096.0 free,      0.0 used.  12284.2 avail Mem
 </tr>
 </tbody>
 </table>
-<p><strong><code>st</code> (steal)</strong> заслуживает отдельного упоминания. Это время, когда виртуальная машина была готова выполняться, но физический CPU был отдан другой VM. В облаке на burstable-инстансах (AWS t3/t4g, GCP e2) steal возникает при исчерпании CPU-кредитов. На переподписанных приватных облаках — постоянно. Симптом в приложении: latency растёт, а собственный CPU не растёт. Единственное лечение — сменить тип инстанса или ноду.</p>
+<p><strong><code>st</code> (steal)</strong> заслуживает отдельного упоминания. Это время, когда виртуальная машина была готова выполняться, но физический CPU был отдан другой VM. В облаке на burstable-экземплярах (AWS t3/t4g, GCP e2) steal возникает при исчерпании CPU-кредитов. На переподписанных приватных облаках — постоянно. Симптом в приложении: latency растёт, а собственный CPU не растёт. Единственное лечение — сменить тип экземпляра или ноду.</p>
 <p><strong><code>top -H</code></strong> — ключевой режим для Java: показывает <strong>потоки</strong>, а не процессы.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>top -H -p <span class="m">12345</span> -b -n <span class="m">1</span> -o %CPU <span class="p">|</span> head -20
 </code></pre></div>
@@ -1820,7 +1820,7 @@ numactl --cpunodebind<span class="o">=</span><span class="m">0</span> --membind<
 </code></pre></div>
 
 <p><code>-XX:+UseNUMA</code> заставляет разделить Eden по NUMA-узлам, так что поток аллоцирует в локальной памяти. Работает с Parallel GC и частично с G1. Выигрыш на двухсокетных машинах — единицы процентов, иногда до 10–15 % на memory-bound нагрузках.</p>
-<p>Практический совет, который важнее тонкой настройки: <strong>если JVM помещается в один NUMA-узел — запусти её в одном NUMA-узле</strong>. Два инстанса по 64 ГБ, прибитых каждый к своему сокету, обычно быстрее одного на 128 ГБ. В Kubernetes за это отвечает Topology Manager с политикой <code>single-numa-node</code> (требует включения на kubelet).</p>
+<p>Практический совет, который важнее тонкой настройки: <strong>если JVM помещается в один NUMA-узел — запусти её в одном NUMA-узле</strong>. Два экземпляра по 64 ГБ, прибитых каждый к своему сокету, обычно быстрее одного на 128 ГБ. В Kubernetes за это отвечает Topology Manager с политикой <code>single-numa-node</code> (требует включения на kubelet).</p>
 <hr>
 <h2 id="6-tcp-в-работе-бэкенда">6. TCP в работе бэкенда</h2>
 <h3 id="61-установление-соединения-и-диаграмма-состояний-tcp">6.1 Установление соединения и диаграмма состояний TCP</h3>

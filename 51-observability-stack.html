@@ -147,7 +147,7 @@
 <p><strong>Pull (Prometheus).</strong> Сервер сам ходит по HTTP на <code>/metrics</code> каждого таргета с интервалом <code>scrape_interval</code> (по умолчанию <code>1m</code>, <a href="https://prometheus.io/docs/prometheus/latest/configuration/configuration/">Prometheus configuration</a>), а список таргетов получает из service discovery.</p>
 <p>У такой модели пять сильных сторон:</p>
 <ul>
-<li><strong>Healthcheck достаётся бесплатно.</strong> Каждый скрейп сам по себе порождает метрику <code>up{job=...,instance=...}</code> со значением 1 или 0, так что отдельный механизм проверки «жив ли инстанс» не нужен: если Prometheus не смог забрать метрики, он сам об этом знает и может по этому поводу алертить.</li>
+<li><strong>Healthcheck достаётся бесплатно.</strong> Каждый скрейп сам по себе порождает метрику <code>up{job=...,instance=...}</code> со значением 1 или 0, так что отдельный механизм проверки «жив ли экземпляр» не нужен: если Prometheus не смог забрать метрики, он сам об этом знает и может по этому поводу алертить.</li>
 <li><strong>Частоту контролирует центр.</strong> Чтобы снизить нагрузку, достаточно поменять один параметр на сервере, а не передеплоивать 300 сервисов.</li>
 <li><strong>Отлаживать можно руками.</strong> Выполнив <code>curl http://pod:8080/actuator/prometheus</code>, вы видите ровно то же, что видит Prometheus, тогда как в push-модели видно только то, что долетело.</li>
 <li><strong>При восстановлении не бывает «шторма».</strong> Если сервер лежал час, то, поднявшись, он просто скрейпит текущие значения: клиенты ничего не копили и не обрушат его накопленным батчем.</li>
@@ -159,7 +159,7 @@
 <li><strong>Сетевая достижимость.</strong> Prometheus обязан видеть таргет, а в мире NAT, изолированных VPC и клиентских периметров это само по себе проблема. Решают её связкой Prometheus Agent + remote write, то есть фактически переходом на push.</li>
 <li><strong>Кардинальность на стороне скрейпа.</strong> При pull сервер обязан переварить всё, что отдал таргет, прямо в момент скрейпа. Защищает от этого <code>sample_limit</code> (по умолчанию <code>0</code>, то есть без лимита), и этот параметр <strong>надо включать всегда</strong>, иначе один взбесившийся сервис кладёт весь Prometheus.</li>
 </ul>
-<p><strong>Push (OTLP, StatsD, Graphite, InfluxDB line protocol).</strong> Здесь клиент отправляет данные сам, и плюсы у этой модели зеркальные: она работает за NAT, подходит для эфемерных задач и оставляет клиенту решение, когда отправлять. Минусы тоже зеркальные: для liveness нужен отдельный механизм, на приёмнике нужен rate limiting, после сетевого разрыва легко получить «громовое стадо» (thundering herd), а понять, что именно отправил конкретный инстанс, гораздо сложнее.</p>
+<p><strong>Push (OTLP, StatsD, Graphite, InfluxDB line protocol).</strong> Здесь клиент отправляет данные сам, и плюсы у этой модели зеркальные: она работает за NAT, подходит для эфемерных задач и оставляет клиенту решение, когда отправлять. Минусы тоже зеркальные: для liveness нужен отдельный механизм, на приёмнике нужен rate limiting, после сетевого разрыва легко получить «громовое стадо» (thundering herd), а понять, что именно отправил конкретный экземпляр, гораздо сложнее.</p>
 <blockquote class="cb-hood">
 <p>🔧 <strong>Под капотом.</strong> Prometheus не опрашивает все таргеты одновременно: скрейпы каждого таргета размазаны по интервалу детерминированным хешем от его лейблов, иначе каждую минуту получался бы синхронный всплеск нагрузки. На практике из этого следует, что у двух таргетов одного job отметки времени сэмплов слегка различаются, и <code>rate()</code> по каждому из них честно считается по его собственным точкам.</p>
 </blockquote>
@@ -1133,7 +1133,7 @@ sum by (level) (
 </tr>
 </tbody>
 </table>
-<p>Чаще всего путают вот что: <strong>роль <code>service</code> даёт один таргет на Service, и скрейп идёт через балансировку</strong>, каждый раз попадая в случайный под. Метрики от этого становятся бессмысленными, потому что счётчики начинают «прыгать» между инстансами и <code>rate()</code> выдаёт мусор, поэтому для метрик всегда берут <code>endpoints</code>, <code>endpointslice</code> или <code>pod</code>.</p>
+<p>Чаще всего путают вот что: <strong>роль <code>service</code> даёт один таргет на Service, и скрейп идёт через балансировку</strong>, каждый раз попадая в случайный под. Метрики от этого становятся бессмысленными, потому что счётчики начинают «прыгать» между экземплярами и <code>rate()</code> выдаёт мусор, поэтому для метрик всегда берут <code>endpoints</code>, <code>endpointslice</code> или <code>pod</code>.</p>
 <p>Каждый обнаруженный таргет приходит с набором <strong>meta-лейблов</strong> <code>__meta_kubernetes_*</code>, и их десятки: <code>__meta_kubernetes_pod_name</code>, <code>__meta_kubernetes_namespace</code>, <code>__meta_kubernetes_pod_label_&lt;name&gt;</code>, <code>__meta_kubernetes_pod_annotation_&lt;name&gt;</code>, <code>__meta_kubernetes_service_name</code>, <code>__meta_kubernetes_pod_container_port_number</code>, <code>__meta_kubernetes_pod_node_name</code>, <code>__meta_kubernetes_pod_phase</code> и так далее. К ним добавляются служебные лейблы: <code>__address__</code> (куда идти), <code>__scheme__</code> (http/https), <code>__metrics_path__</code> (по умолчанию <code>/metrics</code>) и <code>__param_&lt;name&gt;</code>.</p>
 <p><strong>Все лейблы, начинающиеся с <code>__</code>, отбрасываются после relabeling</strong> и в хранилище не попадают. В этом и состоит механика: meta-лейблы существуют только на этапе relabeling, чтобы вы могли собрать из них нужные вам постоянные лейблы.</p>
 <h3 id="43-перемаркировка-через-relabelconfigs">4.3 Перемаркировка через relabel_configs</h3>
@@ -1326,7 +1326,7 @@ sum by (level) (
 <tbody>
 <tr>
 <td><code>Prometheus</code></td>
-<td>сам инстанс: реплики, retention, ресурсы, какие селекторы мониторов подхватывать</td>
+<td>сам экземпляр: реплики, retention, ресурсы, какие селекторы мониторов подхватывать</td>
 </tr>
 <tr>
 <td><code>PrometheusAgent</code></td>
@@ -1354,7 +1354,7 @@ sum by (level) (
 </tr>
 <tr>
 <td><code>Alertmanager</code></td>
-<td>инстанс Alertmanager</td>
+<td>экземпляр Alertmanager</td>
 </tr>
 <tr>
 <td><code>AlertmanagerConfig</code></td>
@@ -1425,7 +1425,7 @@ sum by (level) (
 
 <blockquote class="cb-warn">
 <p>⚠️ <strong>Грабли: три самые частые причины того, что ServiceMonitor есть, а таргета нет.</strong>
-1. <strong>Лейбл на самом ServiceMonitor не подходит под <code>serviceMonitorSelector</code></strong> инстанса Prometheus. В kube-prometheus-stack это обычно <code>release: &lt;имя-релиза-helm&gt;</code>, а проверить селектор можно так: <code>kubectl get prometheus -A -o jsonpath='{.items[*].spec.serviceMonitorSelector}'</code>.
+1. <strong>Лейбл на самом ServiceMonitor не подходит под <code>serviceMonitorSelector</code></strong> экземпляра Prometheus. В kube-prometheus-stack это обычно <code>release: &lt;имя-релиза-helm&gt;</code>, а проверить селектор можно так: <code>kubectl get prometheus -A -o jsonpath='{.items[*].spec.serviceMonitorSelector}'</code>.
 2. <strong><code>namespaceSelector</code> не разрешает ваш namespace.</strong> Оператор по умолчанию может быть ограничен списком namespace (<code>serviceMonitorNamespaceSelector</code>), и тогда ваш ServiceMonitor не будет виден в принципе.
 3. <strong><code>port</code> указан числом, а порт в Service не имеет имени.</strong> <code>endpoints[].port</code> ссылается на <strong>имя</strong> порта Service, и если порта с таким именем нет, эндпоинт молча не генерируется. Для номера существует <code>targetPort</code>, но использовать его не рекомендуется.</p>
 <p>Для отладки выполните <code>kubectl -n monitoring get secret prometheus-&lt;name&gt; -o jsonpath='{.data.prometheus\.yaml\.gz}' | base64 -d | gunzip | grep -A5 payment</code> и посмотрите, попал ли ваш job в сгенерированный конфиг. Если попал, а таргета нет, проблема в SD или в сети; если не попал, проблема в селекторах.</p>
@@ -1574,7 +1574,7 @@ sum by (level) (
 <ul>
 <li><strong>Федерация — это скрейп, а не репликация.</strong> Вы получаете <em>текущее</em> значение раз в <code>scrape_interval</code>, и если старший Prometheus лежал 10 минут, в его данных за эти 10 минут остаётся дыра, которую нечем восполнить. Младший в это время исправно писал к себе, но передать историю не может.</li>
 <li><strong>Теряется разрешение.</strong> Скрейп федерации раз в минуту поверх данных с интервалом 15 с даёт 4-кратную потерю разрешения, и <code>rate()</code> на федерированных данных врёт тем сильнее, чем короче окно.</li>
-<li><strong>Счётчики теряют точность сбросов.</strong> Если инстанс рестартанул между двумя федеративными скрейпами, старший этого не увидит и примет сброс счётчика за падение значения.</li>
+<li><strong>Счётчики теряют точность сбросов.</strong> Если экземпляр рестартанул между двумя федеративными скрейпами, старший этого не увидит и примет сброс счётчика за падение значения.</li>
 <li><strong>Федерация не масштабируется по объёму.</strong> Документация настойчиво предупреждает, что федерировать «все серии» значит пытаться копировать всю TSDB через HTTP-текст каждые N секунд. Один такой скрейп на 2 млн серий занимает десятки секунд и гигабайты трафика и в <code>scrape_timeout</code> не уложится.</li>
 <li><strong>Долгого хранения нет.</strong> Старший Prometheus остаётся таким же одноузловым, с теми же 15 днями.</li>
 </ul>
@@ -1843,7 +1843,7 @@ RAM            ≈ активные_серии × 4 КБ × 2 (запас на �
 
 <p>Вот как может звучать разговор с командой, которая просит «добавить лейбл <code>customer_id</code> в метрику»:</p>
 <blockquote>
-<p>Метрика <code>http_server_requests_seconds</code> у вас уже даёт 480 комбинаций лейблов на инстанс (4 метода × 30 URI × 4 статуса), инстансов 20, итого 9600 комбинаций, и это ещё без бакетов гистограммы, каждый из которых умножает их число. Если добавить <code>customer_id</code> с 5000 значений, получится <code>9600 × 5000 = 48 млн серий</code> даже без учёта бакетов, в десять раз больше, чем весь текущий кластер мониторинга, и это невозможно. Давайте разберёмся, что вам на самом деле нужно. Если посмотреть латентность конкретного клиента при разборе жалобы, то это <strong>трасса</strong> (exemplar от гистограммы ведёт в конкретный запрос) или <strong>лог</strong> с полем <code>customer_id</code>, а не метрика. Если нужен топ-10 клиентов по нагрузке, это аналитика, и о ней гл. 25.</p>
+<p>Метрика <code>http_server_requests_seconds</code> у вас уже даёт 480 комбинаций лейблов на экземпляр (4 метода × 30 URI × 4 статуса), экземпляров 20, итого 9600 комбинаций, и это ещё без бакетов гистограммы, каждый из которых умножает их число. Если добавить <code>customer_id</code> с 5000 значений, получится <code>9600 × 5000 = 48 млн серий</code> даже без учёта бакетов, в десять раз больше, чем весь текущий кластер мониторинга, и это невозможно. Давайте разберёмся, что вам на самом деле нужно. Если посмотреть латентность конкретного клиента при разборе жалобы, то это <strong>трасса</strong> (exemplar от гистограммы ведёт в конкретный запрос) или <strong>лог</strong> с полем <code>customer_id</code>, а не метрика. Если нужен топ-10 клиентов по нагрузке, это аналитика, и о ней гл. 25.</p>
 </blockquote>
 <p>В этом и состоит правильный ответ на кардинальность: <strong>не «нет», а «не сюда»</strong>. Три сигнала существуют именно потому, что у них разная стоимость единицы измерения (гл. 50, раздел 1.2).</p>
 <p><strong>Держат кардинальность в узде три практики:</strong></p>
@@ -1967,7 +1967,7 @@ RAM            ≈ активные_серии × 4 КБ × 2 (запас на �
 <td>условие меняется медленно, спешить некуда</td>
 </tr>
 <tr>
-<td>Полный отказ (все инстансы down)</td>
+<td>Полный отказ (все экземпляры down)</td>
 <td>1–2 м</td>
 <td>тут спешить надо</td>
 </tr>
@@ -3190,11 +3190,11 @@ amtool check-config alertmanager.yml
 <p>Теория head против tail изложена в гл. 50, раздел 5.5, а здесь важна одна инфраструктурная деталь: <strong>head sampling у вас не единственный</strong>. У Envoy/Istio в service mesh (гл. 48) есть <strong>своя</strong> настройка сэмплинга, по умолчанию часто 1 %, и если не согласовать её с приложением, вы получите трассы, в которых mesh-спаны есть, а прикладных нет, или наоборот.</p>
 <hr>
 <h2 id="9-профили-и-непрерывное-профилирование">9. Профили и непрерывное профилирование</h2>
-<p>Непрерывное профилирование (continuous profiling) означает, что профили CPU, аллокаций и блокировок снимаются со всех инстансов постоянно и хранятся так же, как метрики, с метками и retention. Нужно оно потому, что три остальных сигнала говорят, где и когда стало плохо, но не говорят, какая строка кода за это отвечает, а профайлер, запущенный вручную, опаздывает к инциденту, который уже закончился. Раздел объясняет, чем профиль дополняет три сигнала, сравнивает Pyroscope и Parca, показывает, как собирать профили с JVM и во что это обходится, и заканчивается хранением профилей и поиском регрессии между релизами.</p>
+<p>Непрерывное профилирование (continuous profiling) означает, что профили CPU, аллокаций и блокировок снимаются со всех экземпляров постоянно и хранятся так же, как метрики, с метками и retention. Нужно оно потому, что три остальных сигнала говорят, где и когда стало плохо, но не говорят, какая строка кода за это отвечает, а профайлер, запущенный вручную, опаздывает к инциденту, который уже закончился. Раздел объясняет, чем профиль дополняет три сигнала, сравнивает Pyroscope и Parca, показывает, как собирать профили с JVM и во что это обходится, и заканчивается хранением профилей и поиском регрессии между релизами.</p>
 <h3 id="91-профиль-как-четвёртый-сигнал">9.1 Профиль как четвёртый сигнал</h3>
 <p>Профиль называют четвёртым сигналом, потому что он отвечает на вопрос, на который не отвечают остальные три. Метрики сообщают, что p99 вырос до 800 мс, трасса показывает, что эти 800 мс ушли внутри спана <code>processOrder</code>, без исходящих вызовов, а лог говорит, что обработано платёжное поручение 12345. Но ни один из трёх не отвечает на вопрос <strong>«какая строка кода это съедает»</strong>, и ответ на него даёт профиль.</p>
 <p>Профилирование в проде разбиралось в гл. 44 (<code>44-performance.md</code>) как инструмент разработчика: <code>asprof -d 30 -f out.html &lt;pid&gt;</code>, флеймграфы, JFR. Здесь речь о том, как сделать его <strong>непрерывным и централизованным</strong>, чтобы флеймграф за вчерашний инцидент был доступен так же, как метрика, и не приходилось сожалеть, что профайлер не запустили заранее.</p>
-<p>Continuous profiling устроен так: агент на каждом инстансе снимает короткие сэмплы (10 с каждые 15 с или постоянный низкочастотный сэмплинг) и отправляет их в хранилище, которое агрегирует их по времени и меткам. После этого можно задавать вопросы вроде «покажи CPU-профиль сервиса X за 14:00–14:10 вчера» или «покажи diff профиля версии 1.42 против 1.41».</p>
+<p>Continuous profiling устроен так: агент на каждом экземпляре снимает короткие сэмплы (10 с каждые 15 с или постоянный низкочастотный сэмплинг) и отправляет их в хранилище, которое агрегирует их по времени и меткам. После этого можно задавать вопросы вроде «покажи CPU-профиль сервиса X за 14:00–14:10 вчера» или «покажи diff профиля версии 1.42 против 1.41».</p>
 <h3 id="92-pyroscope-и-parca">9.2 Pyroscope и Parca</h3>
 <p>Pyroscope и Parca — два основных открытых хранилища для непрерывного профилирования, и различаются они прежде всего способом сбора: Pyroscope опирается на SDK-агент внутри приложения, а Parca на eBPF-агент снаружи. Для JVM это различие решающее, и таблица ниже сравнивает оба инструмента по происхождению, сбору, хранению и UI, а после неё объяснено, почему для Java выбирают Pyroscope.</p>
 <table>
@@ -3438,7 +3438,7 @@ Comparison:{service="payment-gateway", version="1.42"}  за 2026-09-20 10:00-12
 <tbody>
 <tr>
 <td>Prometheus (Operator)</td>
-<td>отдельный инстанс на команду/домен либо общий с namespace-селекторами</td>
+<td>отдельный экземпляр на команду/домен либо общий с namespace-селекторами</td>
 <td><code>enforcedSampleLimit</code>, <code>enforcedTargetLimit</code>, <code>enforcedLabelLimit</code> в CR <code>Prometheus</code></td>
 </tr>
 <tr>
@@ -3480,9 +3480,9 @@ Comparison:{service="payment-gateway", version="1.42"}  за 2026-09-20 10:00-12
 </table>
 <p><strong>Практическая схема, которая работает в банке среднего размера, выглядит так:</strong></p>
 <ul>
-<li>Prometheus Operator один, а <strong>инстансов Prometheus несколько, по доменам</strong> (core-banking, channels, integration, platform), и у каждого свой <code>serviceMonitorNamespaceSelector</code>. Это даёт взрывозащиту: кардинальность одной команды не кладёт весь мониторинг.</li>
+<li>Prometheus Operator один, а <strong>экземпляров Prometheus несколько, по доменам</strong> (core-banking, channels, integration, platform), и у каждого свой <code>serviceMonitorNamespaceSelector</code>. Это даёт взрывозащиту: кардинальность одной команды не кладёт весь мониторинг.</li>
 <li>Поверх всех стоят общий Thanos, общая Grafana и общий Alertmanager.</li>
-<li>На каждом инстансе стоит <code>enforcedSampleLimit: 50000</code>, так что команда не может превысить квоту, а если превысила, её таргеты падают в <code>up == 0</code>, и алерт приходит <strong>ей</strong>, а не платформе.</li>
+<li>На каждом экземпляре стоит <code>enforcedSampleLimit: 50000</code>, так что команда не может превысить квоту, а если превысила, её таргеты падают в <code>up == 0</code>, и алерт приходит <strong>ей</strong>, а не платформе.</li>
 <li><code>AlertmanagerConfig</code> лежит в namespace команды: команда сама заводит свои receivers и маршруты, а платформа владеет только корневым route и inhibition.</li>
 <li>Loki работает с <code>auth_enabled: true</code> и tenant = namespace, а лимиты задаются per-tenant в <code>overrides</code>.</li>
 </ul>
@@ -3658,7 +3658,7 @@ curl -X POST http://prometheus:9090/api/v1/admin/tsdb/clean_tombstones
 <p><strong><code>rate(...[$__interval])</code> в дашборде.</strong> <em>Симптом:</em> на коротких диапазонах графики пустые, хотя «вчера работало». <em>Лечение:</em> <code>$__rate_interval</code> везде, <code>timeInterval</code> в datasource, равный <code>scrape_interval</code>, и линтер в CI.</p>
 </li>
 <li>
-<p><strong><code>avg</code> перцентилей по инстансам.</strong> <em>Симптом:</em> дашборд показывает p99 = 120 мс, а клиенты жалуются на секунды. <em>Причина:</em> среднее от перцентилей математически бессмысленно. <em>Лечение:</em> <code>histogram_quantile(0.99, sum by (le) (rate(bucket[5m])))</code>.</p>
+<p><strong><code>avg</code> перцентилей по экземплярам.</strong> <em>Симптом:</em> дашборд показывает p99 = 120 мс, а клиенты жалуются на секунды. <em>Причина:</em> среднее от перцентилей математически бессмысленно. <em>Лечение:</em> <code>histogram_quantile(0.99, sum by (le) (rate(bucket[5m])))</code>.</p>
 </li>
 <li>
 <p><strong>Дашборды только в UI Grafana.</strong> <em>Симптом:</em> пересоздали кластер или откатили БД, и дашбордов больше нет. <em>Лечение:</em> provisioning из git, <code>allowUiUpdates: false</code> и генерация (Grafonnet/Terraform).</p>
@@ -3884,7 +3884,7 @@ curl -s <span class="s2">"</span><span class="nv">$ES</span><span class="s2">/lo
 <li>Сначала проверьте <code>up{job="..."}</code>: есть ли серия вообще. Если серии нет, таргет исчез из SD, и дальше идите к шагу 2, а если она есть и равна 0, падает скрейп, и дальше идите к шагу 5.</li>
 <li>Откройте <code>/targets</code> в UI и посмотрите, присутствует ли job. Если его нет, загляните в <code>/service-discovery</code> и проверьте, обнаружены ли таргеты, но отброшены (dropped), и тогда смотрите <code>relabel_configs</code>.</li>
 <li>Выполните <code>kubectl get servicemonitor -n &lt;ns&gt; &lt;name&gt; -o yaml</code> и проверьте, матчит ли селектор лейблы Service, которые показывает <code>kubectl get svc &lt;name&gt; --show-labels</code>.</li>
-<li>Проверьте, матчит ли <code>serviceMonitorSelector</code> инстанса Prometheus лейблы самого ServiceMonitor и включает ли <code>serviceMonitorNamespaceSelector</code> ваш namespace.</li>
+<li>Проверьте, матчит ли <code>serviceMonitorSelector</code> экземпляра Prometheus лейблы самого ServiceMonitor и включает ли <code>serviceMonitorNamespaceSelector</code> ваш namespace.</li>
 <li>Прочитайте <code>lastError</code> в <code>/targets</code>: connection refused означает не тот порт или под, который не слушает, context deadline exceeded означает таймаут из-за слишком большого числа метрик, 404 говорит о неверном <code>path</code>, а 401/403 о том, что нужна аутентификация.</li>
 <li>Сделайте <code>curl</code> на <code>/actuator/prometheus</code> изнутри кластера и убедитесь, что под вообще отдаёт метрики.</li>
 <li>Проверьте NetworkPolicy: разрешён ли трафик из namespace <code>monitoring</code> в ваш namespace на management-порт. После включения zero-trust политик это частая причина.</li>
@@ -4120,7 +4120,7 @@ curl -s <span class="s2">"</span><span class="nv">$ES</span><span class="s2">/lo
 <li><a href="https://prometheus.io/docs/prometheus/latest/storage/">Prometheus — Storage</a> — первичный. Двухчасовые блоки, чанк-сегменты до 512 МБ, WAL сегментами по 128 МБ и минимум три файла; retention по умолчанию 15d; формула <code>needed_disk_space</code>; «1–2 байта на сэмпл»; компакция до 10 % retention или 31 дня; «local storage is not clustered or replicated».</li>
 <li><a href="https://prometheus.io/docs/alerting/latest/configuration/">Prometheus — Alerting configuration (Alertmanager)</a> — первичный. Значения по умолчанию <code>group_wait</code> 30s, <code>group_interval</code> 5m, <code>repeat_interval</code> 4h, <code>resolve_timeout</code> 5m, <code>continue</code> false; <code>matchers</code> вместо устаревших <code>match</code>/<code>match_re</code>; поля <code>inhibit_rule</code> и правило о невозможности самоподавления; <code>time_intervals</code> / <code>mute_time_intervals</code> / <code>active_time_intervals</code>.</li>
 <li><a href="https://prometheus.io/docs/prometheus/latest/federation/">Prometheus — Federation</a> — первичный. Эндпоинт <code>/federate</code>, обязательный параметр <code>match[]</code>, иерархическая и cross-service федерация, пример конфига с <code>honor_labels: true</code>, замечание про нативные гистограммы.</li>
-<li><a href="https://prometheus.io/docs/concepts/metric_types/">Prometheus — Metric types</a> — первичный (проверено при работе над гл. 50). Квантили <code>summary</code> не агрегируются между инстансами; <code>histogram</code> агрегируется через <code>sum by (le)</code>; рекомендация предпочитать нативные гистограммы.</li>
+<li><a href="https://prometheus.io/docs/concepts/metric_types/">Prometheus — Metric types</a> — первичный (проверено при работе над гл. 50). Квантили <code>summary</code> не агрегируются между экземплярами; <code>histogram</code> агрегируется через <code>sum by (le)</code>; рекомендация предпочитать нативные гистограммы.</li>
 <li><a href="https://docs.fluentbit.io/manual/data-pipeline/inputs/tail.md">Fluent Bit — Tail input</a> — первичный. Значения по умолчанию <code>buffer_chunk_size</code> 32k, <code>buffer_max_size</code> 32k, <code>refresh_interval</code> 60, <code>rotate_wait</code> 5, <code>read_from_head</code> false, <code>skip_long_lines</code> false, <code>inotify_watcher</code> true; назначение <code>db</code> и <code>mem_buf_limit</code>; предупреждение о потере логов при <code>logrotate</code> в режиме <code>copytruncate</code> и при backpressure.</li>
 <li><a href="https://opentelemetry.io/docs/collector/configuration/">OpenTelemetry — Collector Configuration</a> — первичный. Структура конфига (receivers / processors / exporters / connectors / extensions / service), правило «the order of the processors in a pipeline determines the order of the processing operations», параметры <code>memory_limiter</code> (<code>check_interval</code>, <code>limit_mib</code>, <code>spike_limit_mib</code>).</li>
 <li><a href="https://opentelemetry.io/docs/concepts/sampling/">OpenTelemetry — Sampling</a> — первичный (проверено при работе над гл. 50). Tail sampling реализуется только в Collector (<code>decision_wait</code>, <code>policies</code>); head sampling не может гарантировать сохранение ошибочных трасс.</li>
