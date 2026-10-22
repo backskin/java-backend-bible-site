@@ -56,6 +56,7 @@
       var tl=e.t.toLowerCase(), sc=0;
       if(tl.indexOf(v)>=0) sc+=3;
       if(tl.indexOf(words[0])===0) sc+=1;
+      if(e.c==='жаргон') sc+=5;   // словарная статья жаргона объясняет слово, поэтому идёт первой
       heads.push({e:e,sc:sc,i:i});
     }
     heads.sort(function(a,b){return b.sc-a.sc||a.i-b.i;});
