@@ -101,13 +101,27 @@
 
 (function(){
   var root=document.documentElement;
+  // единый набор иконок: контур 24×24, линия 2 px со скруглёнными концами, цвет — от текста кнопки
+  var IC={
+    '⧉':'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    '✓':'<path d="M20 6 9 17l-5-5"/>',
+    '⌨':'<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
+    '↩':'<path d="M3 6h18"/><path d="M3 12h15a3 3 0 0 1 0 6h-4"/><path d="m16 15-3 3 3 3"/><path d="M3 18h6"/>',
+    '→':'<path d="M3 6h13M3 12h13M3 18h13"/><path d="m18 9 3 3-3 3"/>',
+    '☀':'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    '☾':'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>',
+    '⛶':'<path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>',
+    '⤡':'<path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/>'
+  };
+  function icon(k){var p=IC[k];return p?'<svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+p+'</svg>':k;}
+  window.JBB_ICON=icon;
   function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
   // ---------- один раз: тема ----------
   var dark=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
   var saved=ls('jbb-theme'); if(saved==='dark'||saved==='light') root.setAttribute('data-theme',saved);
   function eff(){var a=root.getAttribute('data-theme');return a||(dark&&dark.matches?'dark':'light');}
   var tb=document.getElementById('theme');
-  function label(){if(tb){var d=eff()==='dark',t=d?'Светлая тема':'Тёмная тема';tb.innerHTML='<span class="ic" aria-hidden="true">'+(d?'☀':'☾')+'</span><span class="tx">'+t+'</span>';tb.setAttribute('aria-label',t);tb.title=t;}}
+  function label(){if(tb){var d=eff()==='dark',t=d?'Светлая тема':'Тёмная тема';tb.innerHTML='<span class="ic" aria-hidden="true">'+icon(d?'☀':'☾')+'</span><span class="tx">'+t+'</span>';tb.setAttribute('aria-label',t);tb.title=t;}}
   label(); if(dark&&dark.addEventListener) dark.addEventListener('change',label);
   if(tb) tb.addEventListener('click',function(){var nx=eff()==='dark'?'light':'dark';root.setAttribute('data-theme',nx);ls('jbb-theme',nx);label();});
 
@@ -190,7 +204,7 @@
     var fs=document.getElementById('fs'), d=document;
     var can=d.fullscreenEnabled||d.webkitFullscreenEnabled;
     if(fs&&can){ fs.hidden=false;
-      var upd=function(){var on=!!(d.fullscreenElement||d.webkitFullscreenElement);fs.textContent=on?'⤡':'⛶';fs.title=on?'Выйти из полноэкранного режима':'Во весь экран';fs.setAttribute('aria-label',fs.title);};
+      var upd=function(){var on=!!(d.fullscreenElement||d.webkitFullscreenElement);fs.innerHTML=icon(on?'⤡':'⛶');fs.title=on?'Выйти из полноэкранного режима':'Во весь экран';fs.setAttribute('aria-label',fs.title);};
       fs.addEventListener('click',function(){ try{ if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d);} else {var el=d.documentElement;var r=(el.requestFullscreen||el.webkitRequestFullscreen).call(el,{navigationUI:'hide'});if(r&&r.catch)r.catch(function(){fs.hidden=true;});} }catch(x){fs.hidden=true;} });
       // после входа в полноэкранный режим Chrome на Android не сразу перерисовывает новую часть экрана: подталкиваем перерисовку несколько кадров подряд
       var kick=function(){ upd(); var t0=performance.now(), h0=-1; (function step(){ var h=window.innerHeight;
@@ -275,7 +289,7 @@
   try{if(localStorage.getItem('jbb-code-wrap')==='1')root.setAttribute('data-wrap','1');}catch(e){}
   var codeMode=function(){return root.getAttribute('data-code')==='light'?'light':'dark';};
   // кнопка = иконка + подпись: на телефоне подпись скрыта, остаётся для подсказки и экранного диктора
-  var lbl=function(b,ic,tx,ti){b.innerHTML='<span class="ic" aria-hidden="true">'+ic+'</span><span class="tx">'+tx+'</span>';b.setAttribute('aria-label',tx);b.title=ti||tx;};
+  var lbl=function(b,ic,tx,ti){b.innerHTML='<span class="ic" aria-hidden="true">'+icon(ic)+'</span><span class="tx">'+tx+'</span>';b.setAttribute('aria-label',tx);b.title=ti||tx;};
   var paintWrap=function(){var on=root.getAttribute('data-wrap')==='1';document.querySelectorAll('.hl-wrap').forEach(function(w){
     if(on)lbl(w,'→','Без переноса','Показывать длинные строки целиком с прокруткой');else lbl(w,'↩','Переносить строки','Переносить длинные строки, чтобы не прокручивать вбок');});};
   var paintModes=function(){var l=codeMode()==='light';document.querySelectorAll('.hl-mode:not(.hl-wrap)').forEach(function(m){
