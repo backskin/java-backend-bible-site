@@ -1,4 +1,4 @@
-const CACHE = 'jbb-6ba9b9be24';
+const CACHE = 'jbb-f6769628f5';
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './manifest.webmanifest', './icons/icon-192.png'])).then(() => self.skipWaiting()));
 });
