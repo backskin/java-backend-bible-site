@@ -759,7 +759,7 @@ D и E никуда не делись — они недостижимы по в�
 <p>Где правило нарушают осознанно и это нормально:</p>
 <ol>
 <li><strong>Собственная фича-ветка перед ревью.</strong> Она «публична» только технически — вы запушили её ради бэкапа и pipeline. Договорённость в команде: ветки <code>feature/&lt;имя&gt;/*</code> принадлежат автору, их переписывают свободно, кто-то другой на них не работает.</li>
-<li><strong>Ветка в PR после замечаний ревьюера.</strong> Многие команды требуют не «фиксап-коммитов» вроде «поправил по ревью», а переписанной чистой истории. Тогда после <code>git rebase -i</code> идёт <code>git push --force-with-lease</code> — и это штатная операция, а не авария. Ревьюеру при этом помогает <code>git range-diff</code> (см. 4.4) и вкладка «Changes since last review» в хостинге.</li>
+<li><strong>Ветка в PR после замечаний рецензента.</strong> Многие команды требуют не «фиксап-коммитов» вроде «поправил по ревью», а переписанной чистой истории. Тогда после <code>git rebase -i</code> идёт <code>git push --force-with-lease</code> — и это штатная операция, а не авария. Рецензенту при этом помогает <code>git range-diff</code> (см. 4.4) и вкладка «Changes since last review» в хостинге.</li>
 <li><strong>Совместная работа над одной веткой</strong> — вот здесь нарушать нельзя. Если над <code>feature/big-refactoring</code> работают трое, rebase этой ветки — гарантированная авария у двоих.</li>
 </ol>
 <p>Единственный по-настоящему запретный случай — <strong>интеграционные ветки</strong>: <code>main</code>, <code>develop</code>, <code>release/*</code>. Они защищаются на сервере (см. главу 53, <code>53-cicd-platforms.md</code>): protected branches, запрет force-push, запрет удаления. Если на вашем сервере force-push в <code>main</code> технически возможен — это дефект конфигурации, а не вопрос дисциплины.</p>
@@ -847,7 +847,7 @@ git rebase -i --root      <span class="c1"># вообще всю историю,
 </tbody>
 </table>
 <p>Перестановка строк меняет порядок коммитов. Удаление строки эквивалентно <code>drop</code> (и Git с версии 2.9+ по умолчанию ругается, если вы удалили строку случайно — <code>rebase.missingCommitsCheck</code>).</p>
-<p><strong>Разбиение коммита</strong> — операция, которую почти никто не знает, а она нужна регулярно (ревьюер сказал «здесь две разные вещи в одном коммите»):</p>
+<p><strong>Разбиение коммита</strong> — операция, которую почти никто не знает, а она нужна регулярно (рецензент сказал «здесь две разные вещи в одном коммите»):</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>git rebase -i HEAD~3
 <span class="c1"># ставим 'edit' напротив нужного коммита, сохраняем</span>
 
@@ -882,7 +882,7 @@ git commit --fixup<span class="o">=</span>reword:&lt;sha&gt;                <spa
 git config --global rebase.autoStash <span class="nb">true</span>   <span class="c1"># автоматически прятать локальные изменения</span>
 </code></pre></div>
 
-<p>Практика в банковской команде: пока MR на ревью, все правки идут <code>--fixup</code>; перед мержем — <code>rebase -i --autosquash</code>; ревьюер при этом видит каждую итерацию отдельным коммитом и не теряет контекст, а в <code>main</code> уходит чистая история.</p>
+<p>Практика в банковской команде: пока MR на ревью, все правки идут <code>--fixup</code>; перед мержем — <code>rebase -i --autosquash</code>; рецензент при этом видит каждую итерацию отдельным коммитом и не теряет контекст, а в <code>main</code> уходит чистая история.</p>
 <h3 id="35---update-refs---rebase-merges---exec">3.5 <code>--update-refs</code>, <code>--rebase-merges</code>, <code>--exec</code></h3>
 <p><strong><code>--update-refs</code></strong> (Git <strong>2.38</strong>) решает проблему стека веток. Если у вас <code>main ← part1 ← part2 ← part3</code> (каждая следующая ответвлена от предыдущей — stacked PRs), то обычный rebase <code>part3</code> на <code>main</code> оставит <code>part1</code> и <code>part2</code> висеть на старых коммитах. Проверенный вывод (2.55):</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>$ git switch part2 <span class="o">&amp;&amp;</span> git rebase --update-refs main
@@ -2480,7 +2480,7 @@ git config core.hooksPath .githooks
 <li>Периодический полный скан всей истории (ночной заданий): <code>gitleaks detect --log-opts="--all"</code>.</li>
 <li>Организационно: секреты в Vault/k8s Secrets/переменных CI, а не в репозитории (главы 41 и 53).</li>
 </ol>
-<p>Отличие инструментов: <strong>gitleaks</strong> — быстрый, регулярного выражения + энтропия, удобен как гейт; <strong>trufflehog</strong> дополнительно <strong>верифицирует</strong> найденные ключи (пробует их на живых API) и потому даёт меньше ложных срабатываний, но медленнее и требует сетевого доступа.</p>
+<p>Отличие инструментов: <strong>gitleaks</strong> — быстрый, регулярные выражения + энтропия, удобен как гейт; <strong>trufflehog</strong> дополнительно <strong>верифицирует</strong> найденные ключи (пробует их на живых API) и потому даёт меньше ложных срабатываний, но медленнее и требует сетевого доступа.</p>
 <p>Ложные срабатывания гасятся файлом <code>.gitleaks.toml</code> с <code>allowlist</code> — не отключением проверки целиком.</p>
 <h3 id="105-процедура-при-утечке-секрета">10.5 Процедура при утечке секрета</h3>
 <p>Порядок действий именно такой, менять нельзя.</p>
@@ -2717,7 +2717,7 @@ cat .gitattributes
 <p>Цена и грабли:</p>
 <ol>
 <li><strong>Миграция существующей истории</strong> — это переписывание всей истории (<code>git lfs migrate import --include="*.zip" --everything</code>), то есть новые SHA у всех коммитов, force-push и процедура из 10.5. Просто «начать трекать» — значит, старые версии останутся в базе, и репозиторий не похудеет.</li>
-<li><strong>Стоимость хранения и трафика.</strong> GitHub/GitLab считают LFS отдельно от репозитория и отдельно тарифицируют трафик. CI, клонирующий LFS-объекты на каждому заданию, съедает квоту очень быстро — лечится <code>GIT_LFS_SKIP_SMUDGE=1</code> и явным <code>git lfs pull</code> только там, где нужно.</li>
+<li><strong>Стоимость хранения и трафика.</strong> GitHub/GitLab считают LFS отдельно от репозитория и отдельно тарифицируют трафик. CI, клонирующий LFS-объекты на каждом задании, съедает квоту очень быстро — лечится <code>GIT_LFS_SKIP_SMUDGE=1</code> и явным <code>git lfs pull</code> только там, где нужно.</li>
 <li><strong>Нет LFS на исполнителе</strong> — самая частая авария (инцидент 12.6): вместо файлов в рабочем дереве лежат текстовые указатели по 130 байт, сборка формально проходит, артефакт битый.</li>
 <li><strong>Блокировки</strong> (<code>git lfs lock</code>) нужны, потому что бинарники не сливаются; это чужеродная для Git модель работы.</li>
 <li><strong>Зависимость от LFS-сервера</strong>: он недоступен — вы не можете сделать checkout. Зеркалирование репозитория не копирует LFS-объекты автоматически.</li>
@@ -2809,7 +2809,7 @@ git subtree push --prefix<span class="o">=</span>libs/money-core &lt;url&gt; mai
 <ul>
 <li><strong>Сборка.</strong> Gradle с composite builds / configuration cache и Maven с реактором на 300 модулей ведут себя по-разному. Без инкрементальной сборки и удалённого кэша (<code>--build-cache</code>, Develocity, Bazel) полная сборка монорепо становится часовой — а значит, ломается trunk-based. Детали — глава 54.</li>
 <li><strong>CI.</strong> Нужна сборка только затронутых модулей: определение изменений через <code>git diff --name-only origin/main...HEAD</code> и отображение путей на модули; в GitLab — <code>rules:changes</code> и child pipelines (глава 53).</li>
-<li><strong><code>CODEOWNERS</code>.</strong> В монорепо это единственный способ маршрутизировать ревью; файл быстро разрастается до сотен строк, и порядок правил (побеждает последнее совпадение) регулярно даёт «не тех» ревьюеров.</li>
+<li><strong><code>CODEOWNERS</code>.</strong> В монорепо это единственный способ маршрутизировать ревью; файл быстро разрастается до сотен строк, и порядок правил (побеждает последнее совпадение) регулярно даёт «не тех» рецензентов.</li>
 <li><strong>Права.</strong> Git не умеет разграничивать доступ на уровне каталогов. Если часть кода видна не всем (платёжный модуль, антифрод), монорепо противоречит требованию — и это чаще всего непреодолимый аргумент в банке.</li>
 <li><strong><code>git log</code>/<code>blame</code> на путях</strong> становятся основным интерфейсом: <code>git log -- services/pay</code> вместо <code>git log</code>.</li>
 <li><strong>Теги и версии.</strong> Один <code>v1.5.0</code> на всё — либо версия на модуль (<code>pay/v1.5.0</code>), что ломает <code>git describe</code> без <code>--match</code>.</li>
@@ -3073,7 +3073,7 @@ git lfs fsck
 
 <p><strong>Как не допустить.</strong></p>
 <ol>
-<li><code>git-lfs</code> — часть базового образа исполнителя, а не устанавливается в каждом заданию.</li>
+<li><code>git-lfs</code> — часть базового образа исполнителя, а не устанавливается в каждом задании.</li>
 <li>Явная проверка-гейт (код выше) в самом начале конвейера: дешевле любого разбора.</li>
 <li>Тест, который реально <strong>читает</strong> шаблон и проверяет магические байты (<code>PK\x03\x04</code> для xlsx, <code>%PDF</code> для pdf) — такой тест ловит проблему на уровне сборки, а не на стенде.</li>
 <li>Ещё лучше — не держать шаблоны в Git: положить в Nexus/S3 и подтягивать задачей сборки с проверкой контрольной суммы (глава 54, <code>54-build-and-dependencies.md</code>).</li>
@@ -3503,5 +3503,5 @@ git ls-remote origin                 <span class="c1"># что реально н
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-модель-данных-git">1. Модель данных Git</a></li><li><a href="#2-ветки-и-слияние">2. Ветки и слияние</a></li><li><a href="#3-rebase-и-merge">3. Rebase и merge</a></li><li><a href="#4-cherry-pick-и-перенос-изменений">4. Cherry-pick и перенос изменений</a></li><li><a href="#5-отмена-и-восстановление-изменений">5. Отмена и восстановление изменений</a></li><li><a href="#6-инструменты-исследования-истории">6. Инструменты исследования истории</a></li><li><a href="#7-работа-с-удалёнными-репозиториями">7. Работа с удалёнными репозиториями</a></li><li><a href="#8-стратегии-ветвления">8. Стратегии ветвления</a></li><li><a href="#9-соглашения-о-коммитах-и-настройки-репозитория">9. Соглашения о коммитах и настройки репозитория</a></li><li><a href="#10-хуки-и-автоматизация">10. Хуки и автоматизация</a></li><li><a href="#11-большие-и-сложные-репозитории">11. Большие и сложные репозитории</a></li><li><a href="#12-разобранные-инциденты">12. Разобранные инциденты</a></li><li><a href="#13-грабли-и-антипаттерны">13. Грабли и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="search-index.js?v=778ec65fc9"></script><script src="app.js?v=fd5787c1df"></script>
+<script src="search-index.js?v=a905ac87a2"></script><script src="app.js?v=fd5787c1df"></script>
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})</script></body></html>

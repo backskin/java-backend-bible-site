@@ -1138,7 +1138,7 @@ noClasses().that().resideInAPackage("..domain..")
     <span class="p">.</span><span class="na">build</span><span class="p">();</span>
 </code></pre></div>
 
-<p>Без первого <code>disable</code> Jackson пишет <code>Instant</code> как число секунд с дробной частью (<code>1789045500.123456789</code>), и вы получаете все беды epoch вдобавок к проблемам точности JSON-чисел. Без второго <code>ZonedDateTime</code> при десериализации приводится к зоне контекста маппера, по умолчанию UTC, и исходная зона теряется.</p>
+<p>Без первого <code>disable</code> Jackson пишет <code>Instant</code> как число секунд с дробной частью (<code>1789045500.123456789</code>), и вы получаете все беды epoch вдобавок к проблемам точности JSON-чисел. Без второго <code>ZonedDateTime</code> при десериализации приводится к зоне контекста преобразователя, по умолчанию UTC, и исходная зона теряется.</p>
 <h3 id="54-сортировка-событий-с-разных-серверов">5.4 Сортировка событий с разных серверов</h3>
 <p>Часто встречается уверенность, что достаточно поставить timestamp в каждое сообщение и упорядочить события по нему, но это не работает. Часы разных машин никогда не идут точно в ногу, и ниже мы разберём, насколько велико расхождение, какие следствия из него вытекают для порядка, для циклов ожидания и для разрешения конфликтов и чем пользоваться вместо wall clock.</p>
 <p>В хорошей сети NTP держит рассинхронизацию в пределах единиц миллисекунд, в плохой в пределах десятков и сотен миллисекунд, а при сбое NTP или в момент старта VM расхождение может достигать секунд. К этому добавляется smearing в дни високосных секунд (раздел 1.5) и виртуализация, потому что на перегруженном гипервизоре гостевые часы дрейфуют.</p>
@@ -1343,7 +1343,7 @@ noClasses().that().resideInAPackage("..domain..")
 <blockquote class="cb-num">
 <p>📊 <strong>Цифры.</strong> На Linux/x86 с <code>invariant TSC</code> вызов <code>System.nanoTime()</code> стоит порядка 20–30 нс, потому что идёт через vDSO без системного вызова. Если же <code>clocksource</code> переключён на <code>hpet</code> или <code>acpi_pm</code>, что бывает на виртуалках и при некоторых настройках BIOS, вызов становится настоящим системным и стоит <strong>сотни наносекунд и больше</strong>, то есть производительность падает на порядок. Проверяется это командой <code>cat /sys/devices/system/clocksource/clocksource0/current_clocksource</code>, и именно здесь нередко кроется причина необъяснимых просадок в приложениях, которые часто обращаются к часам: в логировании, трассировке и метриках.</p>
 </blockquote>
-<h3 id="58-логи-и-часового-пояса">5.8 Логи и часового пояса</h3>
+<h3 id="58-логи-и-часовые-пояса">5.8 Логи и часовые пояса</h3>
 <p>Время в логах читают во время инцидента, когда события нескольких сервисов нужно выстроить в одну последовательность, и если у каждого сервиса своя зона, это превращается в отдельную задачу, которая отнимает часы. Ниже перечислены четыре правила, которые эти часы экономят, показана настройка Logback и разобран случай, когда логи четырёх источников жили в разных зонах.</p>
 <ol>
 <li><strong>Все логи пишутся в UTC</strong>, а не в зоне сервера и не в зоне бизнеса, потому что UTC — единственная шкала, одинаковая для всех подов, всех регионов и всех лет.</li>
@@ -1351,7 +1351,7 @@ noClasses().that().resideInAPackage("..domain..")
 <li><strong>Формат ISO 8601, а не локализованный</strong>, потому что такие строки сортируются лексикографически и разбираются любым инструментом.</li>
 <li><strong>Миллисекунд достаточно</strong>, а микросекунды нужны, только если вы коррелируете логи с трассировкой.</li>
 </ol>
-<p>В Logback это настраивается прямо в паттерне энкодера:</p>
+<p>В Logback это настраивается прямо в паттерне кодировщика:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">&lt;appender</span> <span class="na">name=</span><span class="s">"STDOUT"</span> <span class="na">class=</span><span class="s">"ch.qos.logback.core.ConsoleAppender"</span><span class="nt">&gt;</span>
   <span class="nt">&lt;encoder&gt;</span>
     <span class="nt">&lt;pattern&gt;</span>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX, UTC} %-5level [%thread] %logger{36} - %msg%n<span class="nt">&lt;/pattern&gt;</span>
@@ -3672,7 +3672,7 @@ Content-Type: text/csv; charset=windows-1251
 <p><strong>Невидимые символы</strong> — это zero-width space (U+200B), zero-width joiner (U+200D), zero-width non-joiner (U+200C), soft hyphen (U+00AD), метки left-to-right/right-to-left (U+200E/U+200F) и override (U+202D/U+202E). Опасны они тремя свойствами:
 - они ломают точное сравнение, потому что строка «выглядит» правильно, но не равна ожидаемой;
 - они позволяют обойти фильтры: <code>adm​in</code> проходит блок-лист на <code>admin</code>;
-- <strong>RTL override меняет визуальный порядок</strong>, так что имя файла <code>report‮gnp.exe</code> отображается как <code>reportexe.png</code>, и это старый приём маскировки исполняемых файлов. В 2021 году ту же технику описали как атаку Trojan Source на исходный код: комментарий с RLO визуально переставляет код, и ревьюер видит не то, что видит компилятор.</p>
+- <strong>RTL override меняет визуальный порядок</strong>, так что имя файла <code>report‮gnp.exe</code> отображается как <code>reportexe.png</code>, и это старый приём маскировки исполняемых файлов. В 2021 году ту же технику описали как атаку Trojan Source на исходный код: комментарий с RLO визуально переставляет код, и рецензент видит не то, что видит компилятор.</p>
 <p>Отфильтровать такие символы можно регулярным выражением по категориям Unicode:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Pattern</span> <span class="n">INVISIBLE</span> <span class="o">=</span>
     <span class="n">Pattern</span><span class="p">.</span><span class="na">compile</span><span class="p">(</span><span class="s">"[\\p{Cf}\\p{Cc}&amp;&amp;[^\\n\\r\\t]]"</span><span class="p">);</span>   <span class="c1">// format + control, кроме переводов строк</span>
@@ -3807,7 +3807,7 @@ Content-Type: text/csv; charset=windows-1251
 </tr>
 </tbody>
 </table>
-<p><strong>Настоящие инциденты случались не раз.</strong> В 2016 году Stack Overflow лёг на 34 минуты: регулярное выражение для обрезки пробелов в постах (<code>^[\s‌]+|[\s‌]+$</code>) встретила пост с ~20 000 пробелов подряд, и бэктрекинг съел CPU. В 2019 году Cloudflare устроил глобальный сбой на 27 минут из-за регулярного выражения <code>(?:(?:\"|'|\]|\}|\\|\d|(?:nan|infinity|true|false|null|undefined|symbol|math)|\</code>|-|+)+[)]<em>;?((?:\s|-|~|!|{}||||+)</em>.<em>(?:.</em>=.<em>)))<code>в WAF — конструкция</code>.</em>.<em>=.</em>` дала катастрофический бэктрекинг и выжгла CPU на всех edge-серверах.</p>
+<p><strong>Настоящие инциденты случались не раз.</strong> В 2016 году Stack Overflow лёг на 34 минуты: регулярное выражение для обрезки пробелов в постах (<code>^[\s‌]+|[\s‌]+$</code>) встретило пост с ~20 000 пробелов подряд, и бэктрекинг съел CPU. В 2019 году Cloudflare устроил глобальный сбой на 27 минут из-за регулярного выражения <code>(?:(?:\"|'|\]|\}|\\|\d|(?:nan|infinity|true|false|null|undefined|symbol|math)|\</code>|-|+)+[)]<em>;?((?:\s|-|~|!|{}||||+)</em>.<em>(?:.</em>=.<em>)))<code>в WAF — конструкция</code>.</em>.<em>=.</em>` дала катастрофический бэктрекинг и выжгла CPU на всех edge-серверах.</p>
 <p><strong>Найти такие паттерны в своём коде можно тремя способами:</strong></p>
 <ol>
 <li>
@@ -3882,7 +3882,7 @@ Content-Type: text/csv; charset=windows-1251
    com.google.re2j.Pattern p = com.google.re2j.Pattern.compile("^(a+)+$");
    p.matcher("a".repeat(100000) + "!").matches();   // мгновенно, false</code></li>
 </ol>
-<p><strong>Для проектов, которые принимают регулярного выражения от пользователя</strong>, будь то поисковые фильтры, правила маршрутизации или антифрод-правила, правило одно: <strong>только re2j</strong>. Пользовательское регулярное выражение в бэктрекинговом движке — это готовый DoS.</p>
+<p><strong>Для проектов, которые принимают регулярные выражения от пользователя</strong>, будь то поисковые фильтры, правила маршрутизации или антифрод-правила, правило одно: <strong>только re2j</strong>. Пользовательское регулярное выражение в бэктрекинговом движке — это готовый DoS.</p>
 <p><strong>Для проверки email правило другое: не пишите регулярный выражение.</strong> Возьмите <code>jakarta.validation.constraints.@Email</code>, реализация которого в Hibernate Validator использует проверенный паттерн, или Apache Commons Validator, а окончательной проверкой email всё равно остаётся письмо с кодом.</p>
 <h3 id="113-numberformat-и-локали-в-api">11.3 <code>NumberFormat</code> и локали в API</h3>
 <p><code>NumberFormat</code> форматирует числа для человека по правилам локали, а в разных локалях эти правила различаются так сильно, что одна и та же строка означает разные числа. Поэтому в машинных интерфейсах локализованному форматированию не место, а там, где оно уместно, у <code>NumberFormat</code> есть свои грабли. Посмотрим сначала, как одно число выглядит в четырёх локалях:</p>
@@ -4443,5 +4443,5 @@ grep -rn <span class="s1">'static.*SimpleDateFormat\|static.*NumberFormat\|stati
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-модель-времени-момент-и-календарная-дата">1. Модель времени: момент и календарная дата</a></li><li><a href="#2-javatime-типы-и-правило-выбора">2. java.time: типы и правило выбора</a></li><li><a href="#3-арифметика-времени-и-тестируемость">3. Арифметика времени и тестируемость</a></li><li><a href="#4-форматирование-и-парсинг">4. Форматирование и парсинг</a></li><li><a href="#5-время-в-системе-бд-api-планировщики-монотонность">5. Время в системе: БД, API, планировщики, монотонность</a></li><li><a href="#6-денежные-суммы-и-тип-double">6. Денежные суммы и тип double</a></li><li><a href="#7-устройство-bigdecimal">7. Устройство BigDecimal</a></li><li><a href="#8-модель-денег-минорные-единицы-value-object-мультивалютность">8. Модель денег: минорные единицы, Value Object, мультивалютность</a></li><li><a href="#9-unicode-и-длина-строки">9. Unicode и длина строки</a></li><li><a href="#10-кодировки-байты-и-символы">10. Кодировки: байты и символы</a></li><li><a href="#11-регулярные-выражения-форматирование-чисел-и-i18n">11. Регулярные выражения, форматирование чисел и i18n</a></li><li><a href="#12-грабли-и-антипаттерны">12. Грабли и антипаттерны</a></li><li><a href="#13-диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="search-index.js?v=778ec65fc9"></script><script src="app.js?v=fd5787c1df"></script>
+<script src="search-index.js?v=a905ac87a2"></script><script src="app.js?v=fd5787c1df"></script>
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})</script></body></html>

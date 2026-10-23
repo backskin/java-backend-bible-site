@@ -656,7 +656,7 @@ sysctl vm.dirty_ratio vm.dirty_background_ratio vm.dirty_expire_centisecs
 
 <h3 id="24-swap-и-jvm">2.4 Swap и JVM</h3>
 <p>Swap для обычного процесса — страховка: редко используемые страницы уезжают на диск, освобождая RAM. Для JVM — механизм саморазрушения, и вот почему.</p>
-<p>GC периодически обходит <strong>весь</strong> живой набор объектов. Любая сборка, затрагивающая старое поколение (Full GC у G1, параллельный марк у любого сборщика), трогает страницы, которые не трогались давно — именно те, которые ядро сочло холодными и выгрузило. Результат: пауза GC, которая должна была занять 200 мс, превращается в минуты чтения с диска по 4 КБ случайным доступом. На HDD это буквально десятки минут; приложение считается мёртвым, liveness-проба убивает под, и всё начинается заново на соседнему узлу.</p>
+<p>GC периодически обходит <strong>весь</strong> живой набор объектов. Любая сборка, затрагивающая старое поколение (Full GC у G1, параллельный марк у любого сборщика), трогает страницы, которые не трогались давно — именно те, которые ядро сочло холодными и выгрузило. Результат: пауза GC, которая должна была занять 200 мс, превращается в минуты чтения с диска по 4 КБ случайным доступом. На HDD это буквально десятки минут; приложение считается мёртвым, liveness-проба убивает под, и всё начинается заново на соседнем узле.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Есть ли своп у процесса — первое, что смотришь при странных паузах</span>
 grep VmSwap /proc/12345/status
 
@@ -1326,7 +1326,7 @@ appuser  hard  nofile  1048576
 </code></pre></div>
 
 <p>Есть ещё глобальные значения по умолчанию systemd: <code>/etc/systemd/system.conf</code> → <code>DefaultLimitNOFILE</code>. С systemd 240 дефолтный soft-лимит для сервисов — 1024, hard — 524288; с systemd 254 soft-лимит по-прежнему консервативный. Явное <code>LimitNOFILE</code> обязательно.</p>
-<p><strong>Уровень 3: контейнер.</strong> Docker: <code>--ulimit nofile=1048576:1048576</code> или <code>default-ulimits</code> в <code>/etc/docker/daemon.json</code>. Kubernetes <strong>не даёт</strong> задать ulimit в манифесте пода — лимит наследуется от container runtime, который наследует от systemd-юнита containerd/CRI-O. Это регулярный сюрприз: под получает <code>nofile=1048576</code> на одному узлу и <code>1024</code> на другой, потому что узла разных поколений.</p>
+<p><strong>Уровень 3: контейнер.</strong> Docker: <code>--ulimit nofile=1048576:1048576</code> или <code>default-ulimits</code> в <code>/etc/docker/daemon.json</code>. Kubernetes <strong>не даёт</strong> задать ulimit в манифесте пода — лимит наследуется от container runtime, который наследует от systemd-юнита containerd/CRI-O. Это регулярный сюрприз: под получает <code>nofile=1048576</code> на одном узле и <code>1024</code> на другом, потому что узлы разных поколений.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Проверка внутри пода — единственный надёжный способ</span>
 kubectl <span class="nb">exec</span> -it mypod -- sh -c <span class="s1">'cat /proc/1/limits | grep "open files"'</span>
 </code></pre></div>
@@ -2505,7 +2505,7 @@ api.external-vendor.com                                  -&gt; ответ
 <li><code>systemd-resolved</code> (слушает на 127.0.0.53, кеширует, поддерживает DNSSEC и DoT);</li>
 <li><code>nscd</code> (старый демон кеширования, кеширует <code>hosts</code>, <code>passwd</code>, <code>group</code>);</li>
 <li><code>dnsmasq</code> / <code>unbound</code> в режиме локального кеша;</li>
-<li>в Kubernetes — <strong>NodeLocal DNSCache</strong> (DaemonSet с CoreDNS на каждому узлу, слушает на link-local адресе).</li>
+<li>в Kubernetes — <strong>NodeLocal DNSCache</strong> (DaemonSet с CoreDNS на каждом узле, слушает на link-local адресе).</li>
 </ul>
 <p>В минимальном контейнере (<code>alpine</code>, <code>distroless</code>, <code>debian-slim</code>) <strong>никакого кеша нет</strong>. Каждый HTTP-запрос к внешнему хосту, если JVM не закешировала, — поход в CoreDNS. При 1000 RPS это 1000 (а с <code>ndots:5</code> — до 8000) DNS-запросов в секунду с одного пода. CoreDNS в кластере ложится, и «тормозит всё».</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Есть ли кеш в системе</span>
@@ -2574,7 +2574,7 @@ java -Djava.security.properties<span class="o">=</span>/opt/app/extra.security -
 <p>Рекомендуемые значения для облачной/кубернетесной среды: <code>ttl=30</code>, <code>negative.ttl=0…5</code>. Негативный кеш особенно коварен: под стартует раньше, чем сервис-зависимость получила эндпоинты, получает NXDOMAIN, кеширует его на 10 секунд — и первые запросы падают уже после того, как всё поднялось.</p>
 <h3 id="73-ipv6-и-таймауты-разрешения-имён">7.3 IPv6 и таймауты разрешения имён</h3>
 <p>Если в системе включён IPv6, glibc при <code>getaddrinfo()</code> без указания семейства запрашивает <strong>и A, и AAAA</strong>, обычно параллельно двумя UDP-пакетами с одного сокета. Если DNS-сервер или промежуточное оборудование плохо обрабатывает параллельные запросы с одного порта (встречалось у старых firewall и у некоторых реализаций conntrack), один из ответов теряется, и резолв ждёт <code>timeout</code> (5 с по умолчанию) и делает <code>attempts</code> попыток. Итого до 10 секунд на резолв.</p>
-<p>Признаки: <code>getent hosts foo</code> отрабатывает мгновенно, а <code>curl foo</code> — за 5 или 10 секунд. Или наоборот, всё быстро на одному узлу и медленно на другой.</p>
+<p>Признаки: <code>getent hosts foo</code> отрабатывает мгновенно, а <code>curl foo</code> — за 5 или 10 секунд. Или наоборот, всё быстро на одном узле и медленно на другом.</p>
 <p>Лечение на уровне резолвера:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>options single-request-reopen
 </code></pre></div>
@@ -3253,7 +3253,7 @@ sudo /usr/share/bcc/tools/tcpretrans
 <li>Оповещение: <code>process_files_open / process_files_max &gt; 0.6</code> (warning) и <code>&gt; 0.8</code> (critical). Метрики Micrometer доступны из коробки.</li>
 <li>Явный <code>LimitNOFILE=1048576</code> в юнитах containerd/CRI-O, зафиксированный в конфигурации узлов (Ansible/Terraform), а не «поправили руками».</li>
 <li>ArchUnit-правило или code review чеклист: <code>HttpClient.newBuilder()</code> / <code>new RestTemplate()</code> / <code>OkHttpClient()</code> не должны создаваться вне конфигурационных классов.</li>
-<li>Проверка <code>cat /proc/1/limits</code> в smoke-тесте после деплоя на нового узел.</li>
+<li>Проверка <code>cat /proc/1/limits</code> в smoke-тесте после деплоя на новый узел.</li>
 </ul>
 <h3 id="92-приложение-не-отвечает-процесс-в-d-состоянии-из-за-диска">9.2 Приложение не отвечает: процесс в <code>D</code>-состоянии из-за диска</h3>
 <p><strong>Симптом.</strong> Сервис обработки документов перестал отвечать. CPU 2 %, память в норме, GC-логи не показывают пауз. <code>jstack</code> завис и не отдал дамп. <code>kubectl exec</code> в под работает, но любая команда, трогающая диск, тоже подвисает.</p>
@@ -4303,5 +4303,5 @@ iostat -xz <span class="m">1</span>
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-процессы-и-их-жизненный-цикл">1. Процессы и их жизненный цикл</a></li><li><a href="#2-память-процесса">2. Память процесса</a></li><li><a href="#3-cgroups-и-контейнерные-лимиты">3. cgroups и контейнерные лимиты</a></li><li><a href="#4-файловые-дескрипторы-и-ввод-вывод">4. Файловые дескрипторы и ввод-вывод</a></li><li><a href="#5-cpu-и-планировщик">5. CPU и планировщик</a></li><li><a href="#6-tcp-в-работе-бэкенда">6. TCP в работе бэкенда</a></li><li><a href="#7-dns">7. DNS</a></li><li><a href="#8-инструменты-диагностики">8. Инструменты диагностики</a></li><li><a href="#9-разобранные-инциденты">9. Разобранные инциденты</a></li><li><a href="#10-командная-оболочка-для-разработчика">10. Командная оболочка для разработчика</a></li><li><a href="#11-грабли-и-антипаттерны">11. Грабли и антипаттерны</a></li><li><a href="#12-диагностика-чеклисты">12. Диагностика: чеклисты</a></li><li><a href="#13-вопросы-на-интервью">13. Вопросы на интервью</a></li><li><a href="#14-попробовать-руками">14. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="search-index.js?v=778ec65fc9"></script><script src="app.js?v=fd5787c1df"></script>
+<script src="search-index.js?v=a905ac87a2"></script><script src="app.js?v=fd5787c1df"></script>
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})</script></body></html>
