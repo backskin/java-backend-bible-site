@@ -1,7 +1,16 @@
 
 (function(){
   var inp=document.getElementById('q'), box=document.getElementById('res');
-  if(!inp||!box||typeof SEARCH==='undefined') return;
+  if(!inp||!box) return;
+  // индекс заголовков (около 3 МБ) грузится при первом обращении к поиску, а не с каждой страницей:
+  // раньше его разбор занимал главный поток на каждой полной загрузке
+  var sState=typeof SEARCH!=='undefined'?2:0;
+  function needIndex(){
+    if(sState) return; sState=1;
+    var sc=document.createElement('script'); sc.src='search-index.js?v=c730fdc0dc';
+    sc.onload=function(){ sState=2; run(); }; sc.onerror=function(){ sState=0; };
+    document.head.appendChild(sc);
+  }
   function esc(s){return s.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   // полнотекстовый индекс: ft/*.js грузятся при первом запросе, каждый делает FT.push(...)
   window.FT=window.FT||[];
@@ -46,7 +55,8 @@
   }
   function run(){
     var v=inp.value.trim().toLowerCase();
-    if(v.length<2){box.classList.remove('on');box.innerHTML='';return;}
+    if(v.length<2){box.classList.remove('on');box.innerHTML='';if(document.activeElement===inp)needIndex();return;}
+    if(sState<2){ needIndex(); box.innerHTML='<a class="muted">загружаю поиск…</a>'; box.classList.add('on'); return; }
     var words=v.split(/\s+/), res=words.map(function(w){return matcher(w,false);}), heads=[];
     for(var i=0;i<SEARCH.length;i++){
       var e=SEARCH[i], ok=true;
@@ -479,23 +489,57 @@
       var nd=new DOMParser().parseFromString(html,'text/html'), ndoc=nd.querySelector('.doc');
       if(!ndoc||!nd.querySelector('.side')){location.href=href;return;}
       if(!opts.pop) history.pushState({jbb:1},'',u.pathname+u.hash);
-      document.title=nd.title;
-      document.body.setAttribute('data-title',nd.body.getAttribute('data-title')||'');
-      doc.innerHTML=ndoc.innerHTML; curPath=u.pathname;
-      var res=document.getElementById('res'); if(res)res.classList.remove('on');
-      var oc=document.querySelector('.topbar .crumb'), nc=nd.querySelector('.topbar .crumb'); if(oc&&nc)oc.innerHTML=nc.innerHTML;
-      if(sd){ var name=u.pathname.split('/').pop();
-        sd.querySelectorAll('a.cur').forEach(function(a){a.classList.remove('cur');});
-        sd.querySelectorAll('a[href="'+name+'"]').forEach(function(a){a.classList.add('cur');
-          var r=a.getBoundingClientRect(),s=sd.getBoundingClientRect(); if(r.top<s.top||r.bottom>s.bottom) sd.scrollTop+=r.top-s.top-sd.clientHeight/2; }); }
-      close(); ghide();
-      var t=u.hash&&document.getElementById(decodeURIComponent(u.hash.slice(1)));
-      if(t)t.scrollIntoView(); else window.scrollTo(0,0);
-      initPage(); vars();
-      document.body.classList.remove('is-loading');
+      // подмена текста: внутри View Transition браузер делает короткий фейд, меню и шапка стоят на месте
+      var swapped=false, swap=function(){
+        if(swapped||busy!==my) return; swapped=true;   // устаревшая подмена не перебивает новую
+        document.title=nd.title;
+        document.body.setAttribute('data-title',nd.body.getAttribute('data-title')||'');
+        doc.innerHTML=ndoc.innerHTML; curPath=u.pathname;
+        var res=document.getElementById('res'); if(res)res.classList.remove('on');
+        var oc=document.querySelector('.topbar .crumb'), nc=nd.querySelector('.topbar .crumb'); if(oc&&nc)oc.innerHTML=nc.innerHTML;
+        if(sd){ var name=u.pathname.split('/').pop();
+          sd.querySelectorAll('a.cur').forEach(function(a){a.classList.remove('cur');});
+          sd.querySelectorAll('a[href="'+name+'"]').forEach(function(a){a.classList.add('cur');
+            var r=a.getBoundingClientRect(),s=sd.getBoundingClientRect(); if(r.top<s.top||r.bottom>s.bottom) sd.scrollTop+=r.top-s.top-sd.clientHeight/2; }); }
+        close(); ghide();
+        var t=u.hash&&document.getElementById(decodeURIComponent(u.hash.slice(1)));
+        if(t)t.scrollIntoView(); else window.scrollTo(0,0);
+        initPage(); vars();
+        document.body.classList.remove('is-loading');
+      };
+      if(document.startViewTransition&&document.visibilityState==='visible'&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+        var vt=document.startViewTransition(swap), noop=function(){};
+        vt.ready.catch(noop); vt.updateCallbackDone.catch(noop);   // пропущенная анимация — не ошибка
+        // страховка: если браузер не рисует кадры (вкладка в фоне, свёрнутое окно), колбэк перехода
+        // может не вызваться вовсе, и страница застряла бы на старой главе; тогда подменяем без анимации
+        var guard=setTimeout(function(){ if(!swapped){ try{vt.skipTransition();}catch(e){} swap(); warm(); } },350);
+        vt.finished.then(function(){clearTimeout(guard);warm();},function(){clearTimeout(guard);warm();});
+      } else { swap(); warm(); }
     }).catch(function(){location.href=href;});
   }
   window.jbbGo=go;
+  // заранее подгружаем главы, куда читатель, скорее всего, пойдёт: соседние по порядку и ту, на ссылку
+  // которой навели мышь. Ответ ложится в кэш service worker, и переход потом берёт его оттуда без сети.
+  var pre={}, conn=navigator.connection;
+  function prefetch(h){
+    if(!h||(conn&&conn.saveData)) return;
+    var u; try{u=new URL(h,location.href);}catch(e){return;}
+    if(u.origin!==location.origin||!/\.html$/.test(u.pathname)||u.pathname===curPath||pre[u.pathname]) return;
+    pre[u.pathname]=1;
+    fetch(u.pathname,{credentials:'same-origin',priority:'low'}).catch(function(){delete pre[u.pathname];});
+  }
+  function warm(){
+    var idle=window.requestIdleCallback||function(f){return setTimeout(f,1500);};
+    idle(function(){ document.querySelectorAll('.nav a.prev, .nav a.next').forEach(function(a){prefetch(a.getAttribute('href'));}); });
+  }
+  var hovT=null;
+  document.addEventListener('pointerover',function(e){
+    var a=e.target.closest&&e.target.closest('a[href$=".html"], a[href*=".html#"]'); if(!a) return;
+    clearTimeout(hovT); hovT=setTimeout(function(){prefetch(a.getAttribute('href'));},80);
+  },{passive:true});
+  document.addEventListener('touchstart',function(e){
+    var a=e.target.closest&&e.target.closest('a[href$=".html"], a[href*=".html#"]'); if(a) prefetch(a.getAttribute('href'));
+  },{passive:true});
   document.addEventListener('click',function(e){
     if(e.defaultPrevented||e.button!==0||e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;
     var a=e.target.closest&&e.target.closest('a[href]'); if(!a||a.target||a.hasAttribute('download'))return;
@@ -532,5 +576,5 @@
     document.querySelectorAll('.part-block').forEach(function(pb){pb.hidden=!pb.querySelector('.chap:not([hidden])');});
   });}
 
-  initPage();
+  initPage(); warm();
 })();
