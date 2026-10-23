@@ -352,7 +352,7 @@
     var seen={}, blocks=[].slice.call(prose.children), bi=0;
     function markBlock(el){
       if(el.tagName==='H2'){seen={};return;}
-      if(el.matches('.hl,pre,.meta,.toc,.ws-btn,.nav,table')) return;
+      if(el.matches('.hl,pre,.meta,.toc,.ws-btn,.nav,.ch-mark,table')) return;
       var w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:function(n){
         for(var p=n.parentNode;p&&p!==el;p=p.parentNode){ if(SKIP.indexOf(p.tagName)>=0||(p.classList&&(p.classList.contains('gl-term')||p.classList.contains('rt-badge'))))return NodeFilter.FILTER_REJECT; }
         return n.nodeValue.length>1?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;}});
@@ -377,7 +377,9 @@
     (function step(){ if(gen!==markGen)return; var t0=Date.now(); while(bi<blocks.length&&(Date.now()-t0)<12){ markBlock(blocks[bi++]); } if(bi<blocks.length)idle(step); })();
   }
   if(document.querySelector('.prose')){
-    var sc=document.createElement('script'); sc.src='glossary.js'; sc.async=true;
+    // та же метка версии, что у app.js, иначе service worker отдаст словарь из старой сборки
+    var me=document.querySelector('script[src^="app.js"]'), vq=me&&me.getAttribute('src').split('?')[1];
+    var sc=document.createElement('script'); sc.src='glossary.js'+(vq?'?'+vq:''); sc.async=true;
     sc.onload=function(){ if(window.GLOSSARY){ G=window.GLOSSARY; markTerms(); } };
     document.head.appendChild(sc);
   }
@@ -435,7 +437,27 @@
   })();
 
   // ---------- переход между главами без перезагрузки: меню, инструменты и их прокрутка остаются на месте ----------
-  function initPage(){ initToc(); initSpy(); initRoute(); initCode(); markTerms(); }
+  // ---------- отметка главы в плане подготовки и значки состояния в меню ----------
+  var PLANK='jbb-prep-plan-v1', PMARK={read:1,active:1,review:1};
+  function planGet(){try{var o=JSON.parse(ls(PLANK)||'{}');return o&&typeof o==='object'&&!Array.isArray(o)?o:{};}catch(e){return {};}}
+  function paintSide(){ if(!sd)return; var p=planGet();
+    sd.querySelectorAll('li a[href$=".html"]').forEach(function(a){var s=p[a.getAttribute('href').replace(/\.html$/,'.md')];
+      if(PMARK[s])a.setAttribute('data-plan',s);else a.removeAttribute('data-plan');}); }
+  function paintMark(){ var box=document.querySelector('.ch-mark'); if(!box)return; box.hidden=false;
+    var s=planGet()[box.getAttribute('data-file')]||'unread';
+    box.querySelectorAll('[data-s]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-s')===s));});
+    var o=box.querySelector('.ch-mark-s'); if(o)o.textContent={read:'Глава отмечена прочитанной.',active:'Глава отмечена «Читаю».',review:'Глава отмечена «Повторить».'}[s]||'Глава пока не отмечена.'; }
+  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.ch-mark [data-s]');if(!b)return;
+    var f=b.closest('.ch-mark').getAttribute('data-file'),p=planGet(),s=b.getAttribute('data-s');
+    if(p[f]===s)delete p[f];else p[f]=s; ls(PLANK,JSON.stringify(p));
+    try{var m=JSON.parse(ls('jbb-prep-meta-v1')||'{}')||{};if(!m.t||typeof m.t!=='object')m.t={};m.t[f]=Date.now();ls('jbb-prep-meta-v1',JSON.stringify(m));}catch(x){}
+    paintMark(); paintSide();});
+  // отметили главу в другой вкладке — меню и отметка здесь обновляются сами (событие storage)
+  window.addEventListener('storage',function(e){if(e.key===PLANK||e.key===null){paintSide();paintMark();}});
+  window.jbbPaintPlan=function(){paintSide();paintMark();};
+  paintSide();
+
+  function initPage(){ initToc(); initSpy(); initRoute(); initCode(); markTerms(); paintMark(); }
   var busy=null;
   var curPath=location.pathname;
   var FULL=/(^|\/)(index|toc|vacancy-refresh|prep-plan)\.html$/;
@@ -500,7 +522,7 @@
       if(L.s){var s=document.createElement('small');s.textContent='раздел: '+L.s;rs.appendChild(s);}
       rs.hidden=false;}}catch(e){}}
   try{var plan=JSON.parse(ls('jbb-prep-plan-v1')||'{}');
-    document.querySelectorAll('.chap[data-file]').forEach(function(li){var st=plan[li.getAttribute('data-file')];if(st){li.setAttribute('data-read',st);var r=li.querySelector('.rd');if(r)r.textContent=st==='read'?'прочитано':'читаю';}});
+    document.querySelectorAll('.chap[data-file]').forEach(function(li){var st=plan[li.getAttribute('data-file')];if(st){li.setAttribute('data-read',st);var r=li.querySelector('.rd');if(r)r.textContent={read:'прочитано',active:'читаю',review:'повторить'}[st]||'';}});
   }catch(e){}
   var fl=document.querySelector('.filter');
   if(fl){fl.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;

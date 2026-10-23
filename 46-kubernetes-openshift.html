@@ -3,7 +3,7 @@
 <title>46. Kubernetes и OpenShift для разработчика — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap"><link rel="stylesheet" href="style.css?v=56a198ff0a">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap"><link rel="stylesheet" href="style.css?v=f1a800b056">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Kubernetes и OpenShift для разработчика">
 <a class="skip" href="#content">К тексту</a>
@@ -1061,7 +1061,7 @@ kubectl logs -l app.kubernetes.io/name<span class="o">=</span>orders --since<spa
 <thead>
 <tr>
 <th>Параметры</th>
-<th>Бюджет</th>
+<th class="num">Бюджет</th>
 <th>Гранулярность обнаружения</th>
 <th>Нагрузка проб</th>
 </tr>
@@ -1069,25 +1069,25 @@ kubectl logs -l app.kubernetes.io/name<span class="o">=</span>orders --since<spa
 <tbody>
 <tr>
 <td><code>periodSeconds: 1</code>, <code>failureThreshold: 300</code></td>
-<td>300 с</td>
+<td class="num">300 с</td>
 <td>под становится Ready в течение 1 с после готовности</td>
 <td>1 HTTP-запрос/с на под</td>
 </tr>
 <tr>
 <td><code>periodSeconds: 5</code>, <code>failureThreshold: 60</code></td>
-<td>300 с</td>
+<td class="num">300 с</td>
 <td>до 5 с «потерянного» времени на каждом поде</td>
 <td>0.2 запроса/с</td>
 </tr>
 <tr>
 <td><code>periodSeconds: 10</code>, <code>failureThreshold: 30</code></td>
-<td>300 с</td>
+<td class="num">300 с</td>
 <td>до 10 с потерь</td>
 <td>0.1 запроса/с</td>
 </tr>
 <tr>
 <td><code>periodSeconds: 30</code>, <code>failureThreshold: 10</code></td>
-<td>300 с</td>
+<td class="num">300 с</td>
 <td>до 30 с потерь на под</td>
 <td>пренебрежимо</td>
 </tr>
@@ -2335,59 +2335,59 @@ watch -n5 <span class="s1">'kubectl get pods -l app.kubernetes.io/name=orders -o
 <table>
 <thead>
 <tr>
-<th>#</th>
+<th class="num">#</th>
 <th>Пункт</th>
 <th>Как проверить, что работает</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>1</td>
+<td class="num">1</td>
 <td><strong><code>readinessProbe</code> есть и отражает готовность</strong></td>
 <td><code>kubectl get endpointslice -l kubernetes.io/service-name=orders -o yaml</code> — адрес пода появляется только после реальной готовности; убейте зависимость из readiness-группы и убедитесь, что под выпал из среза</td>
 </tr>
 <tr>
-<td>2</td>
+<td class="num">2</td>
 <td><strong><code>startupProbe</code> есть, бюджет ≥ 3 × p99 старта</strong></td>
 <td><code>kubectl get deploy orders -o jsonpath='{..startupProbe}'</code>; посчитать <code>periodSeconds × failureThreshold</code> и сравнить с <code>grep "process running for"</code> из логов</td>
 </tr>
 <tr>
-<td>3</td>
+<td class="num">3</td>
 <td><strong><code>livenessProbe</code> не ходит во внешние системы</strong></td>
 <td><code>curl -s :8081/actuator/health/liveness \| jq</code> — в ответе должен быть только <code>livenessState</code>; погасите тестовую БД и убедитесь, что <code>RESTARTS</code> не растёт</td>
 </tr>
 <tr>
-<td>4</td>
+<td class="num">4</td>
 <td><strong><code>preStop</code> на 10–15 с</strong></td>
 <td>нагрузочный прогон с <code>rollout restart</code> (упражнение 2 в разделе 16): число 502 должно быть нулевым</td>
 </tr>
 <tr>
-<td>5</td>
+<td class="num">5</td>
 <td><strong><code>server.shutdown=graceful</code> и согласованный grace period</strong></td>
 <td>exit code прошлого контейнера = <strong>143</strong>, а не 137: <code>kubectl get pod X -o jsonpath='{..lastState.terminated.exitCode}'</code></td>
 </tr>
 <tr>
-<td>6</td>
+<td class="num">6</td>
 <td><strong>PID 1 = java</strong></td>
 <td><code>kubectl exec X -- cat /proc/1/cmdline \| tr '\0' ' '</code> — должно начинаться с <code>java</code>; в distroless — через <code>kubectl debug --target</code></td>
 </tr>
 <tr>
-<td>7</td>
+<td class="num">7</td>
 <td><strong><code>maxUnavailable: 0</code>, <code>maxSurge: 1</code>, <code>minReadySeconds: 10–30</code></strong></td>
 <td><code>kubectl get deploy orders -o jsonpath='{.spec.strategy}{.spec.minReadySeconds}'</code>; во время выката <code>kubectl get pods -w</code> — число Ready-подов не должно опускаться ниже <code>replicas</code></td>
 </tr>
 <tr>
-<td>8</td>
+<td class="num">8</td>
 <td><strong>PDB и его выполнимость</strong></td>
 <td><code>kubectl get pdb orders</code> — колонка <code>ALLOWED DISRUPTIONS</code> должна быть ≥ 1; ноль означает, что дренаж узла заблокирован</td>
 </tr>
 <tr>
-<td>9</td>
+<td class="num">9</td>
 <td><strong>Обратная совместимость N и N+1</strong></td>
 <td>контрактные тесты (глава 27) + правило «миграция совместима со старым кодом»; проверка руками — поднять под старой версии рядом с новой и прогнать смоук</td>
 </tr>
 <tr>
-<td>10</td>
+<td class="num">10</td>
 <td><strong>Хватает ресурсов и квоты на <code>maxSurge</code></strong></td>
 <td><code>kubectl describe quota -n payments</code> — свободного <code>requests.memory</code> должно быть ≥ одного пода; иначе выкат встанет с <code>FailedCreate</code></td>
 </tr>
@@ -4219,7 +4219,7 @@ kubectl auth can-i get secrets --as<span class="o">=</span>system:serviceaccount
 </li>
 </ol>
 <hr>
-<nav class="nav" aria-label="Соседние главы"><a class="prev" href="45-docker-jvm.html"><span class="lbl">← Назад <span class="k">[</span></span><span class="ttl">45. Docker и сборка JVM-приложений</span></a><a class="next" href="47-kubernetes-internals.html"><span class="lbl">Дальше <span class="k">]</span> →</span><span class="ttl">47. Kubernetes изнутри: устройство оркестратора</span></a></nav><h2 id="источники">Источники</h2>
+<div class="ch-mark" data-file="46-kubernetes-openshift.md" hidden><div class="ch-mark-l"><b>План подготовки</b><span class="ch-mark-s" role="status" aria-live="polite"></span></div><div class="ch-mark-b" role="group" aria-label="Отметить главу в плане"><button type="button" data-s="active" aria-pressed="false">● Читаю</button><button type="button" data-s="read" aria-pressed="false">✓ Прочитано</button><button type="button" data-s="review" aria-pressed="false">↻ Повторить</button></div><a href="prep-plan.html">Весь план</a></div><nav class="nav" aria-label="Соседние главы"><a class="prev" href="45-docker-jvm.html"><span class="lbl">← Назад <span class="k">[</span></span><span class="ttl">45. Docker и сборка JVM-приложений</span></a><a class="next" href="47-kubernetes-internals.html"><span class="lbl">Дальше <span class="k">]</span> →</span><span class="ttl">47. Kubernetes изнутри: устройство оркестратора</span></a></nav><h2 id="источники">Источники</h2>
 <p>Ниже перечислены источники, на которых построена глава. Большинство из них первичные — документация Kubernetes, Spring Boot, OpenShift, KEDA, Helm и Kustomize, — и у каждой записи указано, что именно по ней сверено и когда. В конце списка стоят две книги для систематического чтения и честная оговорка о собственном опыте, числа из которого даны как ориентиры, а также отдельная пометка о том, что по документации Red Hat так и не удалось проверить.</p>
 <ul><li class="src-grp"><div class="src-head"><span class="src-host">kubernetes.io</span> <span class="src-n">17 источников</span></div><div class="src-titles"><a href="https://kubernetes.io/releases/">Kubernetes Releases</a> · <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/">Kubernetes: Pod Lifecycle</a> · <a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/">Kubernetes: Configure Liveness, Readiness and Startup Probes</a> · <a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">Kubernetes: Resource Management for Pods and Containers</a> · <a href="https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/">Kubernetes: Sidecar Containers</a> · <a href="https://kubernetes.io/docs/concepts/services-networking/gateway/">Kubernetes: Gateway API</a> · <a href="https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/">Kubernetes: Debug Running Pods</a> · <a href="https://kubernetes.io/docs/concepts/services-networking/service/">Kubernetes: Services</a> · <a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Kubernetes: Horizontal Pod Autoscaling</a> · <a href="https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/">Kubernetes: Container Lifecycle Hooks</a> · <a href="https://kubernetes.io/blog/2025/05/14/kubernetes-v1-33-updates-to-container-lifecycle/">Kubernetes v1.33: Updates to Container Lifecycle</a> · <a href="https://kubernetes.io/docs/tasks/configure-pod-container/resize-container-resources/">Kubernetes: Resize CPU and Memory Resources assigned to Containers</a> · <a href="https://kubernetes.io/docs/concepts/workloads/pods/disruptions/">Kubernetes: Disruptions / PDB</a> · <a href="https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/">Kubernetes: Pod Topology Spread Constraints</a> · <a href="https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/">Kubernetes: CronJob</a> · <a href="https://kubernetes.io/docs/concepts/policy/resource-quotas/">Kubernetes: Resource Quotas</a> · <a href="https://kubernetes.io/docs/concepts/security/service-accounts/">Kubernetes: Service Accounts</a></div><details><summary>Пометки о проверке</summary><ul><li><a href="https://kubernetes.io/releases/">Kubernetes Releases</a> — первичный; актуальная минорная версия 1.37 (26.08.2026), поддерживаемые ветки и EOL. Проверено: 2026-09-21.</li><li><a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/">Kubernetes: Pod Lifecycle</a> — первичный; последовательность завершения пода, состояния контейнеров, семантика трёх проб. Проверено: 2026-09-21.</li><li><a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/">Kubernetes: Configure Liveness, Readiness and Startup Probes</a> — первичный; значения полей проб по умолчанию, типы обработчиков, взаимодействие startup и liveness. Проверено: 2026-09-21.</li><li><a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">Kubernetes: Resource Management for Pods and Containers</a> — первичный; requests/limits, «cpu limits are enforced by CPU throttling», реактивность memory-лимитов, QoS. Проверено: 2026-09-21.</li><li><a href="https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/">Kubernetes: Sidecar Containers</a> — первичный; <code>restartPolicy: Always</code> в <code>initContainers</code>, доступность по умолчанию с 1.29 и GA в 1.33, обратный порядок остановки. Проверено: 2026-09-21.</li><li><a href="https://kubernetes.io/docs/concepts/services-networking/gateway/">Kubernetes: Gateway API</a> — первичный; четыре стабильных вида ресурсов и место Gateway API относительно Ingress. Проверено: 2026-09-21.</li><li><a href="https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/">Kubernetes: Debug Running Pods</a> — первичный; <code>kubectl debug</code>, ephemeral containers, <code>--target</code>, <code>--copy-to</code>, distroless. Проверено: 2026-09-21.</li><li><a href="https://kubernetes.io/docs/concepts/services-networking/service/">Kubernetes: Services</a> — первичный; типы Service, headless, EndpointSlice по 100 адресов, диапазон NodePort 30000–32767, <code>sessionAffinityConfig.clientIP.timeoutSeconds</code> = 10800 с (максимум 86400). Проверено: 2026-09-22.</li><li><a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Kubernetes: Horizontal Pod Autoscaling</a> — первичный; формула расчёта реплик, sync period 15 с, tolerance 0.1, <code>behavior</code> по умолчанию (окно стабилизации 300 с, политики 100 %/15 с и 4 пода/15 с, <code>selectPolicy</code> Max для роста и Min для снижения). Проверено: 2026-09-22.</li><li><a href="https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/">Kubernetes: Container Lifecycle Hooks</a> — первичный; «the hook must complete its execution before the TERM signal can be sent», доставка хуков at-least-once, пример арифметики grace period (60 = 55 + 10 не сходится). Проверено: 2026-09-22.</li><li><a href="https://kubernetes.io/blog/2025/05/14/kubernetes-v1-33-updates-to-container-lifecycle/">Kubernetes v1.33: Updates to Container Lifecycle</a> — первичный (блог проекта); история <code>Sleep</code>-action для <code>preStop</code>: alpha в 1.29, включён по умолчанию с 1.30, нулевая длительность с 1.32/1.33, стабильно с 1.34. Проверено: 2026-09-22.</li><li><a href="https://kubernetes.io/docs/tasks/configure-pod-container/resize-container-resources/">Kubernetes: Resize CPU and Memory Resources assigned to Containers</a> — первичный; in-place resize стабилен с 1.35, подресурс <code>pods/resize</code>, <code>resizePolicy</code>, условия <code>PodResizePending</code>/<code>PodResizeInProgress</code>, уменьшение памяти только по принципу best-effort, запрет смены QoS. Через FACTS.md (гл. 47), проверено: 2026-09-21; уточнено по разделу Limitations: 2026-09-24.</li><li><a href="https://kubernetes.io/docs/concepts/workloads/pods/disruptions/">Kubernetes: Disruptions / PDB</a> — первичный; списки добровольных и недобровольных нарушений; недобровольные нарушения PDB не предотвращает, но они <strong>считаются в бюджете</strong>; «deleting deployments or pods bypasses Pod Disruption Budgets», то есть прямое удаление пода PDB не ограничивает; эвикшн через eviction API уважает <code>terminationGracePeriodSeconds</code>; рекомендован <code>unhealthyPodEvictionPolicy: AlwaysAllow</code>, иначе дренаж ждёт, пока поды выздоровеют. Проверено: 2026-09-22.</li><li><a href="https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/">Kubernetes: Pod Topology Spread Constraints</a> — первичный; <code>maxSkew</code> обязателен и значения по умолчанию не имеет, <code>whenUnsatisfiable</code> по умолчанию <strong><code>DoNotSchedule</code></strong>, <code>minDomains</code> стабилен с 1.30 и работает только с <code>DoNotSchedule</code>, <code>matchLabelKeys</code> и <code>nodeAffinityPolicy</code>/<code>nodeTaintsPolicy</code> (<code>Honor</code>/<code>Ignore</code>) — beta с 1.27 и 1.26. Проверено: 2026-09-22.</li><li><a href="https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/">Kubernetes: CronJob</a> — первичный; <code>concurrencyPolicy</code> (<code>Allow</code> по умолчанию, числового предела параллельных запусков нет), ошибка <code>too many missed start times</code> при более чем 100 пропущенных расписаниях, которая не останавливает CronJob, расписание без <code>timeZone</code> по локальному времени kube-controller-manager. Проверено: 2026-09-24.</li><li><a href="https://kubernetes.io/docs/concepts/policy/resource-quotas/">Kubernetes: Resource Quotas</a> и <a href="https://github.com/kubernetes/kubernetes/blob/master/pkg/quota/v1/evaluator/core/pods.go">pods.go в kubernetes/kubernetes</a> — первичные; квота <code>pods</code> считает только поды в нетерминальном состоянии, <code>count/pods</code> — все поды независимо от состояния. Проверено: 2026-09-24.</li><li><a href="https://kubernetes.io/docs/concepts/security/service-accounts/">Kubernetes: Service Accounts</a> и <a href="https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/">Managing Service Accounts</a> — первичные; короткоживущие токены через TokenRequest в projected volume с v1.22, автоматическое создание Secret-токенов прекращено в v1.24, срок жизни по умолчанию 1 час, обновление после 80 % TTL. Проверено: 2026-09-24.</li></ul></details></li><li><a href="https://docs.spring.io/spring-boot/reference/actuator/endpoints.html">Spring Boot Reference: Actuator Endpoints / Kubernetes Probes</a> — первичный; группы liveness/readiness, <code>probes.enabled</code>, <code>add-additional-paths</code>, <code>ApplicationAvailability</code>, запрет внешних зависимостей в liveness. Проверено: 2026-09-21.</li><li><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/managing-pod-security-policies">OpenShift 4.20: Managing Security Context Constraints</a> — первичный; <code>restricted-v2</code>, <code>MustRunAsRange</code>, аннотация <code>openshift.io/sa.scc.uid-range</code>. Проверено через поисковый индекс docs.redhat.com: 2026-09-21 (прямой WebFetch страницы содержимого не отдаёт).</li><li><a href="https://keda.sh/docs/2.17/reference/scaledobject-spec/">KEDA: ScaledObject specification</a> — первичный; значения по умолчанию <code>pollingInterval</code> 30 с, <code>cooldownPeriod</code> 300 с, <code>initialCooldownPeriod</code> 0, <code>minReplicaCount</code> 0, <code>maxReplicaCount</code> 100, имя создаваемого HPA <code>keda-hpa-{name}</code>, проброс <code>behavior</code> через <code>advanced.horizontalPodAutoscalerConfig</code>. Проверено: 2026-09-22.</li><li><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Thread.html">Java SE 21: Thread</a> — первичный; <code>join(long)</code> по таймауту просто возвращается, <code>join(Duration)</code> (с Java 19) возвращает <code>boolean</code>. Проверено: 2026-09-24.</li><li><a href="https://openjdk.org/jeps/491">JEP 491: Synchronize Virtual Threads without Pinning</a> — первичный; JDK 24, <code>Object.wait()</code> освобождает несущий поток, pinning остаётся на нативных фреймах, загрузке и инициализации классов, свойство <code>jdk.tracePinnedThreads</code> удалено. Проверено: 2026-09-24.</li><li><a href="https://docs.docker.com/reference/dockerfile/">Dockerfile reference</a> — первичный; символьная форма <code>COPY --chmod</code> с версии синтаксиса 1.14, <code>#</code> не в начале строки — аргумент инструкции, некорректный JSON в exec-форме превращает её в shell-форму. Проверено: 2026-09-24.</li><li class="src-grp"><div class="src-head"><span class="src-host">github.com</span> <span class="src-n">5 источников</span></div><div class="src-titles"><a href="https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/consumer/ConsumerConfig.java">ConsumerConfig в apache/kafka</a> · <a href="https://github.com/spring-projects/spring-framework/blob/main/spring-context/src/main/java/org/springframework/scheduling/concurrent/ExecutorConfigurationSupport.java">ExecutorConfigurationSupport в spring-framework</a> · <a href="https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/kubectl/pkg/cmd/debug/profiles.go">profiles.go в kubernetes/kubectl</a> · <a href="https://github.com/openshift/cluster-kube-apiserver-operator/blob/master/bindata/bootkube/scc-manifests/0000_20_kube-apiserver-operator_00_scc-restricted-v2.yaml">SCC restricted-v2 в openshift/cluster-kube-apiserver-operator</a> · <a href="https://github.com/openjdk/jdk/tree/master/src/hotspot/share/gc">Исходники HotSpot (openjdk/jdk)</a></div><details><summary>Пометки о проверке</summary><ul><li><a href="https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/consumer/ConsumerConfig.java">ConsumerConfig в apache/kafka</a> — первичный; <code>partition.assignment.strategy</code> по умолчанию <code>[RangeAssignor, CooperativeStickyAssignor]</code>, <code>group.protocol</code> по умолчанию <code>classic</code>. Проверено: 2026-09-24.</li><li><a href="https://github.com/spring-projects/spring-framework/blob/main/spring-context/src/main/java/org/springframework/scheduling/concurrent/ExecutorConfigurationSupport.java">ExecutorConfigurationSupport в spring-framework</a> — первичный; скоординированная lifecycle-остановка и <code>shutdownNow()</code> при <code>waitForTasksToCompleteOnShutdown=false</code>, отсутствие блокировки без <code>awaitTerminationSeconds</code>. Проверено: 2026-09-24.</li><li><a href="https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/kubectl/pkg/cmd/debug/profiles.go">profiles.go в kubernetes/kubectl</a> — первичный; профиль <code>general</code> для ephemeral-контейнера добавляет <code>SYS_PTRACE</code>, <code>sysadmin</code> делает контейнер привилегированным, тома пода профили не монтируют. Проверено: 2026-09-24.</li><li><a href="https://github.com/openshift/cluster-kube-apiserver-operator/blob/master/bindata/bootkube/scc-manifests/0000_20_kube-apiserver-operator_00_scc-restricted-v2.yaml">SCC restricted-v2 в openshift/cluster-kube-apiserver-operator</a> — первичный; полный манифест <code>restricted-v2</code>, включая список <code>volumes</code>. Проверено: 2026-09-24.</li><li><a href="https://github.com/openjdk/jdk/tree/master/src/hotspot/share/gc">Исходники HotSpot (openjdk/jdk)</a> — первичный; <code>ShrinkHeapInSteps</code> объявлен в <code>serial_globals.hpp</code>, <code>ZUncommit</code> и <code>ShenandoahUncommit</code> включены по умолчанию и отключаются при <code>-Xms</code>, равном <code>-Xmx</code>, <code>G1PeriodicGCInterval</code> по умолчанию 0. Проверено: 2026-09-24.</li></ul></details></li><li><a href="https://docs.oracle.com/en/java/javase/21/troubleshoot/diagnostic-tools.html">Java SE 21 Troubleshooting Guide: Diagnostic Tools</a> — первичный; NMT стоит 5–10 % производительности. Проверено: 2026-09-24.</li><li><a href="https://keda.sh/docs/">KEDA Documentation</a> — первичный; масштабировщик Kafka по лагу группы потребителей, scale-to-zero. Схема <code>ScaledObject</code> сверена по отдельной странице спецификации выше.</li><li>⚠️ <strong>Не закрыто:</strong> детали <code>Route</code> (полный список аннотаций <code>haproxy.router.openshift.io/*</code> и их значения по умолчанию) — <code>docs.redhat.com</code> и <code>docs.openshift.com</code> по-прежнему отдают 404 автоматическим клиентам (повторная проверка 2026-09-22). Сверяйте на живом кластере: <code>oc explain route.spec</code>, <code>oc get route -o yaml</code>.</li><li><a href="https://argo-rollouts.readthedocs.io/">Argo Rollouts</a> и <a href="https://docs.flagger.app/">Flagger</a> — первичные; прогрессивная доставка с анализом метрик. Упомянуты обзорно, подробности в главе 52.</li><li><a href="https://kubectl.docs.kubernetes.io/references/kustomize/">Kustomize Reference</a> — первичный; <code>configMapGenerator</code> с хешем в имени, overlays, <code>images</code>.</li><li><a href="https://helm.sh/docs/">Helm Documentation</a> — первичный; хуки <code>pre-upgrade</code>, релизы и <code>rollback</code>.</li><li>Marko Lukša. <strong>Kubernetes in Action, 2nd edition</strong> — книга (Manning), главы про Pod lifecycle, Service/Endpoints, Deployment и StatefulSet; лучший систематический источник по модели объектов. ⚠️ Страница издателя автоматически не проверялась (см. FACTS.md про 403 на oreilly.com).</li><li>Brendan Burns, Joe Beda, Kelsey Hightower. <strong>Kubernetes: Up and Running, 3rd edition</strong> — книга (O'Reilly, 2022); Deployment, ConfigMap/Secret, RBAC.</li><li>Собственный опыт эксплуатации Spring-сервисов в OpenShift 4.x и ванильном Kubernetes: значения <code>preStop</code> 10–15 с, бюджеты startupProbe, поведение под CFS-квотой. Источник не проверяемый, поэтому все числа даны как ориентиры, а не как константы.</li></ul>
 <div class="footnote">
@@ -4267,5 +4267,5 @@ kubectl auth can-i get secrets --as<span class="o">=</span>system:serviceaccount
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-модель-kubernetes">1. Модель Kubernetes</a></li><li><a href="#2-объекты-с-которыми-работает-разработчик">2. Объекты, с которыми работает разработчик</a></li><li><a href="#3-сеть-service-ingress-gateway-api">3. Сеть: Service, Ingress, Gateway API</a></li><li><a href="#4-конфигурация-configmap-и-secret">4. Конфигурация: ConfigMap и Secret</a></li><li><a href="#5-пробы-probes">5. Пробы (probes)</a></li><li><a href="#6-ресурсы-и-планирование">6. Ресурсы и планирование</a></li><li><a href="#7-жизненный-цикл-пода-и-graceful-shutdown">7. Жизненный цикл пода и graceful shutdown</a></li><li><a href="#8-стратегии-выката">8. Стратегии выката</a></li><li><a href="#9-наблюдаемость-и-отладка-изнутри-кластера">9. Наблюдаемость и отладка изнутри кластера</a></li><li><a href="#10-openshift-специфика">10. OpenShift-специфика</a></li><li><a href="#11-манифесты-сервиса">11. Манифесты сервиса</a></li><li><a href="#12-разобранные-инциденты">12. Разобранные инциденты</a></li><li><a href="#13-грабли-и-антипаттерны">13. Грабли и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="search-index.js?v=e581f6eef0"></script><script src="app.js?v=fd5787c1df"></script>
+<script src="search-index.js?v=e581f6eef0"></script><script src="app.js?v=41ed33a3df"></script>
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})</script></body></html>
