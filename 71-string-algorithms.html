@@ -3,7 +3,7 @@
 <title>71. Алгоритмы на строках — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Алгоритмы на строках">
 <a class="skip" href="#content">К тексту</a>
@@ -227,7 +227,7 @@
 <p><strong>Что спросят дальше.</strong> А если короткие серии встречаются часто? RLE увеличит размер, как на <code>ABRACADABRA!</code>; на практике сжимают общими алгоритмами (Лемпель — Зив в gzip), и Скиена советует не изобретать своё сжатие текста: обогнать gzip специализированным методом почти никогда не удаётся.<sup id="fnref2:a70-5"><a class="footnote-ref" href="#fn:a70-5">5</a></sup> А преобразование Барроуза — Уилера? Оно переставляет символы так, что одинаковые оказываются рядом, и после него RLE и кодирование «переместить в начало» работают хорошо; так устроен bzip2.<sup id="fnref3:a70-5"><a class="footnote-ref" href="#fn:a70-5">5</a></sup></p>
 <h3 id="16-опыт-подстроки-конкатенация-обход-и-компактные-строки">1.6 Опыт: подстроки, конкатенация, обход и компактные строки</h3>
 <p>Опыт проверяет на JDK 21 утверждения подраздела 1.1: что <code>substring</code> копирует, конкатенация в цикле квадратична, а компактные строки вдвое экономят память на латинице. Каждое утверждение проверено на одной и той же машине в одном процессе, чтобы цифры можно было сравнивать между собой. Выделенная память измерена через <code>ThreadMXBean.getThreadAllocatedBytes</code>, время — <code>System.nanoTime</code> после нескольких прогонов; цифры — ориентиры.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Операция</th>
@@ -237,24 +237,24 @@
 </thead>
 <tbody>
 <tr>
-<td>1000 раз <code>substring</code> по 500 000 символов</td>
-<td>28–104 мс</td>
-<td class="num">476 МБ</td>
+<td data-label="Операция">1000 раз <code>substring</code> по 500 000 символов</td>
+<td data-label="время">28–104 мс</td>
+<td data-label="выделено" class="num">476 МБ</td>
 </tr>
 <tr>
-<td>1000 раз <code>CharBuffer.wrap</code> того же диапазона</td>
-<td>0,1–0,6 мс</td>
-<td class="num">54 КБ</td>
+<td data-label="Операция">1000 раз <code>CharBuffer.wrap</code> того же диапазона</td>
+<td data-label="время">0,1–0,6 мс</td>
+<td data-label="выделено" class="num">54 КБ</td>
 </tr>
 <tr>
-<td><code>s += 'a'</code> в цикле, 10⁵ раз</td>
-<td>335 мс</td>
-<td class="num">—</td>
+<td data-label="Операция"><code>s += 'a'</code> в цикле, 10⁵ раз</td>
+<td data-label="время">335 мс</td>
+<td data-label="выделено" class="num">—</td>
 </tr>
 <tr>
-<td><code>StringBuilder.append</code>, 10⁵ раз</td>
-<td>0,2 мс</td>
-<td class="num">—</td>
+<td data-label="Операция"><code>StringBuilder.append</code>, 10⁵ раз</td>
+<td data-label="время">0,2 мс</td>
+<td data-label="выделено" class="num">—</td>
 </tr>
 </tbody>
 </table>
@@ -560,7 +560,7 @@
 <h3 id="27-опыт-туэ-морс-коллизии-в-hashmap-и-рабин-карп-против-indexof">2.7 Опыт: Туэ — Морс, коллизии в <code>HashMap</code> и Рабин — Карп против <code>indexOf</code></h3>
 <p>Опыт проверяет на JDK 21 три утверждения раздела: модуль 2⁶⁴ ломается на строках Туэ — Морса, <code>HashMap&lt;String, …&gt;</code> выдерживает коллизии <code>String.hashCode</code>, а самописный Рабин — Карп проигрывает встроенному <code>indexOf</code>. Все ответы быстрых вариантов сверены с медленными. Замеры <code>System.nanoTime</code> после прогрева, ориентиры.</p>
 <p>Строка Туэ — Морса длины 2048 и её инверсия совпали по хешу по модулю 2⁶⁴ при всех 1000 случайных нечётных основаниях и не совпали ни разу по модулю простого 10⁹ + 7 при 1000 случайных основаниях. Это не вероятностный эффект, а алгебраический: разность хешей строки Туэ — Морса и её инверсии раскладывается в произведение множителей вида <code>(b^{2^i} − 1)</code> по <code>i</code> от 0 до 10, при нечётном <code>b</code> множитель с номером <code>i ≥ 1</code> делится на 2^{i+2}, и суммарная степень двойки намного больше 64.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th><code>HashMap</code>, 65 536 вставок и поисков</th>
@@ -569,20 +569,20 @@
 </thead>
 <tbody>
 <tr>
-<td>случайные строковые ключи</td>
-<td class="num">2 мс</td>
+<td data-label="HashMap, 65 536 вставок и поисков">случайные строковые ключи</td>
+<td data-label="время" class="num">2 мс</td>
 </tr>
 <tr>
-<td>строки с одним <code>String.hashCode</code></td>
-<td class="num">23 мс</td>
+<td data-label="HashMap, 65 536 вставок и поисков">строки с одним <code>String.hashCode</code></td>
+<td data-label="время" class="num">23 мс</td>
 </tr>
 <tr>
-<td>5000 ключей с одним хешем без <code>Comparable</code></td>
-<td class="num">94 мс</td>
+<td data-label="HashMap, 65 536 вставок и поисков">5000 ключей с одним хешем без <code>Comparable</code></td>
+<td data-label="время" class="num">94 мс</td>
 </tr>
 <tr>
-<td>20 000 ключей с одним хешем без <code>Comparable</code></td>
-<td class="num">1810 мс</td>
+<td data-label="HashMap, 65 536 вставок и поисков">20 000 ключей с одним хешем без <code>Comparable</code></td>
+<td data-label="время" class="num">1810 мс</td>
 </tr>
 </tbody>
 </table>
@@ -831,7 +831,7 @@
 <p><strong>Что спросят дальше.</strong> А сгенерировать код без таблицы, где каждое состояние — метка <code>goto</code> (упражнение Седжвика 5.3.34)? Так работали ранние реализации поиска в машинном коде; в Java тот же эффект даёт JIT, который разворачивает цикл по таблице.</p>
 <h3 id="37-опыт-худший-случай-перебора-и-случайный-текст">3.7 Опыт: худший случай перебора и случайный текст</h3>
 <p>Опыт проверяет на JDK 21 оценки раздела: перебор на худшем входе делает Θ(n·m) сравнений, КМП — O(n), а на случайном тексте оба делают около одного сравнения на символ, и выигрывает тот, кто быстрее на одном сравнении. Сравнения считаются счётчиком в коде, время — <code>System.nanoTime</code> после прогрева.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вход</th>
@@ -842,46 +842,46 @@
 </thead>
 <tbody>
 <tr>
-<td>10⁶ букв <code>a</code>, образец <code>a⁹⁹⁹b</code></td>
-<td>перебор</td>
-<td>999 001 000</td>
-<td class="num">1229 мс</td>
+<td data-label="Вход">10⁶ букв <code>a</code>, образец <code>a⁹⁹⁹b</code></td>
+<td data-label="алгоритм">перебор</td>
+<td data-label="сравнений">999 001 000</td>
+<td data-label="время" class="num">1229 мс</td>
 </tr>
 <tr>
-<td></td>
-<td>КМП</td>
-<td>2 999 000</td>
-<td class="num">17 мс</td>
+<td data-label="Вход"></td>
+<td data-label="алгоритм">КМП</td>
+<td data-label="сравнений">2 999 000</td>
+<td data-label="время" class="num">17 мс</td>
 </tr>
 <tr>
-<td></td>
-<td><code>indexOf</code></td>
-<td>—</td>
-<td class="num">308 мс</td>
+<td data-label="Вход"></td>
+<td data-label="алгоритм"><code>indexOf</code></td>
+<td data-label="сравнений">—</td>
+<td data-label="время" class="num">308 мс</td>
 </tr>
 <tr>
-<td>случайный текст 10⁷, образец 20</td>
-<td>перебор</td>
-<td>1,040 на символ</td>
-<td class="num">17 мс</td>
+<td data-label="Вход">случайный текст 10⁷, образец 20</td>
+<td data-label="алгоритм">перебор</td>
+<td data-label="сравнений">1,040 на символ</td>
+<td data-label="время" class="num">17 мс</td>
 </tr>
 <tr>
-<td></td>
-<td>КМП</td>
-<td>1,040 на символ</td>
-<td class="num">19 мс</td>
+<td data-label="Вход"></td>
+<td data-label="алгоритм">КМП</td>
+<td data-label="сравнений">1,040 на символ</td>
+<td data-label="время" class="num">19 мс</td>
 </tr>
 <tr>
-<td></td>
-<td>автомат Седжвика</td>
-<td>—</td>
-<td class="num">13 мс</td>
+<td data-label="Вход"></td>
+<td data-label="алгоритм">автомат Седжвика</td>
+<td data-label="сравнений">—</td>
+<td data-label="время" class="num">13 мс</td>
 </tr>
 <tr>
-<td></td>
-<td><code>indexOf</code></td>
-<td>—</td>
-<td class="num">5 мс</td>
+<td data-label="Вход"></td>
+<td data-label="алгоритм"><code>indexOf</code></td>
+<td data-label="сравнений">—</td>
+<td data-label="время" class="num">5 мс</td>
 </tr>
 </tbody>
 </table>
@@ -1168,7 +1168,7 @@
 <p><strong>Что спросят дальше.</strong> Почему Хорспул быстрее полного Бойера — Мура на практике? Внутренний цикл проще, таблица одна и маленькая, и на типичных текстах таблица хорошего суффикса редко даёт больший сдвиг. А Сандей (Sunday) — вариант, где сдвиг определяется символом сразу за окном? Он даёт сдвиг на <code>m + 1</code> для символа не из образца и на практике ещё немного быстрее.</p>
 <h3 id="54-опыт-все-алгоритмы-против-indexof-и-pattern">5.4 Опыт: все алгоритмы против <code>indexOf</code> и <code>Pattern</code></h3>
 <p>Опыт сравнивает на JDK 21 алгоритмы главы на тексте, похожем на рабочий: 10⁷ символов из слов назначений платежей на русском и английском («оплата по счету за услуги связи…»), образец — фрагмент маркера в самом конце текста, чтобы поиск прошёл весь текст. Для каждого алгоритма — лучшее из четырёх прогонов, <code>System.nanoTime</code>; все нашли одну и ту же позицию.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Длина образца</th>
@@ -1182,31 +1182,31 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">4</td>
-<td class="num">13 мс</td>
-<td class="num">17</td>
-<td class="num">21</td>
-<td class="num">7</td>
-<td class="num">10</td>
-<td class="num">2</td>
+<td data-label="Длина образца" class="num">4</td>
+<td data-label="перебор" class="num">13 мс</td>
+<td data-label="КМП" class="num">17</td>
+<td data-label="Бойер — Мур" class="num">21</td>
+<td data-label="Хорспул" class="num">7</td>
+<td data-label="Pattern" class="num">10</td>
+<td data-label="indexOf" class="num">2</td>
 </tr>
 <tr>
-<td class="num">16</td>
-<td class="num">15</td>
-<td class="num">16</td>
-<td class="num">9</td>
-<td class="num">3</td>
-<td class="num">3</td>
-<td class="num">3</td>
+<td data-label="Длина образца" class="num">16</td>
+<td data-label="перебор" class="num">15</td>
+<td data-label="КМП" class="num">16</td>
+<td data-label="Бойер — Мур" class="num">9</td>
+<td data-label="Хорспул" class="num">3</td>
+<td data-label="Pattern" class="num">3</td>
+<td data-label="indexOf" class="num">3</td>
 </tr>
 <tr>
-<td class="num">60</td>
-<td class="num">15</td>
-<td class="num">16</td>
-<td class="num">5</td>
-<td class="num">1</td>
-<td class="num">1</td>
-<td class="num">2</td>
+<td data-label="Длина образца" class="num">60</td>
+<td data-label="перебор" class="num">15</td>
+<td data-label="КМП" class="num">16</td>
+<td data-label="Бойер — Мур" class="num">5</td>
+<td data-label="Хорспул" class="num">1</td>
+<td data-label="Pattern" class="num">1</td>
+<td data-label="indexOf" class="num">2</td>
 </tr>
 </tbody>
 </table>
@@ -1440,7 +1440,7 @@
 <p><strong>Что спросят дальше.</strong> А вернуть, какие именно слова закончились? Пройти по цепочке ссылок на выход, как в <code>findAll</code>. А если запросы — удаление символов из потока? Автомат не умеет откатываться; хранят стек состояний, и откат — снятие со стека.</p>
 <h3 id="65-опыт-автомат-против-indexof-и-против-альтернативы-в-pattern">6.5 Опыт: автомат против <code>indexOf</code> и против альтернативы в <code>Pattern</code></h3>
 <p>Опыт проверяет на JDK 21, с какого размера словаря автомат окупается. Текст — 5·10⁶ символов из случайных «слов» по 3–9 кириллических букв, словарь — <code>k</code> случайных слов по 5–10 букв, одно из которых точно встречается в тексте. Сравниваются автомат Ахо — Корасик из задачи 6.2, <code>k</code> проходов <code>indexOf</code> и одно регулярное выражение <code>w1|w2|…|wk</code> из экранированных слов. Все три способа нашли одинаковое число вхождений.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">k</th>
@@ -1452,32 +1452,32 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">10</td>
-<td class="num">1 мс</td>
-<td class="num">115 мс</td>
-<td class="num">28 мс</td>
-<td>287 мс</td>
+<td data-label="k" class="num">10</td>
+<td data-label="построение автомата" class="num">1 мс</td>
+<td data-label="поиск автоматом" class="num">115 мс</td>
+<td data-label="k × indexOf" class="num">28 мс</td>
+<td data-label="Pattern с альтернативой">287 мс</td>
 </tr>
 <tr>
-<td class="num">100</td>
-<td class="num">1 мс</td>
-<td class="num">112 мс</td>
-<td class="num">253 мс</td>
-<td>1695 мс</td>
+<td data-label="k" class="num">100</td>
+<td data-label="построение автомата" class="num">1 мс</td>
+<td data-label="поиск автоматом" class="num">112 мс</td>
+<td data-label="k × indexOf" class="num">253 мс</td>
+<td data-label="Pattern с альтернативой">1695 мс</td>
 </tr>
 <tr>
-<td class="num">1000</td>
-<td class="num">7 мс</td>
-<td class="num">155 мс</td>
-<td class="num">2488 мс</td>
-<td>17 814 мс</td>
+<td data-label="k" class="num">1000</td>
+<td data-label="построение автомата" class="num">7 мс</td>
+<td data-label="поиск автоматом" class="num">155 мс</td>
+<td data-label="k × indexOf" class="num">2488 мс</td>
+<td data-label="Pattern с альтернативой">17 814 мс</td>
 </tr>
 <tr>
-<td class="num">10 000</td>
-<td class="num">76 мс</td>
-<td class="num">281 мс</td>
-<td class="num">13 292 мс</td>
-<td>не запускался</td>
+<td data-label="k" class="num">10 000</td>
+<td data-label="построение автомата" class="num">76 мс</td>
+<td data-label="поиск автоматом" class="num">281 мс</td>
+<td data-label="k × indexOf" class="num">13 292 мс</td>
+<td data-label="Pattern с альтернативой">не запускался</td>
 </tr>
 </tbody>
 </table>
@@ -1778,7 +1778,7 @@
 <p><strong>Что спросят дальше.</strong> Как искать образец прямо в BWT, не разворачивая текст? Обратный поиск FM-индекса: по одному символу образца с конца сужать отрезок строк через то же отображение «последний столбец — первый» — O(m) на запрос.</p>
 <h3 id="77-опыт-наивное-построение-против-удвоения">7.7 Опыт: наивное построение против удвоения</h3>
 <p>Опыт сравнивает на JDK 21 три способа построить суффиксный массив: удвоение из задачи 7.2, способ Вайса (<code>substring</code> каждого суффикса и <code>Arrays.sort</code>) и сортировку индексов с компаратором, который сравнивает символы без копий. Входы — случайные строки и строки <code>abab…</code>, где суффиксы имеют длинные общие префиксы. Память — <code>ThreadMXBean</code>, время — <code>System.nanoTime</code>, все результаты совпали.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>n</th>
@@ -1790,46 +1790,46 @@
 </thead>
 <tbody>
 <tr>
-<td>10⁴</td>
-<td>случайный</td>
-<td>10 мс, 0 МБ</td>
-<td>25 мс, 48 МБ</td>
-<td class="num">15 мс</td>
+<td data-label="n">10⁴</td>
+<td data-label="вход">случайный</td>
+<td data-label="удвоение">10 мс, 0 МБ</td>
+<td data-label="substring + sort">25 мс, 48 МБ</td>
+<td data-label="индексы + сравнение" class="num">15 мс</td>
 </tr>
 <tr>
-<td>10⁴</td>
-<td><code>(ab)^{n/2}</code></td>
-<td>6 мс, 1 МБ</td>
-<td>24 мс, 48 МБ</td>
-<td class="num">765 мс</td>
+<td data-label="n">10⁴</td>
+<td data-label="вход"><code>(ab)^{n/2}</code></td>
+<td data-label="удвоение">6 мс, 1 МБ</td>
+<td data-label="substring + sort">24 мс, 48 МБ</td>
+<td data-label="индексы + сравнение" class="num">765 мс</td>
 </tr>
 <tr>
-<td>10⁵</td>
-<td>случайный</td>
-<td>22 мс, 5 МБ</td>
-<td>1157 мс, 4773 МБ</td>
-<td class="num">117 мс</td>
+<td data-label="n">10⁵</td>
+<td data-label="вход">случайный</td>
+<td data-label="удвоение">22 мс, 5 МБ</td>
+<td data-label="substring + sort">1157 мс, 4773 МБ</td>
+<td data-label="индексы + сравнение" class="num">117 мс</td>
 </tr>
 <tr>
-<td>10⁵</td>
-<td><code>(ab)^{n/2}</code></td>
-<td>21 мс, 10 МБ</td>
-<td>976 мс, 4773 МБ</td>
-<td class="num">73,7 с</td>
+<td data-label="n">10⁵</td>
+<td data-label="вход"><code>(ab)^{n/2}</code></td>
+<td data-label="удвоение">21 мс, 10 МБ</td>
+<td data-label="substring + sort">976 мс, 4773 МБ</td>
+<td data-label="индексы + сравнение" class="num">73,7 с</td>
 </tr>
 <tr>
-<td>10⁶</td>
-<td>случайный</td>
-<td>266 мс, 53 МБ</td>
-<td>не запускался</td>
-<td class="num">613 мс</td>
+<td data-label="n">10⁶</td>
+<td data-label="вход">случайный</td>
+<td data-label="удвоение">266 мс, 53 МБ</td>
+<td data-label="substring + sort">не запускался</td>
+<td data-label="индексы + сравнение" class="num">613 мс</td>
 </tr>
 <tr>
-<td>10⁶</td>
-<td><code>(ab)^{n/2}</code></td>
-<td>150 мс, 112 МБ</td>
-<td>не запускался</td>
-<td class="num">не запускался</td>
+<td data-label="n">10⁶</td>
+<td data-label="вход"><code>(ab)^{n/2}</code></td>
+<td data-label="удвоение">150 мс, 112 МБ</td>
+<td data-label="substring + sort">не запускался</td>
+<td data-label="индексы + сравнение" class="num">не запускался</td>
 </tr>
 </tbody>
 </table>
@@ -1976,7 +1976,7 @@
 <p><strong>Что спросят дальше.</strong> А если слов 10⁶? Бор развёрнутых слов, в каждой вершине — список слов, чей остаток — палиндром; поиск идёт по бору символами слова без создания подстрок.</p>
 <h3 id="85-опыт-манакер-против-расширения-от-центров">8.5 Опыт: Манакер против расширения от центров</h3>
 <p>Опыт проверяет на JDK 21, где квадратичное расширение от центров перестаёт быть приемлемым. На случайной строке из двух букв палиндромы короткие, на строке из одной буквы расширение от каждого центра идёт до края. Все ответы совпали; <code>System.nanoTime</code>, второй прогон. Строка из одной буквы — не искусственный худший случай: поля, заполненные одним символом, встречаются в выгрузках постоянно.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>n</th>
@@ -1987,40 +1987,40 @@
 </thead>
 <tbody>
 <tr>
-<td>10⁴</td>
-<td>случайная из <code>a</code>, <code>b</code></td>
-<td>2 мс</td>
-<td class="num">1 мс</td>
+<td data-label="n">10⁴</td>
+<td data-label="вход">случайная из <code>a</code>, <code>b</code></td>
+<td data-label="Манакер">2 мс</td>
+<td data-label="расширение от центров" class="num">1 мс</td>
 </tr>
 <tr>
-<td>10⁴</td>
-<td>одна буква</td>
-<td>меньше 1 мс</td>
-<td class="num">60 мс</td>
+<td data-label="n">10⁴</td>
+<td data-label="вход">одна буква</td>
+<td data-label="Манакер">меньше 1 мс</td>
+<td data-label="расширение от центров" class="num">60 мс</td>
 </tr>
 <tr>
-<td>10⁵</td>
-<td>случайная</td>
-<td>2 мс</td>
-<td class="num">1 мс</td>
+<td data-label="n">10⁵</td>
+<td data-label="вход">случайная</td>
+<td data-label="Манакер">2 мс</td>
+<td data-label="расширение от центров" class="num">1 мс</td>
 </tr>
 <tr>
-<td>10⁵</td>
-<td>одна буква</td>
-<td>меньше 1 мс</td>
-<td class="num">5968 мс</td>
+<td data-label="n">10⁵</td>
+<td data-label="вход">одна буква</td>
+<td data-label="Манакер">меньше 1 мс</td>
+<td data-label="расширение от центров" class="num">5968 мс</td>
 </tr>
 <tr>
-<td>10⁶</td>
-<td>случайная</td>
-<td>13 мс</td>
-<td class="num">10 мс</td>
+<td data-label="n">10⁶</td>
+<td data-label="вход">случайная</td>
+<td data-label="Манакер">13 мс</td>
+<td data-label="расширение от центров" class="num">10 мс</td>
 </tr>
 <tr>
-<td>10⁶</td>
-<td>одна буква</td>
-<td>7 мс</td>
-<td class="num">не запускался (около 10 минут)</td>
+<td data-label="n">10⁶</td>
+<td data-label="вход">одна буква</td>
+<td data-label="Манакер">7 мс</td>
+<td data-label="расширение от центров" class="num">не запускался (около 10 минут)</td>
 </tr>
 </tbody>
 </table>
@@ -2225,7 +2225,7 @@
 <p><strong>Что спросят дальше.</strong> Как проверить выражение до запуска? Статическими анализаторами, которые ищут вложенные квантификаторы над пересекающимися множествами символов, и нагрузочным тестом на «почти подходящих» строках. А возможна ли защита через отдельный поток и <code>Thread.interrupt()</code>? <code>Matcher</code> прерывания не проверяет, поэтому поток продолжит работу; обёртка <code>CharSequence</code> — единственный способ остановить его изнутри.</p>
 <h3 id="95-опыт-что-в-jdk-21-опасно-а-что-уже-нет">9.5 Опыт: что в JDK 21 опасно, а что уже нет</h3>
 <p>Опыт проверяет на JDK 21 утверждения раздела: классические «злые» выражения с вложенными повторами защищены мемоизацией <code>Loop</code>, выражение с обратной ссылкой — нет, цепочка квантификаторов растёт полиномиально, а НКА Томпсона на тех же входах линеен. Строки — <code>n</code> букв <code>a</code> с лишним символом на конце, чтобы совпадения не было и движок перебрал всё.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Выражение</th>
@@ -2237,44 +2237,44 @@
 </thead>
 <tbody>
 <tr>
-<td><code>^(a+)+$</code></td>
-<td class="num">0 мс</td>
-<td class="num">0</td>
-<td class="num">0</td>
-<td class="num">0</td>
+<td data-label="Выражение"><code>^(a+)+$</code></td>
+<td data-label="n = 16" class="num">0 мс</td>
+<td data-label="20" class="num">0</td>
+<td data-label="24" class="num">0</td>
+<td data-label="28" class="num">0</td>
 </tr>
 <tr>
-<td><code>^(a\|aa)+$</code></td>
-<td class="num">0</td>
-<td class="num">0</td>
-<td class="num">0</td>
-<td class="num">0</td>
+<td data-label="Выражение"><code>^(a\|aa)+$</code></td>
+<td data-label="n = 16" class="num">0</td>
+<td data-label="20" class="num">0</td>
+<td data-label="24" class="num">0</td>
+<td data-label="28" class="num">0</td>
 </tr>
 <tr>
-<td><code>^(([a-z])+.)+[A-Z]([a-z])+$</code></td>
-<td class="num">0</td>
-<td class="num">0</td>
-<td class="num">0</td>
-<td class="num">0</td>
+<td data-label="Выражение"><code>^(([a-z])+.)+[A-Z]([a-z])+$</code></td>
+<td data-label="n = 16" class="num">0</td>
+<td data-label="20" class="num">0</td>
+<td data-label="24" class="num">0</td>
+<td data-label="28" class="num">0</td>
 </tr>
 <tr>
-<td><code>^(\w+\s?)*$</code></td>
-<td class="num">0</td>
-<td class="num">0</td>
-<td class="num">0</td>
-<td class="num">0</td>
+<td data-label="Выражение"><code>^(\w+\s?)*$</code></td>
+<td data-label="n = 16" class="num">0</td>
+<td data-label="20" class="num">0</td>
+<td data-label="24" class="num">0</td>
+<td data-label="28" class="num">0</td>
 </tr>
 <tr>
-<td><code>^(a+)+\1$</code></td>
-<td class="num">4</td>
-<td class="num">27</td>
-<td class="num">335</td>
-<td class="num">4919</td>
+<td data-label="Выражение"><code>^(a+)+\1$</code></td>
+<td data-label="n = 16" class="num">4</td>
+<td data-label="20" class="num">27</td>
+<td data-label="24" class="num">335</td>
+<td data-label="28" class="num">4919</td>
 </tr>
 </tbody>
 </table>
 <p>Четыре классических примера ReDoS, которые обычно приводят в статьях о безопасности, в JDK 21 работают мгновенно: защита из <code>Pattern</code> запоминает провалившиеся позиции повторов. Выражение с обратной ссылкой <code>\1</code> растёт примерно в 13–15 раз на каждые четыре символа — экспонента: на 28 символах почти пять секунд, на 40 это были бы часы. Ещё одна проверка с выражением адреса электронной почты из списков уязвимых шаблонов тоже прошла мгновенно.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вход</th>
@@ -2285,22 +2285,22 @@
 </thead>
 <tbody>
 <tr>
-<td>28 символов</td>
-<td class="num">0 мс</td>
-<td class="num">0 мс</td>
-<td>2 мс</td>
+<td data-label="Вход">28 символов</td>
+<td data-label="НКА (aa*)(aa*)*" class="num">0 мс</td>
+<td data-label="НКА a*a*a*a*a*b" class="num">0 мс</td>
+<td data-label="Pattern a*a*a*a*a*b">2 мс</td>
 </tr>
 <tr>
-<td>201 символ</td>
-<td class="num">1 мс</td>
-<td class="num">0 мс</td>
-<td>16 603 мс</td>
+<td data-label="Вход">201 символ</td>
+<td data-label="НКА (aa*)(aa*)*" class="num">1 мс</td>
+<td data-label="НКА a*a*a*a*a*b" class="num">0 мс</td>
+<td data-label="Pattern a*a*a*a*a*b">16 603 мс</td>
 </tr>
 <tr>
-<td>100 000 символов</td>
-<td class="num">49 мс</td>
-<td class="num">22 мс</td>
-<td>не запускался</td>
+<td data-label="Вход">100 000 символов</td>
+<td data-label="НКА (aa*)(aa*)*" class="num">49 мс</td>
+<td data-label="НКА a*a*a*a*a*b" class="num">22 мс</td>
+<td data-label="Pattern a*a*a*a*a*b">не запускался</td>
 </tr>
 </tbody>
 </table>
@@ -2702,7 +2702,7 @@
 <p><strong>Что спросят дальше.</strong> А вставки и удаления? Добавить слагаемые <code>r_old[e − 1]</code> (вставка в текст) и <code>r_new[e − 1] &lt;&lt; 1</code> (удаление из текста) — это алгоритм Ву — Манбера целиком. А образцы длиннее слова? Алгоритм Майерса для редакционного расстояния работает блоками по 64 бита, O(n·⌈m/64⌉).<sup id="fnref5:a70-23"><a class="footnote-ref" href="#fn:a70-23">23</a></sup></p>
 <h3 id="107-опыт-индекс-по-триграммам-и-меры-сходства-на-фио">10.7 Опыт: индекс по триграммам и меры сходства на ФИО</h3>
 <p>Опыт проверяет на JDK 21, сколько даёт триграммный индекс на списке из 200 000 ФИО (двадцать фамилий и десять имён со случайными опечатками, как в опыте 5.10 главы 70) и как разные меры оценивают типичные пары. Оба способа поиска нашли одни и те же записи.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Запрос, порог 2</th>
@@ -2713,27 +2713,27 @@
 </thead>
 <tbody>
 <tr>
-<td>«семенов сергей»</td>
-<td class="num">31 мс</td>
-<td class="num">50 мс</td>
-<td class="num">1030</td>
+<td data-label="Запрос, порог 2">«семенов сергей»</td>
+<td data-label="индекс" class="num">31 мс</td>
+<td data-label="перебор с полосой" class="num">50 мс</td>
+<td data-label="найдено" class="num">1030</td>
 </tr>
 <tr>
-<td>«кузнецова ольга»</td>
-<td class="num">2 мс</td>
-<td class="num">36 мс</td>
-<td class="num">0</td>
+<td data-label="Запрос, порог 2">«кузнецова ольга»</td>
+<td data-label="индекс" class="num">2 мс</td>
+<td data-label="перебор с полосой" class="num">36 мс</td>
+<td data-label="найдено" class="num">0</td>
 </tr>
 <tr>
-<td>«михайлов дмитрии»</td>
-<td class="num">11 мс</td>
-<td class="num">33 мс</td>
-<td class="num">772</td>
+<td data-label="Запрос, порог 2">«михайлов дмитрии»</td>
+<td data-label="индекс" class="num">11 мс</td>
+<td data-label="перебор с полосой" class="num">33 мс</td>
+<td data-label="найдено" class="num">772</td>
 </tr>
 </tbody>
 </table>
 <p>Индекс строится 337 мс и ускоряет поиск от полутора до восемнадцати раз. Ускорение небольшое там, где запрос похож на тысячи записей: список намеренно однообразен, и списки частых триграмм длинные; на запросе без совпадений индекс отсекает почти всё. На реальных справочниках, где фамилий тысячи, отсечение сильнее.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Пара</th>
@@ -2745,39 +2745,39 @@
 </thead>
 <tbody>
 <tr>
-<td>иванов иван / ивонов иван</td>
-<td class="num">1</td>
-<td class="num">1</td>
-<td class="num">0,925</td>
-<td class="num">0,667</td>
+<td data-label="Пара">иванов иван / ивонов иван</td>
+<td data-label="Левенштейн" class="num">1</td>
+<td data-label="OSA" class="num">1</td>
+<td data-label="Джаро — Винклер" class="num">0,925</td>
+<td data-label="Жаккар по триграммам" class="num">0,667</td>
 </tr>
 <tr>
-<td>иванов иван / иван иванов</td>
-<td class="num">4</td>
-<td class="num">4</td>
-<td class="num">0,904</td>
-<td class="num">0,800</td>
+<td data-label="Пара">иванов иван / иван иванов</td>
+<td data-label="Левенштейн" class="num">4</td>
+<td data-label="OSA" class="num">4</td>
+<td data-label="Джаро — Винклер" class="num">0,904</td>
+<td data-label="Жаккар по триграммам" class="num">0,800</td>
 </tr>
 <tr>
-<td>иванов иван / иванова ивана</td>
-<td class="num">2</td>
-<td class="num">2</td>
-<td class="num">0,933</td>
-<td class="num">0,429</td>
+<td data-label="Пара">иванов иван / иванова ивана</td>
+<td data-label="Левенштейн" class="num">2</td>
+<td data-label="OSA" class="num">2</td>
+<td data-label="Джаро — Винклер" class="num">0,933</td>
+<td data-label="Жаккар по триграммам" class="num">0,429</td>
 </tr>
 <tr>
-<td>петров петр / петрова пелагея</td>
-<td class="num">6</td>
-<td class="num">6</td>
-<td class="num">0,884</td>
-<td class="num">0,333</td>
+<td data-label="Пара">петров петр / петрова пелагея</td>
+<td data-label="Левенштейн" class="num">6</td>
+<td data-label="OSA" class="num">6</td>
+<td data-label="Джаро — Винклер" class="num">0,884</td>
+<td data-label="Жаккар по триграммам" class="num">0,333</td>
 </tr>
 <tr>
-<td>семенов / семёнов</td>
-<td class="num">1</td>
-<td class="num">1</td>
-<td class="num">0,933</td>
-<td class="num">0,455</td>
+<td data-label="Пара">семенов / семёнов</td>
+<td data-label="Левенштейн" class="num">1</td>
+<td data-label="OSA" class="num">1</td>
+<td data-label="Джаро — Винклер" class="num">0,933</td>
+<td data-label="Жаккар по триграммам" class="num">0,455</td>
 </tr>
 </tbody>
 </table>
@@ -2936,7 +2936,7 @@
 <p><strong>Что спросят дальше.</strong> А СНИЛС, ОГРН, КПП? У СНИЛС контрольное число — взвешенная сумма по модулю 101, у ОГРН — остаток от деления числа на 11 (для ОГРНИП — на 13), у КПП контрольной суммы нет (⚠️ правила по памяти). Общий вывод: каждую проверку пишут по своему описанию и тестируют на открытых примерах.</p>
 <h3 id="116-опыт-какие-ошибки-ввода-ловит-каждая-проверка">11.6 Опыт: какие ошибки ввода ловит каждая проверка</h3>
 <p>Опыт проверяет утверждения подраздела 11.1 перебором, а не рассуждением: модель ошибок — одиночная замена цифры и перестановка двух соседних, это самые частые ошибки ручного ввода. Для каждой проверки сгенерировано 3000 случайных допустимых номеров; в каждом выполнены все одиночные замены цифры и все перестановки соседних различных цифр, и посчитано, какая доля испорченных номеров всё равно проходит проверку.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Проверка</th>
@@ -2947,29 +2947,29 @@
 </thead>
 <tbody>
 <tr>
-<td>Луна, 16 цифр</td>
-<td class="num">0%</td>
-<td class="num">2,15%</td>
-<td>0 и 9</td>
+<td data-label="Проверка">Луна, 16 цифр</td>
+<td data-label="пропущено одиночных замен" class="num">0%</td>
+<td data-label="пропущено перестановок соседних" class="num">2,15%</td>
+<td data-label="какие пары цифр не видны при перестановке">0 и 9</td>
 </tr>
 <tr>
-<td>ключ счёта по БИК, 20 цифр</td>
-<td class="num">0%</td>
-<td class="num">11,12%</td>
-<td>0–5, 1–6, 2–7, 3–8, 4–9</td>
+<td data-label="Проверка">ключ счёта по БИК, 20 цифр</td>
+<td data-label="пропущено одиночных замен" class="num">0%</td>
+<td data-label="пропущено перестановок соседних" class="num">11,12%</td>
+<td data-label="какие пары цифр не видны при перестановке">0–5, 1–6, 2–7, 3–8, 4–9</td>
 </tr>
 <tr>
-<td>ИНН, 10 цифр</td>
-<td class="num">1,62%</td>
-<td class="num">1,75%</td>
-<td>27 пар из 45</td>
+<td data-label="Проверка">ИНН, 10 цифр</td>
+<td data-label="пропущено одиночных замен" class="num">1,62%</td>
+<td data-label="пропущено перестановок соседних" class="num">1,75%</td>
+<td data-label="какие пары цифр не видны при перестановке">27 пар из 45</td>
 </tr>
 </tbody>
 </table>
 <p>Луна ловит все одиночные ошибки и все перестановки, кроме 0 и 9, — ровно как предсказывает нелинейный шаг с вычитанием девяти. Ключ счёта ловит все одиночные ошибки (веса 7, 1 и 3 взаимно просты с 10), но пропускает каждую девятую перестановку: все пары цифр, отличающихся на 5. ИНН с его модулем 11 мог бы ловить всё, но запись остатка 10 как 0 приводит к тому, что 1,6% одиночных ошибок проходят проверку. Для сервиса из этого следуют два практических вывода: контрольный разряд не заменяет проверку по справочнику, и сообщение пользователю «проверьте номер» после неудачной проверки должно оставаться подсказкой, а прошедшая проверка — не гарантией правильности.</p>
 <h2 id="12-что-из-этого-встречается-в-бэкенде">12. Что из этого встречается в бэкенде</h2>
 <p>Алгоритмы на строках в рабочем коде почти всегда спрятаны в библиотеках: <code>indexOf</code>, <code>Pattern</code>, полнотекстовый поиск в базе, токенизаторы. Собственная реализация нужна, когда библиотечная не подходит по гарантиям (поток без буфера, худший случай под контролем противника, тайм-аут) или по задаче (много образцов, нечёткое сравнение, контрольные разряды). Таблица отвечает на те же три вопроса, что в главах 69 и 70: встретится ли приём в коде сервиса, спросят ли его на собеседовании и чем его заменяют на практике.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>приём</th>
@@ -2980,64 +2980,64 @@
 </thead>
 <tbody>
 <tr>
-<td>поиск подстроки</td>
-<td>постоянно, через <code>indexOf</code> и <code>contains</code></td>
-<td>часто (КМП или хеш)</td>
-<td><code>indexOf</code> — перебор во встроенной функции JVM (<em>intrinsic</em>), быстрее любого Java-кода на обычных строках (опыты 2.7, 3.7, 5.4)</td>
+<td data-label="приём">поиск подстроки</td>
+<td data-label="в коде сервиса">постоянно, через <code>indexOf</code> и <code>contains</code></td>
+<td data-label="на собеседовании">часто (КМП или хеш)</td>
+<td data-label="где встречается или чем заменяют"><code>indexOf</code> — перебор во встроенной функции JVM (<em>intrinsic</em>), быстрее любого Java-кода на обычных строках (опыты 2.7, 3.7, 5.4)</td>
 </tr>
 <tr>
-<td>КМП и префикс-функция</td>
-<td>редко, для потоков</td>
-<td>часто</td>
-<td>поиск маркера в потоке без буфера; период и сдвиги строки; ДКА — в лексерах</td>
+<td data-label="приём">КМП и префикс-функция</td>
+<td data-label="в коде сервиса">редко, для потоков</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют">поиск маркера в потоке без буфера; период и сдвиги строки; ДКА — в лексерах</td>
 </tr>
 <tr>
-<td>полиномиальный хеш</td>
-<td>регулярно, как отпечаток</td>
-<td>часто</td>
-<td>дедупликация фрагментов, сравнение подстрок, двумерный поиск; не модуль 2⁶⁴ при недоверенных данных</td>
+<td data-label="приём">полиномиальный хеш</td>
+<td data-label="в коде сервиса">регулярно, как отпечаток</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют">дедупликация фрагментов, сравнение подстрок, двумерный поиск; не модуль 2⁶⁴ при недоверенных данных</td>
 </tr>
 <tr>
-<td>Бойер — Мур, Хорспул</td>
-<td>редко в своём коде</td>
-<td>средне</td>
-<td>внутри <code>Pattern</code> для литералов, в grep; Хорспул — для длинных образцов в своих буферах</td>
+<td data-label="приём">Бойер — Мур, Хорспул</td>
+<td data-label="в коде сервиса">редко в своём коде</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="где встречается или чем заменяют">внутри <code>Pattern</code> для литералов, в grep; Хорспул — для длинных образцов в своих буферах</td>
 </tr>
 <tr>
-<td>Ахо — Корасик</td>
-<td>регулярно в комплаенсе и модерации</td>
-<td>средне</td>
-<td>проверка назначения платежа по списку, фильтрация по стоп-словам; не цикл <code>contains</code> и не <code>a\|b\|c\|…</code> (опыт 6.5)</td>
+<td data-label="приём">Ахо — Корасик</td>
+<td data-label="в коде сервиса">регулярно в комплаенсе и модерации</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="где встречается или чем заменяют">проверка назначения платежа по списку, фильтрация по стоп-словам; не цикл <code>contains</code> и не <code>a\|b\|c\|…</code> (опыт 6.5)</td>
 </tr>
 <tr>
-<td>суффиксный массив и LCP</td>
-<td>редко</td>
-<td>средне</td>
-<td>индекс по фиксированному тексту, наибольшие повторы, BWT в bzip2 и геномике; в базе — полнотекстовые индексы</td>
+<td data-label="приём">суффиксный массив и LCP</td>
+<td data-label="в коде сервиса">редко</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="где встречается или чем заменяют">индекс по фиксированному тексту, наибольшие повторы, BWT в bzip2 и геномике; в базе — полнотекстовые индексы</td>
 </tr>
 <tr>
-<td>Манакер</td>
-<td>почти никогда</td>
-<td>редко</td>
-<td>палиндромы на длинных однородных строках; на собеседовании хватает расширения от центров</td>
+<td data-label="приём">Манакер</td>
+<td data-label="в коде сервиса">почти никогда</td>
+<td data-label="на собеседовании">редко</td>
+<td data-label="где встречается или чем заменяют">палиндромы на длинных однородных строках; на собеседовании хватает расширения от центров</td>
 </tr>
 <tr>
-<td>регулярные выражения</td>
-<td>постоянно</td>
-<td>средне (как устроены, ReDoS)</td>
-<td>валидация, разбор логов, правила; для недоверенных выражений — тайм-аут или движок на автоматах (RE2/J)</td>
+<td data-label="приём">регулярные выражения</td>
+<td data-label="в коде сервиса">постоянно</td>
+<td data-label="на собеседовании">средне (как устроены, ReDoS)</td>
+<td data-label="где встречается или чем заменяют">валидация, разбор логов, правила; для недоверенных выражений — тайм-аут или движок на автоматах (RE2/J)</td>
 </tr>
 <tr>
-<td>нечёткое сравнение</td>
-<td>регулярно в KYC, дедупликации, поиске</td>
-<td>средне</td>
-<td>Левенштейн с полосой, Джаро — Винклер, триграммы (<code>pg_trgm</code>), транслитерация; пороги по размеченным данным</td>
+<td data-label="приём">нечёткое сравнение</td>
+<td data-label="в коде сервиса">регулярно в KYC, дедупликации, поиске</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="где встречается или чем заменяют">Левенштейн с полосой, Джаро — Винклер, триграммы (<code>pg_trgm</code>), транслитерация; пороги по размеченным данным</td>
 </tr>
 <tr>
-<td>контрольные разряды</td>
-<td>постоянно на входе платёжных API</td>
-<td>часто в финтехе</td>
-<td>Луна, IBAN, ключ счёта по БИК, ИНН; проверка формата, суммы и справочника — по отдельности</td>
+<td data-label="приём">контрольные разряды</td>
+<td data-label="в коде сервиса">постоянно на входе платёжных API</td>
+<td data-label="на собеседовании">часто в финтехе</td>
+<td data-label="где встречается или чем заменяют">Луна, IBAN, ключ счёта по БИК, ИНН; проверка формата, суммы и справочника — по отдельности</td>
 </tr>
 </tbody>
 </table>
@@ -3301,5 +3301,5 @@
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-строка-в-jvm-как-вход-алгоритма">1. Строка в JVM как вход алгоритма</a></li><li><a href="#2-полиномиальный-хеш-и-рабин-карп">2. Полиномиальный хеш и Рабин — Карп</a></li><li><a href="#3-префикс-функция-и-кнут-моррис-пратт">3. Префикс-функция и Кнут — Моррис — Пратт</a></li><li><a href="#4-z-функция">4. Z-функция</a></li><li><a href="#5-бойер-мур-хорспул-и-что-внутри-indexof">5. Бойер — Мур, Хорспул и что внутри indexOf</a></li><li><a href="#6-много-образцов-сразу-ахо-корасик">6. Много образцов сразу: Ахо — Корасик</a></li><li><a href="#7-суффиксный-массив-и-lcp">7. Суффиксный массив и LCP</a></li><li><a href="#8-палиндромы-и-алгоритм-манакера">8. Палиндромы и алгоритм Манакера</a></li><li><a href="#9-регулярные-выражения-изнутри">9. Регулярные выражения изнутри</a></li><li><a href="#10-нечёткий-поиск-опечатки-перестановки-звучание-транслитерация">10. Нечёткий поиск: опечатки, перестановки, звучание, транслитерация</a></li><li><a href="#11-разбор-и-проверка-реквизитов">11. Разбор и проверка реквизитов</a></li><li><a href="#12-что-из-этого-встречается-в-бэкенде">12. Что из этого встречается в бэкенде</a></li><li><a href="#13-грабли-и-антипаттерны">13. Грабли и антипаттерны</a></li><li><a href="#14-диагностика-отладка-решения">14. Диагностика: отладка решения</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

@@ -3,7 +3,7 @@
 <title>17. PostgreSQL изнутри — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="PostgreSQL изнутри">
 <a class="skip" href="#content">К тексту</a>
@@ -41,7 +41,7 @@
 <h3 id="12-фоновые-процессы">1.2 Фоновые процессы</h3>
 <p>Фоновые процессы (<em>background processes</em>) — это служебные процессы сервера, которые запускает postmaster и которые не обслуживают клиентов, а выполняют общую работу: записывают изменённые страницы на диск, сбрасывают журнал, убирают старые версии строк, архивируют журнал и передают его на реплики. Каждый отвечает за одну свою задачу, и у каждого свои параметры настройки. Их видно в <code>ps aux | grep postgres</code>, а начиная с PG 14 — ещё и в представлении <code>pg_stat_activity</code>, в колонке <code>backend_type</code>.</p>
 <p>Таблица ниже перечисляет эти процессы и параметры, которыми ими управляют; она пригодится, когда в <code>ps</code> или в мониторинге появится незнакомое имя. В ней встречаются понятия, которые подробно разобраны дальше: контрольная точка — момент, к которому все изменённые страницы записаны на диск (гл. 16, раздел 4.10, здесь — раздел 5.3); грязный буфер — страница в кэше сервера, изменённая, но ещё не записанная; WAL-сегмент — один файл журнала упреждающей записи, по умолчанию размером 16 МБ (раздел 5.6); <code>VACUUM</code> — уборка старых версий строк (раздел 4).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Процесс</th>
@@ -51,54 +51,54 @@
 </thead>
 <tbody>
 <tr>
-<td><code>checkpointer</code></td>
-<td>Выполняет контрольные точки: сбрасывает грязные буферы на диск и пишет запись checkpoint в WAL</td>
-<td><code>checkpoint_timeout</code>, <code>max_wal_size</code>, <code>checkpoint_completion_target</code></td>
+<td data-label="Процесс"><code>checkpointer</code></td>
+<td data-label="Что делает">Выполняет контрольные точки: сбрасывает грязные буферы на диск и пишет запись checkpoint в WAL</td>
+<td data-label="Ключевые параметры"><code>checkpoint_timeout</code>, <code>max_wal_size</code>, <code>checkpoint_completion_target</code></td>
 </tr>
 <tr>
-<td><code>background writer</code></td>
-<td>Постепенно выписывает грязные буферы, чтобы backend'ам было куда вытеснять страницы</td>
-<td><code>bgwriter_delay</code>, <code>bgwriter_lru_maxpages</code>, <code>bgwriter_lru_multiplier</code></td>
+<td data-label="Процесс"><code>background writer</code></td>
+<td data-label="Что делает">Постепенно выписывает грязные буферы, чтобы backend'ам было куда вытеснять страницы</td>
+<td data-label="Ключевые параметры"><code>bgwriter_delay</code>, <code>bgwriter_lru_maxpages</code>, <code>bgwriter_lru_multiplier</code></td>
 </tr>
 <tr>
-<td><code>walwriter</code></td>
-<td>Периодически сбрасывает WAL-буферы на диск, чтобы фиксациям не приходилось ждать</td>
-<td><code>wal_writer_delay</code>, <code>wal_writer_flush_after</code></td>
+<td data-label="Процесс"><code>walwriter</code></td>
+<td data-label="Что делает">Периодически сбрасывает WAL-буферы на диск, чтобы фиксациям не приходилось ждать</td>
+<td data-label="Ключевые параметры"><code>wal_writer_delay</code>, <code>wal_writer_flush_after</code></td>
 </tr>
 <tr>
-<td><code>autovacuum launcher</code></td>
-<td>Решает, в какой БД запустить worker, и обходит каждую базу примерно раз в <code>autovacuum_naptime</code></td>
-<td><code>autovacuum_naptime</code>, <code>autovacuum_max_workers</code></td>
+<td data-label="Процесс"><code>autovacuum launcher</code></td>
+<td data-label="Что делает">Решает, в какой БД запустить worker, и обходит каждую базу примерно раз в <code>autovacuum_naptime</code></td>
+<td data-label="Ключевые параметры"><code>autovacuum_naptime</code>, <code>autovacuum_max_workers</code></td>
 </tr>
 <tr>
-<td><code>autovacuum worker</code></td>
-<td>Собственно очищает и анализирует таблицы</td>
-<td><code>autovacuum_vacuum_*</code>, <code>autovacuum_analyze_*</code></td>
+<td data-label="Процесс"><code>autovacuum worker</code></td>
+<td data-label="Что делает">Собственно очищает и анализирует таблицы</td>
+<td data-label="Ключевые параметры"><code>autovacuum_vacuum_*</code>, <code>autovacuum_analyze_*</code></td>
 </tr>
 <tr>
-<td><code>archiver</code></td>
-<td>Копирует заполненные WAL-сегменты в архив</td>
-<td><code>archive_mode</code>, <code>archive_command</code>/<code>archive_library</code></td>
+<td data-label="Процесс"><code>archiver</code></td>
+<td data-label="Что делает">Копирует заполненные WAL-сегменты в архив</td>
+<td data-label="Ключевые параметры"><code>archive_mode</code>, <code>archive_command</code>/<code>archive_library</code></td>
 </tr>
 <tr>
-<td><code>walsender</code> / <code>walreceiver</code></td>
-<td>Передаёт WAL на реплику и принимает его на реплике</td>
-<td><code>max_wal_senders</code>, <code>primary_conninfo</code></td>
+<td data-label="Процесс"><code>walsender</code> / <code>walreceiver</code></td>
+<td data-label="Что делает">Передаёт WAL на реплику и принимает его на реплике</td>
+<td data-label="Ключевые параметры"><code>max_wal_senders</code>, <code>primary_conninfo</code></td>
 </tr>
 <tr>
-<td><code>logical replication launcher</code> / <code>apply worker</code></td>
-<td>Обслуживают логическую репликацию: подписки и применение изменений</td>
-<td><code>max_logical_replication_workers</code></td>
+<td data-label="Процесс"><code>logical replication launcher</code> / <code>apply worker</code></td>
+<td data-label="Что делает">Обслуживают логическую репликацию: подписки и применение изменений</td>
+<td data-label="Ключевые параметры"><code>max_logical_replication_workers</code></td>
 </tr>
 <tr>
-<td><code>startup</code></td>
-<td>Проигрывает WAL при восстановлении; на реплике работает постоянно</td>
-<td><code>recovery_prefetch</code></td>
+<td data-label="Процесс"><code>startup</code></td>
+<td data-label="Что делает">Проигрывает WAL при восстановлении; на реплике работает постоянно</td>
+<td data-label="Ключевые параметры"><code>recovery_prefetch</code></td>
 </tr>
 <tr>
-<td><code>io worker</code> (PG 18)</td>
-<td>Выполняет асинхронный ввод-вывод, если <code>io_method = worker</code></td>
-<td><code>io_method</code>, <code>io_workers</code></td>
+<td data-label="Процесс"><code>io worker</code> (PG 18)</td>
+<td data-label="Что делает">Выполняет асинхронный ввод-вывод, если <code>io_method = worker</code></td>
+<td data-label="Ключевые параметры"><code>io_method</code>, <code>io_workers</code></td>
 </tr>
 </tbody>
 </table>
@@ -188,7 +188,7 @@ psql -c <span class="s2">"SELECT pg_size_pretty(pg_table_size('accounts')),</spa
 <p>Номер файла <code>relfilenode</code> и OID таблицы — разные вещи, и путать их опасно. OID даётся таблице один раз и не меняется, а <code>relfilenode</code> меняют все операции, которые переписывают таблицу целиком в новый файл: <code>VACUUM FULL</code>, <code>CLUSTER</code>, <code>TRUNCATE</code>, некоторые <code>ALTER TABLE ... TYPE</code>. Поэтому скрипт, который когда-то запомнил путь к файлу таблицы, после такой операции будет смотреть на файл, которого больше нет.</p>
 <p><strong>Tablespace</strong> — это именованный каталог вне <code>PGDATA</code>, в котором сервер может хранить часть таблиц; из <code>PGDATA/pg_tblspc</code> на него ведёт символическая ссылка. С его помощью горячие и холодные данные разносят по разным дискам, но в облаке или на сервере с одним NVMe-диском пользы от этого почти нет.</p>
 <p>Каждое отношение (<em>relation</em>; так PostgreSQL называет любой объект, хранящий строки, — таблицу, индекс, последовательность) хранится не одним файлом, а набором <strong>форков</strong> (<em>forks</em>): отдельных файлов с разным назначением и общим номером. В таблице ниже видно, какие это форки и по какому суффиксу их узнать в каталоге базы:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Форк</th>
@@ -198,24 +198,24 @@ psql -c <span class="s2">"SELECT pg_size_pretty(pg_table_size('accounts')),</spa
 </thead>
 <tbody>
 <tr>
-<td>main</td>
-<td>(нет)</td>
-<td>Собственно данные — страницы с кортежами</td>
+<td data-label="Форк">main</td>
+<td data-label="Суффикс файла">(нет)</td>
+<td data-label="Содержимое">Собственно данные — страницы с кортежами</td>
 </tr>
 <tr>
-<td>fsm</td>
-<td><code>_fsm</code></td>
-<td>Free Space Map: сколько свободного места на каждой странице</td>
+<td data-label="Форк">fsm</td>
+<td data-label="Суффикс файла"><code>_fsm</code></td>
+<td data-label="Содержимое">Free Space Map: сколько свободного места на каждой странице</td>
 </tr>
 <tr>
-<td>vm</td>
-<td><code>_vm</code></td>
-<td>Visibility Map: два бита на страницу — all-visible, all-frozen</td>
+<td data-label="Форк">vm</td>
+<td data-label="Суффикс файла"><code>_vm</code></td>
+<td data-label="Содержимое">Visibility Map: два бита на страницу — all-visible, all-frozen</td>
 </tr>
 <tr>
-<td>init</td>
-<td><code>_init</code></td>
-<td>Пустой образ для unlogged-таблиц: из него таблицу восстанавливают после краха</td>
+<td data-label="Форк">init</td>
+<td data-label="Суффикс файла"><code>_init</code></td>
+<td data-label="Содержимое">Пустой образ для unlogged-таблиц: из него таблицу восстанавливают после краха</td>
 </tr>
 </tbody>
 </table>
@@ -295,7 +295,7 @@ psql -c <span class="s2">"SELECT pg_size_pretty(pg_table_size('accounts')),</spa
 <p>TOAST (<em>The Oversized-Attribute Storage Technique</em>, техника хранения слишком больших атрибутов) — это механизм, которым PostgreSQL хранит значения, не помещающиеся на страницу: длинные значения колонок он сжимает или выносит в отдельную служебную таблицу, а в строке оставляет на их месте указатель. Нужен он потому, что кортеж не может разрезаться между страницами, и строка поэтому не может быть больше примерно 8 КБ. Между тем в таблицах постоянно встречаются значения крупнее: текст договора на 2 МБ, большой <code>jsonb</code> с ответом антифрод-системы, вложения в <code>bytea</code>. Ниже разберём пороги, при которых механизм включается, стратегии хранения колонок, методы сжатия и то, во что TOAST обходится запросам.</p>
 <p>Когда суммарный размер строки превышает <code>TOAST_TUPLE_THRESHOLD</code> (<strong>2 КБ</strong> по умолчанию), PostgreSQL начинает сжимать или выносить длинные атрибуты и продолжает, пока строка не станет меньше <code>TOAST_TUPLE_TARGET</code> (тоже <strong>2 КБ</strong>; эту цель можно изменить через <code>ALTER TABLE ... SET (toast_tuple_target = N)</code>) (<a href="https://www.postgresql.org/docs/current/storage-toast.html">TOAST</a>). Вынесенное значение режется на куски (<em>chunks</em>) примерно по <strong>2000 байт</strong>. Куски складываются в отдельную TOAST-таблицу <code>pg_toast.pg_toast_&lt;OID&gt;</code> с уникальным индексом по <code>(chunk_id, chunk_seq)</code>, то есть по номеру значения и номеру куска в нём, а в основной строке остаётся <strong>TOAST-указатель размером 18 байт</strong>. Одно TOAST-значение может занимать не больше <strong>1 ГБ</strong> (2³⁰−1).</p>
 <p>Как именно обходиться с длинными значениями, определяет стратегия хранения, которая задаётся для каждой колонки. Стратегий четыре, и в таблице ниже для каждой указано, сжимает ли она данные, выносит ли их наружу и в каких случаях её выбирают:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -306,28 +306,28 @@ psql -c <span class="s2">"SELECT pg_size_pretty(pg_table_size('accounts')),</spa
 </thead>
 <tbody>
 <tr>
-<td><code>PLAIN</code></td>
-<td>нет</td>
-<td>нет</td>
-<td>Единственный вариант для не-TOAST-able типов (<code>int</code>, <code>timestamptz</code>)</td>
+<td data-label="Стратегия"><code>PLAIN</code></td>
+<td data-label="Сжатие">нет</td>
+<td data-label="Вынос наружу">нет</td>
+<td data-label="Когда применять">Единственный вариант для не-TOAST-able типов (<code>int</code>, <code>timestamptz</code>)</td>
 </tr>
 <tr>
-<td><code>EXTENDED</code></td>
-<td>да</td>
-<td>да</td>
-<td><strong>По умолчанию</strong> для <code>text</code>, <code>bytea</code>, <code>jsonb</code></td>
+<td data-label="Стратегия"><code>EXTENDED</code></td>
+<td data-label="Сжатие">да</td>
+<td data-label="Вынос наружу">да</td>
+<td data-label="Когда применять"><strong>По умолчанию</strong> для <code>text</code>, <code>bytea</code>, <code>jsonb</code></td>
 </tr>
 <tr>
-<td><code>EXTERNAL</code></td>
-<td>нет</td>
-<td>да</td>
-<td>Когда часто берёте <code>substr()</code> от больших <code>text</code>/<code>bytea</code>: без сжатия можно читать нужные фрагменты, не разжимая значение целиком</td>
+<td data-label="Стратегия"><code>EXTERNAL</code></td>
+<td data-label="Сжатие">нет</td>
+<td data-label="Вынос наружу">да</td>
+<td data-label="Когда применять">Когда часто берёте <code>substr()</code> от больших <code>text</code>/<code>bytea</code>: без сжатия можно читать нужные фрагменты, не разжимая значение целиком</td>
 </tr>
 <tr>
-<td><code>MAIN</code></td>
-<td>да</td>
-<td>в последнюю очередь</td>
-<td><strong>По умолчанию</strong> для <code>numeric</code>; значения 2–6 КБ, которые хочется держать в основной таблице</td>
+<td data-label="Стратегия"><code>MAIN</code></td>
+<td data-label="Сжатие">да</td>
+<td data-label="Вынос наружу">в последнюю очередь</td>
+<td data-label="Когда применять"><strong>По умолчанию</strong> для <code>numeric</code>; значения 2–6 КБ, которые хочется держать в основной таблице</td>
 </tr>
 </tbody>
 </table>
@@ -364,7 +364,7 @@ psql -c <span class="s2">"SELECT pg_size_pretty(pg_table_size('accounts')),</spa
 <p>Принцип многоверсионности в PostgreSQL — хранить каждую версию строки физически в таблице и помечать её диапазоном транзакций, для которых она видна. Реализовать MVCC можно двумя способами: держать старые версии в отдельном журнале отката или хранить их вместе с актуальными данными. PostgreSQL выбрал второй путь, и от этого выбора зависит, что у него получается дёшево, а за что приходится платить. Поэтому сначала сформулируем саму идею словами документации, а затем сравним оба подхода.</p>
 <p>Документация формулирует идею так: «each SQL statement sees a snapshot of data (a database version) as it was some time ago, regardless of the current state of the underlying data». Каждый оператор, иначе говоря, видит данные такими, какими они были на некоторый момент в прошлом, независимо от того, что с ними происходит сейчас. Главное следствие документация называет отдельно: «reading never blocks writing and writing never blocks reading» (<a href="https://www.postgresql.org/docs/current/mvcc-intro.html">MVCC Introduction</a>). Отчёт по остаткам, который читает таблицу счетов десять минут, не мешает платежам менять эти остатки, и платежи не мешают отчёту.</p>
 <p>Этим PostgreSQL принципиально отличается от Oracle и MySQL/InnoDB. У них в таблице всегда лежит актуальная версия строки, а старые живут в отдельной области, которую называют журналом отката или undo-сегментом (<em>undo</em>): при изменении строки старое значение копируется туда, а строка меняется на месте. У каждого подхода свой выигрыш и своя цена, и таблица ниже сравнивает их по пяти пунктам, которые чаще всего всплывают на практике:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -374,29 +374,29 @@ psql -c <span class="s2">"SELECT pg_size_pretty(pg_table_size('accounts')),</spa
 </thead>
 <tbody>
 <tr>
-<td>Откат транзакции</td>
-<td>Мгновенный: просто помечаем XID как aborted</td>
-<td>Нужно проиграть undo</td>
+<td data-label="">Откат транзакции</td>
+<td data-label="PostgreSQL (версии в heap)">Мгновенный: просто помечаем XID как aborted</td>
+<td data-label="Oracle/InnoDB (undo)">Нужно проиграть undo</td>
 </tr>
 <tr>
-<td>Чтение старых версий</td>
-<td>Дешёвое, они рядом</td>
-<td>Реконструкция по undo-цепочке</td>
+<td data-label="">Чтение старых версий</td>
+<td data-label="PostgreSQL (версии в heap)">Дешёвое, они рядом</td>
+<td data-label="Oracle/InnoDB (undo)">Реконструкция по undo-цепочке</td>
 </tr>
 <tr>
-<td>Мусор</td>
-<td>Остаётся в таблице → нужен VACUUM, bloat</td>
-<td>Собирается в undo, purge</td>
+<td data-label="">Мусор</td>
+<td data-label="PostgreSQL (версии в heap)">Остаётся в таблице → нужен VACUUM, bloat</td>
+<td data-label="Oracle/InnoDB (undo)">Собирается в undo, purge</td>
 </tr>
 <tr>
-<td>Обновление строки</td>
-<td>Новая версия + обновление всех индексов (если не HOT)</td>
-<td>Обновление на месте</td>
+<td data-label="">Обновление строки</td>
+<td data-label="PostgreSQL (версии в heap)">Новая версия + обновление всех индексов (если не HOT)</td>
+<td data-label="Oracle/InnoDB (undo)">Обновление на месте</td>
 </tr>
 <tr>
-<td>Длинная транзакция</td>
-<td>Держит xmin-горизонт, мешает всему кластеру</td>
-<td><code>ORA-01555 snapshot too old</code></td>
+<td data-label="">Длинная транзакция</td>
+<td data-label="PostgreSQL (версии в heap)">Держит xmin-горизонт, мешает всему кластеру</td>
+<td data-label="Oracle/InnoDB (undo)"><code>ORA-01555 snapshot too old</code></td>
 </tr>
 </tbody>
 </table>
@@ -1115,7 +1115,7 @@ autovacuum дошёл до таблицы over через 2 с
 <h3 id="47-расчёт-пропускной-способности-autovacuum">4.7 Расчёт пропускной способности <code>autovacuum</code></h3>
 <p>Пропускная способность <code>autovacuum</code> — это то, сколько мегабайт таблицы он успевает обработать за секунду, и определяется она почти целиком параметрами задержки по стоимости из 4.3. Здесь «примерно понятно» не работает: без числа нельзя ответить, успеет ли <code>autovacuum</code> пройти таблицу в 800 ГБ за ночь. Поэтому посчитаем её точно, по документированным значениям по умолчанию (<a href="https://www.postgresql.org/docs/current/runtime-config-vacuum.html">Cost-based Vacuum Delay</a>), а затем выведем из расчёта методику настройки.</p>
 <p>В таблице собраны все параметры, которые входят в расчёт, с их значениями по умолчанию; обратите внимание на последнюю строку, потому что именно о ней чаще всего забывают:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Параметр</th>
@@ -1125,39 +1125,39 @@ autovacuum дошёл до таблицы over через 2 с
 </thead>
 <tbody>
 <tr>
-<td><code>vacuum_cost_page_hit</code></td>
-<td><strong>1</strong></td>
-<td>Страница найдена в <code>shared_buffers</code></td>
+<td data-label="Параметр"><code>vacuum_cost_page_hit</code></td>
+<td data-label="По умолчанию"><strong>1</strong></td>
+<td data-label="Что значит">Страница найдена в <code>shared_buffers</code></td>
 </tr>
 <tr>
-<td><code>vacuum_cost_page_miss</code></td>
-<td><strong>2</strong></td>
-<td>Страницу пришлось прочитать (в PG 14 снижено с 10)</td>
+<td data-label="Параметр"><code>vacuum_cost_page_miss</code></td>
+<td data-label="По умолчанию"><strong>2</strong></td>
+<td data-label="Что значит">Страницу пришлось прочитать (в PG 14 снижено с 10)</td>
 </tr>
 <tr>
-<td><code>vacuum_cost_page_dirty</code></td>
-<td><strong>20</strong></td>
-<td><code>VACUUM</code> изменил ранее чистую страницу</td>
+<td data-label="Параметр"><code>vacuum_cost_page_dirty</code></td>
+<td data-label="По умолчанию"><strong>20</strong></td>
+<td data-label="Что значит"><code>VACUUM</code> изменил ранее чистую страницу</td>
 </tr>
 <tr>
-<td><code>vacuum_cost_limit</code></td>
-<td><strong>200</strong></td>
-<td>Накопили столько «стоимости» — спим</td>
+<td data-label="Параметр"><code>vacuum_cost_limit</code></td>
+<td data-label="По умолчанию"><strong>200</strong></td>
+<td data-label="Что значит">Накопили столько «стоимости» — спим</td>
 </tr>
 <tr>
-<td><code>vacuum_cost_delay</code></td>
-<td><strong>0</strong> (ручной VACUUM не тормозится)</td>
-<td>Длительность сна</td>
+<td data-label="Параметр"><code>vacuum_cost_delay</code></td>
+<td data-label="По умолчанию"><strong>0</strong> (ручной VACUUM не тормозится)</td>
+<td data-label="Что значит">Длительность сна</td>
 </tr>
 <tr>
-<td><code>autovacuum_vacuum_cost_delay</code></td>
-<td><strong>2 мс</strong></td>
-<td>То же для <code>autovacuum</code> (до PG 12 было 20 мс)</td>
+<td data-label="Параметр"><code>autovacuum_vacuum_cost_delay</code></td>
+<td data-label="По умолчанию"><strong>2 мс</strong></td>
+<td data-label="Что значит">То же для <code>autovacuum</code> (до PG 12 было 20 мс)</td>
 </tr>
 <tr>
-<td><code>autovacuum_vacuum_cost_limit</code></td>
-<td><strong>−1</strong> → берётся <code>vacuum_cost_limit</code> = 200</td>
-<td>И <strong>делится между всеми работающими worker'ами</strong></td>
+<td data-label="Параметр"><code>autovacuum_vacuum_cost_limit</code></td>
+<td data-label="По умолчанию"><strong>−1</strong> → берётся <code>vacuum_cost_limit</code> = 200</td>
+<td data-label="Что значит">И <strong>делится между всеми работающими worker'ами</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1167,7 +1167,7 @@ autovacuum дошёл до таблицы over через 2 с
 </code></pre></div>
 
 <p>Подставим значения по умолчанию <code>limit = 200</code> и <code>delay = 0.002 с</code> и посчитаем четыре сценария, которые различаются тем, где лежит страница и приходится ли её менять:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сценарий</th>
@@ -1178,28 +1178,28 @@ autovacuum дошёл до таблицы over через 2 с
 </thead>
 <tbody>
 <tr>
-<td>Всё в кэше, ничего не грязнится</td>
-<td>1</td>
-<td class="num">100 000</td>
-<td><strong>~780 МБ/с</strong></td>
+<td data-label="Сценарий">Всё в кэше, ничего не грязнится</td>
+<td data-label="Стоимость страницы">1</td>
+<td data-label="Страниц/с" class="num">100 000</td>
+<td data-label="Пропускная способность"><strong>~780 МБ/с</strong></td>
 </tr>
 <tr>
-<td>Читаем с диска, не меняем (проход по all-visible, чистить нечего)</td>
-<td>2</td>
-<td class="num">50 000</td>
-<td><strong>~390 МБ/с</strong></td>
+<td data-label="Сценарий">Читаем с диска, не меняем (проход по all-visible, чистить нечего)</td>
+<td data-label="Стоимость страницы">2</td>
+<td data-label="Страниц/с" class="num">50 000</td>
+<td data-label="Пропускная способность"><strong>~390 МБ/с</strong></td>
 </tr>
 <tr>
-<td>Читаем с диска и чистим (реальный <code>VACUUM</code> мусора)</td>
-<td>2 + 20 = 22</td>
-<td class="num">~4 545</td>
-<td><strong>~36 МБ/с</strong></td>
+<td data-label="Сценарий">Читаем с диска и чистим (реальный <code>VACUUM</code> мусора)</td>
+<td data-label="Стоимость страницы">2 + 20 = 22</td>
+<td data-label="Страниц/с" class="num">~4 545</td>
+<td data-label="Пропускная способность"><strong>~36 МБ/с</strong></td>
 </tr>
 <tr>
-<td>Всё в кэше, но всё грязнится</td>
-<td>1 + 20 = 21</td>
-<td class="num">~4 762</td>
-<td><strong>~37 МБ/с</strong></td>
+<td data-label="Сценарий">Всё в кэше, но всё грязнится</td>
+<td data-label="Стоимость страницы">1 + 20 = 21</td>
+<td data-label="Страниц/с" class="num">~4 762</td>
+<td data-label="Пропускная способность"><strong>~37 МБ/с</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1250,7 +1250,7 @@ autovacuum дошёл до таблицы over через 2 с
 </code></pre></div>
 
 <p>При таком темпе база проходит три рубежа, и в таблице показано, когда наступит каждый из них:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Рубеж</th>
@@ -1260,19 +1260,19 @@ autovacuum дошёл до таблицы over через 2 с
 </thead>
 <tbody>
 <tr>
-<td><code>autovacuum_freeze_max_age</code> — старт anti-wraparound vacuum</td>
-<td>200 млн</td>
-<td><strong>через ~18 часов</strong> после последней заморозки таблицы</td>
+<td data-label="Рубеж"><code>autovacuum_freeze_max_age</code> — старт anti-wraparound vacuum</td>
+<td data-label="Значение">200 млн</td>
+<td data-label="Когда наступит при 260 млн XID/сутки"><strong>через ~18 часов</strong> после последней заморозки таблицы</td>
 </tr>
 <tr>
-<td>Предупреждения в логе</td>
-<td>2 млрд − 40 млн</td>
-<td>через ~7,5 суток непрерывного роста</td>
+<td data-label="Рубеж">Предупреждения в логе</td>
+<td data-label="Значение">2 млрд − 40 млн</td>
+<td data-label="Когда наступит при 260 млн XID/сутки">через ~7,5 суток непрерывного роста</td>
 </tr>
 <tr>
-<td>Отказ принимать запись</td>
-<td>2 млрд − 3 млн</td>
-<td>через <strong>~7,7 суток</strong></td>
+<td data-label="Рубеж">Отказ принимать запись</td>
+<td data-label="Значение">2 млрд − 3 млн</td>
+<td data-label="Когда наступит при 260 млн XID/сутки">через <strong>~7,7 суток</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1315,7 +1315,7 @@ autovacuum дошёл до таблицы over через 2 с
 <p>Главный показатель здесь — средняя заполненность листовых страниц <code>avg_leaf_density</code>. Если она опустилась ниже 50 при <code>fillfactor = 90</code>, индекс распух вдвое. Подозрительно выглядит и высота дерева <code>tree_level</code> 5 и выше на обычной таблице: это значит, что либо ключ очень широкий, либо в индексе накопился мусор (высота B-дерева разобрана в гл. 16, раздел 5.7).</p>
 <p>Помните, что <code>pgstattuple</code> читает объект <strong>целиком</strong> и на терабайтной таблице создаст ту же нагрузку, что <code>SELECT count(*)</code>. На проде используйте <code>pgstattuple_approx()</code>, который читает только страницы без пометки all-visible, или считайте оценку по каталогу. Только имейте в виду, что популярный «bloat estimation query» из pgsql-wiki даёт именно оценку и на таблицах с TOAST и переменной шириной строк легко ошибается в полтора раза.</p>
 <p>Выбирая лечение, вы всегда выбираете цену простоя, поэтому в таблице для каждого инструмента указаны блокировка, которую он берёт, место, которое ему нужно на диске, и ситуация, в которой его стоит брать:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Инструмент</th>
@@ -1326,40 +1326,40 @@ autovacuum дошёл до таблицы over через 2 с
 </thead>
 <tbody>
 <tr>
-<td><code>VACUUM</code> (обычный)</td>
-<td><code>SHARE UPDATE EXCLUSIVE</code>, читателям не мешает</td>
-<td>0</td>
-<td>Всегда. Возвращает место <strong>внутри</strong> файла</td>
+<td data-label="Инструмент"><code>VACUUM</code> (обычный)</td>
+<td data-label="Блокировка"><code>SHARE UPDATE EXCLUSIVE</code>, читателям не мешает</td>
+<td data-label="Место на диске">0</td>
+<td data-label="Когда брать">Всегда. Возвращает место <strong>внутри</strong> файла</td>
 </tr>
 <tr>
-<td><code>VACUUM FULL</code></td>
-<td><code>ACCESS EXCLUSIVE</code> на всё время</td>
-<td>×2 размера таблицы</td>
-<td>Только окно обслуживания или таблица, которую можно выключить</td>
+<td data-label="Инструмент"><code>VACUUM FULL</code></td>
+<td data-label="Блокировка"><code>ACCESS EXCLUSIVE</code> на всё время</td>
+<td data-label="Место на диске">×2 размера таблицы</td>
+<td data-label="Когда брать">Только окно обслуживания или таблица, которую можно выключить</td>
 </tr>
 <tr>
-<td><code>CLUSTER</code></td>
-<td><code>ACCESS EXCLUSIVE</code></td>
-<td>×2</td>
-<td>Когда нужен ещё и физический порядок под BRIN/range-сканы</td>
+<td data-label="Инструмент"><code>CLUSTER</code></td>
+<td data-label="Блокировка"><code>ACCESS EXCLUSIVE</code></td>
+<td data-label="Место на диске">×2</td>
+<td data-label="Когда брать">Когда нужен ещё и физический порядок под BRIN/range-сканы</td>
 </tr>
 <tr>
-<td><code>pg_repack</code></td>
-<td><code>ACCESS EXCLUSIVE</code> дважды по секундам</td>
-<td>×2 + место под лог изменений</td>
-<td>Прод, живая таблица, есть PK/unique</td>
+<td data-label="Инструмент"><code>pg_repack</code></td>
+<td data-label="Блокировка"><code>ACCESS EXCLUSIVE</code> дважды по секундам</td>
+<td data-label="Место на диске">×2 + место под лог изменений</td>
+<td data-label="Когда брать">Прод, живая таблица, есть PK/unique</td>
 </tr>
 <tr>
-<td><code>REINDEX INDEX CONCURRENTLY</code></td>
-<td>не блокирует запись</td>
-<td>×1 размера индекса</td>
-<td>Bloat именно индексов — самый частый случай</td>
+<td data-label="Инструмент"><code>REINDEX INDEX CONCURRENTLY</code></td>
+<td data-label="Блокировка">не блокирует запись</td>
+<td data-label="Место на диске">×1 размера индекса</td>
+<td data-label="Когда брать">Bloat именно индексов — самый частый случай</td>
 </tr>
 <tr>
-<td>Секционирование + <code>DETACH PARTITION</code> и <code>DROP TABLE</code> старой секции</td>
-<td><code>ACCESS EXCLUSIVE</code> на секунды</td>
-<td>0</td>
-<td>Стратегически: мусор уезжает вместе с секцией (глава 19)</td>
+<td data-label="Инструмент">Секционирование + <code>DETACH PARTITION</code> и <code>DROP TABLE</code> старой секции</td>
+<td data-label="Блокировка"><code>ACCESS EXCLUSIVE</code> на секунды</td>
+<td data-label="Место на диске">0</td>
+<td data-label="Когда брать">Стратегически: мусор уезжает вместе с секцией (глава 19)</td>
 </tr>
 </tbody>
 </table>
@@ -1434,7 +1434,7 @@ synchronous_commit = off: 300 отдельных коммитов, 0.10 мс н�
 <p>Параметр <code>synchronous_commit</code> определяет, чего ждёт фиксация, прежде чем вернуть клиенту успех: только записи журнала в память, сброса журнала на локальный диск или ещё и подтверждения от реплики. Тем самым он задаёт компромисс между задержкой фиксации и тем, что можно потерять при аварии. Ниже разберём, что по умолчанию означает фиксация, чем различаются уровни синхронности, почему <code>synchronous_commit = off</code> не имеет ничего общего с <code>fsync = off</code> и как работает групповая фиксация.</p>
 <p>По умолчанию фиксация транзакции в PostgreSQL означает, что запись COMMIT попала в WAL и <strong>WAL сброшен на диск через fsync</strong>, то есть системным вызовом, который возвращает управление только после того, как данные дошли до носителя (гл. 15, раздел 5.2). Именно это и обеспечивает D в ACID. Поэтому задержка фиксации ограничена снизу временем fsync на данном устройстве: на NVMe с конденсатором, который защищает кэш записи от потери питания, это 50–200 мкс, на облачном сетевом диске — 1–5 мс, а на дешёвом SSD без защиты питания — десятки миллисекунд.</p>
 <p><code>synchronous_commit</code> управляет этим компромиссом (<a href="https://www.postgresql.org/docs/current/runtime-config-wal.html#GUC-SYNCHRONOUS-COMMIT">WAL Settings</a>). Часть его значений касается синхронной репликации: если в <code>synchronous_standby_names</code> перечислены реплики, фиксация может ждать ещё и их (подробно — в разделе 10.2). В таблице для каждого значения указано, чего ждёт фиксация и что может потеряться при аварии:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Значение</th>
@@ -1444,29 +1444,29 @@ synchronous_commit = off: 300 отдельных коммитов, 0.10 мс н�
 </thead>
 <tbody>
 <tr>
-<td><code>off</code></td>
-<td>ничего (fsync асинхронно, до <code>wal_writer_delay × 3</code>)</td>
-<td>Последние транзакции при крахе сервера. <strong>Согласованность базы не нарушается</strong></td>
+<td data-label="Значение"><code>off</code></td>
+<td data-label="Фиксация ждёт">ничего (fsync асинхронно, до <code>wal_writer_delay × 3</code>)</td>
+<td data-label="Что теряется при аварии">Последние транзакции при крахе сервера. <strong>Согласованность базы не нарушается</strong></td>
 </tr>
 <tr>
-<td><code>local</code></td>
-<td>fsync локального WAL</td>
-<td>Ничего локально; при падении мастера — то, что не доехало на реплику</td>
+<td data-label="Значение"><code>local</code></td>
+<td data-label="Фиксация ждёт">fsync локального WAL</td>
+<td data-label="Что теряется при аварии">Ничего локально; при падении мастера — то, что не доехало на реплику</td>
 </tr>
 <tr>
-<td><code>remote_write</code></td>
-<td>реплика приняла и записала в ОС</td>
-<td>Транзакции при одновременном отказе мастера и ОС реплики</td>
+<td data-label="Значение"><code>remote_write</code></td>
+<td data-label="Фиксация ждёт">реплика приняла и записала в ОС</td>
+<td data-label="Что теряется при аварии">Транзакции при одновременном отказе мастера и ОС реплики</td>
 </tr>
 <tr>
-<td><code>on</code> (по умолчанию)</td>
-<td>локальный fsync + fsync на синхронной реплике (если задан <code>synchronous_standby_names</code>)</td>
-<td>Практически ничего</td>
+<td data-label="Значение"><code>on</code> (по умолчанию)</td>
+<td data-label="Фиксация ждёт">локальный fsync + fsync на синхронной реплике (если задан <code>synchronous_standby_names</code>)</td>
+<td data-label="Что теряется при аварии">Практически ничего</td>
 </tr>
 <tr>
-<td><code>remote_apply</code></td>
-<td>реплика ещё и применила WAL</td>
-<td>Ничего; чтение с реплики сразу после фиксации видит данные</td>
+<td data-label="Значение"><code>remote_apply</code></td>
+<td data-label="Фиксация ждёт">реплика ещё и применила WAL</td>
+<td data-label="Что теряется при аварии">Ничего; чтение с реплики сразу после фиксации видит данные</td>
 </tr>
 </tbody>
 </table>
@@ -1773,7 +1773,7 @@ HINT: Consider increasing the configuration parameter "max_wal_size".
 
 <h3 id="59-стоимость-уровней-synchronouscommit">5.9 Стоимость уровней synchronous_commit</h3>
 <p>Стоимость уровня <code>synchronous_commit</code> — это время, которое каждый уровень добавляет к задержке фиксации. Таблица в 5.4 отвечала на вопрос, что теряется на каждом уровне; здесь ответим на второй вопрос, сколько каждый уровень стоит, потому что на интервью спрашивают именно «а насколько быстрее». В таблице указано, что добавляется к задержке фиксации на каждом уровне и какого порядка эта добавка; RTT (<em>round-trip time</em>) означает время прохода сетевого пакета до реплики и обратно:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -1783,29 +1783,29 @@ HINT: Consider increasing the configuration parameter "max_wal_size".
 </thead>
 <tbody>
 <tr>
-<td><code>off</code></td>
-<td>ничего; фиксация возвращается до fsync</td>
-<td>0</td>
+<td data-label="Режим"><code>off</code></td>
+<td data-label="Что добавляется к латентности фиксации">ничего; фиксация возвращается до fsync</td>
+<td data-label="Порядок величины">0</td>
 </tr>
 <tr>
-<td><code>local</code></td>
-<td>один fsync WAL на локальном устройстве</td>
-<td>NVMe с конденсатором 50–200 мкс; облачный сетевой диск 1–5 мс</td>
+<td data-label="Режим"><code>local</code></td>
+<td data-label="Что добавляется к латентности фиксации">один fsync WAL на локальном устройстве</td>
+<td data-label="Порядок величины">NVMe с конденсатором 50–200 мкс; облачный сетевой диск 1–5 мс</td>
 </tr>
 <tr>
-<td><code>remote_write</code></td>
-<td>RTT до реплики + write()</td>
-<td>+0,2–1 мс в пределах ДЦ</td>
+<td data-label="Режим"><code>remote_write</code></td>
+<td data-label="Что добавляется к латентности фиксации">RTT до реплики + write()</td>
+<td data-label="Порядок величины">+0,2–1 мс в пределах ДЦ</td>
 </tr>
 <tr>
-<td><code>on</code></td>
-<td>RTT + fsync на реплике</td>
-<td>+0,5–2 мс в ДЦ, +10–30 мс между городами</td>
+<td data-label="Режим"><code>on</code></td>
+<td data-label="Что добавляется к латентности фиксации">RTT + fsync на реплике</td>
+<td data-label="Порядок величины">+0,5–2 мс в ДЦ, +10–30 мс между городами</td>
 </tr>
 <tr>
-<td><code>remote_apply</code></td>
-<td>то же + применение WAL на реплике</td>
-<td>плюс задержка startup-процесса, на конфликтах — десятки мс</td>
+<td data-label="Режим"><code>remote_apply</code></td>
+<td data-label="Что добавляется к латентности фиксации">то же + применение WAL на реплике</td>
+<td data-label="Порядок величины">плюс задержка startup-процесса, на конфликтах — десятки мс</td>
 </tr>
 </tbody>
 </table>
@@ -1834,7 +1834,7 @@ HINT: Consider increasing the configuration parameter "max_wal_size".
 <h3 id="62-модель-стоимости">6.2 Модель стоимости</h3>
 <p>Модель стоимости — это набор параметров, которые переводят физическую работу сервера (чтение страниц, обработку строк, вычисление операторов, запуск параллельных процессов) в единицы стоимости. Планировщик складывает эти величины для каждого варианта плана и сравнивает суммы. От того, насколько параметры соответствуют вашему железу, зависит, будет ли планировщик выбирать индексы там, где они выгодны. Ниже приведены значения по умолчанию, разобрано, какой из параметров чаще всего не соответствует реальности, и объяснено, как читать стоимость в <code>EXPLAIN</code>.</p>
 <p>В таблице собраны параметры модели с их значениями по умолчанию (<a href="https://www.postgresql.org/docs/current/runtime-config-query.html">Query Planning</a>); все стоимости отсчитываются от <code>seq_page_cost</code>:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Параметр</th>
@@ -1844,44 +1844,44 @@ HINT: Consider increasing the configuration parameter "max_wal_size".
 </thead>
 <tbody>
 <tr>
-<td><code>seq_page_cost</code></td>
-<td class="num">1.0</td>
-<td>Последовательное чтение страницы</td>
+<td data-label="Параметр"><code>seq_page_cost</code></td>
+<td data-label="По умолчанию" class="num">1.0</td>
+<td data-label="Смысл">Последовательное чтение страницы</td>
 </tr>
 <tr>
-<td><code>random_page_cost</code></td>
-<td class="num">4.0</td>
-<td>Случайное чтение страницы</td>
+<td data-label="Параметр"><code>random_page_cost</code></td>
+<td data-label="По умолчанию" class="num">4.0</td>
+<td data-label="Смысл">Случайное чтение страницы</td>
 </tr>
 <tr>
-<td><code>cpu_tuple_cost</code></td>
-<td class="num">0.01</td>
-<td>Обработка одной строки</td>
+<td data-label="Параметр"><code>cpu_tuple_cost</code></td>
+<td data-label="По умолчанию" class="num">0.01</td>
+<td data-label="Смысл">Обработка одной строки</td>
 </tr>
 <tr>
-<td><code>cpu_index_tuple_cost</code></td>
-<td class="num">0.005</td>
-<td>Обработка одной записи индекса</td>
+<td data-label="Параметр"><code>cpu_index_tuple_cost</code></td>
+<td data-label="По умолчанию" class="num">0.005</td>
+<td data-label="Смысл">Обработка одной записи индекса</td>
 </tr>
 <tr>
-<td><code>cpu_operator_cost</code></td>
-<td class="num">0.0025</td>
-<td>Вычисление одного оператора/функции</td>
+<td data-label="Параметр"><code>cpu_operator_cost</code></td>
+<td data-label="По умолчанию" class="num">0.0025</td>
+<td data-label="Смысл">Вычисление одного оператора/функции</td>
 </tr>
 <tr>
-<td><code>parallel_setup_cost</code></td>
-<td class="num">1000</td>
-<td>Запуск параллельных worker'ов</td>
+<td data-label="Параметр"><code>parallel_setup_cost</code></td>
+<td data-label="По умолчанию" class="num">1000</td>
+<td data-label="Смысл">Запуск параллельных worker'ов</td>
 </tr>
 <tr>
-<td><code>parallel_tuple_cost</code></td>
-<td class="num">0.1</td>
-<td>Передача строки от worker'а к лидеру</td>
+<td data-label="Параметр"><code>parallel_tuple_cost</code></td>
+<td data-label="По умолчанию" class="num">0.1</td>
+<td data-label="Смысл">Передача строки от worker'а к лидеру</td>
 </tr>
 <tr>
-<td><code>effective_cache_size</code></td>
-<td class="num">4GB</td>
-<td>Сколько данных, по мнению планировщика, в кэше</td>
+<td data-label="Параметр"><code>effective_cache_size</code></td>
+<td data-label="По умолчанию" class="num">4GB</td>
+<td data-label="Смысл">Сколько данных, по мнению планировщика, в кэше</td>
 </tr>
 </tbody>
 </table>
@@ -1898,7 +1898,7 @@ HINT: Consider increasing the configuration parameter "max_wal_size".
 <p>Битовые карты к тому же умеют объединяться: узлы <code>BitmapAnd</code>/<code>BitmapOr</code> комбинируют карты по двум разным индексам в одном запросе. Этим и отвечают на вопрос, зачем нужны отдельные индексы, если есть составной: иногда планировщик соберёт их вместе.</p>
 <h3 id="64-стратегии-соединения">6.4 Стратегии соединения</h3>
 <p>Стратегия соединения (<em>join strategy</em>) — это алгоритм, которым исполнитель сопоставляет строки двух наборов по условию <code>JOIN</code>. У PostgreSQL таких алгоритмов три, и выбор между ними сильнее всего зависит от того, сколько строк, по мнению планировщика, окажется с каждой стороны. В таблице для каждой стратегии указано, как она работает, когда её выбирают и во что она обходится; N и M — число строк в двух наборах:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -1909,22 +1909,22 @@ HINT: Consider increasing the configuration parameter "max_wal_size".
 </thead>
 <tbody>
 <tr>
-<td><strong>Nested Loop</strong></td>
-<td>Для каждой строки внешнего набора ищем совпадения во внутреннем</td>
-<td>Внешний набор мал (единицы–сотни строк) И внутренний доступен по индексу</td>
-<td>O(N × стоимость поиска)</td>
+<td data-label="Стратегия"><strong>Nested Loop</strong></td>
+<td data-label="Как работает">Для каждой строки внешнего набора ищем совпадения во внутреннем</td>
+<td data-label="Когда выбирается">Внешний набор мал (единицы–сотни строк) И внутренний доступен по индексу</td>
+<td data-label="Стоимость">O(N × стоимость поиска)</td>
 </tr>
 <tr>
-<td><strong>Hash Join</strong></td>
-<td>Строим хеш-таблицу по меньшей стороне в <code>work_mem</code>, потом проходим большую</td>
-<td>Большие наборы, условие соединения — равенство</td>
-<td>O(N + M), но нужна память</td>
+<td data-label="Стратегия"><strong>Hash Join</strong></td>
+<td data-label="Как работает">Строим хеш-таблицу по меньшей стороне в <code>work_mem</code>, потом проходим большую</td>
+<td data-label="Когда выбирается">Большие наборы, условие соединения — равенство</td>
+<td data-label="Стоимость">O(N + M), но нужна память</td>
 </tr>
 <tr>
-<td><strong>Merge Join</strong></td>
-<td>Обе стороны сортируются (или уже отсортированы индексом) и сливаются</td>
-<td>Оба набора большие и уже упорядочены по ключу соединения; ключом слияния служит только равенство, а условия-неравенства проверяются как дополнительный фильтр</td>
-<td>O(N log N + M log M) или O(N+M) если сортировка бесплатна</td>
+<td data-label="Стратегия"><strong>Merge Join</strong></td>
+<td data-label="Как работает">Обе стороны сортируются (или уже отсортированы индексом) и сливаются</td>
+<td data-label="Когда выбирается">Оба набора большие и уже упорядочены по ключу соединения; ключом слияния служит только равенство, а условия-неравенства проверяются как дополнительный фильтр</td>
+<td data-label="Стоимость">O(N log N + M log M) или O(N+M) если сортировка бесплатна</td>
 </tr>
 </tbody>
 </table>
@@ -2273,7 +2273,7 @@ rows = card_outer × card_inner × selectivity
 </code></pre></div>
 
 <p>Видов расширенной статистики три, и каждый лечит свою ошибку оценки, как показано в таблице:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вид</th>
@@ -2283,19 +2283,19 @@ rows = card_outer × card_inner × selectivity
 </thead>
 <tbody>
 <tr>
-<td><code>dependencies</code></td>
-<td>Степень функциональной зависимости <code>a → b</code> (0..1)</td>
-<td><code>WHERE a = ? AND b = ?</code> — перемножение селективностей</td>
+<td data-label="Вид"><code>dependencies</code></td>
+<td data-label="Что хранит">Степень функциональной зависимости <code>a → b</code> (0..1)</td>
+<td data-label="Какую ошибку лечит"><code>WHERE a = ? AND b = ?</code> — перемножение селективностей</td>
 </tr>
 <tr>
-<td><code>ndistinct</code></td>
-<td>Число уникальных <strong>комбинаций</strong> колонок</td>
-<td><code>GROUP BY a, b</code> и оценка размера хеш-таблицы; выбор HashAggregate против GroupAggregate</td>
+<td data-label="Вид"><code>ndistinct</code></td>
+<td data-label="Что хранит">Число уникальных <strong>комбинаций</strong> колонок</td>
+<td data-label="Какую ошибку лечит"><code>GROUP BY a, b</code> и оценка размера хеш-таблицы; выбор HashAggregate против GroupAggregate</td>
 </tr>
 <tr>
-<td><code>mcv</code></td>
-<td>Список самых частых комбинаций и их частоты</td>
-<td>Перекошенные комбинации, в том числе с неравенствами; самый мощный и самый дорогой вид</td>
+<td data-label="Вид"><code>mcv</code></td>
+<td data-label="Что хранит">Список самых частых комбинаций и их частоты</td>
+<td data-label="Какую ошибку лечит">Перекошенные комбинации, в том числе с неравенствами; самый мощный и самый дорогой вид</td>
 </tr>
 </tbody>
 </table>
@@ -2481,7 +2481,7 @@ Execution Time: 4288.107 ms
 </ul>
 <h3 id="73-типовые-расхождения-оценки-и-факта">7.3 Типовые расхождения оценки и факта</h3>
 <p>Расхождением оценки и факта называют разницу между числом строк, которое планировщик ожидал от узла, и числом, которое узел вернул на деле. Большинство плохих планов начинается именно с такого расхождения, и у каждого типа расхождения есть своя обычная причина. В таблице собраны самые частые симптомы вместе с причинами и способами лечения, а под ней подробнее разобран последний, самый коварный случай:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Симптом</th>
@@ -2490,28 +2490,28 @@ Execution Time: 4288.107 ms
 </thead>
 <tbody>
 <tr>
-<td>Недооценка в разы на одном предикате</td>
-<td>Устаревшая статистика → <code>ANALYZE</code></td>
+<td data-label="Симптом">Недооценка в разы на одном предикате</td>
+<td data-label="Обычная причина">Устаревшая статистика → <code>ANALYZE</code></td>
 </tr>
 <tr>
-<td>Недооценка на нескольких <code>AND</code>-предикатах</td>
-<td>Корреляция колонок → <code>CREATE STATISTICS</code></td>
+<td data-label="Симптом">Недооценка на нескольких <code>AND</code>-предикатах</td>
+<td data-label="Обычная причина">Корреляция колонок → <code>CREATE STATISTICS</code></td>
 </tr>
 <tr>
-<td>Недооценка на <code>LIKE 'abc%'</code>, на выражениях</td>
-<td>Нет статистики по выражению → expression-индекс даёт и статистику</td>
+<td data-label="Симптом">Недооценка на <code>LIKE 'abc%'</code>, на выражениях</td>
+<td data-label="Обычная причина">Нет статистики по выражению → expression-индекс даёт и статистику</td>
 </tr>
 <tr>
-<td>Оценка ровно 1 строка на неравенстве с now()</td>
-<td>Значение неизвестно при планировании (prepared statement / generic plan)</td>
+<td data-label="Симптом">Оценка ровно 1 строка на неравенстве с now()</td>
+<td data-label="Обычная причина">Значение неизвестно при планировании (prepared statement / generic plan)</td>
 </tr>
 <tr>
-<td>Хорошая оценка, но плохой план</td>
-<td>Неверные cost-константы (<code>random_page_cost</code> на SSD)</td>
+<td data-label="Симптом">Хорошая оценка, но плохой план</td>
+<td data-label="Обычная причина">Неверные cost-константы (<code>random_page_cost</code> на SSD)</td>
 </tr>
 <tr>
-<td>План меняется от запуска к запуску</td>
-<td>GEQO при большом числе join'ов, либо generic vs custom plan</td>
+<td data-label="Симптом">План меняется от запуска к запуску</td>
+<td data-label="Обычная причина">GEQO при большом числе join'ов, либо generic vs custom plan</td>
 </tr>
 </tbody>
 </table>
@@ -2577,7 +2577,7 @@ Execution Time: 0.081 ms
 
 <p>Время упало с 14,3 секунды до 0,08 мс, а число буферов — с 1,09 млн до 7. Сравнивать корректнее именно буферы, потому что время зависит от состояния кэша, а 7 против 1 091 304 — это факт.</p>
 <p>У этой болезни есть частные варианты, которые дают ровно такой же план. В таблице показано, что в этих случаях видно в <code>Filter</code> и почему индекс не работает:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>В <code>Filter</code> видно</th>
@@ -2586,24 +2586,24 @@ Execution Time: 0.081 ms
 </thead>
 <tbody>
 <tr>
-<td><code>(status)::text = 'NEW'::text COLLATE "C"</code></td>
-<td>Условию задано явное правило сортировки, не совпадающее с правилом сортировки индекса; само приведение колонки <code>varchar</code> к <code>text</code> индексу не мешает, потому что своих операторов у <code>varchar</code> нет и B-tree по нему строится с классом <code>text_ops</code></td>
+<td data-label="В Filter видно"><code>(status)::text = 'NEW'::text COLLATE "C"</code></td>
+<td data-label="Почему индекс не работает">Условию задано явное правило сортировки, не совпадающее с правилом сортировки индекса; само приведение колонки <code>varchar</code> к <code>text</code> индексу не мешает, потому что своих операторов у <code>varchar</code> нет и B-tree по нему строится с классом <code>text_ops</code></td>
 </tr>
 <tr>
-<td><code>(id)::numeric = '42'::numeric</code></td>
-<td>Колонка <code>bigint</code>, а в Java параметр ушёл как <code>BigDecimal</code></td>
+<td data-label="В Filter видно"><code>(id)::numeric = '42'::numeric</code></td>
+<td data-label="Почему индекс не работает">Колонка <code>bigint</code>, а в Java параметр ушёл как <code>BigDecimal</code></td>
 </tr>
 <tr>
-<td><code>date_trunc('day', created_at) = ...</code></td>
-<td>Функция на колонке; нужен expression-индекс или переписывание в диапазон</td>
+<td data-label="В Filter видно"><code>date_trunc('day', created_at) = ...</code></td>
+<td data-label="Почему индекс не работает">Функция на колонке; нужен expression-индекс или переписывание в диапазон</td>
 </tr>
 <tr>
-<td><code>col LIKE '%abc%'</code></td>
-<td>Префикса нет, B-tree бесполезен; нужен GIN + <code>pg_trgm</code></td>
+<td data-label="В Filter видно"><code>col LIKE '%abc%'</code></td>
+<td data-label="Почему индекс не работает">Префикса нет, B-tree бесполезен; нужен GIN + <code>pg_trgm</code></td>
 </tr>
 <tr>
-<td><code>col = ANY (...)</code> при partial-индексе</td>
-<td>Планировщик не может доказать, что условие влечёт предикат индекса</td>
+<td data-label="В Filter видно"><code>col = ANY (...)</code> при partial-индексе</td>
+<td data-label="Почему индекс не работает">Планировщик не может доказать, что условие влечёт предикат индекса</td>
 </tr>
 </tbody>
 </table>
@@ -2746,7 +2746,7 @@ Execution Time: 21.004 ms
 <p>Время упало с 8,2 с до 21 мс, а число буферов — с 80 тыс. до 182. Чтобы результат держался постоянно, нужен агрессивный <code>autovacuum</code> для этой таблицы (4.7) и мониторинг <code>visible_pct</code>: если на таблице, где вы рассчитываете на Index Only Scan, он держится ниже 90%, рассчитывать на него не стоит.</p>
 <h3 id="710-сводка-показателей-плана">7.10 Сводка показателей плана</h3>
 <p>Этот подраздел сводит показатели, на которые опирались четыре разбора выше, в одну процедуру, которой можно пользоваться при разборе любого запроса. Главный из них — ошибка оценки, отношение фактического числа строк к ожидаемому, но рядом с ней стоят и остальные сигналы плана. В таблице для каждого показателя указаны норма, значение, при котором пора тревожиться, и то, что это значение обычно означает:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что смотреть</th>
@@ -2757,70 +2757,70 @@ Execution Time: 21.004 ms
 </thead>
 <tbody>
 <tr>
-<td><code>actual rows</code> / <code>estimated rows</code></td>
-<td>&lt; 10×</td>
-<td>&gt; 100×</td>
-<td>Статистика, корреляция, generic plan</td>
+<td data-label="Что смотреть"><code>actual rows</code> / <code>estimated rows</code></td>
+<td data-label="Норма">&lt; 10×</td>
+<td data-label="Тревога">&gt; 100×</td>
+<td data-label="Что это значит">Статистика, корреляция, generic plan</td>
 </tr>
 <tr>
-<td><code>actual time × loops</code></td>
-<td>доля общего</td>
-<td>&gt; 50% общего</td>
-<td>Вот где реально ушло время</td>
+<td data-label="Что смотреть"><code>actual time × loops</code></td>
+<td data-label="Норма">доля общего</td>
+<td data-label="Тревога">&gt; 50% общего</td>
+<td data-label="Что это значит">Вот где реально ушло время</td>
 </tr>
 <tr>
-<td><code>Rows Removed by Filter</code></td>
-<td>&lt; 10× от выхода</td>
-<td>&gt; 1000× от выхода</td>
-<td>Нет индекса или индекс не покрывает условие</td>
+<td data-label="Что смотреть"><code>Rows Removed by Filter</code></td>
+<td data-label="Норма">&lt; 10× от выхода</td>
+<td data-label="Тревога">&gt; 1000× от выхода</td>
+<td data-label="Что это значит">Нет индекса или индекс не покрывает условие</td>
 </tr>
 <tr>
-<td><code>shared read</code></td>
-<td>зависит</td>
-<td>&gt; 10% размера таблицы на точечный запрос</td>
-<td>Читаем мимо кэша, план или кэш не тот</td>
+<td data-label="Что смотреть"><code>shared read</code></td>
+<td data-label="Норма">зависит</td>
+<td data-label="Тревога">&gt; 10% размера таблицы на точечный запрос</td>
+<td data-label="Что это значит">Читаем мимо кэша, план или кэш не тот</td>
 </tr>
 <tr>
-<td><code>shared dirtied</code> у <code>SELECT</code></td>
-<td>0 или мало</td>
-<td>тысячи</td>
-<td>Hint bits после массовой вставки (3.4)</td>
+<td data-label="Что смотреть"><code>shared dirtied</code> у <code>SELECT</code></td>
+<td data-label="Норма">0 или мало</td>
+<td data-label="Тревога">тысячи</td>
+<td data-label="Что это значит">Hint bits после массовой вставки (3.4)</td>
 </tr>
 <tr>
-<td><code>temp read/written</code></td>
-<td>0</td>
-<td>&gt; 0</td>
-<td><code>work_mem</code> мал или оценка сломана</td>
+<td data-label="Что смотреть"><code>temp read/written</code></td>
+<td data-label="Норма">0</td>
+<td data-label="Тревога">&gt; 0</td>
+<td data-label="Что это значит"><code>work_mem</code> мал или оценка сломана</td>
 </tr>
 <tr>
-<td><code>Heap Fetches</code></td>
-<td>0</td>
-<td>≈ rows</td>
-<td>VM не проставлена, нужен VACUUM</td>
+<td data-label="Что смотреть"><code>Heap Fetches</code></td>
+<td data-label="Норма">0</td>
+<td data-label="Тревога">≈ rows</td>
+<td data-label="Что это значит">VM не проставлена, нужен VACUUM</td>
 </tr>
 <tr>
-<td><code>Batches</code></td>
-<td>1</td>
-<td>&gt; 1</td>
-<td>Hash не влез в <code>work_mem</code></td>
+<td data-label="Что смотреть"><code>Batches</code></td>
+<td data-label="Норма">1</td>
+<td data-label="Тревога">&gt; 1</td>
+<td data-label="Что это значит">Hash не влез в <code>work_mem</code></td>
 </tr>
 <tr>
-<td><code>Workers Launched</code></td>
-<td>= Planned</td>
-<td>&lt; Planned</td>
-<td>Кончились слоты параллелизма</td>
+<td data-label="Что смотреть"><code>Workers Launched</code></td>
+<td data-label="Норма">= Planned</td>
+<td data-label="Тревога">&lt; Planned</td>
+<td data-label="Что это значит">Кончились слоты параллелизма</td>
 </tr>
 <tr>
-<td><code>Planning Time</code></td>
-<td>&lt; 1 мс</td>
-<td>&gt; 50 мс</td>
-<td>Много join'ов/секций/индексов, GEQO</td>
+<td data-label="Что смотреть"><code>Planning Time</code></td>
+<td data-label="Норма">&lt; 1 мс</td>
+<td data-label="Тревога">&gt; 50 мс</td>
+<td data-label="Что это значит">Много join'ов/секций/индексов, GEQO</td>
 </tr>
 <tr>
-<td><code>JIT Total</code></td>
-<td>0</td>
-<td>&gt; 20% Execution Time</td>
-<td>JIT вреден, см. 6.13</td>
+<td data-label="Что смотреть"><code>JIT Total</code></td>
+<td data-label="Норма">0</td>
+<td data-label="Тревога">&gt; 20% Execution Time</td>
+<td data-label="Что это значит">JIT вреден, см. 6.13</td>
 </tr>
 </tbody>
 </table>
@@ -2865,7 +2865,7 @@ collation базы:
 </ul>
 <h3 id="82-другие-типы-индексов">8.2 Другие типы индексов</h3>
 <p>Кроме B-tree, в ядре PostgreSQL есть ещё пять методов доступа, и каждый решает задачу, с которой B-tree не справляется или справляется плохо: поиск по вхождению в <code>jsonb</code> и массивы, поиск по геометрии и диапазонам, индексирование огромных упорядоченных таблиц. В таблице для каждого метода указано, что он умеет, когда его применять и какие у него ограничения; ниже таблицы подробнее разобраны две особенности, которые чаще всего всплывают на практике.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип</th>
@@ -2876,34 +2876,34 @@ collation базы:
 </thead>
 <tbody>
 <tr>
-<td><strong>Hash</strong></td>
-<td>только <code>=</code></td>
-<td>Длинные ключи, где B-tree громоздок</td>
-<td>Не поддерживает сортировку, диапазоны, multicolumn, UNIQUE. С PG 10 журналируется (до этого не переживал крах)</td>
+<td data-label="Тип"><strong>Hash</strong></td>
+<td data-label="Что умеет">только <code>=</code></td>
+<td data-label="Когда применять">Длинные ключи, где B-tree громоздок</td>
+<td data-label="Ограничения">Не поддерживает сортировку, диапазоны, multicolumn, UNIQUE. С PG 10 журналируется (до этого не переживал крах)</td>
 </tr>
 <tr>
-<td><strong>GiST</strong></td>
-<td>Расширяемая структура: геометрия, диапазоны (<code>range</code>), <code>&amp;&amp;</code> пересечение, KNN-поиск <code>ORDER BY point &lt;-&gt; point</code></td>
-<td>PostGIS, <code>tstzrange</code> с <code>EXCLUDE</code>, поиск ближайших</td>
-<td>Поиск неточный на верхних уровнях → дороже B-tree на равенстве</td>
+<td data-label="Тип"><strong>GiST</strong></td>
+<td data-label="Что умеет">Расширяемая структура: геометрия, диапазоны (<code>range</code>), <code>&amp;&amp;</code> пересечение, KNN-поиск <code>ORDER BY point &lt;-&gt; point</code></td>
+<td data-label="Когда применять">PostGIS, <code>tstzrange</code> с <code>EXCLUDE</code>, поиск ближайших</td>
+<td data-label="Ограничения">Поиск неточный на верхних уровнях → дороже B-tree на равенстве</td>
 </tr>
 <tr>
-<td><strong>SP-GiST</strong></td>
-<td>Несбалансированные разбиения: quadtree, k-d tree, radix trie</td>
-<td>Точки, IP-префиксы (<code>inet</code>), текстовые префиксы</td>
-<td>Узкий круг задач</td>
+<td data-label="Тип"><strong>SP-GiST</strong></td>
+<td data-label="Что умеет">Несбалансированные разбиения: quadtree, k-d tree, radix trie</td>
+<td data-label="Когда применять">Точки, IP-префиксы (<code>inet</code>), текстовые префиксы</td>
+<td data-label="Ограничения">Узкий круг задач</td>
 </tr>
 <tr>
-<td><strong>GIN</strong></td>
-<td>Инвертированный индекс: один ключ → список TID</td>
-<td><code>jsonb</code>, массивы, полнотекстовый поиск (<code>tsvector</code>), <code>pg_trgm</code> для LIKE '%...%'</td>
-<td>Дорогая вставка, большой размер</td>
+<td data-label="Тип"><strong>GIN</strong></td>
+<td data-label="Что умеет">Инвертированный индекс: один ключ → список TID</td>
+<td data-label="Когда применять"><code>jsonb</code>, массивы, полнотекстовый поиск (<code>tsvector</code>), <code>pg_trgm</code> для LIKE '%...%'</td>
+<td data-label="Ограничения">Дорогая вставка, большой размер</td>
 </tr>
 <tr>
-<td><strong>BRIN</strong></td>
-<td>Min/max на диапазон блоков (<strong>128 страниц</strong> по умолчанию)</td>
-<td>Огромные таблицы, физически упорядоченные по колонке (время вставки, ID)</td>
-<td>Бесполезен при низкой корреляции</td>
+<td data-label="Тип"><strong>BRIN</strong></td>
+<td data-label="Что умеет">Min/max на диапазон блоков (<strong>128 страниц</strong> по умолчанию)</td>
+<td data-label="Когда применять">Огромные таблицы, физически упорядоченные по колонке (время вставки, ID)</td>
+<td data-label="Ограничения">Бесполезен при низкой корреляции</td>
 </tr>
 </tbody>
 </table>
@@ -2973,7 +2973,7 @@ collation базы:
 <li><strong>Индекс не сжимается после удалений.</strong> Когда с листовой страницы удалены все записи, страница помечается как удалённая и попадает в список свободных страниц (карту свободного места индекса), но <strong>файл не усекается</strong>. Повторно использовать страницу можно только после того, как её перестанут видеть все снимки: с PG 14 граница хранится в самой удалённой странице как 64-битный <code>safexid</code> в структуре <code>BTDeletedPageData</code>, а до PG 14 это было 32-битное поле <code>btpo_xact</code>. Поэтому <code>DELETE</code> половины таблицы индекс не уменьшает, а уменьшает его только <code>REINDEX</code>, и это главная причина того, что раздувание индексов встречается чаще раздувания таблиц.</li>
 </ol>
 <p>С раздуванием индексов PostgreSQL борется тремя механизмами, и их стоит различать. В таблице для каждого указано, с какой версии он есть, когда срабатывает и что делает:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Механизм</th>
@@ -2984,22 +2984,22 @@ collation базы:
 </thead>
 <tbody>
 <tr>
-<td>LP_DEAD / «killed tuples»</td>
-<td>давно</td>
-<td>При сканировании индекса, когда обнаружена мёртвая строка</td>
-<td>Помечает запись как killed, чтобы следующий скан её пропустил и чтобы при нехватке места её удалили без <code>VACUUM</code></td>
+<td data-label="Механизм">LP_DEAD / «killed tuples»</td>
+<td data-label="Версия">давно</td>
+<td data-label="Когда срабатывает">При сканировании индекса, когда обнаружена мёртвая строка</td>
+<td data-label="Что делает">Помечает запись как killed, чтобы следующий скан её пропустил и чтобы при нехватке места её удалили без <code>VACUUM</code></td>
 </tr>
 <tr>
-<td>Deduplication</td>
-<td>13</td>
-<td>При заполнении листовой страницы</td>
-<td>Схлопывает дубли значения в posting list: значение один раз + массив TID</td>
+<td data-label="Механизм">Deduplication</td>
+<td data-label="Версия">13</td>
+<td data-label="Когда срабатывает">При заполнении листовой страницы</td>
+<td data-label="Что делает">Схлопывает дубли значения в posting list: значение один раз + массив TID</td>
 </tr>
 <tr>
-<td>Bottom-up index deletion</td>
-<td>14</td>
-<td>Непосредственно перед расщеплением страницы</td>
-<td>Выкидывает «версионный мусор» — записи от UPDATE, не менявших эту колонку</td>
+<td data-label="Механизм">Bottom-up index deletion</td>
+<td data-label="Версия">14</td>
+<td data-label="Когда срабатывает">Непосредственно перед расщеплением страницы</td>
+<td data-label="Что делает">Выкидывает «версионный мусор» — записи от UPDATE, не менявших эту колонку</td>
 </tr>
 </tbody>
 </table>
@@ -3393,7 +3393,7 @@ DETAIL: User query might have needed to see row versions that must be removed.
 <p>PgBouncer — это внешний пул соединений (пулер), отдельный процесс, который стоит между приложениями и базой и раздаёт небольшое число серверных соединений большому числу клиентских. Нужен он тогда, когда пулы на стороне приложений уже не спасают. Но в самом ходовом режиме он ломает всё, что опирается на состояние сессии. Разберём, когда он нужен, его режимы, то, что именно ломается и что это значит для Java-приложения, и типовую конфигурацию.</p>
 <p>Когда приложений много, то есть десятки сервисов и подов, пул на клиенте не помогает: суммарное число соединений всё равно получается большим, потому что у каждого пода свой пул. Тогда ставят <strong>PgBouncer</strong> — лёгкий однопоточный процесс, построенный на событийном вводе-выводе (epoll), который распределяет тысячи клиентских соединений по десяткам серверных.</p>
 <p>Режимов у него три (<a href="https://www.pgbouncer.org/features.html">PgBouncer Features</a>), и различаются они тем, на какое время серверное соединение закрепляется за клиентом:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -3403,19 +3403,19 @@ DETAIL: User query might have needed to see row versions that must be removed.
 </thead>
 <tbody>
 <tr>
-<td><code>session</code></td>
-<td>на всю сессию клиента</td>
-<td>нет (только экономия на fork)</td>
+<td data-label="Режим"><code>session</code></td>
+<td data-label="Серверное соединение закрепляется">на всю сессию клиента</td>
+<td data-label="Мультиплексирование">нет (только экономия на fork)</td>
 </tr>
 <tr>
-<td><code>transaction</code></td>
-<td>на время транзакции</td>
-<td><strong>да, главный режим</strong></td>
+<td data-label="Режим"><code>transaction</code></td>
+<td data-label="Серверное соединение закрепляется">на время транзакции</td>
+<td data-label="Мультиплексирование"><strong>да, главный режим</strong></td>
 </tr>
 <tr>
-<td><code>statement</code></td>
-<td>на один оператор</td>
-<td>максимальное; многооператорные транзакции запрещены</td>
+<td data-label="Режим"><code>statement</code></td>
+<td data-label="Серверное соединение закрепляется">на один оператор</td>
+<td data-label="Мультиплексирование">максимальное; многооператорные транзакции запрещены</td>
 </tr>
 </tbody>
 </table>
@@ -3485,7 +3485,7 @@ DETAIL: User query might have needed to see row versions that must be removed.
 <h3 id="115-ограничения-pgbouncer-и-альтернативы">11.5 Ограничения PgBouncer и альтернативы</h3>
 <p>Ограничения PgBouncer — это возможности PostgreSQL, которые перестают работать или работают иначе, когда между приложением и базой стоит пулер. В 11.3 мы перечислили, что ломается в transaction pooling, а здесь соберём это в одну таблицу по всем трём режимам и для каждого пункта укажем, как с ним жить. Затем подробнее разберём prepared statements, потому что в Java-стеке с ними больше всего проблем, и сравним PgBouncer с альтернативами.</p>
 <p>В таблице для каждой возможности показано, как она ведёт себя в каждом режиме PgBouncer и чем её заменить при transaction pooling:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -3497,66 +3497,66 @@ DETAIL: User query might have needed to see row versions that must be removed.
 </thead>
 <tbody>
 <tr>
-<td><code>SET</code> / <code>RESET</code> без <code>LOCAL</code></td>
-<td>работает</td>
-<td><strong>ломается</strong></td>
-<td>ломается</td>
-<td><code>SET LOCAL</code> внутри транзакции либо <code>ALTER ROLE ... SET</code></td>
+<td data-label="Что"><code>SET</code> / <code>RESET</code> без <code>LOCAL</code></td>
+<td data-label="session">работает</td>
+<td data-label="transaction"><strong>ломается</strong></td>
+<td data-label="statement">ломается</td>
+<td data-label="Как жить в transaction pooling"><code>SET LOCAL</code> внутри транзакции либо <code>ALTER ROLE ... SET</code></td>
 </tr>
 <tr>
-<td>Серверные prepared statements</td>
-<td>работают</td>
-<td>нужен <code>max_prepared_statements &gt; 0</code> (PgBouncer 1.21+)</td>
-<td>не поддерживаются</td>
-<td>Включить <code>max_prepared_statements</code>, иначе <code>prepareThreshold=0</code></td>
+<td data-label="Что">Серверные prepared statements</td>
+<td data-label="session">работают</td>
+<td data-label="transaction">нужен <code>max_prepared_statements &gt; 0</code> (PgBouncer 1.21+)</td>
+<td data-label="statement">не поддерживаются</td>
+<td data-label="Как жить в transaction pooling">Включить <code>max_prepared_statements</code>, иначе <code>prepareThreshold=0</code></td>
 </tr>
 <tr>
-<td><code>pg_advisory_lock</code> (сессионный)</td>
-<td>работает</td>
-<td><strong>опасен</strong> — снимать будете на другом соединении</td>
-<td>ломается</td>
-<td>Только <code>pg_advisory_xact_lock</code> (глава 18)</td>
+<td data-label="Что"><code>pg_advisory_lock</code> (сессионный)</td>
+<td data-label="session">работает</td>
+<td data-label="transaction"><strong>опасен</strong> — снимать будете на другом соединении</td>
+<td data-label="statement">ломается</td>
+<td data-label="Как жить в transaction pooling">Только <code>pg_advisory_xact_lock</code> (глава 18)</td>
 </tr>
 <tr>
-<td>Временные таблицы</td>
-<td>работают</td>
-<td><strong>ломаются</strong></td>
-<td>ломаются</td>
-<td>CTE, обычная таблица с TTL или <code>ON COMMIT DROP</code> внутри одной транзакции</td>
+<td data-label="Что">Временные таблицы</td>
+<td data-label="session">работают</td>
+<td data-label="transaction"><strong>ломаются</strong></td>
+<td data-label="statement">ломаются</td>
+<td data-label="Как жить в transaction pooling">CTE, обычная таблица с TTL или <code>ON COMMIT DROP</code> внутри одной транзакции</td>
 </tr>
 <tr>
-<td><code>LISTEN</code> / <code>NOTIFY</code></td>
-<td>работает</td>
-<td><strong>ломается</strong></td>
-<td>ломается</td>
-<td>Отдельное прямое соединение мимо пулера</td>
+<td data-label="Что"><code>LISTEN</code> / <code>NOTIFY</code></td>
+<td data-label="session">работает</td>
+<td data-label="transaction"><strong>ломается</strong></td>
+<td data-label="statement">ломается</td>
+<td data-label="Как жить в transaction pooling">Отдельное прямое соединение мимо пулера</td>
 </tr>
 <tr>
-<td>Курсоры <code>WITH HOLD</code></td>
-<td>работают</td>
-<td>ломаются</td>
-<td>ломаются</td>
-<td>Курсор в пределах транзакции или keyset-пагинация (глава 20)</td>
+<td data-label="Что">Курсоры <code>WITH HOLD</code></td>
+<td data-label="session">работают</td>
+<td data-label="transaction">ломаются</td>
+<td data-label="statement">ломаются</td>
+<td data-label="Как жить в transaction pooling">Курсор в пределах транзакции или keyset-пагинация (глава 20)</td>
 </tr>
 <tr>
-<td><code>SET application_name</code></td>
-<td>работает</td>
-<td>теряется</td>
-<td>теряется</td>
-<td>Через строку подключения: <code>application_name=orders-svc</code></td>
+<td data-label="Что"><code>SET application_name</code></td>
+<td data-label="session">работает</td>
+<td data-label="transaction">теряется</td>
+<td data-label="statement">теряется</td>
+<td data-label="Как жить в transaction pooling">Через строку подключения: <code>application_name=orders-svc</code></td>
 </tr>
 <tr>
-<td>Многооператорные транзакции</td>
-<td>работают</td>
-<td>работают</td>
-<td><strong>запрещены</strong></td>
-<td>Не использовать statement pooling с транзакциями</td>
+<td data-label="Что">Многооператорные транзакции</td>
+<td data-label="session">работают</td>
+<td data-label="transaction">работают</td>
+<td data-label="statement"><strong>запрещены</strong></td>
+<td data-label="Как жить в transaction pooling">Не использовать statement pooling с транзакциями</td>
 </tr>
 </tbody>
 </table>
 <p>Prepared statements заслуживают отдельного разговора, потому что это самая частая беда Java-стека. Hibernate и pgJDBC по умолчанию переходят на серверные prepared statements после <code>prepareThreshold = 5</code> выполнений, и в transaction pooling без поддержки со стороны пулера это даёт <code>ERROR: prepared statement "S_3" does not exist</code> — плавающую ошибку, которая воспроизводится только под нагрузкой. Возникает она потому, что драйвер подготовил оператор на одном серверном соединении, а выполнить его пытается на другом. Решений у неё два. Первое — включить <code>max_prepared_statements</code> в PgBouncer: он сам отслеживает, какие операторы подготовлены на каком серверном соединении, и при необходимости подготавливает их заново. Второе — выставить <code>prepareThreshold=0</code> в JDBC URL, заплатив за это планированием на каждом вызове.</p>
 <p>Если честно сравнивать PgBouncer с альтернативами, картина получается такая:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Пулер</th>
@@ -3566,24 +3566,24 @@ DETAIL: User query might have needed to see row versions that must be removed.
 </thead>
 <tbody>
 <tr>
-<td><strong>PgBouncer</strong></td>
-<td>Де-факто стандарт, минимальный расход памяти, есть везде, понятная админка (<code>SHOW POOLS</code>)</td>
-<td>Однопоточный (с 1.12 есть <code>so_reuseport</code> и запуск нескольких процессов); нет балансировки чтений</td>
+<td data-label="Пулер"><strong>PgBouncer</strong></td>
+<td data-label="Плюсы">Де-факто стандарт, минимальный расход памяти, есть везде, понятная админка (<code>SHOW POOLS</code>)</td>
+<td data-label="Минусы">Однопоточный (с 1.12 есть <code>so_reuseport</code> и запуск нескольких процессов); нет балансировки чтений</td>
 </tr>
 <tr>
-<td><strong>pgcat</strong></td>
-<td>Многопоточный (Rust), балансировка read/write, шардирование, failover внутри пулера</td>
-<td>Моложе, меньше эксплуатационного опыта, реже встречается в вакансиях</td>
+<td data-label="Пулер"><strong>pgcat</strong></td>
+<td data-label="Плюсы">Многопоточный (Rust), балансировка read/write, шардирование, failover внутри пулера</td>
+<td data-label="Минусы">Моложе, меньше эксплуатационного опыта, реже встречается в вакансиях</td>
 </tr>
 <tr>
-<td><strong>Odyssey</strong></td>
-<td>Многопоточный, разработан в Яндексе под большие нагрузки, поддержка <code>SCRAM</code> и пулинга по пользователям</td>
-<td>Меньше сообщество, документация скромнее</td>
+<td data-label="Пулер"><strong>Odyssey</strong></td>
+<td data-label="Плюсы">Многопоточный, разработан в Яндексе под большие нагрузки, поддержка <code>SCRAM</code> и пулинга по пользователям</td>
+<td data-label="Минусы">Меньше сообщество, документация скромнее</td>
 </tr>
 <tr>
-<td><strong>Пул только в приложении (HikariCP)</strong></td>
-<td>Ноль дополнительных компонентов и сетевых хопов</td>
-<td>Не спасает при десятках экземпляров; суммарное число соединений неуправляемо</td>
+<td data-label="Пулер"><strong>Пул только в приложении (HikariCP)</strong></td>
+<td data-label="Плюсы">Ноль дополнительных компонентов и сетевых хопов</td>
+<td data-label="Минусы">Не спасает при десятках экземпляров; суммарное число соединений неуправляемо</td>
 </tr>
 </tbody>
 </table>
@@ -3593,7 +3593,7 @@ DETAIL: User query might have needed to see row versions that must be removed.
 </blockquote>
 <h2 id="12-нововведения-версий-1418">12. Нововведения версий 14–18</h2>
 <p>Этот раздел — сводка изменений PostgreSQL 14–18, которые затрагивают бэкенд-разработчика: поведение индексов, <code>VACUUM</code>, планов, репликации и мониторинга. За пять мажорных версий изменений накопилось много, но большинство из них касается администраторов или узких сценариев, а здесь отобраны только те, что меняют ответы на вопросы из этой главы. Они собраны в одну таблицу по версиям, и для каждого изменения сказано, почему оно важно. Всё ниже взято из release notes соответствующих веток, для 18-й — из <a href="https://www.postgresql.org/docs/current/release-18.html">Release 18</a>; подробно большинство пунктов разобрано в предыдущих разделах главы.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Версия</th>
@@ -3603,99 +3603,99 @@ DETAIL: User query might have needed to see row versions that must be removed.
 </thead>
 <tbody>
 <tr>
-<td class="num"><strong>14</strong></td>
-<td>Bottom-up index deletion</td>
-<td>Индексы перестали лавинообразно пухнуть на нагрузке с частыми UPDATE</td>
+<td data-label="Версия" class="num"><strong>14</strong></td>
+<td data-label="Изменение">Bottom-up index deletion</td>
+<td data-label="Почему важно">Индексы перестали лавинообразно пухнуть на нагрузке с частыми UPDATE</td>
 </tr>
 <tr>
-<td class="num">14</td>
-<td>Memoize в планах</td>
-<td>Плохой Nested Loop часто стал приемлемым</td>
+<td data-label="Версия" class="num">14</td>
+<td data-label="Изменение">Memoize в планах</td>
+<td data-label="Почему важно">Плохой Nested Loop часто стал приемлемым</td>
 </tr>
 <tr>
-<td class="num">14</td>
-<td><code>vacuum_cost_page_miss</code> 10 → 2, <code>lz4</code> для TOAST, дешевле снятие снимка</td>
-<td>Быстрее <code>autovacuum</code> и сжатие jsonb, меньше деградации на многих соединениях</td>
+<td data-label="Версия" class="num">14</td>
+<td data-label="Изменение"><code>vacuum_cost_page_miss</code> 10 → 2, <code>lz4</code> для TOAST, дешевле снятие снимка</td>
+<td data-label="Почему важно">Быстрее <code>autovacuum</code> и сжатие jsonb, меньше деградации на многих соединениях</td>
 </tr>
 <tr>
-<td class="num"><strong>15</strong></td>
-<td>Кумулятивная статистика перенесена из процесса stats collector в разделяемую память</td>
-<td>Точнее статистика, меньше I/O</td>
+<td data-label="Версия" class="num"><strong>15</strong></td>
+<td data-label="Изменение">Кумулятивная статистика перенесена из процесса stats collector в разделяемую память</td>
+<td data-label="Почему важно">Точнее статистика, меньше I/O</td>
 </tr>
 <tr>
-<td class="num">15</td>
-<td><code>MERGE</code>, <code>wal_compression = lz4/zstd</code></td>
-<td>Один оператор вместо связки INSERT ... ON CONFLICT и отдельного UPDATE; меньше WAL на full-page writes</td>
+<td data-label="Версия" class="num">15</td>
+<td data-label="Изменение"><code>MERGE</code>, <code>wal_compression = lz4/zstd</code></td>
+<td data-label="Почему важно">Один оператор вместо связки INSERT ... ON CONFLICT и отдельного UPDATE; меньше WAL на full-page writes</td>
 </tr>
 <tr>
-<td class="num"><strong>16</strong></td>
-<td><code>pg_stat_io</code></td>
-<td>Наконец видно, кто именно и как читает диск</td>
+<td data-label="Версия" class="num"><strong>16</strong></td>
+<td data-label="Изменение"><code>pg_stat_io</code></td>
+<td data-label="Почему важно">Наконец видно, кто именно и как читает диск</td>
 </tr>
 <tr>
-<td class="num">16</td>
-<td>Логическая репликация с реплики</td>
-<td>Debezium можно увести с мастера</td>
+<td data-label="Версия" class="num">16</td>
+<td data-label="Изменение">Логическая репликация с реплики</td>
+<td data-label="Почему важно">Debezium можно увести с мастера</td>
 </tr>
 <tr>
-<td class="num"><strong>17</strong></td>
-<td><code>pg_stat_checkpointer</code>, настраиваемые SLRU-буферы</td>
-<td>Точнее мониторинг и тюнинг</td>
+<td data-label="Версия" class="num"><strong>17</strong></td>
+<td data-label="Изменение"><code>pg_stat_checkpointer</code>, настраиваемые SLRU-буферы</td>
+<td data-label="Почему важно">Точнее мониторинг и тюнинг</td>
 </tr>
 <tr>
-<td class="num">17</td>
-<td>Новая TID-store в VACUUM</td>
-<td><code>VACUUM</code> больших таблиц ускорился в разы, меньше проходов по индексам</td>
+<td data-label="Версия" class="num">17</td>
+<td data-label="Изменение">Новая TID-store в VACUUM</td>
+<td data-label="Почему важно"><code>VACUUM</code> больших таблиц ускорился в разы, меньше проходов по индексам</td>
 </tr>
 <tr>
-<td class="num">17</td>
-<td><code>failover</code>-слоты логической репликации, <code>transaction_timeout</code>, инкрементальный <code>pg_basebackup</code></td>
-<td>CDC переживает переключение мастера; третий нужный таймаут; быстрее бэкапы</td>
+<td data-label="Версия" class="num">17</td>
+<td data-label="Изменение"><code>failover</code>-слоты логической репликации, <code>transaction_timeout</code>, инкрементальный <code>pg_basebackup</code></td>
+<td data-label="Почему важно">CDC переживает переключение мастера; третий нужный таймаут; быстрее бэкапы</td>
 </tr>
 <tr>
-<td class="num"><strong>18</strong></td>
-<td>Асинхронный I/O (<code>io_method</code>, <code>io_uring</code>/<code>worker</code>), <code>pg_aios</code></td>
-<td>До 3× на чтении с хранилища для сканов и <code>VACUUM</code></td>
+<td data-label="Версия" class="num"><strong>18</strong></td>
+<td data-label="Изменение">Асинхронный I/O (<code>io_method</code>, <code>io_uring</code>/<code>worker</code>), <code>pg_aios</code></td>
+<td data-label="Почему важно">До 3× на чтении с хранилища для сканов и <code>VACUUM</code></td>
 </tr>
 <tr>
-<td class="num">18</td>
-<td>B-tree <strong>skip scan</strong></td>
-<td>Составные индексы работают без ограничения на первую колонку</td>
+<td data-label="Версия" class="num">18</td>
+<td data-label="Изменение">B-tree <strong>skip scan</strong></td>
+<td data-label="Почему важно">Составные индексы работают без ограничения на первую колонку</td>
 </tr>
 <tr>
-<td class="num">18</td>
-<td><code>BUFFERS</code> в <code>EXPLAIN ANALYZE</code> по умолчанию</td>
-<td>Меньше шансов анализировать план вслепую</td>
+<td data-label="Версия" class="num">18</td>
+<td data-label="Изменение"><code>BUFFERS</code> в <code>EXPLAIN ANALYZE</code> по умолчанию</td>
+<td data-label="Почему важно">Меньше шансов анализировать план вслепую</td>
 </tr>
 <tr>
-<td class="num">18</td>
-<td><code>uuidv7()</code></td>
-<td>Временно-сортируемые UUID — меньше random I/O в индексах (см. главу 19)</td>
+<td data-label="Версия" class="num">18</td>
+<td data-label="Изменение"><code>uuidv7()</code></td>
+<td data-label="Почему важно">Временно-сортируемые UUID — меньше random I/O в индексах (см. главу 19)</td>
 </tr>
 <tr>
-<td class="num">18</td>
-<td>Виртуальные generated-колонки по умолчанию</td>
-<td>Вычисление при чтении, не при записи</td>
+<td data-label="Версия" class="num">18</td>
+<td data-label="Изменение">Виртуальные generated-колонки по умолчанию</td>
+<td data-label="Почему важно">Вычисление при чтении, не при записи</td>
 </tr>
 <tr>
-<td class="num">18</td>
-<td><code>OLD</code>/<code>NEW</code> в <code>RETURNING</code></td>
-<td>Проще аудит и outbox</td>
+<td data-label="Версия" class="num">18</td>
+<td data-label="Изменение"><code>OLD</code>/<code>NEW</code> в <code>RETURNING</code></td>
+<td data-label="Почему важно">Проще аудит и outbox</td>
 </tr>
 <tr>
-<td class="num">18</td>
-<td><code>autovacuum_vacuum_max_threshold</code>, <code>autovacuum_worker_slots</code></td>
-<td>Настройка <code>autovacuum</code> под большие таблицы без отдельных настроек для каждой таблицы</td>
+<td data-label="Версия" class="num">18</td>
+<td data-label="Изменение"><code>autovacuum_vacuum_max_threshold</code>, <code>autovacuum_worker_slots</code></td>
+<td data-label="Почему важно">Настройка <code>autovacuum</code> под большие таблицы без отдельных настроек для каждой таблицы</td>
 </tr>
 <tr>
-<td class="num">18</td>
-<td>Контрольные суммы включены в <code>initdb</code> по умолчанию</td>
-<td>Раньше ловите повреждения; чуть больше WAL</td>
+<td data-label="Версия" class="num">18</td>
+<td data-label="Изменение">Контрольные суммы включены в <code>initdb</code> по умолчанию</td>
+<td data-label="Почему важно">Раньше ловите повреждения; чуть больше WAL</td>
 </tr>
 <tr>
-<td class="num">18</td>
-<td><code>pg_upgrade</code> сохраняет статистику планировщика</td>
-<td>Нет провала производительности сразу после апгрейда</td>
+<td data-label="Версия" class="num">18</td>
+<td data-label="Изменение"><code>pg_upgrade</code> сохраняет статистику планировщика</td>
+<td data-label="Почему важно">Нет провала производительности сразу после апгрейда</td>
 </tr>
 </tbody>
 </table>
@@ -4217,5 +4217,5 @@ hot_standby_feedback        = on      # ценой удержания xmin-го�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-процессная-архитектура-и-память">1. Процессная архитектура и память</a></li><li><a href="#2-хранение-файлы-страницы-toast">2. Хранение: файлы, страницы, TOAST</a></li><li><a href="#3-mvcc-хранение-версий-строк">3. MVCC: хранение версий строк</a></li><li><a href="#4-vacuum-bloat-и-wraparound">4. VACUUM, bloat и wraparound</a></li><li><a href="#5-wal-и-долговечность">5. WAL и долговечность</a></li><li><a href="#6-планировщик-запросов">6. Планировщик запросов</a></li><li><a href="#7-чтение-explain-analyze-buffers">7. Чтение EXPLAIN (ANALYZE, BUFFERS)</a></li><li><a href="#8-индексы-устройство-и-выбор">8. Индексы: устройство и выбор</a></li><li><a href="#9-расширения-и-наблюдаемость">9. Расширения и наблюдаемость</a></li><li><a href="#10-репликация">10. Репликация</a></li><li><a href="#11-пул-соединений">11. Пул соединений</a></li><li><a href="#12-нововведения-версий-1418">12. Нововведения версий 14–18</a></li><li><a href="#13-разобранные-инциденты">13. Разобранные инциденты</a></li><li><a href="#14-грабли-и-антипаттерны">14. Грабли и антипаттерны</a></li><li><a href="#15-диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками">17. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

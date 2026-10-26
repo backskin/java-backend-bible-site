@@ -3,7 +3,7 @@
 <title>12. Spring Data JPA и Hibernate — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Spring Data JPA и Hibernate">
 <a class="skip" href="#content">К тексту</a>
@@ -46,7 +46,7 @@
 </ul>
 <h3 id="13-ограничения-orm-и-альтернативы">1.3 Ограничения ORM и альтернативы</h3>
 <p>Ограничения ORM — это задачи, на которых механизмы из 1.2 перестают помогать и начинают мешать. У каждой выгоды есть такая граница, и знать её лучше заранее, чем находить по инцидентам. В таблице ниже собраны типовые задачи, на которых JPA проигрывает: в средней колонке сказано, в чём именно он плох, а в правой — какой инструмент взять вместо него. После таблицы расшифрованы названия, которые в ней упомянуты.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Задача</th>
@@ -56,34 +56,34 @@
 </thead>
 <tbody>
 <tr>
-<td>Отчёты, аналитика, сложные агрегаты</td>
-<td>Всё равно пишете native SQL, сущности не нужны</td>
-<td><code>JdbcClient</code>, jOOQ</td>
+<td data-label="Задача">Отчёты, аналитика, сложные агрегаты</td>
+<td data-label="Почему JPA плох">Всё равно пишете native SQL, сущности не нужны</td>
+<td data-label="Чем заменить"><code>JdbcClient</code>, jOOQ</td>
 </tr>
 <tr>
-<td>Массовая загрузка (сотни тысяч строк)</td>
-<td>Persistence context растёт линейно, dirty checking квадратичен по стоимости</td>
-<td><code>StatelessSession</code>, <code>COPY</code> (гл. 17), bulk DML</td>
+<td data-label="Задача">Массовая загрузка (сотни тысяч строк)</td>
+<td data-label="Почему JPA плох">Persistence context растёт линейно, dirty checking квадратичен по стоимости</td>
+<td data-label="Чем заменить"><code>StatelessSession</code>, <code>COPY</code> (гл. 17), bulk DML</td>
 </tr>
 <tr>
-<td>Сложный динамический поиск (30 фильтров)</td>
-<td>Criteria API нечитаем, Specification composable, но генерирует плохой SQL</td>
-<td>jOOQ, Querydsl SQL</td>
+<td data-label="Задача">Сложный динамический поиск (30 фильтров)</td>
+<td data-label="Почему JPA плох">Criteria API нечитаем, Specification composable, но генерирует плохой SQL</td>
+<td data-label="Чем заменить">jOOQ, Querydsl SQL</td>
 </tr>
 <tr>
-<td>Оконные функции, CTE, <code>LATERAL</code>, <code>DISTINCT ON</code></td>
-<td>JPQL этого не умеет (гл. 20)</td>
-<td>native <code>@Query</code>, jOOQ</td>
+<td data-label="Задача">Оконные функции, CTE, <code>LATERAL</code>, <code>DISTINCT ON</code></td>
+<td data-label="Почему JPA плох">JPQL этого не умеет (гл. 20)</td>
+<td data-label="Чем заменить">native <code>@Query</code>, jOOQ</td>
 </tr>
 <tr>
-<td>Пакетные апдейты по условию</td>
-<td><code>@Modifying</code> рассинхронизирует контекст</td>
-<td><code>JdbcClient</code> вне сессии</td>
+<td data-label="Задача">Пакетные апдейты по условию</td>
+<td data-label="Почему JPA плох"><code>@Modifying</code> рассинхронизирует контекст</td>
+<td data-label="Чем заменить"><code>JdbcClient</code> вне сессии</td>
 </tr>
 <tr>
-<td>Read-model в CQRS</td>
-<td>Сущность — не DTO</td>
-<td>проекции или отдельный слой на <code>JdbcClient</code></td>
+<td data-label="Задача">Read-model в CQRS</td>
+<td data-label="Почему JPA плох">Сущность — не DTO</td>
+<td data-label="Чем заменить">проекции или отдельный слой на <code>JdbcClient</code></td>
 </tr>
 </tbody>
 </table>
@@ -302,7 +302,7 @@
 <p>⚠️ <strong>Грабли.</strong> PgBouncer, пул соединений, который стоит между приложением и PostgreSQL, в режиме transaction pooling отдаёт клиенту разные серверные соединения в разных транзакциях. Оператор <code>S_1</code>, подготовленный на одном соединении, на другом не существует. Раньше это давало ошибку <code>prepared statement "S_1" does not exist</code>, и лечилось отключением серверной подготовки через <code>prepareThreshold=0</code>. Современный PgBouncer умеет сам отслеживать подготовленные операторы протокольного уровня: за это отвечает параметр <code>max_prepared_statements</code>, который в актуальной документации по умолчанию равен 200, а значение 0 выключает поддержку (<a href="https://raw.githubusercontent.com/pgbouncer/pgbouncer/master/doc/config.md">PgBouncer, config.md</a>). Прежде чем выключать <code>prepareThreshold</code> по старому рецепту, проверьте версию и настройку своего PgBouncer: отключение серверной подготовки возвращает серверу разбор каждого запроса.</p>
 </blockquote>
 <p><strong>Сколько сетевых обменов стоит транзакция.</strong> Сетевой обмен — это одна пара «отправили пачку сообщений — дождались ответа», и именно число обменов, а не число сообщений, определяет, сколько транзакция ждёт сеть. Если сложить поведение Hikari, PgJDBC и Hibernate, типичная транзакция из нескольких запросов раскладывается на обмены так, как показано в таблице ниже. Смотреть в ней стоит на шаги, которые сети не требуют вовсе, потому что именно их часто ошибочно считают дорогими.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Шаг</th>
@@ -312,39 +312,39 @@
 </thead>
 <tbody>
 <tr>
-<td><code>getConnection()</code> из Hikari</td>
-<td>соединение выдаётся из пула; если оно простаивало дольше 500 мс, Hikari проверяет его через <code>isValid</code>, и PgJDBC шлёт пустой запрос</td>
-<td>0 или 1</td>
+<td data-label="Шаг"><code>getConnection()</code> из Hikari</td>
+<td data-label="Что происходит">соединение выдаётся из пула; если оно простаивало дольше 500 мс, Hikari проверяет его через <code>isValid</code>, и PgJDBC шлёт пустой запрос</td>
+<td data-label="Сетевых обменов">0 или 1</td>
 </tr>
 <tr>
-<td><code>setAutoCommit(false)</code></td>
-<td>драйвер только меняет флаг у себя</td>
-<td>0</td>
+<td data-label="Шаг"><code>setAutoCommit(false)</code></td>
+<td data-label="Что происходит">драйвер только меняет флаг у себя</td>
+<td data-label="Сетевых обменов">0</td>
 </tr>
 <tr>
-<td><code>BEGIN</code></td>
-<td>драйвер дописывает <code>BEGIN</code> (или <code>BEGIN READ ONLY</code> для read-only соединения) в ту же пачку, что и первый запрос</td>
-<td>0 сверх первого запроса</td>
+<td data-label="Шаг"><code>BEGIN</code></td>
+<td data-label="Что происходит">драйвер дописывает <code>BEGIN</code> (или <code>BEGIN READ ONLY</code> для read-only соединения) в ту же пачку, что и первый запрос</td>
+<td data-label="Сетевых обменов">0 сверх первого запроса</td>
 </tr>
 <tr>
-<td>каждый SELECT или одиночный DML</td>
-<td><code>Parse</code>/<code>Bind</code>/<code>Execute</code>/<code>Sync</code> одной пачкой</td>
-<td>1</td>
+<td data-label="Шаг">каждый SELECT или одиночный DML</td>
+<td data-label="Что происходит"><code>Parse</code>/<code>Bind</code>/<code>Execute</code>/<code>Sync</code> одной пачкой</td>
+<td data-label="Сетевых обменов">1</td>
 </tr>
 <tr>
-<td><code>executeBatch()</code> с N операторами</td>
-<td>все сообщения одной пачкой, <code>Sync</code> в конце, при большом N с промежуточными <code>Sync</code></td>
-<td>1 на каждые ~256 операторов</td>
+<td data-label="Шаг"><code>executeBatch()</code> с N операторами</td>
+<td data-label="Что происходит">все сообщения одной пачкой, <code>Sync</code> в конце, при большом N с промежуточными <code>Sync</code></td>
+<td data-label="Сетевых обменов">1 на каждые ~256 операторов</td>
 </tr>
 <tr>
-<td><code>COMMIT</code></td>
-<td>отдельная команда</td>
-<td>1</td>
+<td data-label="Шаг"><code>COMMIT</code></td>
+<td data-label="Что происходит">отдельная команда</td>
+<td data-label="Сетевых обменов">1</td>
 </tr>
 <tr>
-<td>возврат соединения в пул</td>
-<td><code>setAutoCommit(true)</code> без открытой транзакции ничего не шлёт</td>
-<td>0</td>
+<td data-label="Шаг">возврат соединения в пул</td>
+<td data-label="Что происходит"><code>setAutoCommit(true)</code> без открытой транзакции ничего не шлёт</td>
+<td data-label="Сетевых обменов">0</td>
 </tr>
 </tbody>
 </table>
@@ -353,7 +353,7 @@
 <p>У этой схемы есть тонкость, о которой написан длинный комментарий в <code>QueryExecutorImpl</code>: если писать в сокет, не читая ответов, обе стороны могут встать. Сервер заполняет свой буфер отправки ответами и перестаёт читать, а клиент в это время ждёт, пока сервер прочитает его сообщения. Чтобы этого избежать, драйвер оценивает объём ответов, считая по 250 байт на оператор без результата. Когда оценка достигает 64 000 байт, драйвер вставляет промежуточный <code>Sync</code> и дочитывает ответы; отсюда оценка «один обмен на каждые ~256 операторов» в таблице выше.</p>
 <p>Параметр <code>reWriteBatchedInserts=true</code> идёт дальше: он переписывает пакет однотипных INSERT в многострочный <code>insert into ... values (...), (...), (...)</code>, так что сервер выполняет один оператор вместо десятков. Документация драйвера оценивает выигрыш в 2–3 раза, а в свежих версиях драйвера появился ещё параметр <code>reWriteBatchedInsertsSize</code>, ограничивающий число строк в одном переписанном операторе (<a href="https://jdbc.postgresql.org/documentation/use/">pgJDBC, Connection parameters</a>). Переписываются только INSERT, а UPDATE и DELETE по-прежнему уходят отдельными операторами внутри одного пакета. За переписанный пакет драйвер отчитывается не точным числом строк на каждый элемент, а значением <code>Statement.SUCCESS_NO_INFO</code>, и запуск это подтвердил, показав заодно, как драйвер делит пакет. Пять INSERT с <code>reWriteBatchedInserts=true</code> вернули <code>[-2, -2, -2, -2, 1]</code>: четыре строки ушли одним многострочным оператором, а пятая отдельным, потому что драйвер режет пакет на куски по степеням двойки. Без флага те же пять вставок вернули <code>[1, 1, 1, 1, 1]</code>, а пакет из трёх UPDATE и с флагом вернул точные числа <code>[1, 2, 3]</code> (Spring Boot 4.1.1, Hibernate 7.4.5, PgJDBC 42.7.8, PostgreSQL 18.6; запуск 2026-10-22). У MySQL то же делает свойство <code>rewriteBatchedStatements</code>, и там, по Михалче, переписывание отключает серверные подготовленные операторы (Vlad Mihalcea, «High-Performance Java Persistence», гл. 4 «Batch Updates», с. 35).</p>
 <p>Разницу видно на расчёте. Возьмём вставку 1000 платежей при сетевой задержке 0,5 мс и времени выполнения одного INSERT на сервере около 0,05 мс. Таблица ниже сравнивает четыре варианта, и смотреть в ней надо на колонку сети: серверное время почти не меняется, а ожидание сети падает на два порядка.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вариант</th>
@@ -364,28 +364,28 @@
 </thead>
 <tbody>
 <tr>
-<td>1000 отдельных INSERT (<code>IDENTITY</code> или пакетирование выключено)</td>
-<td class="num">1000</td>
-<td class="num">~500 мс</td>
-<td>~50 мс</td>
+<td data-label="Вариант">1000 отдельных INSERT (<code>IDENTITY</code> или пакетирование выключено)</td>
+<td data-label="Сетевых обменов" class="num">1000</td>
+<td data-label="Ожидание сети" class="num">~500 мс</td>
+<td data-label="Работа сервера">~50 мс</td>
 </tr>
 <tr>
-<td><code>batch_size = 50</code></td>
-<td class="num">20</td>
-<td class="num">~10 мс</td>
-<td>~50 мс</td>
+<td data-label="Вариант"><code>batch_size = 50</code></td>
+<td data-label="Сетевых обменов" class="num">20</td>
+<td data-label="Ожидание сети" class="num">~10 мс</td>
+<td data-label="Работа сервера">~50 мс</td>
 </tr>
 <tr>
-<td>один пакет JDBC на 1000 операторов</td>
-<td class="num">~4</td>
-<td class="num">~2 мс</td>
-<td>~50 мс</td>
+<td data-label="Вариант">один пакет JDBC на 1000 операторов</td>
+<td data-label="Сетевых обменов" class="num">~4</td>
+<td data-label="Ожидание сети" class="num">~2 мс</td>
+<td data-label="Работа сервера">~50 мс</td>
 </tr>
 <tr>
-<td><code>batch_size = 50</code> + <code>reWriteBatchedInserts</code></td>
-<td class="num">20</td>
-<td class="num">~10 мс</td>
-<td>заметно меньше: 20 многострочных INSERT вместо 1000</td>
+<td data-label="Вариант"><code>batch_size = 50</code> + <code>reWriteBatchedInserts</code></td>
+<td data-label="Сетевых обменов" class="num">20</td>
+<td data-label="Ожидание сети" class="num">~10 мс</td>
+<td data-label="Работа сервера">заметно меньше: 20 многострочных INSERT вместо 1000</td>
 </tr>
 </tbody>
 </table>
@@ -785,7 +785,7 @@ getIdentifier(copy) без запроса в базу: 2
 </ul>
 <h3 id="34-persist-merge-и-spring-data-save">3.4 <code>persist</code>, <code>merge</code> и Spring Data <code>save</code></h3>
 <p><code>persist</code>, <code>merge</code> и <code>save</code> — три операции, через которые код передаёт сущность на сохранение. Выглядят они взаимозаменяемыми, потому что все три в итоге приводят к записи в базу, но принимают сущности в разных состояниях и возвращают разное: <code>persist</code> и <code>merge</code> определены в JPA, а <code>save</code> добавляет репозиторий Spring Data поверх них. В таблице ниже сведено, какой аргумент принимает каждая операция, что она возвращает и что делает внутри; главное, на что стоит смотреть, — колонка «Возвращает» у <code>merge</code>.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Операция</th>
@@ -796,22 +796,22 @@ getIdentifier(copy) без запроса в базу: 2
 </thead>
 <tbody>
 <tr>
-<td><code>persist(e)</code></td>
-<td>transient</td>
-<td><code>void</code>, тот же объект становится managed</td>
-<td>ставит INSERT в <code>ActionQueue</code>; для detached — <code>EntityExistsException</code> (или ошибка на flush)</td>
+<td data-label="Операция"><code>persist(e)</code></td>
+<td data-label="Аргумент">transient</td>
+<td data-label="Возвращает"><code>void</code>, тот же объект становится managed</td>
+<td data-label="Поведение">ставит INSERT в <code>ActionQueue</code>; для detached — <code>EntityExistsException</code> (или ошибка на flush)</td>
 </tr>
 <tr>
-<td><code>merge(e)</code></td>
-<td>detached/transient</td>
-<td><strong>новый managed-объект</strong></td>
-<td>читает строку (SELECT, если её нет в контексте), копирует в неё состояние аргумента; аргумент остаётся detached</td>
+<td data-label="Операция"><code>merge(e)</code></td>
+<td data-label="Аргумент">detached/transient</td>
+<td data-label="Возвращает"><strong>новый managed-объект</strong></td>
+<td data-label="Поведение">читает строку (SELECT, если её нет в контексте), копирует в неё состояние аргумента; аргумент остаётся detached</td>
 </tr>
 <tr>
-<td><code>save(e)</code> (Spring Data)</td>
-<td>любой</td>
-<td>managed-объект</td>
-<td><code>isNew(e) ? persist(e) : merge(e)</code></td>
+<td data-label="Операция"><code>save(e)</code> (Spring Data)</td>
+<td data-label="Аргумент">любой</td>
+<td data-label="Возвращает">managed-объект</td>
+<td data-label="Поведение"><code>isNew(e) ? persist(e) : merge(e)</code></td>
 </tr>
 </tbody>
 </table>
@@ -1087,7 +1087,7 @@ Hibernate: select p1_0.status from payment p1_0
 <p>Dirty checking (поиск изменений) — это механизм, с помощью которого Hibernate сам находит изменённые сущности и строит для них <code>UPDATE</code>, чтобы разработчику не приходилось отмечать изменения вручную. Пример, где он становится дорогим, такой. Сверка реестра платежей загружает десять тысяч платежей, и для каждого в цикле делает ещё один JPQL-запрос, например подсчёт по справочнику клиентов. База почти не нагружена, запросы короткие, а метод работает минуты, и профилировщик показывает процессор, занятый внутри Hibernate: перед каждым запросом идёт flush, а с ним и поиск изменений. Удобство оплачивается процессорным временем на каждом flush, и в больших контекстах эта плата становится главной статьёй расходов. Ниже разобраны сам механизм, его стоимость в измеренных цифрах и три способа её снизить.</p>
 <p>Механизм устроен просто. Когда Hibernate загружает сущность, он сохраняет рядом с ней снимок: массив значений всех её полей на момент загрузки. На flush он обходит <strong>все</strong> managed-сущности контекста (список копируется в начале обхода, в <code>AbstractFlushingEventListener.flushEntities</code>), берёт текущие значения полей и сравнивает со снимком; если нашёл расхождение, планирует <code>UPDATE</code>. Сравнение идёт по правилам типа поля, а не по ссылкам, и это важно. Присваивание тех же значений ничего не меняет: я присвоил полю <code>status</code> его же значение и записал в <code>amount</code> новый <code>BigDecimal</code> с тем же числом, и после фиксации в логе не оказалось ни одного <code>UPDATE</code>. Даже <code>amount.setScale(4)</code> для суммы <code>100.00</code> не сделало сущность грязной, потому что <code>BigDecimalJavaType.areEqual</code> сравнивает числа через <code>compareTo</code>, а не через <code>equals</code>. Когда же изменение найдено, <code>UPDATE</code> содержит <strong>все</strong> колонки таблицы, а не только изменённые: в логе был <code>update payment set amount=?,registry_id=?,status=? where id=?</code> при изменении одного статуса.</p>
 <p>Стоимость обхода растёт как произведение числа сущностей на число полей, и платить её приходится на каждом flush, включая неявные, которые срабатывают перед запросами. Для десяти тысяч сущностей по двадцать полей это двести тысяч сравнений на один flush, а цикл из десяти тысяч запросов наберёт два миллиарда. Хуже всего то, что в режиме <code>AUTO</code> Hibernate сначала сравнивает все сущности с их снимками и только потом проверяет, пересекается ли запрос с изменёнными таблицами. Поэтому платит за обход даже запрос, которому сбрасывать нечего. Я измерил это на Hibernate 7.4.5 и H2: 10 000 managed-сущностей <code>Payment</code> из пяти полей, 200 JPQL-запросов к несвязанной таблице подряд, замеры после прогрева JVM.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Условие</th>
@@ -1096,16 +1096,16 @@ Hibernate: select p1_0.status from payment p1_0
 </thead>
 <tbody>
 <tr>
-<td>Контекст пуст</td>
-<td>5–7 мс</td>
+<td data-label="Условие">Контекст пуст</td>
+<td data-label="Время на 200 запросов">5–7 мс</td>
 </tr>
 <tr>
-<td>10 000 managed-сущностей</td>
-<td>199–203 мс</td>
+<td data-label="Условие">10 000 managed-сущностей</td>
+<td data-label="Время на 200 запросов">199–203 мс</td>
 </tr>
 <tr>
-<td>Те же 10 000 сущностей в транзакции <code>readOnly = true</code></td>
-<td>2–4 мс</td>
+<td data-label="Условие">Те же 10 000 сущностей в транзакции <code>readOnly = true</code></td>
+<td data-label="Время на 200 запросов">2–4 мс</td>
 </tr>
 </tbody>
 </table>
@@ -1363,7 +1363,7 @@ update wide_payment set status=? where id=?
 <h3 id="38-внутреннее-устройство-persistence-context">3.8 Внутреннее устройство persistence context</h3>
 <p>Внутреннее устройство persistence context — это конкретные отображения и массивы, из которых он состоит в памяти. Выражение «persistence context» звучит абстрактно ровно до того момента, пока вы не откроете дамп кучи и не увидите там эти структуры. Знание их напрямую превращается в умение читать дампы и заранее прикидывать, сколько памяти займёт загрузка. Ниже по очереди описаны структуры контекста, устройство <code>EntityEntry</code> и формула памяти на одну сущность.</p>
 <p>Корнем служит <code>StatefulPersistenceContext</code> из пакета <code>org.hibernate.engine.internal</code>, который хранится в поле внутри <code>SessionImpl</code>. Внутри него лежит несколько независимых структур, и в таблице ниже для каждой указано, что она хранит и в какой момент растёт.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Структура</th>
@@ -1373,39 +1373,39 @@ update wide_payment set status=? where id=?
 </thead>
 <tbody>
 <tr>
-<td><code>entitiesByKey</code></td>
-<td><code>Map&lt;EntityKey, Object&gt;</code> — «класс + id → экземпляр»</td>
-<td>на каждую загруженную/сохранённую сущность</td>
+<td data-label="Структура"><code>entitiesByKey</code></td>
+<td data-label="Что хранит"><code>Map&lt;EntityKey, Object&gt;</code> — «класс + id → экземпляр»</td>
+<td data-label="Когда растёт">на каждую загруженную/сохранённую сущность</td>
 </tr>
 <tr>
-<td><code>entityEntryContext</code></td>
-<td><code>Object → EntityEntry</code></td>
-<td>то же, параллельно первому отображению</td>
+<td data-label="Структура"><code>entityEntryContext</code></td>
+<td data-label="Что хранит"><code>Object → EntityEntry</code></td>
+<td data-label="Когда растёт">то же, параллельно первому отображению</td>
 </tr>
 <tr>
-<td><code>entitiesByUniqueKey</code></td>
-<td>доступ по <code>@NaturalId</code> и уникальным ключам</td>
-<td>при использовании <code>bySimpleNaturalId</code> и FK по не-PK</td>
+<td data-label="Структура"><code>entitiesByUniqueKey</code></td>
+<td data-label="Что хранит">доступ по <code>@NaturalId</code> и уникальным ключам</td>
+<td data-label="Когда растёт">при использовании <code>bySimpleNaturalId</code> и FK по не-PK</td>
 </tr>
 <tr>
-<td><code>collectionEntries</code></td>
-<td><code>PersistentCollection → CollectionEntry</code></td>
-<td>на каждую инициализированную коллекцию</td>
+<td data-label="Структура"><code>collectionEntries</code></td>
+<td data-label="Что хранит"><code>PersistentCollection → CollectionEntry</code></td>
+<td data-label="Когда растёт">на каждую инициализированную коллекцию</td>
 </tr>
 <tr>
-<td><code>arrayHolders</code></td>
-<td>обёртки над массивами-коллекциями</td>
-<td>редко (отображение массивов)</td>
+<td data-label="Структура"><code>arrayHolders</code></td>
+<td data-label="Что хранит">обёртки над массивами-коллекциями</td>
+<td data-label="Когда растёт">редко (отображение массивов)</td>
 </tr>
 <tr>
-<td><code>proxiesByKey</code></td>
-<td>незаинициализированные прокси</td>
-<td>на каждый <code>getReference</code>/lazy <code>@ManyToOne</code></td>
+<td data-label="Структура"><code>proxiesByKey</code></td>
+<td data-label="Что хранит">незаинициализированные прокси</td>
+<td data-label="Когда растёт">на каждый <code>getReference</code>/lazy <code>@ManyToOne</code></td>
 </tr>
 <tr>
-<td><code>nullifiableEntityKeys</code></td>
-<td>ключи сущностей, помеченных к удалению</td>
-<td>при <code>remove()</code></td>
+<td data-label="Структура"><code>nullifiableEntityKeys</code></td>
+<td data-label="Что хранит">ключи сущностей, помеченных к удалению</td>
+<td data-label="Когда растёт">при <code>remove()</code></td>
 </tr>
 </tbody>
 </table>
@@ -1446,7 +1446,7 @@ update wide_payment set status=? where id=?
 </ol>
 <p>Второй шаг линеен по числу сущностей и полей и выполняется <strong>целиком, даже если вы изменили одно поле одной сущности</strong>. Без bytecode enhancement Hibernate не ведёт списка тех, кто менялся: он не контролирует сеттеры и узнать об изменении может только сравнением.</p>
 <p>Порядок величин можно прикинуть. Одно сравнение поля складывается из виртуального вызова <code>Type#isDirty</code> и самого <code>equals</code> и занимает от единиц до десятков наносекунд. Консервативно возьмём 20 нс с учётом промахов кэша процессора: <code>loadedState</code> лежит в другом месте кучи, чем сама сущность, и на каждое поле приходится два обращения в память. Таблица ниже показывает, во что это складывается для контекстов разного размера.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Сущностей в контексте</th>
@@ -1457,28 +1457,28 @@ update wide_payment set status=? where id=?
 </thead>
 <tbody>
 <tr>
-<td class="num">100</td>
-<td class="num">20</td>
-<td class="num">2 000</td>
-<td>~0,04 мс — незаметно</td>
+<td data-label="Сущностей в контексте" class="num">100</td>
+<td data-label="Полей" class="num">20</td>
+<td data-label="Сравнений на flush" class="num">2 000</td>
+<td data-label="Оценка времени одного flush">~0,04 мс — незаметно</td>
 </tr>
 <tr>
-<td class="num">1 000</td>
-<td class="num">20</td>
-<td class="num">20 000</td>
-<td>~0,4 мс — заметно на профиле</td>
+<td data-label="Сущностей в контексте" class="num">1 000</td>
+<td data-label="Полей" class="num">20</td>
+<td data-label="Сравнений на flush" class="num">20 000</td>
+<td data-label="Оценка времени одного flush">~0,4 мс — заметно на профиле</td>
 </tr>
 <tr>
-<td class="num">10 000</td>
-<td class="num">20</td>
-<td class="num">200 000</td>
-<td>~4 мс — <strong>каждый</strong> flush</td>
+<td data-label="Сущностей в контексте" class="num">10 000</td>
+<td data-label="Полей" class="num">20</td>
+<td data-label="Сравнений на flush" class="num">200 000</td>
+<td data-label="Оценка времени одного flush">~4 мс — <strong>каждый</strong> flush</td>
 </tr>
 <tr>
-<td class="num">50 000</td>
-<td class="num">20</td>
-<td class="num">1 000 000</td>
-<td>~20 мс</td>
+<td data-label="Сущностей в контексте" class="num">50 000</td>
+<td data-label="Полей" class="num">20</td>
+<td data-label="Сравнений на flush" class="num">1 000 000</td>
+<td data-label="Оценка времени одного flush">~20 мс</td>
 </tr>
 </tbody>
 </table>
@@ -1541,7 +1541,7 @@ update wide_payment set status=? where id=?
 <p>Третий случай коварнее остальных, потому что интуиция подсказывает «очистил — значит, пусто». На деле для коллекции с <code>mappedBy</code> без <code>orphanRemoval</code> вызов <code>clear()</code> не порождает вообще никакого SQL. Обратная сторона связи в базу не пишет, старые строки <code>tag</code> остаются на месте со своим <code>order_id</code>, и новые вставки упираются в уникальный индекс не из-за порядка операций, а потому, что DELETE не будет вовсе.</p>
 <p>Действия над коллекциями ведут себя так потому, что пишут только в таблицы, которыми коллекция владеет сама. <code>CollectionUpdateAction</code>, <code>CollectionRemoveAction</code> и <code>CollectionRecreateAction</code> пишут в связующую таблицу или в таблицу <code>@ElementCollection</code>, а для <code>mappedBy</code>-коллекции Hibernate их SQL пропускает (проверка <code>isInverse()</code> в <code>OneToManyPersister</code>). Причём для таких таблиц <code>clear()</code> с последующим <code>add()</code> конфликта не даёт: это одно действие <code>CollectionUpdateAction</code>, которое внутри себя сначала удаляет строки и только потом вставляет новые (<a href="https://raw.githubusercontent.com/hibernate/hibernate-orm/6.6/hibernate-core/src/main/java/org/hibernate/action/internal/CollectionUpdateAction.java"><code>CollectionUpdateAction.java</code>, ветка 6.6</a>). Удалить старые дочерние сущности при <code>clear()</code> заставляет только <code>orphanRemoval</code>, о чём и говорит последняя строка таблицы ниже.</p>
 <p>Для каждого случая есть своё лечение, и в таблице ниже рядом с ним указано, почему оно работает.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Случай</th>
@@ -1551,34 +1551,34 @@ update wide_payment set status=? where id=?
 </thead>
 <tbody>
 <tr>
-<td>(1) delete + insert</td>
-<td><code>em.flush()</code> сразу после удаления</td>
-<td>принудительно выполняет DELETE до постановки INSERT</td>
+<td data-label="Случай">(1) delete + insert</td>
+<td data-label="Лечение"><code>em.flush()</code> сразу после удаления</td>
+<td data-label="Почему">принудительно выполняет DELETE до постановки INSERT</td>
 </tr>
 <tr>
-<td>(1), альтернатива</td>
-<td><code>@Modifying</code>-запрос на удаление (bulk DML)</td>
-<td>bulk-DML идёт в БД <strong>немедленно</strong>, минуя <code>ActionQueue</code></td>
+<td data-label="Случай">(1), альтернатива</td>
+<td data-label="Лечение"><code>@Modifying</code>-запрос на удаление (bulk DML)</td>
+<td data-label="Почему">bulk-DML идёт в БД <strong>немедленно</strong>, минуя <code>ActionQueue</code></td>
 </tr>
 <tr>
-<td>(1), архитектурно</td>
-<td><code>INSERT ... ON CONFLICT DO UPDATE</code> через native-запрос</td>
-<td>одна операция вместо двух, гонок нет вовсе</td>
+<td data-label="Случай">(1), архитектурно</td>
+<td data-label="Лечение"><code>INSERT ... ON CONFLICT DO UPDATE</code> через native-запрос</td>
+<td data-label="Почему">одна операция вместо двух, гонок нет вовсе</td>
 </tr>
 <tr>
-<td>(2) swap</td>
-<td><code>DEFERRABLE INITIALLY DEFERRED</code> на уникальном constraint в БД</td>
-<td>проверка откладывается до конца транзакции (гл. 19)</td>
+<td data-label="Случай">(2) swap</td>
+<td data-label="Лечение"><code>DEFERRABLE INITIALLY DEFERRED</code> на уникальном constraint в БД</td>
+<td data-label="Почему">проверка откладывается до конца транзакции (гл. 19)</td>
 </tr>
 <tr>
-<td>(2), альтернатива</td>
-<td>промежуточное значение (<code>-1</code>) + <code>flush()</code> между шагами</td>
-<td>руками разводит конфликт по времени</td>
+<td data-label="Случай">(2), альтернатива</td>
+<td data-label="Лечение">промежуточное значение (<code>-1</code>) + <code>flush()</code> между шагами</td>
+<td data-label="Почему">руками разводит конфликт по времени</td>
 </tr>
 <tr>
-<td>(3) пересборка коллекции</td>
-<td><code>orphanRemoval = true</code> + <code>flush()</code> после <code>clear()</code></td>
-<td>сироты удаляются <code>OrphanRemovalAction</code>, который идёт в очереди <strong>раньше вставок</strong></td>
+<td data-label="Случай">(3) пересборка коллекции</td>
+<td data-label="Лечение"><code>orphanRemoval = true</code> + <code>flush()</code> после <code>clear()</code></td>
+<td data-label="Почему">сироты удаляются <code>OrphanRemovalAction</code>, который идёт в очереди <strong>раньше вставок</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1655,7 +1655,7 @@ update wide_payment set status=? where id=?
 <h3 id="313-стоимость-управляемой-сущности-по-памяти-и-процессору">3.13 Стоимость управляемой сущности по памяти и процессору</h3>
 <p>Стоимость управляемой сущности — это память и процессорное время, которые Hibernate тратит на сущность сверх самих её данных. В 3.8 была выведена общая формула памяти, а в 3.9 — оценка стоимости flush; этот подраздел доводит обе до конкретных чисел на примере из банковского сервиса и уточняет, куда именно уходит процессор. Понимать это нужно, чтобы заранее ответить на вопрос, который обычно задают уже после инцидента: сколько памяти займёт загрузка справочника или реестра в управляемые сущности и почему сервис, который «просто читает», нагружает процессор. Ниже по шагам разложена память одной сущности с учётом структур Hibernate 6.6, затем посчитан пример со справочником, после этого разобрано, где тратится процессор, включая доступ к полям через рефлексию, и в конце сведены в таблицу четыре способа читать данные с разной ценой.</p>
 <p><strong>Память на одну строку.</strong> Возьмём сущность <code>Payment</code> с двенадцатью атрибутами: <code>Long id</code>, <code>BigDecimal amount</code>, трёхбуквенная валюта, IBAN, назначение платежа на 60 символов, внешний идентификатор-строка из 36 символов, перечисление статуса, две даты-времени, дата валютирования, <code>Long accountId</code> и <code>Integer version</code>. Раскладка ниже посчитана для 64-битной JVM со сжатыми ссылками, 12-байтовым заголовком объекта, выравниванием по 8 байт и компактными строками Latin-1. В первой части таблицы собраны сами данные, во второй — то, что добавляет Hibernate, и смотреть стоит на соотношение итоговых строк.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -1665,54 +1665,54 @@ update wide_payment set status=? where id=?
 </thead>
 <tbody>
 <tr>
-<td>объект <code>Payment</code> (заголовок + 12 ссылок)</td>
-<td class="num">64</td>
-<td>сама сущность</td>
+<td data-label="Что">объект <code>Payment</code> (заголовок + 12 ссылок)</td>
+<td data-label="Байт (оценка)" class="num">64</td>
+<td data-label="Откуда">сама сущность</td>
 </tr>
 <tr>
-<td>значения полей: <code>Long</code>, <code>BigDecimal</code>, строки, <code>Instant</code>, <code>LocalDate</code>, <code>Integer</code></td>
-<td class="num">~470</td>
-<td>строки дают больше половины</td>
+<td data-label="Что">значения полей: <code>Long</code>, <code>BigDecimal</code>, строки, <code>Instant</code>, <code>LocalDate</code>, <code>Integer</code></td>
+<td data-label="Байт (оценка)" class="num">~470</td>
+<td data-label="Откуда">строки дают больше половины</td>
 </tr>
 <tr>
-<td><strong>итого данные</strong></td>
-<td class="num"><strong>~535</strong></td>
-<td>то же занял бы DTO-<code>record</code></td>
+<td data-label="Что"><strong>итого данные</strong></td>
+<td data-label="Байт (оценка)" class="num"><strong>~535</strong></td>
+<td data-label="Откуда">то же занял бы DTO-<code>record</code></td>
 </tr>
 <tr>
-<td><code>Object[] loadedState</code> на 12 ссылок</td>
-<td class="num">64</td>
-<td>снимок (3.8)</td>
+<td data-label="Что"><code>Object[] loadedState</code> на 12 ссылок</td>
+<td data-label="Байт (оценка)" class="num">64</td>
+<td data-label="Откуда">снимок (3.8)</td>
 </tr>
 <tr>
-<td>копии значений в снимке</td>
-<td class="num">0</td>
-<td>все типы неизменяемые, <code>deepCopy</code> возвращает ту же ссылку</td>
+<td data-label="Что">копии значений в снимке</td>
+<td data-label="Байт (оценка)" class="num">0</td>
+<td data-label="Откуда">все типы неизменяемые, <code>deepCopy</code> возвращает ту же ссылку</td>
 </tr>
 <tr>
-<td><code>EntityEntry</code> (<code>AbstractEntityEntry</code>: 9 ссылок и упакованное состояние)</td>
-<td class="num">~56</td>
-<td>паспорт сущности</td>
+<td data-label="Что"><code>EntityEntry</code> (<code>AbstractEntityEntry</code>: 9 ссылок и упакованное состояние)</td>
+<td data-label="Байт (оценка)" class="num">~56</td>
+<td data-label="Откуда">паспорт сущности</td>
 </tr>
 <tr>
-<td><code>EntityKey</code> (id, persister, hash)</td>
-<td class="num">24</td>
-<td>ключ identity map</td>
+<td data-label="Что"><code>EntityKey</code> (id, persister, hash)</td>
+<td data-label="Байт (оценка)" class="num">24</td>
+<td data-label="Откуда">ключ identity map</td>
 </tr>
 <tr>
-<td><code>EntityHolderImpl</code> и узел <code>HashMap</code> в <code>entitiesByKey</code></td>
-<td class="num">~80</td>
-<td>identity map</td>
+<td data-label="Что"><code>EntityHolderImpl</code> и узел <code>HashMap</code> в <code>entitiesByKey</code></td>
+<td data-label="Байт (оценка)" class="num">~80</td>
+<td data-label="Откуда">identity map</td>
 </tr>
 <tr>
-<td>обёртка <code>ManagedEntityImpl</code> и слот <code>IdentityHashMap</code> в <code>EntityEntryContext</code></td>
-<td class="num">~45</td>
-<td>только для неинструментированных классов</td>
+<td data-label="Что">обёртка <code>ManagedEntityImpl</code> и слот <code>IdentityHashMap</code> в <code>EntityEntryContext</code></td>
+<td data-label="Байт (оценка)" class="num">~45</td>
+<td data-label="Откуда">только для неинструментированных классов</td>
 </tr>
 <tr>
-<td><strong>итого накладные расходы Hibernate</strong></td>
-<td class="num"><strong>~270</strong></td>
-<td><strong>+50% к данным</strong></td>
+<td data-label="Что"><strong>итого накладные расходы Hibernate</strong></td>
+<td data-label="Байт (оценка)" class="num"><strong>~270</strong></td>
+<td data-label="Откуда"><strong>+50% к данным</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1726,7 +1726,7 @@ update wide_payment set status=? where id=?
 <p>Третье уточнение касается того, что масштабируется хуже всего. Время на сравнение растёт с числом атрибутов, но сильнее всего его увеличивают атрибуты, для которых сравнение дорого: встраиваемые объекты с вложенностью и jsonb-карты, где <code>Type#isDirty</code> сравнивает всю структуру.</p>
 <p>Избежать сравнения всего подряд можно только одним способом — инструментированием байткода с <code>enableDirtyTracking</code> (3.12). Инструментированная сущность сама записывает имена изменённых атрибутов в <code>$$_hibernate_tracker</code>, и на flush Hibernate спрашивает трекер вместо того, чтобы читать и сравнивать все поля, так что работа становится пропорциональной числу изменений. Инструментирование экономит и память: такой класс реализует интерфейс <code>ManagedEntity</code>, и <code>EntityEntryContext</code> связывает управляемые экземпляры в список через них самих, обходясь без обёртки <code>ManagedEntityImpl</code> и записи в <code>IdentityHashMap</code> из таблицы выше. Для массовой обработки, где identity map и dirty checking не нужны вовсе, правильный инструмент — <code>StatelessSession</code> из 10.5: у неё нет ни контекста, ни снимков, и каждая операция сразу превращается в SQL.</p>
 <p><strong>Четыре способа читать данные.</strong> Таблица ниже сводит варианты по цене и по тому, что каждый из них даёт взамен. Смотреть в ней стоит на правую колонку, потому что отказ от управляемой сущности всегда означает отказ от какой-то её гарантии.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -1737,28 +1737,28 @@ update wide_payment set status=? where id=?
 </thead>
 <tbody>
 <tr>
-<td>управляемая сущность</td>
-<td>снимок + структуры контекста, ~50–100%</td>
-<td>каждый атрибут каждой сущности</td>
-<td>ничего</td>
+<td data-label="Способ">управляемая сущность</td>
+<td data-label="Память на строку сверх данных">снимок + структуры контекста, ~50–100%</td>
+<td data-label="Dirty checking на flush">каждый атрибут каждой сущности</td>
+<td data-label="Что теряется">ничего</td>
 </tr>
 <tr>
-<td>сущность в <code>readOnly</code>-транзакции (8.2)</td>
-<td>структуры контекста без снимка</td>
-<td>не выполняется</td>
-<td>автоматическое сохранение изменений</td>
+<td data-label="Способ">сущность в <code>readOnly</code>-транзакции (8.2)</td>
+<td data-label="Память на строку сверх данных">структуры контекста без снимка</td>
+<td data-label="Dirty checking на flush">не выполняется</td>
+<td data-label="Что теряется">автоматическое сохранение изменений</td>
 </tr>
 <tr>
-<td><code>StatelessSession</code> (10.5)</td>
-<td>нет</td>
-<td>нет</td>
-<td>identity map, каскады, ленивая загрузка, события</td>
+<td data-label="Способ"><code>StatelessSession</code> (10.5)</td>
+<td data-label="Память на строку сверх данных">нет</td>
+<td data-label="Dirty checking на flush">нет</td>
+<td data-label="Что теряется">identity map, каскады, ленивая загрузка, события</td>
 </tr>
 <tr>
-<td>DTO-проекция (6.8, 6.12)</td>
-<td>нет</td>
-<td>нет</td>
-<td>всё, что связано с сущностью: запись, связи, <code>@Version</code></td>
+<td data-label="Способ">DTO-проекция (6.8, 6.12)</td>
+<td data-label="Память на строку сверх данных">нет</td>
+<td data-label="Dirty checking на flush">нет</td>
+<td data-label="Что теряется">всё, что связано с сущностью: запись, связи, <code>@Version</code></td>
 </tr>
 </tbody>
 </table>
@@ -1800,7 +1800,7 @@ update account set balance=?,status=?,iban=? where id=?                         
 <p><strong><code>detach</code> и <code>clear</code> выбрасывают объекты из контекста.</strong> <code>em.detach(a)</code> удаляет из контекста одну сущность вместе с тем, на что распространяется каскад <code>DETACH</code>, а <code>em.clear()</code> удаляет всё. Спецификация прямо говорит, что несброшенные изменения отсоединённых сущностей, включая удаление, в базу не попадут, поэтому перед <code>clear</code> почти всегда нужен <code>flush</code>, как в приёме пакетной вставки из 3.7.</p>
 <p>После отсоединения старый объект остаётся у кода, но контекст о нём больше не знает. Следующий <code>find</code> по тому же идентификатору снова пойдёт в базу и вернёт <strong>новый</strong> экземпляр, а старый так и останется в руках у кода, который его держал: для него <code>em.contains(old)</code> вернёт <code>false</code>, изменения в нём не сохранятся, а обращение к его ленивым связям закончится <code>LazyInitializationException</code>. Поэтому <code>clear</code> уместен на границе порции в пакетной обработке и опасен посреди бизнес-метода, где на сущности ещё смотрят другие переменные.</p>
 <p><strong>Native-запрос и несброшенные изменения.</strong> Для JPQL Hibernate знает, какие таблицы затронуты, и в режиме <code>AUTO</code> сбрасывает изменения только тогда, когда они пересекаются с таблицами запроса (2.9). Для native-запроса таблицы неизвестны, и поведение зависит сразу от трёх вещей, которые видны в <code>NativeQueryImpl.prepareForExecution</code> и <code>shouldFlush</code> (<a href="https://raw.githubusercontent.com/hibernate/hibernate-orm/6.6/hibernate-core/src/main/java/org/hibernate/query/sql/internal/NativeQueryImpl.java"><code>NativeQueryImpl.java</code>, ветка 6.6</a>): от режима flush, от того, идёт ли транзакция, и от того, как собрана <code>SessionFactory</code>. Таблица ниже сводит эти случаи. Смотреть в ней стоит на строку про нативный запуск Hibernate: именно она объясняет, почему один и тот же код ведёт себя по-разному в Spring Boot и в утилите, где Hibernate поднят вручную.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Условие</th>
@@ -1810,34 +1810,34 @@ update account set balance=?,status=?,iban=? where id=?                         
 </thead>
 <tbody>
 <tr>
-<td><code>AUTO</code>, транзакция идёт, запуск через JPA (Spring Boot, <code>LocalContainerEntityManagerFactoryBean</code>)</td>
-<td>да, <strong>всё</strong> содержимое контекста</td>
-<td>да</td>
+<td data-label="Условие"><code>AUTO</code>, транзакция идёт, запуск через JPA (Spring Boot, <code>LocalContainerEntityManagerFactoryBean</code>)</td>
+<td data-label="Сбросит ли Hibernate изменения перед native-запросом">да, <strong>всё</strong> содержимое контекста</td>
+<td data-label="Увидит ли запрос несброшенное">да</td>
 </tr>
 <tr>
-<td><code>AUTO</code>, транзакция идёт, указаны query spaces (<code>addSynchronizedEntityClass</code>, <code>addSynchronizedQuerySpace</code>)</td>
-<td>только если изменения пересекаются с указанными таблицами</td>
-<td>да, по этим таблицам</td>
+<td data-label="Условие"><code>AUTO</code>, транзакция идёт, указаны query spaces (<code>addSynchronizedEntityClass</code>, <code>addSynchronizedQuerySpace</code>)</td>
+<td data-label="Сбросит ли Hibernate изменения перед native-запросом">только если изменения пересекаются с указанными таблицами</td>
+<td data-label="Увидит ли запрос несброшенное">да, по этим таблицам</td>
 </tr>
 <tr>
-<td><code>AUTO</code>, <code>SessionFactory</code> собрана нативным API Hibernate</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Условие"><code>AUTO</code>, <code>SessionFactory</code> собрана нативным API Hibernate</td>
+<td data-label="Сбросит ли Hibernate изменения перед native-запросом">нет</td>
+<td data-label="Увидит ли запрос несброшенное">нет</td>
 </tr>
 <tr>
-<td><code>COMMIT</code> или <code>MANUAL</code> (в том числе <code>readOnly = true</code>, 8.2)</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Условие"><code>COMMIT</code> или <code>MANUAL</code> (в том числе <code>readOnly = true</code>, 8.2)</td>
+<td data-label="Сбросит ли Hibernate изменения перед native-запросом">нет</td>
+<td data-label="Увидит ли запрос несброшенное">нет</td>
 </tr>
 <tr>
-<td><code>ALWAYS</code></td>
-<td>да, всё</td>
-<td>да</td>
+<td data-label="Условие"><code>ALWAYS</code></td>
+<td data-label="Сбросит ли Hibernate изменения перед native-запросом">да, всё</td>
+<td data-label="Увидит ли запрос несброшенное">да</td>
 </tr>
 <tr>
-<td>транзакции нет</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Условие">транзакции нет</td>
+<td data-label="Сбросит ли Hibernate изменения перед native-запросом">нет</td>
+<td data-label="Увидит ли запрос несброшенное">нет</td>
 </tr>
 </tbody>
 </table>
@@ -1875,7 +1875,7 @@ update account set balance=?,status=?,iban=? where id=?                         
 <p>Коллизии ключей начинаются, если проверку ослабили. Значение <code>LOG</code> лишь пишет предупреждение и оставляет шаг 50 из отображения, <code>NONE</code> вообще не смотрит в базу, и в обоих случаях Hibernate раздаёт по 50 значений на каждый <code>nextval</code>, который на деле сдвигает последовательность на единицу. Значение <code>FIX</code> безопасно: оно берёт шаг из базы, но тогда <code>allocationSize</code> фактически становится равным 1. Дорогой эта ошибка бывает именно в миграциях, где Liquibase создал последовательность с шагом по умолчанию, а кто-то, чтобы приложение поднялось, переключил стратегию на <code>LOG</code>.</p>
 <p><strong>Оптимизатор</strong> — это часть генератора, которая раздаёт идентификаторы из памяти, не обращаясь к базе за каждым. При <code>allocationSize &gt; 1</code> Hibernate включает оптимизатор, похожий на hi/lo: один <code>SELECT nextval('payment_seq')</code> даёт приложению право выдать из памяти 50 идентификаторов, так что на 50 вставок приходится 1 обращение к последовательности вместо 50.</p>
 <p>Вариантов оптимизатора два, плюс устаревший третий (<a href="https://vladmihalcea.com/hibernate-hidden-gem-the-pooled-lo-optimizer/">Vlad Mihalcea, pooled-lo</a>). Различаются они тем, как толкуют значение, полученное из последовательности, и в таблице ниже главное — последняя колонка: она показывает, переживёт ли схема вставки из других систем.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Оптимизатор</th>
@@ -1886,22 +1886,22 @@ update account set balance=?,status=?,iban=? where id=?                         
 </thead>
 <tbody>
 <tr>
-<td><code>pooled</code> (по умолчанию при <code>allocationSize &gt; 1</code>)</td>
-<td><strong>верхняя</strong> граница</td>
-<td><code>(value - allocationSize, value]</code></td>
-<td>да</td>
+<td data-label="Оптимизатор"><code>pooled</code> (по умолчанию при <code>allocationSize &gt; 1</code>)</td>
+<td data-label="Значение из БД"><strong>верхняя</strong> граница</td>
+<td data-label="Диапазон в памяти"><code>(value - allocationSize, value]</code></td>
+<td data-label="Совместимость с внешними писателями">да</td>
 </tr>
 <tr>
-<td><code>pooled-lo</code></td>
-<td><strong>нижняя</strong> граница</td>
-<td><code>[value, value + allocationSize)</code></td>
-<td>да, и естественнее читается</td>
+<td data-label="Оптимизатор"><code>pooled-lo</code></td>
+<td data-label="Значение из БД"><strong>нижняя</strong> граница</td>
+<td data-label="Диапазон в памяти"><code>[value, value + allocationSize)</code></td>
+<td data-label="Совместимость с внешними писателями">да, и естественнее читается</td>
 </tr>
 <tr>
-<td><code>hilo</code> (устаревший)</td>
-<td>множитель</td>
-<td><code>value*size+1 .. (value+1)*size</code></td>
-<td><strong>нет</strong> — чужие вставки конфликтуют</td>
+<td data-label="Оптимизатор"><code>hilo</code> (устаревший)</td>
+<td data-label="Значение из БД">множитель</td>
+<td data-label="Диапазон в памяти"><code>value*size+1 .. (value+1)*size</code></td>
+<td data-label="Совместимость с внешними писателями"><strong>нет</strong> — чужие вставки конфликтуют</td>
 </tr>
 </tbody>
 </table>
@@ -2201,7 +2201,7 @@ insert into e_sequence (payload, id) values (?, ?)   -- 2 батча по 50 в 
 <p><strong>Безопасность при нескольких приложениях и экземплярах.</strong> Это главный аргумент в пользу <code>pooled</code>/<code>pooled-lo</code> и против <code>hilo</code>. Диапазон выдаётся атомарно через <code>nextval</code>, который в PostgreSQL не откатывается и не блокируется, поэтому два экземпляра, одновременно вызвавшие <code>nextval</code>, получат разные значения, а значит, непересекающиеся диапазоны. Сторонний писатель — миграция, скрипт DBA или другой сервис, — который вставляет строку через <code>nextval('payment_seq')</code>, тоже получит уникальное значение и просто «прыгнет» на 50 вперёд. Именно это и имеют в виду, когда говорят, что дырки безопасны.</p>
 <p><code>hilo</code> работает иначе: он толкует значение из БД как <strong>множитель</strong> и вычисляет диапазон арифметически. Сторонний писатель, получивший <code>nextval = 7</code>, вставит строку с id = 7, а приложение, получившее множитель 1 при размере 50, считает своими значения 51..100, хотя кто-то уже мог занять 7 или 77, и конфликт становится неизбежен. Поэтому в новом коде <code>hilo</code> не используют, а при миграции старого кода на <code>pooled-lo</code> текущее значение последовательности приходится пересчитывать вручную.</p>
 <p><strong>Как выбрать число.</strong> Зависимость здесь простая: во сколько раз больше <code>allocationSize</code>, во столько раз реже приложение обращается к последовательности. Практические ориентиры собраны в таблице ниже.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Профиль нагрузки</th>
@@ -2211,24 +2211,24 @@ insert into e_sequence (payload, id) values (?, ?)   -- 2 батча по 50 в 
 </thead>
 <tbody>
 <tr>
-<td>OLTP, единицы вставок на запрос</td>
-<td>20–50</td>
-<td>обращение к <code>nextval</code> дешёвое (~0,05 мс), экономия уже ощутима</td>
+<td data-label="Профиль нагрузки">OLTP, единицы вставок на запрос</td>
+<td data-label="allocationSize">20–50</td>
+<td data-label="Обоснование">обращение к <code>nextval</code> дешёвое (~0,05 мс), экономия уже ощутима</td>
 </tr>
 <tr>
-<td>Пакетная обработка, <code>batch_size = 50</code></td>
-<td>≥ <code>batch_size</code>, то есть 50–100</td>
-<td>иначе на каждый пакет будет несколько <code>nextval</code></td>
+<td data-label="Профиль нагрузки">Пакетная обработка, <code>batch_size = 50</code></td>
+<td data-label="allocationSize">≥ <code>batch_size</code>, то есть 50–100</td>
+<td data-label="Обоснование">иначе на каждый пакет будет несколько <code>nextval</code></td>
 </tr>
 <tr>
-<td>Массовая загрузка через отдельную последовательность</td>
-<td>500–1000</td>
-<td>обращений почти нет, дырки не важны</td>
+<td data-label="Профиль нагрузки">Массовая загрузка через отдельную последовательность</td>
+<td data-label="allocationSize">500–1000</td>
+<td data-label="Обоснование">обращений почти нет, дырки не важны</td>
 </tr>
 <tr>
-<td>Идентификатор виден пользователю («номер счёта»)</td>
-<td>1</td>
-<td>дырки и непоследовательность недопустимы бизнесом — но тогда лучше отдельный «человеческий» номер и технический id</td>
+<td data-label="Профиль нагрузки">Идентификатор виден пользователю («номер счёта»)</td>
+<td data-label="allocationSize">1</td>
+<td data-label="Обоснование">дырки и непоследовательность недопустимы бизнесом — но тогда лучше отдельный «человеческий» номер и технический id</td>
 </tr>
 </tbody>
 </table>
@@ -2270,7 +2270,7 @@ insert into e_sequence (payload, id) values (?, ?)   -- 2 батча по 50 в 
 
 <p>В продакшене симптом выглядит безобидно: «после сохранения реестра строка пропала из коллекции», «<code>removeIf</code> не удаляет», «<code>contains</code> врёт». Причина при этом всегда одна: <code>hashCode</code> зависит от генерируемого идентификатора, а объект попал в хеш-коллекцию ещё до flush.</p>
 <p>Теперь сравним три допустимые стратегии. В таблице ниже стоит обратить внимание на строки про transient-объекты и про производительность <code>HashSet</code>, потому что именно в них стратегии расходятся.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -2281,52 +2281,52 @@ insert into e_sequence (payload, id) values (?, ?)   -- 2 батча по 50 в 
 </thead>
 <tbody>
 <tr>
-<td><code>hashCode</code> стабилен всегда</td>
-<td>да</td>
-<td>да (константа)</td>
-<td>да</td>
+<td data-label="Критерий"><code>hashCode</code> стабилен всегда</td>
+<td data-label="1. Бизнес-ключ (@NaturalId)">да</td>
+<td data-label="2. id + константный hashCode">да (константа)</td>
+<td data-label="3. UUID, назначенный в конструкторе">да</td>
 </tr>
 <tr>
-<td><code>equals</code> корректен для transient-объектов</td>
-<td>да (ключ известен сразу)</td>
-<td><strong>нет</strong>: два разных новых объекта с <code>id == null</code> никогда не равны друг другу, даже с одинаковыми полями</td>
-<td>да</td>
+<td data-label="Критерий"><code>equals</code> корректен для transient-объектов</td>
+<td data-label="1. Бизнес-ключ (@NaturalId)">да (ключ известен сразу)</td>
+<td data-label="2. id + константный hashCode"><strong>нет</strong>: два разных новых объекта с <code>id == null</code> никогда не равны друг другу, даже с одинаковыми полями</td>
+<td data-label="3. UUID, назначенный в конструкторе">да</td>
 </tr>
 <tr>
-<td>Совпадает с уникальностью в БД</td>
-<td>да (есть уникальный индекс)</td>
-<td>да (PK)</td>
-<td>да (PK)</td>
+<td data-label="Критерий">Совпадает с уникальностью в БД</td>
+<td data-label="1. Бизнес-ключ (@NaturalId)">да (есть уникальный индекс)</td>
+<td data-label="2. id + константный hashCode">да (PK)</td>
+<td data-label="3. UUID, назначенный в конструкторе">да (PK)</td>
 </tr>
 <tr>
-<td>Производительность <code>HashSet</code>/<code>HashMap</code></td>
-<td>O(1)</td>
-<td><strong>O(n)</strong> — все в одном бакете</td>
-<td>O(1)</td>
+<td data-label="Критерий">Производительность <code>HashSet</code>/<code>HashMap</code></td>
+<td data-label="1. Бизнес-ключ (@NaturalId)">O(1)</td>
+<td data-label="2. id + константный hashCode"><strong>O(n)</strong> — все в одном бакете</td>
+<td data-label="3. UUID, назначенный в конструкторе">O(1)</td>
 </tr>
 <tr>
-<td>Работает с прокси</td>
-<td>да, если сравнение через <code>instanceof</code></td>
-<td>да, если сравнение через <code>instanceof</code></td>
-<td>да</td>
+<td data-label="Критерий">Работает с прокси</td>
+<td data-label="1. Бизнес-ключ (@NaturalId)">да, если сравнение через <code>instanceof</code></td>
+<td data-label="2. id + константный hashCode">да, если сравнение через <code>instanceof</code></td>
+<td data-label="3. UUID, назначенный в конструкторе">да</td>
 </tr>
 <tr>
-<td>Требует от модели</td>
-<td>неизменяемый бизнес-ключ</td>
-<td>ничего</td>
-<td>переход на UUID как PK</td>
+<td data-label="Критерий">Требует от модели</td>
+<td data-label="1. Бизнес-ключ (@NaturalId)">неизменяемый бизнес-ключ</td>
+<td data-label="2. id + константный hashCode">ничего</td>
+<td data-label="3. UUID, назначенный в конструкторе">переход на UUID как PK</td>
 </tr>
 <tr>
-<td>Совместимость с пакетированием вставок</td>
-<td>зависит от генератора id</td>
-<td>зависит от генератора id</td>
-<td><strong>да</strong> (id известен до INSERT)</td>
+<td data-label="Критерий">Совместимость с пакетированием вставок</td>
+<td data-label="1. Бизнес-ключ (@NaturalId)">зависит от генератора id</td>
+<td data-label="2. id + константный hashCode">зависит от генератора id</td>
+<td data-label="3. UUID, назначенный в конструкторе"><strong>да</strong> (id известен до INSERT)</td>
 </tr>
 <tr>
-<td>Когда применять</td>
-<td>есть естественный ключ: IBAN, ISIN, номер договора, внешний id</td>
-<td>старая модель с <code>Long id</code> и без бизнес-ключа</td>
-<td>новый код, DDD-стиль</td>
+<td data-label="Критерий">Когда применять</td>
+<td data-label="1. Бизнес-ключ (@NaturalId)">есть естественный ключ: IBAN, ISIN, номер договора, внешний id</td>
+<td data-label="2. id + константный hashCode">старая модель с <code>Long id</code> и без бизнес-ключа</td>
+<td data-label="3. UUID, назначенный в конструкторе">новый код, DDD-стиль</td>
 </tr>
 </tbody>
 </table>
@@ -2635,7 +2635,7 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 <p>Встраиваемые типы живут в той же строке, что и сущность, поэтому обходятся дёшево: ни отдельной таблицы, ни join. Они хорошо сочетаются с record'ами. Ограничение у них одно: экземпляр <code>@Embeddable</code> нельзя разделять между сущностями, а изменяемый тем более, иначе dirty checking увидит изменение там, где вы его не делали.</p>
 <h3 id="56-стратегии-наследования">5.6 Стратегии наследования</h3>
 <p>Стратегия наследования — это способ, которым JPA раскладывает иерархию классов сущностей по таблицам. Стратегий три, и выбор между ними фиксируется на всю жизнь схемы, поэтому делать его надо сознательно. В таблице ниже стратегии сравниваются по генерируемому SQL, плюсам, минусам и типовым случаям; дискриминатором в ней называется колонка, в которой записан тип строки. После таблицы даны два практических совета.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -2647,25 +2647,25 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 </thead>
 <tbody>
 <tr>
-<td><code>SINGLE_TABLE</code> (по умолчанию)</td>
-<td>одна таблица, <code>dtype</code>-дискриминатор</td>
-<td>самый быстрый: без join, полиморфные запросы тривиальны</td>
-<td>все поля подклассов <strong>nullable</strong> → нельзя поставить <code>NOT NULL</code> на обязательные атрибуты подкласса; широкая разреженная таблица</td>
-<td>иерархия из 2–5 типов с сильно пересекающимися полями</td>
+<td data-label="Стратегия"><code>SINGLE_TABLE</code> (по умолчанию)</td>
+<td data-label="SQL">одна таблица, <code>dtype</code>-дискриминатор</td>
+<td data-label="Плюсы">самый быстрый: без join, полиморфные запросы тривиальны</td>
+<td data-label="Минусы">все поля подклассов <strong>nullable</strong> → нельзя поставить <code>NOT NULL</code> на обязательные атрибуты подкласса; широкая разреженная таблица</td>
+<td data-label="Когда брать">иерархия из 2–5 типов с сильно пересекающимися полями</td>
 </tr>
 <tr>
-<td><code>JOINED</code></td>
-<td>таблица на класс, PK = FK</td>
-<td>нормализовано, <code>NOT NULL</code> работает</td>
-<td>join на каждый уровень, полиморфный запрос = join всех таблиц, вставка = N INSERT</td>
-<td>глубокая иерархия, где подклассы существенно разные</td>
+<td data-label="Стратегия"><code>JOINED</code></td>
+<td data-label="SQL">таблица на класс, PK = FK</td>
+<td data-label="Плюсы">нормализовано, <code>NOT NULL</code> работает</td>
+<td data-label="Минусы">join на каждый уровень, полиморфный запрос = join всех таблиц, вставка = N INSERT</td>
+<td data-label="Когда брать">глубокая иерархия, где подклассы существенно разные</td>
 </tr>
 <tr>
-<td><code>TABLE_PER_CLASS</code></td>
-<td>таблица на конкретный класс, поля продублированы</td>
-<td>нет join на конкретном типе</td>
-<td>полиморфный запрос = <code>UNION ALL</code> по всем таблицам; <code>IDENTITY</code> нельзя (нужна общая последовательность); FK на базовый тип невозможен</td>
-<td>практически никогда</td>
+<td data-label="Стратегия"><code>TABLE_PER_CLASS</code></td>
+<td data-label="SQL">таблица на конкретный класс, поля продублированы</td>
+<td data-label="Плюсы">нет join на конкретном типе</td>
+<td data-label="Минусы">полиморфный запрос = <code>UNION ALL</code> по всем таблицам; <code>IDENTITY</code> нельзя (нужна общая последовательность); FK на базовый тип невозможен</td>
+<td data-label="Когда брать">практически никогда</td>
 </tr>
 </tbody>
 </table>
@@ -2774,7 +2774,7 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 
 <p>Так происходит потому, что связью теперь владеет <code>@ManyToOne</code>, у которого есть конкретный идентификатор строки. Коллекция на стороне родителя становится всего лишь отражением связи, и пересобирать её Hibernate не обязан.</p>
 <p><strong>Сводка по типам коллекций</strong> приведена в таблице ниже. Удобнее всего читать её по колонке «Удаление одного элемента», потому что именно там типы расходятся сильнее всего; <code>MultipleBagFetchException</code> в ней — ошибка, которую Hibernate бросает при попытке загрузить через <code>join fetch</code> два bag сразу (6.10).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип поля</th>
@@ -2787,52 +2787,52 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 </thead>
 <tbody>
 <tr>
-<td><code>List</code> без <code>@OrderColumn</code>, однонаправленная с join-таблицей</td>
-<td>bag</td>
-<td>delete-all + reinsert в join-таблице</td>
-<td>нет</td>
-<td>нет (<code>MultipleBagFetchException</code>)</td>
-<td>катастрофа на больших коллекциях</td>
+<td data-label="Тип поля"><code>List</code> без <code>@OrderColumn</code>, однонаправленная с join-таблицей</td>
+<td data-label="Семантика">bag</td>
+<td data-label="Удаление одного элемента">delete-all + reinsert в join-таблице</td>
+<td data-label="Требует equals/hashCode">нет</td>
+<td data-label="Можно join fetch вдвоём">нет (<code>MultipleBagFetchException</code>)</td>
+<td data-label="Цена">катастрофа на больших коллекциях</td>
 </tr>
 <tr>
-<td><code>List</code> без <code>@OrderColumn</code>, однонаправленная с <code>@JoinColumn</code></td>
-<td>bag</td>
-<td>точечный <code>UPDATE ... SET fk = NULL</code> (+ <code>DELETE</code> при <code>orphanRemoval</code>)</td>
-<td>нет</td>
-<td>нет (<code>MultipleBagFetchException</code>)</td>
-<td>лишний <code>UPDATE</code> на каждую вставку, FK обязан быть nullable</td>
+<td data-label="Тип поля"><code>List</code> без <code>@OrderColumn</code>, однонаправленная с <code>@JoinColumn</code></td>
+<td data-label="Семантика">bag</td>
+<td data-label="Удаление одного элемента">точечный <code>UPDATE ... SET fk = NULL</code> (+ <code>DELETE</code> при <code>orphanRemoval</code>)</td>
+<td data-label="Требует equals/hashCode">нет</td>
+<td data-label="Можно join fetch вдвоём">нет (<code>MultipleBagFetchException</code>)</td>
+<td data-label="Цена">лишний <code>UPDATE</code> на каждую вставку, FK обязан быть nullable</td>
 </tr>
 <tr>
-<td><code>List</code> без <code>@OrderColumn</code>, <code>mappedBy</code></td>
-<td>bag</td>
-<td>точечный <code>DELETE</code></td>
-<td>нет</td>
-<td>нет</td>
-<td>приемлемо</td>
+<td data-label="Тип поля"><code>List</code> без <code>@OrderColumn</code>, <code>mappedBy</code></td>
+<td data-label="Семантика">bag</td>
+<td data-label="Удаление одного элемента">точечный <code>DELETE</code></td>
+<td data-label="Требует equals/hashCode">нет</td>
+<td data-label="Можно join fetch вдвоём">нет</td>
+<td data-label="Цена">приемлемо</td>
 </tr>
 <tr>
-<td><code>List</code> + <code>@OrderColumn</code></td>
-<td>упорядоченный список</td>
-<td><code>DELETE</code> + <code>UPDATE</code> позиций всех последующих</td>
-<td>нет</td>
-<td>да</td>
-<td>средняя</td>
+<td data-label="Тип поля"><code>List</code> + <code>@OrderColumn</code></td>
+<td data-label="Семантика">упорядоченный список</td>
+<td data-label="Удаление одного элемента"><code>DELETE</code> + <code>UPDATE</code> позиций всех последующих</td>
+<td data-label="Требует equals/hashCode">нет</td>
+<td data-label="Можно join fetch вдвоём">да</td>
+<td data-label="Цена">средняя</td>
 </tr>
 <tr>
-<td><code>Set</code></td>
-<td>множество</td>
-<td>точечный <code>DELETE</code></td>
-<td><strong>да, обязательно</strong></td>
-<td>да</td>
-<td>низкая</td>
+<td data-label="Тип поля"><code>Set</code></td>
+<td data-label="Семантика">множество</td>
+<td data-label="Удаление одного элемента">точечный <code>DELETE</code></td>
+<td data-label="Требует equals/hashCode"><strong>да, обязательно</strong></td>
+<td data-label="Можно join fetch вдвоём">да</td>
+<td data-label="Цена">низкая</td>
 </tr>
 <tr>
-<td><code>Map</code> (<code>@MapKey*</code>)</td>
-<td>отображение</td>
-<td>точечный <code>DELETE</code></td>
-<td>для ключа</td>
-<td>да</td>
-<td>низкая</td>
+<td data-label="Тип поля"><code>Map</code> (<code>@MapKey*</code>)</td>
+<td data-label="Семантика">отображение</td>
+<td data-label="Удаление одного элемента">точечный <code>DELETE</code></td>
+<td data-label="Требует equals/hashCode">для ключа</td>
+<td data-label="Можно join fetch вдвоём">да</td>
+<td data-label="Цена">низкая</td>
 </tr>
 </tbody>
 </table>
@@ -2853,7 +2853,7 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 <p><strong><code>Set</code> и требование к <code>equals</code>.</strong> <code>Set</code> снимает проблему повторной вставки, но приносит свою: в <code>HashSet</code> Hibernate вызывает <code>hashCode</code> элементов в момент инициализации коллекции и при каждом <code>add</code>. Если <code>hashCode</code> зависит от генерируемого id (см. 4.8), после flush коллекция ведёт себя непредсказуемо: <code>contains</code> возвращает <code>false</code>, <code>remove</code> не работает, а при добавлении «того же» элемента появляется дубликат. Отсюда правило: <strong><code>Set</code> в сущности допустим только при корректной реализации равенства</strong>, а если её нет, берите <code>List</code> с <code>mappedBy</code>.</p>
 <h3 id="59-типы-каскадов">5.9 Типы каскадов</h3>
 <p>Каскад (<em>cascade</em>) — это правило, по которому операция над родительской сущностью автоматически распространяется на связанные с ней дочерние. Выбирать каскады стоит по одному, а не пакетом. Запись <code>cascade = CascadeType.ALL</code> означает не «так удобнее», а «я согласен на все пять операций, включая те, о которых не думал»: в <code>jakarta.persistence.CascadeType</code> шесть значений, и <code>ALL</code> охватывает остальные пять — <code>PERSIST</code>, <code>MERGE</code>, <code>REMOVE</code>, <code>REFRESH</code> и <code>DETACH</code> (<a href="https://raw.githubusercontent.com/jakartaee/persistence/main/api/src/main/java/jakarta/persistence/CascadeType.java"><code>CascadeType.java</code>, Jakarta Persistence</a>). В таблице ниже разобран каждый тип каскада: что он делает, когда уместен и чем опасен. После неё показана рекомендуемая конфигурация для композиции и альтернатива для удаления родителя с большой коллекцией.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Каскад</th>
@@ -2864,40 +2864,40 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 </thead>
 <tbody>
 <tr>
-<td><code>PERSIST</code></td>
-<td><code>persist</code> родителя → <code>persist</code> детей</td>
-<td>почти всегда для композиции (заказ → позиции)</td>
-<td>если ребёнок уже существует в БД с тем же id — <code>EntityExistsException</code></td>
+<td data-label="Каскад"><code>PERSIST</code></td>
+<td data-label="Что делает"><code>persist</code> родителя → <code>persist</code> детей</td>
+<td data-label="Когда применять">почти всегда для композиции (заказ → позиции)</td>
+<td data-label="Чем опасен">если ребёнок уже существует в БД с тем же id — <code>EntityExistsException</code></td>
 </tr>
 <tr>
-<td><code>MERGE</code></td>
-<td><code>merge</code> родителя → <code>merge</code> детей</td>
-<td>при работе с detached-графами (приём JSON и обновление агрегата)</td>
-<td>тянет SELECT на каждого ребёнка; на большом графе — десятки запросов</td>
+<td data-label="Каскад"><code>MERGE</code></td>
+<td data-label="Что делает"><code>merge</code> родителя → <code>merge</code> детей</td>
+<td data-label="Когда применять">при работе с detached-графами (приём JSON и обновление агрегата)</td>
+<td data-label="Чем опасен">тянет SELECT на каждого ребёнка; на большом графе — десятки запросов</td>
 </tr>
 <tr>
-<td><code>REMOVE</code></td>
-<td><code>remove</code> родителя → <code>remove</code> детей</td>
-<td>настоящая композиция</td>
-<td>на <code>@ManyToOne</code> удаляет общий ресурс; на большой коллекции — N операторов <code>DELETE</code> вместо одного <code>ON DELETE CASCADE</code> в БД</td>
+<td data-label="Каскад"><code>REMOVE</code></td>
+<td data-label="Что делает"><code>remove</code> родителя → <code>remove</code> детей</td>
+<td data-label="Когда применять">настоящая композиция</td>
+<td data-label="Чем опасен">на <code>@ManyToOne</code> удаляет общий ресурс; на большой коллекции — N операторов <code>DELETE</code> вместо одного <code>ON DELETE CASCADE</code> в БД</td>
 </tr>
 <tr>
-<td><code>REFRESH</code></td>
-<td><code>refresh</code> родителя → <code>refresh</code> детей</td>
-<td>почти никогда</td>
-<td>перечитывает весь граф из БД, затирая несохранённые изменения</td>
+<td data-label="Каскад"><code>REFRESH</code></td>
+<td data-label="Что делает"><code>refresh</code> родителя → <code>refresh</code> детей</td>
+<td data-label="Когда применять">почти никогда</td>
+<td data-label="Чем опасен">перечитывает весь граф из БД, затирая несохранённые изменения</td>
 </tr>
 <tr>
-<td><code>DETACH</code></td>
-<td><code>detach</code> родителя → <code>detach</code> детей</td>
-<td>редко, при ручном управлении контекстом</td>
-<td>внезапные <code>LazyInitializationException</code> дальше по коду</td>
+<td data-label="Каскад"><code>DETACH</code></td>
+<td data-label="Что делает"><code>detach</code> родителя → <code>detach</code> детей</td>
+<td data-label="Когда применять">редко, при ручном управлении контекстом</td>
+<td data-label="Чем опасен">внезапные <code>LazyInitializationException</code> дальше по коду</td>
 </tr>
 <tr>
-<td><code>ALL</code></td>
-<td>все пять</td>
-<td>никогда «по умолчанию»</td>
-<td>включает <code>REFRESH</code> и <code>DETACH</code>, которых вы не просили</td>
+<td data-label="Каскад"><code>ALL</code></td>
+<td data-label="Что делает">все пять</td>
+<td data-label="Когда применять">никогда «по умолчанию»</td>
+<td data-label="Чем опасен">включает <code>REFRESH</code> и <code>DETACH</code>, которых вы не просили</td>
 </tr>
 </tbody>
 </table>
@@ -2933,7 +2933,7 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 </code></pre></div>
 
 <p>Как видно из таблицы ниже, в этом сценарии оба варианта ведут себя одинаково.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2943,14 +2943,14 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 </thead>
 <tbody>
 <tr>
-<td>SQL</td>
-<td><code>select</code> детей, затем <code>delete from comment where id=?</code> × N, затем <code>delete from post</code></td>
-<td>то же самое</td>
+<td data-label="">SQL</td>
+<td data-label="Вариант А (REMOVE)"><code>select</code> детей, затем <code>delete from comment where id=?</code> × N, затем <code>delete from post</code></td>
+<td data-label="Вариант Б (orphanRemoval)">то же самое</td>
 </tr>
 <tr>
-<td>Итог</td>
-<td>одинаково: <code>orphanRemoval</code> включает поведение <code>REMOVE</code></td>
-<td>одинаково</td>
+<td data-label="">Итог</td>
+<td data-label="Вариант А (REMOVE)">одинаково: <code>orphanRemoval</code> включает поведение <code>REMOVE</code></td>
+<td data-label="Вариант Б (orphanRemoval)">одинаково</td>
 </tr>
 </tbody>
 </table>
@@ -2960,7 +2960,7 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 </code></pre></div>
 
 <p>Здесь варианты расходятся, и таблица ниже показывает, в чём именно.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2970,19 +2970,19 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 </thead>
 <tbody>
 <tr>
-<td>SQL</td>
-<td><code>update comment set post_id = null where id = ?</code></td>
-<td><code>delete from comment where id = ?</code></td>
+<td data-label="">SQL</td>
+<td data-label="Вариант А (REMOVE)"><code>update comment set post_id = null where id = ?</code></td>
+<td data-label="Вариант Б (orphanRemoval)"><code>delete from comment where id = ?</code></td>
 </tr>
 <tr>
-<td>Если <code>post_id NOT NULL</code></td>
-<td><code>ConstraintViolationException</code> на flush</td>
-<td>работает</td>
+<td data-label="">Если <code>post_id NOT NULL</code></td>
+<td data-label="Вариант А (REMOVE)"><code>ConstraintViolationException</code> на flush</td>
+<td data-label="Вариант Б (orphanRemoval)">работает</td>
 </tr>
 <tr>
-<td>Семантика</td>
-<td>«комментарий остался, но ничей»</td>
-<td>«комментарий без поста не существует»</td>
+<td data-label="">Семантика</td>
+<td data-label="Вариант А (REMOVE)">«комментарий остался, но ничей»</td>
+<td data-label="Вариант Б (orphanRemoval)">«комментарий без поста не существует»</td>
 </tr>
 </tbody>
 </table>
@@ -3152,7 +3152,7 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 
 <p>У этой стратегии три недостатка. На каждый полиморфный запрос выполняется <code>UNION ALL</code> по всем таблицам. <code>IDENTITY</code> невозможен, потому что идентификаторы должны быть уникальны по всей иерархии и нужна общая последовательность. А внешний ключ на <code>Payment</code> построить нельзя, потому что таблицы <code>payment</code> просто нет. Практическая область применения у этой стратегии близка к нулю.</p>
 <p><strong>Честная таблица выбора</strong> ниже сформулирована как вопросы к вашей модели: найдите строку, которая описывает вашу ситуацию, и справа будет стратегия.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Вопрос к вашей модели</th>
@@ -3161,28 +3161,28 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 </thead>
 <tbody>
 <tr>
-<td>Подтипы отличаются 1–3 полями, полиморфные запросы часты</td>
-<td><code>SINGLE_TABLE</code></td>
+<td data-label="Вопрос к вашей модели">Подтипы отличаются 1–3 полями, полиморфные запросы часты</td>
+<td data-label="Ответ → стратегия"><code>SINGLE_TABLE</code></td>
 </tr>
 <tr>
-<td>Обязательность полей подтипа критична (финансы, регуляторика)</td>
-<td><code>JOINED</code></td>
+<td data-label="Вопрос к вашей модели">Обязательность полей подтипа критична (финансы, регуляторика)</td>
+<td data-label="Ответ → стратегия"><code>JOINED</code></td>
 </tr>
 <tr>
-<td>Подтипы отличаются 15+ полями, иерархия растёт</td>
-<td><code>JOINED</code></td>
+<td data-label="Вопрос к вашей модели">Подтипы отличаются 15+ полями, иерархия растёт</td>
+<td data-label="Ответ → стратегия"><code>JOINED</code></td>
 </tr>
 <tr>
-<td>Полиморфные запросы не нужны вовсе, общие только поля аудита</td>
-<td><code>@MappedSuperclass</code></td>
+<td data-label="Вопрос к вашей модели">Полиморфные запросы не нужны вовсе, общие только поля аудита</td>
+<td data-label="Ответ → стратегия"><code>@MappedSuperclass</code></td>
 </tr>
 <tr>
-<td>Нужен FK на базовый тип из других таблиц</td>
-<td><code>SINGLE_TABLE</code> или <code>JOINED</code>, но не <code>TABLE_PER_CLASS</code></td>
+<td data-label="Вопрос к вашей модели">Нужен FK на базовый тип из других таблиц</td>
+<td data-label="Ответ → стратегия"><code>SINGLE_TABLE</code> или <code>JOINED</code>, но не <code>TABLE_PER_CLASS</code></td>
 </tr>
 <tr>
-<td>Подтипов больше 8</td>
-<td>пересмотреть модель: скорее всего, это не наследование, а поле-тип плюс jsonb</td>
+<td data-label="Вопрос к вашей модели">Подтипов больше 8</td>
+<td data-label="Ответ → стратегия">пересмотреть модель: скорее всего, это не наследование, а поле-тип плюс jsonb</td>
 </tr>
 </tbody>
 </table>
@@ -3193,7 +3193,7 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 <h3 id="514-обратные-вызовы-жизненного-цикла-и-слушатели-сущностей">5.14 Обратные вызовы жизненного цикла и слушатели сущностей</h3>
 <p>Обратный вызов жизненного цикла (<em>lifecycle callback</em>) — это метод сущности или отдельного класса-слушателя, помеченный одной из семи аннотаций JPA, который провайдер вызывает при переходе сущности между состояниями: перед сохранением, после загрузки, перед удалением и так далее. На обратных вызовах построены аудит Spring Data (12.16), флаг новизны <code>Persistable</code> (3.4, 12.13) и множество самописных «заполнить поле перед записью». Почти все ошибки с ними происходят от неверного представления о том, <strong>когда</strong> именно обратный вызов вызывается относительно flush и SQL. Ниже разобраны момент вызова каждого обратного вызова в Hibernate для разных генераторов идентификатора, порядок вызова нескольких слушателей, то, что в обратном вызове делать нельзя, и способ внедрить в слушатель бин Spring.</p>
 <p><strong>Когда вызывается каждый обратный вызов.</strong> Спецификация задаёт границы, а Hibernate выбирает момент внутри них. Таблица ниже сводит то и другое по тексту Jakarta Persistence 3.2 (раздел 3.6.3) и по исходникам Hibernate 7.1 (<code>AbstractSaveEventListener</code>, <code>DefaultFlushEntityEventListener</code>, <code>DefaultDeleteEventListener</code>, <code>EntityInsertAction</code>). Смотреть в ней стоит на <code>@PrePersist</code> и <code>@PostPersist</code>: для <code>SEQUENCE</code> и <code>IDENTITY</code> они ведут себя по-разному, и именно это различие ломает код, который читает идентификатор.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Обратный вызов</th>
@@ -3203,39 +3203,39 @@ List + @OrderColumn, убрали последний        {delete ordered_pare
 </thead>
 <tbody>
 <tr>
-<td><code>@PrePersist</code></td>
-<td>синхронно внутри <code>persist</code> (и <code>merge</code> нового объекта — на управляемой копии), после генерации ключа, до постановки INSERT в очередь</td>
-<td><code>SEQUENCE</code>, <code>TABLE</code>, <code>UUID</code> — да; <code>IDENTITY</code> — нет</td>
+<td data-label="Обратный вызов"><code>@PrePersist</code></td>
+<td data-label="Когда вызывается в Hibernate">синхронно внутри <code>persist</code> (и <code>merge</code> нового объекта — на управляемой копии), после генерации ключа, до постановки INSERT в очередь</td>
+<td data-label="Идентификатор доступен?"><code>SEQUENCE</code>, <code>TABLE</code>, <code>UUID</code> — да; <code>IDENTITY</code> — нет</td>
 </tr>
 <tr>
-<td><code>@PostPersist</code></td>
-<td>сразу после выполнения INSERT: для <code>IDENTITY</code> — внутри <code>persist</code>, для <code>SEQUENCE</code> — на flush</td>
-<td>всегда</td>
+<td data-label="Обратный вызов"><code>@PostPersist</code></td>
+<td data-label="Когда вызывается в Hibernate">сразу после выполнения INSERT: для <code>IDENTITY</code> — внутри <code>persist</code>, для <code>SEQUENCE</code> — на flush</td>
+<td data-label="Идентификатор доступен?">всегда</td>
 </tr>
 <tr>
-<td><code>@PreUpdate</code></td>
-<td>на flush, только для сущностей, у которых dirty checking нашёл изменения</td>
-<td>да</td>
+<td data-label="Обратный вызов"><code>@PreUpdate</code></td>
+<td data-label="Когда вызывается в Hibernate">на flush, только для сущностей, у которых dirty checking нашёл изменения</td>
+<td data-label="Идентификатор доступен?">да</td>
 </tr>
 <tr>
-<td><code>@PostUpdate</code></td>
-<td>на flush, после выполнения UPDATE</td>
-<td>да</td>
+<td data-label="Обратный вызов"><code>@PostUpdate</code></td>
+<td data-label="Когда вызывается в Hibernate">на flush, после выполнения UPDATE</td>
+<td data-label="Идентификатор доступен?">да</td>
 </tr>
 <tr>
-<td><code>@PreRemove</code></td>
-<td>синхронно внутри <code>remove</code>, до постановки DELETE в очередь</td>
-<td>да</td>
+<td data-label="Обратный вызов"><code>@PreRemove</code></td>
+<td data-label="Когда вызывается в Hibernate">синхронно внутри <code>remove</code>, до постановки DELETE в очередь</td>
+<td data-label="Идентификатор доступен?">да</td>
 </tr>
 <tr>
-<td><code>@PostRemove</code></td>
-<td>на flush, после выполнения DELETE</td>
-<td>да</td>
+<td data-label="Обратный вызов"><code>@PostRemove</code></td>
+<td data-label="Когда вызывается в Hibernate">на flush, после выполнения DELETE</td>
+<td data-label="Идентификатор доступен?">да</td>
 </tr>
 <tr>
-<td><code>@PostLoad</code></td>
-<td>после загрузки строки в контекст и после <code>refresh</code>, до того как результат вернётся коду</td>
-<td>да</td>
+<td data-label="Обратный вызов"><code>@PostLoad</code></td>
+<td data-label="Когда вызывается в Hibernate">после загрузки строки в контекст и после <code>refresh</code>, до того как результат вернётся коду</td>
+<td data-label="Идентификатор доступен?">да</td>
 </tr>
 </tbody>
 </table>
@@ -4001,7 +4001,7 @@ select bl1_0.order_id,bl1_0.id from bline bl1_0 where bl1_0.order_id = any (?)
 
 <p>Здесь три запроса, объём каждого предсказуем, и лимит применяется в SQL. То, что третий запрос не нужно присваивать переменной, прямо следует из identity map (3.2): объекты <code>Order</code> уже лежат в контексте, и инициализация их коллекции меняет те же самые экземпляры.</p>
 <p>В таблице ниже сведены все обходы, включая DTO-проекцию; выбирать проще всего по колонкам «Пагинация» и «Когда выбирать».</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Обход</th>
@@ -4014,36 +4014,36 @@ select bl1_0.order_id,bl1_0.id from bline bl1_0 where bl1_0.order_id = any (?)
 </thead>
 <tbody>
 <tr>
-<td><code>Set</code> вместо <code>List</code></td>
-<td class="num">1</td>
-<td>произведение</td>
-<td>нет</td>
-<td>да</td>
-<td>одна из коллекций 1–3 элемента</td>
+<td data-label="Обход"><code>Set</code> вместо <code>List</code></td>
+<td data-label="Запросов" class="num">1</td>
+<td data-label="Строк из БД">произведение</td>
+<td data-label="Пагинация">нет</td>
+<td data-label="Требует equals">да</td>
+<td data-label="Когда выбирать">одна из коллекций 1–3 элемента</td>
 </tr>
 <tr>
-<td>join fetch + <code>@BatchSize</code></td>
-<td class="num">2</td>
-<td>сумма</td>
-<td>нет</td>
-<td>нет</td>
-<td>выбор по умолчанию для «загрузить агрегат целиком»</td>
+<td data-label="Обход">join fetch + <code>@BatchSize</code></td>
+<td data-label="Запросов" class="num">2</td>
+<td data-label="Строк из БД">сумма</td>
+<td data-label="Пагинация">нет</td>
+<td data-label="Требует equals">нет</td>
+<td data-label="Когда выбирать">выбор по умолчанию для «загрузить агрегат целиком»</td>
 </tr>
 <tr>
-<td>Несколько запросов по id</td>
-<td class="num">3</td>
-<td>сумма</td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>эндпоинты со страницами</td>
+<td data-label="Обход">Несколько запросов по id</td>
+<td data-label="Запросов" class="num">3</td>
+<td data-label="Строк из БД">сумма</td>
+<td data-label="Пагинация"><strong>да</strong></td>
+<td data-label="Требует equals">нет</td>
+<td data-label="Когда выбирать">эндпоинты со страницами</td>
 </tr>
 <tr>
-<td>DTO-проекция + отдельный запрос по деталям</td>
-<td class="num">2</td>
-<td>сумма, только нужные колонки</td>
-<td>да</td>
-<td>нет</td>
-<td>read-модель, отдача наружу</td>
+<td data-label="Обход">DTO-проекция + отдельный запрос по деталям</td>
+<td data-label="Запросов" class="num">2</td>
+<td data-label="Строк из БД">сумма, только нужные колонки</td>
+<td data-label="Пагинация">да</td>
+<td data-label="Требует equals">нет</td>
+<td data-label="Когда выбирать">read-модель, отдача наружу</td>
 </tr>
 </tbody>
 </table>
@@ -4066,7 +4066,7 @@ select bl1_0.order_id,bl1_0.id from bline bl1_0 where bl1_0.order_id = any (?)
 <li><code>Page</code> дополнительно выполнит <code>count</code>-запрос, который <strong>тоже</strong> будет с join'ом, если count выводится автоматически из того же JPQL.</li>
 </ul>
 <p>Что делать, зависит от ситуации, и типовые случаи собраны в таблице ниже.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -4075,24 +4075,24 @@ select bl1_0.order_id,bl1_0.id from bline bl1_0 where bl1_0.order_id = any (?)
 </thead>
 <tbody>
 <tr>
-<td>Пагинация + одна коллекция</td>
-<td>two-query pattern (6.4): страница id → догрузка графа</td>
+<td data-label="Ситуация">Пагинация + одна коллекция</td>
+<td data-label="Решение">two-query pattern (6.4): страница id → догрузка графа</td>
 </tr>
 <tr>
-<td>Пагинация + коллекция, нужная целиком редко</td>
-<td>обычная пагинация + <code>@BatchSize</code> на коллекции</td>
+<td data-label="Ситуация">Пагинация + коллекция, нужная целиком редко</td>
+<td data-label="Решение">обычная пагинация + <code>@BatchSize</code> на коллекции</td>
 </tr>
 <tr>
-<td>Пагинация по DTO</td>
-<td>проекция с агрегатом (<code>count(l)</code>, <code>sum(l.amount)</code>) вместо коллекции</td>
+<td data-label="Ситуация">Пагинация по DTO</td>
+<td data-label="Решение">проекция с агрегатом (<code>count(l)</code>, <code>sum(l.amount)</code>) вместо коллекции</td>
 </tr>
 <tr>
-<td>«Нужно отдать 10 000 заказов с позициями»</td>
-<td>это не пагинация, это выгрузка: <code>Stream</code> + <code>StatelessSession</code> или отдельный batch-job</td>
+<td data-label="Ситуация">«Нужно отдать 10 000 заказов с позициями»</td>
+<td data-label="Решение">это не пагинация, это выгрузка: <code>Stream</code> + <code>StatelessSession</code> или отдельный batch-job</td>
 </tr>
 <tr>
-<td>Сортировка по полю коллекции</td>
-<td>вынести в отдельный запрос или денормализовать поле в родителя</td>
+<td data-label="Ситуация">Сортировка по полю коллекции</td>
+<td data-label="Решение">вынести в отдельный запрос или денормализовать поле в родителя</td>
 </tr>
 </tbody>
 </table>
@@ -4118,7 +4118,7 @@ join line l1_0 on o1_0.id = l1_0.order_id order by o1_0.id</code></p>
 </ul>
 <h3 id="612-сравнение-проекций-по-стоимости">6.12 Сравнение проекций по стоимости</h3>
 <p>Стоимость проекции — это то, какие колонки она уводит в SQL, попадает ли результат в persistence context и сколько объектов создаётся на строку. Виды проекций уже были перечислены в 6.8, а здесь они сведены в таблицу с честной ценой каждого. Именно этот материал отличает разговор «я знаю про DTO» от разговора «я понимаю, что где происходит». После таблицы разобраны пять практических замечаний, от ловушки открытых проекций до стоимости динамических прокси.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -4131,60 +4131,60 @@ join line l1_0 on o1_0.id = l1_0.order_id order by o1_0.id</code></p>
 </thead>
 <tbody>
 <tr>
-<td>Сущность</td>
-<td>все колонки + EAGER-связи</td>
-<td>да, со снимком</td>
-<td>через lazy → риск N+1</td>
-<td>нет</td>
-<td>максимальная</td>
+<td data-label="Способ">Сущность</td>
+<td data-label="Что уходит в SQL">все колонки + EAGER-связи</td>
+<td data-label="Попадает в persistence context">да, со снимком</td>
+<td data-label="Вложенные объекты">через lazy → риск N+1</td>
+<td data-label="Динамика">нет</td>
+<td data-label="Цена">максимальная</td>
 </tr>
 <tr>
-<td>Интерфейсная <strong>закрытая</strong> проекция</td>
-<td>только нужные колонки верхнего уровня</td>
-<td>нет</td>
-<td>да, вложенным интерфейсом, но вложенная сущность выбирается всеми колонками</td>
-<td>нет</td>
-<td>минимальная, но динамический прокси на каждую строку</td>
+<td data-label="Способ">Интерфейсная <strong>закрытая</strong> проекция</td>
+<td data-label="Что уходит в SQL">только нужные колонки верхнего уровня</td>
+<td data-label="Попадает в persistence context">нет</td>
+<td data-label="Вложенные объекты">да, вложенным интерфейсом, но вложенная сущность выбирается всеми колонками</td>
+<td data-label="Динамика">нет</td>
+<td data-label="Цена">минимальная, но динамический прокси на каждую строку</td>
 </tr>
 <tr>
-<td>Интерфейсная <strong>открытая</strong> (<code>@Value</code> со SpEL)</td>
-<td><strong>все</strong> колонки сущности</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>как у сущности — SpEL может дотянуться до любого поля</td>
+<td data-label="Способ">Интерфейсная <strong>открытая</strong> (<code>@Value</code> со SpEL)</td>
+<td data-label="Что уходит в SQL"><strong>все</strong> колонки сущности</td>
+<td data-label="Попадает в persistence context">да</td>
+<td data-label="Вложенные объекты">да</td>
+<td data-label="Динамика">да</td>
+<td data-label="Цена">как у сущности — SpEL может дотянуться до любого поля</td>
 </tr>
 <tr>
-<td>Class-based DTO / <code>record</code> через <code>select new</code></td>
-<td>только нужные колонки</td>
-<td>нет</td>
-<td>нет (плоский результат)</td>
-<td>нет</td>
-<td>минимальная</td>
+<td data-label="Способ">Class-based DTO / <code>record</code> через <code>select new</code></td>
+<td data-label="Что уходит в SQL">только нужные колонки</td>
+<td data-label="Попадает в persistence context">нет</td>
+<td data-label="Вложенные объекты">нет (плоский результат)</td>
+<td data-label="Динамика">нет</td>
+<td data-label="Цена">минимальная</td>
 </tr>
 <tr>
-<td><code>record</code> + автоматическое переписывание Spring Data</td>
-<td>только нужные колонки</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>минимальная</td>
+<td data-label="Способ"><code>record</code> + автоматическое переписывание Spring Data</td>
+<td data-label="Что уходит в SQL">только нужные колонки</td>
+<td data-label="Попадает в persistence context">нет</td>
+<td data-label="Вложенные объекты">нет</td>
+<td data-label="Динамика">нет</td>
+<td data-label="Цена">минимальная</td>
 </tr>
 <tr>
-<td><code>Tuple</code></td>
-<td>только нужные колонки</td>
-<td>нет</td>
-<td>нет</td>
-<td>да</td>
-<td>минимальная, но доступ по строковым именам</td>
+<td data-label="Способ"><code>Tuple</code></td>
+<td data-label="Что уходит в SQL">только нужные колонки</td>
+<td data-label="Попадает в persistence context">нет</td>
+<td data-label="Вложенные объекты">нет</td>
+<td data-label="Динамика">да</td>
+<td data-label="Цена">минимальная, но доступ по строковым именам</td>
 </tr>
 <tr>
-<td>Динамическая проекция (<code>&lt;T&gt; List&lt;T&gt; findBy…(Class&lt;T&gt; type)</code>)</td>
-<td>зависит от типа</td>
-<td>зависит</td>
-<td>зависит</td>
-<td><strong>да</strong></td>
-<td>по типу</td>
+<td data-label="Способ">Динамическая проекция (<code>&lt;T&gt; List&lt;T&gt; findBy…(Class&lt;T&gt; type)</code>)</td>
+<td data-label="Что уходит в SQL">зависит от типа</td>
+<td data-label="Попадает в persistence context">зависит</td>
+<td data-label="Вложенные объекты">зависит</td>
+<td data-label="Динамика"><strong>да</strong></td>
+<td data-label="Цена">по типу</td>
 </tr>
 </tbody>
 </table>
@@ -4514,7 +4514,7 @@ GET /slow -&gt; HTTP 200: занято соединений после выхо�
 <p><strong>Сценарий 9. Самовызов <code>@Transactional</code>.</strong> Самовызов (<em>self-invocation</em>) — это вызов метода бина через <code>this</code>: метод бина вызывает свой же <code>@Transactional</code>-метод, транзакционный прокси в этом вызове не участвует, и транзакции нет; механика подробно разобрана в гл. 09 (<code>09-spring-core.md</code>, §8.3). Для JPA это частный случай сценария 2: код работает с прокси <code>EntityManager</code> без транзакции, получает отсоединённые объекты, падает на <code>persist</code> с <code>TransactionRequiredException</code> или молча теряет изменения. Опознать его помогает то же, что и сценарий 2: <code>TransactionSynchronizationManager.isActualTransactionActive()</code> внутри метода возвращает <code>false</code>, хотя на методе стоит аннотация.</p>
 <h3 id="76-сводная-таблица-разрывов-сессии">7.6 Сводная таблица разрывов сессии</h3>
 <p>Сводная таблица разрывов сессии собирает девять сценариев из 7.4 и 7.5 в одном месте, чтобы ставить диагноз по тексту исключения. Для каждого сценария в ней указаны исключение, которое видно в логе, механизм и лечение. Колонку «Исключение в логе» стоит читать как подсказку для поиска по логам, потому что именно по ней инцидент обычно и находят.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сценарий</th>
@@ -4525,58 +4525,58 @@ GET /slow -&gt; HTTP 200: занято соединений после выхо�
 </thead>
 <tbody>
 <tr>
-<td>1. Ленивая связь после транзакции</td>
-<td><code>LazyInitializationException: ... could not initialize proxy - no Session</code></td>
-<td>сессия закрыта, у коллекции и прокси нет сессии</td>
-<td><code>join fetch</code>, <code>@EntityGraph</code>, DTO внутри транзакции</td>
+<td data-label="Сценарий">1. Ленивая связь после транзакции</td>
+<td data-label="Исключение в логе"><code>LazyInitializationException: ... could not initialize proxy - no Session</code></td>
+<td data-label="Причина">сессия закрыта, у коллекции и прокси нет сессии</td>
+<td data-label="Лечение"><code>join fetch</code>, <code>@EntityGraph</code>, DTO внутри транзакции</td>
 </tr>
 <tr>
-<td>2. Репозиторий вне транзакции</td>
-<td><code>LazyInitializationException</code>, <code>TransactionRequiredException</code>, тихая потеря изменений</td>
-<td>сессия на один вызов (2.7)</td>
-<td>транзакция на бизнес-операцию</td>
+<td data-label="Сценарий">2. Репозиторий вне транзакции</td>
+<td data-label="Исключение в логе"><code>LazyInitializationException</code>, <code>TransactionRequiredException</code>, тихая потеря изменений</td>
+<td data-label="Причина">сессия на один вызов (2.7)</td>
+<td data-label="Лечение">транзакция на бизнес-операцию</td>
 </tr>
 <tr>
-<td>3. Сущность в другом потоке</td>
-<td><code>LazyInitializationException</code> или непредсказуемая гонка</td>
-<td>ресурсы привязаны к <code>ThreadLocal</code></td>
-<td>передавать id и DTO, новая транзакция в потоке</td>
+<td data-label="Сценарий">3. Сущность в другом потоке</td>
+<td data-label="Исключение в логе"><code>LazyInitializationException</code> или непредсказуемая гонка</td>
+<td data-label="Причина">ресурсы привязаны к <code>ThreadLocal</code></td>
+<td data-label="Лечение">передавать id и DTO, новая транзакция в потоке</td>
 </tr>
 <tr>
-<td>4. Работа после исключения</td>
-<td><code>current transaction is aborted</code> (<code>25P02</code>), <code>UnexpectedRollbackException</code></td>
-<td>транзакция aborted, контекст несогласован</td>
-<td>откат и новая транзакция на элемент, <code>on conflict</code></td>
+<td data-label="Сценарий">4. Работа после исключения</td>
+<td data-label="Исключение в логе"><code>current transaction is aborted</code> (<code>25P02</code>), <code>UnexpectedRollbackException</code></td>
+<td data-label="Причина">транзакция aborted, контекст несогласован</td>
+<td data-label="Лечение">откат и новая транзакция на элемент, <code>on conflict</code></td>
 </tr>
 <tr>
-<td>5. Отсоединённый объект в <code>persist</code></td>
-<td><code>PersistentObjectException: detached entity passed to persist</code></td>
-<td>каскад или <code>persist</code> отсоединённого объекта</td>
-<td><code>getReference</code>, изменения к загруженной сущности, не <code>merge</code> графа</td>
+<td data-label="Сценарий">5. Отсоединённый объект в <code>persist</code></td>
+<td data-label="Исключение в логе"><code>PersistentObjectException: detached entity passed to persist</code></td>
+<td data-label="Причина">каскад или <code>persist</code> отсоединённого объекта</td>
+<td data-label="Лечение"><code>getReference</code>, изменения к загруженной сущности, не <code>merge</code> графа</td>
 </tr>
 <tr>
-<td>6. Соединение убито посреди транзакции</td>
-<td><code>25P03</code>, <code>An I/O error occurred while sending to the backend.</code>, <code>Connection is closed</code></td>
-<td>долгая транзакция, idle-таймауты базы, PgBouncer, межсетевой экран</td>
-<td>короткие транзакции без внешних вызовов, <code>socketTimeout</code>, <code>keepaliveTime</code>, <code>maxLifetime</code></td>
+<td data-label="Сценарий">6. Соединение убито посреди транзакции</td>
+<td data-label="Исключение в логе"><code>25P03</code>, <code>An I/O error occurred while sending to the backend.</code>, <code>Connection is closed</code></td>
+<td data-label="Причина">долгая транзакция, idle-таймауты базы, PgBouncer, межсетевой экран</td>
+<td data-label="Лечение">короткие транзакции без внешних вызовов, <code>socketTimeout</code>, <code>keepaliveTime</code>, <code>maxLifetime</code></td>
 </tr>
 <tr>
-<td>7. Таймаут</td>
-<td><code>transaction timeout expired</code>, <code>TransactionTimedOutException</code>, <code>QueryTimeoutException</code> (<code>57014</code>)</td>
-<td>истёк срок транзакции или запроса</td>
-<td>вынести медленное за транзакцию, осознанные пределы</td>
+<td data-label="Сценарий">7. Таймаут</td>
+<td data-label="Исключение в логе"><code>transaction timeout expired</code>, <code>TransactionTimedOutException</code>, <code>QueryTimeoutException</code> (<code>57014</code>)</td>
+<td data-label="Причина">истёк срок транзакции или запроса</td>
+<td data-label="Лечение">вынести медленное за транзакцию, осознанные пределы</td>
 </tr>
 <tr>
-<td>8. Сохранённая ссылка на сессию</td>
-<td><code>IllegalStateException: Session/EntityManager is closed</code></td>
-<td>ссылка на настоящую сессию пережила её</td>
-<td>держать только прокси, <code>unwrap</code> на месте</td>
+<td data-label="Сценарий">8. Сохранённая ссылка на сессию</td>
+<td data-label="Исключение в логе"><code>IllegalStateException: Session/EntityManager is closed</code></td>
+<td data-label="Причина">ссылка на настоящую сессию пережила её</td>
+<td data-label="Лечение">держать только прокси, <code>unwrap</code> на месте</td>
 </tr>
 <tr>
-<td>9. Самовызов</td>
-<td>те же, что в сценарии 2</td>
-<td>прокси не участвует (гл. 09, §8.3)</td>
-<td>отдельный бин или <code>TransactionTemplate</code></td>
+<td data-label="Сценарий">9. Самовызов</td>
+<td data-label="Исключение в логе">те же, что в сценарии 2</td>
+<td data-label="Причина">прокси не участвует (гл. 09, §8.3)</td>
+<td data-label="Лечение">отдельный бин или <code>TransactionTemplate</code></td>
 </tr>
 </tbody>
 </table>
@@ -4587,7 +4587,7 @@ GET /slow -&gt; HTTP 200: занято соединений после выхо�
 <h3 id="81-propagation-persistence-context-и-соединение">8.1 Propagation, persistence context и соединение</h3>
 <p>Транзакционные методы вызывают друг друга: сервис платежей вызывает сервис лимитов, тот пишет аудит, и у каждого метода своя аннотация <code>@Transactional</code>. Атрибут propagation (распространение транзакции) решает, что делает метод, если его вызвали, когда транзакция уже идёт: присоединиться к ней, приостановить её и открыть свою или работать вовсе без транзакции. Для JPA от этого выбора зависит, получит ли вызванный метод тот же <code>EntityManager</code> и то же соединение с базой или новые. <code>EntityManager</code> — объект, через который код работает с persistence context; в Hibernate за ним стоит <code>Session</code> (2.2). Ниже сначала таблица всех семи вариантов, затем три следствия из неё, на которых ошибаются чаще всего.</p>
 <p>В таблице важнее всего правая колонка: она показывает, делят ли вызывающий и вызванный методы один контекст и одно соединение. Одно понятие в ней нужно пояснить заранее: savepoint — это точка внутри транзакции, до которой можно откатиться, не отменяя того, что было сделано раньше; на нём построен <code>NESTED</code>, и подробно он разобран в третьем следствии.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Propagation</th>
@@ -4597,39 +4597,39 @@ GET /slow -&gt; HTTP 200: занято соединений после выхо�
 </thead>
 <tbody>
 <tr>
-<td><code>REQUIRED</code> (по умолчанию)</td>
-<td>присоединиться к текущей, иначе начать новую</td>
-<td>тот же контекст, одно соединение</td>
+<td data-label="Propagation"><code>REQUIRED</code> (по умолчанию)</td>
+<td data-label="Поведение">присоединиться к текущей, иначе начать новую</td>
+<td data-label="Что с EntityManager">тот же контекст, одно соединение</td>
 </tr>
 <tr>
-<td><code>REQUIRES_NEW</code></td>
-<td>приостановить текущую, начать новую</td>
-<td><strong>новый</strong> <code>EntityManager</code>, <strong>второе соединение из пула</strong></td>
+<td data-label="Propagation"><code>REQUIRES_NEW</code></td>
+<td data-label="Поведение">приостановить текущую, начать новую</td>
+<td data-label="Что с EntityManager"><strong>новый</strong> <code>EntityManager</code>, <strong>второе соединение из пула</strong></td>
 </tr>
 <tr>
-<td><code>NESTED</code></td>
-<td>savepoint внутри текущей</td>
-<td>тот же контекст, одно соединение</td>
+<td data-label="Propagation"><code>NESTED</code></td>
+<td data-label="Поведение">savepoint внутри текущей</td>
+<td data-label="Что с EntityManager">тот же контекст, одно соединение</td>
 </tr>
 <tr>
-<td><code>SUPPORTS</code></td>
-<td>участвовать, если есть; иначе без транзакции</td>
-<td>контекст может быть не транзакционным</td>
+<td data-label="Propagation"><code>SUPPORTS</code></td>
+<td data-label="Поведение">участвовать, если есть; иначе без транзакции</td>
+<td data-label="Что с EntityManager">контекст может быть не транзакционным</td>
 </tr>
 <tr>
-<td><code>MANDATORY</code></td>
-<td>требовать существующую, иначе исключение</td>
-<td>—</td>
+<td data-label="Propagation"><code>MANDATORY</code></td>
+<td data-label="Поведение">требовать существующую, иначе исключение</td>
+<td data-label="Что с EntityManager">—</td>
 </tr>
 <tr>
-<td><code>NEVER</code></td>
-<td>запретить существующую</td>
-<td>—</td>
+<td data-label="Propagation"><code>NEVER</code></td>
+<td data-label="Поведение">запретить существующую</td>
+<td data-label="Что с EntityManager">—</td>
 </tr>
 <tr>
-<td><code>NOT_SUPPORTED</code></td>
-<td>приостановить транзакцию</td>
-<td>—</td>
+<td data-label="Propagation"><code>NOT_SUPPORTED</code></td>
+<td data-label="Поведение">приостановить транзакцию</td>
+<td data-label="Что с EntityManager">—</td>
 </tr>
 </tbody>
 </table>
@@ -5630,7 +5630,7 @@ PESSIMISTIC_WRITE, без хинта               -&gt; получил стро
 </code></pre></div>
 
 <p>Режимы JPA ложатся на SQL PostgreSQL так, как показано в таблице: режим на чтение разрешает другим тоже читать с блокировкой, режим на запись не пускает никого.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th><code>LockModeType</code></th>
@@ -5639,16 +5639,16 @@ PESSIMISTIC_WRITE, без хинта               -&gt; получил стро
 </thead>
 <tbody>
 <tr>
-<td><code>PESSIMISTIC_READ</code></td>
-<td><code>SELECT ... FOR SHARE OF t</code></td>
+<td data-label="LockModeType"><code>PESSIMISTIC_READ</code></td>
+<td data-label="PostgreSQL"><code>SELECT ... FOR SHARE OF t</code></td>
 </tr>
 <tr>
-<td><code>PESSIMISTIC_WRITE</code></td>
-<td><code>SELECT ... FOR NO KEY UPDATE OF t</code> (Hibernate 7.4.5, проверено; не <code>FOR UPDATE</code>)</td>
+<td data-label="LockModeType"><code>PESSIMISTIC_WRITE</code></td>
+<td data-label="PostgreSQL"><code>SELECT ... FOR NO KEY UPDATE OF t</code> (Hibernate 7.4.5, проверено; не <code>FOR UPDATE</code>)</td>
 </tr>
 <tr>
-<td><code>PESSIMISTIC_FORCE_INCREMENT</code></td>
-<td><code>FOR NO KEY UPDATE OF t</code> + <code>update ... set version</code></td>
+<td data-label="LockModeType"><code>PESSIMISTIC_FORCE_INCREMENT</code></td>
+<td data-label="PostgreSQL"><code>FOR NO KEY UPDATE OF t</code> + <code>update ... set version</code></td>
 </tr>
 </tbody>
 </table>
@@ -5675,7 +5675,7 @@ PESSIMISTIC_WRITE, без хинта               -&gt; получил стро
 
 <p>Подробности про <code>SKIP LOCKED</code>/<code>NOWAIT</code> и семантику блокировок есть в гл. 18.</p>
 <p>Запуск из подраздела 9.1 покрывает и пессимистичные блокировки: класс и его полный вывод приведены там, ниже разобраны блоки 9.3.1 и 9.3.2. Одна транзакция берёт блокировку на строку <code>Account</code> и держит её 5 секунд, вторая пробует взять ту же строку с разными настройками таймаута:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Настройка</th>
@@ -5685,24 +5685,24 @@ PESSIMISTIC_WRITE, без хинта               -&gt; получил стро
 </thead>
 <tbody>
 <tr>
-<td>подсказка <code>jakarta.persistence.lock.timeout</code> = 500</td>
-<td><code>PessimisticLockException</code> (внутри <code>PSQLException</code>)</td>
-<td>521 мс</td>
+<td data-label="Настройка">подсказка <code>jakarta.persistence.lock.timeout</code> = 500</td>
+<td data-label="Что произошло"><code>PessimisticLockException</code> (внутри <code>PSQLException</code>)</td>
+<td data-label="Сколько ждали">521 мс</td>
 </tr>
 <tr>
-<td>подсказка = 0</td>
-<td>то же, сразу</td>
-<td>1 мс</td>
+<td data-label="Настройка">подсказка = 0</td>
+<td data-label="Что произошло">то же, сразу</td>
+<td data-label="Сколько ждали">1 мс</td>
 </tr>
 <tr>
-<td>подсказка = -2 (<code>SKIP LOCKED</code>)</td>
-<td>запрос вернул 0 строк, занятая строка пропущена</td>
-<td>195 мс</td>
+<td data-label="Настройка">подсказка = -2 (<code>SKIP LOCKED</code>)</td>
+<td data-label="Что произошло">запрос вернул 0 строк, занятая строка пропущена</td>
+<td data-label="Сколько ждали">195 мс</td>
 </tr>
 <tr>
-<td>без подсказки</td>
-<td>получила строку после того, как держатель отпустил</td>
-<td>5010 мс (всё время удержания)</td>
+<td data-label="Настройка">без подсказки</td>
+<td data-label="Что произошло">получила строку после того, как держатель отпустил</td>
+<td data-label="Сколько ждали">5010 мс (всё время удержания)</td>
 </tr>
 </tbody>
 </table>
@@ -5738,7 +5738,7 @@ select a1_0.id,a1_0.balance,a1_0.version from account a1_0 for no key update of 
 </ul>
 <h3 id="94-выбор-между-оптимистичной-и-пессимистичной-блокировкой">9.4 Выбор между оптимистичной и пессимистичной блокировкой</h3>
 <p>Выбор между оптимистичной и пессимистичной блокировкой определяется частотой конфликтов и тем, насколько горячая строка, за которую идёт борьба, то есть сколько транзакций одновременно хотят её изменить. Универсального ответа нет, но для каждой узнаваемой ситуации из практики он вполне определённый. В таблице ниже типовые ситуации сопоставлены с подходящим механизмом, а после неё даны правило для высокой конкуренции и одна ловушка.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -5747,29 +5747,29 @@ select a1_0.id,a1_0.balance,a1_0.version from account a1_0 for no key update of 
 </thead>
 <tbody>
 <tr>
-<td>Редкие конфликты, короткая транзакция, есть UI с «версией»</td>
-<td>оптимистичная <code>@Version</code></td>
+<td data-label="Ситуация">Редкие конфликты, короткая транзакция, есть UI с «версией»</td>
+<td data-label="Механизм">оптимистичная <code>@Version</code></td>
 </tr>
 <tr>
-<td>Горячая строка (счёт мерчанта, общий лимит), высокая конкуренция</td>
-<td>пессимистичная <code>FOR UPDATE</code></td>
+<td data-label="Ситуация">Горячая строка (счёт мерчанта, общий лимит), высокая конкуренция</td>
+<td data-label="Механизм">пессимистичная <code>FOR UPDATE</code></td>
 </tr>
 <tr>
-<td>Очередь задач, воркеры</td>
-<td><code>FOR UPDATE SKIP LOCKED</code></td>
+<td data-label="Ситуация">Очередь задач, воркеры</td>
+<td data-label="Механизм"><code>FOR UPDATE SKIP LOCKED</code></td>
 </tr>
 <tr>
-<td>Инвариант агрегата, зависящий от детей</td>
-<td><code>OPTIMISTIC_FORCE_INCREMENT</code></td>
+<td data-label="Ситуация">Инвариант агрегата, зависящий от детей</td>
+<td data-label="Механизм"><code>OPTIMISTIC_FORCE_INCREMENT</code></td>
 </tr>
 <tr>
-<td>Нужен счётчик без чтения</td>
-<td>атомарный <code>@Modifying</code>-UPDATE (<code>set x = x + 1</code>), без блокировки в приложении</td>
+<td data-label="Ситуация">Нужен счётчик без чтения</td>
+<td data-label="Механизм">атомарный <code>@Modifying</code>-UPDATE (<code>set x = x + 1</code>), без блокировки в приложении</td>
 </tr>
 </tbody>
 </table>
 <p>Правило для высокой конкуренции такое: когда за одну строку борется много потоков, оптимистичная блокировка вырождается в «шторм повторных попыток», и начиная с какой-то доли конфликтов пессимистичная оказывается быстрее. Ориентир в 20% конфликтующих транзакций стоит считать эвристикой, а не измеренной границей: точка перелома зависит от длины транзакции и цены повтора, поэтому её надо мерить на своей нагрузке. Источника для порога в 20% я не нашёл ни в документации, ни в книгах из библиотеки автора, поэтому померил сам (PostgreSQL 18.6, PgJDBC 42.7.8, 16 потоков по 300 списаний, каждое списание — отдельная короткая транзакция, запуск 2026-10-22). Оптимистичный вариант читал <code>version</code> и делал <code>UPDATE … WHERE id = ? AND version = ?</code> с повтором при нуле строк, пессимистичный — <code>SELECT … FOR UPDATE</code> и <code>UPDATE</code>. Конкуренцию задавало число строк, на которые случайно падали списания:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Строк</th>
@@ -5780,40 +5780,40 @@ select a1_0.id,a1_0.balance,a1_0.version from account a1_0 for no key update of 
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td class="num">91,8%</td>
-<td class="num">99 938</td>
-<td class="num">13 305</td>
+<td data-label="Строк" class="num">1</td>
+<td data-label="Доля неудачных попыток (опт.)" class="num">91,8%</td>
+<td data-label="Оптимистичная, мс" class="num">99 938</td>
+<td data-label="Пессимистичная, мс" class="num">13 305</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td class="num">76,6%</td>
-<td class="num">27 839</td>
-<td class="num">4 829</td>
+<td data-label="Строк" class="num">4</td>
+<td data-label="Доля неудачных попыток (опт.)" class="num">76,6%</td>
+<td data-label="Оптимистичная, мс" class="num">27 839</td>
+<td data-label="Пессимистичная, мс" class="num">4 829</td>
 </tr>
 <tr>
-<td class="num">16</td>
-<td class="num">42,1%</td>
-<td class="num">6 169</td>
-<td class="num">2 874</td>
+<td data-label="Строк" class="num">16</td>
+<td data-label="Доля неудачных попыток (опт.)" class="num">42,1%</td>
+<td data-label="Оптимистичная, мс" class="num">6 169</td>
+<td data-label="Пессимистичная, мс" class="num">2 874</td>
 </tr>
 <tr>
-<td class="num">64</td>
-<td class="num">14,7%</td>
-<td class="num">3 169</td>
-<td class="num">2 714</td>
+<td data-label="Строк" class="num">64</td>
+<td data-label="Доля неудачных попыток (опт.)" class="num">14,7%</td>
+<td data-label="Оптимистичная, мс" class="num">3 169</td>
+<td data-label="Пессимистичная, мс" class="num">2 714</td>
 </tr>
 <tr>
-<td class="num">256</td>
-<td class="num">3,7%</td>
-<td class="num">2 847</td>
-<td class="num">2 761</td>
+<td data-label="Строк" class="num">256</td>
+<td data-label="Доля неудачных попыток (опт.)" class="num">3,7%</td>
+<td data-label="Оптимистичная, мс" class="num">2 847</td>
+<td data-label="Пессимистичная, мс" class="num">2 761</td>
 </tr>
 <tr>
-<td class="num">4096</td>
-<td class="num">0,2%</td>
-<td class="num">2 945</td>
-<td class="num">2 916</td>
+<td data-label="Строк" class="num">4096</td>
+<td data-label="Доля неудачных попыток (опт.)" class="num">0,2%</td>
+<td data-label="Оптимистичная, мс" class="num">2 945</td>
+<td data-label="Пессимистичная, мс" class="num">2 916</td>
 </tr>
 </tbody>
 </table>
@@ -6148,7 +6148,7 @@ select a1_0.id,a1_0.balance,a1_0.version from account a1_0 for no key update of 
 <h3 id="113-стратегии-доступа-к-кэшу-concurrency-strategies">11.3 Стратегии доступа к кэшу (concurrency strategies)</h3>
 <p>Стратегия доступа (concurrency strategy) — это правило, по которому кэш согласуется с базой, когда сущность меняется: что происходит с записью кэша между изменением в базе и фиксацией и насколько устаревшими могут оказаться прочитанные из кэша данные. Выбирать её приходится для каждой кэшируемой сущности и коллекции, потому что у справочника валют и у изменяемого тарифа требования разные. В таблице ниже четыре стратегии с их семантикой и типовым применением; после неё сказано, какую выбирают на практике.</p>
 <p>Две аббревиатуры в таблице нужно пояснить заранее. JTA (Jakarta Transactions) — стандарт распределённых транзакций через внешний координатор, а XA — протокол двухфазной фиксации, по которому такой координатор фиксирует изменения сразу в нескольких ресурсах, здесь в базе и в кэше. «Мягкая блокировка» (soft lock) — это отметка в кэше, которая на время транзакции делает запись нечитаемой; её механика разобрана в 11.11.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -6158,24 +6158,24 @@ select a1_0.id,a1_0.balance,a1_0.version from account a1_0 for no key update of 
 </thead>
 <tbody>
 <tr>
-<td><code>READ_ONLY</code></td>
-<td>запись запрещена, изменение даёт исключение</td>
-<td>справочники, которые никогда не меняются на живой системе</td>
+<td data-label="Стратегия"><code>READ_ONLY</code></td>
+<td data-label="Семантика">запись запрещена, изменение даёт исключение</td>
+<td data-label="Когда">справочники, которые никогда не меняются на живой системе</td>
 </tr>
 <tr>
-<td><code>NONSTRICT_READ_WRITE</code></td>
-<td>запись в БД, затем инвалидация; окно рассинхрона есть</td>
-<td>данные, где редкая устаревшая запись не страшна</td>
+<td data-label="Стратегия"><code>NONSTRICT_READ_WRITE</code></td>
+<td data-label="Семантика">запись в БД, затем инвалидация; окно рассинхрона есть</td>
+<td data-label="Когда">данные, где редкая устаревшая запись не страшна</td>
 </tr>
 <tr>
-<td><code>READ_WRITE</code></td>
-<td>«мягкая блокировка» записи кэша на время транзакции; после фиксации — обновление</td>
-<td>основной рабочий вариант, read-committed-подобная согласованность</td>
+<td data-label="Стратегия"><code>READ_WRITE</code></td>
+<td data-label="Семантика">«мягкая блокировка» записи кэша на время транзакции; после фиксации — обновление</td>
+<td data-label="Когда">основной рабочий вариант, read-committed-подобная согласованность</td>
 </tr>
 <tr>
-<td><code>TRANSACTIONAL</code></td>
-<td>полноценная XA-согласованность кэша и БД</td>
-<td>только с JTA и кэшем, поддерживающим транзакции (Infinispan)</td>
+<td data-label="Стратегия"><code>TRANSACTIONAL</code></td>
+<td data-label="Семантика">полноценная XA-согласованность кэша и БД</td>
+<td data-label="Когда">только с JTA и кэшем, поддерживающим транзакции (Infinispan)</td>
 </tr>
 </tbody>
 </table>
@@ -6222,7 +6222,7 @@ select a1_0.id,a1_0.balance,a1_0.version from account a1_0 for no key update of 
 <p><strong><code>CacheImplementor</code> и его реализация.</strong> Точка входа в первый слой — объект, который возвращает <code>sessionFactory.getCache()</code>. Это <code>org.hibernate.Cache</code>, и при включённом кэше за ним стоит <code>EnabledCaching</code>, реализующий внутренний интерфейс <code>CacheImplementor</code> (<a href="https://raw.githubusercontent.com/hibernate/hibernate-orm/6.6/hibernate-core/src/main/java/org/hibernate/cache/internal/EnabledCaching.java"><code>EnabledCaching.java</code>, ветка 6.6</a>). Внутри он держит <code>RegionFactory</code> провайдера, отображение регионов по имени и три отображения объектов доступа — для сущностей, коллекций и natural-id. Ключом в этих отображениях служит <code>NavigableRole</code> — внутреннее имя сущности или коллекции в модели. Кроме того, <code>EnabledCaching</code> держит кэш результатов запросов по умолчанию, именованные кэши запросов и один <code>TimestampsCache</code> на всю фабрику.</p>
 <p>Главное в этой схеме — объекты доступа. <code>EntityDataAccess</code>, <code>CollectionDataAccess</code> и <code>NaturalIdDataAccess</code> реализуют выбранную стратегию из 11.3, и через них проходит каждое чтение и каждая запись. Поэтому вся логика мягких блокировок, разобранная в 11.11, сосредоточена в этих классах, а не в провайдере.</p>
 <p><strong>Регионы и их виды.</strong> Регион — это именованное хранилище внутри провайдера, и в JCache каждому региону соответствует отдельный <code>javax.cache.Cache</code>. Видов регионов пять, и в таблице ниже для каждого указано, что в нём лежит и откуда берётся его имя. Natural-id в таблице — это естественный ключ сущности, то есть бизнес-идентификатор вроде кода валюты или БИК, помеченный <code>@NaturalId</code> (4.4). Обратите внимание на последнюю строку: регион меток времени служит опорой для всего кэша запросов и настраивается иначе, чем остальные.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Регион</th>
@@ -6232,29 +6232,29 @@ select a1_0.id,a1_0.balance,a1_0.version from account a1_0 for no key update of 
 </thead>
 <tbody>
 <tr>
-<td>сущностей</td>
-<td>разобранное состояние сущности по ключу «корневая сущность + id» (11.8, 11.9)</td>
-<td>полное имя корневого класса сущности либо <code>region</code> из <code>@Cache</code></td>
+<td data-label="Регион">сущностей</td>
+<td data-label="Что хранит">разобранное состояние сущности по ключу «корневая сущность + id» (11.8, 11.9)</td>
+<td data-label="Имя по умолчанию">полное имя корневого класса сущности либо <code>region</code> из <code>@Cache</code></td>
 </tr>
 <tr>
-<td>коллекций</td>
-<td>идентификаторы элементов коллекции по ключу «роль коллекции + id владельца» (11.12)</td>
-<td>имя класса владельца плюс имя атрибута коллекции</td>
+<td data-label="Регион">коллекций</td>
+<td data-label="Что хранит">идентификаторы элементов коллекции по ключу «роль коллекции + id владельца» (11.12)</td>
+<td data-label="Имя по умолчанию">имя класса владельца плюс имя атрибута коллекции</td>
 </tr>
 <tr>
-<td>natural-id</td>
-<td>соответствие значения <code>@NaturalId</code> идентификатору, при <code>@NaturalIdCache</code></td>
-<td>имя корневой сущности с суффиксом <code>##NaturalId</code> (запуск: регион <code>dev.team.v12.Model$Client##NaturalId</code>, Hibernate 7.4.5)</td>
+<td data-label="Регион">natural-id</td>
+<td data-label="Что хранит">соответствие значения <code>@NaturalId</code> идентификатору, при <code>@NaturalIdCache</code></td>
+<td data-label="Имя по умолчанию">имя корневой сущности с суффиксом <code>##NaturalId</code> (запуск: регион <code>dev.team.v12.Model$Client##NaturalId</code>, Hibernate 7.4.5)</td>
 </tr>
 <tr>
-<td>результатов запросов</td>
-<td>строки результата кэшируемого запроса вместе с меткой времени (11.18)</td>
-<td><code>default-query-results-region</code> либо имя из подсказки <code>org.hibernate.cacheRegion</code></td>
+<td data-label="Регион">результатов запросов</td>
+<td data-label="Что хранит">строки результата кэшируемого запроса вместе с меткой времени (11.18)</td>
+<td data-label="Имя по умолчанию"><code>default-query-results-region</code> либо имя из подсказки <code>org.hibernate.cacheRegion</code></td>
 </tr>
 <tr>
-<td>меток времени</td>
-<td>время последнего изменения каждой таблицы (11.18)</td>
-<td><code>default-update-timestamps-region</code></td>
+<td data-label="Регион">меток времени</td>
+<td data-label="Что хранит">время последнего изменения каждой таблицы (11.18)</td>
+<td data-label="Имя по умолчанию"><code>default-update-timestamps-region</code></td>
 </tr>
 </tbody>
 </table>
@@ -6303,7 +6303,7 @@ select a1_0.id,a1_0.balance,a1_0.version from account a1_0 for no key update of 
 <p><strong>Чтение.</strong> Кэш сущностей опрашивается только при загрузке по идентификатору. В <code>em.find</code> и <code>session.get</code> он стоит третьим уровнем после persistence context (2.5); туда же относятся инициализация прокси, загрузка связи «к одному» по внешнему ключу и сборка элементов закэшированной коллекции. А вот JPQL- и Criteria-запросы кэш сущностей <strong>не читают</strong>: запрос уходит в базу, и строки проходят через инициализаторы. Инициализатор — компонент Hibernate, который собирает сущность из строки результата; с кэшем он делает только одно — кладёт загруженные сущности в кэш через <code>putFromLoad</code>, если режим кэша это разрешает (<a href="https://raw.githubusercontent.com/hibernate/hibernate-orm/6.6/hibernate-core/src/main/java/org/hibernate/sql/results/graph/entity/internal/EntityInitializerImpl.java"><code>EntityInitializerImpl.java</code>, ветка 6.6</a>).</p>
 <p>Отсюда частое разочарование. Сервис, который ищет тариф запросом <code>where code = :code</code>, при включённом кэше продолжает ходить в базу на каждый вызов, потому что загружает тариф не по идентификатору. Помогает ему одно из трёх: <code>@NaturalId</code> с <code>@NaturalIdCache</code>, кэш запросов (11.18) или кэш приложения.</p>
 <p><strong>Запись.</strong> Точки записи зависят от операции, и таблица ниже показывает их для стратегии <code>READ_WRITE</code>. Смотреть в ней стоит на колонку «после завершения транзакции»: именно там новое состояние становится видимым для других сессий.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Операция</th>
@@ -6313,29 +6313,29 @@ select a1_0.id,a1_0.balance,a1_0.version from account a1_0 for no key update of 
 </thead>
 <tbody>
 <tr>
-<td>загрузка из базы (<code>find</code>, запрос, ленивая связь)</td>
-<td>—</td>
-<td>запись <code>putFromLoad</code> сразу после чтения строки, если на ключе нет более новой версии или мягкой блокировки</td>
+<td data-label="Операция">загрузка из базы (<code>find</code>, запрос, ленивая связь)</td>
+<td data-label="Во время flush">—</td>
+<td data-label="После завершения транзакции">запись <code>putFromLoad</code> сразу после чтения строки, если на ключе нет более новой версии или мягкой блокировки</td>
 </tr>
 <tr>
-<td><code>persist</code> → <code>EntityInsertAction</code></td>
-<td>ничего (<code>insert</code> возвращает <code>false</code>)</td>
-<td>при успехе <code>afterInsert</code> кладёт новый <code>Item</code></td>
+<td data-label="Операция"><code>persist</code> → <code>EntityInsertAction</code></td>
+<td data-label="Во время flush">ничего (<code>insert</code> возвращает <code>false</code>)</td>
+<td data-label="После завершения транзакции">при успехе <code>afterInsert</code> кладёт новый <code>Item</code></td>
 </tr>
 <tr>
-<td>изменение → <code>EntityUpdateAction</code></td>
-<td><code>lockItem</code>: на ключ ставится мягкая блокировка</td>
-<td>при успехе <code>afterUpdate</code> кладёт новый <code>Item</code>, при откате <code>unlockItem</code> снимает блокировку, не восстанавливая старое значение</td>
+<td data-label="Операция">изменение → <code>EntityUpdateAction</code></td>
+<td data-label="Во время flush"><code>lockItem</code>: на ключ ставится мягкая блокировка</td>
+<td data-label="После завершения транзакции">при успехе <code>afterUpdate</code> кладёт новый <code>Item</code>, при откате <code>unlockItem</code> снимает блокировку, не восстанавливая старое значение</td>
 </tr>
 <tr>
-<td><code>remove</code> → <code>EntityDeleteAction</code></td>
-<td><code>lockItem</code> и попытка <code>remove</code>, которую <code>READ_WRITE</code> пропускает, чтобы не снять блокировку</td>
-<td><code>unlockItem</code>: на ключе остаётся снятая блокировка, и следующее чтение идёт в базу</td>
+<td data-label="Операция"><code>remove</code> → <code>EntityDeleteAction</code></td>
+<td data-label="Во время flush"><code>lockItem</code> и попытка <code>remove</code>, которую <code>READ_WRITE</code> пропускает, чтобы не снять блокировку</td>
+<td data-label="После завершения транзакции"><code>unlockItem</code>: на ключе остаётся снятая блокировка, и следующее чтение идёт в базу</td>
 </tr>
 <tr>
-<td><code>merge</code></td>
-<td>как загрузка плюс изменение</td>
-<td>как у изменения</td>
+<td data-label="Операция"><code>merge</code></td>
+<td data-label="Во время flush">как загрузка плюс изменение</td>
+<td data-label="После завершения транзакции">как у изменения</td>
 </tr>
 </tbody>
 </table>
@@ -6370,7 +6370,7 @@ T4: find, начата позже    попадание, v6
 <p>Правильная пара для справочника — <code>@Immutable</code> вместе с <code>READ_ONLY</code>. С <code>@Immutable</code> Hibernate не выполняет для сущности dirty checking и не генерирует UPDATE, так что исключению просто неоткуда взяться. А блокировок и меток времени у стратегии нет вовсе, поэтому чтение из неё самое дешёвое.</p>
 <p><strong><code>TRANSACTIONAL</code>.</strong> Эта стратегия делает кэш участником транзакции: изменения в кэше и в базе фиксируются или откатываются вместе через JTA. С JCache она недоступна (11.7). На практике её используют только с Infinispan в транзакционном режиме и с JTA-менеджером транзакций, а для Spring Boot-сервиса с <code>JpaTransactionManager</code> это означает смену всей транзакционной инфраструктуры.</p>
 <p>Таблица ниже сводит, что каждая стратегия реально обещает относительно базы на уровне изоляции <code>READ COMMITTED</code>. Смотреть в ней стоит на третью колонку: именно она отвечает на вопрос, можно ли прочитать из кэша то, чего в базе уже нет.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -6381,28 +6381,28 @@ T4: find, начата позже    попадание, v6
 </thead>
 <tbody>
 <tr>
-<td><code>READ_ONLY</code></td>
-<td>изменений нет по определению</td>
-<td>нет, если данные действительно не меняются</td>
-<td>минимальная</td>
+<td data-label="Стратегия"><code>READ_ONLY</code></td>
+<td data-label="Что видят другие транзакции между flush и фиксацией">изменений нет по определению</td>
+<td data-label="Может ли кэш отдать состояние старее зафиксированного">нет, если данные действительно не меняются</td>
+<td data-label="Цена">минимальная</td>
 </tr>
 <tr>
-<td><code>NONSTRICT_READ_WRITE</code></td>
-<td>промах и чтение из базы</td>
-<td>да, в редкой гонке чтения и фиксации, до следующего изменения или TTL</td>
-<td>удаление ключа на каждое изменение</td>
+<td data-label="Стратегия"><code>NONSTRICT_READ_WRITE</code></td>
+<td data-label="Что видят другие транзакции между flush и фиксацией">промах и чтение из базы</td>
+<td data-label="Может ли кэш отдать состояние старее зафиксированного">да, в редкой гонке чтения и фиксации, до следующего изменения или TTL</td>
+<td data-label="Цена">удаление ключа на каждое изменение</td>
 </tr>
 <tr>
-<td><code>READ_WRITE</code></td>
-<td>промах из-за мягкой блокировки и чтение из базы</td>
-<td>в пределах одного процесса нет; между процессами да (11.15)</td>
-<td>блокировка региона на каждое чтение, лишние промахи после изменений</td>
+<td data-label="Стратегия"><code>READ_WRITE</code></td>
+<td data-label="Что видят другие транзакции между flush и фиксацией">промах из-за мягкой блокировки и чтение из базы</td>
+<td data-label="Может ли кэш отдать состояние старее зафиксированного">в пределах одного процесса нет; между процессами да (11.15)</td>
+<td data-label="Цена">блокировка региона на каждое чтение, лишние промахи после изменений</td>
 </tr>
 <tr>
-<td><code>TRANSACTIONAL</code></td>
-<td>зависит от изоляции кэша</td>
-<td>нет в пределах JTA-транзакции</td>
-<td>JTA и транзакционный кэш</td>
+<td data-label="Стратегия"><code>TRANSACTIONAL</code></td>
+<td data-label="Что видят другие транзакции между flush и фиксацией">зависит от изоляции кэша</td>
+<td data-label="Может ли кэш отдать состояние старее зафиксированного">нет в пределах JTA-транзакции</td>
+<td data-label="Цена">JTA и транзакционный кэш</td>
 </tr>
 </tbody>
 </table>
@@ -6606,7 +6606,7 @@ select t1_0.id,t1_0.fee_percent,t1_0.tariff_id from tariff_rule t1_0 where t1_0.
 <p><strong>Пробуксовка на пишущей таблице.</strong> Из механики меток следует, что <strong>любое</strong> изменение любой строки таблицы делает недействительными <strong>все</strong> закэшированные запросы, которые её читают, касалось ли изменение их результатов или нет. Для таблицы платежей, в которую пишут десять раз в секунду, кэшированный запрос живёт в среднем 100 мс. А платить приходится на каждом выполнении: сериализацией и записью результата в регион, чтением меток по каждой таблице и лишней памятью под результаты, которые никто не успеет прочитать.</p>
 <p>В статистике пробуксовка выглядит как <code>QueryCachePutCount</code>, почти равный числу выполнений, при <code>QueryCacheHitCount</code> около нуля, и такой кэш замедляет запрос по сравнению с его отсутствием. Хуже того, пока открыта транзакция с изменением, метка стоит в будущем, так что долгая пишущая транзакция отключает кэш запросов по своим таблицам для всего приложения.</p>
 <p><strong>Режимы кэша и подсказки.</strong> Режим кэша определяет, читает ли конкретная операция из L2 и пишет ли в него то, что загрузила. Jakarta Persistence управляет этим двумя подсказками, <code>jakarta.persistence.cache.retrieveMode</code> (<code>USE</code> или <code>BYPASS</code>) и <code>jakarta.persistence.cache.storeMode</code> (<code>USE</code>, <code>BYPASS</code> или <code>REFRESH</code>), а Hibernate — перечислением <code>CacheMode</code> и подсказкой <code>org.hibernate.cacheMode</code>. Их соответствие по User Guide сведено в таблицу ниже. Смотреть в ней стоит на <code>REFRESH</code>: это способ принудительно обновить запись из базы, не читая старую.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th><code>CacheMode</code> Hibernate</th>
@@ -6616,29 +6616,29 @@ select t1_0.id,t1_0.fee_percent,t1_0.tariff_id from tariff_rule t1_0 where t1_0.
 </thead>
 <tbody>
 <tr>
-<td><code>NORMAL</code></td>
-<td><code>storeMode=USE</code>, <code>retrieveMode=USE</code></td>
-<td>читает и пишет, значение по умолчанию</td>
+<td data-label="CacheMode Hibernate"><code>NORMAL</code></td>
+<td data-label="Подсказки Jakarta Persistence"><code>storeMode=USE</code>, <code>retrieveMode=USE</code></td>
+<td data-label="Поведение">читает и пишет, значение по умолчанию</td>
 </tr>
 <tr>
-<td><code>GET</code></td>
-<td><code>storeMode=BYPASS</code>, <code>retrieveMode=USE</code></td>
-<td>читает, но не пишет</td>
+<td data-label="CacheMode Hibernate"><code>GET</code></td>
+<td data-label="Подсказки Jakarta Persistence"><code>storeMode=BYPASS</code>, <code>retrieveMode=USE</code></td>
+<td data-label="Поведение">читает, но не пишет</td>
 </tr>
 <tr>
-<td><code>PUT</code></td>
-<td><code>storeMode=USE</code>, <code>retrieveMode=BYPASS</code></td>
-<td>не читает, пишет загруженное</td>
+<td data-label="CacheMode Hibernate"><code>PUT</code></td>
+<td data-label="Подсказки Jakarta Persistence"><code>storeMode=USE</code>, <code>retrieveMode=BYPASS</code></td>
+<td data-label="Поведение">не читает, пишет загруженное</td>
 </tr>
 <tr>
-<td><code>REFRESH</code></td>
-<td><code>storeMode=REFRESH</code>, <code>retrieveMode=BYPASS</code></td>
-<td>не читает, перезаписывает загруженным</td>
+<td data-label="CacheMode Hibernate"><code>REFRESH</code></td>
+<td data-label="Подсказки Jakarta Persistence"><code>storeMode=REFRESH</code>, <code>retrieveMode=BYPASS</code></td>
+<td data-label="Поведение">не читает, перезаписывает загруженным</td>
 </tr>
 <tr>
-<td><code>IGNORE</code></td>
-<td><code>storeMode=BYPASS</code>, <code>retrieveMode=BYPASS</code></td>
-<td>не читает и не пишет</td>
+<td data-label="CacheMode Hibernate"><code>IGNORE</code></td>
+<td data-label="Подсказки Jakarta Persistence"><code>storeMode=BYPASS</code>, <code>retrieveMode=BYPASS</code></td>
+<td data-label="Поведение">не читает и не пишет</td>
 </tr>
 </tbody>
 </table>
@@ -6656,7 +6656,7 @@ select t1_0.id,t1_0.fee_percent,t1_0.tariff_id from tariff_rule t1_0 where t1_0.
 <h3 id="1119-сводная-схема-кэшей">11.19 Сводная схема кэшей</h3>
 <p>За словом «кэш» в Hibernate-приложении стоят шесть разных механизмов, которые живут на разных уровнях, хранят разное и сбрасываются по разным правилам. Путаница между ними дорого обходится при диагностике: разработчик выключает L2, а устаревшие данные приходят из persistence context долгой сессии. Таблица ниже сводит механизмы вместе: где живёт каждый, что хранит, кто его сбрасывает и чем он грозит. Смотреть в ней стоит на колонку «кто сбрасывает», потому что именно ответ «никто» объясняет большинство инцидентов с устаревшими данными.</p>
 <p>Два обозначения в таблице встречаются в этом разделе впервые. SQM (semantic query model) — внутреннее дерево, в которое Hibernate 6 разбирает текст JPQL, прежде чем построить SQL (2.5). DDL (data definition language) — операторы, меняющие схему базы, а PgBouncer — пул соединений, который стоит между приложением и PostgreSQL (2.6).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Кэш</th>
@@ -6668,46 +6668,46 @@ select t1_0.id,t1_0.fee_percent,t1_0.tariff_id from tariff_rule t1_0 where t1_0.
 </thead>
 <tbody>
 <tr>
-<td>первого уровня, persistence context (3.2, 3.14)</td>
-<td>в <code>Session</code>, одна транзакция</td>
-<td>управляемые сущности и их снимки</td>
-<td><code>clear</code>, <code>detach</code>, <code>refresh</code>, закрытие сессии; внешние изменения — никто</td>
-<td>устаревшие данные в долгой сессии, потерянное обновление без <code>@Version</code>, рост памяти</td>
+<td data-label="Кэш">первого уровня, persistence context (3.2, 3.14)</td>
+<td data-label="Где живёт">в <code>Session</code>, одна транзакция</td>
+<td data-label="Что хранит">управляемые сущности и их снимки</td>
+<td data-label="Кто сбрасывает"><code>clear</code>, <code>detach</code>, <code>refresh</code>, закрытие сессии; внешние изменения — никто</td>
+<td data-label="Чем грозит">устаревшие данные в долгой сессии, потерянное обновление без <code>@Version</code>, рост памяти</td>
 </tr>
 <tr>
-<td>второго уровня (11.7–11.15)</td>
-<td>в <code>SessionFactory</code>, весь процесс или кластер</td>
-<td>разобранное состояние сущностей, id элементов коллекций, natural-id</td>
-<td>Hibernate при изменениях через себя; внешние изменения — только TTL</td>
-<td>устаревшие данные после чужих правок, расхождение подов, N+1 через кэш коллекций</td>
+<td data-label="Кэш">второго уровня (11.7–11.15)</td>
+<td data-label="Где живёт">в <code>SessionFactory</code>, весь процесс или кластер</td>
+<td data-label="Что хранит">разобранное состояние сущностей, id элементов коллекций, natural-id</td>
+<td data-label="Кто сбрасывает">Hibernate при изменениях через себя; внешние изменения — только TTL</td>
+<td data-label="Чем грозит">устаревшие данные после чужих правок, расхождение подов, N+1 через кэш коллекций</td>
 </tr>
 <tr>
-<td>запросов (11.18)</td>
-<td>в <code>SessionFactory</code></td>
-<td>строки результата и метка времени</td>
-<td>метки таблиц при любом изменении через Hibernate; внешние — только TTL</td>
-<td>пробуксовка на пишущих таблицах, лишняя память</td>
+<td data-label="Кэш">запросов (11.18)</td>
+<td data-label="Где живёт">в <code>SessionFactory</code></td>
+<td data-label="Что хранит">строки результата и метка времени</td>
+<td data-label="Кто сбрасывает">метки таблиц при любом изменении через Hibernate; внешние — только TTL</td>
+<td data-label="Чем грозит">пробуксовка на пишущих таблицах, лишняя память</td>
 </tr>
 <tr>
-<td>планов запросов (2.5)</td>
-<td>в <code>QueryEngine</code>, процесс</td>
-<td>разобранный SQM и планы, до 2048 записей</td>
-<td>не нужна: план зависит только от текста</td>
-<td>вытеснение при конкатенации значений в JPQL</td>
+<td data-label="Кэш">планов запросов (2.5)</td>
+<td data-label="Где живёт">в <code>QueryEngine</code>, процесс</td>
+<td data-label="Что хранит">разобранный SQM и планы, до 2048 записей</td>
+<td data-label="Кто сбрасывает">не нужна: план зависит только от текста</td>
+<td data-label="Чем грозит">вытеснение при конкатенации значений в JPQL</td>
 </tr>
 <tr>
-<td>серверных prepared statements PgJDBC (2.6)</td>
-<td>в соединении драйвера и в бэкенде PostgreSQL</td>
-<td>подготовленные операторы, до 256 на соединение</td>
-<td>закрытие соединения, <code>DEALLOCATE</code>, смена схемы</td>
-<td>ошибки после DDL на живой базе, <code>prepared statement does not exist</code> за PgBouncer</td>
+<td data-label="Кэш">серверных prepared statements PgJDBC (2.6)</td>
+<td data-label="Где живёт">в соединении драйвера и в бэкенде PostgreSQL</td>
+<td data-label="Что хранит">подготовленные операторы, до 256 на соединение</td>
+<td data-label="Кто сбрасывает">закрытие соединения, <code>DEALLOCATE</code>, смена схемы</td>
+<td data-label="Чем грозит">ошибки после DDL на живой базе, <code>prepared statement does not exist</code> за PgBouncer</td>
 </tr>
 <tr>
-<td>приложения, Spring Cache (гл. 23, <code>23-caching.md</code>)</td>
-<td>в бине, процессе или Redis</td>
-<td>то, что вы положили, обычно DTO</td>
-<td>вы сами: <code>@CacheEvict</code>, TTL, событие</td>
-<td>всё, что вы забыли сбросить, но это хотя бы видно в коде</td>
+<td data-label="Кэш">приложения, Spring Cache (гл. 23, <code>23-caching.md</code>)</td>
+<td data-label="Где живёт">в бине, процессе или Redis</td>
+<td data-label="Что хранит">то, что вы положили, обычно DTO</td>
+<td data-label="Кто сбрасывает">вы сами: <code>@CacheEvict</code>, TTL, событие</td>
+<td data-label="Чем грозит">всё, что вы забыли сбросить, но это хотя бы видно в коде</td>
 </tr>
 </tbody>
 </table>
@@ -6919,7 +6919,7 @@ select t1_0.id,t1_0.fee_percent,t1_0.tariff_id from tariff_rule t1_0 where t1_0.
 <li>Целевым объектом (<code>target</code>) прокси служит экземпляр <code>SimpleJpaRepository&lt;T, ID&gt;</code> — обычная реализация операций создания, чтения, обновления и удаления (create, read, update, delete, CRUD) поверх <code>EntityManager</code>.</li>
 </ol>
 <p><strong>Вызов метода маршрутизируется</strong> по виду метода, как показано в таблице ниже.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Что за метод</th>
@@ -6928,24 +6928,24 @@ select t1_0.id,t1_0.fee_percent,t1_0.tariff_id from tariff_rule t1_0 where t1_0.
 </thead>
 <tbody>
 <tr>
-<td>Метод кастомного фрагмента (<code>OrderSearch#search</code>)</td>
-<td>в бин <code>OrderSearchImpl</code></td>
+<td data-label="Что за метод">Метод кастомного фрагмента (<code>OrderSearch#search</code>)</td>
+<td data-label="Куда уходит">в бин <code>OrderSearchImpl</code></td>
 </tr>
 <tr>
-<td>Метод базового интерфейса (<code>findById</code>, <code>save</code>, <code>deleteAll</code>)</td>
-<td>в <code>SimpleJpaRepository</code></td>
+<td data-label="Что за метод">Метод базового интерфейса (<code>findById</code>, <code>save</code>, <code>deleteAll</code>)</td>
+<td data-label="Куда уходит">в <code>SimpleJpaRepository</code></td>
 </tr>
 <tr>
-<td>Метод с <code>@Query</code></td>
-<td>в <code>SimpleJpaQuery</code> (JPQL) или <code>NativeJpaQuery</code> (native SQL), созданный на старте</td>
+<td data-label="Что за метод">Метод с <code>@Query</code></td>
+<td data-label="Куда уходит">в <code>SimpleJpaQuery</code> (JPQL) или <code>NativeJpaQuery</code> (native SQL), созданный на старте</td>
 </tr>
 <tr>
-<td><code>default</code>-метод интерфейса</td>
-<td>проходит через прокси, и <code>DefaultMethodInvokingMethodInterceptor</code> исполняет его тело</td>
+<td data-label="Что за метод"><code>default</code>-метод интерфейса</td>
+<td data-label="Куда уходит">проходит через прокси, и <code>DefaultMethodInvokingMethodInterceptor</code> исполняет его тело</td>
 </tr>
 <tr>
-<td>Всё остальное</td>
-<td>разбирается <code>PartTree</code> как derived-запрос</td>
+<td data-label="Что за метод">Всё остальное</td>
+<td data-label="Куда уходит">разбирается <code>PartTree</code> как derived-запрос</td>
 </tr>
 </tbody>
 </table>
@@ -7005,7 +7005,7 @@ select t1_0.id,t1_0.fee_percent,t1_0.tariff_id from tariff_rule t1_0 where t1_0.
 <p><strong>Шаг 6: прокси и разбор запросов.</strong> Наконец создаётся <code>ProxyFactory</code> с целевым объектом и тремя интерфейсами: интерфейсом репозитория, маркерным <code>Repository</code> и <code>TransactionalProxy</code>. Поскольку прокси строится по интерфейсам, <code>getProxy</code> возвращает JDK-прокси, механика которого разобрана в гл. 09 (<code>09-spring-core.md</code>). Предпоследним в прокси добавляется <code>QueryExecutorMethodInterceptor</code>, и его конструктор делает самую дорогую часть старта. Он проходит по всем методам-запросам, для каждого вызывает <code>QueryLookupStrategy.resolveQuery</code> и складывает результат в отображение <code>Map&lt;Method, RepositoryQuery&gt;</code>.</p>
 <p>Именно здесь разбирается имя derived-метода, именно здесь JPQL из <code>@Query</code> компилируется пробным <code>createQuery</code> на отдельном <code>EntityManager</code>. Поэтому опечатка в имени метода роняет приложение на подъёме контекста, а не на первом запросе (<a href="https://raw.githubusercontent.com/spring-projects/spring-data-commons/4.1.1/src/main/java/org/springframework/data/repository/core/support/QueryExecutorMethodInterceptor.java"><code>QueryExecutorMethodInterceptor</code>, 4.1.1</a>).</p>
 <p>Таблица ниже сводит перехватчики готового прокси в том порядке, в котором через них проходит вызов, от внешнего к внутреннему. В третьей колонке указано условие, при котором перехватчик вообще появляется. Смотреть стоит прежде всего на взаимное расположение транзакционного перехватчика, трансляции исключений и публикации событий.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">№</th>
@@ -7016,64 +7016,64 @@ select t1_0.id,t1_0.fee_percent,t1_0.tariff_id from tariff_rule t1_0 where t1_0.
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td><code>MethodInvocationValidator</code></td>
-<td>интерфейс написан на Kotlin или в его пакете объявлена null-безопасность (JSpecify <code>@NullMarked</code> или <code>@NonNullApi</code>)</td>
-<td>проверяет аргументы и результат на <code>null</code> по аннотациям</td>
+<td data-label="№" class="num">1</td>
+<td data-label="Перехватчик"><code>MethodInvocationValidator</code></td>
+<td data-label="Когда добавляется">интерфейс написан на Kotlin или в его пакете объявлена null-безопасность (JSpecify <code>@NullMarked</code> или <code>@NonNullApi</code>)</td>
+<td data-label="Что делает">проверяет аргументы и результат на <code>null</code> по аннотациям</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td><code>ExposeMetadataInterceptor</code> и <code>ExposeInvocationInterceptor</code></td>
-<td>включён <code>exposeMetadata</code></td>
-<td>кладёт метаданные вызова в <code>RepositoryMethodContextHolder</code></td>
+<td data-label="№" class="num">2</td>
+<td data-label="Перехватчик"><code>ExposeMetadataInterceptor</code> и <code>ExposeInvocationInterceptor</code></td>
+<td data-label="Когда добавляется">включён <code>exposeMetadata</code></td>
+<td data-label="Что делает">кладёт метаданные вызова в <code>RepositoryMethodContextHolder</code></td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td><code>CrudMethodMetadataPopulatingMethodInterceptor</code></td>
-<td>всегда в JPA</td>
-<td>передаёт в <code>SimpleJpaRepository</code> <code>@Lock</code>, <code>@QueryHints</code> и <code>@EntityGraph</code>, объявленные на переопределённых CRUD-методах</td>
+<td data-label="№" class="num">3</td>
+<td data-label="Перехватчик"><code>CrudMethodMetadataPopulatingMethodInterceptor</code></td>
+<td data-label="Когда добавляется">всегда в JPA</td>
+<td data-label="Что делает">передаёт в <code>SimpleJpaRepository</code> <code>@Lock</code>, <code>@QueryHints</code> и <code>@EntityGraph</code>, объявленные на переопределённых CRUD-методах</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td><code>SurroundingTransactionDetectorMethodInterceptor</code></td>
-<td>в интерфейсе есть метод со <code>Stream</code> или <code>@Procedure</code></td>
-<td>запоминает, была ли транзакция <strong>до</strong> входа в репозиторий</td>
+<td data-label="№" class="num">4</td>
+<td data-label="Перехватчик"><code>SurroundingTransactionDetectorMethodInterceptor</code></td>
+<td data-label="Когда добавляется">в интерфейсе есть метод со <code>Stream</code> или <code>@Procedure</code></td>
+<td data-label="Что делает">запоминает, была ли транзакция <strong>до</strong> входа в репозиторий</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td><code>PersistenceExceptionTranslationInterceptor</code></td>
-<td>всегда, если есть бин-транслятор</td>
-<td>превращает <code>PersistenceException</code> в <code>DataAccessException</code></td>
+<td data-label="№" class="num">5</td>
+<td data-label="Перехватчик"><code>PersistenceExceptionTranslationInterceptor</code></td>
+<td data-label="Когда добавляется">всегда, если есть бин-транслятор</td>
+<td data-label="Что делает">превращает <code>PersistenceException</code> в <code>DataAccessException</code></td>
 </tr>
 <tr>
-<td class="num">6</td>
-<td><code>TransactionInterceptor</code></td>
-<td>всегда</td>
-<td>открывает или подхватывает транзакцию по атрибутам из 12.8</td>
+<td data-label="№" class="num">6</td>
+<td data-label="Перехватчик"><code>TransactionInterceptor</code></td>
+<td data-label="Когда добавляется">всегда</td>
+<td data-label="Что делает">открывает или подхватывает транзакцию по атрибутам из 12.8</td>
 </tr>
 <tr>
-<td class="num">7</td>
-<td><code>EventPublishingMethodInterceptor</code></td>
-<td>у сущности есть метод с <code>@DomainEvents</code></td>
-<td>после <code>save…</code>/<code>delete…</code> публикует доменные события (12.16)</td>
+<td data-label="№" class="num">7</td>
+<td data-label="Перехватчик"><code>EventPublishingMethodInterceptor</code></td>
+<td data-label="Когда добавляется">у сущности есть метод с <code>@DomainEvents</code></td>
+<td data-label="Что делает">после <code>save…</code>/<code>delete…</code> публикует доменные события (12.16)</td>
 </tr>
 <tr>
-<td class="num">8</td>
-<td><code>DefaultMethodInvokingMethodInterceptor</code></td>
-<td>в интерфейсе есть <code>default</code>-методы</td>
-<td>исполняет тело <code>default</code>-метода</td>
+<td data-label="№" class="num">8</td>
+<td data-label="Перехватчик"><code>DefaultMethodInvokingMethodInterceptor</code></td>
+<td data-label="Когда добавляется">в интерфейсе есть <code>default</code>-методы</td>
+<td data-label="Что делает">исполняет тело <code>default</code>-метода</td>
 </tr>
 <tr>
-<td class="num">9</td>
-<td><code>QueryExecutorMethodInterceptor</code></td>
-<td>всегда</td>
-<td>исполняет методы-запросы по карте <code>Method → RepositoryQuery</code></td>
+<td data-label="№" class="num">9</td>
+<td data-label="Перехватчик"><code>QueryExecutorMethodInterceptor</code></td>
+<td data-label="Когда добавляется">всегда</td>
+<td data-label="Что делает">исполняет методы-запросы по карте <code>Method → RepositoryQuery</code></td>
 </tr>
 <tr>
-<td class="num">10</td>
-<td><code>ImplementationMethodExecutionInterceptor</code></td>
-<td>всегда</td>
-<td>ищет реализацию в композиции: <code>…Impl</code>, фрагменты, базовый класс</td>
+<td data-label="№" class="num">10</td>
+<td data-label="Перехватчик"><code>ImplementationMethodExecutionInterceptor</code></td>
+<td data-label="Когда добавляется">всегда</td>
+<td data-label="Что делает">ищет реализацию в композиции: <code>…Impl</code>, фрагменты, базовый класс</td>
 </tr>
 </tbody>
 </table>
@@ -7135,7 +7135,7 @@ advice     : ImplementationMethodExecutionInterceptor
 <p><strong>Какой метод считается методом-запросом.</strong> Решение принимается на старте, в <code>RepositoryInformationSupport.isQueryMethodCandidate</code>, и правило в нём короче, чем обычно думают. Мостовые, статические и <code>default</code>-методы запросами не бывают никогда, и метод, для которого нашлась реализация во фрагменте, тоже не запрос. А вот метод с аннотацией запроса становится запросом, <strong>даже если совпадает по сигнатуре с методом базового класса</strong> (<a href="https://raw.githubusercontent.com/spring-projects/spring-data-commons/4.1.1/src/main/java/org/springframework/data/repository/core/RepositoryInformationSupport.java"><code>RepositoryInformationSupport</code></a>, <a href="https://raw.githubusercontent.com/spring-projects/spring-data-commons/4.1.1/src/main/java/org/springframework/data/repository/core/support/DefaultRepositoryInformation.java"><code>DefaultRepositoryInformation</code></a>, 4.1.1). Отсюда законный приём: переобъявить в своём интерфейсе <code>findAll()</code> с <code>@Query("select p from Payment p where p.deleted = false")</code>, и вызов уйдёт в запрос, а не в <code>SimpleJpaRepository</code>.</p>
 <p>Всё, что не запрос, при вызове доходит до <code>ImplementationMethodExecutionInterceptor</code>, а тот вызывает <code>RepositoryComposition.invoke</code>. Композиция перебирает фрагменты по порядку и берёт первый, у которого есть метод с подходящими именем и параметрами. Поэтому <code>PaymentRepositoryImpl</code> выигрывает у фрагментов, фрагменты выигрывают у <code>SimpleJpaRepository</code>, а среди фрагментов побеждает объявленный в <code>extends</code> раньше.</p>
 <p><strong>Три режима стратегии.</strong> Режим задаётся атрибутом <code>queryLookupStrategy</code> у <code>@EnableJpaRepositories</code>, по умолчанию он равен <code>CREATE_IF_NOT_FOUND</code>, и значения у перечисления <code>QueryLookupStrategy.Key</code> ровно три (<a href="https://raw.githubusercontent.com/spring-projects/spring-data-commons/4.1.1/src/main/java/org/springframework/data/repository/query/QueryLookupStrategy.java"><code>QueryLookupStrategy</code></a>, <a href="https://raw.githubusercontent.com/spring-projects/spring-data-jpa/4.1.1/spring-data-jpa/src/main/java/org/springframework/data/jpa/repository/config/EnableJpaRepositories.java"><code>EnableJpaRepositories</code></a>). Порядок, в котором каждый режим ищет запрос, виден в <code>JpaQueryLookupStrategy</code>, и таблица ниже переносит его один в один (<a href="https://raw.githubusercontent.com/spring-projects/spring-data-jpa/4.1.1/spring-data-jpa/src/main/java/org/springframework/data/jpa/repository/query/JpaQueryLookupStrategy.java"><code>JpaQueryLookupStrategy</code>, 4.1.1</a>). Named query в ней — это запрос, объявленный заранее под именем: аннотацией <code>@NamedQuery</code> на сущности или в файле свойств. Смотреть в таблице стоит на то, что при <code>CREATE</code> аннотация <code>@Query</code> не читается вовсе.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -7145,19 +7145,19 @@ advice     : ImplementationMethodExecutionInterceptor
 </thead>
 <tbody>
 <tr>
-<td><code>CREATE</code></td>
-<td>только имя метода</td>
-<td>всегда <code>PartTreeJpaQuery</code>; метод с <code>@Query</code> будет разобран как derived и, скорее всего, уронит старт</td>
+<td data-label="Режим"><code>CREATE</code></td>
+<td data-label="Что ищется и в каком порядке">только имя метода</td>
+<td data-label="Что получается">всегда <code>PartTreeJpaQuery</code>; метод с <code>@Query</code> будет разобран как derived и, скорее всего, уронит старт</td>
 </tr>
 <tr>
-<td><code>USE_DECLARED_QUERY</code></td>
-<td><code>@Procedure</code> → <code>@Query</code> / <code>@NativeQuery</code> → запрос из <code>META-INF/jpa-named-queries.properties</code> → JPA <code>@NamedQuery</code> с именем <code>Сущность.метод</code></td>
-<td><code>StoredProcedureJpaQuery</code>, <code>SimpleJpaQuery</code>, <code>NativeJpaQuery</code> или <code>NamedQuery</code>; если ничего не нашлось — служебный <code>NoQuery</code></td>
+<td data-label="Режим"><code>USE_DECLARED_QUERY</code></td>
+<td data-label="Что ищется и в каком порядке"><code>@Procedure</code> → <code>@Query</code> / <code>@NativeQuery</code> → запрос из <code>META-INF/jpa-named-queries.properties</code> → JPA <code>@NamedQuery</code> с именем <code>Сущность.метод</code></td>
+<td data-label="Что получается"><code>StoredProcedureJpaQuery</code>, <code>SimpleJpaQuery</code>, <code>NativeJpaQuery</code> или <code>NamedQuery</code>; если ничего не нашлось — служебный <code>NoQuery</code></td>
 </tr>
 <tr>
-<td><code>CREATE_IF_NOT_FOUND</code> (по умолчанию)</td>
-<td>всё то же, что <code>USE_DECLARED_QUERY</code>, а если ничего не нашлось — разбор имени</td>
-<td>то же плюс <code>PartTreeJpaQuery</code></td>
+<td data-label="Режим"><code>CREATE_IF_NOT_FOUND</code> (по умолчанию)</td>
+<td data-label="Что ищется и в каком порядке">всё то же, что <code>USE_DECLARED_QUERY</code>, а если ничего не нашлось — разбор имени</td>
+<td data-label="Что получается">то же плюс <code>PartTreeJpaQuery</code></td>
 </tr>
 </tbody>
 </table>
@@ -7165,7 +7165,7 @@ advice     : ImplementationMethodExecutionInterceptor
 <p><strong>Цена режима по умолчанию.</strong> В режиме <code>CREATE_IF_NOT_FOUND</code> поиск JPA-шного <code>@NamedQuery</code> выполняется для <strong>каждого</strong> derived-метода, и устроен он неожиданно дорого. <code>NamedQuery.hasNamedQuery</code> открывает новый <code>EntityManager</code> от фабрики, вызывает на нём <code>createNamedQuery(name)</code> и ловит <code>IllegalArgumentException</code>, которое Hibernate бросает, когда запроса с таким именем нет (<a href="https://raw.githubusercontent.com/spring-projects/spring-data-jpa/4.1.1/spring-data-jpa/src/main/java/org/springframework/data/jpa/repository/query/NamedQuery.java"><code>NamedQuery</code>, 4.1.1</a>). Каждая такая попытка стоит открытия сессии и создания исключения со стеком, и на приложении с тысячей derived-методов эта строчка заметна в профиле старта.</p>
 <p>Убрать эту цену переключением на <code>CREATE</code> можно только в проекте, где нет ни одного <code>@Query</code>, а таких почти не бывает. Поэтому на практике с ней живут и просто знают, откуда в DEBUG-логе тысяча строк «Did not find named query».</p>
 <p><strong>Классы запросов.</strong> На выходе стратегии получается один из пяти классов, и у каждого своё поведение на старте и на вызове. Таблица ниже сводит их; главное в ней — разница между проверкой JPQL и native SQL.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Класс</th>
@@ -7176,34 +7176,34 @@ advice     : ImplementationMethodExecutionInterceptor
 </thead>
 <tbody>
 <tr>
-<td><code>PartTreeJpaQuery</code></td>
-<td>derived-метод</td>
-<td>разбор имени в <code>PartTree</code>, существование свойств, число и типы аргументов</td>
-<td>строится текст JPQL (12.11), вызывается <code>em.createQuery</code></td>
+<td data-label="Класс"><code>PartTreeJpaQuery</code></td>
+<td data-label="Для какого метода">derived-метод</td>
+<td data-label="Что проверяется на старте">разбор имени в <code>PartTree</code>, существование свойств, число и типы аргументов</td>
+<td data-label="Что происходит на вызове">строится текст JPQL (12.11), вызывается <code>em.createQuery</code></td>
 </tr>
 <tr>
-<td><code>SimpleJpaQuery</code></td>
-<td><code>@Query</code> с JPQL, <code>jpa-named-queries.properties</code></td>
-<td>пробный <code>createQuery</code> на отдельном <code>EntityManager</code>: «Query validation failed for …»</td>
-<td>переписывание под <code>Sort</code>, <code>Pageable</code> и проекцию, затем <code>createQuery</code></td>
+<td data-label="Класс"><code>SimpleJpaQuery</code></td>
+<td data-label="Для какого метода"><code>@Query</code> с JPQL, <code>jpa-named-queries.properties</code></td>
+<td data-label="Что проверяется на старте">пробный <code>createQuery</code> на отдельном <code>EntityManager</code>: «Query validation failed for …»</td>
+<td data-label="Что происходит на вызове">переписывание под <code>Sort</code>, <code>Pageable</code> и проекцию, затем <code>createQuery</code></td>
 </tr>
 <tr>
-<td><code>NativeJpaQuery</code></td>
-<td><code>@Query(nativeQuery = true)</code> или <code>@NativeQuery</code></td>
-<td><strong>ничего</strong>: SQL не проверяется, опечатка всплывёт на первом вызове</td>
-<td><code>createNativeQuery</code></td>
+<td data-label="Класс"><code>NativeJpaQuery</code></td>
+<td data-label="Для какого метода"><code>@Query(nativeQuery = true)</code> или <code>@NativeQuery</code></td>
+<td data-label="Что проверяется на старте"><strong>ничего</strong>: SQL не проверяется, опечатка всплывёт на первом вызове</td>
+<td data-label="Что происходит на вызове"><code>createNativeQuery</code></td>
 </tr>
 <tr>
-<td><code>NamedQuery</code></td>
-<td>JPA <code>@NamedQuery</code> / <code>orm.xml</code></td>
-<td>наличие запроса по имени; синтаксис Hibernate проверил ещё при сборке фабрики</td>
-<td><code>createNamedQuery</code></td>
+<td data-label="Класс"><code>NamedQuery</code></td>
+<td data-label="Для какого метода">JPA <code>@NamedQuery</code> / <code>orm.xml</code></td>
+<td data-label="Что проверяется на старте">наличие запроса по имени; синтаксис Hibernate проверил ещё при сборке фабрики</td>
+<td data-label="Что происходит на вызове"><code>createNamedQuery</code></td>
 </tr>
 <tr>
-<td><code>StoredProcedureJpaQuery</code></td>
-<td><code>@Procedure</code></td>
-<td>сигнатура процедуры по аннотациям</td>
-<td><code>createStoredProcedureQuery</code></td>
+<td data-label="Класс"><code>StoredProcedureJpaQuery</code></td>
+<td data-label="Для какого метода"><code>@Procedure</code></td>
+<td data-label="Что проверяется на старте">сигнатура процедуры по аннотациям</td>
+<td data-label="Что происходит на вызове"><code>createStoredProcedureQuery</code></td>
 </tr>
 </tbody>
 </table>
@@ -7225,7 +7225,7 @@ advice     : ImplementationMethodExecutionInterceptor
 <p>Особый и полезный случай — идентификатор связи. <code>findByPayerId(Long accountId)</code> не делает соединения с таблицей счетов вообще, а сравнивает внешний ключ <code>payment.payer_id</code> с параметром. Зато <code>findByPayerNumber(String number)</code> соединяет <code>payment</code> с <code>account</code>, и если нужен ровно такой фильтр на горячем пути, его цену стоит проверить в плане запроса.</p>
 <p><strong>Проверки при разборе.</strong> После построения дерева <code>PartTreeJpaQuery.validate</code> сверяет условия с параметрами метода. Если условий больше, чем аргументов, старт падает с «Method expects at least 2 arguments but only found 1», а если для <code>In</code> передан не <code>Collection</code>, а скаляр, — с «Operator 'IN' on 'status' requires a Collection argument» (<a href="https://raw.githubusercontent.com/spring-projects/spring-data-jpa/4.1.1/spring-data-jpa/src/main/java/org/springframework/data/jpa/repository/query/PartTreeJpaQuery.java"><code>PartTreeJpaQuery</code>, 4.1.1</a>). Типы аргументов для прочих операторов на старте не проверяются, и <code>findByAmountGreaterThan(String amount)</code> поднимется, а упадёт уже на вызове, когда Hibernate попытается привязать строку к числовому параметру.</p>
 <p>Таблица ниже сводит ключевые слова <code>Part.Type</code> из исходника 4.1.1 и фрагменты JPQL, которые из них получаются (<a href="https://raw.githubusercontent.com/spring-projects/spring-data-commons/4.1.1/src/main/java/org/springframework/data/repository/query/parser/Part.java"><code>Part</code>, 4.1.1</a>, <a href="https://raw.githubusercontent.com/spring-projects/spring-data-jpa/4.1.1/spring-data-jpa/src/main/java/org/springframework/data/jpa/repository/query/JpaQueryCreator.java"><code>JpaQueryCreator</code>, 4.1.1</a>). Синонимы в первой колонке разделены косой чертой, а во второй колонке <code>x</code> означает путь к свойству, <code>?</code> — параметр. Смотреть в ней стоит на три строки: на пустое ключевое слово, у которого есть неочевидное поведение для <code>null</code>, на <code>IgnoreCase</code> и на <code>Containing</code> для коллекции.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ключевое слово</th>
@@ -7235,89 +7235,89 @@ advice     : ImplementationMethodExecutionInterceptor
 </thead>
 <tbody>
 <tr>
-<td>(нет) / <code>Is</code> / <code>Equals</code></td>
-<td><code>x = ?</code></td>
-<td>при аргументе <code>null</code> превращается в <code>x is null</code></td>
+<td data-label="Ключевое слово">(нет) / <code>Is</code> / <code>Equals</code></td>
+<td data-label="Фрагмент JPQL"><code>x = ?</code></td>
+<td data-label="Замечание">при аргументе <code>null</code> превращается в <code>x is null</code></td>
 </tr>
 <tr>
-<td><code>Not</code> / <code>IsNot</code></td>
-<td><code>x &lt;&gt; ?</code></td>
-<td>при <code>null</code> — <code>x is not null</code></td>
+<td data-label="Ключевое слово"><code>Not</code> / <code>IsNot</code></td>
+<td data-label="Фрагмент JPQL"><code>x &lt;&gt; ?</code></td>
+<td data-label="Замечание">при <code>null</code> — <code>x is not null</code></td>
 </tr>
 <tr>
-<td><code>Between</code> / <code>IsBetween</code></td>
-<td><code>x between ? and ?</code></td>
-<td>два аргумента</td>
+<td data-label="Ключевое слово"><code>Between</code> / <code>IsBetween</code></td>
+<td data-label="Фрагмент JPQL"><code>x between ? and ?</code></td>
+<td data-label="Замечание">два аргумента</td>
 </tr>
 <tr>
-<td><code>LessThan</code>, <code>LessThanEqual</code>, <code>GreaterThan</code>, <code>GreaterThanEqual</code></td>
-<td><code>x &lt; ?</code>, <code>x &lt;= ?</code>, <code>x &gt; ?</code>, <code>x &gt;= ?</code></td>
-<td></td>
+<td data-label="Ключевое слово"><code>LessThan</code>, <code>LessThanEqual</code>, <code>GreaterThan</code>, <code>GreaterThanEqual</code></td>
+<td data-label="Фрагмент JPQL"><code>x &lt; ?</code>, <code>x &lt;= ?</code>, <code>x &gt; ?</code>, <code>x &gt;= ?</code></td>
+<td data-label="Замечание"></td>
 </tr>
 <tr>
-<td><code>Before</code> / <code>After</code></td>
-<td><code>x &lt; ?</code> / <code>x &gt; ?</code></td>
-<td>синонимы для дат</td>
+<td data-label="Ключевое слово"><code>Before</code> / <code>After</code></td>
+<td data-label="Фрагмент JPQL"><code>x &lt; ?</code> / <code>x &gt; ?</code></td>
+<td data-label="Замечание">синонимы для дат</td>
 </tr>
 <tr>
-<td><code>IsNull</code> / <code>Null</code>, <code>IsNotNull</code> / <code>NotNull</code></td>
-<td><code>x is null</code>, <code>x is not null</code></td>
-<td>без аргумента</td>
+<td data-label="Ключевое слово"><code>IsNull</code> / <code>Null</code>, <code>IsNotNull</code> / <code>NotNull</code></td>
+<td data-label="Фрагмент JPQL"><code>x is null</code>, <code>x is not null</code></td>
+<td data-label="Замечание">без аргумента</td>
 </tr>
 <tr>
-<td><code>In</code> / <code>IsIn</code>, <code>NotIn</code></td>
-<td><code>x in ?</code>, <code>x not in ?</code></td>
-<td>аргумент обязан быть коллекцией или массивом</td>
+<td data-label="Ключевое слово"><code>In</code> / <code>IsIn</code>, <code>NotIn</code></td>
+<td data-label="Фрагмент JPQL"><code>x in ?</code>, <code>x not in ?</code></td>
+<td data-label="Замечание">аргумент обязан быть коллекцией или массивом</td>
 </tr>
 <tr>
-<td><code>Like</code>, <code>NotLike</code></td>
-<td><code>x like ? escape '\'</code></td>
-<td>шаблон с <code>%</code> передаёт вызывающий</td>
+<td data-label="Ключевое слово"><code>Like</code>, <code>NotLike</code></td>
+<td data-label="Фрагмент JPQL"><code>x like ? escape '\'</code></td>
+<td data-label="Замечание">шаблон с <code>%</code> передаёт вызывающий</td>
 </tr>
 <tr>
-<td><code>StartingWith</code> / <code>StartsWith</code>, <code>EndingWith</code>, <code>Containing</code> / <code>Contains</code></td>
-<td><code>x like ? escape '\'</code></td>
-<td><code>%</code> добавляет Spring Data, а <code>%</code> и <code>_</code> в значении экранирует</td>
+<td data-label="Ключевое слово"><code>StartingWith</code> / <code>StartsWith</code>, <code>EndingWith</code>, <code>Containing</code> / <code>Contains</code></td>
+<td data-label="Фрагмент JPQL"><code>x like ? escape '\'</code></td>
+<td data-label="Замечание"><code>%</code> добавляет Spring Data, а <code>%</code> и <code>_</code> в значении экранирует</td>
 </tr>
 <tr>
-<td><code>Containing</code> на коллекции</td>
-<td><code>? member of x</code></td>
-<td>не <code>like</code>, а проверка вхождения</td>
+<td data-label="Ключевое слово"><code>Containing</code> на коллекции</td>
+<td data-label="Фрагмент JPQL"><code>? member of x</code></td>
+<td data-label="Замечание">не <code>like</code>, а проверка вхождения</td>
 </tr>
 <tr>
-<td><code>IsEmpty</code>, <code>IsNotEmpty</code></td>
-<td><code>x is empty</code>, <code>x is not empty</code></td>
-<td>только для коллекций</td>
+<td data-label="Ключевое слово"><code>IsEmpty</code>, <code>IsNotEmpty</code></td>
+<td data-label="Фрагмент JPQL"><code>x is empty</code>, <code>x is not empty</code></td>
+<td data-label="Замечание">только для коллекций</td>
 </tr>
 <tr>
-<td><code>True</code>, <code>False</code></td>
-<td><code>x = true</code>, <code>x = false</code></td>
-<td>без аргумента</td>
+<td data-label="Ключевое слово"><code>True</code>, <code>False</code></td>
+<td data-label="Фрагмент JPQL"><code>x = true</code>, <code>x = false</code></td>
+<td data-label="Замечание">без аргумента</td>
 </tr>
 <tr>
-<td><code>IgnoreCase</code>, <code>AllIgnoreCase</code></td>
-<td><code>upper(x) = upper(?)</code></td>
-<td>обычный индекс по <code>x</code> не используется</td>
+<td data-label="Ключевое слово"><code>IgnoreCase</code>, <code>AllIgnoreCase</code></td>
+<td data-label="Фрагмент JPQL"><code>upper(x) = upper(?)</code></td>
+<td data-label="Замечание">обычный индекс по <code>x</code> не используется</td>
 </tr>
 <tr>
-<td><code>OrderBy…Asc/Desc</code></td>
-<td><code>order by x asc/desc</code></td>
-<td>допускается один раз</td>
+<td data-label="Ключевое слово"><code>OrderBy…Asc/Desc</code></td>
+<td data-label="Фрагмент JPQL"><code>order by x asc/desc</code></td>
+<td data-label="Замечание">допускается один раз</td>
 </tr>
 <tr>
-<td><code>First</code>/<code>Top</code>, <code>FirstN</code>/<code>TopN</code></td>
-<td><code>setMaxResults(N)</code></td>
-<td>ограничение применяется к запросу, а не к <code>Pageable</code></td>
+<td data-label="Ключевое слово"><code>First</code>/<code>Top</code>, <code>FirstN</code>/<code>TopN</code></td>
+<td data-label="Фрагмент JPQL"><code>setMaxResults(N)</code></td>
+<td data-label="Замечание">ограничение применяется к запросу, а не к <code>Pageable</code></td>
 </tr>
 <tr>
-<td><code>exists…By</code></td>
-<td><code>setMaxResults(1)</code></td>
-<td>результат — непустота списка</td>
+<td data-label="Ключевое слово"><code>exists…By</code></td>
+<td data-label="Фрагмент JPQL"><code>setMaxResults(1)</code></td>
+<td data-label="Замечание">результат — непустота списка</td>
 </tr>
 <tr>
-<td><code>Distinct</code></td>
-<td><code>select distinct</code></td>
-<td></td>
+<td data-label="Ключевое слово"><code>Distinct</code></td>
+<td data-label="Фрагмент JPQL"><code>select distinct</code></td>
+<td data-label="Замечание"></td>
 </tr>
 </tbody>
 </table>
@@ -7353,7 +7353,7 @@ select p1_0.id,p1_0.amount,... from payment p1_0
 <h3 id="1212-пути-исполнения-запроса">12.12 Пути исполнения запроса</h3>
 <p>Путь исполнения (query execution) — это способ, которым Spring Data выполняет уже созданный запрос и превращает его результат в возвращаемое значение метода; за каждый путь отвечает свой вариант <code>JpaQueryExecution</code>. Выбор определяется только возвращаемым типом метода: один и тот же текст запроса за <code>List</code>, <code>Page</code>, <code>Slice</code>, <code>Stream</code> и <code>Window</code> исполняется пятью разными способами, с разным числом SQL-операторов и разными требованиями к транзакции. Именно здесь живут сюрпризы вроде второго запроса у <code>Page</code>, исключения у <code>Stream</code> вне транзакции и исключения у одиночного результата, когда строк вдруг две; сюда же относится молчаливое <code>is null</code>, в которое derived-метод превращает аргумент <code>null</code> (12.11). Ниже варианты разобраны по очереди: как Spring Data выбирает выполнение, что делает каждое из них и какой SQL при этом уходит в базу.</p>
 <p><strong>Как выбирается выполнение.</strong> <code>AbstractJpaQuery</code> выбирает вариант в фиксированном порядке: <code>Stream</code> → <code>@Procedure</code> → коллекция → <code>Slice</code> → <code>Page</code> → <code>@Modifying</code> → одиночный результат. <code>PartTreeJpaQuery</code> перед этим перехватывает три случая, свои только для derived-методов: <code>Window</code> со <code>ScrollPosition</code>, префикс <code>delete…By</code> и префикс <code>exists…By</code> (<a href="https://raw.githubusercontent.com/spring-projects/spring-data-jpa/4.1.1/spring-data-jpa/src/main/java/org/springframework/data/jpa/repository/query/AbstractJpaQuery.java"><code>AbstractJpaQuery</code></a>, <a href="https://raw.githubusercontent.com/spring-projects/spring-data-jpa/4.1.1/spring-data-jpa/src/main/java/org/springframework/data/jpa/repository/query/JpaQueryExecution.java"><code>JpaQueryExecution</code></a>, 4.1.1). Таблица ниже сводит варианты вместе с числом SQL-операторов и требованиями к транзакции. На неё удобно опираться при ревью, когда нужно быстро понять, сколько обращений к базе даст метод.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Возвращаемый тип</th>
@@ -7364,58 +7364,58 @@ select p1_0.id,p1_0.amount,... from payment p1_0
 </thead>
 <tbody>
 <tr>
-<td><code>List&lt;T&gt;</code>, <code>Collection&lt;T&gt;</code></td>
-<td><code>CollectionExecution</code></td>
-<td>один <code>select</code></td>
-<td>не нужна</td>
+<td data-label="Возвращаемый тип"><code>List&lt;T&gt;</code>, <code>Collection&lt;T&gt;</code></td>
+<td data-label="Выполнение"><code>CollectionExecution</code></td>
+<td data-label="SQL">один <code>select</code></td>
+<td data-label="Транзакция">не нужна</td>
 </tr>
 <tr>
-<td><code>T</code>, <code>Optional&lt;T&gt;</code></td>
-<td><code>SingleEntityExecution</code></td>
-<td>один <code>select</code>, <code>getSingleResultOrNull()</code></td>
-<td>не нужна</td>
+<td data-label="Возвращаемый тип"><code>T</code>, <code>Optional&lt;T&gt;</code></td>
+<td data-label="Выполнение"><code>SingleEntityExecution</code></td>
+<td data-label="SQL">один <code>select</code>, <code>getSingleResultOrNull()</code></td>
+<td data-label="Транзакция">не нужна</td>
 </tr>
 <tr>
-<td><code>Slice&lt;T&gt;</code></td>
-<td><code>SlicedExecution</code></td>
-<td>один <code>select</code> с лимитом <code>size + 1</code></td>
-<td>не нужна</td>
+<td data-label="Возвращаемый тип"><code>Slice&lt;T&gt;</code></td>
+<td data-label="Выполнение"><code>SlicedExecution</code></td>
+<td data-label="SQL">один <code>select</code> с лимитом <code>size + 1</code></td>
+<td data-label="Транзакция">не нужна</td>
 </tr>
 <tr>
-<td><code>Page&lt;T&gt;</code></td>
-<td><code>PagedExecution</code></td>
-<td><code>select</code> плюс, как правило, <code>count</code></td>
-<td>меняет способ подсчёта</td>
+<td data-label="Возвращаемый тип"><code>Page&lt;T&gt;</code></td>
+<td data-label="Выполнение"><code>PagedExecution</code></td>
+<td data-label="SQL"><code>select</code> плюс, как правило, <code>count</code></td>
+<td data-label="Транзакция">меняет способ подсчёта</td>
 </tr>
 <tr>
-<td><code>Stream&lt;T&gt;</code></td>
-<td><code>StreamExecution</code></td>
-<td>один <code>select</code>, чтение по мере потребления</td>
-<td><strong>обязательна снаружи</strong></td>
+<td data-label="Возвращаемый тип"><code>Stream&lt;T&gt;</code></td>
+<td data-label="Выполнение"><code>StreamExecution</code></td>
+<td data-label="SQL">один <code>select</code>, чтение по мере потребления</td>
+<td data-label="Транзакция"><strong>обязательна снаружи</strong></td>
 </tr>
 <tr>
-<td><code>int</code>/<code>long</code>/<code>void</code> с <code>@Modifying</code></td>
-<td><code>ModifyingExecution</code></td>
-<td>один <code>update</code>/<code>delete</code></td>
-<td>обязательна</td>
+<td data-label="Возвращаемый тип"><code>int</code>/<code>long</code>/<code>void</code> с <code>@Modifying</code></td>
+<td data-label="Выполнение"><code>ModifyingExecution</code></td>
+<td data-label="SQL">один <code>update</code>/<code>delete</code></td>
+<td data-label="Транзакция">обязательна</td>
 </tr>
 <tr>
-<td><code>Window&lt;T&gt;</code> + <code>ScrollPosition</code></td>
-<td><code>ScrollExecution</code></td>
-<td>один <code>select</code> с лимитом <code>limit + 1</code></td>
-<td>не нужна</td>
+<td data-label="Возвращаемый тип"><code>Window&lt;T&gt;</code> + <code>ScrollPosition</code></td>
+<td data-label="Выполнение"><code>ScrollExecution</code></td>
+<td data-label="SQL">один <code>select</code> с лимитом <code>limit + 1</code></td>
+<td data-label="Транзакция">не нужна</td>
 </tr>
 <tr>
-<td><code>long</code> у <code>delete…By</code></td>
-<td><code>DeleteExecution</code></td>
-<td><code>select</code>, затем <code>delete</code> на каждую строку</td>
-<td>обязательна</td>
+<td data-label="Возвращаемый тип"><code>long</code> у <code>delete…By</code></td>
+<td data-label="Выполнение"><code>DeleteExecution</code></td>
+<td data-label="SQL"><code>select</code>, затем <code>delete</code> на каждую строку</td>
+<td data-label="Транзакция">обязательна</td>
 </tr>
 <tr>
-<td><code>boolean</code> у <code>exists…By</code></td>
-<td><code>ExistsExecution</code></td>
-<td><code>select</code> с лимитом 1</td>
-<td>не нужна</td>
+<td data-label="Возвращаемый тип"><code>boolean</code> у <code>exists…By</code></td>
+<td data-label="Выполнение"><code>ExistsExecution</code></td>
+<td data-label="SQL"><code>select</code> с лимитом 1</td>
+<td data-label="Транзакция">не нужна</td>
 </tr>
 </tbody>
 </table>
@@ -7503,7 +7503,7 @@ select count(*) from account a1_0 join payment p1_0 on a1_0.id=p1_0.payer_id
 - <strong>Сначала версия.</strong> Если у сущности есть атрибут <code>@Version</code> и его тип <strong>не примитивный</strong>, сущность новая, когда версия равна <code>null</code>.
 - <strong>Затем идентификатор.</strong> Если атрибута версии нет или он примитивный, решение переходит к идентификатору в <code>AbstractEntityInformation</code>: непримитивный id считается новым при <code>null</code>, а примитивный числовой — при нуле (<a href="https://raw.githubusercontent.com/spring-projects/spring-data-jpa/4.1.1/spring-data-jpa/src/main/java/org/springframework/data/jpa/repository/support/JpaMetamodelEntityInformation.java"><code>JpaMetamodelEntityInformation</code></a>, <a href="https://raw.githubusercontent.com/spring-projects/spring-data-commons/4.1.1/src/main/java/org/springframework/data/repository/core/support/AbstractEntityInformation.java"><code>AbstractEntityInformation</code></a>, 4.1.1).</p>
 <p>Таблица ниже сводит все варианты вместе с тем, что уйдёт в базу при первом сохранении объекта, созданного через <code>new</code>.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Модель сущности</th>
@@ -7513,34 +7513,34 @@ select count(*) from account a1_0 join payment p1_0 on a1_0.id=p1_0.payer_id
 </thead>
 <tbody>
 <tr>
-<td><code>@GeneratedValue Long id</code>, без версии</td>
-<td><code>id == null</code> → новая</td>
-<td><code>insert</code> (для <code>SEQUENCE</code> перед ним <code>nextval</code> раз в <code>allocationSize</code>)</td>
+<td data-label="Модель сущности"><code>@GeneratedValue Long id</code>, без версии</td>
+<td data-label="Решение isNew для нового объекта"><code>id == null</code> → новая</td>
+<td data-label="SQL при первом save"><code>insert</code> (для <code>SEQUENCE</code> перед ним <code>nextval</code> раз в <code>allocationSize</code>)</td>
 </tr>
 <tr>
-<td><code>Long id</code> задаётся приложением, без версии</td>
-<td><code>id != null</code> → <strong>не новая</strong></td>
-<td><code>select</code> по id, затем <code>insert</code></td>
+<td data-label="Модель сущности"><code>Long id</code> задаётся приложением, без версии</td>
+<td data-label="Решение isNew для нового объекта"><code>id != null</code> → <strong>не новая</strong></td>
+<td data-label="SQL при первом save"><code>select</code> по id, затем <code>insert</code></td>
 </tr>
 <tr>
-<td><code>UUID id</code> задаётся приложением, <code>@Version Long version</code></td>
-<td><code>version == null</code> → новая</td>
-<td><code>insert</code></td>
+<td data-label="Модель сущности"><code>UUID id</code> задаётся приложением, <code>@Version Long version</code></td>
+<td data-label="Решение isNew для нового объекта"><code>version == null</code> → новая</td>
+<td data-label="SQL при первом save"><code>insert</code></td>
 </tr>
 <tr>
-<td><code>UUID id</code> задаётся приложением, <code>@Version long version</code> (примитив)</td>
-<td>версия игнорируется, <code>id != null</code> → не новая</td>
-<td><code>select</code>, затем <code>insert</code></td>
+<td data-label="Модель сущности"><code>UUID id</code> задаётся приложением, <code>@Version long version</code> (примитив)</td>
+<td data-label="Решение isNew для нового объекта">версия игнорируется, <code>id != null</code> → не новая</td>
+<td data-label="SQL при первом save"><code>select</code>, затем <code>insert</code></td>
 </tr>
 <tr>
-<td><code>long id</code> (примитив) задаётся приложением</td>
-<td><code>id != 0</code> → не новая</td>
-<td><code>select</code>, затем <code>insert</code></td>
+<td data-label="Модель сущности"><code>long id</code> (примитив) задаётся приложением</td>
+<td data-label="Решение isNew для нового объекта"><code>id != 0</code> → не новая</td>
+<td data-label="SQL при первом save"><code>select</code>, затем <code>insert</code></td>
 </tr>
 <tr>
-<td>реализует <code>Persistable</code></td>
-<td><code>entity.isNew()</code></td>
-<td>по флагу</td>
+<td data-label="Модель сущности">реализует <code>Persistable</code></td>
+<td data-label="Решение isNew для нового объекта"><code>entity.isNew()</code></td>
+<td data-label="SQL при первом save">по флагу</td>
 </tr>
 </tbody>
 </table>
@@ -7569,7 +7569,7 @@ insert into registry_entry (amount,document_no,...,id) values (?,?,...,?)  -- б
 <p><strong>DTO через конструктор.</strong> Для класса-проекции, чаще всего <code>record</code>, derived-метод получает конструкторное выражение <code>select new com.bank.payments.PaymentRow(p.id, p.amount, p.status) from Payment p …</code>, где порядок аргументов берётся из параметров конструктора. Для <code>@Query</code> с <code>select p from Payment p</code> и DTO в возвращаемом типе Spring Data переписывает запрос так же (6.8). Объектов на строку здесь создаётся ровно один — сам DTO, — а Hibernate передаёт значения в конструктор без промежуточного отображения. Если у класса несколько конструкторов, <code>TupleConverter</code> выбирает первый подходящий по числу и типам аргументов, а <code>@PersistenceCreator</code> позволяет указать нужный явно.</p>
 <p><strong>Динамическая проекция.</strong> Динамической называют проекцию, тип которой передают аргументом: метод <code>&lt;T&gt; List&lt;T&gt; findByStatus(PaymentStatus status, Class&lt;T&gt; type)</code> вычисляет <code>ReturnedType</code> на каждом вызове по переданному классу. Поэтому один метод даёт столько разных текстов запроса, сколько типов в него передают. Для кэша планов Hibernate это несколько записей вместо одной, а для читающего код — неочевидность: по сигнатуре метода нельзя сказать, какой SQL он выполнит, пока не увидишь место вызова.</p>
 <p>Таблица ниже сводит, что создаётся на каждую строку результата. От этого числа зависит цена проекции на выгрузке в сотни тысяч строк, о которой шла речь в пятом замечании 6.12.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -7580,34 +7580,34 @@ insert into registry_entry (amount,document_no,...,id) values (?,?,...,?)  -- б
 </thead>
 <tbody>
 <tr>
-<td>Сущность</td>
-<td>все колонки</td>
-<td>сущность, <code>EntityEntry</code>, снимок <code>loadedState</code> (3.8)</td>
-<td>нет</td>
+<td data-label="Способ">Сущность</td>
+<td data-label="Что выбирается">все колонки</td>
+<td data-label="Объекты на строку">сущность, <code>EntityEntry</code>, снимок <code>loadedState</code> (3.8)</td>
+<td data-label="Работа на вызове геттера">нет</td>
 </tr>
 <tr>
-<td>Закрытый интерфейс</td>
-<td>входные свойства</td>
-<td><code>Tuple</code>, <code>TupleBackedMap</code>, <code>ProxyFactory</code>, JDK-прокси</td>
-<td>цепочка из 2–4 перехватчиков и поиск в отображении</td>
+<td data-label="Способ">Закрытый интерфейс</td>
+<td data-label="Что выбирается">входные свойства</td>
+<td data-label="Объекты на строку"><code>Tuple</code>, <code>TupleBackedMap</code>, <code>ProxyFactory</code>, JDK-прокси</td>
+<td data-label="Работа на вызове геттера">цепочка из 2–4 перехватчиков и поиск в отображении</td>
 </tr>
 <tr>
-<td>Открытый интерфейс</td>
-<td>вся сущность</td>
-<td>всё, что у сущности, плюс <code>ProxyFactory</code> и JDK-прокси</td>
-<td>перехватчики и вычисление SpEL</td>
+<td data-label="Способ">Открытый интерфейс</td>
+<td data-label="Что выбирается">вся сущность</td>
+<td data-label="Объекты на строку">всё, что у сущности, плюс <code>ProxyFactory</code> и JDK-прокси</td>
+<td data-label="Работа на вызове геттера">перехватчики и вычисление SpEL</td>
 </tr>
 <tr>
-<td><code>record</code> через <code>select new</code></td>
-<td>аргументы конструктора</td>
-<td>один <code>record</code></td>
-<td>нет</td>
+<td data-label="Способ"><code>record</code> через <code>select new</code></td>
+<td data-label="Что выбирается">аргументы конструктора</td>
+<td data-label="Объекты на строку">один <code>record</code></td>
+<td data-label="Работа на вызове геттера">нет</td>
 </tr>
 <tr>
-<td>Динамическая</td>
-<td>по переданному классу</td>
-<td>по переданному классу</td>
-<td>по переданному классу</td>
+<td data-label="Способ">Динамическая</td>
+<td data-label="Что выбирается">по переданному классу</td>
+<td data-label="Объекты на строку">по переданному классу</td>
+<td data-label="Работа на вызове геттера">по переданному классу</td>
 </tr>
 </tbody>
 </table>
@@ -7730,7 +7730,7 @@ insert into registry_entry (amount,document_no,...,id) values (?,?,...,?)  -- б
 - некоторые запросы, которые в HB5 «работали» по недосмотру, в HB6 не компилируются, и на них уходит основная работа при миграции.</p>
 <p><strong>Новый слой типов.</strong> Тип атрибута в Hibernate отвечает за то, как Java-значение превращается в значение колонки и обратно. В HB6 <code>BasicType</code> складывается из двух независимых частей: <code>JavaType</code> описывает Java-сторону, <code>JdbcType</code> — сторону базы. Вместо <code>@Type(type = "...")</code> из HB5 поэтому используются <code>@JdbcTypeCode</code>, <code>@JavaType</code> и <code>@JdbcType</code>, которыми можно задать каждую сторону отдельно. Отсюда и встроенная поддержка jsonb, массивов, <code>Duration</code> и <code>UUID</code>, для которой в HB5 требовались сторонние библиотеки.</p>
 <p><strong>Типовые поломки миграции 5 → 6</strong> собраны в таблице ниже вместе со способом починки каждой.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Что ломается</th>
@@ -7739,36 +7739,36 @@ insert into registry_entry (amount,document_no,...,id) values (?,?,...,?)  -- б
 </thead>
 <tbody>
 <tr>
-<td><code>hibernate_sequence</code> больше нет; <code>AUTO</code> → своя последовательность на сущность</td>
-<td>явный <code>@SequenceGenerator</code> либо миграция создающая <code>&lt;table&gt;_seq</code></td>
+<td data-label="Что ломается"><code>hibernate_sequence</code> больше нет; <code>AUTO</code> → своя последовательность на сущность</td>
+<td data-label="Как чинить">явный <code>@SequenceGenerator</code> либо миграция создающая <code>&lt;table&gt;_seq</code></td>
 </tr>
 <tr>
-<td><code>@Type(type = "jsonb")</code> из <code>hibernate-types</code></td>
-<td><code>@JdbcTypeCode(SqlTypes.JSON)</code></td>
+<td data-label="Что ломается"><code>@Type(type = "jsonb")</code> из <code>hibernate-types</code></td>
+<td data-label="Как чинить"><code>@JdbcTypeCode(SqlTypes.JSON)</code></td>
 </tr>
 <tr>
-<td><code>Timestamp</code>/<code>OffsetDateTime</code> теперь нормализуются в UTC</td>
-<td><code>@TimeZoneStorage</code>, сверка с фактическими данными</td>
+<td data-label="Что ломается"><code>Timestamp</code>/<code>OffsetDateTime</code> теперь нормализуются в UTC</td>
+<td data-label="Как чинить"><code>@TimeZoneStorage</code>, сверка с фактическими данными</td>
 </tr>
 <tr>
-<td><code>boolean</code> в <code>char(1)</code>/<code>0/1</code> через старые типы</td>
-<td><code>@JdbcTypeCode(SqlTypes.CHAR)</code> или конвертер</td>
+<td data-label="Что ломается"><code>boolean</code> в <code>char(1)</code>/<code>0/1</code> через старые типы</td>
+<td data-label="Как чинить"><code>@JdbcTypeCode(SqlTypes.CHAR)</code> или конвертер</td>
 </tr>
 <tr>
-<td><code>NamingStrategy</code> и имена колонок</td>
-<td>проверить <code>physical_naming_strategy</code></td>
+<td data-label="Что ломается"><code>NamingStrategy</code> и имена колонок</td>
+<td data-label="Как чинить">проверить <code>physical_naming_strategy</code></td>
 </tr>
 <tr>
-<td>Логирование параметров <code>org.hibernate.type.descriptor.sql.BasicBinder</code></td>
-<td><code>org.hibernate.orm.jdbc.bind</code></td>
+<td data-label="Что ломается">Логирование параметров <code>org.hibernate.type.descriptor.sql.BasicBinder</code></td>
+<td data-label="Как чинить"><code>org.hibernate.orm.jdbc.bind</code></td>
 </tr>
 <tr>
-<td><code>Query#getResultList</code> для <code>update</code>/<code>delete</code></td>
-<td><code>executeUpdate</code></td>
+<td data-label="Что ломается"><code>Query#getResultList</code> для <code>update</code>/<code>delete</code></td>
+<td data-label="Как чинить"><code>executeUpdate</code></td>
 </tr>
 <tr>
-<td><code>Criteria</code> API (старый, <code>org.hibernate.Criteria</code>)</td>
-<td>объявлен устаревшим в HB5.2, удалён в HB6.0; переписать на JPA Criteria</td>
+<td data-label="Что ломается"><code>Criteria</code> API (старый, <code>org.hibernate.Criteria</code>)</td>
+<td data-label="Как чинить">объявлен устаревшим в HB5.2, удалён в HB6.0; переписать на JPA Criteria</td>
 </tr>
 </tbody>
 </table>
@@ -7804,7 +7804,7 @@ insert into registry_entry (amount,document_no,...,id) values (?,?,...,?)  -- б
 <p><strong>Spring Data JDBC</strong> можно назвать «JPA без JPA»: репозитории Spring Data над агрегатами в смысле предметно-ориентированного проектирования (domain-driven design, DDD), но без ленивой загрузки, без dirty checking и без кэша. Сохранение агрегата означает, что дочерние строки удаляются и вставляются заново. В версии 4.1 документация по-прежнему описывает именно такое поведение: если корень агрегата не новый, все связанные сущности удаляются, корень обновляется, а связанные сущности вставляются снова (<a href="https://docs.spring.io/spring-data/relational/reference/jdbc/entity-persistence.html">Spring Data JDBC, Persisting Entities</a>).</p>
 <p>Модель Spring Data JDBC на порядок проще, а поведение предсказуемо, но у неё есть ограничения. Ленивых связей нет, и агрегат всегда грузится целиком, а с наследованием и связями many-to-many всё слабее. Поэтому хорош он там, где агрегаты маленькие и их границы чёткие.</p>
 <p>В таблице ниже четыре инструмента сравнены по шести критериям. Значок ⚠️ означает, что задачу решить можно, но руками или с оговорками. Write-модель в первой строке — это часть системы, которая меняет данные и охраняет их инварианты, а read-модель во второй — часть, которая только читает и отдаёт данные в удобной форме.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -7816,46 +7816,46 @@ insert into registry_entry (amount,document_no,...,id) values (?,?,...,?)  -- б
 </thead>
 <tbody>
 <tr>
-<td>Сложная write-модель с инвариантами</td>
-<td>✅</td>
-<td>✅ (мелкие агрегаты)</td>
-<td>⚠️ вручную</td>
-<td>⚠️ вручную</td>
+<td data-label="Критерий">Сложная write-модель с инвариантами</td>
+<td data-label="JPA/Hibernate">✅</td>
+<td data-label="Spring Data JDBC">✅ (мелкие агрегаты)</td>
+<td data-label="jOOQ">⚠️ вручную</td>
+<td data-label="JdbcClient">⚠️ вручную</td>
 </tr>
 <tr>
-<td>Read-модель, отчёты</td>
-<td>❌</td>
-<td>⚠️</td>
-<td>✅</td>
-<td>✅</td>
+<td data-label="Критерий">Read-модель, отчёты</td>
+<td data-label="JPA/Hibernate">❌</td>
+<td data-label="Spring Data JDBC">⚠️</td>
+<td data-label="jOOQ">✅</td>
+<td data-label="JdbcClient">✅</td>
 </tr>
 <tr>
-<td>Полный контроль над SQL</td>
-<td>❌</td>
-<td>⚠️</td>
-<td>✅</td>
-<td>✅</td>
+<td data-label="Критерий">Полный контроль над SQL</td>
+<td data-label="JPA/Hibernate">❌</td>
+<td data-label="Spring Data JDBC">⚠️</td>
+<td data-label="jOOQ">✅</td>
+<td data-label="JdbcClient">✅</td>
 </tr>
 <tr>
-<td>Порог входа команды</td>
-<td>высокий</td>
-<td>низкий</td>
-<td>средний</td>
-<td>низкий</td>
+<td data-label="Критерий">Порог входа команды</td>
+<td data-label="JPA/Hibernate">высокий</td>
+<td data-label="Spring Data JDBC">низкий</td>
+<td data-label="jOOQ">средний</td>
+<td data-label="JdbcClient">низкий</td>
 </tr>
 <tr>
-<td>Кэширование, dirty checking</td>
-<td>✅</td>
-<td>❌</td>
-<td>❌</td>
-<td>❌</td>
+<td data-label="Критерий">Кэширование, dirty checking</td>
+<td data-label="JPA/Hibernate">✅</td>
+<td data-label="Spring Data JDBC">❌</td>
+<td data-label="jOOQ">❌</td>
+<td data-label="JdbcClient">❌</td>
 </tr>
 <tr>
-<td>Предсказуемость числа запросов</td>
-<td>❌</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
+<td data-label="Критерий">Предсказуемость числа запросов</td>
+<td data-label="JPA/Hibernate">❌</td>
+<td data-label="Spring Data JDBC">✅</td>
+<td data-label="jOOQ">✅</td>
+<td data-label="JdbcClient">✅</td>
 </tr>
 </tbody>
 </table>
@@ -9047,5 +9047,5 @@ HTTP вне транзакции            успешно 12 из 12, отка�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-назначение-orm-и-его-границы">1. Назначение ORM и его границы</a></li><li><a href="#2-архитектура-jakarta-persistence-и-hibernate">2. Архитектура: Jakarta Persistence и Hibernate</a></li><li><a href="#3-persistence-context">3. Persistence context</a></li><li><a href="#4-идентификаторы-и-равенство-сущностей">4. Идентификаторы и равенство сущностей</a></li><li><a href="#5-отображение-связей-наследование-типы">5. Отображение связей, наследование, типы</a></li><li><a href="#6-fetching-и-n1">6. Fetching и N+1</a></li><li><a href="#7-open-session-in-view">7. Open Session in View</a></li><li><a href="#8-transactional-в-контексте-jpa">8. @Transactional в контексте JPA</a></li><li><a href="#9-блокировки-из-jpa">9. Блокировки из JPA</a></li><li><a href="#10-batching-и-массовые-операции">10. Batching и массовые операции</a></li><li><a href="#11-кэш-второго-уровня">11. Кэш второго уровня</a></li><li><a href="#12-spring-data-jpa">12. Spring Data JPA</a></li><li><a href="#13-hibernate-67-и-альтернативы">13. Hibernate 6/7 и альтернативы</a></li><li><a href="#14-разобранные-инциденты">14. Разобранные инциденты</a></li><li><a href="#15-грабли-и-антипаттерны">15. Грабли и антипаттерны</a></li><li><a href="#16-диагностика">16. Диагностика</a></li><li><a href="#17-вопросы-на-интервью">17. Вопросы на интервью</a></li><li><a href="#18-попробовать-руками">18. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

@@ -3,7 +3,7 @@
 <title>61. Массивы, хеширование, два указателя, скользящее окно — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Массивы, хеширование, два указателя, скользящее окно">
 <a class="skip" href="#content">К тексту</a>
@@ -35,7 +35,7 @@
 <p>Динамический массив в Java хранит только ссылки, поэтому <code>ArrayList&lt;Integer&gt;</code> на миллион чисел занимает в несколько раз больше памяти, чем <code>int[]</code>, и каждое <code>get</code> распаковывает <code>Integer</code> обратно в <code>int</code>. В Kotlin это же происходит незаметно: <code>List&lt;Int&gt;</code> и <code>MutableList&lt;Int&gt;</code> хранят <code>Integer</code>, а <code>listOf(1, 2, 3).sum()</code> распаковывает каждый элемент. На собеседовании упаковка редко влияет на оценку, но интервьюер может спросить, где в вашем решении лишние выделения памяти, и правильный ответ звучит так: «в <code>HashMap&lt;Integer, Integer&gt;</code> и в <code>List&lt;Int&gt;</code>; если это горячий путь, их заменяют примитивными коллекциями или массивами».</p>
 <h3 id="13-стоимость-операций">1.3 Стоимость операций</h3>
 <p>Стоимость операций с массивом определяет, какие решения вообще допустимы, поэтому её стоит помнить без раздумий. Таблица ниже сравнивает массив, динамический массив и хеш-множество на тех операциях, которые встречаются в задачах главы. Цифры в ней — асимптотика и порядок расхода памяти, а не замер: насколько массив быстрее на практике, зависит от кэша процессора и от того, сколько объектов создаёт решение.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Операция</th>
@@ -46,40 +46,40 @@
 </thead>
 <tbody>
 <tr>
-<td>Чтение и запись по индексу</td>
-<td>O(1)</td>
-<td>O(1)</td>
-<td>нет индексов</td>
+<td data-label="Операция">Чтение и запись по индексу</td>
+<td data-label="int[]">O(1)</td>
+<td data-label="ArrayList">O(1)</td>
+<td data-label="HashSet/HashMap">нет индексов</td>
 </tr>
 <tr>
-<td>Поиск значения</td>
-<td>O(n)</td>
-<td>O(n)</td>
-<td>O(1) в среднем</td>
+<td data-label="Операция">Поиск значения</td>
+<td data-label="int[]">O(n)</td>
+<td data-label="ArrayList">O(n)</td>
+<td data-label="HashSet/HashMap">O(1) в среднем</td>
 </tr>
 <tr>
-<td>Добавление в конец</td>
-<td>нельзя, размер фиксирован</td>
-<td>O(1) амортизированно</td>
-<td>O(1) в среднем</td>
+<td data-label="Операция">Добавление в конец</td>
+<td data-label="int[]">нельзя, размер фиксирован</td>
+<td data-label="ArrayList">O(1) амортизированно</td>
+<td data-label="HashSet/HashMap">O(1) в среднем</td>
 </tr>
 <tr>
-<td>Вставка и удаление в середине</td>
-<td>O(n) сдвиг</td>
-<td>O(n) сдвиг</td>
-<td>O(1) в среднем</td>
+<td data-label="Операция">Вставка и удаление в середине</td>
+<td data-label="int[]">O(n) сдвиг</td>
+<td data-label="ArrayList">O(n) сдвиг</td>
+<td data-label="HashSet/HashMap">O(1) в среднем</td>
 </tr>
 <tr>
-<td>Удаление последнего</td>
-<td>нельзя</td>
-<td>O(1)</td>
-<td>—</td>
+<td data-label="Операция">Удаление последнего</td>
+<td data-label="int[]">нельзя</td>
+<td data-label="ArrayList">O(1)</td>
+<td data-label="HashSet/HashMap">—</td>
 </tr>
 <tr>
-<td>Память на элемент <code>int</code></td>
-<td>4 байта</td>
-<td>~20 байт (ссылка и <code>Integer</code>)</td>
-<td>~40–50 байт (узел, ссылка, <code>Integer</code>)</td>
+<td data-label="Операция">Память на элемент <code>int</code></td>
+<td data-label="int[]">4 байта</td>
+<td data-label="ArrayList">~20 байт (ссылка и <code>Integer</code>)</td>
+<td data-label="HashSet/HashMap">~40–50 байт (узел, ссылка, <code>Integer</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -120,7 +120,7 @@
 <p>Второе, на что смотрят в ограничениях, — диапазон значений. Если элементы лежат в пределах от −10⁹ до 10⁹, а массив длиной 10⁵, то сумма подмассива может достигать 10¹⁴ и не помещается в <code>int</code>, максимум которого около 2,1·10⁹. Сумму в таком случае копят в <code>long</code>. Если значения лежат в диапазоне <code>[1, n]</code>, это намёк на перестановку на месте, когда значение служит индексом (раздел 7). Если в строке только строчные латинские буквы, вместо хеш-таблицы хватит массива из 26 счётчиков.</p>
 <h3 id="15-как-узнать-технику-по-условию">1.5 Как узнать технику по условию</h3>
 <p>Техники главы узнаются по формулировке условия, и этот навык на собеседовании важнее, чем умение быстро писать код. Таблица ниже собирает признаки, по которым их узнают; каждая строка подробно разобрана в своём разделе, а общий каталог по всем главам части XI приведён в главе 60.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Признак в условии</th>
@@ -130,64 +130,64 @@
 </thead>
 <tbody>
 <tr>
-<td>«Найти пару или элемент, который встречался раньше», «есть ли дубликат»</td>
-<td>хеш-таблица: множество или словарь «значение → индекс»</td>
-<td class="num">2</td>
+<td data-label="Признак в условии">«Найти пару или элемент, который встречался раньше», «есть ли дубликат»</td>
+<td data-label="Техника">хеш-таблица: множество или словарь «значение → индекс»</td>
+<td data-label="Раздел" class="num">2</td>
 </tr>
 <tr>
-<td>«Сгруппировать», «посчитать частоты», «самые частые»</td>
-<td>хеш-таблица с ключом-сигнатурой, массив счётчиков</td>
-<td class="num">2</td>
+<td data-label="Признак в условии">«Сгруппировать», «посчитать частоты», «самые частые»</td>
+<td data-label="Техника">хеш-таблица с ключом-сигнатурой, массив счётчиков</td>
+<td data-label="Раздел" class="num">2</td>
 </tr>
 <tr>
-<td>Массив отсортирован, ищем пару или тройку с условием на сумму</td>
-<td>встречные указатели</td>
-<td class="num">3</td>
+<td data-label="Признак в условии">Массив отсортирован, ищем пару или тройку с условием на сумму</td>
+<td data-label="Техника">встречные указатели</td>
+<td data-label="Раздел" class="num">3</td>
 </tr>
 <tr>
-<td>«На месте», «без дополнительной памяти», «сохраняя порядок»</td>
-<td>указатели «чтение и запись»</td>
-<td class="num">3</td>
+<td data-label="Признак в условии">«На месте», «без дополнительной памяти», «сохраняя порядок»</td>
+<td data-label="Техника">указатели «чтение и запись»</td>
+<td data-label="Раздел" class="num">3</td>
 </tr>
 <tr>
-<td>«Самый длинный / самый короткий подотрезок, у которого…», все числа неотрицательны</td>
-<td>скользящее окно переменной длины</td>
-<td class="num">4</td>
+<td data-label="Признак в условии">«Самый длинный / самый короткий подотрезок, у которого…», все числа неотрицательны</td>
+<td data-label="Техника">скользящее окно переменной длины</td>
+<td data-label="Раздел" class="num">4</td>
 </tr>
 <tr>
-<td>«За последние k элементов», «за последние 24 часа»</td>
-<td>скользящее окно фиксированной длины или по времени</td>
-<td class="num">4</td>
+<td data-label="Признак в условии">«За последние k элементов», «за последние 24 часа»</td>
+<td data-label="Техника">скользящее окно фиксированной длины или по времени</td>
+<td data-label="Раздел" class="num">4</td>
 </tr>
 <tr>
-<td>«Сумма подотрезка», много запросов на сумму</td>
-<td>префиксные суммы</td>
-<td class="num">5</td>
+<td data-label="Признак в условии">«Сумма подотрезка», много запросов на сумму</td>
+<td data-label="Техника">префиксные суммы</td>
+<td data-label="Раздел" class="num">5</td>
 </tr>
 <tr>
-<td>«Число подмассивов с суммой k», числа бывают отрицательными</td>
-<td>префиксные суммы и хеш-таблица</td>
-<td class="num">5</td>
+<td data-label="Признак в условии">«Число подмассивов с суммой k», числа бывают отрицательными</td>
+<td data-label="Техника">префиксные суммы и хеш-таблица</td>
+<td data-label="Раздел" class="num">5</td>
 </tr>
 <tr>
-<td>«Прибавить значение на диапазоне», много таких обновлений</td>
-<td>разностный массив</td>
-<td class="num">5</td>
+<td data-label="Признак в условии">«Прибавить значение на диапазоне», много таких обновлений</td>
+<td data-label="Техника">разностный массив</td>
+<td data-label="Раздел" class="num">5</td>
 </tr>
 <tr>
-<td>«Максимальная сумма подмассива», «лучшая сделка»</td>
-<td>алгоритм Кадане, один проход с минимумом</td>
-<td class="num">6</td>
+<td data-label="Признак в условии">«Максимальная сумма подмассива», «лучшая сделка»</td>
+<td data-label="Техника">алгоритм Кадане, один проход с минимумом</td>
+<td data-label="Раздел" class="num">6</td>
 </tr>
 <tr>
-<td>«Элемент, который встречается больше n/2 раз»</td>
-<td>голосование Бойера–Мура</td>
-<td class="num">6</td>
+<td data-label="Признак в условии">«Элемент, который встречается больше n/2 раз»</td>
+<td data-label="Техника">голосование Бойера–Мура</td>
+<td data-label="Раздел" class="num">6</td>
 </tr>
 <tr>
-<td>Значения в диапазоне <code>[1, n]</code>, «найти пропущенный или повторённый»</td>
-<td>перестановка на месте (cyclic sort), XOR</td>
-<td class="num">7</td>
+<td data-label="Признак в условии">Значения в диапазоне <code>[1, n]</code>, «найти пропущенный или повторённый»</td>
+<td data-label="Техника">перестановка на месте (cyclic sort), XOR</td>
+<td data-label="Раздел" class="num">7</td>
 </tr>
 </tbody>
 </table>
@@ -3358,5 +3358,5 @@
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-массив-и-динамический-массив">1. Массив и динамический массив</a></li><li><a href="#2-хеш-таблица-как-инструмент-решения-задач">2. Хеш-таблица как инструмент решения задач</a></li><li><a href="#3-два-указателя">3. Два указателя</a></li><li><a href="#4-скользящее-окно">4. Скользящее окно</a></li><li><a href="#5-префиксные-суммы-и-разностный-массив">5. Префиксные суммы и разностный массив</a></li><li><a href="#6-однопроходные-алгоритмы-кадане-и-бойермур">6. Однопроходные алгоритмы: Кадане и Бойер–Мур</a></li><li><a href="#7-перестановки-на-месте">7. Перестановки на месте</a></li><li><a href="#8-матрицы">8. Матрицы</a></li><li><a href="#9-грабли-и-антипаттерны">9. Грабли и антипаттерны</a></li><li><a href="#10-диагностика-отладка-решения">10. Диагностика: отладка решения</a></li><li><a href="#11-вопросы-на-интервью">11. Вопросы на интервью</a></li><li><a href="#12-попробовать-руками">12. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

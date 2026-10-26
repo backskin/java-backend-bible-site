@@ -3,7 +3,7 @@
 <title>13. Spring Security — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Spring Security">
 <a class="skip" href="#content">К тексту</a>
@@ -53,7 +53,7 @@
 <h3 id="12-порядок-фильтров-безопасности">1.2 Порядок фильтров безопасности</h3>
 <p>Фильтры внутри <code>SecurityFilterChain</code> выстраиваются не в том порядке, в каком вы их упомянули в конфигурации, а в каноническом, который зашит в Spring Security. Знать этот порядок нужно, чтобы по симптому понимать, какой фильтр успел отработать, а какой нет, и чтобы правильно вставлять собственные фильтры. Ниже приведён сам список и логика, по которой он построен.</p>
 <p>Порядок фиксирован (<code>FilterOrderRegistration</code>) и от порядка вызовов в DSL не зависит, и это принципиальный момент: как бы вы ни переставляли <code>.csrf()</code> и <code>.httpBasic()</code> в конфиге, фильтры всё равно встанут в каноническом порядке. Для типичной конфигурации Spring Boot на уровне DEBUG в логе окажется примерно такой список (<a href="https://docs.spring.io/spring-security/reference/servlet/architecture.html">Architecture</a>); смотрите в нём прежде всего на то, где кончаются защитные фильтры и где начинаются аутентифицирующие:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">#</th>
@@ -63,99 +63,99 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td><code>DisableEncodeUrlFilter</code></td>
-<td>Запрещает <code>response.encodeURL()</code> — чтобы <code>jsessionid</code> не утёк в URL (а оттуда в логи и Referer)</td>
+<td data-label="#" class="num">1</td>
+<td data-label="Фильтр"><code>DisableEncodeUrlFilter</code></td>
+<td data-label="Что делает">Запрещает <code>response.encodeURL()</code> — чтобы <code>jsessionid</code> не утёк в URL (а оттуда в логи и Referer)</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td><code>WebAsyncManagerIntegrationFilter</code></td>
-<td>Связывает <code>SecurityContext</code> с <code>WebAsyncManager</code>, чтобы контекст был виден в <code>Callable</code>-асинхронщине MVC</td>
+<td data-label="#" class="num">2</td>
+<td data-label="Фильтр"><code>WebAsyncManagerIntegrationFilter</code></td>
+<td data-label="Что делает">Связывает <code>SecurityContext</code> с <code>WebAsyncManager</code>, чтобы контекст был виден в <code>Callable</code>-асинхронщине MVC</td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td><code>SecurityContextHolderFilter</code></td>
-<td><strong>Загружает</strong> <code>SecurityContext</code> из <code>SecurityContextRepository</code> и очищает holder в <code>finally</code>. Не сохраняет (см. §4.3)</td>
+<td data-label="#" class="num">3</td>
+<td data-label="Фильтр"><code>SecurityContextHolderFilter</code></td>
+<td data-label="Что делает"><strong>Загружает</strong> <code>SecurityContext</code> из <code>SecurityContextRepository</code> и очищает holder в <code>finally</code>. Не сохраняет (см. §4.3)</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td><code>HeaderWriterFilter</code></td>
-<td>Пишет заголовки безопасности (<code>X-Content-Type-Options</code>, <code>Cache-Control</code>, HSTS, frame options)</td>
+<td data-label="#" class="num">4</td>
+<td data-label="Фильтр"><code>HeaderWriterFilter</code></td>
+<td data-label="Что делает">Пишет заголовки безопасности (<code>X-Content-Type-Options</code>, <code>Cache-Control</code>, HSTS, frame options)</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td><code>CorsFilter</code></td>
-<td>Обрабатывает CORS, если настроен <code>cors()</code></td>
+<td data-label="#" class="num">5</td>
+<td data-label="Фильтр"><code>CorsFilter</code></td>
+<td data-label="Что делает">Обрабатывает CORS, если настроен <code>cors()</code></td>
 </tr>
 <tr>
-<td class="num">6</td>
-<td><code>CsrfFilter</code></td>
-<td>Проверяет CSRF-токен для «небезопасных» методов</td>
+<td data-label="#" class="num">6</td>
+<td data-label="Фильтр"><code>CsrfFilter</code></td>
+<td data-label="Что делает">Проверяет CSRF-токен для «небезопасных» методов</td>
 </tr>
 <tr>
-<td class="num">7</td>
-<td><code>LogoutFilter</code></td>
-<td>Обрабатывает <code>POST /logout</code></td>
+<td data-label="#" class="num">7</td>
+<td data-label="Фильтр"><code>LogoutFilter</code></td>
+<td data-label="Что делает">Обрабатывает <code>POST /logout</code></td>
 </tr>
 <tr>
-<td class="num">8</td>
-<td><code>OAuth2AuthorizationRequestRedirectFilter</code></td>
-<td>OAuth2 Client: инициирует redirect на authorization endpoint</td>
+<td data-label="#" class="num">8</td>
+<td data-label="Фильтр"><code>OAuth2AuthorizationRequestRedirectFilter</code></td>
+<td data-label="Что делает">OAuth2 Client: инициирует redirect на authorization endpoint</td>
 </tr>
 <tr>
-<td class="num">9</td>
-<td><code>OAuth2LoginAuthenticationFilter</code></td>
-<td>OAuth2 Client: обрабатывает callback с <code>code</code></td>
+<td data-label="#" class="num">9</td>
+<td data-label="Фильтр"><code>OAuth2LoginAuthenticationFilter</code></td>
+<td data-label="Что делает">OAuth2 Client: обрабатывает callback с <code>code</code></td>
 </tr>
 <tr>
-<td class="num">10</td>
-<td><code>UsernamePasswordAuthenticationFilter</code></td>
-<td>Form login: <code>POST /login</code> → <code>AuthenticationManager</code></td>
+<td data-label="#" class="num">10</td>
+<td data-label="Фильтр"><code>UsernamePasswordAuthenticationFilter</code></td>
+<td data-label="Что делает">Form login: <code>POST /login</code> → <code>AuthenticationManager</code></td>
 </tr>
 <tr>
-<td class="num">11</td>
-<td><code>DefaultLoginPageGeneratingFilter</code> / <code>DefaultLogoutPageGeneratingFilter</code></td>
-<td>Генерируют страницы входа и выхода по умолчанию, если своих нет</td>
+<td data-label="#" class="num">11</td>
+<td data-label="Фильтр"><code>DefaultLoginPageGeneratingFilter</code> / <code>DefaultLogoutPageGeneratingFilter</code></td>
+<td data-label="Что делает">Генерируют страницы входа и выхода по умолчанию, если своих нет</td>
 </tr>
 <tr>
-<td class="num">12</td>
-<td><code>BearerTokenAuthenticationFilter</code></td>
-<td>Resource Server: достаёт <code>Authorization: Bearer ...</code>, отдаёт в <code>AuthenticationManager</code> (в Spring Security 7 стоит <strong>перед</strong> Basic, проверено запуском)</td>
+<td data-label="#" class="num">12</td>
+<td data-label="Фильтр"><code>BearerTokenAuthenticationFilter</code></td>
+<td data-label="Что делает">Resource Server: достаёт <code>Authorization: Bearer ...</code>, отдаёт в <code>AuthenticationManager</code> (в Spring Security 7 стоит <strong>перед</strong> Basic, проверено запуском)</td>
 </tr>
 <tr>
-<td class="num">13</td>
-<td><code>BasicAuthenticationFilter</code></td>
-<td>HTTP Basic: разбирает <code>Authorization: Basic ...</code></td>
+<td data-label="#" class="num">13</td>
+<td data-label="Фильтр"><code>BasicAuthenticationFilter</code></td>
+<td data-label="Что делает">HTTP Basic: разбирает <code>Authorization: Basic ...</code></td>
 </tr>
 <tr>
-<td class="num">14</td>
-<td><code>RequestCacheAwareFilter</code></td>
-<td>Восстанавливает исходный запрос после логина (из <code>RequestCache</code>)</td>
+<td data-label="#" class="num">14</td>
+<td data-label="Фильтр"><code>RequestCacheAwareFilter</code></td>
+<td data-label="Что делает">Восстанавливает исходный запрос после логина (из <code>RequestCache</code>)</td>
 </tr>
 <tr>
-<td class="num">15</td>
-<td><code>SecurityContextHolderAwareRequestFilter</code></td>
-<td>Оборачивает request, чтобы работали <code>getUserPrincipal()</code>, <code>isUserInRole()</code> из сервлет-API</td>
+<td data-label="#" class="num">15</td>
+<td data-label="Фильтр"><code>SecurityContextHolderAwareRequestFilter</code></td>
+<td data-label="Что делает">Оборачивает request, чтобы работали <code>getUserPrincipal()</code>, <code>isUserInRole()</code> из сервлет-API</td>
 </tr>
 <tr>
-<td class="num">16</td>
-<td><code>AnonymousAuthenticationFilter</code></td>
-<td>Если аутентификации нет — подставляет <code>AnonymousAuthenticationToken</code> с <code>ROLE_ANONYMOUS</code></td>
+<td data-label="#" class="num">16</td>
+<td data-label="Фильтр"><code>AnonymousAuthenticationFilter</code></td>
+<td data-label="Что делает">Если аутентификации нет — подставляет <code>AnonymousAuthenticationToken</code> с <code>ROLE_ANONYMOUS</code></td>
 </tr>
 <tr>
-<td class="num">17</td>
-<td><code>SessionManagementFilter</code></td>
-<td>(в 6.x не регистрируется по умолчанию)</td>
+<td data-label="#" class="num">17</td>
+<td data-label="Фильтр"><code>SessionManagementFilter</code></td>
+<td data-label="Что делает">(в 6.x не регистрируется по умолчанию)</td>
 </tr>
 <tr>
-<td class="num">18</td>
-<td><code>ExceptionTranslationFilter</code></td>
-<td>Ловит <code>AuthenticationException</code>/<code>AccessDeniedException</code> ниже по стеку</td>
+<td data-label="#" class="num">18</td>
+<td data-label="Фильтр"><code>ExceptionTranslationFilter</code></td>
+<td data-label="Что делает">Ловит <code>AuthenticationException</code>/<code>AccessDeniedException</code> ниже по стеку</td>
 </tr>
 <tr>
-<td class="num">19</td>
-<td><code>AuthorizationFilter</code></td>
-<td>Применяет правила <code>authorizeHttpRequests</code>; кидает <code>AccessDeniedException</code></td>
+<td data-label="#" class="num">19</td>
+<td data-label="Фильтр"><code>AuthorizationFilter</code></td>
+<td data-label="Что делает">Применяет правила <code>authorizeHttpRequests</code>; кидает <code>AccessDeniedException</code></td>
 </tr>
 </tbody>
 </table>
@@ -350,7 +350,7 @@
 </blockquote>
 <h3 id="15-назначение-фильтров-и-последствия-их-перестановки">1.5 Назначение фильтров и последствия их перестановки</h3>
 <p>Таблица в §1.2 отвечает на вопрос, что делает каждый фильтр, а на практике чаще нужен другой ответ: что случится, если фильтра не окажется в цепочке или он встанет не на своё место. Ниже та же цепочка показана в инженерной проекции, и в ней стоит обратить внимание на колонку «когда срабатывает»: большинство фильтров на большинстве запросов ничего не делают и обходятся почти бесплатно, поэтому экономить на них бессмысленно, а убирать опасно.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Фильтр</th>
@@ -361,106 +361,106 @@
 </thead>
 <tbody>
 <tr>
-<td><code>DisableEncodeUrlFilter</code></td>
-<td>всегда (оборачивает response)</td>
-<td>контейнер сможет дописать <code>;jsessionid=</code> в URL при отключённых cookie → идентификатор сессии утечёт в Referer, логи прокси и историю браузера</td>
-<td>должен быть первым: если встанет после <code>HeaderWriterFilter</code>, часть ссылок уже успеет отрендериться с <code>jsessionid</code></td>
+<td data-label="Фильтр"><code>DisableEncodeUrlFilter</code></td>
+<td data-label="Когда реально срабатывает">всегда (оборачивает response)</td>
+<td data-label="Что будет, если убрать">контейнер сможет дописать <code>;jsessionid=</code> в URL при отключённых cookie → идентификатор сессии утечёт в Referer, логи прокси и историю браузера</td>
+<td data-label="Что будет, если переставить">должен быть первым: если встанет после <code>HeaderWriterFilter</code>, часть ссылок уже успеет отрендериться с <code>jsessionid</code></td>
 </tr>
 <tr>
-<td><code>WebAsyncManagerIntegrationFilter</code></td>
-<td>только когда контроллер вернул <code>Callable</code>/<code>WebAsyncTask</code></td>
-<td>в асинхронном MVC контекст пуст, <code>@PreAuthorize</code> внутри <code>Callable</code> падает с <code>AuthenticationCredentialsNotFoundException</code></td>
-<td>должен стоять до аутентификации: он регистрирует интерцептор, который снимает контекст в момент отправки <code>Callable</code> в executor</td>
+<td data-label="Фильтр"><code>WebAsyncManagerIntegrationFilter</code></td>
+<td data-label="Когда реально срабатывает">только когда контроллер вернул <code>Callable</code>/<code>WebAsyncTask</code></td>
+<td data-label="Что будет, если убрать">в асинхронном MVC контекст пуст, <code>@PreAuthorize</code> внутри <code>Callable</code> падает с <code>AuthenticationCredentialsNotFoundException</code></td>
+<td data-label="Что будет, если переставить">должен стоять до аутентификации: он регистрирует интерцептор, который снимает контекст в момент отправки <code>Callable</code> в executor</td>
 </tr>
 <tr>
-<td><code>SecurityContextHolderFilter</code></td>
-<td>всегда</td>
-<td>ни один последующий фильтр не увидит сохранённый контекст: каждый запрос анонимный, сессионный логин не работает вообще</td>
-<td>если встанет после аутентифицирующих фильтров — те положат контекст в holder, а он тут же перетрёт его загруженным (обычно пустым)</td>
+<td data-label="Фильтр"><code>SecurityContextHolderFilter</code></td>
+<td data-label="Когда реально срабатывает">всегда</td>
+<td data-label="Что будет, если убрать">ни один последующий фильтр не увидит сохранённый контекст: каждый запрос анонимный, сессионный логин не работает вообще</td>
+<td data-label="Что будет, если переставить">если встанет после аутентифицирующих фильтров — те положат контекст в holder, а он тут же перетрёт его загруженным (обычно пустым)</td>
 </tr>
 <tr>
-<td><code>HeaderWriterFilter</code></td>
-<td>всегда</td>
-<td>пропадут <code>nosniff</code>, <code>X-Frame-Options</code>, HSTS, <code>Cache-Control: no-store</code> — класс уязвимостей от clickjacking до кеширования приватных ответов на CDN</td>
-<td>заголовки пишутся при фиксации ответа; если фильтр окажется ниже того, кто фиксация ответ сам (например, ваш фильтр, отдающий 401), заголовков на этом ответе не будет</td>
+<td data-label="Фильтр"><code>HeaderWriterFilter</code></td>
+<td data-label="Когда реально срабатывает">всегда</td>
+<td data-label="Что будет, если убрать">пропадут <code>nosniff</code>, <code>X-Frame-Options</code>, HSTS, <code>Cache-Control: no-store</code> — класс уязвимостей от clickjacking до кеширования приватных ответов на CDN</td>
+<td data-label="Что будет, если переставить">заголовки пишутся при фиксации ответа; если фильтр окажется ниже того, кто фиксация ответ сам (например, ваш фильтр, отдающий 401), заголовков на этом ответе не будет</td>
 </tr>
 <tr>
-<td><code>CorsFilter</code></td>
-<td>только на запросах с <code>Origin</code> и на preflight <code>OPTIONS</code></td>
-<td>preflight дойдёт до <code>AuthorizationFilter</code> и получит 401; браузер покажет «CORS policy» вместо настоящей причины</td>
-<td>обязан быть до <code>CsrfFilter</code> и <code>AuthorizationFilter</code>. Ниже — preflight ломается; выше <code>HeaderWriterFilter</code> — теряются security-заголовки на CORS-ответах</td>
+<td data-label="Фильтр"><code>CorsFilter</code></td>
+<td data-label="Когда реально срабатывает">только на запросах с <code>Origin</code> и на preflight <code>OPTIONS</code></td>
+<td data-label="Что будет, если убрать">preflight дойдёт до <code>AuthorizationFilter</code> и получит 401; браузер покажет «CORS policy» вместо настоящей причины</td>
+<td data-label="Что будет, если переставить">обязан быть до <code>CsrfFilter</code> и <code>AuthorizationFilter</code>. Ниже — preflight ломается; выше <code>HeaderWriterFilter</code> — теряются security-заголовки на CORS-ответах</td>
 </tr>
 <tr>
-<td><code>CsrfFilter</code></td>
-<td>на не-GET/HEAD/OPTIONS/TRACE</td>
-<td>любой сайт сможет отправить <code>POST</code> от имени залогиненного пользователя, если аутентификация на cookie</td>
-<td>должен идти <strong>после</strong> <code>CorsFilter</code> (иначе preflight упрётся в CSRF) и <strong>до</strong> любой аутентификации, меняющей сессию</td>
+<td data-label="Фильтр"><code>CsrfFilter</code></td>
+<td data-label="Когда реально срабатывает">на не-GET/HEAD/OPTIONS/TRACE</td>
+<td data-label="Что будет, если убрать">любой сайт сможет отправить <code>POST</code> от имени залогиненного пользователя, если аутентификация на cookie</td>
+<td data-label="Что будет, если переставить">должен идти <strong>после</strong> <code>CorsFilter</code> (иначе preflight упрётся в CSRF) и <strong>до</strong> любой аутентификации, меняющей сессию</td>
 </tr>
 <tr>
-<td><code>LogoutFilter</code></td>
-<td>только на <code>POST /logout</code> (и на <code>GET</code>, если CSRF выключен)</td>
-<td><code>/logout</code> попадёт в <code>DispatcherServlet</code> → 404, сессия не убьётся, cookie не очистится</td>
-<td>если встанет после <code>UsernamePasswordAuthenticationFilter</code>, логаут будет обрабатываться уже с новой аутентификацией</td>
+<td data-label="Фильтр"><code>LogoutFilter</code></td>
+<td data-label="Когда реально срабатывает">только на <code>POST /logout</code> (и на <code>GET</code>, если CSRF выключен)</td>
+<td data-label="Что будет, если убрать"><code>/logout</code> попадёт в <code>DispatcherServlet</code> → 404, сессия не убьётся, cookie не очистится</td>
+<td data-label="Что будет, если переставить">если встанет после <code>UsernamePasswordAuthenticationFilter</code>, логаут будет обрабатываться уже с новой аутентификацией</td>
 </tr>
 <tr>
-<td><code>OAuth2AuthorizationRequestRedirectFilter</code></td>
-<td>на <code>/oauth2/authorization/{registrationId}</code></td>
-<td>вход через внешний IdP не инициируется: путь уйдёт в 404</td>
-<td>должен быть до <code>AuthorizationFilter</code>, иначе перенаправление на IdP сам потребует аутентификации — бесконечный цикл</td>
+<td data-label="Фильтр"><code>OAuth2AuthorizationRequestRedirectFilter</code></td>
+<td data-label="Когда реально срабатывает">на <code>/oauth2/authorization/{registrationId}</code></td>
+<td data-label="Что будет, если убрать">вход через внешний IdP не инициируется: путь уйдёт в 404</td>
+<td data-label="Что будет, если переставить">должен быть до <code>AuthorizationFilter</code>, иначе перенаправление на IdP сам потребует аутентификации — бесконечный цикл</td>
 </tr>
 <tr>
-<td><code>OAuth2LoginAuthenticationFilter</code></td>
-<td>на <code>/login/oauth2/code/{registrationId}</code></td>
-<td>callback от IdP превратится в 404, а пользователь увидит «не получилось войти» без деталей</td>
-<td>тот же цикл: callback должен обрабатываться до авторизации</td>
+<td data-label="Фильтр"><code>OAuth2LoginAuthenticationFilter</code></td>
+<td data-label="Когда реально срабатывает">на <code>/login/oauth2/code/{registrationId}</code></td>
+<td data-label="Что будет, если убрать">callback от IdP превратится в 404, а пользователь увидит «не получилось войти» без деталей</td>
+<td data-label="Что будет, если переставить">тот же цикл: callback должен обрабатываться до авторизации</td>
 </tr>
 <tr>
-<td><code>UsernamePasswordAuthenticationFilter</code></td>
-<td>только на <code>POST /login</code> (настраиваемо)</td>
-<td>форма логина перестанет работать; сам <code>/login</code> уйдёт в контроллер, если он есть</td>
-<td>если поставить после <code>ExceptionTranslationFilter</code>, <code>BadCredentialsException</code> перестанет обрабатываться стандартно</td>
+<td data-label="Фильтр"><code>UsernamePasswordAuthenticationFilter</code></td>
+<td data-label="Когда реально срабатывает">только на <code>POST /login</code> (настраиваемо)</td>
+<td data-label="Что будет, если убрать">форма логина перестанет работать; сам <code>/login</code> уйдёт в контроллер, если он есть</td>
+<td data-label="Что будет, если переставить">если поставить после <code>ExceptionTranslationFilter</code>, <code>BadCredentialsException</code> перестанет обрабатываться стандартно</td>
 </tr>
 <tr>
-<td><code>BasicAuthenticationFilter</code></td>
-<td>только при заголовке <code>Authorization: Basic</code></td>
-<td>Basic перестанет работать; заголовок будет молча проигнорирован, ответ 401</td>
-<td>порядок относительно <code>BearerTokenAuthenticationFilter</code> определяет, кто выиграет, если клиент прислал оба (редкий, но реальный случай при миграции)</td>
+<td data-label="Фильтр"><code>BasicAuthenticationFilter</code></td>
+<td data-label="Когда реально срабатывает">только при заголовке <code>Authorization: Basic</code></td>
+<td data-label="Что будет, если убрать">Basic перестанет работать; заголовок будет молча проигнорирован, ответ 401</td>
+<td data-label="Что будет, если переставить">порядок относительно <code>BearerTokenAuthenticationFilter</code> определяет, кто выиграет, если клиент прислал оба (редкий, но реальный случай при миграции)</td>
 </tr>
 <tr>
-<td><code>BearerTokenAuthenticationFilter</code></td>
-<td>только при <code>Authorization: Bearer</code> или параметре/форме (если разрешено)</td>
-<td>токены игнорируются, всё защищённое отдаёт 401 — самый частый симптом «забыли <code>oauth2ResourceServer</code>»</td>
-<td>если окажется <strong>после</strong> <code>AuthorizationFilter</code>, авторизация отработает на пустом контексте: 401 на всё</td>
+<td data-label="Фильтр"><code>BearerTokenAuthenticationFilter</code></td>
+<td data-label="Когда реально срабатывает">только при <code>Authorization: Bearer</code> или параметре/форме (если разрешено)</td>
+<td data-label="Что будет, если убрать">токены игнорируются, всё защищённое отдаёт 401 — самый частый симптом «забыли <code>oauth2ResourceServer</code>»</td>
+<td data-label="Что будет, если переставить">если окажется <strong>после</strong> <code>AuthorizationFilter</code>, авторизация отработает на пустом контексте: 401 на всё</td>
 </tr>
 <tr>
-<td><code>RequestCacheAwareFilter</code></td>
-<td>только если в <code>RequestCache</code> есть сохранённый запрос</td>
-<td>после логина пользователь попадёт на главную, а не туда, куда шёл</td>
-<td>безвредно при перестановке, но в stateless-цепочке его вообще лучше обезвредить <code>NullRequestCache</code></td>
+<td data-label="Фильтр"><code>RequestCacheAwareFilter</code></td>
+<td data-label="Когда реально срабатывает">только если в <code>RequestCache</code> есть сохранённый запрос</td>
+<td data-label="Что будет, если убрать">после логина пользователь попадёт на главную, а не туда, куда шёл</td>
+<td data-label="Что будет, если переставить">безвредно при перестановке, но в stateless-цепочке его вообще лучше обезвредить <code>NullRequestCache</code></td>
 </tr>
 <tr>
-<td><code>SecurityContextHolderAwareRequestFilter</code></td>
-<td>всегда (обёртка над request)</td>
-<td>перестанут работать <code>request.isUserInRole()</code>, <code>getUserPrincipal()</code>, <code>login()</code>/<code>logout()</code> из сервлет-API; сломаются JSP-теги и старые библиотеки</td>
-<td>должен быть после аутентификации, иначе обёртка увидит пустой контекст</td>
+<td data-label="Фильтр"><code>SecurityContextHolderAwareRequestFilter</code></td>
+<td data-label="Когда реально срабатывает">всегда (обёртка над request)</td>
+<td data-label="Что будет, если убрать">перестанут работать <code>request.isUserInRole()</code>, <code>getUserPrincipal()</code>, <code>login()</code>/<code>logout()</code> из сервлет-API; сломаются JSP-теги и старые библиотеки</td>
+<td data-label="Что будет, если переставить">должен быть после аутентификации, иначе обёртка увидит пустой контекст</td>
 </tr>
 <tr>
-<td><code>AnonymousAuthenticationFilter</code></td>
-<td>всегда, когда контекст пуст</td>
-<td><code>authentication == null</code>, и <code>ExceptionTranslationFilter</code> любой отказ превратит в 401 — вы потеряете различие 401/403</td>
-<td>если поставить до аутентифицирующих фильтров, те увидят «уже есть аутентификация» и часть из них не сработает</td>
+<td data-label="Фильтр"><code>AnonymousAuthenticationFilter</code></td>
+<td data-label="Когда реально срабатывает">всегда, когда контекст пуст</td>
+<td data-label="Что будет, если убрать"><code>authentication == null</code>, и <code>ExceptionTranslationFilter</code> любой отказ превратит в 401 — вы потеряете различие 401/403</td>
+<td data-label="Что будет, если переставить">если поставить до аутентифицирующих фильтров, те увидят «уже есть аутентификация» и часть из них не сработает</td>
 </tr>
 <tr>
-<td><code>ExceptionTranslationFilter</code></td>
-<td>только когда ниже бросили исключение</td>
-<td><code>AccessDeniedException</code> улетит в контейнер → 500 вместо 403, а redirect на форму логина не произойдёт</td>
-<td>обязан быть <strong>выше</strong> <code>AuthorizationFilter</code>. Ниже — не поймает ничего: он ловит через <code>try/catch</code> вокруг <code>chain.doFilter</code></td>
+<td data-label="Фильтр"><code>ExceptionTranslationFilter</code></td>
+<td data-label="Когда реально срабатывает">только когда ниже бросили исключение</td>
+<td data-label="Что будет, если убрать"><code>AccessDeniedException</code> улетит в контейнер → 500 вместо 403, а redirect на форму логина не произойдёт</td>
+<td data-label="Что будет, если переставить">обязан быть <strong>выше</strong> <code>AuthorizationFilter</code>. Ниже — не поймает ничего: он ловит через <code>try/catch</code> вокруг <code>chain.doFilter</code></td>
 </tr>
 <tr>
-<td><code>AuthorizationFilter</code></td>
-<td>всегда</td>
-<td><strong>вся авторизация отключена</strong>: любой запрос дойдёт до контроллера. Method security останется, web-правила исчезнут</td>
-<td>должен быть последним: если поставить выше аутентификации, решение примется на анонимном контексте</td>
+<td data-label="Фильтр"><code>AuthorizationFilter</code></td>
+<td data-label="Когда реально срабатывает">всегда</td>
+<td data-label="Что будет, если убрать"><strong>вся авторизация отключена</strong>: любой запрос дойдёт до контроллера. Method security останется, web-правила исчезнут</td>
+<td data-label="Что будет, если переставить">должен быть последним: если поставить выше аутентификации, решение примется на анонимном контексте</td>
 </tr>
 </tbody>
 </table>
@@ -544,7 +544,7 @@ Failed to authorize filter invocation [GET /api/payments/42] with attribute[s] [
 
 <p>Из этого лога сразу читаются три вещи. Во-первых, какая цепочка выбрана: её выдаёт общее число фильтров <code>N</code> в <code>(i/N)</code>. Во-вторых, на каком фильтре обработка остановилась — это последняя строка <code>Invoking</code>. В-третьих, причина отказа, если он был, записанная прямо в последней строке трассы. А если строки <code>Securing ...</code> нет вовсе, значит запрос во <code>FilterChainProxy</code> не попал: либо его отсекли раньше (<code>HttpFirewall</code> пишет об этом отдельную ошибку), либо путь внесён в <code>web.ignoring()</code>, либо запрос обработал другой сервлет.</p>
 <p><strong>Шаг 2. Различить пять типовых причин</strong> по последнему сработавшему фильтру. Таблица ниже сопоставляет фильтр, на котором остановилась трасса, с тем, что это значит и где искать дальше:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Остановились на</th>
@@ -554,29 +554,29 @@ Failed to authorize filter invocation [GET /api/payments/42] with attribute[s] [
 </thead>
 <tbody>
 <tr>
-<td><code>AuthorizationFilter</code>, «Failed to authorize»</td>
-<td>правило авторизации отклонило запрос; аутентификация может быть и корректной</td>
-<td>какие authorities реально в контексте (см. ниже), какое правило совпало</td>
+<td data-label="Остановились на"><code>AuthorizationFilter</code>, «Failed to authorize»</td>
+<td data-label="Что это значит">правило авторизации отклонило запрос; аутентификация может быть и корректной</td>
+<td data-label="Куда смотреть">какие authorities реально в контексте (см. ниже), какое правило совпало</td>
 </tr>
 <tr>
-<td><code>BearerTokenAuthenticationFilter</code> с <code>invalid_token</code></td>
-<td>токен не прошёл декодирование/валидацию</td>
-<td><code>WWW-Authenticate</code> в ответе содержит <code>error_description</code> — читайте его</td>
+<td data-label="Остановились на"><code>BearerTokenAuthenticationFilter</code> с <code>invalid_token</code></td>
+<td data-label="Что это значит">токен не прошёл декодирование/валидацию</td>
+<td data-label="Куда смотреть"><code>WWW-Authenticate</code> в ответе содержит <code>error_description</code> — читайте его</td>
 </tr>
 <tr>
-<td><code>CsrfFilter</code></td>
-<td>403 на небезопасном методе</td>
-<td>наличие и формат токена, XOR-handler</td>
+<td data-label="Остановились на"><code>CsrfFilter</code></td>
+<td data-label="Что это значит">403 на небезопасном методе</td>
+<td data-label="Куда смотреть">наличие и формат токена, XOR-handler</td>
 </tr>
 <tr>
-<td><code>CorsFilter</code> (и ответ 403 на <code>OPTIONS</code>)</td>
-<td>origin не в списке разрешённых</td>
-<td><code>CorsConfigurationSource</code></td>
+<td data-label="Остановились на"><code>CorsFilter</code> (и ответ 403 на <code>OPTIONS</code>)</td>
+<td data-label="Что это значит">origin не в списке разрешённых</td>
+<td data-label="Куда смотреть"><code>CorsConfigurationSource</code></td>
 </tr>
 <tr>
-<td>ни на чём — все фильтры пройдены, а контроллера нет</td>
-<td>это уже не Security: 404 от <code>DispatcherServlet</code>, не тот <code>context-path</code>, не тот HTTP-метод</td>
-<td><code>/actuator/mappings</code>, лог <code>DispatcherServlet</code> на DEBUG</td>
+<td data-label="Остановились на">ни на чём — все фильтры пройдены, а контроллера нет</td>
+<td data-label="Что это значит">это уже не Security: 404 от <code>DispatcherServlet</code>, не тот <code>context-path</code>, не тот HTTP-метод</td>
+<td data-label="Куда смотреть"><code>/actuator/mappings</code>, лог <code>DispatcherServlet</code> на DEBUG</td>
 </tr>
 </tbody>
 </table>
@@ -948,7 +948,7 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 <p>Отсюда вопрос, что делать с запросом, который попал в цепочку, но не подошёл ни под одно <code>requestMatchers</code>, когда <code>anyRequest()</code> в конфигурации нет. Приложение при этом стартует, а такой запрос <strong>отклоняется</strong>: <code>RequestMatcherDelegatingAuthorizationManager</code> перебирает правила по порядку и, не найдя подходящего, возвращает отказ (в TRACE-логе это строка «Denying request since did not find matching RequestMatcher»). Так работает <code>authorizeHttpRequests</code> в 6.x и 7.x, и это изменение к лучшему по сравнению со старым <code>authorizeRequests</code>, где не подошедший ни под одно правило запрос проходил без проверки. Ошибку на старте дают другие случаи: <code>authorizeHttpRequests</code> без единого правила («At least one mapping is required»), правило, у которого указан матчер, но не указан доступ («An incomplete mapping was found»), и правило, объявленное после <code>anyRequest()</code> («Can't configure requestMatchers after anyRequest»). Явный <code>anyRequest()</code> в конце всё равно нужен, потому что по нему читатель конфигурации видит, что случится с неописанными путями, не вспоминая про неявный отказ.</p>
 <h3 id="23-permitall-и-webignoring">2.3 <code>permitAll</code> и <code>web.ignoring()</code></h3>
 <p>Открыть путь для всех можно двумя способами, и снаружи они выглядят одинаково, хотя по устройству различаются радикально. <code>WebSecurity#ignoring()</code> исключает путь из <code>FilterChainProxy</code> целиком, так что Spring Security этот запрос вообще не видит. А <code>permitAll()</code> пропускает запрос через всю цепочку фильтров, и только <code>AuthorizationFilter</code> в конце разрешает доступ. Таблица ниже показывает, что из этого следует для каждой защиты по отдельности:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -958,34 +958,34 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 </thead>
 <tbody>
 <tr>
-<td>Заголовки безопасности (<code>HeaderWriterFilter</code>)</td>
-<td>не пишутся</td>
-<td>пишутся</td>
+<td data-label="">Заголовки безопасности (<code>HeaderWriterFilter</code>)</td>
+<td data-label="web.ignoring()">не пишутся</td>
+<td data-label="permitAll()">пишутся</td>
 </tr>
 <tr>
-<td>CSRF</td>
-<td>не проверяется</td>
-<td>проверяется (для небезопасных методов)</td>
+<td data-label="">CSRF</td>
+<td data-label="web.ignoring()">не проверяется</td>
+<td data-label="permitAll()">проверяется (для небезопасных методов)</td>
 </tr>
 <tr>
-<td><code>SecurityContext</code></td>
-<td>не загружается — <code>@AuthenticationPrincipal</code> пуст</td>
-<td>загружается, аутентифицированный пользователь виден</td>
+<td data-label=""><code>SecurityContext</code></td>
+<td data-label="web.ignoring()">не загружается — <code>@AuthenticationPrincipal</code> пуст</td>
+<td data-label="permitAll()">загружается, аутентифицированный пользователь виден</td>
 </tr>
 <tr>
-<td><code>HttpFirewall</code></td>
-<td>применяется (он на уровне <code>FilterChainProxy</code>)</td>
-<td>применяется</td>
+<td data-label=""><code>HttpFirewall</code></td>
+<td data-label="web.ignoring()">применяется (он на уровне <code>FilterChainProxy</code>)</td>
+<td data-label="permitAll()">применяется</td>
 </tr>
 <tr>
-<td>Стоимость</td>
-<td>~0</td>
-<td>несколько фильтров на запрос</td>
+<td data-label="">Стоимость</td>
+<td data-label="web.ignoring()">~0</td>
+<td data-label="permitAll()">несколько фильтров на запрос</td>
 </tr>
 <tr>
-<td>Риск</td>
-<td>высокий: опечатка в паттерне = дыра без единой проверки</td>
-<td>ограниченный</td>
+<td data-label="">Риск</td>
+<td data-label="web.ignoring()">высокий: опечатка в паттерне = дыра без единой проверки</td>
+<td data-label="permitAll()">ограниченный</td>
 </tr>
 </tbody>
 </table>
@@ -997,7 +997,7 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 <h3 id="24-свои-фильтры-addfilterbefore-addfilterafter-addfilterat">2.4 Свои фильтры: <code>addFilterBefore</code>, <code>addFilterAfter</code>, <code>addFilterAt</code></h3>
 <p>Собственный фильтр в цепочку Security добавляют, когда встроенных механизмов аутентификации не хватает: клиента уже проверил внешний шлюз, ключ приходит в нестандартном заголовке, контекст нужно обогатить данными из БД. Ошибиться здесь проще всего в двух местах — в позиции фильтра относительно встроенных и в том, как он регистрируется, — и обе ошибки проявляются не сразу. Ниже приведено правило размещения, пример аутентифицирующего фильтра и три типовых промаха.</p>
 <p>Документация даёт для размещения простое правило, привязанное к типу фильтра (<a href="https://docs.spring.io/spring-security/reference/servlet/architecture.html">Architecture</a>):</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Тип вашего фильтра</th>
@@ -1006,16 +1006,16 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 </thead>
 <tbody>
 <tr>
-<td>Защита от эксплойтов</td>
-<td><code>SecurityContextHolderFilter</code></td>
+<td data-label="Тип вашего фильтра">Защита от эксплойтов</td>
+<td data-label="Ставить после"><code>SecurityContextHolderFilter</code></td>
 </tr>
 <tr>
-<td>Аутентификация</td>
-<td><code>LogoutFilter</code></td>
+<td data-label="Тип вашего фильтра">Аутентификация</td>
+<td data-label="Ставить после"><code>LogoutFilter</code></td>
 </tr>
 <tr>
-<td>Авторизация</td>
-<td><code>AnonymousAuthenticationFilter</code></td>
+<td data-label="Тип вашего фильтра">Авторизация</td>
+<td data-label="Ставить после"><code>AnonymousAuthenticationFilter</code></td>
 </tr>
 </tbody>
 </table>
@@ -1257,7 +1257,7 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 <p>Отсюда практическое правило: если вы пишете <strong>свой</strong> провайдер или логините пользователя вручную в контроллере, воспроизведите обе защиты, иначе у вас получится готовый вектор для перечисления учётных записей.</p>
 <h3 id="33-authenticationentrypoint-и-accessdeniedhandler-ответы-401-и-403">3.3 <code>AuthenticationEntryPoint</code> и <code>AccessDeniedHandler</code>: ответы 401 и 403</h3>
 <p>Коды 401 и 403 в Spring Security отдают два разных компонента, и выбор между ними определяется не тем, что проверялось, а тем, знает ли система, кто пришёл. Путаница между ними ломает клиентов, которые по коду ответа решают, обновлять ли токен. Таблица ниже сводит различия, а после неё разобраны детали, которые чаще всего ломаются:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1267,24 +1267,24 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 </thead>
 <tbody>
 <tr>
-<td>Смысл</td>
-<td>«я не знаю, кто ты»</td>
-<td>«я знаю, кто ты, но тебе нельзя»</td>
+<td data-label="">Смысл</td>
+<td data-label="401 Unauthorized">«я не знаю, кто ты»</td>
+<td data-label="403 Forbidden">«я знаю, кто ты, но тебе нельзя»</td>
 </tr>
 <tr>
-<td>Компонент</td>
-<td><code>AuthenticationEntryPoint</code></td>
-<td><code>AccessDeniedHandler</code></td>
+<td data-label="">Компонент</td>
+<td data-label="401 Unauthorized"><code>AuthenticationEntryPoint</code></td>
+<td data-label="403 Forbidden"><code>AccessDeniedHandler</code></td>
 </tr>
 <tr>
-<td>Когда</td>
-<td>нет/некорректны креды, аноним пытается зайти в защищённое</td>
-<td>аутентифицирован, но не хватает authority; провал CSRF</td>
+<td data-label="">Когда</td>
+<td data-label="401 Unauthorized">нет/некорректны креды, аноним пытается зайти в защищённое</td>
+<td data-label="403 Forbidden">аутентифицирован, но не хватает authority; провал CSRF</td>
 </tr>
 <tr>
-<td>Обязателен заголовок</td>
-<td><code>WWW-Authenticate</code> (RFC 9110)</td>
-<td>нет</td>
+<td data-label="">Обязателен заголовок</td>
+<td data-label="401 Unauthorized"><code>WWW-Authenticate</code> (RFC 9110)</td>
+<td data-label="403 Forbidden">нет</td>
 </tr>
 </tbody>
 </table>
@@ -1309,7 +1309,7 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 <p><code>SecurityContext</code> — это контейнер, в котором лежит текущий <code>Authentication</code>, и всё, что в приложении спрашивает «кто сейчас работает», читает его через <code>SecurityContextHolder</code>. Живёт контекст в <code>ThreadLocal</code>, и из этого вытекают обе главные проблемы раздела: между запросами его нужно где-то хранить, а при переходе работы в другой поток он теряется, если его не передать явно. Ниже разобраны стратегии holder'а, репозитории контекста и изменение 6.x, из-за которого контекст больше не сохраняется сам, а затем подробная инвентаризация мест, где контекст теряется, — <code>@Async</code>, <code>@Scheduled</code>, виртуальные потоки, <code>CompletableFuture</code>, <code>context-propagation</code> и слушатели Kafka.</p>
 <h3 id="41-securitycontextholder-и-стратегии">4.1 <code>SecurityContextHolder</code> и стратегии</h3>
 <p><code>SecurityContextHolder</code> — статический фасад над <code>SecurityContextHolderStrategy</code>, и то, где физически хранится контекст, определяет именно стратегия. От выбора стратегии зависит, увидит ли контекст порождённый поток и не унаследует ли поток пула чужую аутентификацию, поэтому выбирать её нужно осознанно. Встроенных стратегий три, и таблица показывает, когда каждая из них уместна:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -1319,19 +1319,19 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 </thead>
 <tbody>
 <tr>
-<td><code>MODE_THREADLOCAL</code> (по умолчанию)</td>
-<td><code>ThreadLocalSecurityContextHolderStrategy</code></td>
-<td>обычный сервлетный сценарий</td>
+<td data-label="Стратегия"><code>MODE_THREADLOCAL</code> (по умолчанию)</td>
+<td data-label="Реализация"><code>ThreadLocalSecurityContextHolderStrategy</code></td>
+<td data-label="Когда">обычный сервлетный сценарий</td>
 </tr>
 <tr>
-<td><code>MODE_INHERITABLETHREADLOCAL</code></td>
-<td><code>InheritableThreadLocalSecurityContextHolderStrategy</code></td>
-<td>контекст наследуется <strong>новым</strong> порождённым потоком</td>
+<td data-label="Стратегия"><code>MODE_INHERITABLETHREADLOCAL</code></td>
+<td data-label="Реализация"><code>InheritableThreadLocalSecurityContextHolderStrategy</code></td>
+<td data-label="Когда">контекст наследуется <strong>новым</strong> порождённым потоком</td>
 </tr>
 <tr>
-<td><code>MODE_GLOBAL</code></td>
-<td>статическое поле на всю JVM</td>
-<td>только standalone-приложения, не веб</td>
+<td data-label="Стратегия"><code>MODE_GLOBAL</code></td>
+<td data-label="Реализация">статическое поле на всю JVM</td>
+<td data-label="Когда">только standalone-приложения, не веб</td>
 </tr>
 </tbody>
 </table>
@@ -1543,7 +1543,7 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 </ul>
 <h3 id="45-места-потери-контекста">4.5 Места потери контекста</h3>
 <p>Переходов между потоками в типичном приложении больше, чем кажется, и на каждом из них контекст безопасности либо переносится сам, либо теряется молча. Полезно один раз выписать их все и честно отметить, где Spring Security помогает, а где нет. Таблица ниже служит рабочим чеклистом при аудите приложения: в средней колонке смотрите на «нет», в правой — на то, чем это лечится.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Переход</th>
@@ -1553,79 +1553,79 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 </thead>
 <tbody>
 <tr>
-<td>Контроллер → тот же поток</td>
-<td>да</td>
-<td>—</td>
+<td data-label="Переход">Контроллер → тот же поток</td>
+<td data-label="Контекст переносится?">да</td>
+<td data-label="Чем лечится">—</td>
 </tr>
 <tr>
-<td>MVC <code>Callable</code> / <code>WebAsyncTask</code> / <code>DeferredResult</code></td>
-<td>да, автоматически</td>
-<td><code>WebAsyncManagerIntegrationFilter</code></td>
+<td data-label="Переход">MVC <code>Callable</code> / <code>WebAsyncTask</code> / <code>DeferredResult</code></td>
+<td data-label="Контекст переносится?">да, автоматически</td>
+<td data-label="Чем лечится"><code>WebAsyncManagerIntegrationFilter</code></td>
 </tr>
 <tr>
-<td><code>@Async</code>-метод</td>
-<td><strong>нет</strong></td>
-<td><code>DelegatingSecurityContextAsyncTaskExecutor</code></td>
+<td data-label="Переход"><code>@Async</code>-метод</td>
+<td data-label="Контекст переносится?"><strong>нет</strong></td>
+<td data-label="Чем лечится"><code>DelegatingSecurityContextAsyncTaskExecutor</code></td>
 </tr>
 <tr>
-<td><code>@Scheduled</code>-задача</td>
-<td><strong>нет</strong>, и переносить нечего — потока-источника не было</td>
-<td>явная системная аутентификация</td>
+<td data-label="Переход"><code>@Scheduled</code>-задача</td>
+<td data-label="Контекст переносится?"><strong>нет</strong>, и переносить нечего — потока-источника не было</td>
+<td data-label="Чем лечится">явная системная аутентификация</td>
 </tr>
 <tr>
-<td><code>CompletableFuture.supplyAsync(...)</code> (common pool)</td>
-<td><strong>нет</strong></td>
-<td>обернуть executor или задачу вручную</td>
+<td data-label="Переход"><code>CompletableFuture.supplyAsync(...)</code> (common pool)</td>
+<td data-label="Контекст переносится?"><strong>нет</strong></td>
+<td data-label="Чем лечится">обернуть executor или задачу вручную</td>
 </tr>
 <tr>
-<td><code>CompletableFuture.thenApplyAsync(...)</code></td>
-<td><strong>нет</strong></td>
-<td>то же</td>
+<td data-label="Переход"><code>CompletableFuture.thenApplyAsync(...)</code></td>
+<td data-label="Контекст переносится?"><strong>нет</strong></td>
+<td data-label="Чем лечится">то же</td>
 </tr>
 <tr>
-<td><code>list.parallelStream()</code></td>
-<td><strong>нет</strong> (кроме потока-инициатора, который участвует в вычислении)</td>
-<td>не использовать под авторизацией; см. главу 08</td>
+<td data-label="Переход"><code>list.parallelStream()</code></td>
+<td data-label="Контекст переносится?"><strong>нет</strong> (кроме потока-инициатора, который участвует в вычислении)</td>
+<td data-label="Чем лечится">не использовать под авторизацией; см. главу 08</td>
 </tr>
 <tr>
-<td><code>ExecutorService</code>, созданный руками</td>
-<td><strong>нет</strong></td>
-<td><code>DelegatingSecurityContextExecutorService</code></td>
+<td data-label="Переход"><code>ExecutorService</code>, созданный руками</td>
+<td data-label="Контекст переносится?"><strong>нет</strong></td>
+<td data-label="Чем лечится"><code>DelegatingSecurityContextExecutorService</code></td>
 </tr>
 <tr>
-<td>Виртуальные потоки (<code>Thread.ofVirtual().start</code>, <code>newVirtualThreadPerTaskExecutor</code>)</td>
-<td><strong>нет</strong></td>
-<td>то же, что для платформенных</td>
+<td data-label="Переход">Виртуальные потоки (<code>Thread.ofVirtual().start</code>, <code>newVirtualThreadPerTaskExecutor</code>)</td>
+<td data-label="Контекст переносится?"><strong>нет</strong></td>
+<td data-label="Чем лечится">то же, что для платформенных</td>
 </tr>
 <tr>
-<td><code>TransactionSynchronization#afterCommit</code></td>
-<td>да (тот же поток)</td>
-<td>—</td>
+<td data-label="Переход"><code>TransactionSynchronization#afterCommit</code></td>
+<td data-label="Контекст переносится?">да (тот же поток)</td>
+<td data-label="Чем лечится">—</td>
 </tr>
 <tr>
-<td><code>@TransactionalEventListener(phase = AFTER_COMMIT)</code> синхронный</td>
-<td>да</td>
-<td>—</td>
+<td data-label="Переход"><code>@TransactionalEventListener(phase = AFTER_COMMIT)</code> синхронный</td>
+<td data-label="Контекст переносится?">да</td>
+<td data-label="Чем лечится">—</td>
 </tr>
 <tr>
-<td>слушатель Kafka или RabbitMQ</td>
-<td><strong>нет</strong>, потока-источника нет</td>
-<td>явная аутентификация из заголовков сообщения</td>
+<td data-label="Переход">слушатель Kafka или RabbitMQ</td>
+<td data-label="Контекст переносится?"><strong>нет</strong>, потока-источника нет</td>
+<td data-label="Чем лечится">явная аутентификация из заголовков сообщения</td>
 </tr>
 <tr>
-<td>Реактивная цепочка в WebFlux</td>
-<td>да, через Reactor <code>Context</code></td>
-<td>—</td>
+<td data-label="Переход">Реактивная цепочка в WebFlux</td>
+<td data-label="Контекст переносится?">да, через Reactor <code>Context</code></td>
+<td data-label="Чем лечится">—</td>
 </tr>
 <tr>
-<td>Сервлет → <code>WebClient</code> → <code>block()</code></td>
-<td>нет без передачи контекста</td>
-<td><code>Hooks.enableAutomaticContextPropagation()</code></td>
+<td data-label="Переход">Сервлет → <code>WebClient</code> → <code>block()</code></td>
+<td data-label="Контекст переносится?">нет без передачи контекста</td>
+<td data-label="Чем лечится"><code>Hooks.enableAutomaticContextPropagation()</code></td>
 </tr>
 <tr>
-<td><code>ThreadLocal</code>-контекст → Micrometer Observation</td>
-<td>да, при подключённом <code>context-propagation</code></td>
-<td><code>ContextSnapshot</code></td>
+<td data-label="Переход"><code>ThreadLocal</code>-контекст → Micrometer Observation</td>
+<td data-label="Контекст переносится?">да, при подключённом <code>context-propagation</code></td>
+<td data-label="Чем лечится"><code>ContextSnapshot</code></td>
 </tr>
 </tbody>
 </table>
@@ -1820,7 +1820,7 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 <p>Запуск из подраздела 5.2 покрывает и формат <code>{id}</code>: класс и вывод приведены там. Два хеша одного и того же пароля начинаются с <code>{bcrypt}$2a$10$</code> и различаются между собой (в каждом своя соль), оба проходят <code>matches</code>. Хеш без префикса не проходит: <code>IllegalArgumentException</code> с текстом <code>Given that there is no default password encoder configured...</code>, а после <code>setDefaultPasswordEncoderForMatches(new BCryptPasswordEncoder())</code> проверка проходит. Текст исключения в этом подразделе выше исправлен по запуску.<sup id="fnref:s13-pwd"><a class="footnote-ref" href="#fn:s13-pwd">8</a></sup></p>
 <h3 id="52-выбор-алгоритма-хеширования">5.2 Выбор алгоритма хеширования</h3>
 <p>Выбор алгоритма хеширования сводится к компромиссу между стоимостью перебора для атакующего и стоимостью проверки для вас, и настраивать его приходится не по документации, а по реальной нагрузке логинов. Таблица ниже сводит четыре алгоритма, которые поддерживает Spring Security, с их параметрами по умолчанию; смотрите в ней прежде всего на колонку особенностей, потому что именно там прячутся ограничения:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Алгоритм</th>
@@ -1831,28 +1831,28 @@ alice (ROLE_USER), GET /api/admin/limits     -&gt; HTTP 403
 </thead>
 <tbody>
 <tr>
-<td>bcrypt</td>
-<td><code>BCryptPasswordEncoder</code></td>
-<td>strength <strong>10</strong> (2^10 итераций)</td>
-<td>де-факто стандарт; ограничение <strong>72 байта</strong> (в Spring Security 7 <code>encode()</code> бросает исключение на более длинном пароле, проверено запуском)</td>
+<td data-label="Алгоритм">bcrypt</td>
+<td data-label="Класс"><code>BCryptPasswordEncoder</code></td>
+<td data-label="По умолчанию в Spring Security">strength <strong>10</strong> (2^10 итераций)</td>
+<td data-label="Особенность">де-факто стандарт; ограничение <strong>72 байта</strong> (в Spring Security 7 <code>encode()</code> бросает исключение на более длинном пароле, проверено запуском)</td>
 </tr>
 <tr>
-<td>Argon2id</td>
-<td><code>Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8()</code></td>
-<td>salt 16 байт, hash 32 байта, p=1, m=16384 KiB (16 МиБ), t=2 — константы <code>DEFAULT_*</code> в исходнике (<a href="https://raw.githubusercontent.com/spring-projects/spring-security/main/crypto/src/main/java/org/springframework/security/crypto/argon2/Argon2PasswordEncoder.java">Argon2PasswordEncoder</a>)</td>
-<td>победитель PHC, memory-hard; требует BouncyCastle</td>
+<td data-label="Алгоритм">Argon2id</td>
+<td data-label="Класс"><code>Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8()</code></td>
+<td data-label="По умолчанию в Spring Security">salt 16 байт, hash 32 байта, p=1, m=16384 KiB (16 МиБ), t=2 — константы <code>DEFAULT_*</code> в исходнике (<a href="https://raw.githubusercontent.com/spring-projects/spring-security/main/crypto/src/main/java/org/springframework/security/crypto/argon2/Argon2PasswordEncoder.java">Argon2PasswordEncoder</a>)</td>
+<td data-label="Особенность">победитель PHC, memory-hard; требует BouncyCastle</td>
 </tr>
 <tr>
-<td>scrypt</td>
-<td><code>SCryptPasswordEncoder.defaultsForSpringSecurity_v5_8()</code></td>
-<td>N=65536, r=8, p=1</td>
-<td>memory-hard</td>
+<td data-label="Алгоритм">scrypt</td>
+<td data-label="Класс"><code>SCryptPasswordEncoder.defaultsForSpringSecurity_v5_8()</code></td>
+<td data-label="По умолчанию в Spring Security">N=65536, r=8, p=1</td>
+<td data-label="Особенность">memory-hard</td>
 </tr>
 <tr>
-<td>PBKDF2</td>
-<td><code>Pbkdf2PasswordEncoder.defaultsForSpringSecurity_v5_8()</code></td>
-<td>HMAC-SHA256, 310 000 итераций</td>
-<td>нужен для FIPS</td>
+<td data-label="Алгоритм">PBKDF2</td>
+<td data-label="Класс"><code>Pbkdf2PasswordEncoder.defaultsForSpringSecurity_v5_8()</code></td>
+<td data-label="По умолчанию в Spring Security">HMAC-SHA256, 310 000 итераций</td>
+<td data-label="Особенность">нужен для FIPS</td>
 </tr>
 </tbody>
 </table>
@@ -2157,7 +2157,7 @@ policy = REJECT            выполнено 2, отклонено 4 (Invocatio
 <h3 id="64-механизм-method-security">6.4 Механизм method security</h3>
 <p>Method security переносит проверку прав с уровня HTTP-запроса на уровень вызова метода бина: аннотация <code>@PreAuthorize</code> над сервисным методом срабатывает, откуда бы этот метод ни вызвали. Реализована она через AOP-прокси, и отсюда и её сила, и все её ограничения, которые чаще всего и приводят к тому, что метод выглядит защищённым, а на деле не защищён. Ниже разобрано, какие перехватчики включает <code>@EnableMethodSecurity</code> и в каком порядке, и какие ограничения прокси нужно держать в голове.</p>
 <p><code>@EnableMethodSecurity</code> включает четыре advisor'а, у каждого из которых свой pointcut и свой порядок (<a href="https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html">Method Security</a>). Порядок в таблице определяет, что выполнится раньше, если на методе стоит несколько аннотаций сразу:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аннотация</th>
@@ -2167,24 +2167,24 @@ policy = REJECT            выполнено 2, отклонено 4 (Invocatio
 </thead>
 <tbody>
 <tr>
-<td><code>@PreFilter</code></td>
-<td><code>PreFilterAuthorizationMethodInterceptor</code></td>
-<td class="num">100</td>
+<td data-label="Аннотация"><code>@PreFilter</code></td>
+<td data-label="Interceptor"><code>PreFilterAuthorizationMethodInterceptor</code></td>
+<td data-label="Порядок (AuthorizationInterceptorsOrder)" class="num">100</td>
 </tr>
 <tr>
-<td><code>@PreAuthorize</code></td>
-<td><code>AuthorizationManagerBeforeMethodInterceptor.preAuthorize()</code></td>
-<td class="num">200</td>
+<td data-label="Аннотация"><code>@PreAuthorize</code></td>
+<td data-label="Interceptor"><code>AuthorizationManagerBeforeMethodInterceptor.preAuthorize()</code></td>
+<td data-label="Порядок (AuthorizationInterceptorsOrder)" class="num">200</td>
 </tr>
 <tr>
-<td><code>@PostAuthorize</code></td>
-<td><code>AuthorizationManagerAfterMethodInterceptor.postAuthorize()</code></td>
-<td class="num">500</td>
+<td data-label="Аннотация"><code>@PostAuthorize</code></td>
+<td data-label="Interceptor"><code>AuthorizationManagerAfterMethodInterceptor.postAuthorize()</code></td>
+<td data-label="Порядок (AuthorizationInterceptorsOrder)" class="num">500</td>
 </tr>
 <tr>
-<td><code>@PostFilter</code></td>
-<td><code>PostFilterAuthorizationMethodInterceptor</code></td>
-<td class="num">600</td>
+<td data-label="Аннотация"><code>@PostFilter</code></td>
+<td data-label="Interceptor"><code>PostFilterAuthorizationMethodInterceptor</code></td>
+<td data-label="Порядок (AuthorizationInterceptorsOrder)" class="num">600</td>
 </tr>
 </tbody>
 </table>
@@ -2277,7 +2277,7 @@ policy = REJECT            выполнено 2, отклонено 4 (Invocatio
 <p><strong>Spring Security ACL</strong> (<code>spring-security-acl</code>) — полноценная реализация доменной авторизации на четырёх таблицах (<code>acl_sid</code>, <code>acl_class</code>, <code>acl_object_identity</code>, <code>acl_entry</code>) с наследованием прав и битовыми масками. В 2026 году это скорее историческая опция: схема тяжёлая, без кеширования не обойтись, а большинство команд решает ту же задачу либо колонкой <code>owner_id</code> с условием в запросе, либо внешним движком (OPA/Cedar/SpiceDB — ReBAC, см. главу 42). Знать про ACL полезно, но применять его в современном Spring-бэкенде приходится редко.</p>
 <h3 id="68-rbac-и-abac-в-терминах-spring">6.8 RBAC и ABAC в терминах Spring</h3>
 <p>RBAC и ABAC — две модели принятия решения о доступе: в первой решение зависит от ролей субъекта, во второй — от атрибутов субъекта, ресурса, действия и окружения. В Spring Security обе выражаются имеющимися средствами, и практический вопрос не в том, какую выбрать, а в том, как их разумно совместить. Таблица сравнивает модели по тому, чем каждая выражается в Spring и чем за неё платят:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2287,24 +2287,24 @@ policy = REJECT            выполнено 2, отклонено 4 (Invocatio
 </thead>
 <tbody>
 <tr>
-<td>Решение зависит от</td>
-<td>набора ролей субъекта</td>
-<td>атрибутов субъекта, ресурса, действия и среды</td>
+<td data-label="">Решение зависит от</td>
+<td data-label="RBAC">набора ролей субъекта</td>
+<td data-label="ABAC">атрибутов субъекта, ресурса, действия и среды</td>
 </tr>
 <tr>
-<td>В Spring</td>
-<td><code>hasRole</code>, <code>hasAuthority</code>, <code>RoleHierarchy</code></td>
-<td>SpEL с <code>#параметрами</code>, свой <code>AuthorizationManager</code>, <code>PermissionEvaluator</code></td>
+<td data-label="">В Spring</td>
+<td data-label="RBAC"><code>hasRole</code>, <code>hasAuthority</code>, <code>RoleHierarchy</code></td>
+<td data-label="ABAC">SpEL с <code>#параметрами</code>, свой <code>AuthorizationManager</code>, <code>PermissionEvaluator</code></td>
 </tr>
 <tr>
-<td>Плюс</td>
-<td>просто, проверяется статически</td>
-<td>выражает «только свои платежи до 100 000 в рабочее время»</td>
+<td data-label="">Плюс</td>
+<td data-label="RBAC">просто, проверяется статически</td>
+<td data-label="ABAC">выражает «только свои платежи до 100 000 в рабочее время»</td>
 </tr>
 <tr>
-<td>Минус</td>
-<td>взрыв числа ролей (<code>ROLE_OPERATOR_MOSCOW_VIP</code>)</td>
-<td>правила размазаны по коду, тяжело аудировать</td>
+<td data-label="">Минус</td>
+<td data-label="RBAC">взрыв числа ролей (<code>ROLE_OPERATOR_MOSCOW_VIP</code>)</td>
+<td data-label="ABAC">правила размазаны по коду, тяжело аудировать</td>
 </tr>
 </tbody>
 </table>
@@ -2314,7 +2314,7 @@ policy = REJECT            выполнено 2, отклонено 4 (Invocatio
 </blockquote>
 <h3 id="69-справочник-spel-выражений-в-аннотациях">6.9 Справочник SpEL-выражений в аннотациях</h3>
 <p>Выражения в <code>@PreAuthorize</code> вычисляются в контексте <code>MethodSecurityExpressionRoot</code>, который наследует <code>SecurityExpressionRoot</code>, и набор доступных в них имён и функций определяется именно этим корнем. Справочник нужен потому, что ошибка в строке выражения не ловится компилятором и проявляется только во время выполнения, причём часто не отказом в доступе, а ошибкой 500. Ниже собрано всё, что реально доступно, а в правой колонке указано, где каждый вариант ломается, — на неё и стоит смотреть в первую очередь.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Выражение</th>
@@ -2324,89 +2324,89 @@ policy = REJECT            выполнено 2, отклонено 4 (Invocatio
 </thead>
 <tbody>
 <tr>
-<td><code>hasRole('ADMIN')</code></td>
-<td>ищет authority <code>ROLE_ADMIN</code> (префикс из <code>GrantedAuthorityDefaults</code>)</td>
-<td>если префикс отключён глобально, а в аннотации остался расчёт на него</td>
+<td data-label="Выражение"><code>hasRole('ADMIN')</code></td>
+<td data-label="Что делает">ищет authority <code>ROLE_ADMIN</code> (префикс из <code>GrantedAuthorityDefaults</code>)</td>
+<td data-label="Где ломается">если префикс отключён глобально, а в аннотации остался расчёт на него</td>
 </tr>
 <tr>
-<td><code>hasAnyRole('A','B')</code></td>
-<td>любая из ролей</td>
-<td>—</td>
+<td data-label="Выражение"><code>hasAnyRole('A','B')</code></td>
+<td data-label="Что делает">любая из ролей</td>
+<td data-label="Где ломается">—</td>
 </tr>
 <tr>
-<td><code>hasAuthority('SCOPE_payments:write')</code></td>
-<td>точное сравнение</td>
-<td>опечатка в строке не ловится компилятором</td>
+<td data-label="Выражение"><code>hasAuthority('SCOPE_payments:write')</code></td>
+<td data-label="Что делает">точное сравнение</td>
+<td data-label="Где ломается">опечатка в строке не ловится компилятором</td>
 </tr>
 <tr>
-<td><code>hasAnyAuthority(...)</code></td>
-<td>любая из authorities</td>
-<td>—</td>
+<td data-label="Выражение"><code>hasAnyAuthority(...)</code></td>
+<td data-label="Что делает">любая из authorities</td>
+<td data-label="Где ломается">—</td>
 </tr>
 <tr>
-<td><code>permitAll()</code> / <code>denyAll()</code></td>
-<td>безусловное решение</td>
-<td><code>denyAll()</code> на методе, который дергает <code>@Scheduled</code>, — гарантированное ночное оповещение</td>
+<td data-label="Выражение"><code>permitAll()</code> / <code>denyAll()</code></td>
+<td data-label="Что делает">безусловное решение</td>
+<td data-label="Где ломается"><code>denyAll()</code> на методе, который дергает <code>@Scheduled</code>, — гарантированное ночное оповещение</td>
 </tr>
 <tr>
-<td><code>isAuthenticated()</code></td>
-<td>не аноним</td>
-<td>пропускает remember-me</td>
+<td data-label="Выражение"><code>isAuthenticated()</code></td>
+<td data-label="Что делает">не аноним</td>
+<td data-label="Где ломается">пропускает remember-me</td>
 </tr>
 <tr>
-<td><code>isFullyAuthenticated()</code></td>
-<td>не аноним и не remember-me</td>
-<td>—</td>
+<td data-label="Выражение"><code>isFullyAuthenticated()</code></td>
+<td data-label="Что делает">не аноним и не remember-me</td>
+<td data-label="Где ломается">—</td>
 </tr>
 <tr>
-<td><code>isAnonymous()</code> / <code>isRememberMe()</code></td>
-<td>явные проверки</td>
-<td>—</td>
+<td data-label="Выражение"><code>isAnonymous()</code> / <code>isRememberMe()</code></td>
+<td data-label="Что делает">явные проверки</td>
+<td data-label="Где ломается">—</td>
 </tr>
 <tr>
-<td><code>authentication</code></td>
-<td>сам объект <code>Authentication</code></td>
-<td><code>authentication.principal.claims['x']</code> упадёт, если principal — не <code>Jwt</code> (в тестах с <code>@WithMockUser</code> это <code>User</code>)</td>
+<td data-label="Выражение"><code>authentication</code></td>
+<td data-label="Что делает">сам объект <code>Authentication</code></td>
+<td data-label="Где ломается"><code>authentication.principal.claims['x']</code> упадёт, если principal — не <code>Jwt</code> (в тестах с <code>@WithMockUser</code> это <code>User</code>)</td>
 </tr>
 <tr>
-<td><code>principal</code></td>
-<td><code>authentication.getPrincipal()</code></td>
-<td>то же</td>
+<td data-label="Выражение"><code>principal</code></td>
+<td data-label="Что делает"><code>authentication.getPrincipal()</code></td>
+<td data-label="Где ломается">то же</td>
 </tr>
 <tr>
-<td><code>#paramName</code></td>
-<td>значение аргумента метода</td>
-<td>требует <code>-parameters</code> при компиляции или <code>@P("name")</code></td>
+<td data-label="Выражение"><code>#paramName</code></td>
+<td data-label="Что делает">значение аргумента метода</td>
+<td data-label="Где ломается">требует <code>-parameters</code> при компиляции или <code>@P("name")</code></td>
 </tr>
 <tr>
-<td><code>#paramName.field</code></td>
-<td>навигация по аргументу</td>
-<td>NPE при <code>null</code>-аргументе даёт <code>SpelEvaluationException</code> → 500, а не 403</td>
+<td data-label="Выражение"><code>#paramName.field</code></td>
+<td data-label="Что делает">навигация по аргументу</td>
+<td data-label="Где ломается">NPE при <code>null</code>-аргументе даёт <code>SpelEvaluationException</code> → 500, а не 403</td>
 </tr>
 <tr>
-<td><code>returnObject</code> (только <code>@PostAuthorize</code>)</td>
-<td>возвращаемое значение</td>
-<td><code>null</code> возвращаемое значение и обращение к его полю — снова 500</td>
+<td data-label="Выражение"><code>returnObject</code> (только <code>@PostAuthorize</code>)</td>
+<td data-label="Что делает">возвращаемое значение</td>
+<td data-label="Где ломается"><code>null</code> возвращаемое значение и обращение к его полю — снова 500</td>
 </tr>
 <tr>
-<td><code>filterObject</code> (только <code>@PreFilter</code>/<code>@PostFilter</code>)</td>
-<td>текущий элемент коллекции</td>
-<td>—</td>
+<td data-label="Выражение"><code>filterObject</code> (только <code>@PreFilter</code>/<code>@PostFilter</code>)</td>
+<td data-label="Что делает">текущий элемент коллекции</td>
+<td data-label="Где ломается">—</td>
 </tr>
 <tr>
-<td><code>hasPermission(obj, 'READ')</code></td>
-<td>делегат в <code>PermissionEvaluator</code></td>
-<td>без зарегистрированного эвалюатора — <code>IllegalArgumentException</code> во время выполнения</td>
+<td data-label="Выражение"><code>hasPermission(obj, 'READ')</code></td>
+<td data-label="Что делает">делегат в <code>PermissionEvaluator</code></td>
+<td data-label="Где ломается">без зарегистрированного эвалюатора — <code>IllegalArgumentException</code> во время выполнения</td>
 </tr>
 <tr>
-<td><code>@beanName.method(#arg)</code></td>
-<td>вызов метода произвольного бина</td>
-<td>бин ищется по имени: переименование бина ломает выражение молча</td>
+<td data-label="Выражение"><code>@beanName.method(#arg)</code></td>
+<td data-label="Что делает">вызов метода произвольного бина</td>
+<td data-label="Где ломается">бин ищется по имени: переименование бина ломает выражение молча</td>
 </tr>
 <tr>
-<td><code>T(java.time.LocalTime).now()</code></td>
-<td>статический вызов</td>
-<td>работает, но превращает аннотацию в нечитаемый код</td>
+<td data-label="Выражение"><code>T(java.time.LocalTime).now()</code></td>
+<td data-label="Что делает">статический вызов</td>
+<td data-label="Где ломается">работает, но превращает аннотацию в нечитаемый код</td>
 </tr>
 </tbody>
 </table>
@@ -2903,7 +2903,7 @@ policy = REJECT            выполнено 2, отклонено 4 (Invocatio
 </code></pre></div>
 
 <p>Реализует это <code>SpringOpaqueTokenIntrospector</code> (в 7.x появился <code>RestClientOpaqueTokenIntrospector</code>, <a href="https://docs.spring.io/spring-security/reference/whats-new.html">What's New</a>). Principal здесь — <code>OAuth2AuthenticatedPrincipal</code>, а authorities строятся из <code>scope</code> с префиксом <code>SCOPE_</code>. Таблица ниже сравнивает два вида токенов по тем свойствам, которые влияют на выбор:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2913,29 +2913,29 @@ policy = REJECT            выполнено 2, отклонено 4 (Invocatio
 </thead>
 <tbody>
 <tr>
-<td>Проверка</td>
-<td>локальная, подпись</td>
-<td>сетевой вызов на каждый запрос</td>
+<td data-label="">Проверка</td>
+<td data-label="JWT">локальная, подпись</td>
+<td data-label="Opaque + introspection">сетевой вызов на каждый запрос</td>
 </tr>
 <tr>
-<td>Латентность</td>
-<td>микросекунды</td>
-<td>+RTT до IdP (1–20 мс) и нагрузка на него</td>
+<td data-label="">Латентность</td>
+<td data-label="JWT">микросекунды</td>
+<td data-label="Opaque + introspection">+RTT до IdP (1–20 мс) и нагрузка на него</td>
 </tr>
 <tr>
-<td>Отзыв токена</td>
-<td>невозможен до <code>exp</code></td>
-<td>мгновенный</td>
+<td data-label="">Отзыв токена</td>
+<td data-label="JWT">невозможен до <code>exp</code></td>
+<td data-label="Opaque + introspection">мгновенный</td>
 </tr>
 <tr>
-<td>Размер заголовка</td>
-<td>1–4 КБ</td>
-<td>десятки байт</td>
+<td data-label="">Размер заголовка</td>
+<td data-label="JWT">1–4 КБ</td>
+<td data-label="Opaque + introspection">десятки байт</td>
 </tr>
 <tr>
-<td>Утечка данных</td>
-<td>клеймы видны всем, кто видит токен</td>
-<td>ничего не видно</td>
+<td data-label="">Утечка данных</td>
+<td data-label="JWT">клеймы видны всем, кто видит токен</td>
+<td data-label="Opaque + introspection">ничего не видно</td>
 </tr>
 </tbody>
 </table>
@@ -3237,7 +3237,7 @@ T+N+ε    kid=B в кеше, всё работает; простоя нет
 <p><strong>Принципал для <code>client_credentials</code>.</strong> Требование передать в <code>OAuth2AuthorizeRequest.principal(...)</code> непустой принципал часто вызывает недоумение: зачем он, если токен сервис получает за себя? Ответ сугубо прикладной: имя принципала служит <strong>ключом</strong> в <code>OAuth2AuthorizedClientService</code> (составной ключ <code>registrationId</code> + <code>principalName</code>). Если передавать разный принципал, например имя текущего пользователя, на каждого пользователя получится отдельный сервисный токен, и хранилище раздуется, поэтому для <code>client_credentials</code> принципал должен быть <strong>константой</strong>.</p>
 <h3 id="85-хранение-авторизованных-клиентов">8.5 Хранение авторизованных клиентов</h3>
 <p>Хранилище авторизованных клиентов определяет, сколько токенов получит кластер, переживут ли они рестарт и где физически окажутся действующие access- и refresh-токены. Выбор между реализациями — это не только вопрос производительности, но и вопрос безопасности, потому что внешнее хранилище токенов становится ещё одним местом, которое нужно защищать. Таблица ниже сравнивает варианты, и главное в ней — колонка подводных камней:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Реализация</th>
@@ -3248,28 +3248,28 @@ T+N+ε    kid=B в кеше, всё работает; простоя нет
 </thead>
 <tbody>
 <tr>
-<td><code>InMemoryOAuth2AuthorizedClientService</code></td>
-<td><code>Map</code> в heap экземпляр</td>
-<td>по умолчанию, сервисные токены, немного подов</td>
-<td>N подов = N наборов токенов и в N раз больше запросов к IdP; рестарт = все токены заново</td>
+<td data-label="Реализация"><code>InMemoryOAuth2AuthorizedClientService</code></td>
+<td data-label="Где живёт"><code>Map</code> в heap экземпляр</td>
+<td data-label="Когда брать">по умолчанию, сервисные токены, немного подов</td>
+<td data-label="Подводные камни">N подов = N наборов токенов и в N раз больше запросов к IdP; рестарт = все токены заново</td>
 </tr>
 <tr>
-<td><code>JdbcOAuth2AuthorizedClientService</code></td>
-<td>таблица <code>oauth2_authorized_client</code></td>
-<td>много подов, жёсткий rate limit IdP</td>
-<td><strong>токены хранятся в БД</strong>: нужен шифрованный столбец или шифрование на уровне хранилища; запись на каждое обновление</td>
+<td data-label="Реализация"><code>JdbcOAuth2AuthorizedClientService</code></td>
+<td data-label="Где живёт">таблица <code>oauth2_authorized_client</code></td>
+<td data-label="Когда брать">много подов, жёсткий rate limit IdP</td>
+<td data-label="Подводные камни"><strong>токены хранятся в БД</strong>: нужен шифрованный столбец или шифрование на уровне хранилища; запись на каждое обновление</td>
 </tr>
 <tr>
-<td><code>HttpSessionOAuth2AuthorizedClientRepository</code></td>
-<td><code>HttpSession</code></td>
-<td>пользовательские токены при <code>authorization_code</code></td>
-<td>размер сессии растёт; при Spring Session + Redis токены уезжают в Redis (см. ниже)</td>
+<td data-label="Реализация"><code>HttpSessionOAuth2AuthorizedClientRepository</code></td>
+<td data-label="Где живёт"><code>HttpSession</code></td>
+<td data-label="Когда брать">пользовательские токены при <code>authorization_code</code></td>
+<td data-label="Подводные камни">размер сессии растёт; при Spring Session + Redis токены уезжают в Redis (см. ниже)</td>
 </tr>
 <tr>
-<td>своя на Redis</td>
-<td>Redis</td>
-<td>кластер + пользовательские токены</td>
-<td>сериализация <code>OAuth2AuthorizedClient</code> требует <code>SecurityJacksonModules</code>; TTL надо ставить руками</td>
+<td data-label="Реализация">своя на Redis</td>
+<td data-label="Где живёт">Redis</td>
+<td data-label="Когда брать">кластер + пользовательские токены</td>
+<td data-label="Подводные камни">сериализация <code>OAuth2AuthorizedClient</code> требует <code>SecurityJacksonModules</code>; TTL надо ставить руками</td>
 </tr>
 </tbody>
 </table>
@@ -3321,7 +3321,7 @@ T+N+ε    kid=B в кеше, всё работает; простоя нет
 <p>Этот раздел посвящён защитам, которые нужны из-за браузера: CSRF защищает от запросов, которые чужой сайт отправляет от имени залогиненного пользователя, CORS управляет тем, каким чужим origin'ам браузер разрешит читать ваши ответы, а заголовки безопасности закрывают clickjacking, MIME-sniffing и кеширование приватных данных. Здесь ошибаются в обе стороны: выключают CSRF там, где он необходим, «чтобы заработало», и мучаются с CORS, потому что preflight упирается в авторизацию. Ниже разобрано, когда CSRF нужен и когда его можно выключить, как хранится токен и при чём здесь BREACH, как CORS встраивается в порядок фильтров и какие заголовки Spring Security ставит сам.</p>
 <h3 id="91-применимость-защиты-от-csrf">9.1 Применимость защиты от CSRF</h3>
 <p>CSRF-атака работает только тогда, когда браузер <strong>сам</strong> прикрепляет аутентификационные данные к кросс-сайтовому запросу. Так происходит с cookie (включая <code>JSESSIONID</code>), с HTTP Basic и с клиентскими TLS-сертификатами. С заголовком <code>Authorization: Bearer ...</code> так <strong>не</strong> происходит: его JavaScript обязан поставить сам, а другой сайт не может прочитать ваш токен из localStorage из-за same-origin policy. Из этого механизма и выводится рабочее правило, сведённое в таблицу:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Аутентификация</th>
@@ -3330,24 +3330,24 @@ T+N+ε    kid=B в кеше, всё работает; простоя нет
 </thead>
 <tbody>
 <tr>
-<td>Cookie-сессия (<code>JSESSIONID</code>), браузерный клиент</td>
-<td><strong>нужен</strong></td>
+<td data-label="Аутентификация">Cookie-сессия (<code>JSESSIONID</code>), браузерный клиент</td>
+<td data-label="CSRF"><strong>нужен</strong></td>
 </tr>
 <tr>
-<td>Cookie с JWT внутри</td>
-<td><strong>нужен</strong> (это всё ещё cookie)</td>
+<td data-label="Аутентификация">Cookie с JWT внутри</td>
+<td data-label="CSRF"><strong>нужен</strong> (это всё ещё cookie)</td>
 </tr>
 <tr>
-<td><code>Authorization: Bearer</code>, SPA/мобильный клиент</td>
-<td>не нужен, можно отключить</td>
+<td data-label="Аутентификация"><code>Authorization: Bearer</code>, SPA/мобильный клиент</td>
+<td data-label="CSRF">не нужен, можно отключить</td>
 </tr>
 <tr>
-<td>HTTP Basic из браузера</td>
-<td>нужен</td>
+<td data-label="Аутентификация">HTTP Basic из браузера</td>
+<td data-label="CSRF">нужен</td>
 </tr>
 <tr>
-<td>Machine-to-machine без cookie</td>
-<td>не нужен</td>
+<td data-label="Аутентификация">Machine-to-machine без cookie</td>
+<td data-label="CSRF">не нужен</td>
 </tr>
 </tbody>
 </table>
@@ -3654,7 +3654,7 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 </blockquote>
 <h3 id="94-заголовки-безопасности">9.4 Заголовки безопасности</h3>
 <p>Заголовки безопасности — это инструкции браузеру, которые запрещают ему опасное поведение: угадывать тип содержимого, встраивать страницу во фрейм, кешировать приватный ответ, ходить на сайт по HTTP. Часть из них Spring Security ставит сам, часть нужно включать явно, а одна настройка почти необратима. Таблица ниже показывает, что <code>HeaderWriterFilter</code> ставит по умолчанию и зачем:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Заголовок</th>
@@ -3664,29 +3664,29 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 </thead>
 <tbody>
 <tr>
-<td><code>X-Content-Type-Options</code></td>
-<td><code>nosniff</code></td>
-<td>запрет MIME-sniffing</td>
+<td data-label="Заголовок"><code>X-Content-Type-Options</code></td>
+<td data-label="Значение по умолчанию"><code>nosniff</code></td>
+<td data-label="Смысл">запрет MIME-sniffing</td>
 </tr>
 <tr>
-<td><code>X-Frame-Options</code></td>
-<td><code>DENY</code></td>
-<td>защита от clickjacking</td>
+<td data-label="Заголовок"><code>X-Frame-Options</code></td>
+<td data-label="Значение по умолчанию"><code>DENY</code></td>
+<td data-label="Смысл">защита от clickjacking</td>
 </tr>
 <tr>
-<td><code>Cache-Control</code></td>
-<td><code>no-cache, no-store, max-age=0, must-revalidate</code></td>
-<td>чтобы приватные ответы не оседали в кешах</td>
+<td data-label="Заголовок"><code>Cache-Control</code></td>
+<td data-label="Значение по умолчанию"><code>no-cache, no-store, max-age=0, must-revalidate</code></td>
+<td data-label="Смысл">чтобы приватные ответы не оседали в кешах</td>
 </tr>
 <tr>
-<td><code>Strict-Transport-Security</code></td>
-<td><code>max-age=31536000 ; includeSubDomains</code></td>
-<td>только по HTTPS-запросам</td>
+<td data-label="Заголовок"><code>Strict-Transport-Security</code></td>
+<td data-label="Значение по умолчанию"><code>max-age=31536000 ; includeSubDomains</code></td>
+<td data-label="Смысл">только по HTTPS-запросам</td>
 </tr>
 <tr>
-<td><code>X-XSS-Protection</code></td>
-<td><code>0</code></td>
-<td>выключение устаревшего фильтра браузера (он сам был уязвимостью)</td>
+<td data-label="Заголовок"><code>X-XSS-Protection</code></td>
+<td data-label="Значение по умолчанию"><code>0</code></td>
+<td data-label="Смысл">выключение устаревшего фильтра браузера (он сам был уязвимостью)</td>
 </tr>
 </tbody>
 </table>
@@ -3711,7 +3711,7 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 <p>Сессия — это серверное состояние, по которому приложение узнаёт пользователя между запросами, и в Spring Security от неё зависит, где живёт <code>SecurityContext</code>, нужен ли CSRF и как быстро действует отзыв доступа. Даже приложение, которое считает себя stateless, нередко создаёт сессии незаметно для разработчиков, а приложение с сессиями в кластере теряет лимиты и разлогинивает пользователей при выкате. Ниже разобраны политики создания сессий, защита от фиксации, ограничение числа одновременных сессий, Spring Session поверх Redis и честное сравнение сессий с JWT.</p>
 <h3 id="101-sessioncreationpolicy">10.1 <code>SessionCreationPolicy</code></h3>
 <p><code>SessionCreationPolicy</code> определяет, может ли Spring Security создавать <code>HttpSession</code> и пользоваться ею, и именно здесь stateless-API обычно объявляет, что сессии ему не нужны. Но действует эта настройка только на сам Spring Security, и ниже разобрано, что из этого следует. Политик четыре, и таблица показывает, чем они отличаются:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Политика</th>
@@ -3720,20 +3720,20 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 </thead>
 <tbody>
 <tr>
-<td><code>ALWAYS</code></td>
-<td>сессия создаётся всегда (через <code>ForceEagerSessionCreationFilter</code>)</td>
+<td data-label="Политика"><code>ALWAYS</code></td>
+<td data-label="Поведение">сессия создаётся всегда (через <code>ForceEagerSessionCreationFilter</code>)</td>
 </tr>
 <tr>
-<td><code>IF_REQUIRED</code></td>
-<td>по умолчанию: создаётся, когда нужна</td>
+<td data-label="Политика"><code>IF_REQUIRED</code></td>
+<td data-label="Поведение">по умолчанию: создаётся, когда нужна</td>
 </tr>
 <tr>
-<td><code>NEVER</code></td>
-<td>Spring Security не создаёт, но использует существующую</td>
+<td data-label="Политика"><code>NEVER</code></td>
+<td data-label="Поведение">Spring Security не создаёт, но использует существующую</td>
 </tr>
 <tr>
-<td><code>STATELESS</code></td>
-<td>не создаёт и не использует; <code>SecurityContextRepository</code> = <code>NullSecurityContextRepository</code></td>
+<td data-label="Политика"><code>STATELESS</code></td>
+<td data-label="Поведение">не создаёт и не использует; <code>SecurityContextRepository</code> = <code>NullSecurityContextRepository</code></td>
 </tr>
 </tbody>
 </table>
@@ -3743,7 +3743,7 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 </blockquote>
 <h3 id="102-фиксация-сессии">10.2 Фиксация сессии</h3>
 <p>Фиксация сессии (session fixation) — атака, при которой злоумышленник заранее навязывает жертве идентификатор сессии, например ссылкой с <code>;jsessionid=</code> или установкой cookie на поддомене. Жертва логинится, сессия становится аутентифицированной, а её идентификатор атакующему уже известен. Защищается от этого Spring Security сменой идентификатора в момент аутентификации, и стратегий смены четыре (<a href="https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html">Session Management</a>):</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -3752,20 +3752,20 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 </thead>
 <tbody>
 <tr>
-<td><code>changeSessionId</code></td>
-<td><strong>по умолчанию</strong>: <code>HttpServletRequest#changeSessionId()</code> — контейнер меняет id, атрибуты сохраняются</td>
+<td data-label="Стратегия"><code>changeSessionId</code></td>
+<td data-label="Что делает"><strong>по умолчанию</strong>: <code>HttpServletRequest#changeSessionId()</code> — контейнер меняет id, атрибуты сохраняются</td>
 </tr>
 <tr>
-<td><code>newSession</code></td>
-<td>новая чистая сессия, атрибуты не копируются</td>
+<td data-label="Стратегия"><code>newSession</code></td>
+<td data-label="Что делает">новая чистая сессия, атрибуты не копируются</td>
 </tr>
 <tr>
-<td><code>migrateSession</code></td>
-<td>новая сессия + копирование атрибутов</td>
+<td data-label="Стратегия"><code>migrateSession</code></td>
+<td data-label="Что делает">новая сессия + копирование атрибутов</td>
 </tr>
 <tr>
-<td><code>none</code></td>
-<td>выключено (нельзя)</td>
+<td data-label="Стратегия"><code>none</code></td>
+<td data-label="Что делает">выключено (нельзя)</td>
 </tr>
 </tbody>
 </table>
@@ -3822,7 +3822,7 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 - каждый запрос к защищённому ресурсу читает сессию из Redis, так что 10 000 RPS дают 10 000 обращений; отложенная загрузка контекста в 6.x отчасти помогает.</p>
 <h3 id="105-stateless--и-stateful-сессии">10.5 Stateless- и stateful-сессии</h3>
 <p>Выбор между серверной сессией и JWT обычно подают как выбор между «старым» и «современным», хотя на деле это обмен одних свойств на другие, и главный из них — возможность мгновенно отозвать доступ. Таблица ниже сравнивает оба подхода по тем свойствам, которые влияют на решение:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -3832,39 +3832,39 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 </thead>
 <tbody>
 <tr>
-<td>Отзыв доступа</td>
-<td>мгновенный (удалить из Redis)</td>
-<td>только по истечении <code>exp</code> или через блэклист</td>
+<td data-label="">Отзыв доступа</td>
+<td data-label="Сессия (cookie + Redis)">мгновенный (удалить из Redis)</td>
+<td data-label="JWT в заголовке">только по истечении <code>exp</code> или через блэклист</td>
 </tr>
 <tr>
-<td>Хранилище</td>
-<td>нужно (Redis/БД) — точка отказа</td>
-<td>не нужно</td>
+<td data-label="">Хранилище</td>
+<td data-label="Сессия (cookie + Redis)">нужно (Redis/БД) — точка отказа</td>
+<td data-label="JWT в заголовке">не нужно</td>
 </tr>
 <tr>
-<td>Размер запроса</td>
-<td>~40 байт cookie</td>
-<td>1–4 КБ заголовка на каждый запрос</td>
+<td data-label="">Размер запроса</td>
+<td data-label="Сессия (cookie + Redis)">~40 байт cookie</td>
+<td data-label="JWT в заголовке">1–4 КБ заголовка на каждый запрос</td>
 </tr>
 <tr>
-<td>Латентность проверки</td>
-<td>RTT до Redis</td>
-<td>проверка подписи локально</td>
+<td data-label="">Латентность проверки</td>
+<td data-label="Сессия (cookie + Redis)">RTT до Redis</td>
+<td data-label="JWT в заголовке">проверка подписи локально</td>
 </tr>
 <tr>
-<td>CSRF</td>
-<td>нужен</td>
-<td>не нужен</td>
+<td data-label="">CSRF</td>
+<td data-label="Сессия (cookie + Redis)">нужен</td>
+<td data-label="JWT в заголовке">не нужен</td>
 </tr>
 <tr>
-<td>Хранение на клиенте</td>
-<td>HttpOnly cookie — недоступно JS</td>
-<td>localStorage уязвим к XSS; cookie снова требует CSRF</td>
+<td data-label="">Хранение на клиенте</td>
+<td data-label="Сессия (cookie + Redis)">HttpOnly cookie — недоступно JS</td>
+<td data-label="JWT в заголовке">localStorage уязвим к XSS; cookie снова требует CSRF</td>
 </tr>
 <tr>
-<td>Смена прав пользователя</td>
-<td>сразу</td>
-<td>после обновления токена</td>
+<td data-label="">Смена прав пользователя</td>
+<td data-label="Сессия (cookie + Redis)">сразу</td>
+<td data-label="JWT в заголовке">после обновления токена</td>
 </tr>
 </tbody>
 </table>
@@ -3872,7 +3872,7 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 <hr>
 <h2 id="11-реактивный-стек">11. Реактивный стек</h2>
 <p>В реактивном стеке Spring Security устроен по тем же принципам, что и в сервлетном, но опирается на другие типы, потому что WebFlux не может пользоваться <code>ThreadLocal</code>: одна цепочка обработки запроса перемещается между потоками event loop. Поэтому у Spring Security есть параллельная иерархия типов (см. главу 11 про Reactor), а контекст безопасности живёт в Reactor <code>Context</code>. Ниже приведено соответствие типов двух стеков, пример конфигурации, способ достать текущего пользователя и отличия, на которых ошибаются при переходе из сервлетного мира. Сначала — соответствие типов:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Сервлет</th>
@@ -3881,44 +3881,44 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 </thead>
 <tbody>
 <tr>
-<td><code>SecurityFilterChain</code></td>
-<td><code>SecurityWebFilterChain</code></td>
+<td data-label="Сервлет"><code>SecurityFilterChain</code></td>
+<td data-label="Реактив"><code>SecurityWebFilterChain</code></td>
 </tr>
 <tr>
-<td><code>HttpSecurity</code></td>
-<td><code>ServerHttpSecurity</code></td>
+<td data-label="Сервлет"><code>HttpSecurity</code></td>
+<td data-label="Реактив"><code>ServerHttpSecurity</code></td>
 </tr>
 <tr>
-<td><code>Filter</code></td>
-<td><code>WebFilter</code></td>
+<td data-label="Сервлет"><code>Filter</code></td>
+<td data-label="Реактив"><code>WebFilter</code></td>
 </tr>
 <tr>
-<td><code>SecurityContextHolder</code></td>
-<td><code>ReactiveSecurityContextHolder</code></td>
+<td data-label="Сервлет"><code>SecurityContextHolder</code></td>
+<td data-label="Реактив"><code>ReactiveSecurityContextHolder</code></td>
 </tr>
 <tr>
-<td><code>AuthenticationManager</code></td>
-<td><code>ReactiveAuthenticationManager</code></td>
+<td data-label="Сервлет"><code>AuthenticationManager</code></td>
+<td data-label="Реактив"><code>ReactiveAuthenticationManager</code></td>
 </tr>
 <tr>
-<td><code>UserDetailsService</code></td>
-<td><code>ReactiveUserDetailsService</code></td>
+<td data-label="Сервлет"><code>UserDetailsService</code></td>
+<td data-label="Реактив"><code>ReactiveUserDetailsService</code></td>
 </tr>
 <tr>
-<td><code>AuthorizationManager</code></td>
-<td><code>ReactiveAuthorizationManager</code></td>
+<td data-label="Сервлет"><code>AuthorizationManager</code></td>
+<td data-label="Реактив"><code>ReactiveAuthorizationManager</code></td>
 </tr>
 <tr>
-<td><code>SecurityContextRepository</code></td>
-<td><code>ServerSecurityContextRepository</code></td>
+<td data-label="Сервлет"><code>SecurityContextRepository</code></td>
+<td data-label="Реактив"><code>ServerSecurityContextRepository</code></td>
 </tr>
 <tr>
-<td><code>@EnableWebSecurity</code></td>
-<td><code>@EnableWebFluxSecurity</code></td>
+<td data-label="Сервлет"><code>@EnableWebSecurity</code></td>
+<td data-label="Реактив"><code>@EnableWebFluxSecurity</code></td>
 </tr>
 <tr>
-<td><code>@EnableMethodSecurity</code></td>
-<td><code>@EnableReactiveMethodSecurity</code></td>
+<td data-label="Сервлет"><code>@EnableMethodSecurity</code></td>
+<td data-label="Реактив"><code>@EnableReactiveMethodSecurity</code></td>
 </tr>
 </tbody>
 </table>
@@ -4286,7 +4286,7 @@ Tests run: 10, Failures: 0, Errors: 0
 
 <h3 id="125-выбор-способа-подстановки-пользователя">12.5 Выбор способа подстановки пользователя</h3>
 <p>Четыре механизма подстановки пользователя внешне делают одно и то же, но проверяют разное, и путаница между ними — причина зелёных тестов при сломанном проде. Выбирать между ними нужно по тому, какую часть реального пути аутентификации тест должен пройти. Таблица сопоставляет механизмы по тому, что каждый создаёт, что проверяет и, главное, чего не проверяет:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Механизм</th>
@@ -4298,32 +4298,32 @@ Tests run: 10, Failures: 0, Errors: 0
 </thead>
 <tbody>
 <tr>
-<td><code>@WithMockUser</code></td>
-<td><code>UsernamePasswordAuthenticationToken</code> с principal типа <code>User</code></td>
-<td>правила <code>authorizeHttpRequests</code>, <code>@PreAuthorize</code> по ролям</td>
-<td>ваш <code>UserDetailsService</code>, ваш конвертер JWT, тип principal в контроллере</td>
-<td>быстрые тесты правил доступа</td>
+<td data-label="Механизм"><code>@WithMockUser</code></td>
+<td data-label="Что реально создаёт"><code>UsernamePasswordAuthenticationToken</code> с principal типа <code>User</code></td>
+<td data-label="Что проверяет">правила <code>authorizeHttpRequests</code>, <code>@PreAuthorize</code> по ролям</td>
+<td data-label="Что НЕ проверяет">ваш <code>UserDetailsService</code>, ваш конвертер JWT, тип principal в контроллере</td>
+<td data-label="Когда брать">быстрые тесты правил доступа</td>
 </tr>
 <tr>
-<td><code>@WithUserDetails("alice")</code></td>
-<td>то же, но principal получен из настоящего <code>UserDetailsService</code></td>
-<td>загрузку пользователя, отображение ролей из БД, флаги <code>locked</code>/<code>disabled</code></td>
-<td>всё, что связано с токеном</td>
-<td>когда важно, что роли приходят из вашей БД</td>
+<td data-label="Механизм"><code>@WithUserDetails("alice")</code></td>
+<td data-label="Что реально создаёт">то же, но principal получен из настоящего <code>UserDetailsService</code></td>
+<td data-label="Что проверяет">загрузку пользователя, отображение ролей из БД, флаги <code>locked</code>/<code>disabled</code></td>
+<td data-label="Что НЕ проверяет">всё, что связано с токеном</td>
+<td data-label="Когда брать">когда важно, что роли приходят из вашей БД</td>
 </tr>
 <tr>
-<td><code>@WithSecurityContext</code> (своя аннотация)</td>
-<td>любой <code>Authentication</code>, какой напишете</td>
-<td>точный тип токена, кастомные клеймы, свои <code>GrantedAuthority</code></td>
-<td>сам конвертер, если вы строите authorities руками</td>
-<td>Keycloak-специфика, доменные principal'ы</td>
+<td data-label="Механизм"><code>@WithSecurityContext</code> (своя аннотация)</td>
+<td data-label="Что реально создаёт">любой <code>Authentication</code>, какой напишете</td>
+<td data-label="Что проверяет">точный тип токена, кастомные клеймы, свои <code>GrantedAuthority</code></td>
+<td data-label="Что НЕ проверяет">сам конвертер, если вы строите authorities руками</td>
+<td data-label="Когда брать">Keycloak-специфика, доменные principal'ы</td>
 </tr>
 <tr>
-<td><code>.with(jwt())</code></td>
-<td><code>JwtAuthenticationToken</code> с фейковым <code>Jwt</code></td>
-<td>правила доступа и контроллеры, которые ждут <code>Jwt</code>; <strong>ваш</strong> конвертер authorities — только если передать его через <code>.authorities(converter)</code></td>
-<td>настоящее декодирование, подпись, валидаторы <code>aud</code>/<code>iss</code>, а без <code>.authorities(converter)</code> и ваш <code>JwtAuthenticationConverter</code></td>
-<td>тесты API на JWT</td>
+<td data-label="Механизм"><code>.with(jwt())</code></td>
+<td data-label="Что реально создаёт"><code>JwtAuthenticationToken</code> с фейковым <code>Jwt</code></td>
+<td data-label="Что проверяет">правила доступа и контроллеры, которые ждут <code>Jwt</code>; <strong>ваш</strong> конвертер authorities — только если передать его через <code>.authorities(converter)</code></td>
+<td data-label="Что НЕ проверяет">настоящее декодирование, подпись, валидаторы <code>aud</code>/<code>iss</code>, а без <code>.authorities(converter)</code> и ваш <code>JwtAuthenticationConverter</code></td>
+<td data-label="Когда брать">тесты API на JWT</td>
 </tr>
 </tbody>
 </table>
@@ -4533,7 +4533,7 @@ Tests run: 10, Failures: 0, Errors: 0
 <p>Наблюдаемость в безопасности отвечает на два разных вопроса: что сейчас происходит с аутентификацией и авторизацией (всплеск отказов, ротация ключей, брутфорс) и кто, когда и что сделал (аудит, который потом покажут проверяющим). Spring Security даёт для этого события, интеграцию с Micrometer и трассировку, но у каждого инструмента своя цена, а самая частая ошибка здесь не в недостатке данных, а в их избытке: в логи утекают токены и пароли. Ниже разобраны события и их слушатели, минимальный набор метрик и список того, что логировать нельзя.</p>
 <h3 id="131-события-безопасности">13.1 События безопасности</h3>
 <p>Spring Security публикует события в <code>ApplicationEventPublisher</code>, и на них строится и аудит, и оповещение о подозрительной активности. Но слушать их все подряд нельзя, потому что часть событий публикуется на каждый запрос. Таблица показывает, какие события бывают и когда они возникают:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Событие</th>
@@ -4542,28 +4542,28 @@ Tests run: 10, Failures: 0, Errors: 0
 </thead>
 <tbody>
 <tr>
-<td><code>AuthenticationSuccessEvent</code></td>
-<td>успешная аутентификация</td>
+<td data-label="Событие"><code>AuthenticationSuccessEvent</code></td>
+<td data-label="Когда">успешная аутентификация</td>
 </tr>
 <tr>
-<td><code>AbstractAuthenticationFailureEvent</code> (<code>...BadCredentialsEvent</code>, <code>...CredentialsExpiredEvent</code>, <code>...LockedEvent</code>, <code>...DisabledEvent</code>)</td>
-<td>провал</td>
+<td data-label="Событие"><code>AbstractAuthenticationFailureEvent</code> (<code>...BadCredentialsEvent</code>, <code>...CredentialsExpiredEvent</code>, <code>...LockedEvent</code>, <code>...DisabledEvent</code>)</td>
+<td data-label="Когда">провал</td>
 </tr>
 <tr>
-<td><code>InteractiveAuthenticationSuccessEvent</code></td>
-<td>успешный интерактивный вход (форма, Basic) — в отличие от «восстановили из сессии»</td>
+<td data-label="Событие"><code>InteractiveAuthenticationSuccessEvent</code></td>
+<td data-label="Когда">успешный интерактивный вход (форма, Basic) — в отличие от «восстановили из сессии»</td>
 </tr>
 <tr>
-<td><code>LogoutSuccessEvent</code></td>
-<td>логаут</td>
+<td data-label="Событие"><code>LogoutSuccessEvent</code></td>
+<td data-label="Когда">логаут</td>
 </tr>
 <tr>
-<td><code>AuthorizationDeniedEvent</code> / <code>AuthorizationGrantedEvent</code></td>
-<td>решение авторизации (нужен бин <code>AuthorizationEventPublisher</code>)</td>
+<td data-label="Событие"><code>AuthorizationDeniedEvent</code> / <code>AuthorizationGrantedEvent</code></td>
+<td data-label="Когда">решение авторизации (нужен бин <code>AuthorizationEventPublisher</code>)</td>
 </tr>
 <tr>
-<td><code>SessionFixationProtectionEvent</code>, <code>SessionDestroyedEvent</code></td>
-<td>жизненный цикл сессии</td>
+<td data-label="Событие"><code>SessionFixationProtectionEvent</code>, <code>SessionDestroyedEvent</code></td>
+<td data-label="Когда">жизненный цикл сессии</td>
 </tr>
 </tbody>
 </table>
@@ -4620,7 +4620,7 @@ Tests run: 10, Failures: 0, Errors: 0
 <p>Мажорные версии Spring Security за последние годы поменяли модель конфигурации, авторизации и хранения контекста, и миграция между ними — отдельная инженерная задача, а не замена номера версии в сборке. Коварство её в том, что часть изменений ловит компилятор, а часть ломается во время выполнения молча: логин перестаёт «прилипать», <code>@Secured</code> перестаёт работать, SPA получает 403 на все POST. Ниже по порядку разобраны переход 5 → 6, новинки 6.3–6.5, что принёс 7.x, полная карта изменений с указанием того, как каждое ломается, и порядок миграции вместе с тем, что делать с сохранёнными сессиями.</p>
 <h3 id="141-spring-security-5-6-spring-boot-27-3x">14.1 Spring Security 5 → 6 (Spring Boot 2.7 → 3.x)</h3>
 <p>Переход с 5 на 6 совпадает с переходом Spring Boot с 2.7 на 3.x и затрагивает почти каждую строку конфигурации безопасности. Таблица ниже сводит основные замены, а после неё разобраны два подводных камня, которые таблица не показывает, и порядок, в котором такую миграцию проходят без лишней боли:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Было (5.x)</th>
@@ -4629,48 +4629,48 @@ Tests run: 10, Failures: 0, Errors: 0
 </thead>
 <tbody>
 <tr>
-<td><code>WebSecurityConfigurerAdapter</code></td>
-<td>удалён; объявляйте бины <code>SecurityFilterChain</code> и <code>WebSecurityCustomizer</code></td>
+<td data-label="Было (5.x)"><code>WebSecurityConfigurerAdapter</code></td>
+<td data-label="Стало (6.x)">удалён; объявляйте бины <code>SecurityFilterChain</code> и <code>WebSecurityCustomizer</code></td>
 </tr>
 <tr>
-<td><code>authorizeRequests()</code> + <code>antMatchers()</code>/<code>mvcMatchers()</code></td>
-<td><code>authorizeHttpRequests()</code> + <code>requestMatchers()</code></td>
+<td data-label="Было (5.x)"><code>authorizeRequests()</code> + <code>antMatchers()</code>/<code>mvcMatchers()</code></td>
+<td data-label="Стало (6.x)"><code>authorizeHttpRequests()</code> + <code>requestMatchers()</code></td>
 </tr>
 <tr>
-<td><code>AccessDecisionManager</code>/<code>Voter</code></td>
-<td><code>AuthorizationManager</code></td>
+<td data-label="Было (5.x)"><code>AccessDecisionManager</code>/<code>Voter</code></td>
+<td data-label="Стало (6.x)"><code>AuthorizationManager</code></td>
 </tr>
 <tr>
-<td><code>SecurityContextPersistenceFilter</code> (авто-сохранение)</td>
-<td><code>SecurityContextHolderFilter</code> (<strong>только загрузка</strong>), явный <code>saveContext</code></td>
+<td data-label="Было (5.x)"><code>SecurityContextPersistenceFilter</code> (авто-сохранение)</td>
+<td data-label="Стало (6.x)"><code>SecurityContextHolderFilter</code> (<strong>только загрузка</strong>), явный <code>saveContext</code></td>
 </tr>
 <tr>
-<td><code>@EnableGlobalMethodSecurity(prePostEnabled = true)</code></td>
-<td><code>@EnableMethodSecurity</code> (prePost включён по умолчанию)</td>
+<td data-label="Было (5.x)"><code>@EnableGlobalMethodSecurity(prePostEnabled = true)</code></td>
+<td data-label="Стало (6.x)"><code>@EnableMethodSecurity</code> (prePost включён по умолчанию)</td>
 </tr>
 <tr>
-<td>CSRF-токен читался всегда</td>
-<td>отложенная загрузка</td>
+<td data-label="Было (5.x)">CSRF-токен читался всегда</td>
+<td data-label="Стало (6.x)">отложенная загрузка</td>
 </tr>
 <tr>
-<td>CSRF без BREACH-защиты</td>
-<td><code>XorCsrfTokenRequestAttributeHandler</code> по умолчанию</td>
+<td data-label="Было (5.x)">CSRF без BREACH-защиты</td>
+<td data-label="Стало (6.x)"><code>XorCsrfTokenRequestAttributeHandler</code> по умолчанию</td>
 </tr>
 <tr>
-<td><code>SessionManagementFilter</code> в цепочке</td>
-<td>не регистрируется; стратегия вызывается самим механизмом аутентификации</td>
+<td data-label="Было (5.x)"><code>SessionManagementFilter</code> в цепочке</td>
+<td data-label="Стало (6.x)">не регистрируется; стратегия вызывается самим механизмом аутентификации</td>
 </tr>
 <tr>
-<td><code>javax.servlet.*</code></td>
-<td><code>jakarta.servlet.*</code></td>
+<td data-label="Было (5.x)"><code>javax.servlet.*</code></td>
+<td data-label="Стало (6.x)"><code>jakarta.servlet.*</code></td>
 </tr>
 <tr>
-<td><code>.and()</code>-цепочки</td>
-<td>лямбда-DSL (в 7.x <code>.and()</code> удалён)</td>
+<td data-label="Было (5.x)"><code>.and()</code>-цепочки</td>
+<td data-label="Стало (6.x)">лямбда-DSL (в 7.x <code>.and()</code> удалён)</td>
 </tr>
 <tr>
-<td><code>PathRequest</code>/<code>EndpointRequest</code> те же</td>
-<td><code>requestMatchers</code> сам выбирает MVC- или Ant-матчер (в 7.0 всегда <code>PathPatternRequestMatcher</code>)</td>
+<td data-label="Было (5.x)"><code>PathRequest</code>/<code>EndpointRequest</code> те же</td>
+<td data-label="Стало (6.x)"><code>requestMatchers</code> сам выбирает MVC- или Ant-матчер (в 7.0 всегда <code>PathPatternRequestMatcher</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -4699,7 +4699,7 @@ Tests run: 10, Failures: 0, Errors: 0
 </ul>
 <h3 id="144-сводная-таблица-изменений-при-миграции">14.4 Сводная таблица изменений при миграции</h3>
 <p>Ниже сведены изменения, с которыми реально сталкиваешься при переезде, и важнее всех здесь колонка «как ломается». Часть изменений ловит компилятор, а часть проявляется только во время выполнения, и вторые опаснее, потому что проходят сборку и ревью незамеченными; после таблицы из них составлен план тестирования миграции:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Область</th>
@@ -4710,124 +4710,124 @@ Tests run: 10, Failures: 0, Errors: 0
 </thead>
 <tbody>
 <tr>
-<td>Точка входа конфигурации</td>
-<td><code>extends WebSecurityConfigurerAdapter</code>, <code>configure(HttpSecurity)</code></td>
-<td><code>@Bean SecurityFilterChain</code></td>
-<td>компилятор (класс удалён в 6.0)</td>
+<td data-label="Область">Точка входа конфигурации</td>
+<td data-label="Было (5.x)"><code>extends WebSecurityConfigurerAdapter</code>, <code>configure(HttpSecurity)</code></td>
+<td data-label="Стало (6.x/7.x)"><code>@Bean SecurityFilterChain</code></td>
+<td data-label="Как ломается">компилятор (класс удалён в 6.0)</td>
 </tr>
 <tr>
-<td>Игнорирование путей</td>
-<td><code>configure(WebSecurity)</code> + <code>web.ignoring()</code></td>
-<td><code>@Bean WebSecurityCustomizer</code></td>
-<td>компилятор</td>
+<td data-label="Область">Игнорирование путей</td>
+<td data-label="Было (5.x)"><code>configure(WebSecurity)</code> + <code>web.ignoring()</code></td>
+<td data-label="Стало (6.x/7.x)"><code>@Bean WebSecurityCustomizer</code></td>
+<td data-label="Как ломается">компилятор</td>
 </tr>
 <tr>
-<td>Правила доступа</td>
-<td><code>authorizeRequests()</code></td>
-<td><code>authorizeHttpRequests()</code></td>
-<td>компилятор (удалён в 7.0; deprecated с 6.1)</td>
+<td data-label="Область">Правила доступа</td>
+<td data-label="Было (5.x)"><code>authorizeRequests()</code></td>
+<td data-label="Стало (6.x/7.x)"><code>authorizeHttpRequests()</code></td>
+<td data-label="Как ломается">компилятор (удалён в 7.0; deprecated с 6.1)</td>
 </tr>
 <tr>
-<td>Матчеры</td>
-<td><code>antMatchers()</code>, <code>mvcMatchers()</code>, <code>regexMatchers()</code></td>
-<td><code>requestMatchers()</code> (в 6.x сам выбирает Mvc/Ant, в 7.0 всегда <code>PathPatternRequestMatcher</code>), <code>RegexRequestMatcher</code> явно</td>
-<td>компилятор; <strong>но</strong> семантика могла измениться — среда выполнения, в 7.0 ещё и для servlet path (§2.6)</td>
+<td data-label="Область">Матчеры</td>
+<td data-label="Было (5.x)"><code>antMatchers()</code>, <code>mvcMatchers()</code>, <code>regexMatchers()</code></td>
+<td data-label="Стало (6.x/7.x)"><code>requestMatchers()</code> (в 6.x сам выбирает Mvc/Ant, в 7.0 всегда <code>PathPatternRequestMatcher</code>), <code>RegexRequestMatcher</code> явно</td>
+<td data-label="Как ломается">компилятор; <strong>но</strong> семантика могла измениться — среда выполнения, в 7.0 ещё и для servlet path (§2.6)</td>
 </tr>
 <tr>
-<td>Стиль DSL</td>
-<td><code>.csrf().disable().and().httpBasic()</code></td>
-<td>лямбды: <code>.csrf(CsrfConfigurer::disable)</code></td>
-<td><code>.and()</code> deprecated в 6.1, <strong>удалён в 7.0</strong> — компилятор</td>
+<td data-label="Область">Стиль DSL</td>
+<td data-label="Было (5.x)"><code>.csrf().disable().and().httpBasic()</code></td>
+<td data-label="Стало (6.x/7.x)">лямбды: <code>.csrf(CsrfConfigurer::disable)</code></td>
+<td data-label="Как ломается"><code>.and()</code> deprecated в 6.1, <strong>удалён в 7.0</strong> — компилятор</td>
 </tr>
 <tr>
-<td>Авторизация</td>
-<td><code>AccessDecisionManager</code> + <code>AccessDecisionVoter</code></td>
-<td><code>AuthorizationManager&lt;T&gt;</code></td>
-<td>компилятор; в 7.0 старый API вынесен в модуль <code>spring-security-access</code></td>
+<td data-label="Область">Авторизация</td>
+<td data-label="Было (5.x)"><code>AccessDecisionManager</code> + <code>AccessDecisionVoter</code></td>
+<td data-label="Стало (6.x/7.x)"><code>AuthorizationManager&lt;T&gt;</code></td>
+<td data-label="Как ломается">компилятор; в 7.0 старый API вынесен в модуль <code>spring-security-access</code></td>
 </tr>
 <tr>
-<td>Сохранение контекста</td>
-<td><code>SecurityContextPersistenceFilter</code>, авто</td>
-<td><code>SecurityContextHolderFilter</code>, явный <code>saveContext</code></td>
-<td><strong>среда выполнения, молча</strong>: логин «не прилипает»</td>
+<td data-label="Область">Сохранение контекста</td>
+<td data-label="Было (5.x)"><code>SecurityContextPersistenceFilter</code>, авто</td>
+<td data-label="Стало (6.x/7.x)"><code>SecurityContextHolderFilter</code>, явный <code>saveContext</code></td>
+<td data-label="Как ломается"><strong>среда выполнения, молча</strong>: логин «не прилипает»</td>
 </tr>
 <tr>
-<td>Мутация контекста</td>
-<td><code>SecurityContextHolder.getContext().setAuthentication(a)</code></td>
-<td><code>createEmptyContext()</code> + <code>setContext()</code> + <code>saveContext()</code></td>
-<td>среда выполнения</td>
+<td data-label="Область">Мутация контекста</td>
+<td data-label="Было (5.x)"><code>SecurityContextHolder.getContext().setAuthentication(a)</code></td>
+<td data-label="Стало (6.x/7.x)"><code>createEmptyContext()</code> + <code>setContext()</code> + <code>saveContext()</code></td>
+<td data-label="Как ломается">среда выполнения</td>
 </tr>
 <tr>
-<td>Method security</td>
-<td><code>@EnableGlobalMethodSecurity(prePostEnabled = true)</code></td>
-<td><code>@EnableMethodSecurity</code> (prePost по умолчанию <strong>включён</strong>, <code>securedEnabled</code>/<code>jsr250Enabled</code> — <strong>выключены</strong>)</td>
-<td><strong>среда выполнения</strong>: <code>@Secured</code> молча перестаёт работать</td>
+<td data-label="Область">Method security</td>
+<td data-label="Было (5.x)"><code>@EnableGlobalMethodSecurity(prePostEnabled = true)</code></td>
+<td data-label="Стало (6.x/7.x)"><code>@EnableMethodSecurity</code> (prePost по умолчанию <strong>включён</strong>, <code>securedEnabled</code>/<code>jsr250Enabled</code> — <strong>выключены</strong>)</td>
+<td data-label="Как ломается"><strong>среда выполнения</strong>: <code>@Secured</code> молча перестаёт работать</td>
 </tr>
 <tr>
-<td>CSRF-handler</td>
-<td>сырое значение токена</td>
-<td><code>XorCsrfTokenRequestAttributeHandler</code> (BREACH)</td>
-<td><strong>среда выполнения</strong>: 403 на все POST из SPA</td>
+<td data-label="Область">CSRF-handler</td>
+<td data-label="Было (5.x)">сырое значение токена</td>
+<td data-label="Стало (6.x/7.x)"><code>XorCsrfTokenRequestAttributeHandler</code> (BREACH)</td>
+<td data-label="Как ломается"><strong>среда выполнения</strong>: 403 на все POST из SPA</td>
 </tr>
 <tr>
-<td>CSRF-загрузка</td>
-<td>токен читался всегда</td>
-<td>отложенная (<code>CsrfToken</code> как <code>Supplier</code>)</td>
-<td>среда выполнения: cookie <code>XSRF-TOKEN</code> перестаёт появляться после GET</td>
+<td data-label="Область">CSRF-загрузка</td>
+<td data-label="Было (5.x)">токен читался всегда</td>
+<td data-label="Стало (6.x/7.x)">отложенная (<code>CsrfToken</code> как <code>Supplier</code>)</td>
+<td data-label="Как ломается">среда выполнения: cookie <code>XSRF-TOKEN</code> перестаёт появляться после GET</td>
 </tr>
 <tr>
-<td>CSRF-пресет для SPA</td>
-<td>руками</td>
-<td><code>http.csrf(csrf -&gt; csrf.spa())</code> (7.0+; в 6.x по-прежнему руками)</td>
-<td>—</td>
+<td data-label="Область">CSRF-пресет для SPA</td>
+<td data-label="Было (5.x)">руками</td>
+<td data-label="Стало (6.x/7.x)"><code>http.csrf(csrf -&gt; csrf.spa())</code> (7.0+; в 6.x по-прежнему руками)</td>
+<td data-label="Как ломается">—</td>
 </tr>
 <tr>
-<td>Сессии</td>
-<td><code>SessionManagementFilter</code> в цепочке</td>
-<td>не регистрируется; стратегия вызывается механизмом аутентификации</td>
-<td>среда выполнения для кастомных <code>SessionAuthenticationStrategy</code></td>
+<td data-label="Область">Сессии</td>
+<td data-label="Было (5.x)"><code>SessionManagementFilter</code> в цепочке</td>
+<td data-label="Стало (6.x/7.x)">не регистрируется; стратегия вызывается механизмом аутентификации</td>
+<td data-label="Как ломается">среда выполнения для кастомных <code>SessionAuthenticationStrategy</code></td>
 </tr>
 <tr>
-<td>Пакеты</td>
-<td><code>javax.servlet.*</code></td>
-<td><code>jakarta.servlet.*</code></td>
-<td>компилятор</td>
+<td data-label="Область">Пакеты</td>
+<td data-label="Было (5.x)"><code>javax.servlet.*</code></td>
+<td data-label="Стало (6.x/7.x)"><code>jakarta.servlet.*</code></td>
+<td data-label="Как ломается">компилятор</td>
 </tr>
 <tr>
-<td>Trailing slash</td>
-<td><code>/admin</code> совпадал с <code>/admin/</code></td>
-<td>не совпадает (Spring 6)</td>
-<td><strong>среда выполнения</strong>: правило перестаёт срабатывать</td>
+<td data-label="Область">Trailing slash</td>
+<td data-label="Было (5.x)"><code>/admin</code> совпадал с <code>/admin/</code></td>
+<td data-label="Стало (6.x/7.x)">не совпадает (Spring 6)</td>
+<td data-label="Как ломается"><strong>среда выполнения</strong>: правило перестаёт срабатывать</td>
 </tr>
 <tr>
-<td>Suffix pattern</td>
-<td><code>mvcMatchers("/admin")</code> совпадал с <code>/admin.html</code></td>
-<td>не совпадает</td>
-<td>среда выполнения</td>
+<td data-label="Область">Suffix pattern</td>
+<td data-label="Было (5.x)"><code>mvcMatchers("/admin")</code> совпадал с <code>/admin.html</code></td>
+<td data-label="Стало (6.x/7.x)">не совпадает</td>
+<td data-label="Как ломается">среда выполнения</td>
 </tr>
 <tr>
-<td>Пароли</td>
-<td><code>NoOpPasswordEncoder</code> доступен</td>
-<td>по-прежнему доступен и в 7.1, помечен <code>@Deprecated</code> без планов удаления</td>
-<td>ничего не ломается; от него уходят ради безопасности, а не ради компиляции</td>
+<td data-label="Область">Пароли</td>
+<td data-label="Было (5.x)"><code>NoOpPasswordEncoder</code> доступен</td>
+<td data-label="Стало (6.x/7.x)">по-прежнему доступен и в 7.1, помечен <code>@Deprecated</code> без планов удаления</td>
+<td data-label="Как ломается">ничего не ломается; от него уходят ради безопасности, а не ради компиляции</td>
 </tr>
 <tr>
-<td>Сериализация</td>
-<td>Jackson 2 (<code>SecurityJackson2Modules</code>)</td>
-<td>Jackson 3 (<code>SecurityJacksonModules</code>) в 7.0</td>
-<td><strong>среда выполнения при выкате</strong>: старые сессии/записи в БД не читаются</td>
+<td data-label="Область">Сериализация</td>
+<td data-label="Было (5.x)">Jackson 2 (<code>SecurityJackson2Modules</code>)</td>
+<td data-label="Стало (6.x/7.x)">Jackson 3 (<code>SecurityJacksonModules</code>) в 7.0</td>
+<td data-label="Как ломается"><strong>среда выполнения при выкате</strong>: старые сессии/записи в БД не читаются</td>
 </tr>
 <tr>
-<td>Opaque introspection</td>
-<td><code>NimbusOpaqueTokenIntrospector</code> на <code>RestTemplate</code></td>
-<td><code>SpringOpaqueTokenIntrospector</code>, с 7.1 ещё и <code>RestClientOpaqueTokenIntrospector</code></td>
-<td>компилятор: <code>NimbusOpaqueTokenIntrospector</code> удалён в 7.0</td>
+<td data-label="Область">Opaque introspection</td>
+<td data-label="Было (5.x)"><code>NimbusOpaqueTokenIntrospector</code> на <code>RestTemplate</code></td>
+<td data-label="Стало (6.x/7.x)"><code>SpringOpaqueTokenIntrospector</code>, с 7.1 ещё и <code>RestClientOpaqueTokenIntrospector</code></td>
+<td data-label="Как ломается">компилятор: <code>NimbusOpaqueTokenIntrospector</code> удалён в 7.0</td>
 </tr>
 <tr>
-<td>Явное сохранение</td>
-<td><code>requireExplicitSave(false)</code> доступно</td>
-<td><code>true</code> по умолчанию с 6.0; метод есть и в 7.1, а <code>false</code> по-прежнему включает устаревший <code>SecurityContextPersistenceFilter</code></td>
-<td>ничего не ломается, но <code>false</code> возвращает поведение 5.x и оставляет в коде deprecated-фильтр</td>
+<td data-label="Область">Явное сохранение</td>
+<td data-label="Было (5.x)"><code>requireExplicitSave(false)</code> доступно</td>
+<td data-label="Стало (6.x/7.x)"><code>true</code> по умолчанию с 6.0; метод есть и в 7.1, а <code>false</code> по-прежнему включает устаревший <code>SecurityContextPersistenceFilter</code></td>
+<td data-label="Как ломается">ничего не ломается, но <code>false</code> возвращает поведение 5.x и оставляет в коде deprecated-фильтр</td>
 </tr>
 </tbody>
 </table>
@@ -5144,7 +5144,7 @@ curl -s -X POST <span class="se">\</span>
 <p>Проверять стоит по порядку. Сначала нужно убедиться, что в токене есть <code>realm_access.roles</code>. Затем — совпадает ли <code>iss</code> с настроенным, причём чаще всего расходятся <code>http</code> и <code>https</code>, наличие или отсутствие завершающего слеша и внутренний хост Keycloak против внешнего. Потом проверяют, есть ли ваш сервис в <code>aud</code>, и наконец — совпадает ли <code>kid</code> с одним из ключей JWKS.</p>
 <h3 id="174-типовые-симптомы-и-причины">17.4 Типовые симптомы и причины</h3>
 <p>Одни и те же коды ответа возникают по очень разным причинам, и чтобы не проверять всё подряд, полезно сразу сузить круг подозреваемых. Таблица ниже сопоставляет самые частые симптомы с тем местом, куда нужно смотреть в первую очередь; для многих строк подробный разбор есть выше в главе:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Симптом</th>
@@ -5153,40 +5153,40 @@ curl -s -X POST <span class="se">\</span>
 </thead>
 <tbody>
 <tr>
-<td>401 на всё, включая <code>permitAll</code></td>
-<td>не та цепочка выбрана (<code>FilterChainProxy</code> TRACE)</td>
+<td data-label="Симптом">401 на всё, включая <code>permitAll</code></td>
+<td data-label="Куда смотреть">не та цепочка выбрана (<code>FilterChainProxy</code> TRACE)</td>
 </tr>
 <tr>
-<td>401 вместо 403</td>
-<td><code>anonymous</code> выключен, либо кастомный entry point</td>
+<td data-label="Симптом">401 вместо 403</td>
+<td data-label="Куда смотреть"><code>anonymous</code> выключен, либо кастомный entry point</td>
 </tr>
 <tr>
-<td>403 только на POST/PUT</td>
-<td>CSRF</td>
+<td data-label="Симптом">403 только на POST/PUT</td>
+<td data-label="Куда смотреть">CSRF</td>
 </tr>
 <tr>
-<td>403 после смены IdP</td>
-<td>отображение ролей, <code>aud</code>, <code>iss</code></td>
+<td data-label="Симптом">403 после смены IdP</td>
+<td data-label="Куда смотреть">отображение ролей, <code>aud</code>, <code>iss</code></td>
 </tr>
 <tr>
-<td>401 с <code>invalid_token</code></td>
-<td><code>WWW-Authenticate</code> содержит <code>error_description</code> — читайте его в ответе</td>
+<td data-label="Симптом">401 с <code>invalid_token</code></td>
+<td data-label="Куда смотреть"><code>WWW-Authenticate</code> содержит <code>error_description</code> — читайте его в ответе</td>
 </tr>
 <tr>
-<td>Работает в тесте, не в браузере</td>
-<td><code>saveContext</code>, cookie <code>SameSite</code>/<code>Secure</code>, forward-headers</td>
+<td data-label="Симптом">Работает в тесте, не в браузере</td>
+<td data-label="Куда смотреть"><code>saveContext</code>, cookie <code>SameSite</code>/<code>Secure</code>, forward-headers</td>
 </tr>
 <tr>
-<td>CORS-ошибка в консоли браузера</td>
-<td>на самом деле 401 на preflight</td>
+<td data-label="Симптом">CORS-ошибка в консоли браузера</td>
+<td data-label="Куда смотреть">на самом деле 401 на preflight</td>
 </tr>
 <tr>
-<td>Всё падает после рестарта IdP</td>
-<td>discovery при старте</td>
+<td data-label="Симптом">Всё падает после рестарта IdP</td>
+<td data-label="Куда смотреть">discovery при старте</td>
 </tr>
 <tr>
-<td><code>AuthenticationCredentialsNotFoundException</code></td>
-<td><code>@Async</code>/<code>@Scheduled</code>/пул без передачи контекста</td>
+<td data-label="Симптом"><code>AuthenticationCredentialsNotFoundException</code></td>
+<td data-label="Куда смотреть"><code>@Async</code>/<code>@Scheduled</code>/пул без передачи контекста</td>
 </tr>
 </tbody>
 </table>
@@ -5465,5 +5465,5 @@ curl -so /dev/null -w <span class="s1">'%{http_code}\n'</span> https://api.examp
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-архитектура-от-сервлет-фильтра-до-authorizationfilter">1. Архитектура: от сервлет-фильтра до AuthorizationFilter</a></li><li><a href="#2-несколько-цепочек-securitymatcher-и-свои-фильтры">2. Несколько цепочек, securityMatcher и свои фильтры</a></li><li><a href="#3-модель-аутентификации">3. Модель аутентификации</a></li><li><a href="#4-securitycontext-хранение-и-распространение">4. SecurityContext: хранение и распространение</a></li><li><a href="#5-пароли">5. Пароли</a></li><li><a href="#6-авторизация">6. Авторизация</a></li><li><a href="#7-oauth2-resource-server">7. OAuth2 Resource Server</a></li><li><a href="#8-oauth2-client">8. OAuth2 Client</a></li><li><a href="#9-csrf-cors-и-заголовки-безопасности">9. CSRF, CORS и заголовки безопасности</a></li><li><a href="#10-сессии">10. Сессии</a></li><li><a href="#11-реактивный-стек">11. Реактивный стек</a></li><li><a href="#12-тестирование">12. Тестирование</a></li><li><a href="#13-наблюдаемость-и-аудит">13. Наблюдаемость и аудит</a></li><li><a href="#14-миграция-5-6-7-и-нововведения">14. Миграция 5 → 6 → 7 и нововведения</a></li><li><a href="#15-разобранные-инциденты">15. Разобранные инциденты</a></li><li><a href="#16-грабли-и-антипаттерны">16. Грабли и антипаттерны</a></li><li><a href="#17-диагностика">17. Диагностика</a></li><li><a href="#18-вопросы-на-интервью">18. Вопросы на интервью</a></li><li><a href="#19-попробовать-руками">19. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

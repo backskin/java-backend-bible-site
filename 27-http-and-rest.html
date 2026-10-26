@@ -3,7 +3,7 @@
 <title>27. HTTP и REST — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="HTTP и REST">
 <a class="skip" href="#content">К тексту</a>
@@ -100,7 +100,7 @@ pong
 <h3 id="15-http3-и-quic">1.5 HTTP/3 и QUIC</h3>
 <p>HTTP/3 — это HTTP поверх <strong>QUIC</strong>, транспортного протокола на UDP (<em>User Datagram Protocol</em>, протокол отправки отдельных пакетов без гарантии доставки) со встроенным TLS 1.3, мультиплексированием и управлением потоком на уровне каждого стрима. QUIC сам следит за доставкой, но делает это для каждого стрима отдельно. Появился HTTP/3 ради того, чтобы убрать транспортный HOL blocking, который HTTP/2 унаследовал от TCP: «стримы независимы друг от друга, поэтому заблокированный или потерявший пакет стрим не мешает прогрессу остальных» (<a href="https://www.rfc-editor.org/rfc/rfc9114.html">RFC 9114</a>). Ниже идут сравнение с HTTP/2, особенности 0-RTT и миграции соединения, а также то, в каком состоянии поддержка HTTP/3 находится в JVM.</p>
 <p>Следующая таблица сводит, чем HTTP/3 отличается от HTTP/2 по каждому свойству транспорта. Главное в ней — строки про HOL blocking и установку соединения; ALPN в последней строке — это расширение TLS (<em>Application-Layer Protocol Negotiation</em>), через которое клиент и сервер договариваются о версии HTTP прямо во время TLS-рукопожатия:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Свойство</th>
@@ -110,34 +110,34 @@ pong
 </thead>
 <tbody>
 <tr>
-<td>Транспорт</td>
-<td>TCP + TLS</td>
-<td>QUIC (UDP) + TLS 1.3 внутри</td>
+<td data-label="Свойство">Транспорт</td>
+<td data-label="HTTP/2">TCP + TLS</td>
+<td data-label="HTTP/3">QUIC (UDP) + TLS 1.3 внутри</td>
 </tr>
 <tr>
-<td>Сжатие заголовков</td>
-<td>HPACK</td>
-<td>QPACK (отдельные однонаправленные стримы для таблицы)</td>
+<td data-label="Свойство">Сжатие заголовков</td>
+<td data-label="HTTP/2">HPACK</td>
+<td data-label="HTTP/3">QPACK (отдельные однонаправленные стримы для таблицы)</td>
 </tr>
 <tr>
-<td>HOL blocking</td>
-<td>снят на уровне HTTP, остался на TCP</td>
-<td>снят</td>
+<td data-label="Свойство">HOL blocking</td>
+<td data-label="HTTP/2">снят на уровне HTTP, остался на TCP</td>
+<td data-label="HTTP/3">снят</td>
 </tr>
 <tr>
-<td>Установка</td>
-<td>TCP handshake + TLS handshake</td>
-<td>1-RTT, при resumption 0-RTT</td>
+<td data-label="Свойство">Установка</td>
+<td data-label="HTTP/2">TCP handshake + TLS handshake</td>
+<td data-label="HTTP/3">1-RTT, при resumption 0-RTT</td>
 </tr>
 <tr>
-<td>Миграция соединения</td>
-<td>нет (смена IP/порта рвёт соединение)</td>
-<td>есть (Connection ID)</td>
+<td data-label="Свойство">Миграция соединения</td>
+<td data-label="HTTP/2">нет (смена IP/порта рвёт соединение)</td>
+<td data-label="HTTP/3">есть (Connection ID)</td>
 </tr>
 <tr>
-<td>Обнаружение</td>
-<td>ALPN <code>h2</code> при TLS</td>
-<td><code>Alt-Svc: h3=":443"</code> или прямая попытка</td>
+<td data-label="Свойство">Обнаружение</td>
+<td data-label="HTTP/2">ALPN <code>h2</code> при TLS</td>
+<td data-label="HTTP/3"><code>Alt-Svc: h3=":443"</code> или прямая попытка</td>
 </tr>
 </tbody>
 </table>
@@ -193,7 +193,7 @@ curl -H <span class="s1">'Expect:'</span> -X POST --data-binary @big.json ...
 <h3 id="18-http2-кадры-управление-потоком-и-атаки-на-протокол">1.8 HTTP/2: кадры, управление потоком и атаки на протокол</h3>
 <p>Управление потоком (<em>flow control</em>) в HTTP/2 — это механизм, которым получатель ограничивает, сколько данных отправитель может прислать, пока получатель их не вычитал; в разделе 1.4 HTTP/2 был описан сверху, а здесь разобрана эта и соседняя механика. Кадры, окна управления потоком и <code>GOAWAY</code> объясняют три практические вещи: почему большая выгрузка по HTTP/2 может идти медленнее, чем по HTTP/1.1, почему на каждом деплое всплывают 502 и откуда взялось целое семейство атак на отказ в обслуживании. По этой механике на интервью и отличают того, кто читал статью, от того, кто отлаживал протокол руками. Сначала перечислены типы кадров, затем разобраны управление потоком, плавная остановка сервера и сами атаки с выводами для бэкенд-разработчика.</p>
 <p><strong>Типы кадров</strong> (<a href="https://www.rfc-editor.org/rfc/rfc9113.html">RFC 9113</a>) сведены в таблицу. Для дальнейшего разбора важнее всего <code>RST_STREAM</code>, <code>WINDOW_UPDATE</code>, <code>GOAWAY</code> и <code>CONTINUATION</code>, остальные приведены для полноты:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Кадр</th>
@@ -203,54 +203,54 @@ curl -H <span class="s1">'Expect:'</span> -X POST --data-binary @big.json ...
 </thead>
 <tbody>
 <tr>
-<td><code>DATA</code></td>
-<td>0x00</td>
-<td>тело сообщения; флаг <code>END_STREAM</code> закрывает полустрим</td>
+<td data-label="Кадр"><code>DATA</code></td>
+<td data-label="Код">0x00</td>
+<td data-label="Назначение">тело сообщения; флаг <code>END_STREAM</code> закрывает полустрим</td>
 </tr>
 <tr>
-<td><code>HEADERS</code></td>
-<td>0x01</td>
-<td>блок заголовков (HPACK); флаги <code>END_HEADERS</code>, <code>END_STREAM</code></td>
+<td data-label="Кадр"><code>HEADERS</code></td>
+<td data-label="Код">0x01</td>
+<td data-label="Назначение">блок заголовков (HPACK); флаги <code>END_HEADERS</code>, <code>END_STREAM</code></td>
 </tr>
 <tr>
-<td><code>PRIORITY</code></td>
-<td>0x02</td>
-<td>приоритет стрима — схема депрекирована</td>
+<td data-label="Кадр"><code>PRIORITY</code></td>
+<td data-label="Код">0x02</td>
+<td data-label="Назначение">приоритет стрима — схема депрекирована</td>
 </tr>
 <tr>
-<td><code>RST_STREAM</code></td>
-<td>0x03</td>
-<td>немедленный обрыв <strong>одного</strong> стрима с кодом ошибки</td>
+<td data-label="Кадр"><code>RST_STREAM</code></td>
+<td data-label="Код">0x03</td>
+<td data-label="Назначение">немедленный обрыв <strong>одного</strong> стрима с кодом ошибки</td>
 </tr>
 <tr>
-<td><code>SETTINGS</code></td>
-<td>0x04</td>
-<td>параметры соединения; требует подтверждения (флаг <code>ACK</code>)</td>
+<td data-label="Кадр"><code>SETTINGS</code></td>
+<td data-label="Код">0x04</td>
+<td data-label="Назначение">параметры соединения; требует подтверждения (флаг <code>ACK</code>)</td>
 </tr>
 <tr>
-<td><code>PUSH_PROMISE</code></td>
-<td>0x05</td>
-<td>server push</td>
+<td data-label="Кадр"><code>PUSH_PROMISE</code></td>
+<td data-label="Код">0x05</td>
+<td data-label="Назначение">server push</td>
 </tr>
 <tr>
-<td><code>PING</code></td>
-<td>0x06</td>
-<td>проверка живости и измерение RTT, требует <code>ACK</code></td>
+<td data-label="Кадр"><code>PING</code></td>
+<td data-label="Код">0x06</td>
+<td data-label="Назначение">проверка живости и измерение RTT, требует <code>ACK</code></td>
 </tr>
 <tr>
-<td><code>GOAWAY</code></td>
-<td>0x08</td>
-<td>«больше новых стримов не открываю»; несёт id последнего принятого стрима</td>
+<td data-label="Кадр"><code>GOAWAY</code></td>
+<td data-label="Код">0x08</td>
+<td data-label="Назначение">«больше новых стримов не открываю»; несёт id последнего принятого стрима</td>
 </tr>
 <tr>
-<td><code>WINDOW_UPDATE</code></td>
-<td>0x09</td>
-<td>увеличение окна управления потоком</td>
+<td data-label="Кадр"><code>WINDOW_UPDATE</code></td>
+<td data-label="Код">0x09</td>
+<td data-label="Назначение">увеличение окна управления потоком</td>
 </tr>
 <tr>
-<td><code>CONTINUATION</code></td>
-<td>0x0A</td>
-<td>продолжение блока заголовков, не влезшего в <code>HEADERS</code></td>
+<td data-label="Кадр"><code>CONTINUATION</code></td>
+<td data-label="Код">0x0A</td>
+<td data-label="Назначение">продолжение блока заголовков, не влезшего в <code>HEADERS</code></td>
 </tr>
 </tbody>
 </table>
@@ -269,7 +269,7 @@ curl -H <span class="s1">'Expect:'</span> -X POST --data-binary @big.json ...
 <p>Из этих атак для бэкенд-разработчика вытекают четыре правила. Первое: <strong>HTTP/2-стек надо держать в актуальной версии</strong>, потому что этот класс дыр закрывают только патчи, а конфигурацией его не обойти. Второе: HTTP/2 не терминируют самописным кодом, потому что в самописном коде этих защит не будет. Третье: лимиты выставляют явно — <code>SETTINGS_MAX_CONCURRENT_STREAMS</code> (100–256, а не «без лимита»), <code>MAX_HEADER_LIST_SIZE</code> (8–16 КБ), а также ограничение на частоту <code>RST_STREAM</code> и <code>SETTINGS</code> от клиента (в Netty — <code>Http2FrameCodecBuilder</code> + <code>Http2SettingsReceivedConsumer</code>; в nginx — <code>http2_max_concurrent_streams</code>). Четвёртое, уже архитектурное: <strong>HTTP/2-эндпоинт приложения не выставляют наружу напрямую</strong>, а завершают на границе сети (Envoy, nginx, CDN), где стек патчат централизованно и где есть защита от флуда.</p>
 <h3 id="19-переход-11-2-3-с-точки-зрения-бэкенда">1.9 Переход 1.1 → 2 → 3 с точки зрения бэкенда</h3>
 <p>Переход на новую версию HTTP часто воспринимают как бесплатное ускорение, хотя на деле он перераспределяет заботы: одни проблемы уходят, другие появляются, а третьи остаются там же, где были. Чтобы решение о переходе было осознанным, полезно разложить его по конкретным аспектам эксплуатации, от размера пула и балансировки до отладки и поведения при обрыве. Ниже такое сравнение сведено в таблицу, а после неё идут оговорки, без которых таблица вводит в заблуждение. Читать её стоит по строкам: в каждой видно, что именно выигрывается и что при этом теряется. Строка про размер пула ссылается на закон Литтла, по которому число одновременно занятых соединений равно интенсивности запросов, умноженной на время ответа (подробно в 10.3).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аспект</th>
@@ -280,76 +280,76 @@ curl -H <span class="s1">'Expect:'</span> -X POST --data-binary @big.json ...
 </thead>
 <tbody>
 <tr>
-<td>Параллелизм на соединение</td>
-<td>1 запрос; параллелизм = число соединений в пуле</td>
-<td>до <code>MAX_CONCURRENT_STREAMS</code> (типично 100–128)</td>
-<td>то же, но стримы независимы на транспорте</td>
+<td data-label="Аспект">Параллелизм на соединение</td>
+<td data-label="HTTP/1.1">1 запрос; параллелизм = число соединений в пуле</td>
+<td data-label="HTTP/2">до <code>MAX_CONCURRENT_STREAMS</code> (типично 100–128)</td>
+<td data-label="HTTP/3">то же, но стримы независимы на транспорте</td>
 </tr>
 <tr>
-<td>Размер пула клиента</td>
-<td>критичный параметр, считается по Литтлу</td>
-<td>почти не важен: 1–2 соединения на хост</td>
-<td>то же</td>
+<td data-label="Аспект">Размер пула клиента</td>
+<td data-label="HTTP/1.1">критичный параметр, считается по Литтлу</td>
+<td data-label="HTTP/2">почти не важен: 1–2 соединения на хост</td>
+<td data-label="HTTP/3">то же</td>
 </tr>
 <tr>
-<td>HOL blocking</td>
-<td>на уровне соединения</td>
-<td>снят на HTTP, остался на TCP</td>
-<td>снят полностью</td>
+<td data-label="Аспект">HOL blocking</td>
+<td data-label="HTTP/1.1">на уровне соединения</td>
+<td data-label="HTTP/2">снят на HTTP, остался на TCP</td>
+<td data-label="HTTP/3">снят полностью</td>
 </tr>
 <tr>
-<td>Балансировка L4</td>
-<td>работает: каждое соединение может уйти на свой под</td>
-<td><strong>ломается</strong>: весь трафик прибит к одному поду</td>
-<td>ломается так же</td>
+<td data-label="Аспект">Балансировка L4</td>
+<td data-label="HTTP/1.1">работает: каждое соединение может уйти на свой под</td>
+<td data-label="HTTP/2"><strong>ломается</strong>: весь трафик прибит к одному поду</td>
+<td data-label="HTTP/3">ломается так же</td>
 </tr>
 <tr>
-<td>Отладка <code>tcpdump</code></td>
-<td>читается глазами</td>
-<td>нужен <code>nghttp</code>/Wireshark с дешифровкой</td>
-<td>без ключей не читается вовсе</td>
+<td data-label="Аспект">Отладка <code>tcpdump</code></td>
+<td data-label="HTTP/1.1">читается глазами</td>
+<td data-label="HTTP/2">нужен <code>nghttp</code>/Wireshark с дешифровкой</td>
+<td data-label="HTTP/3">без ключей не читается вовсе</td>
 </tr>
 <tr>
-<td>Заголовки</td>
-<td>текст, повторяются целиком</td>
-<td>HPACK, экономия 80–90% на повторах</td>
-<td>QPACK</td>
+<td data-label="Аспект">Заголовки</td>
+<td data-label="HTTP/1.1">текст, повторяются целиком</td>
+<td data-label="HTTP/2">HPACK, экономия 80–90% на повторах</td>
+<td data-label="HTTP/3">QPACK</td>
 </tr>
 <tr>
-<td>Стриминг тела</td>
-<td><code>Transfer-Encoding: chunked</code></td>
-<td><code>DATA</code>-кадры + <code>END_STREAM</code></td>
-<td>то же</td>
+<td data-label="Аспект">Стриминг тела</td>
+<td data-label="HTTP/1.1"><code>Transfer-Encoding: chunked</code></td>
+<td data-label="HTTP/2"><code>DATA</code>-кадры + <code>END_STREAM</code></td>
+<td data-label="HTTP/3">то же</td>
 </tr>
 <tr>
-<td>Flow control</td>
-<td>только TCP</td>
-<td>TCP + окна HTTP/2 (новый источник затыков)</td>
-<td>окна QUIC</td>
+<td data-label="Аспект">Flow control</td>
+<td data-label="HTTP/1.1">только TCP</td>
+<td data-label="HTTP/2">TCP + окна HTTP/2 (новый источник затыков)</td>
+<td data-label="HTTP/3">окна QUIC</td>
 </tr>
 <tr>
-<td>Graceful shutdown</td>
-<td><code>Connection: close</code> на ответе</td>
-<td>двухфазный <code>GOAWAY</code></td>
-<td><code>GOAWAY</code> + QUIC-таймауты</td>
+<td data-label="Аспект">Graceful shutdown</td>
+<td data-label="HTTP/1.1"><code>Connection: close</code> на ответе</td>
+<td data-label="HTTP/2">двухфазный <code>GOAWAY</code></td>
+<td data-label="HTTP/3"><code>GOAWAY</code> + QUIC-таймауты</td>
 </tr>
 <tr>
-<td>Повтор после обрыва</td>
-<td>неизвестно, дошло ли</td>
-<td><code>GOAWAY</code> даёт точную границу «не обработано»</td>
-<td>то же</td>
+<td data-label="Аспект">Повтор после обрыва</td>
+<td data-label="HTTP/1.1">неизвестно, дошло ли</td>
+<td data-label="HTTP/2"><code>GOAWAY</code> даёт точную границу «не обработано»</td>
+<td data-label="HTTP/3">то же</td>
 </tr>
 <tr>
-<td>Фаерволы и корпсети</td>
-<td>проходит везде</td>
-<td>проходит везде (443/TCP)</td>
-<td><strong>UDP нередко режут</strong>, нужен фолбэк на h2</td>
+<td data-label="Аспект">Фаерволы и корпсети</td>
+<td data-label="HTTP/1.1">проходит везде</td>
+<td data-label="HTTP/2">проходит везде (443/TCP)</td>
+<td data-label="HTTP/3"><strong>UDP нередко режут</strong>, нужен фолбэк на h2</td>
 </tr>
 <tr>
-<td>Поддержка в JVM</td>
-<td>везде</td>
-<td>везде (JDK 11+, Tomcat, Netty, Jetty)</td>
-<td>клиент — JDK 26 (JEP 517), сервер — сторонние стеки</td>
+<td data-label="Аспект">Поддержка в JVM</td>
+<td data-label="HTTP/1.1">везде</td>
+<td data-label="HTTP/2">везде (JDK 11+, Tomcat, Netty, Jetty)</td>
+<td data-label="HTTP/3">клиент — JDK 26 (JEP 517), сервер — сторонние стеки</td>
 </tr>
 </tbody>
 </table>
@@ -374,7 +374,7 @@ curl -H <span class="s1">'Expect:'</span> -X POST --data-binary @big.json ...
 <li><strong>Cacheable</strong> — ответ можно сохранить и использовать повторно, и зависит это сразу от метода, от кода и от заголовков.</li>
 </ul>
 <p>Таблица ниже показывает, как эти свойства распределены по методам. Выделенные клетки у PUT, DELETE, POST и PATCH определяют, что можно повторять без дополнительной защиты:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метод</th>
@@ -386,60 +386,60 @@ curl -H <span class="s1">'Expect:'</span> -X POST --data-binary @big.json ...
 </thead>
 <tbody>
 <tr>
-<td>GET</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>нет (семантики не имеет)</td>
+<td data-label="Метод">GET</td>
+<td data-label="Safe">да</td>
+<td data-label="Idempotent">да</td>
+<td data-label="Cacheable">да</td>
+<td data-label="Тело запроса">нет (семантики не имеет)</td>
 </tr>
 <tr>
-<td>HEAD</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>нет</td>
+<td data-label="Метод">HEAD</td>
+<td data-label="Safe">да</td>
+<td data-label="Idempotent">да</td>
+<td data-label="Cacheable">да</td>
+<td data-label="Тело запроса">нет</td>
 </tr>
 <tr>
-<td>OPTIONS</td>
-<td>да</td>
-<td>да</td>
-<td>нет</td>
-<td>обычно нет</td>
+<td data-label="Метод">OPTIONS</td>
+<td data-label="Safe">да</td>
+<td data-label="Idempotent">да</td>
+<td data-label="Cacheable">нет</td>
+<td data-label="Тело запроса">обычно нет</td>
 </tr>
 <tr>
-<td>TRACE</td>
-<td>да</td>
-<td>да</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Метод">TRACE</td>
+<td data-label="Safe">да</td>
+<td data-label="Idempotent">да</td>
+<td data-label="Cacheable">нет</td>
+<td data-label="Тело запроса">нет</td>
 </tr>
 <tr>
-<td>PUT</td>
-<td>нет</td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>да</td>
+<td data-label="Метод">PUT</td>
+<td data-label="Safe">нет</td>
+<td data-label="Idempotent"><strong>да</strong></td>
+<td data-label="Cacheable">нет</td>
+<td data-label="Тело запроса">да</td>
 </tr>
 <tr>
-<td>DELETE</td>
-<td>нет</td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>обычно нет</td>
+<td data-label="Метод">DELETE</td>
+<td data-label="Safe">нет</td>
+<td data-label="Idempotent"><strong>да</strong></td>
+<td data-label="Cacheable">нет</td>
+<td data-label="Тело запроса">обычно нет</td>
 </tr>
 <tr>
-<td>POST</td>
-<td>нет</td>
-<td><strong>нет</strong></td>
-<td>только при явных директивах</td>
-<td>да</td>
+<td data-label="Метод">POST</td>
+<td data-label="Safe">нет</td>
+<td data-label="Idempotent"><strong>нет</strong></td>
+<td data-label="Cacheable">только при явных директивах</td>
+<td data-label="Тело запроса">да</td>
 </tr>
 <tr>
-<td>PATCH</td>
-<td>нет</td>
-<td><strong>нет</strong> (может быть да)</td>
-<td>нет</td>
-<td>да</td>
+<td data-label="Метод">PATCH</td>
+<td data-label="Safe">нет</td>
+<td data-label="Idempotent"><strong>нет</strong> (может быть да)</td>
+<td data-label="Cacheable">нет</td>
+<td data-label="Тело запроса">да</td>
 </tr>
 </tbody>
 </table>
@@ -585,7 +585,7 @@ POST /payments   {not json                          -&gt; 400 "Failed to read re
 </blockquote>
 <h3 id="33-4xx-и-5xx-в-политике-повторов">3.3 4xx и 5xx в политике повторов</h3>
 <p>Политика повторов — это правило, которое для каждого кода говорит, повторять ли запрос и будить ли дежурного. Раз коды статусов управляют повторами и оповещениями, такое правило стоит записать явно и внести в правила проектирования API. Иначе каждая команда решит этот вопрос по-своему, и одна и та же ошибка будет в одном клиенте повторяться бесконечно, а в другом — молча проглатываться. Таблица ниже сводит такое правило; главная в ней строка 500/502/504, о которой речь идёт сразу после таблицы.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Код</th>
@@ -596,52 +596,52 @@ POST /payments   {not json                          -&gt; 400 "Failed to read re
 </thead>
 <tbody>
 <tr>
-<td>400, 422, 415, 404, 403, 409, 412</td>
-<td><strong>нет</strong></td>
-<td>нет</td>
-<td>повтор даст тот же ответ</td>
+<td data-label="Код">400, 422, 415, 404, 403, 409, 412</td>
+<td data-label="Повторять?"><strong>нет</strong></td>
+<td data-label="Будить дежурного?">нет</td>
+<td data-label="Комментарий">повтор даст тот же ответ</td>
 </tr>
 <tr>
-<td>401</td>
-<td>нет (сначала refresh токена)</td>
-<td>нет</td>
-<td>после обновления токена — один повтор</td>
+<td data-label="Код">401</td>
+<td data-label="Повторять?">нет (сначала refresh токена)</td>
+<td data-label="Будить дежурного?">нет</td>
+<td data-label="Комментарий">после обновления токена — один повтор</td>
 </tr>
 <tr>
-<td>408 Request Timeout</td>
-<td>да, если идемпотентно</td>
-<td>нет</td>
-<td>сервер не дождался запроса</td>
+<td data-label="Код">408 Request Timeout</td>
+<td data-label="Повторять?">да, если идемпотентно</td>
+<td data-label="Будить дежурного?">нет</td>
+<td data-label="Комментарий">сервер не дождался запроса</td>
 </tr>
 <tr>
-<td>425 Too Early</td>
-<td>да</td>
-<td>нет</td>
-<td>отказ обрабатывать 0-RTT-данные</td>
+<td data-label="Код">425 Too Early</td>
+<td data-label="Повторять?">да</td>
+<td data-label="Будить дежурного?">нет</td>
+<td data-label="Комментарий">отказ обрабатывать 0-RTT-данные</td>
 </tr>
 <tr>
-<td>429</td>
-<td><strong>да</strong>, по <code>Retry-After</code></td>
-<td>нет (но оповещение на всплеск)</td>
-<td>это не инцидент, это защита</td>
+<td data-label="Код">429</td>
+<td data-label="Повторять?"><strong>да</strong>, по <code>Retry-After</code></td>
+<td data-label="Будить дежурного?">нет (но оповещение на всплеск)</td>
+<td data-label="Комментарий">это не инцидент, это защита</td>
 </tr>
 <tr>
-<td>500, 502, 504</td>
-<td>да, если идемпотентно <strong>или</strong> есть <code>Idempotency-Key</code></td>
-<td>да</td>
-<td></td>
+<td data-label="Код">500, 502, 504</td>
+<td data-label="Повторять?">да, если идемпотентно <strong>или</strong> есть <code>Idempotency-Key</code></td>
+<td data-label="Будить дежурного?">да</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td>501, 505</td>
-<td>нет</td>
-<td>да</td>
-<td>конфигурационная ошибка</td>
+<td data-label="Код">501, 505</td>
+<td data-label="Повторять?">нет</td>
+<td data-label="Будить дежурного?">да</td>
+<td data-label="Комментарий">конфигурационная ошибка</td>
 </tr>
 <tr>
-<td>503</td>
-<td>да, по <code>Retry-After</code></td>
-<td>да (если не плановое)</td>
-<td></td>
+<td data-label="Код">503</td>
+<td data-label="Повторять?">да, по <code>Retry-After</code></td>
+<td data-label="Будить дежурного?">да (если не плановое)</td>
+<td data-label="Комментарий"></td>
 </tr>
 </tbody>
 </table>
@@ -677,7 +677,7 @@ POST /payments   {not json                          -&gt; 400 "Failed to read re
 <hr>
 <h3 id="35-источники-ответов-502-503-и-504">3.5 Источники ответов 502, 503 и 504</h3>
 <p>Коды 502, 503 и 504 — это ответы класса 5xx, которые в 90% случаев генерирует <strong>не ваше приложение</strong>, а стоящий перед ним прокси или балансировщик, и это первое, что нужно держать в голове при разборе инцидента. Приложение обычно отдаёт 500, когда вылетело необработанное исключение, или 503, когда сработали его собственные проверки здоровья или сброс нагрузки, а 502 и 504 почти всегда пишет промежуточный узел. Поэтому искать причину в логе приложения часто бесполезно. В таблице ниже для каждого кода указано, кто его обычно ставит, что стоит за ним на самом деле и куда смотреть в первую очередь; вышестоящим (<em>upstream</em>) здесь называют сервер, к которому прокси пересылает запрос:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Код</th>
@@ -688,28 +688,28 @@ POST /payments   {not json                          -&gt; 400 "Failed to read re
 </thead>
 <tbody>
 <tr>
-<td><strong>500</strong></td>
-<td>само приложение</td>
-<td>необработанное исключение в обработчике</td>
-<td>лог приложения по <code>traceId</code></td>
+<td data-label="Код"><strong>500</strong></td>
+<td data-label="Кто типично ставит">само приложение</td>
+<td data-label="Что произошло">необработанное исключение в обработчике</td>
+<td data-label="Куда смотреть первым делом">лог приложения по <code>traceId</code></td>
 </tr>
 <tr>
-<td><strong>502 Bad Gateway</strong></td>
-<td>nginx/Envoy/ALB/ingress</td>
-<td>вышестоящий сервер вернул мусор, разорвал соединение, не ответил вовсе, отдал слишком большие заголовки</td>
-<td>лог прокси: <code>upstream prematurely closed connection</code>, <code>upstream sent too big header</code></td>
+<td data-label="Код"><strong>502 Bad Gateway</strong></td>
+<td data-label="Кто типично ставит">nginx/Envoy/ALB/ingress</td>
+<td data-label="Что произошло">вышестоящий сервер вернул мусор, разорвал соединение, не ответил вовсе, отдал слишком большие заголовки</td>
+<td data-label="Куда смотреть первым делом">лог прокси: <code>upstream prematurely closed connection</code>, <code>upstream sent too big header</code></td>
 </tr>
 <tr>
-<td><strong>503 Service Unavailable</strong></td>
-<td>балансировщик <strong>или</strong> приложение</td>
-<td>у балансировщика нет здоровых вышестоящих серверов; либо приложение само защищается (load shedding, readiness=false)</td>
-<td>список эндпоинтов/health-чеков; метрика readiness</td>
+<td data-label="Код"><strong>503 Service Unavailable</strong></td>
+<td data-label="Кто типично ставит">балансировщик <strong>или</strong> приложение</td>
+<td data-label="Что произошло">у балансировщика нет здоровых вышестоящих серверов; либо приложение само защищается (load shedding, readiness=false)</td>
+<td data-label="Куда смотреть первым делом">список эндпоинтов/health-чеков; метрика readiness</td>
 </tr>
 <tr>
-<td><strong>504 Gateway Timeout</strong></td>
-<td>прокси/балансировщик</td>
-<td>вышестоящий сервер не ответил за <code>proxy_read_timeout</code> / idle timeout ALB</td>
-<td>p99 вышестоящего сервера и значение таймаута прокси</td>
+<td data-label="Код"><strong>504 Gateway Timeout</strong></td>
+<td data-label="Кто типично ставит">прокси/балансировщик</td>
+<td data-label="Что произошло">вышестоящий сервер не ответил за <code>proxy_read_timeout</code> / idle timeout ALB</td>
+<td data-label="Куда смотреть первым делом">p99 вышестоящего сервера и значение таймаута прокси</td>
 </tr>
 </tbody>
 </table>
@@ -1085,7 +1085,7 @@ POST /payments {amount:999, USD}  Idempotency-Key: k-1  -&gt; 200, Idempotent-Re
 <p>Problem Details — это стандартный формат тела ошибки в HTTP API: JSON-объект с фиксированным набором полей, которые описывают, что пошло не так, и с возможностью добавлять свои поля. Нужен он потому, что код статуса сообщает только категорию проблемы, а клиенту, чтобы принять решение, нужно знать её точную причину: «недостаточно средств» и «счёт заблокирован» оба приходят как 422, но обрабатывать их надо по-разному. Если же каждая команда придумывает формат ошибки сама, каждый интегратор пишет свой разборщик для каждого сервиса. Сначала раздел разбирает структуру формата, затем объясняет, зачем помимо статуса нужен стабильный машиночитаемый код, как локализовать текст ошибки, что ни в коем случае нельзя отдавать наружу и как вернуть сразу все ошибки валидации.</p>
 <h3 id="51-структура-problem-details">5.1 Структура Problem Details</h3>
 <p>Структура Problem Details задана в <a href="https://www.rfc-editor.org/rfc/rfc9457.html">RFC 9457</a> (июль 2023, заменил RFC 7807): это тело ошибки с медиа-типами <code>application/problem+json</code> и <code>application/problem+xml</code> и пятью стандартными членами. Каждый член отвечает на свой вопрос: что это за тип проблемы, как его коротко назвать, какой у ответа код, что случилось в этот раз и где именно. В таблице ниже стоит обратить внимание на разницу между <code>title</code> и <code>detail</code> и на то, что <code>status</code> лишь дублирует код ответа:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Член</th>
@@ -1095,29 +1095,29 @@ POST /payments {amount:999, USD}  Idempotency-Key: k-1  -&gt; 200, Idempotent-Re
 </thead>
 <tbody>
 <tr>
-<td><code>type</code></td>
-<td>URI</td>
-<td>идентификатор <strong>типа</strong> проблемы; по умолчанию <code>about:blank</code></td>
+<td data-label="Член"><code>type</code></td>
+<td data-label="Тип">URI</td>
+<td data-label="Смысл">идентификатор <strong>типа</strong> проблемы; по умолчанию <code>about:blank</code></td>
 </tr>
 <tr>
-<td><code>title</code></td>
-<td>string</td>
-<td>короткое человекочитаемое описание типа (не конкретного случая)</td>
+<td data-label="Член"><code>title</code></td>
+<td data-label="Тип">string</td>
+<td data-label="Смысл">короткое человекочитаемое описание типа (не конкретного случая)</td>
 </tr>
 <tr>
-<td><code>status</code></td>
-<td>integer</td>
-<td>HTTP-код; <strong>advisory</strong>, реальный код ответа имеет приоритет</td>
+<td data-label="Член"><code>status</code></td>
+<td data-label="Тип">integer</td>
+<td data-label="Смысл">HTTP-код; <strong>advisory</strong>, реальный код ответа имеет приоритет</td>
 </tr>
 <tr>
-<td><code>detail</code></td>
-<td>string</td>
-<td>объяснение <strong>конкретного</strong> случая</td>
+<td data-label="Член"><code>detail</code></td>
+<td data-label="Тип">string</td>
+<td data-label="Смысл">объяснение <strong>конкретного</strong> случая</td>
 </tr>
 <tr>
-<td><code>instance</code></td>
-<td>URI</td>
-<td>идентификатор конкретного возникновения проблемы</td>
+<td data-label="Член"><code>instance</code></td>
+<td data-label="Тип">URI</td>
+<td data-label="Смысл">идентификатор конкретного возникновения проблемы</td>
 </tr>
 </tbody>
 </table>
@@ -1485,7 +1485,7 @@ GET /nope -&gt; HTTP 404, Content-Type: application/problem+json
 <p>Прагматичная альтернатива, которая покрывает 90% потребности, — два-три <strong>именованных представления</strong>: <code>?view=compact|full</code> (или <code>?expand=account,client</code> для связанных сущностей). Их можно описать в OpenAPI, они кэшируются и ведут себя предсказуемо, потому что вариантов ответа конечное число.</p>
 <h3 id="66-bulk-операции-и-семантика-ошибок">6.6 Bulk-операции и семантика ошибок</h3>
 <p>Пакетная операция (<em>bulk operation</em>) — это запрос, который принимает массив элементов и обрабатывает их все за один вызов, например <code>POST /payments/bulk</code>. Соблазнительна она тем, что экономит сетевые обходы. Главный вопрос у неё один: <strong>что делать, если элемент 7 из 100 невалиден?</strong> Ответов три, и выбрать один из них надо явно, потому что от выбора зависят код ответа, форма тела и идемпотентность. Таблица ниже сводит три модели, а после неё разобраны тело ответа для модели best-effort и идемпотентность пакета:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Модель</th>
@@ -1496,22 +1496,22 @@ GET /nope -&gt; HTTP 404, Content-Type: application/problem+json
 </thead>
 <tbody>
 <tr>
-<td>All-or-nothing</td>
-<td>201 / 422</td>
-<td>одна транзакция, любая ошибка откатывает всё</td>
-<td>когда пакет — это одна бизнес-операция (реестр платежей)</td>
+<td data-label="Модель">All-or-nothing</td>
+<td data-label="Код">201 / 422</td>
+<td data-label="Поведение">одна транзакция, любая ошибка откатывает всё</td>
+<td data-label="Когда">когда пакет — это одна бизнес-операция (реестр платежей)</td>
 </tr>
 <tr>
-<td>Best-effort</td>
-<td>200 (или 207)</td>
-<td>каждый элемент обрабатывается независимо, в теле — массив результатов</td>
-<td>массовые импорты, независимые элементы</td>
+<td data-label="Модель">Best-effort</td>
+<td data-label="Код">200 (или 207)</td>
+<td data-label="Поведение">каждый элемент обрабатывается независимо, в теле — массив результатов</td>
+<td data-label="Когда">массовые импорты, независимые элементы</td>
 </tr>
 <tr>
-<td>Async</td>
-<td>202</td>
-<td>пакет принят, статус по ссылке</td>
-<td>большие пакеты (тысячи элементов)</td>
+<td data-label="Модель">Async</td>
+<td data-label="Код">202</td>
+<td data-label="Поведение">пакет принят, статус по ссылке</td>
+<td data-label="Когда">большие пакеты (тысячи элементов)</td>
 </tr>
 </tbody>
 </table>
@@ -1552,7 +1552,7 @@ Content-Type: application/json
 <hr>
 <h3 id="69-инициатива-сервера-long-polling-sse-websocket-webhook">6.9 Инициатива сервера: long polling, SSE, WebSocket, webhook</h3>
 <p>Инициатива сервера — это ситуация, когда данные появляются на сервере, а узнать о них должен клиент, хотя в HTTP запрос всегда начинает клиент. У HTTP на этот случай есть четыре ответа с очень разной ценой. Ошибка в выборе обходится дорого: WebSocket там, где хватило бы SSE, приносит собственную аутентификацию и мониторинг, а long polling без курсора теряет события. В таблице ниже четыре механизма сравниваются по направлению, прохождению через прокси, стоимости соединения и балансировке, а после неё разобраны детали, на которых спотыкаются с каждым из них.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Свойство</th>
@@ -1564,67 +1564,67 @@ Content-Type: application/json
 </thead>
 <tbody>
 <tr>
-<td>Направление</td>
-<td>сервер → клиент, по одному событию</td>
-<td>сервер → клиент, поток</td>
-<td>двусторонний</td>
-<td>сервер → клиент (клиент — сервер)</td>
+<td data-label="Свойство">Направление</td>
+<td data-label="Long polling">сервер → клиент, по одному событию</td>
+<td data-label="SSE (text/event-stream)">сервер → клиент, поток</td>
+<td data-label="WebSocket">двусторонний</td>
+<td data-label="Webhook">сервер → клиент (клиент — сервер)</td>
 </tr>
 <tr>
-<td>Протокол</td>
-<td>обычный HTTP</td>
-<td>обычный HTTP (<code>GET</code>, chunked)</td>
-<td>апгрейд с HTTP на <code>ws://</code>/<code>wss://</code></td>
-<td>обычный HTTP-запрос к клиенту</td>
+<td data-label="Свойство">Протокол</td>
+<td data-label="Long polling">обычный HTTP</td>
+<td data-label="SSE (text/event-stream)">обычный HTTP (<code>GET</code>, chunked)</td>
+<td data-label="WebSocket">апгрейд с HTTP на <code>ws://</code>/<code>wss://</code></td>
+<td data-label="Webhook">обычный HTTP-запрос к клиенту</td>
 </tr>
 <tr>
-<td>Проходит через корп-прокси</td>
-<td>всегда</td>
-<td>почти всегда</td>
-<td>часто режут</td>
-<td>зависит от сети клиента</td>
+<td data-label="Свойство">Проходит через корп-прокси</td>
+<td data-label="Long polling">всегда</td>
+<td data-label="SSE (text/event-stream)">почти всегда</td>
+<td data-label="WebSocket">часто режут</td>
+<td data-label="Webhook">зависит от сети клиента</td>
 </tr>
 <tr>
-<td>Работает поверх HTTP/2</td>
-<td>да</td>
-<td>да (и стримы дешёвые)</td>
-<td>нет (для h2 нужен RFC 8441 <code>CONNECT</code>, поддержка неполная)</td>
-<td>да</td>
+<td data-label="Свойство">Работает поверх HTTP/2</td>
+<td data-label="Long polling">да</td>
+<td data-label="SSE (text/event-stream)">да (и стримы дешёвые)</td>
+<td data-label="WebSocket">нет (для h2 нужен RFC 8441 <code>CONNECT</code>, поддержка неполная)</td>
+<td data-label="Webhook">да</td>
 </tr>
 <tr>
-<td>Переподключение</td>
-<td>тривиально</td>
-<td>встроено в браузерный <code>EventSource</code> + <code>Last-Event-ID</code></td>
-<td>делается руками</td>
-<td>повторы на стороне отправителя</td>
+<td data-label="Свойство">Переподключение</td>
+<td data-label="Long polling">тривиально</td>
+<td data-label="SSE (text/event-stream)">встроено в браузерный <code>EventSource</code> + <code>Last-Event-ID</code></td>
+<td data-label="WebSocket">делается руками</td>
+<td data-label="Webhook">повторы на стороне отправителя</td>
 </tr>
 <tr>
-<td>Стоимость соединения</td>
-<td>1 запрос на событие + висящие запросы</td>
-<td>1 висящее соединение на клиента</td>
-<td>1 висящее соединение на клиента</td>
-<td>ноль между событиями</td>
+<td data-label="Свойство">Стоимость соединения</td>
+<td data-label="Long polling">1 запрос на событие + висящие запросы</td>
+<td data-label="SSE (text/event-stream)">1 висящее соединение на клиента</td>
+<td data-label="WebSocket">1 висящее соединение на клиента</td>
+<td data-label="Webhook">ноль между событиями</td>
 </tr>
 <tr>
-<td>Бинарные данные</td>
-<td>да</td>
-<td><strong>нет</strong> (только UTF-8 текст)</td>
-<td>да</td>
-<td>да</td>
+<td data-label="Свойство">Бинарные данные</td>
+<td data-label="Long polling">да</td>
+<td data-label="SSE (text/event-stream)"><strong>нет</strong> (только UTF-8 текст)</td>
+<td data-label="WebSocket">да</td>
+<td data-label="Webhook">да</td>
 </tr>
 <tr>
-<td>Балансировка</td>
-<td>обычная</td>
-<td>липкость не нужна, но нужен таймаут &gt; длительности</td>
-<td>нужна поддержка апгрейда на всех хопах</td>
-<td>обычная</td>
+<td data-label="Свойство">Балансировка</td>
+<td data-label="Long polling">обычная</td>
+<td data-label="SSE (text/event-stream)">липкость не нужна, но нужен таймаут &gt; длительности</td>
+<td data-label="WebSocket">нужна поддержка апгрейда на всех хопах</td>
+<td data-label="Webhook">обычная</td>
 </tr>
 <tr>
-<td>Кому подходит</td>
-<td>старые клиенты, редкие события</td>
-<td>прогресс операции, лента уведомлений, дашборд</td>
-<td>чат, торговый терминал, совместное редактирование</td>
-<td>межсистемная интеграция</td>
+<td data-label="Свойство">Кому подходит</td>
+<td data-label="Long polling">старые клиенты, редкие события</td>
+<td data-label="SSE (text/event-stream)">прогресс операции, лента уведомлений, дашборд</td>
+<td data-label="WebSocket">чат, торговый терминал, совместное редактирование</td>
+<td data-label="Webhook">межсистемная интеграция</td>
 </tr>
 </tbody>
 </table>
@@ -1660,7 +1660,7 @@ SSE (поток событий):              15 из 15; медиана 21 мс
 <p>Версионирование API — это способ выпускать несовместимые изменения, не ломая уже работающих клиентов, а эволюция API — умение обходиться без таких изменений как можно дольше. Спорят обычно о первом, о том, куда положить номер версии, хотя дорого обходится второе: каждая живая мажорная версия удваивает тесты, документацию и инциденты. Сначала раздел сравнивает четыре способа версионирования, затем даёт полный список того, что считается несовместимым изменением. После этого разобраны принцип терпимого чтения (<em>tolerant reader</em>), стандартные заголовки, которыми API объявляет о выводе ресурса из эксплуатации, и цена поддержки нескольких версий сразу.</p>
 <h3 id="71-способы-версионирования-api">7.1 Способы версионирования API</h3>
 <p>Способ версионирования — это место в запросе, где клиент называет нужную ему версию API: путь, заголовок, медиа-тип или параметр строки запроса. У каждого способа свои сторонники и свои издержки. Выбор между ними менее важен, чем кажется, но знать сильные и слабые стороны каждого нужно, хотя бы чтобы ответить на неизбежный вопрос на интервью. Таблица ниже сравнивает четыре способа по видимости в логах, маршрутизации и влиянию на кэш, а после неё сказано, что выбирают на практике; gateway в таблице — это API-шлюз, входной прокси, который маршрутизирует запросы к сервисам:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -1671,28 +1671,28 @@ SSE (поток событий):              15 из 15; медиана 21 мс
 </thead>
 <tbody>
 <tr>
-<td><strong>URI-путь</strong></td>
-<td><code>/v1/payments</code></td>
-<td>виден в логах, в браузере, в curl; тривиально маршрутизируется на уровне gateway; понятен всем</td>
-<td>нарушает «один URI = один ресурс»; версионирует <strong>весь</strong> API разом; клиенты прибиваются к строке</td>
+<td data-label="Способ"><strong>URI-путь</strong></td>
+<td data-label="Пример"><code>/v1/payments</code></td>
+<td data-label="Плюсы">виден в логах, в браузере, в curl; тривиально маршрутизируется на уровне gateway; понятен всем</td>
+<td data-label="Минусы">нарушает «один URI = один ресурс»; версионирует <strong>весь</strong> API разом; клиенты прибиваются к строке</td>
 </tr>
 <tr>
-<td><strong>Заголовок</strong></td>
-<td><code>X-API-Version: 2</code> / <code>API-Version: 2</code></td>
-<td>URI остаётся стабильным; версионирование на уровне эндпоинта</td>
-<td>невидим в логах и curl-примерах; легко забыть; кэши требуют <code>Vary</code>; в браузере не воспроизвести</td>
+<td data-label="Способ"><strong>Заголовок</strong></td>
+<td data-label="Пример"><code>X-API-Version: 2</code> / <code>API-Version: 2</code></td>
+<td data-label="Плюсы">URI остаётся стабильным; версионирование на уровне эндпоинта</td>
+<td data-label="Минусы">невидим в логах и curl-примерах; легко забыть; кэши требуют <code>Vary</code>; в браузере не воспроизвести</td>
 </tr>
 <tr>
-<td><strong>Media type</strong></td>
-<td><code>Accept: application/vnd.bank.payment.v2+json</code></td>
-<td>«правильный» с точки зрения HTTP: версионируется представление, а не ресурс; гранулярность по ресурсу</td>
-<td>сложно для интеграторов; ломает контент-негоциацию в инструментах; OpenAPI описывает громоздко</td>
+<td data-label="Способ"><strong>Media type</strong></td>
+<td data-label="Пример"><code>Accept: application/vnd.bank.payment.v2+json</code></td>
+<td data-label="Плюсы">«правильный» с точки зрения HTTP: версионируется представление, а не ресурс; гранулярность по ресурсу</td>
+<td data-label="Минусы">сложно для интеграторов; ломает контент-негоциацию в инструментах; OpenAPI описывает громоздко</td>
 </tr>
 <tr>
-<td><strong>Query</strong></td>
-<td><code>/payments?version=2</code></td>
-<td>проще всего попробовать</td>
-<td>загрязняет кэш-ключ; легко теряется при перенаправлениях; считается плохим тоном</td>
+<td data-label="Способ"><strong>Query</strong></td>
+<td data-label="Пример"><code>/payments?version=2</code></td>
+<td data-label="Плюсы">проще всего попробовать</td>
+<td data-label="Минусы">загрязняет кэш-ключ; легко теряется при перенаправлениях; считается плохим тоном</td>
 </tr>
 </tbody>
 </table>
@@ -2067,7 +2067,7 @@ PUT /payments/1  If-Match: "1"          -&gt; 412 Precondition Failed, "верс
 </blockquote>
 <h3 id="911-директивы-cache-control">9.11 Директивы <code>Cache-Control</code></h3>
 <p>Директивы <code>Cache-Control</code> — это указания, которые сервер даёт каждому кэшу на пути ответа: можно ли ответ хранить, сколько он остаётся свежим и что делать, когда он устарел. Их названия обманчивы: <code>no-cache</code> не запрещает кэширование, а <code>max-age=0</code> не мешает записать ответ на диск, и на этом ошибаются даже опытные разработчики. В таблице ниже собраны директивы с тем, какой кэш их читает и что они означают точно; после неё разобраны пары, о которых спрашивают на интервью.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Директива</th>
@@ -2077,69 +2077,69 @@ PUT /payments/1  If-Match: "1"          -&gt; 412 Precondition Failed, "верс
 </thead>
 <tbody>
 <tr>
-<td><code>max-age=N</code></td>
-<td>все кэши</td>
-<td>ответ свеж N секунд с момента генерации</td>
+<td data-label="Директива"><code>max-age=N</code></td>
+<td data-label="Кто читает">все кэши</td>
+<td data-label="Что означает точно">ответ свеж N секунд с момента генерации</td>
 </tr>
 <tr>
-<td><code>s-maxage=N</code></td>
-<td>только общие</td>
-<td>переопределяет <code>max-age</code> и <code>Expires</code> для общих кэшей</td>
+<td data-label="Директива"><code>s-maxage=N</code></td>
+<td data-label="Кто читает">только общие</td>
+<td data-label="Что означает точно">переопределяет <code>max-age</code> и <code>Expires</code> для общих кэшей</td>
 </tr>
 <tr>
-<td><code>no-cache</code></td>
-<td>все</td>
-<td><strong>хранить можно</strong>, но повторно использовать нельзя без валидации на origin</td>
+<td data-label="Директива"><code>no-cache</code></td>
+<td data-label="Кто читает">все</td>
+<td data-label="Что означает точно"><strong>хранить можно</strong>, но повторно использовать нельзя без валидации на origin</td>
 </tr>
 <tr>
-<td><code>no-store</code></td>
-<td>все</td>
-<td><strong>хранить нельзя</strong> вообще, ни на диске, ни в памяти</td>
+<td data-label="Директива"><code>no-store</code></td>
+<td data-label="Кто читает">все</td>
+<td data-label="Что означает точно"><strong>хранить нельзя</strong> вообще, ни на диске, ни в памяти</td>
 </tr>
 <tr>
-<td><code>private</code></td>
-<td>все</td>
-<td>хранить может только приватный кэш (браузер), общий — нет</td>
+<td data-label="Директива"><code>private</code></td>
+<td data-label="Кто читает">все</td>
+<td data-label="Что означает точно">хранить может только приватный кэш (браузер), общий — нет</td>
 </tr>
 <tr>
-<td><code>public</code></td>
-<td>все</td>
-<td>хранить можно даже там, где по умолчанию нельзя (например, при <code>Authorization</code>)</td>
+<td data-label="Директива"><code>public</code></td>
+<td data-label="Кто читает">все</td>
+<td data-label="Что означает точно">хранить можно даже там, где по умолчанию нельзя (например, при <code>Authorization</code>)</td>
 </tr>
 <tr>
-<td><code>must-revalidate</code></td>
-<td>все</td>
-<td>протухший ответ отдавать <strong>запрещено</strong> даже при недоступности origin</td>
+<td data-label="Директива"><code>must-revalidate</code></td>
+<td data-label="Кто читает">все</td>
+<td data-label="Что означает точно">протухший ответ отдавать <strong>запрещено</strong> даже при недоступности origin</td>
 </tr>
 <tr>
-<td><code>proxy-revalidate</code></td>
-<td>только общие</td>
-<td>то же, но требование только к общим кэшам</td>
+<td data-label="Директива"><code>proxy-revalidate</code></td>
+<td data-label="Кто читает">только общие</td>
+<td data-label="Что означает точно">то же, но требование только к общим кэшам</td>
 </tr>
 <tr>
-<td><code>immutable</code></td>
-<td>браузеры</td>
-<td>ресурс не изменится за время свежести; браузер не шлёт валидацию даже при F5 (расширение, не в RFC 9111)</td>
+<td data-label="Директива"><code>immutable</code></td>
+<td data-label="Кто читает">браузеры</td>
+<td data-label="Что означает точно">ресурс не изменится за время свежести; браузер не шлёт валидацию даже при F5 (расширение, не в RFC 9111)</td>
 </tr>
 <tr>
-<td><code>no-transform</code></td>
-<td>прокси</td>
-<td>не пережимать картинки, не минифицировать</td>
+<td data-label="Директива"><code>no-transform</code></td>
+<td data-label="Кто читает">прокси</td>
+<td data-label="Что означает точно">не пережимать картинки, не минифицировать</td>
 </tr>
 <tr>
-<td><code>must-understand</code></td>
-<td>все</td>
-<td>хранить, только если кэш понимает семантику этого кода</td>
+<td data-label="Директива"><code>must-understand</code></td>
+<td data-label="Кто читает">все</td>
+<td data-label="Что означает точно">хранить, только если кэш понимает семантику этого кода</td>
 </tr>
 <tr>
-<td><code>stale-while-revalidate=N</code></td>
-<td>общие</td>
-<td>ещё N секунд после протухания можно отдавать старое, обновляя в фоне (<a href="https://www.rfc-editor.org/rfc/rfc5861.html">RFC 5861</a>)</td>
+<td data-label="Директива"><code>stale-while-revalidate=N</code></td>
+<td data-label="Кто читает">общие</td>
+<td data-label="Что означает точно">ещё N секунд после протухания можно отдавать старое, обновляя в фоне (<a href="https://www.rfc-editor.org/rfc/rfc5861.html">RFC 5861</a>)</td>
 </tr>
 <tr>
-<td><code>stale-if-error=N</code></td>
-<td>общие и клиенты</td>
-<td>при ошибке (500/502/503/504 или обрыве) отдавать старое ещё N секунд (RFC 5861)</td>
+<td data-label="Директива"><code>stale-if-error=N</code></td>
+<td data-label="Кто читает">общие и клиенты</td>
+<td data-label="Что означает точно">при ошибке (500/502/503/504 или обрыве) отдавать старое ещё N секунд (RFC 5861)</td>
 </tr>
 </tbody>
 </table>
@@ -2207,7 +2207,7 @@ PUT /payments/1  If-Match: "1"          -&gt; 412 Precondition Failed, "верс
 <p>Клиентская сторона HTTP — это всё, что происходит в вашем сервисе, когда он сам вызывает соседа или партнёра: таймауты, дедлайны, пулы соединений, разрешение имён и выбор библиотеки. Именно здесь живёт большинство реальных инцидентов, потому что сервер обычно настраивают внимательно, а клиент собирают по примеру из документации со значениями по умолчанию. Сначала раздел разбирает четыре разных таймаута, дедлайн и бюджет времени на цепочку вызовов, размер пула и кэширование DNS в JVM. Затем идут возможности и ограничения JDK <code>HttpClient</code> и сравнение популярных клиентов. В конце разобраны механизм рассинхрона keep-alive, метрики клиента и то, что меняют виртуальные потоки.</p>
 <h3 id="101-виды-таймаутов-http-клиента">10.1 Виды таймаутов HTTP-клиента</h3>
 <p>Таймаут HTTP-вызова — это предел времени, после которого клиент перестаёт ждать и считает вызов неудачным, и на деле это не одно число, а по меньшей мере четыре разных ограничения. Каждое отвечает за свою фазу вызова, и путать их — верный путь к инциденту. Самое опасное недоразумение связано с таймаутом чтения (<em>read timeout</em>), который многие считают ограничением на весь ответ. В таблице ниже собраны четыре таймаута с типовыми значениями внутри ЦОД, а после неё разобрано, почему общий таймаут обязателен и какой пятый таймаут забывают чаще всего:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Таймаут</th>
@@ -2217,24 +2217,24 @@ PUT /payments/1  If-Match: "1"          -&gt; 412 Precondition Failed, "верс
 </thead>
 <tbody>
 <tr>
-<td><strong>connect</strong></td>
-<td>установку TCP (+TLS)</td>
-<td>200–500 мс</td>
+<td data-label="Таймаут"><strong>connect</strong></td>
+<td data-label="Что ограничивает">установку TCP (+TLS)</td>
+<td data-label="Типовое значение (внутри ДЦ)">200–500 мс</td>
 </tr>
 <tr>
-<td><strong>read (socket)</strong></td>
-<td>паузу между байтами ответа</td>
-<td>1–5 с</td>
+<td data-label="Таймаут"><strong>read (socket)</strong></td>
+<td data-label="Что ограничивает">паузу между байтами ответа</td>
+<td data-label="Типовое значение (внутри ДЦ)">1–5 с</td>
 </tr>
 <tr>
-<td><strong>write</strong></td>
-<td>отправку тела</td>
-<td>1–5 с</td>
+<td data-label="Таймаут"><strong>write</strong></td>
+<td data-label="Что ограничивает">отправку тела</td>
+<td data-label="Типовое значение (внутри ДЦ)">1–5 с</td>
 </tr>
 <tr>
-<td><strong>total (request)</strong></td>
-<td>весь вызов от начала до последнего байта</td>
-<td>равен бюджету операции</td>
+<td data-label="Таймаут"><strong>total (request)</strong></td>
+<td data-label="Что ограничивает">весь вызов от начала до последнего байта</td>
+<td data-label="Типовое значение (внутри ДЦ)">равен бюджету операции</td>
 </tr>
 </tbody>
 </table>
@@ -2252,7 +2252,7 @@ PUT /payments/1  If-Match: "1"          -&gt; 412 Precondition Failed, "верс
 </code></pre></div>
 
 <p><strong>Запуск.</strong> Одни и те же виды таймаутов в двух клиентах, <code>JDK HttpClient</code> и <code>Apache HttpClient 5</code>, против сервера на <code>localhost</code> и против адреса, на который никто не отвечает:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сценарий</th>
@@ -2262,29 +2262,29 @@ PUT /payments/1  If-Match: "1"          -&gt; 412 Precondition Failed, "верс
 </thead>
 <tbody>
 <tr>
-<td>JDK, <code>connectTimeout</code> 700 мс, адрес <code>10.255.255.1</code></td>
-<td><code>HttpConnectTimeoutException: HTTP connect timed out</code></td>
-<td class="num">738 мс</td>
+<td data-label="Сценарий">JDK, <code>connectTimeout</code> 700 мс, адрес <code>10.255.255.1</code></td>
+<td data-label="Исключение"><code>HttpConnectTimeoutException: HTTP connect timed out</code></td>
+<td data-label="Время" class="num">738 мс</td>
 </tr>
 <tr>
-<td>JDK, <code>timeout</code> запроса 1000 мс, сервер отвечает 3 с</td>
-<td><code>HttpTimeoutException: request timed out</code></td>
-<td class="num">1009 мс</td>
+<td data-label="Сценарий">JDK, <code>timeout</code> запроса 1000 мс, сервер отвечает 3 с</td>
+<td data-label="Исключение"><code>HttpTimeoutException: request timed out</code></td>
+<td data-label="Время" class="num">1009 мс</td>
 </tr>
 <tr>
-<td>JDK, порт <code>9</code> закрыт</td>
-<td><code>ConnectException: null</code></td>
-<td class="num">2 мс</td>
+<td data-label="Сценарий">JDK, порт <code>9</code> закрыт</td>
+<td data-label="Исключение"><code>ConnectException: null</code></td>
+<td data-label="Время" class="num">2 мс</td>
 </tr>
 <tr>
-<td>HC5, <code>responseTimeout</code> 1000 мс, сервер отвечает 3 с</td>
-<td><code>SocketTimeoutException: Read timed out</code></td>
-<td class="num">1044 мс</td>
+<td data-label="Сценарий">HC5, <code>responseTimeout</code> 1000 мс, сервер отвечает 3 с</td>
+<td data-label="Исключение"><code>SocketTimeoutException: Read timed out</code></td>
+<td data-label="Время" class="num">1044 мс</td>
 </tr>
 <tr>
-<td>HC5, пул из одного соединения занят, <code>connectionRequestTimeout</code> 500 мс</td>
-<td><code>ConnectionRequestTimeoutException: Timeout deadline: 500 MILLISECONDS, actual: 513 MILLISECONDS</code></td>
-<td class="num">513 мс</td>
+<td data-label="Сценарий">HC5, пул из одного соединения занят, <code>connectionRequestTimeout</code> 500 мс</td>
+<td data-label="Исключение"><code>ConnectionRequestTimeoutException: Timeout deadline: 500 MILLISECONDS, actual: 513 MILLISECONDS</code></td>
+<td data-label="Время" class="num">513 мс</td>
 </tr>
 </tbody>
 </table>
@@ -2349,7 +2349,7 @@ PUT /payments/1  If-Match: "1"          -&gt; 412 Precondition Failed, "верс
 </blockquote>
 <h3 id="106-apache-httpclient-5-okhttp-spring-restclientwebclient-feign">10.6 Apache HttpClient 5, OkHttp, Spring <code>RestClient</code>/<code>WebClient</code>, Feign</h3>
 <p>Выбор HTTP-клиента в Java-сервисе — это выбор библиотеки, которая будет держать соединения и выполнять вызовы, и от него зависит, насколько тонко можно настроить пул, увидеть его метрики и управлять повторами. Разница между клиентами здесь больше, чем кажется по их API. Spring-обёртки при этом сами соединениями не управляют и наследуют всё от базового клиента, поэтому смотреть надо на то, что лежит под ними. Таблица ниже сравнивает основные клиенты по поддержке HTTP/2, настройке пула, сильным и слабым сторонам, а после неё идут замечания, которые важнее самой таблицы:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Клиент</th>
@@ -2361,46 +2361,46 @@ PUT /payments/1  If-Match: "1"          -&gt; 412 Precondition Failed, "верс
 </thead>
 <tbody>
 <tr>
-<td><strong>JDK <code>HttpClient</code></strong></td>
-<td>да (TLS), h2c только апгрейдом</td>
-<td>пул есть, настройки глобальные, метрик нет</td>
-<td>ноль зависимостей, нормальная асинхронность, виртуальные потоки</td>
-<td>нет тонкой настройки, нет метрик, нет <code>Expect</code></td>
+<td data-label="Клиент"><strong>JDK <code>HttpClient</code></strong></td>
+<td data-label="HTTP/2">да (TLS), h2c только апгрейдом</td>
+<td data-label="Пул: настройка и метрики">пул есть, настройки глобальные, метрик нет</td>
+<td data-label="Сильная сторона">ноль зависимостей, нормальная асинхронность, виртуальные потоки</td>
+<td data-label="Слабая сторона">нет тонкой настройки, нет метрик, нет <code>Expect</code></td>
 </tr>
 <tr>
-<td><strong>Apache HttpClient 5</strong></td>
-<td>да, но только в асинхронном API (включая h2c prior knowledge); классический блокирующий клиент, на котором стоит <code>RestClient</code>, работает по HTTP/1.1</td>
-<td>полная: per-route, <code>validateAfterInactivity</code>, <code>timeToLive</code>, метрики через <code>PoolStats</code></td>
-<td>самый управляемый, зрелые retry-стратегии, поддержка прокси и NTLM</td>
-<td>многословный API, легко получить значение по умолчанию «5 соединений на маршрут»</td>
+<td data-label="Клиент"><strong>Apache HttpClient 5</strong></td>
+<td data-label="HTTP/2">да, но только в асинхронном API (включая h2c prior knowledge); классический блокирующий клиент, на котором стоит <code>RestClient</code>, работает по HTTP/1.1</td>
+<td data-label="Пул: настройка и метрики">полная: per-route, <code>validateAfterInactivity</code>, <code>timeToLive</code>, метрики через <code>PoolStats</code></td>
+<td data-label="Сильная сторона">самый управляемый, зрелые retry-стратегии, поддержка прокси и NTLM</td>
+<td data-label="Слабая сторона">многословный API, легко получить значение по умолчанию «5 соединений на маршрут»</td>
 </tr>
 <tr>
-<td><strong>OkHttp</strong></td>
-<td>да</td>
-<td>пул с <code>maxIdleConnections</code>/<code>keepAliveDuration</code>, интерсепторы</td>
-<td>лучшие интерсепторы, прозрачный повтор соединений, connection coalescing</td>
-<td>Kotlin-ориентирован, в серверном Java-стеке реже, свои модели таймаутов</td>
+<td data-label="Клиент"><strong>OkHttp</strong></td>
+<td data-label="HTTP/2">да</td>
+<td data-label="Пул: настройка и метрики">пул с <code>maxIdleConnections</code>/<code>keepAliveDuration</code>, интерсепторы</td>
+<td data-label="Сильная сторона">лучшие интерсепторы, прозрачный повтор соединений, connection coalescing</td>
+<td data-label="Слабая сторона">Kotlin-ориентирован, в серверном Java-стеке реже, свои модели таймаутов</td>
 </tr>
 <tr>
-<td><strong>Spring <code>RestClient</code></strong></td>
-<td>через выбранный <code>ClientHttpRequestFactory</code></td>
-<td>наследует от базового клиента</td>
-<td>синхронный fluent API, <code>ResponseErrorHandler</code>, наблюдаемость через Micrometer из коробки</td>
-<td>не более чем обёртка: настройки пула — у базового клиента</td>
+<td data-label="Клиент"><strong>Spring <code>RestClient</code></strong></td>
+<td data-label="HTTP/2">через выбранный <code>ClientHttpRequestFactory</code></td>
+<td data-label="Пул: настройка и метрики">наследует от базового клиента</td>
+<td data-label="Сильная сторона">синхронный fluent API, <code>ResponseErrorHandler</code>, наблюдаемость через Micrometer из коробки</td>
+<td data-label="Слабая сторона">не более чем обёртка: настройки пула — у базового клиента</td>
 </tr>
 <tr>
-<td><strong>Spring <code>WebClient</code></strong></td>
-<td>да (Reactor Netty)</td>
-<td><code>ConnectionProvider</code>: <code>maxConnections</code>, <code>pendingAcquireTimeout</code>, <code>maxIdleTime</code></td>
-<td>реактивный и нереактивный режимы, стриминг, backpressure</td>
-<td>реактивная модель протекает в код; сложнее отлаживать (глава 11, <code>11-reactive.md</code>)</td>
+<td data-label="Клиент"><strong>Spring <code>WebClient</code></strong></td>
+<td data-label="HTTP/2">да (Reactor Netty)</td>
+<td data-label="Пул: настройка и метрики"><code>ConnectionProvider</code>: <code>maxConnections</code>, <code>pendingAcquireTimeout</code>, <code>maxIdleTime</code></td>
+<td data-label="Сильная сторона">реактивный и нереактивный режимы, стриминг, backpressure</td>
+<td data-label="Слабая сторона">реактивная модель протекает в код; сложнее отлаживать (глава 11, <code>11-reactive.md</code>)</td>
 </tr>
 <tr>
-<td><strong>Feign / HTTP Interface</strong></td>
-<td>зависит от транспорта</td>
-<td>зависит от транспорта</td>
-<td>декларативный интерфейс вместо кода</td>
-<td>прячет транспорт, включая ошибки настройки таймаутов</td>
+<td data-label="Клиент"><strong>Feign / HTTP Interface</strong></td>
+<td data-label="HTTP/2">зависит от транспорта</td>
+<td data-label="Пул: настройка и метрики">зависит от транспорта</td>
+<td data-label="Сильная сторона">декларативный интерфейс вместо кода</td>
+<td data-label="Слабая сторона">прячет транспорт, включая ошибки настройки таймаутов</td>
 </tr>
 </tbody>
 </table>
@@ -2941,5 +2941,5 @@ Postman не делает preflight, потому что это чисто бр�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-http-как-протокол">1. HTTP как протокол</a></li><li><a href="#2-семантика-методов">2. Семантика методов</a></li><li><a href="#3-коды-статусов-как-контракт">3. Коды статусов как контракт</a></li><li><a href="#4-идемпотентность-на-практике">4. Идемпотентность на практике</a></li><li><a href="#5-ошибки-rfc-9457-problem-details">5. Ошибки: RFC 9457 Problem Details</a></li><li><a href="#6-дизайн-ресурсов-и-коллекций">6. Дизайн ресурсов и коллекций</a></li><li><a href="#7-версионирование-и-эволюция-api">7. Версионирование и эволюция API</a></li><li><a href="#8-контракт-openapi-31">8. Контракт: OpenAPI 3.1</a></li><li><a href="#9-основные-заголовки-http">9. Основные заголовки HTTP</a></li><li><a href="#10-клиентская-сторона-таймауты-дедлайны-пулы">10. Клиентская сторона: таймауты, дедлайны, пулы</a></li><li><a href="#11-минимальные-требования-к-безопасности-api">11. Минимальные требования к безопасности API</a></li><li><a href="#12-архитектурный-стиль-rest">12. Архитектурный стиль REST</a></li><li><a href="#13-разобранные-инциденты">13. Разобранные инциденты</a></li><li><a href="#14-грабли-и-антипаттерны">14. Грабли и антипаттерны</a></li><li><a href="#15-диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками">17. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

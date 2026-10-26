@@ -3,7 +3,7 @@
 <title>19. Проектирование схем и миграции — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Проектирование схем и миграции">
 <a class="skip" href="#content">К тексту</a>
@@ -78,7 +78,7 @@
 <p><strong>N:M</strong> реализуется связующей таблицей, и спорят обычно о её первичном ключе: составной <code>(a_id, b_id)</code> или суррогатный <code>id</code>. Составной честнее, потому что сам по себе исключает дубли и экономит отдельный индекс. Суррогатный нужен, когда на связь ссылаются третьи таблицы или когда ORM плохо переваривает составные ключи. Выбрав составной, помните о порядке колонок: <code>PRIMARY KEY (a_id, b_id)</code> даёт индекс, полезный для обхода «от A к B», а для обратного направления понадобится ещё один индекс на <code>(b_id)</code>.</p>
 <h3 id="14-справочник-enum-в-коде-или-check">1.4 Справочник, enum в коде или CHECK</h3>
 <p>Множество допустимых значений колонки — статусов, типов продуктов, категорий — можно ограничить четырьмя способами, и все четыре решают разные задачи. Ошибка в выборе проявляется позже, когда значения начинают меняться: где-то для этого нужен DDL, где-то релиз приложения, а где-то база и вовсе перестаёт защищать себя от мусора. Таблица ниже сравнивает способы по тому, как меняется набор значений, есть ли ссылочная целостность и чем за это платят.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -90,32 +90,32 @@
 </thead>
 <tbody>
 <tr>
-<td>Таблица-справочник + FK</td>
-<td><code>INSERT</code> в справочник, без DDL</td>
-<td>Да, FK</td>
-<td>Да (название, порядок, флаг активности)</td>
-<td>Join или кеш в приложении</td>
+<td data-label="Способ">Таблица-справочник + FK</td>
+<td data-label="Изменение значений"><code>INSERT</code> в справочник, без DDL</td>
+<td data-label="Ссылочная целостность">Да, FK</td>
+<td data-label="Доп. атрибуты">Да (название, порядок, флаг активности)</td>
+<td data-label="Цена">Join или кеш в приложении</td>
 </tr>
 <tr>
-<td><code>CHECK (col IN (...))</code></td>
-<td><code>ALTER TABLE</code> (можно <code>NOT VALID</code>)</td>
-<td>Нет</td>
-<td>Нет</td>
-<td>Дёшево, но DDL при каждом изменении</td>
+<td data-label="Способ"><code>CHECK (col IN (...))</code></td>
+<td data-label="Изменение значений"><code>ALTER TABLE</code> (можно <code>NOT VALID</code>)</td>
+<td data-label="Ссылочная целостность">Нет</td>
+<td data-label="Доп. атрибуты">Нет</td>
+<td data-label="Цена">Дёшево, но DDL при каждом изменении</td>
 </tr>
 <tr>
-<td>PostgreSQL <code>enum</code></td>
-<td><code>ALTER TYPE ... ADD VALUE</code></td>
-<td>Тип</td>
-<td>Нет</td>
-<td>Больно менять (см. 3.7)</td>
+<td data-label="Способ">PostgreSQL <code>enum</code></td>
+<td data-label="Изменение значений"><code>ALTER TYPE ... ADD VALUE</code></td>
+<td data-label="Ссылочная целостность">Тип</td>
+<td data-label="Доп. атрибуты">Нет</td>
+<td data-label="Цена">Больно менять (см. 3.7)</td>
 </tr>
 <tr>
-<td>Только Java <code>enum</code>, в БД <code>text</code></td>
-<td>Деплой кода</td>
-<td>Нет</td>
-<td>В коде</td>
-<td>БД не защищена от мусора</td>
+<td data-label="Способ">Только Java <code>enum</code>, в БД <code>text</code></td>
+<td data-label="Изменение значений">Деплой кода</td>
+<td data-label="Ссылочная целостность">Нет</td>
+<td data-label="Доп. атрибуты">В коде</td>
+<td data-label="Цена">БД не защищена от мусора</td>
 </tr>
 </tbody>
 </table>
@@ -215,7 +215,7 @@
 <p>В PostgreSQL 18 появилась встроенная генерация <code>uuidv7([shift interval])</code>, которая «Generates a version 7 (time-ordered) UUID. The timestamp is computed using UNIX timestamp with millisecond precision + sub-millisecond timestamp + random», а вместе с ней синоним <code>uuidv4()</code> для <code>gen_random_uuid()</code> (<a href="https://www.postgresql.org/docs/18/functions-uuid.html">PostgreSQL 18, UUID Functions</a>). Необязательный параметр <code>shift</code> сдвигает вычисленную временную метку на заданный интервал, и результат обязан уложиться в диапазон 48-битного поля миллисекунд (от 1970 года примерно до 10889-го), иначе функция вернёт ошибку. Обратите внимание на слова «sub-millisecond timestamp»: PostgreSQL заполняет биты <code>rand_a</code> дробной частью времени, поэтому монотонность сохраняется и тогда, когда внутри одной миллисекунды генерируется несколько значений, — ровно так, как рекомендует RFC 9562. На версиях 16 и 17 v7 придётся генерировать на стороне приложения или расширением.</p>
 <p><strong>ULID</strong> устроен по той же идее (48 бит времени и 80 случайных), но кодируется в Crockford base32 (26 символов) и по формату UUID не является; в базе его обычно кладут в <code>uuid</code> или <code>bytea(16)</code>. <strong>Snowflake</strong> (Twitter) занимает 64 бита, в которые упакованы время, id узла и счётчик. Он помещается в <code>bigint</code>, но требует договориться, как назначаются id узлов. Если генерировать ключи нужно распределённо, а размер <code>bigint</code> для вас критичен, Snowflake-подобная схема остаётся лучшим компромиссом.</p>
 <p>Таблица ниже сводит все варианты вместе; главные строки в ней — локальность вставки и раздувание индекса, потому что именно они определяют поведение большой таблицы.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -227,46 +227,46 @@
 </thead>
 <tbody>
 <tr>
-<td>Размер</td>
-<td>8 Б</td>
-<td>16 Б</td>
-<td>16 Б</td>
-<td>8 Б</td>
+<td data-label="Критерий">Размер</td>
+<td data-label="bigint identity">8 Б</td>
+<td data-label="UUIDv4">16 Б</td>
+<td data-label="UUIDv7">16 Б</td>
+<td data-label="Snowflake (bigint)">8 Б</td>
 </tr>
 <tr>
-<td>Генерация вне БД</td>
-<td>нет</td>
-<td>да</td>
-<td>да</td>
-<td>да, с конфигом узла</td>
+<td data-label="Критерий">Генерация вне БД</td>
+<td data-label="bigint identity">нет</td>
+<td data-label="UUIDv4">да</td>
+<td data-label="UUIDv7">да</td>
+<td data-label="Snowflake (bigint)">да, с конфигом узла</td>
 </tr>
 <tr>
-<td>Локальность вставки</td>
-<td>отличная</td>
-<td>худшая</td>
-<td>отличная</td>
-<td>отличная</td>
+<td data-label="Критерий">Локальность вставки</td>
+<td data-label="bigint identity">отличная</td>
+<td data-label="UUIDv4">худшая</td>
+<td data-label="UUIDv7">отличная</td>
+<td data-label="Snowflake (bigint)">отличная</td>
 </tr>
 <tr>
-<td>Раздувание индекса</td>
-<td>нет</td>
-<td>~2×</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Критерий">Раздувание индекса</td>
+<td data-label="bigint identity">нет</td>
+<td data-label="UUIDv4">~2×</td>
+<td data-label="UUIDv7">нет</td>
+<td data-label="Snowflake (bigint)">нет</td>
 </tr>
 <tr>
-<td>Утечка порядка/времени</td>
-<td>да (порядок)</td>
-<td>нет</td>
-<td>да (мс)</td>
-<td>да</td>
+<td data-label="Критерий">Утечка порядка/времени</td>
+<td data-label="bigint identity">да (порядок)</td>
+<td data-label="UUIDv4">нет</td>
+<td data-label="UUIDv7">да (мс)</td>
+<td data-label="Snowflake (bigint)">да</td>
 </tr>
 <tr>
-<td>Пригодность как публичный id</td>
-<td>плохо</td>
-<td>хорошо</td>
-<td>средне (видно время)</td>
-<td>средне</td>
+<td data-label="Критерий">Пригодность как публичный id</td>
+<td data-label="bigint identity">плохо</td>
+<td data-label="UUIDv4">хорошо</td>
+<td data-label="UUIDv7">средне (видно время)</td>
+<td data-label="Snowflake (bigint)">средне</td>
 </tr>
 </tbody>
 </table>
@@ -600,7 +600,7 @@
 <p>Отдельно стоит помнить, что <strong>последовательности не транзакционны</strong>: <code>nextval()</code> не откатывается вместе с транзакцией, поэтому в <code>id</code> будут дыры, и это нормальное поведение, а не баг. По той же причине последовательность нельзя использовать как «номер документа без пропусков»: для нумерации без дыр нужна отдельная таблица-счётчик с блокировкой строки, и здесь вы сознательно платите сериализацией.</p>
 <h3 id="65-заполнение-createdatupdatedat">6.5 Заполнение <code>created_at</code>/<code>updated_at</code></h3>
 <p>Служебные метки <code>created_at</code> и <code>updated_at</code> есть почти в каждой таблице, и вопрос лишь в том, кто их заполняет: база или приложение. Вариантов два, и выбрать один нужно сразу для всей схемы, иначе в соседних таблицах время начнёт расходиться по-разному. Таблица ниже сравнивает, как работает каждый способ и чем за него платят.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Кто пишет</th>
@@ -611,16 +611,16 @@
 </thead>
 <tbody>
 <tr>
-<td>БД, <code>DEFAULT now()</code> + триггер на update</td>
-<td><code>created_at timestamptz NOT NULL DEFAULT now()</code></td>
-<td>Единое время, работает для любого клиента</td>
-<td>Триггер на каждое обновление; <code>now()</code> = время начала транзакции</td>
+<td data-label="Кто пишет">БД, <code>DEFAULT now()</code> + триггер на update</td>
+<td data-label="Как"><code>created_at timestamptz NOT NULL DEFAULT now()</code></td>
+<td data-label="Плюсы">Единое время, работает для любого клиента</td>
+<td data-label="Минусы">Триггер на каждое обновление; <code>now()</code> = время начала транзакции</td>
 </tr>
 <tr>
-<td>Приложение (JPA <code>@CreatedDate</code>/<code>@LastModifiedDate</code>)</td>
-<td>Spring Data Auditing</td>
-<td>Нет триггеров, видно в сущности</td>
-<td>Расходится при разъезде часов на подах; обходится прямым SQL</td>
+<td data-label="Кто пишет">Приложение (JPA <code>@CreatedDate</code>/<code>@LastModifiedDate</code>)</td>
+<td data-label="Как">Spring Data Auditing</td>
+<td data-label="Плюсы">Нет триггеров, видно в сущности</td>
+<td data-label="Минусы">Расходится при разъезде часов на подах; обходится прямым SQL</td>
 </tr>
 </tbody>
 </table>
@@ -675,7 +675,7 @@
 <hr>
 <h3 id="67-scd-историчность-справочников">6.7 SCD: историчность справочников</h3>
 <p>Slowly Changing Dimensions (SCD) — классификация способов хранить справочник, значения которого со временем меняются: перезаписывать ли их, заводить ли новую строку на каждое изменение, хранить ли предыдущее значение рядом. Пришла она из хранилищ данных (Кимбалл), но в OLTP применима ничуть не хуже, просто там её обычно не называют по имени. Ценность её в том, что она даёт словарь: вместо «ну надо как-то хранить историю» можно сказать «здесь SCD 2, а здесь SCD 1, и вот почему». Таблица ниже перечисляет типы, а после неё разобрано, какие из них реально живут в бэкенде, как реализовать SCD 2 и как на него перейти.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип</th>
@@ -686,40 +686,40 @@
 </thead>
 <tbody>
 <tr>
-<td>SCD 0</td>
-<td>Значение фиксируется при создании и не меняется</td>
-<td>Снимки в документах: цена в позиции заказа</td>
-<td>Нет истории изменений источника</td>
+<td data-label="Тип">SCD 0</td>
+<td data-label="Что делает">Значение фиксируется при создании и не меняется</td>
+<td data-label="Когда применять">Снимки в документах: цена в позиции заказа</td>
+<td data-label="Цена">Нет истории изменений источника</td>
 </tr>
 <tr>
-<td>SCD 1</td>
-<td>Перезапись на месте, история не хранится</td>
-<td>Опечатки, технические поля, всё, где прошлое не нужно</td>
-<td>Прошлое утрачено безвозвратно</td>
+<td data-label="Тип">SCD 1</td>
+<td data-label="Что делает">Перезапись на месте, история не хранится</td>
+<td data-label="Когда применять">Опечатки, технические поля, всё, где прошлое не нужно</td>
+<td data-label="Цена">Прошлое утрачено безвозвратно</td>
 </tr>
 <tr>
-<td>SCD 2</td>
-<td>Новая строка на каждое изменение + период действия</td>
-<td>Ставки, тарифы, адреса, статусы контрагентов</td>
-<td>Все запросы обрастают фильтром по периоду</td>
+<td data-label="Тип">SCD 2</td>
+<td data-label="Что делает">Новая строка на каждое изменение + период действия</td>
+<td data-label="Когда применять">Ставки, тарифы, адреса, статусы контрагентов</td>
+<td data-label="Цена">Все запросы обрастают фильтром по периоду</td>
 </tr>
 <tr>
-<td>SCD 3</td>
-<td>Колонка <code>previous_value</code> рядом с текущим</td>
-<td>Нужно «предыдущее значение» и только оно</td>
-<td>Глубина ровно 1</td>
+<td data-label="Тип">SCD 3</td>
+<td data-label="Что делает">Колонка <code>previous_value</code> рядом с текущим</td>
+<td data-label="Когда применять">Нужно «предыдущее значение» и только оно</td>
+<td data-label="Цена">Глубина ровно 1</td>
 </tr>
 <tr>
-<td>SCD 4</td>
-<td>Текущее — в основной таблице, история — в отдельной</td>
-<td>Горячее чтение текущего + редкое чтение истории</td>
-<td>Две таблицы, синхронизация</td>
+<td data-label="Тип">SCD 4</td>
+<td data-label="Что делает">Текущее — в основной таблице, история — в отдельной</td>
+<td data-label="Когда применять">Горячее чтение текущего + редкое чтение истории</td>
+<td data-label="Цена">Две таблицы, синхронизация</td>
 </tr>
 <tr>
-<td>SCD 6</td>
-<td>Гибрид 1+2+3: в строке истории лежит и текущее значение</td>
-<td>Отчётность «как было» и «как стало» в одном запросе</td>
-<td>Денормализация, обновление всех строк сущности</td>
+<td data-label="Тип">SCD 6</td>
+<td data-label="Что делает">Гибрид 1+2+3: в строке истории лежит и текущее значение</td>
+<td data-label="Когда применять">Отчётность «как было» и «как стало» в одном запросе</td>
+<td data-label="Цена">Денормализация, обновление всех строк сущности</td>
 </tr>
 </tbody>
 </table>
@@ -854,7 +854,7 @@
 <p><strong>Модель B: схема на арендатора.</strong> Таблицы <code>tenant_42.invoice</code>, <code>tenant_43.invoice</code> и так далее имеют одинаковую структуру и лежат в разных схемах одной базы, а приложение переключается между ними через <code>SET search_path</code>.</p>
 <p><strong>Модель C: база (или кластер) на арендатора.</strong> Изоляция здесь полная, включая ресурсы.</p>
 <p>Таблица ниже сравнивает три модели; самые важные для выбора строки — миграция, число арендаторов, при котором модель ломается, и подключения.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -865,58 +865,58 @@
 </thead>
 <tbody>
 <tr>
-<td>Миграция</td>
-<td>одна, атомарно для всех</td>
-<td>N миграций, каждая может упасть</td>
-<td>N миграций + N подключений</td>
+<td data-label="Критерий">Миграция</td>
+<td data-label="A: общая схема">одна, атомарно для всех</td>
+<td data-label="B: схема на арендатора">N миграций, каждая может упасть</td>
+<td data-label="C: база на арендатора">N миграций + N подключений</td>
 </tr>
 <tr>
-<td>Время миграции</td>
-<td>не зависит от числа арендаторов</td>
-<td>линейно по числу схем</td>
-<td>линейно, плюс окна по часовым поясам</td>
+<td data-label="Критерий">Время миграции</td>
+<td data-label="A: общая схема">не зависит от числа арендаторов</td>
+<td data-label="B: схема на арендатора">линейно по числу схем</td>
+<td data-label="C: база на арендатора">линейно, плюс окна по часовым поясам</td>
 </tr>
 <tr>
-<td>Изоляция данных</td>
-<td>логическая (RLS, код)</td>
-<td>средняя (права на схему)</td>
-<td>полная</td>
+<td data-label="Критерий">Изоляция данных</td>
+<td data-label="A: общая схема">логическая (RLS, код)</td>
+<td data-label="B: схема на арендатора">средняя (права на схему)</td>
+<td data-label="C: база на арендатора">полная</td>
 </tr>
 <tr>
-<td>«Шумный сосед»</td>
-<td>общий буферный кеш и CPU</td>
-<td>то же</td>
-<td>изолировано</td>
+<td data-label="Критерий">«Шумный сосед»</td>
+<td data-label="A: общая схема">общий буферный кеш и CPU</td>
+<td data-label="B: схема на арендатора">то же</td>
+<td data-label="C: база на арендатора">изолировано</td>
 </tr>
 <tr>
-<td>Выгрузить/удалить арендатора</td>
-<td><code>DELETE</code> по <code>tenant_id</code> — долго</td>
-<td><code>DROP SCHEMA</code> — мгновенно</td>
-<td><code>DROP DATABASE</code>/бэкап схемы</td>
+<td data-label="Критерий">Выгрузить/удалить арендатора</td>
+<td data-label="A: общая схема"><code>DELETE</code> по <code>tenant_id</code> — долго</td>
+<td data-label="B: схема на арендатора"><code>DROP SCHEMA</code> — мгновенно</td>
+<td data-label="C: база на арендатора"><code>DROP DATABASE</code>/бэкап схемы</td>
 </tr>
 <tr>
-<td>Индивидуальная схема арендатора</td>
-<td>невозможна</td>
-<td>возможна (и это проблема)</td>
-<td>возможна</td>
+<td data-label="Критерий">Индивидуальная схема арендатора</td>
+<td data-label="A: общая схема">невозможна</td>
+<td data-label="B: схема на арендатора">возможна (и это проблема)</td>
+<td data-label="C: база на арендатора">возможна</td>
 </tr>
 <tr>
-<td>Число арендаторов, где ломается</td>
-<td>десятки тысяч и больше — нормально</td>
-<td>сотни-тысячи схем: <code>pg_class</code> распухает, <code>pg_dump</code> замедляется</td>
-<td>десятки-сотни (по числу соединений и экземпляров)</td>
+<td data-label="Критерий">Число арендаторов, где ломается</td>
+<td data-label="A: общая схема">десятки тысяч и больше — нормально</td>
+<td data-label="B: схема на арендатора">сотни-тысячи схем: <code>pg_class</code> распухает, <code>pg_dump</code> замедляется</td>
+<td data-label="C: база на арендатора">десятки-сотни (по числу соединений и экземпляров)</td>
 </tr>
 <tr>
-<td>Подключения/пулы</td>
-<td>один пул</td>
-<td>один пул + <code>search_path</code></td>
-<td>пул на арендатора — главный ограничитель</td>
+<td data-label="Критерий">Подключения/пулы</td>
+<td data-label="A: общая схема">один пул</td>
+<td data-label="B: схема на арендатора">один пул + <code>search_path</code></td>
+<td data-label="C: база на арендатора">пул на арендатора — главный ограничитель</td>
 </tr>
 <tr>
-<td>Регуляторное требование «данные раздельно»</td>
-<td>не проходит</td>
-<td>иногда проходит</td>
-<td>проходит</td>
+<td data-label="Критерий">Регуляторное требование «данные раздельно»</td>
+<td data-label="A: общая схема">не проходит</td>
+<td data-label="B: схема на арендатора">иногда проходит</td>
+<td data-label="C: база на арендатора">проходит</td>
 </tr>
 </tbody>
 </table>
@@ -950,7 +950,7 @@
 <p>Инструмент миграций превращает изменения схемы в версионируемые файлы, которые лежат в репозитории рядом с кодом и применяются к каждой базе в одном и том же порядке. Без него схема на проде, на стендах и у разработчиков расходится за несколько месяцев, и никто уже не может сказать, какая из них правильная. В Java-мире таких инструментов два — Liquibase и Flyway, — и в этом разделе разобрано, как они устроены, что в каждом важно знать в эксплуатации, как выбрать между ними, где хранить и как проверять на ревью миграции, как работают контрольные суммы, rollback и baseline и кто должен применять миграции, когда подов много.</p>
 <h3 id="81-общая-модель-инструментов-миграций">8.1 Общая модель инструментов миграций</h3>
 <p>Оба инструмента делают по сути одно и то же. Они держат в базе журнал применённых миграций, сравнивают его с набором файлов и применяют недостающие в детерминированном порядке, причём под блокировкой, чтобы два экземпляра не начали мигрировать одновременно. Различаются они тем, как устроены журнал, блокировка и единица изменения, и таблица ниже сопоставляет их по этим и другим признакам.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -960,49 +960,49 @@
 </thead>
 <tbody>
 <tr>
-<td>Журнал</td>
-<td><code>DATABASECHANGELOG</code></td>
-<td><code>flyway_schema_history</code></td>
+<td data-label="">Журнал</td>
+<td data-label="Liquibase"><code>DATABASECHANGELOG</code></td>
+<td data-label="Flyway"><code>flyway_schema_history</code></td>
 </tr>
 <tr>
-<td>Блокировка</td>
-<td><code>DATABASECHANGELOGLOCK</code> (таблица-флаг)</td>
-<td>блокировка на таблице истории / advisory lock</td>
+<td data-label="">Блокировка</td>
+<td data-label="Liquibase"><code>DATABASECHANGELOGLOCK</code> (таблица-флаг)</td>
+<td data-label="Flyway">блокировка на таблице истории / advisory lock</td>
 </tr>
 <tr>
-<td>Форматы</td>
-<td>XML, YAML, JSON, SQL (formatted SQL)</td>
-<td>SQL, Java</td>
+<td data-label="">Форматы</td>
+<td data-label="Liquibase">XML, YAML, JSON, SQL (formatted SQL)</td>
+<td data-label="Flyway">SQL, Java</td>
 </tr>
 <tr>
-<td>Единица</td>
-<td>changeset (<code>id</code> + <code>author</code> + путь файла)</td>
-<td>миграция с версией в имени файла</td>
+<td data-label="">Единица</td>
+<td data-label="Liquibase">changeset (<code>id</code> + <code>author</code> + путь файла)</td>
+<td data-label="Flyway">миграция с версией в имени файла</td>
 </tr>
 <tr>
-<td>Идентичность</td>
-<td><code>author:id</code> + путь к changelog-файлу</td>
-<td>версия (<code>V1_2__desc.sql</code>)</td>
+<td data-label="">Идентичность</td>
+<td data-label="Liquibase"><code>author:id</code> + путь к changelog-файлу</td>
+<td data-label="Flyway">версия (<code>V1_2__desc.sql</code>)</td>
 </tr>
 <tr>
-<td>Повторный прогон при изменении</td>
-<td><code>runOnChange</code>, <code>runAlways</code></td>
-<td>repeatable-миграции <code>R__*.sql</code></td>
+<td data-label="">Повторный прогон при изменении</td>
+<td data-label="Liquibase"><code>runOnChange</code>, <code>runAlways</code></td>
+<td data-label="Flyway">repeatable-миграции <code>R__*.sql</code></td>
 </tr>
 <tr>
-<td>Откат</td>
-<td><code>rollback</code>-блок, частично автогенерируемый</td>
-<td><code>U__*.sql</code> (undo), в платной редакции</td>
+<td data-label="">Откат</td>
+<td data-label="Liquibase"><code>rollback</code>-блок, частично автогенерируемый</td>
+<td data-label="Flyway"><code>U__*.sql</code> (undo), в платной редакции</td>
 </tr>
 <tr>
-<td>Условная логика</td>
-<td><code>contexts</code>, <code>labels</code>, <code>preConditions</code>, <code>dbms</code></td>
-<td>placeholders, callbacks, конфигурация окружения</td>
+<td data-label="">Условная логика</td>
+<td data-label="Liquibase"><code>contexts</code>, <code>labels</code>, <code>preConditions</code>, <code>dbms</code></td>
+<td data-label="Flyway">placeholders, callbacks, конфигурация окружения</td>
 </tr>
 <tr>
-<td>Абстракция от диалекта</td>
-<td>да (XML-теги → DDL под СУБД)</td>
-<td>нет, пишете SQL под свою СУБД</td>
+<td data-label="">Абстракция от диалекта</td>
+<td data-label="Liquibase">да (XML-теги → DDL под СУБД)</td>
+<td data-label="Flyway">нет, пишете SQL под свою СУБД</td>
 </tr>
 </tbody>
 </table>
@@ -1070,7 +1070,7 @@
 <p>Когда changeset применяется впервые, Liquibase считает хеш от его нормализованного содержимого — текста SQL или сериализованного описания change-типов вместе с некоторыми атрибутами — и пишет его в колонку <code>MD5SUM</code> таблицы <code>DATABASECHANGELOG</code> рядом с <code>ID</code>, <code>AUTHOR</code>, <code>FILENAME</code>, <code>DATEEXECUTED</code>, <code>ORDEREXECUTED</code>, <code>EXEC_TYPE</code> и <code>LIQUIBASE</code> (версией инструмента). При каждом следующем запуске сумма пересчитывается и сравнивается с записанной. Если они разошлись, Liquibase выбрасывает <code>ValidationFailedException: Validation Failed: N changesets check sum</code>, и в этом прогоне не применяется <strong>ни один</strong> changeset.</p>
 <p>У контрольной суммы есть важная тонкость — <strong>версия алгоритма</strong>. В <code>MD5SUM</code> пишется строка вида <code>9:d41d8cd98f00b204e9800998ecf8427e</code>, и префикс до двоеточия как раз обозначает версию. Liquibase менял алгоритм нормализации несколько раз, в частности при переходе на 3.x и на 4.x, и при обновлении инструмента суммы всех строк с устаревшим префиксом пересчитываются автоматически; это штатное поведение, а не инцидент. А вот расхождение внутри одной и той же версии алгоритма означает ровно одно: файл изменили после того, как его применили.</p>
 <p>Таблица ниже перечисляет пять типовых причин расхождения, признак, по которому каждую узнают, и правильное действие:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Причина</th>
@@ -1080,29 +1080,29 @@
 </thead>
 <tbody>
 <tr>
-<td>Изменили SQL применённого changeset'а</td>
-<td>Ошибка на всех стендах, где он уже применён</td>
-<td>Откатить правку, сделать <strong>новый</strong> changeset</td>
+<td data-label="Причина">Изменили SQL применённого changeset'а</td>
+<td data-label="Признак">Ошибка на всех стендах, где он уже применён</td>
+<td data-label="Правильное действие">Откатить правку, сделать <strong>новый</strong> changeset</td>
 </tr>
 <tr>
-<td>Поправили комментарий/форматирование</td>
-<td>Семантика не изменилась</td>
-<td><code>validCheckSum</code> с новой суммой (или обе)</td>
+<td data-label="Причина">Поправили комментарий/форматирование</td>
+<td data-label="Признак">Семантика не изменилась</td>
+<td data-label="Правильное действие"><code>validCheckSum</code> с новой суммой (или обе)</td>
 </tr>
 <tr>
-<td>Обновили Liquibase, сменилась версия алгоритма</td>
-<td>Префикс сумм в БД отличается от текущего</td>
-<td>Ничего, Liquibase пересчитает сам</td>
+<td data-label="Причина">Обновили Liquibase, сменилась версия алгоритма</td>
+<td data-label="Признак">Префикс сумм в БД отличается от текущего</td>
+<td data-label="Правильное действие">Ничего, Liquibase пересчитает сам</td>
 </tr>
 <tr>
-<td>Изменился <code>logicalFilePath</code> или путь файла</td>
-<td>Changeset считается новым, а не «изменённым»</td>
-<td>Зафиксировать <code>logicalFilePath</code>, при необходимости <code>UPDATE DATABASECHANGELOG SET FILENAME=...</code></td>
+<td data-label="Причина">Изменился <code>logicalFilePath</code> или путь файла</td>
+<td data-label="Признак">Changeset считается новым, а не «изменённым»</td>
+<td data-label="Правильное действие">Зафиксировать <code>logicalFilePath</code>, при необходимости <code>UPDATE DATABASECHANGELOG SET FILENAME=...</code></td>
 </tr>
 <tr>
-<td>Подстановка property изменила текст (<code>${schema}</code>)</td>
-<td>Разное поведение на разных окружениях</td>
-<td>Убрать property из тела changeset'а</td>
+<td data-label="Причина">Подстановка property изменила текст (<code>${schema}</code>)</td>
+<td data-label="Признак">Разное поведение на разных окружениях</td>
+<td data-label="Правильное действие">Убрать property из тела changeset'а</td>
 </tr>
 </tbody>
 </table>
@@ -1158,7 +1158,7 @@
 <p><strong>Блокировка.</strong> На PostgreSQL Flyway на время миграции берёт сессионный advisory lock (<code>pg_advisory_lock</code>). В этом его ключевое отличие от Liquibase: advisory lock <strong>привязан к сессии</strong> и снимается автоматически, когда она разрывается, так что даже если процесс убили через <code>kill -9</code>, TCP-соединение закроется, и блокировка исчезнет. У Liquibase же блокировка хранится строкой в обычной таблице, которая переживает смерть процесса и требует ручного вмешательства. Это единственное, но очень существенное операционное преимущество Flyway.</p>
 <h3 id="89-применение-миграций-при-нескольких-подах">8.9 Применение миграций при нескольких подах</h3>
 <p>Когда сервис работает в нескольких подах, возникает вопрос, кто именно применяет миграции, и на нём разваливается большинство самодельных схем деплоя. Вариантов пять, и у каждого свой профиль отказов, а таблица ниже сравнивает их по тому, как они работают и что в них ломается.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вариант</th>
@@ -1169,34 +1169,34 @@
 </thead>
 <tbody>
 <tr>
-<td>Каждый под при старте (<code>spring.liquibase.enabled=true</code>)</td>
-<td>Миграция в <code>ApplicationContext</code></td>
-<td>Ничего не надо настраивать</td>
-<td>N-1 подов ждут лок; долгая миграция срывает <code>startupProbe</code>; лок залипает при OOM-kill</td>
+<td data-label="Вариант">Каждый под при старте (<code>spring.liquibase.enabled=true</code>)</td>
+<td data-label="Как">Миграция в <code>ApplicationContext</code></td>
+<td data-label="Плюсы">Ничего не надо настраивать</td>
+<td data-label="Минусы">N-1 подов ждут лок; долгая миграция срывает <code>startupProbe</code>; лок залипает при OOM-kill</td>
 </tr>
 <tr>
-<td><code>initContainer</code></td>
-<td>Отдельный контейнер перед основным</td>
-<td>Миграция отделена от приложения</td>
-<td>Выполняется на <strong>каждом</strong> поде — та же конкуренция за лок, просто раньше</td>
+<td data-label="Вариант"><code>initContainer</code></td>
+<td data-label="Как">Отдельный контейнер перед основным</td>
+<td data-label="Плюсы">Миграция отделена от приложения</td>
+<td data-label="Минусы">Выполняется на <strong>каждом</strong> поде — та же конкуренция за лок, просто раньше</td>
 </tr>
 <tr>
-<td>Kubernetes <code>Job</code> (или Helm hook <code>pre-upgrade</code>)</td>
-<td>Одноразовый под до раскатки Deployment</td>
-<td>Ровно один исполнитель; повторы через <code>backoffLimit</code>; логи отдельно</td>
-<td>Нужна оркестрация: Deployment не должен стартовать раньше успеха Job</td>
+<td data-label="Вариант">Kubernetes <code>Job</code> (или Helm hook <code>pre-upgrade</code>)</td>
+<td data-label="Как">Одноразовый под до раскатки Deployment</td>
+<td data-label="Плюсы">Ровно один исполнитель; повторы через <code>backoffLimit</code>; логи отдельно</td>
+<td data-label="Минусы">Нужна оркестрация: Deployment не должен стартовать раньше успеха Job</td>
 </tr>
 <tr>
-<td>Стадия конвейера CI/CD</td>
-<td><code>liquibase update</code> из исполнителя до <code>kubectl apply</code></td>
-<td>Виден результат в конвейере, можно вставить approve и dry-run</td>
-<td>Исполнителю нужен сетевой доступ к БД (в банке это отдельная история)</td>
+<td data-label="Вариант">Стадия конвейера CI/CD</td>
+<td data-label="Как"><code>liquibase update</code> из исполнителя до <code>kubectl apply</code></td>
+<td data-label="Плюсы">Виден результат в конвейере, можно вставить approve и dry-run</td>
+<td data-label="Минусы">Исполнителю нужен сетевой доступ к БД (в банке это отдельная история)</td>
 </tr>
 <tr>
-<td>Выделенный «мигратор»-лидер</td>
-<td>Один под берёт advisory lock и мигрирует</td>
-<td>Работает без внешней оркестрации</td>
-<td>Самый сложный код, самая трудная отладка</td>
+<td data-label="Вариант">Выделенный «мигратор»-лидер</td>
+<td data-label="Как">Один под берёт advisory lock и мигрирует</td>
+<td data-label="Плюсы">Работает без внешней оркестрации</td>
+<td data-label="Минусы">Самый сложный код, самая трудная отладка</td>
 </tr>
 </tbody>
 </table>
@@ -1340,7 +1340,7 @@
 <p>Пять шагов ради одного переименования — веская причина выбирать имена колонок один раз и правильно. Для чисто «косметических» переименований есть альтернатива: не переименовывать колонку вовсе, а завести <code>VIEW</code> с новым именем. На этом же приёме построен pgroll, который создаёт версионированные схемы из представлений поверх физических таблиц, сам добавляет колонки, заполняет их и на время миграции синхронизирует записи триггерами (<a href="https://github.com/xataio/pgroll">pgroll</a>).</p>
 <h3 id="95-рецепт-сменить-тип-колонки">9.5 Рецепт: сменить тип колонки</h3>
 <p><code>ALTER COLUMN ... TYPE</code> в общем случае переписывает всю таблицу и перестраивает её индексы под <code>ACCESS EXCLUSIVE</code>, поэтому на большой таблице это одно из самых опасных изменений. Документация описывает исключение: если <code>USING</code> не меняет содержимое, а старый тип бинарно совместим с новым или служит для него неограниченным доменом, переписывать таблицу не нужно, но индексы всё равно перестраиваются, если система не может доказать их эквивалентность (<a href="https://www.postgresql.org/docs/17/sql-altertable.html">ALTER TABLE</a>). Таблица ниже показывает, какие типовые изменения попадают под исключение, а какие нет:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Изменение</th>
@@ -1350,34 +1350,34 @@
 </thead>
 <tbody>
 <tr>
-<td><code>varchar(20)</code> → <code>varchar(50)</code></td>
-<td>нет</td>
-<td>бинарно совместимо</td>
+<td data-label="Изменение"><code>varchar(20)</code> → <code>varchar(50)</code></td>
+<td data-label="Переписывание">нет</td>
+<td data-label="Комментарий">бинарно совместимо</td>
 </tr>
 <tr>
-<td><code>varchar(50)</code> → <code>varchar(20)</code></td>
-<td>да</td>
-<td>нужна проверка/усечение</td>
+<td data-label="Изменение"><code>varchar(50)</code> → <code>varchar(20)</code></td>
+<td data-label="Переписывание">да</td>
+<td data-label="Комментарий">нужна проверка/усечение</td>
 </tr>
 <tr>
-<td><code>varchar(n)</code> → <code>text</code></td>
-<td>нет</td>
-<td></td>
+<td data-label="Изменение"><code>varchar(n)</code> → <code>text</code></td>
+<td data-label="Переписывание">нет</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td><code>int</code> → <code>bigint</code></td>
-<td><strong>да</strong></td>
-<td>разный размер</td>
+<td data-label="Изменение"><code>int</code> → <code>bigint</code></td>
+<td data-label="Переписывание"><strong>да</strong></td>
+<td data-label="Комментарий">разный размер</td>
 </tr>
 <tr>
-<td><code>numeric(19,2)</code> → <code>numeric(19,4)</code></td>
-<td>да</td>
-<td></td>
+<td data-label="Изменение"><code>numeric(19,2)</code> → <code>numeric(19,4)</code></td>
+<td data-label="Переписывание">да</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td><code>timestamp</code> → <code>timestamptz</code></td>
-<td>да, и зависит от <code>TimeZone</code> сессии!</td>
-<td></td>
+<td data-label="Изменение"><code>timestamp</code> → <code>timestamptz</code></td>
+<td data-label="Переписывание">да, и зависит от <code>TimeZone</code> сессии!</td>
+<td data-label="Комментарий"></td>
 </tr>
 </tbody>
 </table>
@@ -1453,7 +1453,7 @@
 <h3 id="99-поведение-версий-приложения-на-каждом-этапе">9.9 Поведение версий приложения на каждом этапе</h3>
 <p>Схема «expand — migrate — contract» остаётся абстракцией, пока не расписать, что происходит в кластере в каждый момент выката. Поэтому ниже она разобрана на конкретной задаче: колонку <code>payment.merchant_ref text</code> (старое имя и старый формат — строка) нужно заменить на <code>payment.merchant_id bigint REFERENCES merchant(id)</code>. Для каждого шага показано, что делается со схемой, какие версии кода работают в кластере и что делает каждая из них.</p>
 <p>В кластере по очереди появляются три версии кода: <strong>v1</strong> знает только старую колонку, <strong>v2</strong> — переходный код, который знает обе, а <strong>v3</strong> знает только новую. Rolling update гарантирует, что между началом и концом выката <strong>одновременно</strong> живут ровно две соседние версии. Благодаря этому требование можно сформулировать точно: каждая пара (v1,v2) и (v2,v3) должна работать на одной и той же схеме. Таблица ниже расписывает выкат по шагам; главное в ней — строки 2 и 5, где запись и чтение переключаются разными деплоями.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Шаг</th>
@@ -1465,67 +1465,67 @@
 </thead>
 <tbody>
 <tr>
-<td>0</td>
-<td>—</td>
-<td>только v1</td>
-<td>—</td>
-<td>читает и пишет <code>merchant_ref</code></td>
+<td data-label="Шаг">0</td>
+<td data-label="Что делаем со схемой">—</td>
+<td data-label="Какие версии кода в кластере">только v1</td>
+<td data-label="Что делает старшая версия">—</td>
+<td data-label="Что делает младшая">читает и пишет <code>merchant_ref</code></td>
 </tr>
 <tr>
-<td>1 (expand)</td>
-<td><code>ADD COLUMN merchant_id bigint</code> (nullable), индекс <code>CONCURRENTLY</code>, FK <code>NOT VALID</code></td>
-<td>только v1</td>
-<td>—</td>
-<td>v1 не знает о колонке, вставляет NULL — работает</td>
+<td data-label="Шаг">1 (expand)</td>
+<td data-label="Что делаем со схемой"><code>ADD COLUMN merchant_id bigint</code> (nullable), индекс <code>CONCURRENTLY</code>, FK <code>NOT VALID</code></td>
+<td data-label="Какие версии кода в кластере">только v1</td>
+<td data-label="Что делает старшая версия">—</td>
+<td data-label="Что делает младшая">v1 не знает о колонке, вставляет NULL — работает</td>
 </tr>
 <tr>
-<td>2 (деплой v2)</td>
-<td>—</td>
-<td>v1 + v2</td>
-<td>v2 пишет <strong>обе</strong> колонки, читает <code>merchant_ref</code></td>
-<td>v1 пишет только <code>merchant_ref</code>, читает её же</td>
+<td data-label="Шаг">2 (деплой v2)</td>
+<td data-label="Что делаем со схемой">—</td>
+<td data-label="Какие версии кода в кластере">v1 + v2</td>
+<td data-label="Что делает старшая версия">v2 пишет <strong>обе</strong> колонки, читает <code>merchant_ref</code></td>
+<td data-label="Что делает младшая">v1 пишет только <code>merchant_ref</code>, читает её же</td>
 </tr>
 <tr>
-<td>3 (backfill)</td>
-<td>пакеты заполняют <code>merchant_id</code> там, где он NULL</td>
-<td>только v2</td>
-<td>—</td>
-<td>—</td>
+<td data-label="Шаг">3 (backfill)</td>
+<td data-label="Что делаем со схемой">пакеты заполняют <code>merchant_id</code> там, где он NULL</td>
+<td data-label="Какие версии кода в кластере">только v2</td>
+<td data-label="Что делает старшая версия">—</td>
+<td data-label="Что делает младшая">—</td>
 </tr>
 <tr>
-<td>4 (сверка)</td>
-<td><code>count(*) WHERE merchant_id IS NULL AND merchant_ref IS NOT NULL</code> = 0 несколько циклов</td>
-<td>только v2</td>
-<td>—</td>
-<td>—</td>
+<td data-label="Шаг">4 (сверка)</td>
+<td data-label="Что делаем со схемой"><code>count(*) WHERE merchant_id IS NULL AND merchant_ref IS NOT NULL</code> = 0 несколько циклов</td>
+<td data-label="Какие версии кода в кластере">только v2</td>
+<td data-label="Что делает старшая версия">—</td>
+<td data-label="Что делает младшая">—</td>
 </tr>
 <tr>
-<td>5 (деплой v2r)</td>
-<td>—</td>
-<td>v2 + v2r</td>
-<td>v2r читает <code>merchant_id</code>, пишет обе</td>
-<td>v2 читает <code>merchant_ref</code>, пишет обе</td>
+<td data-label="Шаг">5 (деплой v2r)</td>
+<td data-label="Что делаем со схемой">—</td>
+<td data-label="Какие версии кода в кластере">v2 + v2r</td>
+<td data-label="Что делает старшая версия">v2r читает <code>merchant_id</code>, пишет обе</td>
+<td data-label="Что делает младшая">v2 читает <code>merchant_ref</code>, пишет обе</td>
 </tr>
 <tr>
-<td>6</td>
-<td><code>VALIDATE CONSTRAINT</code>, <code>SET NOT NULL</code> через <code>CHECK</code></td>
-<td>только v2r</td>
-<td>—</td>
-<td>—</td>
+<td data-label="Шаг">6</td>
+<td data-label="Что делаем со схемой"><code>VALIDATE CONSTRAINT</code>, <code>SET NOT NULL</code> через <code>CHECK</code></td>
+<td data-label="Какие версии кода в кластере">только v2r</td>
+<td data-label="Что делает старшая версия">—</td>
+<td data-label="Что делает младшая">—</td>
 </tr>
 <tr>
-<td>7 (деплой v3)</td>
-<td>—</td>
-<td>v2r + v3</td>
-<td>v3 читает и пишет только <code>merchant_id</code></td>
-<td>v2r пишет обе — не мешает</td>
+<td data-label="Шаг">7 (деплой v3)</td>
+<td data-label="Что делаем со схемой">—</td>
+<td data-label="Какие версии кода в кластере">v2r + v3</td>
+<td data-label="Что делает старшая версия">v3 читает и пишет только <code>merchant_id</code></td>
+<td data-label="Что делает младшая">v2r пишет обе — не мешает</td>
 </tr>
 <tr>
-<td>8 (contract)</td>
-<td><code>DROP COLUMN merchant_ref</code> (сначала снять <code>NOT NULL</code>/<code>DEFAULT</code>)</td>
-<td>только v3</td>
-<td>—</td>
-<td>—</td>
+<td data-label="Шаг">8 (contract)</td>
+<td data-label="Что делаем со схемой"><code>DROP COLUMN merchant_ref</code> (сначала снять <code>NOT NULL</code>/<code>DEFAULT</code>)</td>
+<td data-label="Какие версии кода в кластере">только v3</td>
+<td data-label="Что делает старшая версия">—</td>
+<td data-label="Что делает младшая">—</td>
 </tr>
 </tbody>
 </table>
@@ -1851,7 +1851,7 @@ statement_timeout = '300ms' при lock_timeout = '1s'
 <hr>
 <h3 id="104-справочник-операция-блокировка-переписывание-безопасная-альтернатива">10.4 Справочник: операция → блокировка → переписывание → безопасная альтернатива</h3>
 <p>Этот справочник стоит держать под рукой на ревью миграций: для каждой типовой операции DDL в нём указано, какую блокировку она берёт, сканирует ли или переписывает таблицу и чем её заменить на живой базе. Уровни блокировок взяты из матрицы конфликтов в <a href="https://www.postgresql.org/docs/17/explicit-locking.html">Explicit Locking</a> и описания подкоманд в <a href="https://www.postgresql.org/docs/17/sql-altertable.html">ALTER TABLE</a>; «скан» означает полный проход по таблице, пока блокировка удерживается. Главное, на что смотреть в таблице, — сочетание ACCESS EXCLUSIVE со сканом или переписыванием в третьей колонке.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Операция</th>
@@ -1862,190 +1862,190 @@ statement_timeout = '300ms' при lock_timeout = '1s'
 </thead>
 <tbody>
 <tr>
-<td><code>ADD COLUMN</code> (nullable, без default)</td>
-<td>ACCESS EXCLUSIVE</td>
-<td>нет, метаданные</td>
-<td>безопасно; только <code>lock_timeout</code></td>
+<td data-label="Операция"><code>ADD COLUMN</code> (nullable, без default)</td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет, метаданные</td>
+<td data-label="Безопасная альтернатива">безопасно; только <code>lock_timeout</code></td>
 </tr>
 <tr>
-<td><code>ADD COLUMN ... DEFAULT &lt;const&gt;</code> (PG 11+)</td>
-<td>ACCESS EXCLUSIVE</td>
-<td>нет, значение в метаданных</td>
-<td>безопасно</td>
+<td data-label="Операция"><code>ADD COLUMN ... DEFAULT &lt;const&gt;</code> (PG 11+)</td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет, значение в метаданных</td>
+<td data-label="Безопасная альтернатива">безопасно</td>
 </tr>
 <tr>
-<td><code>ADD COLUMN ... DEFAULT &lt;volatile&gt;</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td><strong>переписывание</strong></td>
-<td>nullable → backfill → <code>SET DEFAULT</code></td>
+<td data-label="Операция"><code>ADD COLUMN ... DEFAULT &lt;volatile&gt;</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание"><strong>переписывание</strong></td>
+<td data-label="Безопасная альтернатива">nullable → backfill → <code>SET DEFAULT</code></td>
 </tr>
 <tr>
-<td><code>ADD COLUMN ... GENERATED ... STORED</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td><strong>переписывание</strong></td>
-<td>новая колонка + триггер + backfill</td>
+<td data-label="Операция"><code>ADD COLUMN ... GENERATED ... STORED</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание"><strong>переписывание</strong></td>
+<td data-label="Безопасная альтернатива">новая колонка + триггер + backfill</td>
 </tr>
 <tr>
-<td><code>DROP COLUMN</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td>нет, помечается в <code>pg_attribute</code></td>
-<td>безопасно по блокировке, опасно по коду</td>
+<td data-label="Операция"><code>DROP COLUMN</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет, помечается в <code>pg_attribute</code></td>
+<td data-label="Безопасная альтернатива">безопасно по блокировке, опасно по коду</td>
 </tr>
 <tr>
-<td><code>RENAME COLUMN</code> / <code>RENAME TABLE</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td>нет</td>
-<td>опасно для кода: только через новую колонку/вью</td>
+<td data-label="Операция"><code>RENAME COLUMN</code> / <code>RENAME TABLE</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет</td>
+<td data-label="Безопасная альтернатива">опасно для кода: только через новую колонку/вью</td>
 </tr>
 <tr>
-<td><code>SET NOT NULL</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td><strong>скан</strong> (PG &lt; 12 всегда)</td>
-<td><code>CHECK ... NOT VALID</code> → <code>VALIDATE</code> → <code>SET NOT NULL</code></td>
+<td data-label="Операция"><code>SET NOT NULL</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание"><strong>скан</strong> (PG &lt; 12 всегда)</td>
+<td data-label="Безопасная альтернатива"><code>CHECK ... NOT VALID</code> → <code>VALIDATE</code> → <code>SET NOT NULL</code></td>
 </tr>
 <tr>
-<td><code>DROP NOT NULL</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td>нет</td>
-<td>безопасно</td>
+<td data-label="Операция"><code>DROP NOT NULL</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет</td>
+<td data-label="Безопасная альтернатива">безопасно</td>
 </tr>
 <tr>
-<td><code>SET DEFAULT</code> / <code>DROP DEFAULT</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td>нет</td>
-<td>безопасно</td>
+<td data-label="Операция"><code>SET DEFAULT</code> / <code>DROP DEFAULT</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет</td>
+<td data-label="Безопасная альтернатива">безопасно</td>
 </tr>
 <tr>
-<td><code>ALTER COLUMN TYPE</code> (бинарно совместимо)</td>
-<td>ACCESS EXCLUSIVE</td>
-<td>нет heap; индексы могут перестраиваться</td>
-<td><code>varchar(n)</code>→<code>text</code>, расширение <code>varchar</code></td>
+<td data-label="Операция"><code>ALTER COLUMN TYPE</code> (бинарно совместимо)</td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет heap; индексы могут перестраиваться</td>
+<td data-label="Безопасная альтернатива"><code>varchar(n)</code>→<code>text</code>, расширение <code>varchar</code></td>
 </tr>
 <tr>
-<td><code>ALTER COLUMN TYPE</code> (несовместимо)</td>
-<td>ACCESS EXCLUSIVE</td>
-<td><strong>переписывание + все индексы</strong></td>
-<td>новая колонка + двойная запись + backfill</td>
+<td data-label="Операция"><code>ALTER COLUMN TYPE</code> (несовместимо)</td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание"><strong>переписывание + все индексы</strong></td>
+<td data-label="Безопасная альтернатива">новая колонка + двойная запись + backfill</td>
 </tr>
 <tr>
-<td><code>ADD CHECK</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td><strong>скан</strong></td>
-<td><code>NOT VALID</code>, затем <code>VALIDATE CONSTRAINT</code></td>
+<td data-label="Операция"><code>ADD CHECK</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание"><strong>скан</strong></td>
+<td data-label="Безопасная альтернатива"><code>NOT VALID</code>, затем <code>VALIDATE CONSTRAINT</code></td>
 </tr>
 <tr>
-<td><code>ADD CHECK ... NOT VALID</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td>нет</td>
-<td>безопасно</td>
+<td data-label="Операция"><code>ADD CHECK ... NOT VALID</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет</td>
+<td data-label="Безопасная альтернатива">безопасно</td>
 </tr>
 <tr>
-<td><code>VALIDATE CONSTRAINT</code></td>
-<td>SHARE UPDATE EXCLUSIVE</td>
-<td>скан, но запись не блокируется</td>
-<td>безопасно</td>
+<td data-label="Операция"><code>VALIDATE CONSTRAINT</code></td>
+<td data-label="Блокировка">SHARE UPDATE EXCLUSIVE</td>
+<td data-label="Скан / переписывание">скан, но запись не блокируется</td>
+<td data-label="Безопасная альтернатива">безопасно</td>
 </tr>
 <tr>
-<td><code>ADD FOREIGN KEY</code></td>
-<td>SHARE ROW EXCLUSIVE на <strong>обе</strong> таблицы</td>
-<td>скан дочерней</td>
-<td><code>NOT VALID</code> + <code>VALIDATE</code></td>
+<td data-label="Операция"><code>ADD FOREIGN KEY</code></td>
+<td data-label="Блокировка">SHARE ROW EXCLUSIVE на <strong>обе</strong> таблицы</td>
+<td data-label="Скан / переписывание">скан дочерней</td>
+<td data-label="Безопасная альтернатива"><code>NOT VALID</code> + <code>VALIDATE</code></td>
 </tr>
 <tr>
-<td><code>ADD PRIMARY KEY</code> / <code>ADD UNIQUE</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td>построение индекса</td>
-<td><code>CREATE UNIQUE INDEX CONCURRENTLY</code> → <code>ADD CONSTRAINT ... USING INDEX</code></td>
+<td data-label="Операция"><code>ADD PRIMARY KEY</code> / <code>ADD UNIQUE</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">построение индекса</td>
+<td data-label="Безопасная альтернатива"><code>CREATE UNIQUE INDEX CONCURRENTLY</code> → <code>ADD CONSTRAINT ... USING INDEX</code></td>
 </tr>
 <tr>
-<td><code>ADD EXCLUDE</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td>построение GiST</td>
-<td>нет прямой; на больших таблицах — триггер</td>
+<td data-label="Операция"><code>ADD EXCLUDE</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">построение GiST</td>
+<td data-label="Безопасная альтернатива">нет прямой; на больших таблицах — триггер</td>
 </tr>
 <tr>
-<td><code>CREATE INDEX</code></td>
-<td>SHARE (чтение ок, запись встаёт)</td>
-<td>построение</td>
-<td><code>CREATE INDEX CONCURRENTLY</code></td>
+<td data-label="Операция"><code>CREATE INDEX</code></td>
+<td data-label="Блокировка">SHARE (чтение ок, запись встаёт)</td>
+<td data-label="Скан / переписывание">построение</td>
+<td data-label="Безопасная альтернатива"><code>CREATE INDEX CONCURRENTLY</code></td>
 </tr>
 <tr>
-<td><code>CREATE INDEX CONCURRENTLY</code></td>
-<td>SHARE UPDATE EXCLUSIVE</td>
-<td>два прохода, дольше</td>
-<td>безопасно, но не в транзакции</td>
+<td data-label="Операция"><code>CREATE INDEX CONCURRENTLY</code></td>
+<td data-label="Блокировка">SHARE UPDATE EXCLUSIVE</td>
+<td data-label="Скан / переписывание">два прохода, дольше</td>
+<td data-label="Безопасная альтернатива">безопасно, но не в транзакции</td>
 </tr>
 <tr>
-<td><code>DROP INDEX</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td>нет</td>
-<td><code>DROP INDEX CONCURRENTLY</code></td>
+<td data-label="Операция"><code>DROP INDEX</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет</td>
+<td data-label="Безопасная альтернатива"><code>DROP INDEX CONCURRENTLY</code></td>
 </tr>
 <tr>
-<td><code>REINDEX INDEX</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td>построение</td>
-<td><code>REINDEX INDEX CONCURRENTLY</code> (PG 12+)</td>
+<td data-label="Операция"><code>REINDEX INDEX</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">построение</td>
+<td data-label="Безопасная альтернатива"><code>REINDEX INDEX CONCURRENTLY</code> (PG 12+)</td>
 </tr>
 <tr>
-<td><code>CLUSTER</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td><strong>переписывание</strong></td>
-<td><code>pg_repack --order-by</code></td>
+<td data-label="Операция"><code>CLUSTER</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание"><strong>переписывание</strong></td>
+<td data-label="Безопасная альтернатива"><code>pg_repack --order-by</code></td>
 </tr>
 <tr>
-<td><code>VACUUM FULL</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td><strong>переписывание</strong></td>
-<td><code>pg_repack</code>, настройка autovacuum</td>
+<td data-label="Операция"><code>VACUUM FULL</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание"><strong>переписывание</strong></td>
+<td data-label="Безопасная альтернатива"><code>pg_repack</code>, настройка autovacuum</td>
 </tr>
 <tr>
-<td><code>TRUNCATE</code></td>
-<td>ACCESS EXCLUSIVE (+ каскад по FK)</td>
-<td>нет</td>
-<td><code>DELETE</code> пакетами или <code>DETACH PARTITION</code></td>
+<td data-label="Операция"><code>TRUNCATE</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE (+ каскад по FK)</td>
+<td data-label="Скан / переписывание">нет</td>
+<td data-label="Безопасная альтернатива"><code>DELETE</code> пакетами или <code>DETACH PARTITION</code></td>
 </tr>
 <tr>
-<td><code>ATTACH PARTITION</code></td>
-<td>SHARE UPDATE EXCLUSIVE на родителя, ACCESS EXCLUSIVE на секцию</td>
-<td>скан секции, если нет совпадающего <code>CHECK</code></td>
-<td>заранее навесить <code>CHECK</code> по границам</td>
+<td data-label="Операция"><code>ATTACH PARTITION</code></td>
+<td data-label="Блокировка">SHARE UPDATE EXCLUSIVE на родителя, ACCESS EXCLUSIVE на секцию</td>
+<td data-label="Скан / переписывание">скан секции, если нет совпадающего <code>CHECK</code></td>
+<td data-label="Безопасная альтернатива">заранее навесить <code>CHECK</code> по границам</td>
 </tr>
 <tr>
-<td><code>DETACH PARTITION</code></td>
-<td>ACCESS EXCLUSIVE на родителя</td>
-<td>нет</td>
-<td><code>DETACH ... CONCURRENTLY</code></td>
+<td data-label="Операция"><code>DETACH PARTITION</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE на родителя</td>
+<td data-label="Скан / переписывание">нет</td>
+<td data-label="Безопасная альтернатива"><code>DETACH ... CONCURRENTLY</code></td>
 </tr>
 <tr>
-<td><code>ADD COLUMN</code> на секционированной таблице</td>
-<td>ACCESS EXCLUSIVE на родителя и все секции</td>
-<td>по правилам выше на каждой</td>
-<td>те же приёмы, но помнить про число секций</td>
+<td data-label="Операция"><code>ADD COLUMN</code> на секционированной таблице</td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE на родителя и все секции</td>
+<td data-label="Скан / переписывание">по правилам выше на каждой</td>
+<td data-label="Безопасная альтернатива">те же приёмы, но помнить про число секций</td>
 </tr>
 <tr>
-<td><code>REFRESH MATERIALIZED VIEW</code></td>
-<td>ACCESS EXCLUSIVE</td>
-<td>пересчёт</td>
-<td><code>REFRESH ... CONCURRENTLY</code> (нужен UNIQUE-индекс)</td>
+<td data-label="Операция"><code>REFRESH MATERIALIZED VIEW</code></td>
+<td data-label="Блокировка">ACCESS EXCLUSIVE</td>
+<td data-label="Скан / переписывание">пересчёт</td>
+<td data-label="Безопасная альтернатива"><code>REFRESH ... CONCURRENTLY</code> (нужен UNIQUE-индекс)</td>
 </tr>
 <tr>
-<td><code>CREATE TRIGGER</code></td>
-<td>SHARE ROW EXCLUSIVE</td>
-<td>нет</td>
-<td>безопасно, но пишущие встают на миг</td>
+<td data-label="Операция"><code>CREATE TRIGGER</code></td>
+<td data-label="Блокировка">SHARE ROW EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет</td>
+<td data-label="Безопасная альтернатива">безопасно, но пишущие встают на миг</td>
 </tr>
 <tr>
-<td><code>ALTER TABLE ... SET (fillfactor = ...)</code></td>
-<td>SHARE UPDATE EXCLUSIVE</td>
-<td>нет (применится при последующих записях)</td>
-<td>безопасно</td>
+<td data-label="Операция"><code>ALTER TABLE ... SET (fillfactor = ...)</code></td>
+<td data-label="Блокировка">SHARE UPDATE EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет (применится при последующих записях)</td>
+<td data-label="Безопасная альтернатива">безопасно</td>
 </tr>
 <tr>
-<td><code>ALTER TABLE ... SET (autovacuum_*)</code></td>
-<td>SHARE UPDATE EXCLUSIVE</td>
-<td>нет</td>
-<td>безопасно</td>
+<td data-label="Операция"><code>ALTER TABLE ... SET (autovacuum_*)</code></td>
+<td data-label="Блокировка">SHARE UPDATE EXCLUSIVE</td>
+<td data-label="Скан / переписывание">нет</td>
+<td data-label="Безопасная альтернатива">безопасно</td>
 </tr>
 </tbody>
 </table>
@@ -2877,5 +2877,5 @@ diff -u /tmp/uat.sql /tmp/prod.sql <span class="p">|</span> head -100
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-проектирование-таблиц-по-доменной-модели">1. Проектирование таблиц по доменной модели</a></li><li><a href="#2-ключи">2. Ключи</a></li><li><a href="#3-типы-данных-postgresql">3. Типы данных PostgreSQL</a></li><li><a href="#4-null-и-трёхзначная-логика">4. NULL и трёхзначная логика</a></li><li><a href="#5-ограничения-целостности">5. Ограничения целостности</a></li><li><a href="#6-паттерны-хранения">6. Паттерны хранения</a></li><li><a href="#7-секционирование">7. Секционирование</a></li><li><a href="#8-инструменты-миграций-liquibase-и-flyway">8. Инструменты миграций: Liquibase и Flyway</a></li><li><a href="#9-zero-downtime-миграции-expand-migrate-contract">9. Zero-downtime миграции: expand → migrate → contract</a></li><li><a href="#10-ddl-и-очередь-блокировок">10. DDL и очередь блокировок</a></li><li><a href="#11-миграции-данных-большого-объёма">11. Миграции данных большого объёма</a></li><li><a href="#12-откат-и-тестирование-миграций">12. Откат и тестирование миграций</a></li><li><a href="#13-разобранные-инциденты">13. Разобранные инциденты</a></li><li><a href="#14-грабли-и-антипаттерны">14. Грабли и антипаттерны</a></li><li><a href="#15-диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками">17. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

@@ -3,7 +3,7 @@
 <title>47. Kubernetes и OpenShift для разработчика — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Kubernetes и OpenShift для разработчика">
 <a class="skip" href="#content">К тексту</a>
@@ -43,7 +43,7 @@ act      → делаем один шаг к цели (создать/удали
 <p>Почему <code>kubectl edit</code> и <code>kubectl scale</code> в проде вредны, понятно из той же схемы. Изменение живёт только в кластере, и следующий <code>apply</code> из CI молча вернёт старое значение — отсюда классический «загадочный откат фикса». Кроме того, у такой правки нет ревью, истории и записанной причины, а сделанное в редакторе изменение не проходит валидацию шаблонизатора. Отсюда рабочее правило: <strong>в кластер руками ходят только читать и отлаживать</strong>. Исключение одно — инцидент, но и тогда изменение переносят в git сразу после того, как пожар потушен. Именно эту дисциплину формализует GitOps (глава 53).</p>
 <h3 id="13-компоненты-управляющего-контура">1.3 Компоненты управляющего контура</h3>
 <p>Управляющий контур — это набор компонентов, которые принимают запросы к API, хранят состояние и приводят к нему кластер. Администрировать их разработчику не нужно, но во время инцидента нужно быстро понять, <strong>чей это отказ</strong>, потому что от ответа зависит, кого будить и что можно сделать самому. В таблице ниже для каждого компонента указано, чем он занят и как выглядит его отказ со стороны; смотрите прежде всего на последнюю колонку, по ней инцидент и опознают.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Компонент</th>
@@ -53,39 +53,39 @@ act      → делаем один шаг к цели (создать/удали
 </thead>
 <tbody>
 <tr>
-<td><strong>kube-apiserver</strong></td>
-<td>единственная точка входа, валидация, авторизация, запись в etcd</td>
-<td><code>kubectl</code> отвечает ошибкой/таймаутом; ничего не меняется в кластере, но <strong>работающие поды продолжают работать</strong></td>
+<td data-label="Компонент"><strong>kube-apiserver</strong></td>
+<td data-label="Что делает">единственная точка входа, валидация, авторизация, запись в etcd</td>
+<td data-label="Симптом его отказа"><code>kubectl</code> отвечает ошибкой/таймаутом; ничего не меняется в кластере, но <strong>работающие поды продолжают работать</strong></td>
 </tr>
 <tr>
-<td><strong>etcd</strong></td>
-<td>хранилище всего состояния</td>
-<td>apiserver тормозит или отдаёт 500; <code>etcdserver: request timed out</code> в событиях</td>
+<td data-label="Компонент"><strong>etcd</strong></td>
+<td data-label="Что делает">хранилище всего состояния</td>
+<td data-label="Симптом его отказа">apiserver тормозит или отдаёт 500; <code>etcdserver: request timed out</code> в событиях</td>
 </tr>
 <tr>
-<td><strong>kube-scheduler</strong></td>
-<td>выбирает узел для пода</td>
-<td>поды вечно в <code>Pending</code>, событие <code>FailedScheduling</code></td>
+<td data-label="Компонент"><strong>kube-scheduler</strong></td>
+<td data-label="Что делает">выбирает узел для пода</td>
+<td data-label="Симптом его отказа">поды вечно в <code>Pending</code>, событие <code>FailedScheduling</code></td>
 </tr>
 <tr>
-<td><strong>kube-controller-manager</strong></td>
-<td>ReplicaSet, Deployment, Job, endpoints, node lifecycle</td>
-<td>Deployment обновлён, но новые поды не создаются; endpoints не обновляются</td>
+<td data-label="Компонент"><strong>kube-controller-manager</strong></td>
+<td data-label="Что делает">ReplicaSet, Deployment, Job, endpoints, node lifecycle</td>
+<td data-label="Симптом его отказа">Deployment обновлён, но новые поды не создаются; endpoints не обновляются</td>
 </tr>
 <tr>
-<td><strong>kubelet</strong> (на каждом узле)</td>
-<td>запускает контейнеры, выполняет пробы, репортит статус узла</td>
-<td>поды на узле <code>NotReady</code>, <code>Unknown</code>; пробы не выполняются</td>
+<td data-label="Компонент"><strong>kubelet</strong> (на каждом узле)</td>
+<td data-label="Что делает">запускает контейнеры, выполняет пробы, репортит статус узла</td>
+<td data-label="Симптом его отказа">поды на узле <code>NotReady</code>, <code>Unknown</code>; пробы не выполняются</td>
 </tr>
 <tr>
-<td><strong>kube-proxy</strong> (на каждом узле)</td>
-<td>программирует iptables/IPVS для Service</td>
-<td>трафик идёт в удалённый под или не идёт вовсе</td>
+<td data-label="Компонент"><strong>kube-proxy</strong> (на каждом узле)</td>
+<td data-label="Что делает">программирует iptables/IPVS для Service</td>
+<td data-label="Симптом его отказа">трафик идёт в удалённый под или не идёт вовсе</td>
 </tr>
 <tr>
-<td><strong>CoreDNS</strong></td>
-<td>DNS внутри кластера</td>
-<td><code>UnknownHostException</code> на имена сервисов, плавающие таймауты разрешения имён</td>
+<td data-label="Компонент"><strong>CoreDNS</strong></td>
+<td data-label="Что делает">DNS внутри кластера</td>
+<td data-label="Симптом его отказа"><code>UnknownHostException</code> на имена сервисов, плавающие таймауты разрешения имён</td>
 </tr>
 </tbody>
 </table>
@@ -347,7 +347,7 @@ orders-c76bd8758    2          0         &lt;none&gt;
 <h3 id="31-устройство-service">3.1 Устройство Service</h3>
 <p>Service даёт <strong>стабильное имя и стабильный виртуальный IP меняющемуся множеству подов</strong>, и вызывающему сервису не нужно знать, сколько подов за ним стоит и где они сейчас. Объект состоит из двух половин: <code>spec.selector</code>, то есть меток, по которым ищутся поды, и портов. За подами, подходящими под селектор, следит контроллер endpoints (сейчас это EndpointSlice-контроллер), и в списке он держит только адреса <strong>готовых</strong> подов — тех, у кого прошла readiness.</p>
 <p>Типов Service пять, и в таблице ниже для каждого сказано, что он делает и в какой ситуации нужен разработчику; в подавляющем большинстве случаев достаточно первой строки:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип</th>
@@ -357,29 +357,29 @@ orders-c76bd8758    2          0         &lt;none&gt;
 </thead>
 <tbody>
 <tr>
-<td><code>ClusterIP</code> (по умолчанию)</td>
-<td>виртуальный IP, доступный только внутри кластера</td>
-<td>95 % случаев: вызовы между сервисами</td>
+<td data-label="Тип"><code>ClusterIP</code> (по умолчанию)</td>
+<td data-label="Что делает">виртуальный IP, доступный только внутри кластера</td>
+<td data-label="Когда нужен разработчику">95 % случаев: вызовы между сервисами</td>
 </tr>
 <tr>
-<td><code>ClusterIP: None</code> (<strong>headless</strong>)</td>
-<td>нет VIP; DNS отдаёт A-записи всех подов</td>
-<td>клиентский балансинг, StatefulSet, gRPC</td>
+<td data-label="Тип"><code>ClusterIP: None</code> (<strong>headless</strong>)</td>
+<td data-label="Что делает">нет VIP; DNS отдаёт A-записи всех подов</td>
+<td data-label="Когда нужен разработчику">клиентский балансинг, StatefulSet, gRPC</td>
 </tr>
 <tr>
-<td><code>NodePort</code></td>
-<td>порт 30000–32767 на каждом узле</td>
-<td>локальные кластеры, legacy-балансировщики</td>
+<td data-label="Тип"><code>NodePort</code></td>
+<td data-label="Что делает">порт 30000–32767 на каждом узле</td>
+<td data-label="Когда нужен разработчику">локальные кластеры, legacy-балансировщики</td>
 </tr>
 <tr>
-<td><code>LoadBalancer</code></td>
-<td>NodePort + внешний LB от облака</td>
-<td>внешняя точка входа (дорого: один LB на сервис)</td>
+<td data-label="Тип"><code>LoadBalancer</code></td>
+<td data-label="Что делает">NodePort + внешний LB от облака</td>
+<td data-label="Когда нужен разработчику">внешняя точка входа (дорого: один LB на сервис)</td>
 </tr>
 <tr>
-<td><code>ExternalName</code></td>
-<td>CNAME на внешнее имя</td>
-<td>адаптация к внешним системам без кода</td>
+<td data-label="Тип"><code>ExternalName</code></td>
+<td data-label="Что делает">CNAME на внешнее имя</td>
+<td data-label="Когда нужен разработчику">адаптация к внешним системам без кода</td>
 </tr>
 </tbody>
 </table>
@@ -437,7 +437,7 @@ orders-c76bd8758    2          0         &lt;none&gt;
 </code></pre></div>
 
 <p>Сравнение по критериям, которые важны на практике, собрано в таблице; главные строки в ней — первая и третья, про обновление без рестарта и про утечку:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -447,34 +447,34 @@ orders-c76bd8758    2          0         &lt;none&gt;
 </thead>
 <tbody>
 <tr>
-<td>Обновление без рестарта</td>
-<td><strong>нет</strong></td>
-<td><strong>да</strong> (kubelet синхронизирует, обычно ≤ ~1 мин)</td>
+<td data-label="Критерий">Обновление без рестарта</td>
+<td data-label="env"><strong>нет</strong></td>
+<td data-label="том (файлы)"><strong>да</strong> (kubelet синхронизирует, обычно ≤ ~1 мин)</td>
 </tr>
 <tr>
-<td>Видно в <code>kubectl describe pod</code></td>
-<td>да, включая значения из ConfigMap</td>
-<td>нет</td>
+<td data-label="Критерий">Видно в <code>kubectl describe pod</code></td>
+<td data-label="env">да, включая значения из ConfigMap</td>
+<td data-label="том (файлы)">нет</td>
 </tr>
 <tr>
-<td>Утечка в дочерние процессы, дампы, <code>/proc/1/environ</code></td>
-<td><strong>да</strong></td>
-<td>нет</td>
+<td data-label="Критерий">Утечка в дочерние процессы, дампы, <code>/proc/1/environ</code></td>
+<td data-label="env"><strong>да</strong></td>
+<td data-label="том (файлы)">нет</td>
 </tr>
 <tr>
-<td>Попадает в логи при печати окружения</td>
-<td>да</td>
-<td>нет</td>
+<td data-label="Критерий">Попадает в логи при печати окружения</td>
+<td data-label="env">да</td>
+<td data-label="том (файлы)">нет</td>
 </tr>
 <tr>
-<td>Размер и структура</td>
-<td>плоские строки</td>
-<td>файлы, в т. ч. вложенные каталоги</td>
+<td data-label="Критерий">Размер и структура</td>
+<td data-label="env">плоские строки</td>
+<td data-label="том (файлы)">файлы, в т. ч. вложенные каталоги</td>
 </tr>
 <tr>
-<td>Простота для 12-factor</td>
-<td>выше</td>
-<td>нужна поддержка в приложении</td>
+<td data-label="Критерий">Простота для 12-factor</td>
+<td data-label="env">выше</td>
+<td data-label="том (файлы)">нужна поддержка в приложении</td>
 </tr>
 </tbody>
 </table>
@@ -534,7 +534,7 @@ orders-c76bd8758    2          0         &lt;none&gt;
 <p>Для каждого смонтированного ConfigMap или Secret kubelet держит кэш и периодически его сверяет. Как именно он это делает, определяет параметр <code>configMapAndSecretChangeDetectionStrategy</code> в конфигурации kubelet: по умолчанию стоит <code>Watch</code>, при котором kubelet реагирует на событие, а при <code>Cache</code> или <code>Get</code> задержку определяют <code>syncFrequency</code> (по умолчанию 1 минута) и TTL кэша. Файл обновляется <strong>атомарно</strong>: kubelet создаёт новый каталог <code>..data_tmp</code>, наполняет его и подменяет symlink <code>..data</code>. Поэтому приложение никогда не увидит полуобновлённый файл, но и <code>inotify</code>, повешенный на сам файл, не сработает, ведь меняется symlink, а не inode файла, и следить надо за каталогом.</p>
 <p>На практике задержка лежит в диапазоне <strong>от единиц секунд до ~1 минуты плюс период синхронизации</strong>. Есть и три случая, когда обновления не будет вовсе: <code>subPath</code> (раздел 4.1), <code>immutable: true</code> и переменные окружения.</p>
 <p>Самое же важное в том, что <strong>обновившийся файл ничего не меняет в работающем Spring-приложении</strong>. Property sources читаются при создании контекста, а <code>@Value</code> и <code>@ConfigurationProperties</code> превращаются в поля бинов, которые уже проинжектированы. Сам Boot за файлами конфигурации не следит ни в каком виде, поэтому новое значение приходится доставлять в приложение отдельно, и способы сделать это вместе с их ценой собраны в таблице:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -544,24 +544,24 @@ orders-c76bd8758    2          0         &lt;none&gt;
 </thead>
 <tbody>
 <tr>
-<td>Чексумма ConfigMap в аннотации пода (раздел 4.3)</td>
-<td>обычный rolling update, откат через <code>rollout undo</code>, наблюдаемость</td>
-<td>перезапуск подов (но это и есть штатный путь)</td>
+<td data-label="Способ">Чексумма ConfigMap в аннотации пода (раздел 4.3)</td>
+<td data-label="Что даёт">обычный rolling update, откат через <code>rollout undo</code>, наблюдаемость</td>
+<td data-label="Цена">перезапуск подов (но это и есть штатный путь)</td>
 </tr>
 <tr>
-<td><code>@RefreshScope</code> + Spring Cloud (<code>/actuator/refresh</code>)</td>
-<td>обновление без рестарта</td>
-<td>нужен Spring Cloud Context; бины пересоздаются лениво — скрытые сюрпризы с состоянием; надо дёрнуть каждый под отдельно</td>
+<td data-label="Способ"><code>@RefreshScope</code> + Spring Cloud (<code>/actuator/refresh</code>)</td>
+<td data-label="Что даёт">обновление без рестарта</td>
+<td data-label="Цена">нужен Spring Cloud Context; бины пересоздаются лениво — скрытые сюрпризы с состоянием; надо дёрнуть каждый под отдельно</td>
 </tr>
 <tr>
-<td>Spring Cloud Kubernetes с <code>spring.cloud.kubernetes.reload.enabled=true</code></td>
-<td>автоматическая перезагрузка по watch</td>
-<td>RBAC на чтение ConfigMap, зависимость от apiserver, риск «конфиг поехал на одной реплике из шести»</td>
+<td data-label="Способ">Spring Cloud Kubernetes с <code>spring.cloud.kubernetes.reload.enabled=true</code></td>
+<td data-label="Что даёт">автоматическая перезагрузка по watch</td>
+<td data-label="Цена">RBAC на чтение ConfigMap, зависимость от apiserver, риск «конфиг поехал на одной реплике из шести»</td>
 </tr>
 <tr>
-<td>Своё чтение файла по запросу (feature flag в файле)</td>
-<td>полный контроль</td>
-<td>пишете сами; годится для флагов, не для всей конфигурации</td>
+<td data-label="Способ">Своё чтение файла по запросу (feature flag в файле)</td>
+<td data-label="Что даёт">полный контроль</td>
+<td data-label="Цена">пишете сами; годится для флагов, не для всей конфигурации</td>
 </tr>
 </tbody>
 </table>
@@ -668,7 +668,7 @@ orders-c76bd8758    2          0         &lt;none&gt;
 <p>Пробы (probes) — это проверки, которыми kubelet периодически опрашивает контейнер, чтобы решить, стартовал ли он, жив ли и можно ли слать ему трафик. Для Java-сервиса эта тема важнее любой другой в главе: медленный старт JVM, тяжёлый <code>/actuator/health</code> и таймаут по умолчанию в одну секунду вместе дают больше инцидентов, чем все остальные настройки манифеста, а неверно настроенная liveness способна превратить деградацию базы в полный отказ сервиса. Ниже разобраны семантика трёх проб, причина, по которой liveness не должна ходить в базу, интеграция со Spring Boot Actuator, расчёт параметров, типовые ошибки, а затем подробнее — расчёт <code>startupProbe</code>, выбор таймаута, каскадный перезапуск по шагам, умышленное снятие пода с балансировки, gRPC- и exec-пробы и поведение проб на виртуальных потоках.</p>
 <h3 id="51-семантика-трёх-проб">5.1 Семантика трёх проб</h3>
 <p>Тема проб лидирует и по частоте вопросов на интервью, и по частоте инцидентов, и путаница в ней начинается с того, что все три пробы выглядят одинаково: у каждой тот же набор механизмов (<code>httpGet</code>, <code>exec</code>, <code>tcpSocket</code>, <code>grpc</code>). Но <strong>последствия провала у них принципиально разные</strong>, и именно от них зависит, что в пробу можно класть, а что нельзя. Таблица ниже сводит это вместе; главная колонка в ней — последняя, про проверку зависимостей:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Проба</th>
@@ -679,22 +679,22 @@ orders-c76bd8758    2          0         &lt;none&gt;
 </thead>
 <tbody>
 <tr>
-<td><code>startupProbe</code></td>
-<td>«ещё не стартовал»</td>
-<td>ждёт; при исчерпании <code>failureThreshold</code> — <strong>убивает контейнер</strong></td>
-<td>нет</td>
+<td data-label="Проба"><code>startupProbe</code></td>
+<td data-label="Что означает провал">«ещё не стартовал»</td>
+<td data-label="Что делает kubelet">ждёт; при исчерпании <code>failureThreshold</code> — <strong>убивает контейнер</strong></td>
+<td data-label="Можно ли проверять зависимости">нет</td>
 </tr>
 <tr>
-<td><code>livenessProbe</code></td>
-<td>«сломан необратимо»</td>
-<td><strong>перезапускает контейнер</strong></td>
-<td><strong>категорически нет</strong></td>
+<td data-label="Проба"><code>livenessProbe</code></td>
+<td data-label="Что означает провал">«сломан необратимо»</td>
+<td data-label="Что делает kubelet"><strong>перезапускает контейнер</strong></td>
+<td data-label="Можно ли проверять зависимости"><strong>категорически нет</strong></td>
 </tr>
 <tr>
-<td><code>readinessProbe</code></td>
-<td>«не могу обслуживать сейчас»</td>
-<td>убирает под из EndpointSlice (трафик не идёт)</td>
-<td>да</td>
+<td data-label="Проба"><code>readinessProbe</code></td>
+<td data-label="Что означает провал">«не могу обслуживать сейчас»</td>
+<td data-label="Что делает kubelet">убирает под из EndpointSlice (трафик не идёт)</td>
+<td data-label="Можно ли проверять зависимости">да</td>
 </tr>
 </tbody>
 </table>
@@ -1057,7 +1057,7 @@ kubectl logs -l app.kubernetes.io/name<span class="o">=</span>orders --since<spa
 
 <p><strong>Шаг 2. Заложить коэффициент.</strong> Рабочее правило такое: бюджет равен <strong>3 × p99</strong>, но не меньше, чем <code>максимум + 60 с</code>. Тройка взята не с потолка: это эмпирическая поправка на три независимых фактора, которые в худший день складываются. Первый — холодный page cache и медленный pull образа на новом узле, второй — борьба за CPU с соседями и с собственными репликами, третий — деградация внешней зависимости, которую приложение ждёт на старте (Config Server, Vault, или миграции уже применены, но БД под нагрузкой).</p>
 <p><strong>Шаг 3. Разложить бюджет на <code>periodSeconds × failureThreshold</code>.</strong> Одинаковый бюджет можно получить разными сочетаниями, и выбор между ними не безразличен. В таблице ниже бюджет везде один и тот же, 300 с, а сравнивать надо третью и четвёртую колонки — насколько поздно под станет Ready и сколько запросов создают сами пробы:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Параметры</th>
@@ -1068,28 +1068,28 @@ kubectl logs -l app.kubernetes.io/name<span class="o">=</span>orders --since<spa
 </thead>
 <tbody>
 <tr>
-<td><code>periodSeconds: 1</code>, <code>failureThreshold: 300</code></td>
-<td class="num">300 с</td>
-<td>под становится Ready в течение 1 с после готовности</td>
-<td>1 HTTP-запрос/с на под</td>
+<td data-label="Параметры"><code>periodSeconds: 1</code>, <code>failureThreshold: 300</code></td>
+<td data-label="Бюджет" class="num">300 с</td>
+<td data-label="Гранулярность обнаружения">под становится Ready в течение 1 с после готовности</td>
+<td data-label="Нагрузка проб">1 HTTP-запрос/с на под</td>
 </tr>
 <tr>
-<td><code>periodSeconds: 5</code>, <code>failureThreshold: 60</code></td>
-<td class="num">300 с</td>
-<td>до 5 с «потерянного» времени на каждом поде</td>
-<td>0.2 запроса/с</td>
+<td data-label="Параметры"><code>periodSeconds: 5</code>, <code>failureThreshold: 60</code></td>
+<td data-label="Бюджет" class="num">300 с</td>
+<td data-label="Гранулярность обнаружения">до 5 с «потерянного» времени на каждом поде</td>
+<td data-label="Нагрузка проб">0.2 запроса/с</td>
 </tr>
 <tr>
-<td><code>periodSeconds: 10</code>, <code>failureThreshold: 30</code></td>
-<td class="num">300 с</td>
-<td>до 10 с потерь</td>
-<td>0.1 запроса/с</td>
+<td data-label="Параметры"><code>periodSeconds: 10</code>, <code>failureThreshold: 30</code></td>
+<td data-label="Бюджет" class="num">300 с</td>
+<td data-label="Гранулярность обнаружения">до 10 с потерь</td>
+<td data-label="Нагрузка проб">0.1 запроса/с</td>
 </tr>
 <tr>
-<td><code>periodSeconds: 30</code>, <code>failureThreshold: 10</code></td>
-<td class="num">300 с</td>
-<td>до 30 с потерь на под</td>
-<td>пренебрежимо</td>
+<td data-label="Параметры"><code>periodSeconds: 30</code>, <code>failureThreshold: 10</code></td>
+<td data-label="Бюджет" class="num">300 с</td>
+<td data-label="Гранулярность обнаружения">до 30 с потерь на под</td>
+<td data-label="Нагрузка проб">пренебрежимо</td>
 </tr>
 </tbody>
 </table>
@@ -1111,7 +1111,7 @@ kubectl logs -l app.kubernetes.io/name<span class="o">=</span>orders --since<spa
 <h3 id="57-таймаут-пробы-и-p99-эндпоинта-здоровья">5.7 Таймаут пробы и p99 эндпоинта здоровья</h3>
 <p>Таймаут пробы — это время, за которое эндпоинт здоровья обязан ответить, чтобы kubelet засчитал проверку. Значение по умолчанию <code>timeoutSeconds: 1</code> почти всегда неверно, потому что <code>/actuator/health</code> отвечает не за постоянное время: он агрегирует все <code>HealthIndicator</code>, и каждый из них выполняет реальную работу. Ниже разобрано, из чего складывается время ответа health, как выбрать таймаут, как сделать сам эндпоинт дешёвым и почему пробы опасны, когда делят пул потоков с бизнес-трафиком.</p>
 <p>Сколько времени занимают стандартные индикаторы, видно из таблицы; смотреть в ней стоит на правую колонку, особенно на строку <code>db</code>, где при исчерпанном пуле время ответа вырастает до десятков секунд:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Индикатор</th>
@@ -1121,34 +1121,34 @@ kubectl logs -l app.kubernetes.io/name<span class="o">=</span>orders --since<spa
 </thead>
 <tbody>
 <tr>
-<td><code>livenessState</code>, <code>readinessState</code></td>
-<td>чтение поля в памяти</td>
-<td>&lt; 1 мкс</td>
+<td data-label="Индикатор"><code>livenessState</code>, <code>readinessState</code></td>
+<td data-label="Что делает">чтение поля в памяти</td>
+<td data-label="Типичная длительность">&lt; 1 мкс</td>
 </tr>
 <tr>
-<td><code>diskSpace</code></td>
-<td><code>File.getUsableSpace()</code> — syscall</td>
-<td>0.1–5 мс, на сетевом томе — десятки мс</td>
+<td data-label="Индикатор"><code>diskSpace</code></td>
+<td data-label="Что делает"><code>File.getUsableSpace()</code> — syscall</td>
+<td data-label="Типичная длительность">0.1–5 мс, на сетевом томе — десятки мс</td>
 </tr>
 <tr>
-<td><code>db</code></td>
-<td><code>SELECT 1</code> через пул</td>
-<td>1–3 мс в норме; при исчерпанном пуле — до <code>connectionTimeout</code> (30 с по умолчанию в HikariCP!)</td>
+<td data-label="Индикатор"><code>db</code></td>
+<td data-label="Что делает"><code>SELECT 1</code> через пул</td>
+<td data-label="Типичная длительность">1–3 мс в норме; при исчерпанном пуле — до <code>connectionTimeout</code> (30 с по умолчанию в HikariCP!)</td>
 </tr>
 <tr>
-<td><code>redis</code></td>
-<td><code>PING</code></td>
-<td>0.5–2 мс</td>
+<td data-label="Индикатор"><code>redis</code></td>
+<td data-label="Что делает"><code>PING</code></td>
+<td data-label="Типичная длительность">0.5–2 мс</td>
 </tr>
 <tr>
-<td><code>kafka</code></td>
-<td><code>describeCluster()</code> с таймаутом</td>
-<td>50–500 мс, при недоступном брокере — до <code>request.timeout.ms</code></td>
+<td data-label="Индикатор"><code>kafka</code></td>
+<td data-label="Что делает"><code>describeCluster()</code> с таймаутом</td>
+<td data-label="Типичная длительность">50–500 мс, при недоступном брокере — до <code>request.timeout.ms</code></td>
 </tr>
 <tr>
-<td><code>mail</code>, <code>ldap</code>, кастомные</td>
-<td>сетевой вызов</td>
-<td>непредсказуемо</td>
+<td data-label="Индикатор"><code>mail</code>, <code>ldap</code>, кастомные</td>
+<td data-label="Что делает">сетевой вызов</td>
+<td data-label="Типичная длительность">непредсказуемо</td>
 </tr>
 </tbody>
 </table>
@@ -1461,7 +1461,7 @@ kubectl patch deploy orders --type<span class="o">=</span>json <span class="se">
 </blockquote>
 <h3 id="62-классы-qos">6.2 Классы QoS</h3>
 <p>QoS-класс пода определяет, в каком порядке kubelet и ядро будут убивать поды, когда на узле кончится память. Класс назначается автоматически по тому, как заданы requests и limits, и напрямую его не настроить, поэтому важно знать правила, по которым он получается. Таблица ниже показывает три класса и условия для каждого; обратите внимание, что условие Guaranteed распространяется и на init-контейнеры, и на sidecar:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Класс</th>
@@ -1471,19 +1471,19 @@ kubectl patch deploy orders --type<span class="o">=</span>json <span class="se">
 </thead>
 <tbody>
 <tr>
-<td><strong>Guaranteed</strong></td>
-<td>у <strong>каждого</strong> контейнера (включая init и sidecar) заданы и cpu, и memory, и <code>requests == limits</code></td>
-<td>последний кандидат на вытеснение; может получить эксклюзивные ядра при <code>static</code> CPU manager policy</td>
+<td data-label="Класс"><strong>Guaranteed</strong></td>
+<td data-label="Условие">у <strong>каждого</strong> контейнера (включая init и sidecar) заданы и cpu, и memory, и <code>requests == limits</code></td>
+<td data-label="Что это значит">последний кандидат на вытеснение; может получить эксклюзивные ядра при <code>static</code> CPU manager policy</td>
 </tr>
 <tr>
-<td><strong>Burstable</strong></td>
-<td>заданы какие-то requests/limits, но условие Guaranteed не выполнено</td>
-<td>вытесняется после BestEffort; при превышении requests по памяти — кандидат на вытеснение</td>
+<td data-label="Класс"><strong>Burstable</strong></td>
+<td data-label="Условие">заданы какие-то requests/limits, но условие Guaranteed не выполнено</td>
+<td data-label="Что это значит">вытесняется после BestEffort; при превышении requests по памяти — кандидат на вытеснение</td>
 </tr>
 <tr>
-<td><strong>BestEffort</strong></td>
-<td>не задано ничего</td>
-<td>вытесняется первым при нехватке памяти на узле</td>
+<td data-label="Класс"><strong>BestEffort</strong></td>
+<td data-label="Условие">не задано ничего</td>
+<td data-label="Что это значит">вытесняется первым при нехватке памяти на узле</td>
 </tr>
 </tbody>
 </table>
@@ -1592,7 +1592,7 @@ kubectl patch deploy orders --type<span class="o">=</span>json <span class="se">
 <h3 id="64-oomkilled-и-outofmemoryerror">6.4 OOMKilled и OutOfMemoryError</h3>
 <p><code>OOMKilled</code> и <code>OutOfMemoryError</code> звучат похоже, но это два совершенно разных события: первое означает, что ядро убило весь контейнер, второе — что JVM не смогла выделить память в одном из своих пулов. Если перепутать их при разборе инцидента, чинить будут не то, поэтому ниже собраны признаки, по которым их различают, формула бюджета памяти и оговорка про exit code 137.</p>
 <p>Сравнение по всем признакам сведено в таблицу; быстрее всего различать их по строкам «Что в логах приложения» и «Что в <code>kubectl describe pod</code>»:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1602,34 +1602,34 @@ kubectl patch deploy orders --type<span class="o">=</span>json <span class="se">
 </thead>
 <tbody>
 <tr>
-<td>Кто убил</td>
-<td>ядро Linux (cgroup memory.max)</td>
-<td>сама JVM</td>
+<td data-label="">Кто убил</td>
+<td data-label="OOMKilled (exit 137)">ядро Linux (cgroup memory.max)</td>
+<td data-label="java.lang.OutOfMemoryError">сама JVM</td>
 </tr>
 <tr>
-<td>Что превышено</td>
-<td><strong>вся</strong> память контейнера: heap + metaspace + code cache + стеки потоков + direct buffers + native (malloc, zip, JNI)</td>
-<td>конкретный пул JVM (обычно heap)</td>
+<td data-label="">Что превышено</td>
+<td data-label="OOMKilled (exit 137)"><strong>вся</strong> память контейнера: heap + metaspace + code cache + стеки потоков + direct buffers + native (malloc, zip, JNI)</td>
+<td data-label="java.lang.OutOfMemoryError">конкретный пул JVM (обычно heap)</td>
 </tr>
 <tr>
-<td>Что в логах приложения</td>
-<td><strong>ничего</strong> — процесс убит SIGKILL, шанса что-то написать нет</td>
-<td>stack trace, часто <code>Java heap space</code> или <code>Metaspace</code></td>
+<td data-label="">Что в логах приложения</td>
+<td data-label="OOMKilled (exit 137)"><strong>ничего</strong> — процесс убит SIGKILL, шанса что-то написать нет</td>
+<td data-label="java.lang.OutOfMemoryError">stack trace, часто <code>Java heap space</code> или <code>Metaspace</code></td>
 </tr>
 <tr>
-<td>Что в <code>kubectl describe pod</code></td>
-<td><code>Last State: Terminated, Reason: OOMKilled, Exit Code: 137</code></td>
-<td><code>Reason: Error</code>, exit code 1 (или что вернул процесс)</td>
+<td data-label="">Что в <code>kubectl describe pod</code></td>
+<td data-label="OOMKilled (exit 137)"><code>Last State: Terminated, Reason: OOMKilled, Exit Code: 137</code></td>
+<td data-label="java.lang.OutOfMemoryError"><code>Reason: Error</code>, exit code 1 (или что вернул процесс)</td>
 </tr>
 <tr>
-<td>Heap dump</td>
-<td><code>HeapDumpOnOutOfMemoryError</code> <strong>не сработает</strong></td>
-<td>сработает, если флаг задан</td>
+<td data-label="">Heap dump</td>
+<td data-label="OOMKilled (exit 137)"><code>HeapDumpOnOutOfMemoryError</code> <strong>не сработает</strong></td>
+<td data-label="java.lang.OutOfMemoryError">сработает, если флаг задан</td>
 </tr>
 <tr>
-<td>Типичная причина</td>
-<td>heap влезает, но native/metaspace/потоки не учтены; <code>MaxRAMPercentage</code> слишком велик</td>
-<td>утечка в heap, слишком маленький <code>-Xmx</code></td>
+<td data-label="">Типичная причина</td>
+<td data-label="OOMKilled (exit 137)">heap влезает, но native/metaspace/потоки не учтены; <code>MaxRAMPercentage</code> слишком велик</td>
+<td data-label="java.lang.OutOfMemoryError">утечка в heap, слишком маленький <code>-Xmx</code></td>
 </tr>
 </tbody>
 </table>
@@ -1769,7 +1769,7 @@ kubectl <span class="nb">exec</span> orders-xyz -- jcmd <span class="m">1</span>
 
 <p>Читая такой отчёт, сравнивайте <strong>committed</strong>, а не reserved: reserved — это виртуальное адресное пространство, и физической памяти оно не занимает. Сумму committed затем сверяют с <code>container_memory_working_set_bytes</code>, и если расхождение измеряется сотнями мегабайт, значит, есть native-память, которую NMT не учитывает: арены glibc, JNI-библиотеки (криптопровайдеры, ГОСТ, драйверы) и отображённые через mmap файлы.</p>
 <p><strong>Шаг 2. Измерить фактическое потребление под нагрузкой.</strong> Источников данных здесь три, и отвечают они на разные вопросы, а таблица ниже показывает, какую метрику для чего брать; главная в ней первая строка, потому что именно по working set kubelet принимает решение об эвикшне:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Источник</th>
@@ -1779,29 +1779,29 @@ kubectl <span class="nb">exec</span> orders-xyz -- jcmd <span class="m">1</span>
 </thead>
 <tbody>
 <tr>
-<td><code>container_memory_working_set_bytes</code></td>
-<td>RSS минус вытесняемый page cache — <strong>именно по нему kubelet принимает решение об эвикшене</strong></td>
-<td>подбор <code>requests.memory</code>/<code>limits.memory</code></td>
+<td data-label="Источник"><code>container_memory_working_set_bytes</code></td>
+<td data-label="Что показывает">RSS минус вытесняемый page cache — <strong>именно по нему kubelet принимает решение об эвикшене</strong></td>
+<td data-label="Для чего нужен">подбор <code>requests.memory</code>/<code>limits.memory</code></td>
 </tr>
 <tr>
-<td><code>container_memory_rss</code></td>
-<td>резидентная память</td>
-<td>сверка с NMT</td>
+<td data-label="Источник"><code>container_memory_rss</code></td>
+<td data-label="Что показывает">резидентная память</td>
+<td data-label="Для чего нужен">сверка с NMT</td>
 </tr>
 <tr>
-<td><code>jvm_memory_used_bytes{area="heap"}</code> (Micrometer)</td>
-<td>занятый heap</td>
-<td>понять, heap растёт или non-heap</td>
+<td data-label="Источник"><code>jvm_memory_used_bytes{area="heap"}</code> (Micrometer)</td>
+<td data-label="Что показывает">занятый heap</td>
+<td data-label="Для чего нужен">понять, heap растёт или non-heap</td>
 </tr>
 <tr>
-<td><code>container_cpu_usage_seconds_total</code> (rate)</td>
-<td>реальное потребление CPU</td>
-<td>подбор <code>requests.cpu</code></td>
+<td data-label="Источник"><code>container_cpu_usage_seconds_total</code> (rate)</td>
+<td data-label="Что показывает">реальное потребление CPU</td>
+<td data-label="Для чего нужен">подбор <code>requests.cpu</code></td>
 </tr>
 <tr>
-<td><code>container_cpu_cfs_throttled_periods_total</code></td>
-<td>доля дросселированных периодов</td>
-<td>понять, душит ли limit</td>
+<td data-label="Источник"><code>container_cpu_cfs_throttled_periods_total</code></td>
+<td data-label="Что показывает">доля дросселированных периодов</td>
+<td data-label="Для чего нужен">понять, душит ли limit</td>
 </tr>
 </tbody>
 </table>
@@ -2332,7 +2332,7 @@ watch -n5 <span class="s1">'kubectl get pods -l app.kubernetes.io/name=orders -o
 <p>Тогда события покажут <code>Startup probe failed</code> задолго до того, как истечёт таймаут.</p>
 <h3 id="711-расширенный-чеклист-выката-без-простоя">7.11 Расширенный чеклист выката без простоя</h3>
 <p>Шесть пунктов из 7.6 — необходимый минимум, но чеклист полезен лишь тогда, когда каждый пункт можно проверить, а не просто отметить галочкой. Ниже приведён полный список из десяти пунктов, и для каждого указана команда или процедура, которая показывает, что он действительно работает; в конце добавлен одиннадцатый пункт, который командой не проверяется.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">#</th>
@@ -2342,54 +2342,54 @@ watch -n5 <span class="s1">'kubectl get pods -l app.kubernetes.io/name=orders -o
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td><strong><code>readinessProbe</code> есть и отражает готовность</strong></td>
-<td><code>kubectl get endpointslice -l kubernetes.io/service-name=orders -o yaml</code> — адрес пода появляется только после реальной готовности; убейте зависимость из readiness-группы и убедитесь, что под выпал из среза</td>
+<td data-label="#" class="num">1</td>
+<td data-label="Пункт"><strong><code>readinessProbe</code> есть и отражает готовность</strong></td>
+<td data-label="Как проверить, что работает"><code>kubectl get endpointslice -l kubernetes.io/service-name=orders -o yaml</code> — адрес пода появляется только после реальной готовности; убейте зависимость из readiness-группы и убедитесь, что под выпал из среза</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td><strong><code>startupProbe</code> есть, бюджет ≥ 3 × p99 старта</strong></td>
-<td><code>kubectl get deploy orders -o jsonpath='{..startupProbe}'</code>; посчитать <code>periodSeconds × failureThreshold</code> и сравнить с <code>grep "process running for"</code> из логов</td>
+<td data-label="#" class="num">2</td>
+<td data-label="Пункт"><strong><code>startupProbe</code> есть, бюджет ≥ 3 × p99 старта</strong></td>
+<td data-label="Как проверить, что работает"><code>kubectl get deploy orders -o jsonpath='{..startupProbe}'</code>; посчитать <code>periodSeconds × failureThreshold</code> и сравнить с <code>grep "process running for"</code> из логов</td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td><strong><code>livenessProbe</code> не ходит во внешние системы</strong></td>
-<td><code>curl -s :8081/actuator/health/liveness \| jq</code> — в ответе должен быть только <code>livenessState</code>; погасите тестовую БД и убедитесь, что <code>RESTARTS</code> не растёт</td>
+<td data-label="#" class="num">3</td>
+<td data-label="Пункт"><strong><code>livenessProbe</code> не ходит во внешние системы</strong></td>
+<td data-label="Как проверить, что работает"><code>curl -s :8081/actuator/health/liveness \| jq</code> — в ответе должен быть только <code>livenessState</code>; погасите тестовую БД и убедитесь, что <code>RESTARTS</code> не растёт</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td><strong><code>preStop</code> на 10–15 с</strong></td>
-<td>нагрузочный прогон с <code>rollout restart</code> (упражнение 2 в разделе 16): число 502 должно быть нулевым</td>
+<td data-label="#" class="num">4</td>
+<td data-label="Пункт"><strong><code>preStop</code> на 10–15 с</strong></td>
+<td data-label="Как проверить, что работает">нагрузочный прогон с <code>rollout restart</code> (упражнение 2 в разделе 16): число 502 должно быть нулевым</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td><strong><code>server.shutdown=graceful</code> и согласованный grace period</strong></td>
-<td>exit code прошлого контейнера = <strong>143</strong>, а не 137: <code>kubectl get pod X -o jsonpath='{..lastState.terminated.exitCode}'</code></td>
+<td data-label="#" class="num">5</td>
+<td data-label="Пункт"><strong><code>server.shutdown=graceful</code> и согласованный grace period</strong></td>
+<td data-label="Как проверить, что работает">exit code прошлого контейнера = <strong>143</strong>, а не 137: <code>kubectl get pod X -o jsonpath='{..lastState.terminated.exitCode}'</code></td>
 </tr>
 <tr>
-<td class="num">6</td>
-<td><strong>PID 1 = java</strong></td>
-<td><code>kubectl exec X -- cat /proc/1/cmdline \| tr '\0' ' '</code> — должно начинаться с <code>java</code>; в distroless — через <code>kubectl debug --target</code></td>
+<td data-label="#" class="num">6</td>
+<td data-label="Пункт"><strong>PID 1 = java</strong></td>
+<td data-label="Как проверить, что работает"><code>kubectl exec X -- cat /proc/1/cmdline \| tr '\0' ' '</code> — должно начинаться с <code>java</code>; в distroless — через <code>kubectl debug --target</code></td>
 </tr>
 <tr>
-<td class="num">7</td>
-<td><strong><code>maxUnavailable: 0</code>, <code>maxSurge: 1</code>, <code>minReadySeconds: 10–30</code></strong></td>
-<td><code>kubectl get deploy orders -o jsonpath='{.spec.strategy}{.spec.minReadySeconds}'</code>; во время выката <code>kubectl get pods -w</code> — число Ready-подов не должно опускаться ниже <code>replicas</code></td>
+<td data-label="#" class="num">7</td>
+<td data-label="Пункт"><strong><code>maxUnavailable: 0</code>, <code>maxSurge: 1</code>, <code>minReadySeconds: 10–30</code></strong></td>
+<td data-label="Как проверить, что работает"><code>kubectl get deploy orders -o jsonpath='{.spec.strategy}{.spec.minReadySeconds}'</code>; во время выката <code>kubectl get pods -w</code> — число Ready-подов не должно опускаться ниже <code>replicas</code></td>
 </tr>
 <tr>
-<td class="num">8</td>
-<td><strong>PDB и его выполнимость</strong></td>
-<td><code>kubectl get pdb orders</code> — колонка <code>ALLOWED DISRUPTIONS</code> должна быть ≥ 1; ноль означает, что дренаж узла заблокирован</td>
+<td data-label="#" class="num">8</td>
+<td data-label="Пункт"><strong>PDB и его выполнимость</strong></td>
+<td data-label="Как проверить, что работает"><code>kubectl get pdb orders</code> — колонка <code>ALLOWED DISRUPTIONS</code> должна быть ≥ 1; ноль означает, что дренаж узла заблокирован</td>
 </tr>
 <tr>
-<td class="num">9</td>
-<td><strong>Обратная совместимость N и N+1</strong></td>
-<td>контрактные тесты (глава 27) + правило «миграция совместима со старым кодом»; проверка руками — поднять под старой версии рядом с новой и прогнать смоук</td>
+<td data-label="#" class="num">9</td>
+<td data-label="Пункт"><strong>Обратная совместимость N и N+1</strong></td>
+<td data-label="Как проверить, что работает">контрактные тесты (глава 27) + правило «миграция совместима со старым кодом»; проверка руками — поднять под старой версии рядом с новой и прогнать смоук</td>
 </tr>
 <tr>
-<td class="num">10</td>
-<td><strong>Хватает ресурсов и квоты на <code>maxSurge</code></strong></td>
-<td><code>kubectl describe quota -n payments</code> — свободного <code>requests.memory</code> должно быть ≥ одного пода; иначе выкат встанет с <code>FailedCreate</code></td>
+<td data-label="#" class="num">10</td>
+<td data-label="Пункт"><strong>Хватает ресурсов и квоты на <code>maxSurge</code></strong></td>
+<td data-label="Как проверить, что работает"><code>kubectl describe quota -n payments</code> — свободного <code>requests.memory</code> должно быть ≥ одного пода; иначе выкат встанет с <code>FailedCreate</code></td>
 </tr>
 </tbody>
 </table>
@@ -2415,7 +2415,7 @@ kubectl patch svc orders -p <span class="s1">'{"spec":{"selector":{"version":"gr
 <h3 id="84-обратная-совместимость-версий">8.4 Обратная совместимость версий</h3>
 <p>Обратная совместимость здесь означает, что версии N и N+1 способны одновременно работать с одним и тем же трафиком, одной базой и одними и теми же сообщениями. При rolling update они действительно работают <strong>одновременно</strong>, и длится это не «обычно несколько секунд»: на шести репликах с <code>minReadySeconds</code> это минуты, а при частичном откате могут набежать и часы. Ниже собраны правила для типовых изменений, общий паттерн expand/contract и полумера, которая не помогает.</p>
 <p>Из одновременной работы версий следует жёсткий набор правил, и таблица ниже перечисляет типовые изменения с ответом, совместимы ли они с rolling update и как их делать, если нет:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Изменение</th>
@@ -2425,39 +2425,39 @@ kubectl patch svc orders -p <span class="s1">'{"spec":{"selector":{"version":"gr
 </thead>
 <tbody>
 <tr>
-<td>Добавить необязательное поле в JSON-ответ</td>
-<td>да</td>
-<td>—</td>
+<td data-label="Изменение">Добавить необязательное поле в JSON-ответ</td>
+<td data-label="Совместимо с rolling?">да</td>
+<td data-label="Как делать">—</td>
 </tr>
 <tr>
-<td>Добавить обязательное поле в запрос</td>
-<td><strong>нет</strong></td>
-<td>два шага: сначала опциональное, потом обязательное</td>
+<td data-label="Изменение">Добавить обязательное поле в запрос</td>
+<td data-label="Совместимо с rolling?"><strong>нет</strong></td>
+<td data-label="Как делать">два шага: сначала опциональное, потом обязательное</td>
 </tr>
 <tr>
-<td>Удалить поле из ответа</td>
-<td><strong>нет</strong></td>
-<td>deprecate → дождаться ухода клиентов → удалить</td>
+<td data-label="Изменение">Удалить поле из ответа</td>
+<td data-label="Совместимо с rolling?"><strong>нет</strong></td>
+<td data-label="Как делать">deprecate → дождаться ухода клиентов → удалить</td>
 </tr>
 <tr>
-<td><code>ADD COLUMN NOT NULL</code> без DEFAULT</td>
-<td><strong>нет</strong></td>
-<td><code>ADD COLUMN NULL</code> → бэкфилл → <code>SET NOT NULL</code></td>
+<td data-label="Изменение"><code>ADD COLUMN NOT NULL</code> без DEFAULT</td>
+<td data-label="Совместимо с rolling?"><strong>нет</strong></td>
+<td data-label="Как делать"><code>ADD COLUMN NULL</code> → бэкфилл → <code>SET NOT NULL</code></td>
 </tr>
 <tr>
-<td><code>DROP COLUMN</code></td>
-<td><strong>нет</strong></td>
-<td>перестать читать/писать в коде → выкатить → в следующем релизе удалить</td>
+<td data-label="Изменение"><code>DROP COLUMN</code></td>
+<td data-label="Совместимо с rolling?"><strong>нет</strong></td>
+<td data-label="Как делать">перестать читать/писать в коде → выкатить → в следующем релизе удалить</td>
 </tr>
 <tr>
-<td>Переименовать колонку</td>
-<td><strong>нет</strong></td>
-<td>expand/contract: добавить новую, писать в обе, мигрировать, убрать старую</td>
+<td data-label="Изменение">Переименовать колонку</td>
+<td data-label="Совместимо с rolling?"><strong>нет</strong></td>
+<td data-label="Как делать">expand/contract: добавить новую, писать в обе, мигрировать, убрать старую</td>
 </tr>
 <tr>
-<td>Изменить формат сообщения Kafka</td>
-<td>зависит</td>
-<td>только совместимая эволюция схемы (глава 29)</td>
+<td data-label="Изменение">Изменить формат сообщения Kafka</td>
+<td data-label="Совместимо с rolling?">зависит</td>
+<td data-label="Как делать">только совместимая эволюция схемы (глава 29)</td>
 </tr>
 </tbody>
 </table>
@@ -2468,7 +2468,7 @@ kubectl patch svc orders -p <span class="s1">'{"spec":{"selector":{"version":"gr
 <h3 id="85-способы-запуска-миграций-бд">8.5 Способы запуска миграций БД</h3>
 <p>Миграцию схемы БД при выкате можно запустить тремя способами — отдельной Job, init-контейнером или самим приложением на старте, — и они по-разному ведут себя, когда реплик несколько, когда миграция падает и когда её приходится откатывать. Ниже варианты сравнены в таблице, объяснено, от чего спасают и от чего не спасают блокировки Flyway и Liquibase, и приведена рекомендация с примером Helm-хука.</p>
 <p>В таблице для каждого варианта указано, как он устроен, что в нём хорошо и что плохо; главное различие видно в колонке минусов у второго и третьего вариантов:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вариант</th>
@@ -2479,22 +2479,22 @@ kubectl patch svc orders -p <span class="s1">'{"spec":{"selector":{"version":"gr
 </thead>
 <tbody>
 <tr>
-<td><strong>Job перед деплоем</strong></td>
-<td>отдельный <code>Job</code> с <code>orders:1.14.2 --spring.profiles.active=migrate</code>, потом <code>rollout</code></td>
-<td>выполняется <strong>ровно один раз</strong>, видна в CI как отдельный шаг, можно откатить до деплоя, лог отдельный</td>
-<td>нужен оркестратор (конвейер, Helm hook, Argo sync wave); окно, когда схема новая, а код старый</td>
+<td data-label="Вариант"><strong>Job перед деплоем</strong></td>
+<td data-label="Как">отдельный <code>Job</code> с <code>orders:1.14.2 --spring.profiles.active=migrate</code>, потом <code>rollout</code></td>
+<td data-label="Плюсы">выполняется <strong>ровно один раз</strong>, видна в CI как отдельный шаг, можно откатить до деплоя, лог отдельный</td>
+<td data-label="Минусы">нужен оркестратор (конвейер, Helm hook, Argo sync wave); окно, когда схема новая, а код старый</td>
 </tr>
 <tr>
-<td><strong>Init-контейнер</strong></td>
-<td>init-контейнер каждого пода запускает Flyway</td>
-<td>не нужен внешний оркестратор</td>
-<td><strong>запускается N раз параллельно</strong> — при старте 6 реплик шесть Flyway борются за lock; если лок не работает — порча схемы; замедляет каждый старт</td>
+<td data-label="Вариант"><strong>Init-контейнер</strong></td>
+<td data-label="Как">init-контейнер каждого пода запускает Flyway</td>
+<td data-label="Плюсы">не нужен внешний оркестратор</td>
+<td data-label="Минусы"><strong>запускается N раз параллельно</strong> — при старте 6 реплик шесть Flyway борются за lock; если лок не работает — порча схемы; замедляет каждый старт</td>
 </tr>
 <tr>
-<td><strong>На старте приложения</strong></td>
-<td><code>spring.flyway.enabled=true</code> по умолчанию</td>
-<td>ничего не настраивать</td>
-<td>то же, что init-контейнер, плюс: миграция удлиняет старт и ломает <code>startupProbe</code>; при откате старый под попытается стартовать на новой схеме; провал миграции = <code>CrashLoopBackOff</code> вместо понятной ошибки</td>
+<td data-label="Вариант"><strong>На старте приложения</strong></td>
+<td data-label="Как"><code>spring.flyway.enabled=true</code> по умолчанию</td>
+<td data-label="Плюсы">ничего не настраивать</td>
+<td data-label="Минусы">то же, что init-контейнер, плюс: миграция удлиняет старт и ломает <code>startupProbe</code>; при откате старый под попытается стартовать на новой схеме; провал миграции = <code>CrashLoopBackOff</code> вместо понятной ошибки</td>
 </tr>
 </tbody>
 </table>
@@ -2657,7 +2657,7 @@ job.batch/orders-migrate condition met
 <h3 id="87-выбор-maxsurge-и-maxunavailable">8.7 Выбор <code>maxSurge</code> и <code>maxUnavailable</code></h3>
 <p><code>maxSurge</code> и <code>maxUnavailable</code> задают, сколько подов сверх нормы можно поднять и сколько можно потерять во время выката, и от них зависят скорость выката, запас ёмкости и нагрузка на базу во время стартов. Универсального сочетания нет, поэтому ниже собраны рекомендации для типовых профилей сервиса, два подводных камня и роль <code>minReadySeconds</code>, которую чаще всего недооценивают.</p>
 <p>Таблица сопоставляет профиль сервиса с настройкой и объясняет выбор; обратите внимание на последнюю строку, где правильного сочетания нет вовсе:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Профиль сервиса</th>
@@ -2667,34 +2667,34 @@ job.batch/orders-migrate condition met
 </thead>
 <tbody>
 <tr>
-<td>Онлайн-сервис под SLA, 4+ реплик</td>
-<td><code>maxUnavailable: 0</code>, <code>maxSurge: 1</code></td>
-<td>ёмкость не проседает ни на секунду; цена — долгий выкат и запас на один под</td>
+<td data-label="Профиль сервиса">Онлайн-сервис под SLA, 4+ реплик</td>
+<td data-label="Настройка"><code>maxUnavailable: 0</code>, <code>maxSurge: 1</code></td>
+<td data-label="Почему">ёмкость не проседает ни на секунду; цена — долгий выкат и запас на один под</td>
 </tr>
 <tr>
-<td>Онлайн-сервис, 10+ реплик, важна скорость выката</td>
-<td><code>maxUnavailable: 0</code>, <code>maxSurge: 25%</code></td>
-<td>параллелизм при сохранении ёмкости; следите за нагрузкой стартов на БД</td>
+<td data-label="Профиль сервиса">Онлайн-сервис, 10+ реплик, важна скорость выката</td>
+<td data-label="Настройка"><code>maxUnavailable: 0</code>, <code>maxSurge: 25%</code></td>
+<td data-label="Почему">параллелизм при сохранении ёмкости; следите за нагрузкой стартов на БД</td>
 </tr>
 <tr>
-<td>Сервис с дорогим стартом (большой кеш, RocksDB)</td>
-<td><code>maxUnavailable: 0</code>, <code>maxSurge: 1</code>, <code>minReadySeconds: 60</code></td>
-<td>не допустить, чтобы несколько реплик одновременно грели состояние</td>
+<td data-label="Профиль сервиса">Сервис с дорогим стартом (большой кеш, RocksDB)</td>
+<td data-label="Настройка"><code>maxUnavailable: 0</code>, <code>maxSurge: 1</code>, <code>minReadySeconds: 60</code></td>
+<td data-label="Почему">не допустить, чтобы несколько реплик одновременно грели состояние</td>
 </tr>
 <tr>
-<td>Потребитель Kafka</td>
-<td><code>maxUnavailable: 1</code>, <code>maxSurge: 0</code></td>
-<td>лишний потребитель сверх числа партиций бесполезен и вызывает лишняя перебалансировка</td>
+<td data-label="Профиль сервиса">Потребитель Kafka</td>
+<td data-label="Настройка"><code>maxUnavailable: 1</code>, <code>maxSurge: 0</code></td>
+<td data-label="Почему">лишний потребитель сверх числа партиций бесполезен и вызывает лишняя перебалансировка</td>
 </tr>
 <tr>
-<td>Пакет/внутренний инструмент, простой допустим</td>
-<td><code>maxUnavailable: 50%</code>, <code>maxSurge: 50%</code></td>
-<td>быстрее всего</td>
+<td data-label="Профиль сервиса">Пакет/внутренний инструмент, простой допустим</td>
+<td data-label="Настройка"><code>maxUnavailable: 50%</code>, <code>maxSurge: 50%</code></td>
+<td data-label="Почему">быстрее всего</td>
 </tr>
 <tr>
-<td>Сервис с ровно 1 репликой</td>
-<td>никакая настройка не спасёт</td>
-<td><code>maxSurge: 1</code> даёт две версии одновременно (часто недопустимо для синглтона), <code>maxUnavailable: 1</code> — простой; правильный ответ — сделать реплик больше одной</td>
+<td data-label="Профиль сервиса">Сервис с ровно 1 репликой</td>
+<td data-label="Настройка">никакая настройка не спасёт</td>
+<td data-label="Почему"><code>maxSurge: 1</code> даёт две версии одновременно (часто недопустимо для синглтона), <code>maxUnavailable: 1</code> — простой; правильный ответ — сделать реплик больше одной</td>
 </tr>
 </tbody>
 </table>
@@ -2703,7 +2703,7 @@ job.batch/orders-migrate condition met
 <h3 id="88-миграции-бд-в-трёх-сценариях">8.8 Миграции БД в трёх сценариях</h3>
 <p>Раздел 8.5 сравнил способы запускать миграции по плюсам и минусам, а здесь те же три способа сравнены по тому, о чём реально спрашивают на ревью и на интервью: что будет при нескольких репликах, при откате и при долгой миграции. После таблицы разобраны итоговая рекомендация, случай, когда приемлем init-контейнер, и обязательный <code>lock_timeout</code>.</p>
 <p>Сценарии в таблице расположены по строкам; самые важные из них — вторая и третья строки, про откат и долгую миграцию:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2714,40 +2714,40 @@ job.batch/orders-migrate condition met
 </thead>
 <tbody>
 <tr>
-<td><strong>При нескольких репликах</strong></td>
-<td>выполняется <strong>один раз</strong>, борьбы за лок нет</td>
-<td>N параллельных запусков; первый берёт лок, остальные ждут; старт всех реплик растянут на время миграции</td>
-<td>то же, что init-контейнер, плюс миграция идёт <strong>внутри</strong> окна startupProbe</td>
+<td data-label=""><strong>При нескольких репликах</strong></td>
+<td data-label="Job перед деплоем">выполняется <strong>один раз</strong>, борьбы за лок нет</td>
+<td data-label="Init-контейнер">N параллельных запусков; первый берёт лок, остальные ждут; старт всех реплик растянут на время миграции</td>
+<td data-label="На старте приложения">то же, что init-контейнер, плюс миграция идёт <strong>внутри</strong> окна startupProbe</td>
 </tr>
 <tr>
-<td><strong>При откате (<code>rollout undo</code>)</strong></td>
-<td>схема остаётся новой — откат кода работает <strong>только если миграция совместима со старым кодом</strong> (expand/contract). Обратной миграции нет и не нужно</td>
-<td>то же, но откат ещё и запускает init-контейнеры <strong>старой</strong> версии: старый Flyway увидит в истории миграцию с версией выше своей и упадёт с <code>Detected applied migration not resolved locally</code></td>
-<td>худший случай: старый под падает на старте (<code>CrashLoopBackOff</code>), а не отдаёт понятную ошибку; откат фактически не работает</td>
+<td data-label=""><strong>При откате (<code>rollout undo</code>)</strong></td>
+<td data-label="Job перед деплоем">схема остаётся новой — откат кода работает <strong>только если миграция совместима со старым кодом</strong> (expand/contract). Обратной миграции нет и не нужно</td>
+<td data-label="Init-контейнер">то же, но откат ещё и запускает init-контейнеры <strong>старой</strong> версии: старый Flyway увидит в истории миграцию с версией выше своей и упадёт с <code>Detected applied migration not resolved locally</code></td>
+<td data-label="На старте приложения">худший случай: старый под падает на старте (<code>CrashLoopBackOff</code>), а не отдаёт понятную ошибку; откат фактически не работает</td>
 </tr>
 <tr>
-<td><strong>При долгой миграции (5+ мин)</strong></td>
-<td>ограничивается <code>activeDeadlineSeconds</code>; деплой не начинается, пока Job не завершилась; можно следить отдельным шагом конвейера</td>
-<td>под висит в <code>Init:0/1</code> всё это время; при <code>maxUnavailable: 0</code> выкат стоит; если под убьют по любой причине — лок Flyway повисает</td>
-<td><code>startupProbe</code> почти наверняка исчерпается → контейнер убьют <strong>посреди DDL</strong> → лок повисает → весь сервис в <code>CrashLoopBackOff</code></td>
+<td data-label=""><strong>При долгой миграции (5+ мин)</strong></td>
+<td data-label="Job перед деплоем">ограничивается <code>activeDeadlineSeconds</code>; деплой не начинается, пока Job не завершилась; можно следить отдельным шагом конвейера</td>
+<td data-label="Init-контейнер">под висит в <code>Init:0/1</code> всё это время; при <code>maxUnavailable: 0</code> выкат стоит; если под убьют по любой причине — лок Flyway повисает</td>
+<td data-label="На старте приложения"><code>startupProbe</code> почти наверняка исчерпается → контейнер убьют <strong>посреди DDL</strong> → лок повисает → весь сервис в <code>CrashLoopBackOff</code></td>
 </tr>
 <tr>
-<td><strong>Наблюдаемость</strong></td>
-<td>отдельный под, отдельный лог, отдельный статус в CI</td>
-<td>лог надо искать в <code>logs pod -c init</code> каждой реплики</td>
-<td>лог перемешан с логом приложения</td>
+<td data-label=""><strong>Наблюдаемость</strong></td>
+<td data-label="Job перед деплоем">отдельный под, отдельный лог, отдельный статус в CI</td>
+<td data-label="Init-контейнер">лог надо искать в <code>logs pod -c init</code> каждой реплики</td>
+<td data-label="На старте приложения">лог перемешан с логом приложения</td>
 </tr>
 <tr>
-<td><strong>Кто запускает</strong></td>
-<td>конвейер, Helm hook, Argo sync wave</td>
-<td>сам Kubernetes</td>
-<td>само приложение</td>
+<td data-label=""><strong>Кто запускает</strong></td>
+<td data-label="Job перед деплоем">конвейер, Helm hook, Argo sync wave</td>
+<td data-label="Init-контейнер">сам Kubernetes</td>
+<td data-label="На старте приложения">само приложение</td>
 </tr>
 <tr>
-<td><strong>Права к БД</strong></td>
-<td>можно дать отдельному пользователю с DDL, приложению оставить только DML</td>
-<td>приложение и миграция под одним пользователем</td>
-<td>то же</td>
+<td data-label=""><strong>Права к БД</strong></td>
+<td data-label="Job перед деплоем">можно дать отдельному пользователю с DDL, приложению оставить только DML</td>
+<td data-label="Init-контейнер">приложение и миграция под одним пользователем</td>
+<td data-label="На старте приложения">то же</td>
 </tr>
 </tbody>
 </table>
@@ -2783,7 +2783,7 @@ kubectl get events --field-selector involvedObject.name<span class="o">=</span>o
 </code></pre></div>
 
 <p>В таблице собраны события, которые встречаются чаще всего; колонка «Куда смотреть» подсказывает следующий шаг диагностики:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Событие</th>
@@ -2793,49 +2793,49 @@ kubectl get events --field-selector involvedObject.name<span class="o">=</span>o
 </thead>
 <tbody>
 <tr>
-<td><code>FailedScheduling</code></td>
-<td>нет узла, удовлетворяющего requests/affinity/taints</td>
-<td>текст события: <code>Insufficient cpu</code>, <code>untolerated taint</code>, <code>didn't match pod topology spread constraints</code></td>
+<td data-label="Событие"><code>FailedScheduling</code></td>
+<td data-label="Что означает">нет узла, удовлетворяющего requests/affinity/taints</td>
+<td data-label="Куда смотреть">текст события: <code>Insufficient cpu</code>, <code>untolerated taint</code>, <code>didn't match pod topology spread constraints</code></td>
 </tr>
 <tr>
-<td><code>ImagePullBackOff</code> / <code>ErrImagePull</code></td>
-<td>образа нет, нет прав, опечатка в теге</td>
-<td>тег, <code>imagePullSecrets</code>, доступность реестра из кластера</td>
+<td data-label="Событие"><code>ImagePullBackOff</code> / <code>ErrImagePull</code></td>
+<td data-label="Что означает">образа нет, нет прав, опечатка в теге</td>
+<td data-label="Куда смотреть">тег, <code>imagePullSecrets</code>, доступность реестра из кластера</td>
 </tr>
 <tr>
-<td><code>Unhealthy</code></td>
-<td>провалилась проба</td>
-<td>текст: <code>Liveness probe failed: HTTP probe failed with statuscode: 503</code> или <code>connection refused</code></td>
+<td data-label="Событие"><code>Unhealthy</code></td>
+<td data-label="Что означает">провалилась проба</td>
+<td data-label="Куда смотреть">текст: <code>Liveness probe failed: HTTP probe failed with statuscode: 503</code> или <code>connection refused</code></td>
 </tr>
 <tr>
-<td><code>BackOff</code> / <code>CrashLoopBackOff</code></td>
-<td>контейнер падает и перезапускается с нарастающей задержкой (10 с → 20 с → ... → 5 мин)</td>
-<td><code>kubectl logs --previous</code></td>
+<td data-label="Событие"><code>BackOff</code> / <code>CrashLoopBackOff</code></td>
+<td data-label="Что означает">контейнер падает и перезапускается с нарастающей задержкой (10 с → 20 с → ... → 5 мин)</td>
+<td data-label="Куда смотреть"><code>kubectl logs --previous</code></td>
 </tr>
 <tr>
-<td><code>OOMKilling</code> / статус <code>OOMKilled</code></td>
-<td>превышен <code>limits.memory</code></td>
-<td>раздел 6.4</td>
+<td data-label="Событие"><code>OOMKilling</code> / статус <code>OOMKilled</code></td>
+<td data-label="Что означает">превышен <code>limits.memory</code></td>
+<td data-label="Куда смотреть">раздел 6.4</td>
 </tr>
 <tr>
-<td><code>FailedMount</code> / <code>FailedAttachVolume</code></td>
-<td>нет ConfigMap/Secret/PVC, или том не отцепился от прошлого узла</td>
-<td>имя объекта в тексте события</td>
+<td data-label="Событие"><code>FailedMount</code> / <code>FailedAttachVolume</code></td>
+<td data-label="Что означает">нет ConfigMap/Secret/PVC, или том не отцепился от прошлого узла</td>
+<td data-label="Куда смотреть">имя объекта в тексте события</td>
 </tr>
 <tr>
-<td><code>Evicted</code></td>
-<td>kubelet вытеснил под при нехватке ресурсов на узле</td>
-<td><code>message</code>: <code>The node was low on resource: memory</code> / <code>ephemeral-storage</code></td>
+<td data-label="Событие"><code>Evicted</code></td>
+<td data-label="Что означает">kubelet вытеснил под при нехватке ресурсов на узле</td>
+<td data-label="Куда смотреть"><code>message</code>: <code>The node was low on resource: memory</code> / <code>ephemeral-storage</code></td>
 </tr>
 <tr>
-<td><code>FailedCreatePodSandBox</code></td>
-<td>проблема CNI или среды выполнения контейнеров на узле</td>
-<td>это к платформе, не к вам</td>
+<td data-label="Событие"><code>FailedCreatePodSandBox</code></td>
+<td data-label="Что означает">проблема CNI или среды выполнения контейнеров на узле</td>
+<td data-label="Куда смотреть">это к платформе, не к вам</td>
 </tr>
 <tr>
-<td><code>NodeNotReady</code></td>
-<td>узел отвалился</td>
-<td>поды уйдут в <code>Terminating</code>/<code>Unknown</code></td>
+<td data-label="Событие"><code>NodeNotReady</code></td>
+<td data-label="Что означает">узел отвалился</td>
+<td data-label="Куда смотреть">поды уйдут в <code>Terminating</code>/<code>Unknown</code></td>
 </tr>
 </tbody>
 </table>
@@ -2891,7 +2891,7 @@ kubectl cp payments/orders-...:/tmp/heap.hprof ./heap.hprof
 <p>Эндпоинт <code>/actuator/heapdump</code> начиная со Spring Boot 3.5 по умолчанию имеет <code>access=none</code> (см. FACTS.md), и включать его стоит осознанно и только на management-порту.</p>
 <h3 id="95-состояния-пода-и-их-причины">9.5 Состояния пода и их причины</h3>
 <p>Состояние пода в выводе <code>kubectl get pods</code> — первое, что видит дежурный, и по нему уже можно сузить круг причин до двух-трёх. Таблица ниже сопоставляет каждое состояние с вероятными причинами и командой, с которой начинать разбор; обратите внимание на три строки с exit code, по которым различают OOM, SIGKILL по grace period и штатное завершение.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Состояние</th>
@@ -2901,69 +2901,69 @@ kubectl cp payments/orders-...:/tmp/heap.hprof ./heap.hprof
 </thead>
 <tbody>
 <tr>
-<td><code>Pending</code></td>
-<td>не хватает ресурсов; taint без toleration; не выполнены topology spread; нет PV под PVC; квота namespace исчерпана</td>
-<td><code>kubectl describe pod</code> → Events → <code>FailedScheduling</code>; <code>kubectl describe node</code>; <code>kubectl get resourcequota</code></td>
+<td data-label="Состояние"><code>Pending</code></td>
+<td data-label="Вероятная причина">не хватает ресурсов; taint без toleration; не выполнены topology spread; нет PV под PVC; квота namespace исчерпана</td>
+<td data-label="Что смотреть"><code>kubectl describe pod</code> → Events → <code>FailedScheduling</code>; <code>kubectl describe node</code>; <code>kubectl get resourcequota</code></td>
 </tr>
 <tr>
-<td><code>ContainerCreating</code> (долго)</td>
-<td>тянется образ; не монтируется том; не готов CNI</td>
-<td><code>describe</code> → <code>Pulling</code>/<code>FailedMount</code>; размер образа; доступность реестра</td>
+<td data-label="Состояние"><code>ContainerCreating</code> (долго)</td>
+<td data-label="Вероятная причина">тянется образ; не монтируется том; не готов CNI</td>
+<td data-label="Что смотреть"><code>describe</code> → <code>Pulling</code>/<code>FailedMount</code>; размер образа; доступность реестра</td>
 </tr>
 <tr>
-<td><code>ImagePullBackOff</code></td>
-<td>опечатка в теге; образа нет в реестре; нет <code>imagePullSecrets</code>; rate limit Docker Hub</td>
-<td><code>describe</code> → текст ошибки; <code>kubectl get sa default -o yaml</code></td>
+<td data-label="Состояние"><code>ImagePullBackOff</code></td>
+<td data-label="Вероятная причина">опечатка в теге; образа нет в реестре; нет <code>imagePullSecrets</code>; rate limit Docker Hub</td>
+<td data-label="Что смотреть"><code>describe</code> → текст ошибки; <code>kubectl get sa default -o yaml</code></td>
 </tr>
 <tr>
-<td><code>Init:0/2</code>, <code>Init:CrashLoopBackOff</code></td>
-<td>init-контейнер не проходит</td>
-<td><code>kubectl logs pod -c &lt;init-name&gt;</code></td>
+<td data-label="Состояние"><code>Init:0/2</code>, <code>Init:CrashLoopBackOff</code></td>
+<td data-label="Вероятная причина">init-контейнер не проходит</td>
+<td data-label="Что смотреть"><code>kubectl logs pod -c &lt;init-name&gt;</code></td>
 </tr>
 <tr>
-<td><code>Running</code>, но <code>0/1 READY</code></td>
-<td>не проходит readiness</td>
-<td><code>describe</code> → <code>Unhealthy</code>; <code>port-forward</code> на пробный URL и <code>curl</code> вручную</td>
+<td data-label="Состояние"><code>Running</code>, но <code>0/1 READY</code></td>
+<td data-label="Вероятная причина">не проходит readiness</td>
+<td data-label="Что смотреть"><code>describe</code> → <code>Unhealthy</code>; <code>port-forward</code> на пробный URL и <code>curl</code> вручную</td>
 </tr>
 <tr>
-<td><code>CrashLoopBackOff</code></td>
-<td>приложение падает на старте; liveness убивает раньше, чем сервис поднялся; нет startupProbe; неверная конфигурация</td>
-<td><code>kubectl logs --previous</code>; <code>describe</code> → exit code и Reason</td>
+<td data-label="Состояние"><code>CrashLoopBackOff</code></td>
+<td data-label="Вероятная причина">приложение падает на старте; liveness убивает раньше, чем сервис поднялся; нет startupProbe; неверная конфигурация</td>
+<td data-label="Что смотреть"><code>kubectl logs --previous</code>; <code>describe</code> → exit code и Reason</td>
 </tr>
 <tr>
-<td><code>Error</code> / exit code 1</td>
-<td>исключение при старте, упавшая миграция, отсутствующая переменная</td>
-<td><code>logs --previous</code></td>
+<td data-label="Состояние"><code>Error</code> / exit code 1</td>
+<td data-label="Вероятная причина">исключение при старте, упавшая миграция, отсутствующая переменная</td>
+<td data-label="Что смотреть"><code>logs --previous</code></td>
 </tr>
 <tr>
-<td>exit code 137 + <code>Reason: OOMKilled</code></td>
-<td>превышен <code>limits.memory</code></td>
-<td>раздел 6.4; <code>kubectl top</code>; метрика working set</td>
+<td data-label="Состояние">exit code 137 + <code>Reason: OOMKilled</code></td>
+<td data-label="Вероятная причина">превышен <code>limits.memory</code></td>
+<td data-label="Что смотреть">раздел 6.4; <code>kubectl top</code>; метрика working set</td>
 </tr>
 <tr>
-<td>exit code 137 без <code>OOMKilled</code></td>
-<td>не уложился в grace period, SIGKILL</td>
-<td><code>terminationGracePeriodSeconds</code>, доходит ли SIGTERM до JVM</td>
+<td data-label="Состояние">exit code 137 без <code>OOMKilled</code></td>
+<td data-label="Вероятная причина">не уложился в grace period, SIGKILL</td>
+<td data-label="Что смотреть"><code>terminationGracePeriodSeconds</code>, доходит ли SIGTERM до JVM</td>
 </tr>
 <tr>
-<td>exit code 143</td>
-<td>штатное завершение по SIGTERM (128+15)</td>
-<td>норма при выкате</td>
+<td data-label="Состояние">exit code 143</td>
+<td data-label="Вероятная причина">штатное завершение по SIGTERM (128+15)</td>
+<td data-label="Что смотреть">норма при выкате</td>
 </tr>
 <tr>
-<td><code>Evicted</code></td>
-<td>нехватка памяти или ephemeral-storage на узле; BestEffort/Burstable QoS</td>
-<td><code>describe pod</code> → <code>message</code>; поднять requests, задать QoS</td>
+<td data-label="Состояние"><code>Evicted</code></td>
+<td data-label="Вероятная причина">нехватка памяти или ephemeral-storage на узле; BestEffort/Burstable QoS</td>
+<td data-label="Что смотреть"><code>describe pod</code> → <code>message</code>; поднять requests, задать QoS</td>
 </tr>
 <tr>
-<td><code>Terminating</code> (застрял)</td>
-<td>долгий grace period; финализатор; зависший том; узел NotReady</td>
-<td><code>describe</code>; <code>kubectl delete pod --grace-period=0 --force</code> <strong>только</strong> как последнее средство</td>
+<td data-label="Состояние"><code>Terminating</code> (застрял)</td>
+<td data-label="Вероятная причина">долгий grace period; финализатор; зависший том; узел NotReady</td>
+<td data-label="Что смотреть"><code>describe</code>; <code>kubectl delete pod --grace-period=0 --force</code> <strong>только</strong> как последнее средство</td>
 </tr>
 <tr>
-<td><code>Unknown</code></td>
-<td>kubelet узла не репортит статус</td>
-<td><code>kubectl get nodes</code></td>
+<td data-label="Состояние"><code>Unknown</code></td>
+<td data-label="Вероятная причина">kubelet узла не репортит статус</td>
+<td data-label="Что смотреть"><code>kubectl get nodes</code></td>
 </tr>
 </tbody>
 </table>
@@ -3387,7 +3387,7 @@ oc status                <span class="c1"># сводка по проекту: ч
 </code></pre></div>
 
 <p>Режимов TLS у Route три, и отличаются они тем, где заканчивается шифрование и что видит роутер; подробнее выбор между ними разобран в 10.8:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -3398,22 +3398,22 @@ oc status                <span class="c1"># сводка по проекту: ч
 </thead>
 <tbody>
 <tr>
-<td><code>edge</code></td>
-<td>на роутере</td>
-<td><strong>plaintext</strong> внутри кластера</td>
-<td>по умолчанию, сертификат управляется платформой</td>
+<td data-label="Режим"><code>edge</code></td>
+<td data-label="Где заканчивается TLS">на роутере</td>
+<td data-label="Трафик до пода"><strong>plaintext</strong> внутри кластера</td>
+<td data-label="Когда">по умолчанию, сертификат управляется платформой</td>
 </tr>
 <tr>
-<td><code>passthrough</code></td>
-<td>в поде</td>
-<td>TLS насквозь, роутер не видит содержимое</td>
-<td>mTLS, требования регулятора, gRPC с клиентскими сертификатами</td>
+<td data-label="Режим"><code>passthrough</code></td>
+<td data-label="Где заканчивается TLS">в поде</td>
+<td data-label="Трафик до пода">TLS насквозь, роутер не видит содержимое</td>
+<td data-label="Когда">mTLS, требования регулятора, gRPC с клиентскими сертификатами</td>
 </tr>
 <tr>
-<td><code>reencrypt</code></td>
-<td>на роутере, затем новый TLS до пода</td>
-<td>TLS</td>
-<td>нужен и осмотр трафика (L7-маршрутизация), и шифрование внутри</td>
+<td data-label="Режим"><code>reencrypt</code></td>
+<td data-label="Где заканчивается TLS">на роутере, затем новый TLS до пода</td>
+<td data-label="Трафик до пода">TLS</td>
+<td data-label="Когда">нужен и осмотр трафика (L7-маршрутизация), и шифрование внутри</td>
 </tr>
 </tbody>
 </table>
@@ -3508,7 +3508,7 @@ oc <span class="nb">set</span> triggers deploy/orders --from-image<span class="o
 </code></pre></div>
 
 <p>Таблица ниже показывает, что из этого списка ломает типовой Java-образ; строки упорядочены по убыванию частоты, так что первые две встречаются почти в каждом переезде:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что в образе</th>
@@ -3518,39 +3518,39 @@ oc <span class="nb">set</span> triggers deploy/orders --from-image<span class="o
 </thead>
 <tbody>
 <tr>
-<td><code>USER appuser</code> (UID 1000) и файлы, принадлежащие <code>appuser</code></td>
-<td>процесс пойдёт под UID из диапазона проекта, <code>appuser</code> ему не принадлежит</td>
-<td><code>chgrp -R 0 /app &amp;&amp; chmod -R g=u /app</code> — права даём группе 0, в которую произвольный UID входит всегда</td>
+<td data-label="Что в образе"><code>USER appuser</code> (UID 1000) и файлы, принадлежащие <code>appuser</code></td>
+<td data-label="Почему ломается">процесс пойдёт под UID из диапазона проекта, <code>appuser</code> ему не принадлежит</td>
+<td data-label="Рецепт"><code>chgrp -R 0 /app &amp;&amp; chmod -R g=u /app</code> — права даём группе 0, в которую произвольный UID входит всегда</td>
 </tr>
 <tr>
-<td><code>$HOME</code> указывает на <code>/home/appuser</code>, которого процесс не может создать</td>
-<td>многие библиотеки пишут туда (<code>~/.m2</code>, <code>~/.cache</code>, <code>~/.java</code>)</td>
-<td><code>ENV HOME=/tmp</code> либо создать <code>/home/app</code> с <code>chmod g=u</code>; сюда же — <code>-Duser.home=/tmp</code></td>
+<td data-label="Что в образе"><code>$HOME</code> указывает на <code>/home/appuser</code>, которого процесс не может создать</td>
+<td data-label="Почему ломается">многие библиотеки пишут туда (<code>~/.m2</code>, <code>~/.cache</code>, <code>~/.java</code>)</td>
+<td data-label="Рецепт"><code>ENV HOME=/tmp</code> либо создать <code>/home/app</code> с <code>chmod g=u</code>; сюда же — <code>-Duser.home=/tmp</code></td>
 </tr>
 <tr>
-<td>запись в <code>/app/logs</code> или в каталог рядом с jar</td>
-<td>writable layer принадлежит root</td>
-<td>писать только в stdout; для файлов — смонтированный <code>emptyDir</code></td>
+<td data-label="Что в образе">запись в <code>/app/logs</code> или в каталог рядом с jar</td>
+<td data-label="Почему ломается">writable layer принадлежит root</td>
+<td data-label="Рецепт">писать только в stdout; для файлов — смонтированный <code>emptyDir</code></td>
 </tr>
 <tr>
-<td><code>java.io.tmpdir</code> по умолчанию <code>/tmp</code></td>
-<td>обычно работает, но при <code>readOnlyRootFilesystem: true</code> — нет</td>
-<td>том <code>emptyDir</code> на <code>/tmp</code> + <code>-Djava.io.tmpdir=/tmp</code></td>
+<td data-label="Что в образе"><code>java.io.tmpdir</code> по умолчанию <code>/tmp</code></td>
+<td data-label="Почему ломается">обычно работает, но при <code>readOnlyRootFilesystem: true</code> — нет</td>
+<td data-label="Рецепт">том <code>emptyDir</code> на <code>/tmp</code> + <code>-Djava.io.tmpdir=/tmp</code></td>
 </tr>
 <tr>
-<td><code>EXPOSE 80</code> / <code>server.port: 80</code></td>
-<td>порт &lt; 1024 требует <code>NET_BIND_SERVICE</code></td>
-<td>слушать 8080; порт снаружи всё равно даёт Route</td>
+<td data-label="Что в образе"><code>EXPOSE 80</code> / <code>server.port: 80</code></td>
+<td data-label="Почему ломается">порт &lt; 1024 требует <code>NET_BIND_SERVICE</code></td>
+<td data-label="Рецепт">слушать 8080; порт снаружи всё равно даёт Route</td>
 </tr>
 <tr>
-<td><code>useradd</code>/<code>chown</code> в <code>CMD</code>-скрипте</td>
-<td>нет прав менять владельца</td>
-<td>всё делать на этапе сборки (<code>COPY --chown=1001:0</code>)</td>
+<td data-label="Что в образе"><code>useradd</code>/<code>chown</code> в <code>CMD</code>-скрипте</td>
+<td data-label="Почему ломается">нет прав менять владельца</td>
+<td data-label="Рецепт">всё делать на этапе сборки (<code>COPY --chown=1001:0</code>)</td>
 </tr>
 <tr>
-<td>попытка прочитать <code>/etc/passwd</code>-запись своего UID</td>
-<td>произвольного UID там нет → <code>getpwuid</code> возвращает null, некоторые библиотеки падают</td>
-<td><code>nss_wrapper</code> или образ на UBI, где это учтено; в JVM это редко критично</td>
+<td data-label="Что в образе">попытка прочитать <code>/etc/passwd</code>-запись своего UID</td>
+<td data-label="Почему ломается">произвольного UID там нет → <code>getpwuid</code> возвращает null, некоторые библиотеки падают</td>
+<td data-label="Рецепт"><code>nss_wrapper</code> или образ на UBI, где это учтено; в JVM это редко критично</td>
 </tr>
 </tbody>
 </table>
@@ -3593,7 +3593,7 @@ oc <span class="nb">set</span> triggers deploy/orders --from-image<span class="o
 <h3 id="109-s2i-и-buildconfig-в-сравнении-с-внешним-ci">10.9 S2I и BuildConfig в сравнении с внешним CI</h3>
 <p>Этот подраздел сводит в одну таблицу сравнение S2I с внешним CI, начатое в 10.4, чтобы выбор можно было обосновать по пунктам, а не по привычке. После таблицы названы решающий аргумент и причина, по которой <code>BuildConfig</code> полезно уметь читать даже тем, кто пользуется внешним CI.</p>
 <p>Сравнение идёт по восьми критериям, и решающая среди них третья строка, про один артефакт на все среды:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -3603,44 +3603,44 @@ oc <span class="nb">set</span> triggers deploy/orders --from-image<span class="o
 </thead>
 <tbody>
 <tr>
-<td>Порог входа</td>
-<td><code>oc new-app</code> — одна команда</td>
-<td>конвейер надо написать</td>
+<td data-label="Критерий">Порог входа</td>
+<td data-label="S2I / BuildConfig"><code>oc new-app</code> — одна команда</td>
+<td data-label="Внешний CI (GitLab/Jenkins), глава 54">конвейер надо написать</td>
 </tr>
 <tr>
-<td>Воспроизводимость</td>
-<td>builder-образ обновляется независимо от вас; та же коммит-точка даст другой образ</td>
-<td>образ пиннится по дайджесту, сборка воспроизводима</td>
+<td data-label="Критерий">Воспроизводимость</td>
+<td data-label="S2I / BuildConfig">builder-образ обновляется независимо от вас; та же коммит-точка даст другой образ</td>
+<td data-label="Внешний CI (GitLab/Jenkins), глава 54">образ пиннится по дайджесту, сборка воспроизводима</td>
 </tr>
 <tr>
-<td>Один артефакт на все среды</td>
-<td><strong>нет</strong>: в каждом кластере собирается свой образ</td>
-<td>да: собрали раз, продвигаем дайджест dev → stage → prod</td>
+<td data-label="Критерий">Один артефакт на все среды</td>
+<td data-label="S2I / BuildConfig"><strong>нет</strong>: в каждом кластере собирается свой образ</td>
+<td data-label="Внешний CI (GitLab/Jenkins), глава 54">да: собрали раз, продвигаем дайджест dev → stage → prod</td>
 </tr>
 <tr>
-<td>Кэш зависимостей</td>
-<td>нужен PVC или incremental build; медленно</td>
-<td>штатные кэши исполнителя</td>
+<td data-label="Критерий">Кэш зависимостей</td>
+<td data-label="S2I / BuildConfig">нужен PVC или incremental build; медленно</td>
+<td data-label="Внешний CI (GitLab/Jenkins), глава 54">штатные кэши исполнителя</td>
 </tr>
 <tr>
-<td>Ресурсы</td>
-<td>ест CPU <strong>того же кластера</strong>, куда выкатываете</td>
-<td>отдельные исполнители</td>
+<td data-label="Критерий">Ресурсы</td>
+<td data-label="S2I / BuildConfig">ест CPU <strong>того же кластера</strong>, куда выкатываете</td>
+<td data-label="Внешний CI (GitLab/Jenkins), глава 54">отдельные исполнители</td>
 </tr>
 <tr>
-<td>Тесты, линтеры, сканеры</td>
-<td>встраиваются натужно</td>
-<td>естественно</td>
+<td data-label="Критерий">Тесты, линтеры, сканеры</td>
+<td data-label="S2I / BuildConfig">встраиваются натужно</td>
+<td data-label="Внешний CI (GitLab/Jenkins), глава 54">естественно</td>
 </tr>
 <tr>
-<td>Триггеры</td>
-<td>webhook, ImageChange, ConfigChange</td>
-<td>полноценный конвейер с гейтами</td>
+<td data-label="Критерий">Триггеры</td>
+<td data-label="S2I / BuildConfig">webhook, ImageChange, ConfigChange</td>
+<td data-label="Внешний CI (GitLab/Jenkins), глава 54">полноценный конвейер с гейтами</td>
 </tr>
 <tr>
-<td>Аудит и подпись артефакта</td>
-<td>слабо</td>
-<td>SBOM, подпись, провенанс</td>
+<td data-label="Критерий">Аудит и подпись артефакта</td>
+<td data-label="S2I / BuildConfig">слабо</td>
+<td data-label="Внешний CI (GitLab/Jenkins), глава 54">SBOM, подпись, провенанс</td>
 </tr>
 </tbody>
 </table>
@@ -3971,7 +3971,7 @@ kubectl auth can-i get secrets --as<span class="o">=</span>system:serviceaccount
 <p>Этот раздел — рабочий справочник на время инцидента: в нём нет новых механизмов, только порядок действий, собранный из разобранного выше. Сначала идёт таблица «симптом → команда → что искать», по которой находят первую команду для любого наблюдаемого симптома, а за ней — три чеклиста для самых частых ситуаций: под не стартует, под рестартует и деплой даёт 502 или 504. Пункты чеклистов идут в том порядке, в каком их стоит проверять.</p>
 <h3 id="141-симптомы-и-команды-диагностики">14.1 Симптомы и команды диагностики</h3>
 <p>Таблица сопоставляет наблюдаемый симптом с командой, с которой стоит начать, и с тем, что искать в её выводе. Пользуются ею сверху вниз: находят строку со своим симптомом и выполняют команду из средней колонки. Если симптомов несколько, начинайте с верхнего из них, потому что строки идут от самых общих признаков к частным.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Симптом</th>
@@ -3981,59 +3981,59 @@ kubectl auth can-i get secrets --as<span class="o">=</span>system:serviceaccount
 </thead>
 <tbody>
 <tr>
-<td>Под не в <code>Running</code></td>
-<td><code>kubectl describe pod P</code></td>
-<td>секция Events внизу; <code>State</code>/<code>Last State</code> контейнера</td>
+<td data-label="Симптом">Под не в <code>Running</code></td>
+<td data-label="Команда"><code>kubectl describe pod P</code></td>
+<td data-label="Что искать">секция Events внизу; <code>State</code>/<code>Last State</code> контейнера</td>
 </tr>
 <tr>
-<td><code>CrashLoopBackOff</code></td>
-<td><code>kubectl logs P --previous</code></td>
-<td>исключение при старте; <code>Started ... in N seconds</code> вообще есть?</td>
+<td data-label="Симптом"><code>CrashLoopBackOff</code></td>
+<td data-label="Команда"><code>kubectl logs P --previous</code></td>
+<td data-label="Что искать">исключение при старте; <code>Started ... in N seconds</code> вообще есть?</td>
 </tr>
 <tr>
-<td>Рестарты без видимой причины</td>
-<td><code>kubectl get pod P -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'</code></td>
-<td><code>reason: OOMKilled</code>, <code>exitCode</code></td>
+<td data-label="Симптом">Рестарты без видимой причины</td>
+<td data-label="Команда"><code>kubectl get pod P -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'</code></td>
+<td data-label="Что искать"><code>reason: OOMKilled</code>, <code>exitCode</code></td>
 </tr>
 <tr>
-<td>Под <code>Running</code>, но <code>0/1</code></td>
-<td><code>kubectl describe pod P</code></td>
-<td><code>Readiness probe failed:</code> и точный текст</td>
+<td data-label="Симптом">Под <code>Running</code>, но <code>0/1</code></td>
+<td data-label="Команда"><code>kubectl describe pod P</code></td>
+<td data-label="Что искать"><code>Readiness probe failed:</code> и точный текст</td>
 </tr>
 <tr>
-<td>502/504 при деплое</td>
-<td><code>kubectl get deploy -o yaml</code></td>
-<td><code>maxUnavailable</code>, наличие <code>preStop</code>, <code>terminationGracePeriodSeconds</code></td>
+<td data-label="Симптом">502/504 при деплое</td>
+<td data-label="Команда"><code>kubectl get deploy -o yaml</code></td>
+<td data-label="Что искать"><code>maxUnavailable</code>, наличие <code>preStop</code>, <code>terminationGracePeriodSeconds</code></td>
 </tr>
 <tr>
-<td>Трафик не доходит</td>
-<td><code>kubectl get endpointslice -l kubernetes.io/service-name=S</code></td>
-<td>пустой список адресов = ни один под не Ready или селектор не совпал</td>
+<td data-label="Симптом">Трафик не доходит</td>
+<td data-label="Команда"><code>kubectl get endpointslice -l kubernetes.io/service-name=S</code></td>
+<td data-label="Что искать">пустой список адресов = ни один под не Ready или селектор не совпал</td>
 </tr>
 <tr>
-<td>Высокий p99 без нагрузки</td>
-<td><code>kubectl exec P -- cat /sys/fs/cgroup/cpu.stat</code></td>
-<td><code>nr_throttled</code> / <code>nr_periods</code></td>
+<td data-label="Симптом">Высокий p99 без нагрузки</td>
+<td data-label="Команда"><code>kubectl exec P -- cat /sys/fs/cgroup/cpu.stat</code></td>
+<td data-label="Что искать"><code>nr_throttled</code> / <code>nr_periods</code></td>
 </tr>
 <tr>
-<td>Потребление памяти</td>
-<td><code>kubectl top pod --containers</code> + <code>/actuator/metrics/jvm.memory.used</code></td>
-<td>расхождение RSS и heap = non-heap проблема</td>
+<td data-label="Симптом">Потребление памяти</td>
+<td data-label="Команда"><code>kubectl top pod --containers</code> + <code>/actuator/metrics/jvm.memory.used</code></td>
+<td data-label="Что искать">расхождение RSS и heap = non-heap проблема</td>
 </tr>
 <tr>
-<td>Под <code>Pending</code></td>
-<td><code>kubectl describe pod P</code></td>
-<td><code>0/12 nodes are available: ...</code> — точная причина по каждому узлу</td>
+<td data-label="Симптом">Под <code>Pending</code></td>
+<td data-label="Команда"><code>kubectl describe pod P</code></td>
+<td data-label="Что искать"><code>0/12 nodes are available: ...</code> — точная причина по каждому узлу</td>
 </tr>
 <tr>
-<td>Медленный старт</td>
-<td><code>kubectl logs P \| grep "Started"</code></td>
-<td>сравнить с <code>requests.cpu</code>; посмотреть throttling</td>
+<td data-label="Симптом">Медленный старт</td>
+<td data-label="Команда"><code>kubectl logs P \| grep "Started"</code></td>
+<td data-label="Что искать">сравнить с <code>requests.cpu</code>; посмотреть throttling</td>
 </tr>
 <tr>
-<td>Не видно логов</td>
-<td><code>kubectl get events -n NS --sort-by=.lastTimestamp</code></td>
-<td>события живут час; для истории нужен централизованный сбор (глава 51)</td>
+<td data-label="Симптом">Не видно логов</td>
+<td data-label="Команда"><code>kubectl get events -n NS --sort-by=.lastTimestamp</code></td>
+<td data-label="Что искать">события живут час; для истории нужен централизованный сбор (глава 51)</td>
 </tr>
 </tbody>
 </table>
@@ -4267,5 +4267,5 @@ kubectl auth can-i get secrets --as<span class="o">=</span>system:serviceaccount
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-модель-kubernetes">1. Модель Kubernetes</a></li><li><a href="#2-объекты-с-которыми-работает-разработчик">2. Объекты, с которыми работает разработчик</a></li><li><a href="#3-сеть-service-ingress-gateway-api">3. Сеть: Service, Ingress, Gateway API</a></li><li><a href="#4-конфигурация-configmap-и-secret">4. Конфигурация: ConfigMap и Secret</a></li><li><a href="#5-пробы-probes">5. Пробы (probes)</a></li><li><a href="#6-ресурсы-и-планирование">6. Ресурсы и планирование</a></li><li><a href="#7-жизненный-цикл-пода-и-graceful-shutdown">7. Жизненный цикл пода и graceful shutdown</a></li><li><a href="#8-стратегии-выката">8. Стратегии выката</a></li><li><a href="#9-наблюдаемость-и-отладка-изнутри-кластера">9. Наблюдаемость и отладка изнутри кластера</a></li><li><a href="#10-openshift-специфика">10. OpenShift-специфика</a></li><li><a href="#11-манифесты-сервиса">11. Манифесты сервиса</a></li><li><a href="#12-разобранные-инциденты">12. Разобранные инциденты</a></li><li><a href="#13-грабли-и-антипаттерны">13. Грабли и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

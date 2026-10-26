@@ -3,7 +3,7 @@
 <title>7. Память и GC — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Память и GC">
 <a class="skip" href="#content">К тексту</a>
@@ -56,7 +56,7 @@
 <h3 id="12-compressed-oops-и-порог-32-гб">1.2 Compressed oops и порог 32 ГБ</h3>
 <p>Compressed oops (compressed ordinary object pointers, сжатые обычные указатели на объекты) — это приём, которым HotSpot экономит память на ссылках: вместо 64-битного адреса в поле хранится 32-битное число, из которого адрес восстанавливается при обращении. Экономия здесь большая, потому что ссылки составляют до половины данных типичной Java-кучи: из них состоят узлы коллекций, обёртки и DTO. На 64-битной машине «честная» ссылка занимает 8 байт, и без сжатия объём памяти, который занимает приложение (footprint), вырос бы почти вдвое по сравнению с 32-битной JVM. 32 бит хватает на большую кучу благодаря выравниванию: объекты выровнены по 8 байт, поэтому три младших бита адреса всегда нулевые и хранить их не нужно. Отсюда 32 бита × 8 = 2³⁵ = 32 ГБ адресуемой кучи; из этой арифметики и вырастает порог, которому посвящён раздел.</p>
 <p>Способ, которым 32-битное значение превращается обратно в адрес, называют режимом декодирования. HotSpot выбирает его сам, глядя на <code>-Xmx</code> и на то, по каким адресам ОС позволила разместить кучу (<a href="https://shipilev.net/jvm/anatomy-quarks/23-compressed-references/">Shipilev, «Compressed References»</a>). В таблице четыре режима, и смотреть в ней стоит на правую колонку: там видно, во что обходится декодирование ссылки в каждом из них. Регистр <code>%r12</code> в x86-коде HotSpot держит базовый адрес кучи.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -66,24 +66,24 @@
 </thead>
 <tbody>
 <tr>
-<td>32-bit (unscaled)</td>
-<td>куча целиком лежит ниже 4 ГБ виртуального адреса</td>
-<td><code>ref</code> используется как есть: <code>mov (%r11), %eax</code></td>
+<td data-label="Режим">32-bit (unscaled)</td>
+<td data-label="Условие">куча целиком лежит ниже 4 ГБ виртуального адреса</td>
+<td data-label="Декодирование"><code>ref</code> используется как есть: <code>mov (%r11), %eax</code></td>
 </tr>
 <tr>
-<td>Zero-based</td>
-<td>куча ниже 32 ГБ</td>
-<td><code>ref &lt;&lt; 3</code>; в x86 это бесплатно через адресацию: <code>mov 0xc(%r12,%r11,8),%eax</code>, где <code>%r12 = 0</code></td>
+<td data-label="Режим">Zero-based</td>
+<td data-label="Условие">куча ниже 32 ГБ</td>
+<td data-label="Декодирование"><code>ref &lt;&lt; 3</code>; в x86 это бесплатно через адресацию: <code>mov 0xc(%r12,%r11,8),%eax</code>, где <code>%r12 = 0</code></td>
 </tr>
 <tr>
-<td>Non-zero-based (heap-based)</td>
-<td>куча ≤ 32 ГБ, но ОС не дала низкие адреса</td>
-<td><code>base + (ref &lt;&lt; 3)</code>, <code>%r12</code> держит базу</td>
+<td data-label="Режим">Non-zero-based (heap-based)</td>
+<td data-label="Условие">куча ≤ 32 ГБ, но ОС не дала низкие адреса</td>
+<td data-label="Декодирование"><code>base + (ref &lt;&lt; 3)</code>, <code>%r12</code> держит базу</td>
 </tr>
 <tr>
-<td>Uncompressed</td>
-<td><code>-Xmx</code> &gt; 32 ГБ (при 8-байтном выравнивании)</td>
-<td>ссылки 8 байт, сжатие выключено</td>
+<td data-label="Режим">Uncompressed</td>
+<td data-label="Условие"><code>-Xmx</code> &gt; 32 ГБ (при 8-байтном выравнивании)</td>
+<td data-label="Декодирование">ссылки 8 байт, сжатие выключено</td>
 </tr>
 </tbody>
 </table>
@@ -137,7 +137,7 @@ Space losses: 0 bytes internal + 0 bytes external = 0 bytes total
 </code></pre></div>
 
 <p>Сводная таблица собирает веса типичных объектов на JDK 17–21 (64 бита, compressed oops, 12-байтный заголовок), а в скобках даёт размер с компактными заголовками JDK 25. Колонка «Разбор» показывает, из чего складывается каждое число, и по ней хорошо видно, сколько места уходит на заголовки и выравнивание, а не на сами данные. Строки у <code>String</code> две, потому что строка в Java — это два объекта: сам <code>String</code> и массив <code>byte[]</code> с символами.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Объект</th>
@@ -147,69 +147,69 @@ Space losses: 0 bytes internal + 0 bytes external = 0 bytes total
 </thead>
 <tbody>
 <tr>
-<td><code>new Object()</code></td>
-<td>16 (8)</td>
-<td>12 заголовок + 4 выравнивание</td>
+<td data-label="Объект"><code>new Object()</code></td>
+<td data-label="Размер, байт">16 (8)</td>
+<td data-label="Разбор">12 заголовок + 4 выравнивание</td>
 </tr>
 <tr>
-<td><code>Integer</code></td>
-<td>16 (16)</td>
-<td>12 + 4 <code>int</code></td>
+<td data-label="Объект"><code>Integer</code></td>
+<td data-label="Размер, байт">16 (16)</td>
+<td data-label="Разбор">12 + 4 <code>int</code></td>
 </tr>
 <tr>
-<td><code>Long</code>, <code>Double</code></td>
-<td>24 (16)</td>
-<td>12 + 4 дыра + 8 поле</td>
+<td data-label="Объект"><code>Long</code>, <code>Double</code></td>
+<td data-label="Размер, байт">24 (16)</td>
+<td data-label="Разбор">12 + 4 дыра + 8 поле</td>
 </tr>
 <tr>
-<td><code>int[0]</code></td>
-<td>16 (16)</td>
-<td>12 + 4 length</td>
+<td data-label="Объект"><code>int[0]</code></td>
+<td data-label="Размер, байт">16 (16)</td>
+<td data-label="Разбор">12 + 4 length</td>
 </tr>
 <tr>
-<td><code>int[10]</code></td>
-<td>56</td>
-<td>16 + 40</td>
+<td data-label="Объект"><code>int[10]</code></td>
+<td data-label="Размер, байт">56</td>
+<td data-label="Разбор">16 + 40</td>
 </tr>
 <tr>
-<td><code>String</code> «hello» (JDK 9+, compact strings)</td>
-<td>24 + 24 = 48</td>
-<td>объект: 12 + <code>hash</code> 4 + <code>value</code> 4 + <code>coder</code> 1 + <code>hashIsZero</code> 1 → 24; массив <code>byte[5]</code>: 16 + 5 → 24</td>
+<td data-label="Объект"><code>String</code> «hello» (JDK 9+, compact strings)</td>
+<td data-label="Размер, байт">24 + 24 = 48</td>
+<td data-label="Разбор">объект: 12 + <code>hash</code> 4 + <code>value</code> 4 + <code>coder</code> 1 + <code>hashIsZero</code> 1 → 24; массив <code>byte[5]</code>: 16 + 5 → 24</td>
 </tr>
 <tr>
-<td><code>String</code> из 100 латинских символов</td>
-<td>24 + 120 = 144</td>
-<td><code>byte[100]</code> = 16 + 100 → 120 (LATIN1 по 1 байту; UTF16 — по 2)</td>
+<td data-label="Объект"><code>String</code> из 100 латинских символов</td>
+<td data-label="Размер, байт">24 + 120 = 144</td>
+<td data-label="Разбор"><code>byte[100]</code> = 16 + 100 → 120 (LATIN1 по 1 байту; UTF16 — по 2)</td>
 </tr>
 <tr>
-<td><code>HashMap.Node</code></td>
-<td>32 (24)</td>
-<td>12 + <code>hash</code> 4 + <code>key</code> 4 + <code>value</code> 4 + <code>next</code> 4 = 28 → 32</td>
+<td data-label="Объект"><code>HashMap.Node</code></td>
+<td data-label="Размер, байт">32 (24)</td>
+<td data-label="Разбор">12 + <code>hash</code> 4 + <code>key</code> 4 + <code>value</code> 4 + <code>next</code> 4 = 28 → 32</td>
 </tr>
 <tr>
-<td><code>HashMap.TreeNode</code></td>
-<td>56</td>
-<td>Node + <code>parent</code>, <code>left</code>, <code>right</code>, <code>prev</code>, <code>red</code></td>
+<td data-label="Объект"><code>HashMap.TreeNode</code></td>
+<td data-label="Размер, байт">56</td>
+<td data-label="Разбор">Node + <code>parent</code>, <code>left</code>, <code>right</code>, <code>prev</code>, <code>red</code></td>
 </tr>
 <tr>
-<td>пустая <code>HashMap</code></td>
-<td>48</td>
-<td>12 + <code>table</code>, <code>entrySet</code>, <code>size</code>, <code>modCount</code>, <code>threshold</code>, <code>loadFactor</code> + унаследованные <code>keySet</code>, <code>values</code></td>
+<td data-label="Объект">пустая <code>HashMap</code></td>
+<td data-label="Размер, байт">48</td>
+<td data-label="Разбор">12 + <code>table</code>, <code>entrySet</code>, <code>size</code>, <code>modCount</code>, <code>threshold</code>, <code>loadFactor</code> + унаследованные <code>keySet</code>, <code>values</code></td>
 </tr>
 <tr>
-<td><code>Object[16]</code> (таблица HashMap на 16)</td>
-<td>80</td>
-<td>16 + 16 × 4</td>
+<td data-label="Объект"><code>Object[16]</code> (таблица HashMap на 16)</td>
+<td data-label="Размер, байт">80</td>
+<td data-label="Разбор">16 + 16 × 4</td>
 </tr>
 <tr>
-<td>пустой <code>ArrayList</code></td>
-<td>24</td>
-<td>12 + <code>size</code> 4 + <code>modCount</code> 4 + <code>elementData</code> 4</td>
+<td data-label="Объект">пустой <code>ArrayList</code></td>
+<td data-label="Размер, байт">24</td>
+<td data-label="Разбор">12 + <code>size</code> 4 + <code>modCount</code> 4 + <code>elementData</code> 4</td>
 </tr>
 <tr>
-<td><code>Optional.of(x)</code></td>
-<td>16</td>
-<td>12 + 4 ссылка</td>
+<td data-label="Объект"><code>Optional.of(x)</code></td>
+<td data-label="Размер, байт">16</td>
+<td data-label="Разбор">12 + 4 ссылка</td>
 </tr>
 </tbody>
 </table>
@@ -406,7 +406,7 @@ inFlight=600000:  14 пауз Young (Normal), 16 Concurrent Start, 16 Young (Mix
 
 <p>Кратко о каждой области. Metaspace хранит описания загруженных классов. Code cache хранит машинный код, который сгенерировал JIT-компилятор. Direct memory — это память вне кучи, которую Java-код выделяет через <code>ByteBuffer.allocateDirect</code> для ввода-вывода. Native-выделения памяти — это память, которую берут у ОС через <code>malloc</code> библиотеки на C: сама JVM, zlib, OpenSSL. Подробно все они разобраны в разделе 16.</p>
 <p>Таблица разбирает те же области подробнее: что в каждой лежит, чем она ограничена по умолчанию в JDK 21 (<a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html">man java</a>) и какой командой на неё посмотреть. Последнюю колонку стоит запомнить, потому что именно ею пользуются при разборе инцидента. В строке Native/malloc обратите внимание на пометку, что NMT эту область не видит. NMT (Native Memory Tracking) — встроенный в JVM учёт её собственной памяти вне кучи, он разобран в 11.3.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Область</th>
@@ -417,46 +417,46 @@ inFlight=600000:  14 пауз Young (Normal), 16 Concurrent Start, 16 Young (Mix
 </thead>
 <tbody>
 <tr>
-<td>Heap</td>
-<td>объекты Java</td>
-<td><code>-Xmx</code>, по умолчанию ¼ физической памяти (<code>MaxRAMPercentage=25</code>); <code>-Xms</code> = 1/64 (<code>InitialRAMPercentage=1.5625</code>)</td>
-<td><code>-Xlog:gc*</code>, <code>jstat -gc</code>, JFR</td>
+<td data-label="Область">Heap</td>
+<td data-label="Что лежит">объекты Java</td>
+<td data-label="Лимит по умолчанию"><code>-Xmx</code>, по умолчанию ¼ физической памяти (<code>MaxRAMPercentage=25</code>); <code>-Xms</code> = 1/64 (<code>InitialRAMPercentage=1.5625</code>)</td>
+<td data-label="Как посмотреть"><code>-Xlog:gc*</code>, <code>jstat -gc</code>, JFR</td>
 </tr>
 <tr>
-<td>Metaspace</td>
-<td><code>Klass</code>, методы, константные пулы, аннотации</td>
-<td><code>MaxMetaspaceSize</code> — не ограничен; <code>CompressedClassSpaceSize</code> — 1 ГБ резерва</td>
-<td><code>jcmd &lt;pid&gt; VM.metaspace</code>, <code>-Xlog:gc+metaspace</code></td>
+<td data-label="Область">Metaspace</td>
+<td data-label="Что лежит"><code>Klass</code>, методы, константные пулы, аннотации</td>
+<td data-label="Лимит по умолчанию"><code>MaxMetaspaceSize</code> — не ограничен; <code>CompressedClassSpaceSize</code> — 1 ГБ резерва</td>
+<td data-label="Как посмотреть"><code>jcmd &lt;pid&gt; VM.metaspace</code>, <code>-Xlog:gc+metaspace</code></td>
 </tr>
 <tr>
-<td>Code cache</td>
-<td>JIT-код, интерпретаторные стабы</td>
-<td><code>ReservedCodeCacheSize</code> = 240 МБ при tiered (48 МБ без)</td>
-<td><code>jcmd &lt;pid&gt; Compiler.codecache</code>, глава 06</td>
+<td data-label="Область">Code cache</td>
+<td data-label="Что лежит">JIT-код, интерпретаторные стабы</td>
+<td data-label="Лимит по умолчанию"><code>ReservedCodeCacheSize</code> = 240 МБ при tiered (48 МБ без)</td>
+<td data-label="Как посмотреть"><code>jcmd &lt;pid&gt; Compiler.codecache</code>, глава 06</td>
 </tr>
 <tr>
-<td>Thread stacks</td>
-<td>стеки платформенных потоков</td>
-<td><code>-Xss</code> = 1 МБ (Linux x64), 2 МБ (Linux AArch64); резервируются целиком, физическая память выделяется (<em>commit</em>) по мере роста</td>
-<td>NMT категория <code>Thread</code></td>
+<td data-label="Область">Thread stacks</td>
+<td data-label="Что лежит">стеки платформенных потоков</td>
+<td data-label="Лимит по умолчанию"><code>-Xss</code> = 1 МБ (Linux x64), 2 МБ (Linux AArch64); резервируются целиком, физическая память выделяется (<em>commit</em>) по мере роста</td>
+<td data-label="Как посмотреть">NMT категория <code>Thread</code></td>
 </tr>
 <tr>
-<td>GC-структуры</td>
-<td>card table, remembered sets (G1: категория <code>GCCardSet</code>), mark bitmaps (ZGC/Shenandoah), work queues</td>
-<td>зависит от коллектора: G1 в плохих случаях 10–20 % кучи, ZGC — bitmaps ~3 %</td>
-<td>NMT категория <code>GC</code></td>
+<td data-label="Область">GC-структуры</td>
+<td data-label="Что лежит">card table, remembered sets (G1: категория <code>GCCardSet</code>), mark bitmaps (ZGC/Shenandoah), work queues</td>
+<td data-label="Лимит по умолчанию">зависит от коллектора: G1 в плохих случаях 10–20 % кучи, ZGC — bitmaps ~3 %</td>
+<td data-label="Как посмотреть">NMT категория <code>GC</code></td>
 </tr>
 <tr>
-<td>Direct memory</td>
-<td><code>ByteBuffer.allocateDirect</code>, NIO-каналы, Netty</td>
-<td><code>MaxDirectMemorySize</code>, по умолчанию равен <code>-Xmx</code></td>
-<td>MBean <code>BufferPool</code>, JFR <code>jdk.DirectBufferStatistics</code></td>
+<td data-label="Область">Direct memory</td>
+<td data-label="Что лежит"><code>ByteBuffer.allocateDirect</code>, NIO-каналы, Netty</td>
+<td data-label="Лимит по умолчанию"><code>MaxDirectMemorySize</code>, по умолчанию равен <code>-Xmx</code></td>
+<td data-label="Как посмотреть">MBean <code>BufferPool</code>, JFR <code>jdk.DirectBufferStatistics</code></td>
 </tr>
 <tr>
-<td>Native/malloc</td>
-<td>JNI-библиотеки, zlib при <code>Inflater</code>, <code>Unsafe.allocateMemory</code>, арены glibc</td>
-<td>не ограничено JVM</td>
-<td><code>pmap</code>, <code>jemalloc</code>-профиль; NMT не видит</td>
+<td data-label="Область">Native/malloc</td>
+<td data-label="Что лежит">JNI-библиотеки, zlib при <code>Inflater</code>, <code>Unsafe.allocateMemory</code>, арены glibc</td>
+<td data-label="Лимит по умолчанию">не ограничено JVM</td>
+<td data-label="Как посмотреть"><code>pmap</code>, <code>jemalloc</code>-профиль; NMT не видит</td>
 </tr>
 </tbody>
 </table>
@@ -583,7 +583,7 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 <h3 id="45-evacuation-failure-и-состав-паузы">4.5 Evacuation failure и состав паузы</h3>
 <p><strong>Evacuation failure</strong> (отказ эвакуации, в старых логах <code>to-space exhausted</code>) случается, когда во время копирования не нашлось свободного региона под живые объекты. G1 при этом не падает. Он оставляет несъехавшие объекты на месте, так что регион целиком, вместе с мусором, становится old, чинит уже перемещённые ссылки и продолжает работу (<a href="https://docs.oracle.com/en/java/javase/21/gctuning/garbage-first-g1-garbage-collector1.html">G1 Tuning Guide</a>). Но такая пауза обходится дорого (сотни мс), а если места нет и после неё, следует Full GC. Причины обычно такие: слишком поздно стартовала разметка (IHOP), случился всплеск выделений памяти с долгоживущими объектами или не хватает резерва <code>G1ReservePercent</code>. Лечится это не добавлением памяти, а пониманием того, почему живых объектов стало больше, чем ожидал коллектор.</p>
 <p>Из чего складывается young-пауза G1 в реальности, показывает таблица ниже; порядок величин дан для кучи в 8 ГБ, eden ~2 ГБ и живых данных (live) ~5 %. Смотреть в ней стоит прежде всего на правую колонку: она говорит, какая особенность приложения раздувает каждую фазу, и именно по ней ищут причину, когда пауза вышла за цель.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Фаза</th>
@@ -593,34 +593,34 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 </thead>
 <tbody>
 <tr>
-<td>Pre Evacuate (выбор CSet, JNI/JVMTI-корни)</td>
-<td>0.1–1 мс</td>
-<td>много потоков, глубокие стеки</td>
+<td data-label="Фаза">Pre Evacuate (выбор CSet, JNI/JVMTI-корни)</td>
+<td data-label="Типично">0.1–1 мс</td>
+<td data-label="Что раздувает">много потоков, глубокие стеки</td>
 </tr>
 <tr>
-<td>Merge/Scan Heap Roots (RSet)</td>
-<td>1–20 мс</td>
-<td>огромные RSet: большие <code>HashMap</code>, LRU-кэши с частыми перезаписями</td>
+<td data-label="Фаза">Merge/Scan Heap Roots (RSet)</td>
+<td data-label="Типично">1–20 мс</td>
+<td data-label="Что раздувает">огромные RSet: большие <code>HashMap</code>, LRU-кэши с частыми перезаписями</td>
 </tr>
 <tr>
-<td>Evacuate Collection Set (копирование)</td>
-<td>5–100 мс</td>
-<td>много живых объектов в eden (in-flight запросы, большие пакеты), premature promotion</td>
+<td data-label="Фаза">Evacuate Collection Set (копирование)</td>
+<td data-label="Типично">5–100 мс</td>
+<td data-label="Что раздувает">много живых объектов в eden (in-flight запросы, большие пакеты), premature promotion</td>
 </tr>
 <tr>
-<td>Object Copy внутри evacuate</td>
-<td>основная доля</td>
-<td>глубокие структуры (linked lists копируются плохо — cache misses)</td>
+<td data-label="Фаза">Object Copy внутри evacuate</td>
+<td data-label="Типично">основная доля</td>
+<td data-label="Что раздувает">глубокие структуры (linked lists копируются плохо — cache misses)</td>
 </tr>
 <tr>
-<td>Post Evacuate (Reference Processing, Weak/Soft/JNI weak)</td>
-<td>0.5–10 мс</td>
-<td>миллионы <code>WeakReference</code>/<code>SoftReference</code>/<code>Cleaner</code></td>
+<td data-label="Фаза">Post Evacuate (Reference Processing, Weak/Soft/JNI weak)</td>
+<td data-label="Типично">0.5–10 мс</td>
+<td data-label="Что раздувает">миллионы <code>WeakReference</code>/<code>SoftReference</code>/<code>Cleaner</code></td>
 </tr>
 <tr>
-<td>Other (ресайз, освобождение регионов)</td>
-<td>0.5–2 мс</td>
-<td></td>
+<td data-label="Фаза">Other (ресайз, освобождение регионов)</td>
+<td data-label="Типично">0.5–2 мс</td>
+<td data-label="Что раздувает"></td>
 </tr>
 </tbody>
 </table>
@@ -657,7 +657,7 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 <p>Цикл Shenandoah чередует короткие паузы и concurrent-фазы (<a href="https://wiki.openjdk.org/display/shenandoah/Main">Shenandoah Wiki</a>): Init Mark (пауза) → Concurrent Mark (SATB) → Final Mark (пауза) → Concurrent Cleanup → Concurrent Evacuation → Init Update Refs (пауза) → Concurrent Update References → Final Update Refs (пауза) → Concurrent Cleanup. Паузы укладываются в «0..10 мс» и пропорциональны размеру корней, а не кучи.</p>
 <p>Когда стартовать цикл, решают эвристики (heuristics). Их четыре: <code>adaptive</code> (выбрана по умолчанию и учится на прошлых циклах), <code>static</code>, <code>compact</code> (агрессивно экономит footprint и полезна в контейнерах) и <code>aggressive</code> (для диагностики). Если выделения памяти обгоняют GC, наступает <strong>degenerated GC</strong>, «вырожденная сборка»: цикл продолжается в STW-режиме с той точки, где остановился (в логах <code>Pause Degenerated GC</code>). В крайнем случае дело доходит до Full GC.</p>
 <p><strong>Shenandoah с поколениями</strong> прошёл ровно тот же путь, что и ZGC, только на три релиза позже. Ниже хронология по JEP, и смотреть в ней стоит на правую колонку: набор флагов, которыми режим включается, меняется от релиза к релизу.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">JDK</th>
@@ -668,22 +668,22 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 </thead>
 <tbody>
 <tr>
-<td class="num">24</td>
-<td><a href="https://openjdk.org/jeps/404">JEP 404</a> (Closed/Delivered)</td>
-<td>режим с поколениями как <strong>experimental</strong></td>
-<td><code>-XX:+UnlockExperimentalVMOptions -XX:+UseShenandoahGC -XX:ShenandoahGCMode=generational</code></td>
+<td data-label="JDK" class="num">24</td>
+<td data-label="JEP"><a href="https://openjdk.org/jeps/404">JEP 404</a> (Closed/Delivered)</td>
+<td data-label="Что">режим с поколениями как <strong>experimental</strong></td>
+<td data-label="Как включается"><code>-XX:+UnlockExperimentalVMOptions -XX:+UseShenandoahGC -XX:ShenandoahGCMode=generational</code></td>
 </tr>
 <tr>
-<td class="num">25</td>
-<td><a href="https://openjdk.org/jeps/521">JEP 521</a> (Closed/Delivered)</td>
-<td>тот же режим как <strong>продуктовый</strong>, <code>UnlockExperimentalVMOptions</code> больше не нужен</td>
-<td><code>-XX:+UseShenandoahGC -XX:ShenandoahGCMode=generational</code></td>
+<td data-label="JDK" class="num">25</td>
+<td data-label="JEP"><a href="https://openjdk.org/jeps/521">JEP 521</a> (Closed/Delivered)</td>
+<td data-label="Что">тот же режим как <strong>продуктовый</strong>, <code>UnlockExperimentalVMOptions</code> больше не нужен</td>
+<td data-label="Как включается"><code>-XX:+UseShenandoahGC -XX:ShenandoahGCMode=generational</code></td>
 </tr>
 <tr>
-<td class="num">28</td>
-<td><a href="https://openjdk.org/jeps/535">JEP 535</a> (Targeted)</td>
-<td>режим с поколениями станет <strong>режимом по умолчанию</strong>: <code>ShenandoahGCMode</code> меняет значение по умолчанию с <code>satb</code> на <code>generational</code>, старый <code>satb</code> объявляется deprecated с предупреждением</td>
-<td><code>-XX:+UseShenandoahGC</code></td>
+<td data-label="JDK" class="num">28</td>
+<td data-label="JEP"><a href="https://openjdk.org/jeps/535">JEP 535</a> (Targeted)</td>
+<td data-label="Что">режим с поколениями станет <strong>режимом по умолчанию</strong>: <code>ShenandoahGCMode</code> меняет значение по умолчанию с <code>satb</code> на <code>generational</code>, старый <code>satb</code> объявляется deprecated с предупреждением</td>
+<td data-label="Как включается"><code>-XX:+UseShenandoahGC</code></td>
 </tr>
 </tbody>
 </table>
@@ -691,7 +691,7 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 <p>Прежде чем выбирать Shenandoah, проверьте сборку JDK: <strong>Oracle JDK не включает Shenandoah</strong>. Он есть в Temurin, Red Hat, Corretto, Zulu, SapMachine и Liberica (<a href="https://wiki.openjdk.org/display/shenandoah/Main">Shenandoah Wiki</a>), так что на образе с Oracle JDK <code>-XX:+UseShenandoahGC</code> не запустится.</p>
 <h3 id="53-сравнение-zgc-shenandoah-и-g1">5.3 Сравнение ZGC, Shenandoah и G1</h3>
 <p>Сравнение сборщиков удобнее всего вести по тем свойствам, которые решают выбор в проде: паузы и их риски, барьеры, compressed oops, накладные расходы на CPU и память, доступность в сборках JDK и зрелость. Ниже три сборщика сведены по этим свойствам в одну таблицу. Цифры в ней типичные, а не гарантированные, и читать её стоит построчно, сравнивая, чем каждый сборщик расплачивается за свои преимущества.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -702,64 +702,64 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 </thead>
 <tbody>
 <tr>
-<td>Паузы</td>
-<td>цель 200 мс, факт 10–300 мс, растут с live set</td>
-<td>&lt; 1 мс STW; риск allocation stall</td>
-<td>1–10 мс; риск degenerated GC</td>
+<td data-label="">Паузы</td>
+<td data-label="G1">цель 200 мс, факт 10–300 мс, растут с live set</td>
+<td data-label="ZGC (gen, JDK 21+/25)">&lt; 1 мс STW; риск allocation stall</td>
+<td data-label="Shenandoah">1–10 мс; риск degenerated GC</td>
 </tr>
 <tr>
-<td>Эвакуация</td>
-<td>STW</td>
-<td>concurrent</td>
-<td>concurrent</td>
+<td data-label="">Эвакуация</td>
+<td data-label="G1">STW</td>
+<td data-label="ZGC (gen, JDK 21+/25)">concurrent</td>
+<td data-label="Shenandoah">concurrent</td>
 </tr>
 <tr>
-<td>Барьеры</td>
-<td>2 write (SATB + card/RSet)</td>
-<td>load + store</td>
-<td>load (LRB) + SATB write</td>
+<td data-label="">Барьеры</td>
+<td data-label="G1">2 write (SATB + card/RSet)</td>
+<td data-label="ZGC (gen, JDK 21+/25)">load + store</td>
+<td data-label="Shenandoah">load (LRB) + SATB write</td>
 </tr>
 <tr>
-<td>Compressed oops</td>
-<td>да</td>
-<td><strong>нет</strong></td>
-<td>да</td>
+<td data-label="">Compressed oops</td>
+<td data-label="G1">да</td>
+<td data-label="ZGC (gen, JDK 21+/25)"><strong>нет</strong></td>
+<td data-label="Shenandoah">да</td>
 </tr>
 <tr>
-<td>Макс. куча</td>
-<td>практически до ТБ, но паузы растут</td>
-<td>16 ТБ</td>
-<td>как G1</td>
+<td data-label="">Макс. куча</td>
+<td data-label="G1">практически до ТБ, но паузы растут</td>
+<td data-label="ZGC (gen, JDK 21+/25)">16 ТБ</td>
+<td data-label="Shenandoah">как G1</td>
 </tr>
 <tr>
-<td>Overhead CPU (типично)</td>
-<td>+5–10 % к Parallel</td>
-<td>+10–20 %</td>
-<td>+10–20 %</td>
+<td data-label="">Overhead CPU (типично)</td>
+<td data-label="G1">+5–10 % к Parallel</td>
+<td data-label="ZGC (gen, JDK 21+/25)">+10–20 %</td>
+<td data-label="Shenandoah">+10–20 %</td>
 </tr>
 <tr>
-<td>Footprint сверх live set</td>
-<td>+10–20 % (RSet, survivors)</td>
-<td>+20–30 % headroom; RSS ≈ Xmx</td>
-<td>+10–20 %, режим <code>compact</code> меньше</td>
+<td data-label="">Footprint сверх live set</td>
+<td data-label="G1">+10–20 % (RSet, survivors)</td>
+<td data-label="ZGC (gen, JDK 21+/25)">+20–30 % headroom; RSS ≈ Xmx</td>
+<td data-label="Shenandoah">+10–20 %, режим <code>compact</code> меньше</td>
 </tr>
 <tr>
-<td>Где есть</td>
-<td>везде</td>
-<td>все сборки OpenJDK</td>
-<td>не в Oracle JDK</td>
+<td data-label="">Где есть</td>
+<td data-label="G1">везде</td>
+<td data-label="ZGC (gen, JDK 21+/25)">все сборки OpenJDK</td>
+<td data-label="Shenandoah">не в Oracle JDK</td>
 </tr>
 <tr>
-<td>Зрелость</td>
-<td>по умолчанию с 2017</td>
-<td>продукт с JDK 15, gen с 21/23</td>
-<td>продукт с JDK 15, gen с 24/25</td>
+<td data-label="">Зрелость</td>
+<td data-label="G1">по умолчанию с 2017</td>
+<td data-label="ZGC (gen, JDK 21+/25)">продукт с JDK 15, gen с 21/23</td>
+<td data-label="Shenandoah">продукт с JDK 15, gen с 24/25</td>
 </tr>
 <tr>
-<td>Sweet spot</td>
-<td>универсальный выбор по умолчанию, 1–32 ГБ</td>
-<td>latency-критичные сервисы, кучи 8 ГБ+</td>
-<td>те же задачи в non-Oracle сборках, средние кучи</td>
+<td data-label="">Sweet spot</td>
+<td data-label="G1">универсальный выбор по умолчанию, 1–32 ГБ</td>
+<td data-label="ZGC (gen, JDK 21+/25)">latency-критичные сервисы, кучи 8 ГБ+</td>
+<td data-label="Shenandoah">те же задачи в non-Oracle сборках, средние кучи</td>
 </tr>
 </tbody>
 </table>
@@ -789,7 +789,7 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 <p>Улучшить одно свойство, не ухудшив хотя бы одного другого, нельзя. Если дать сборщику больше памяти, сборки станут реже, и выиграют и throughput, и latency (при копирующей сборке молодого поколения), но вырастет footprint. Если укоротить паузу, придётся делать больше concurrent-работы, и упадёт throughput. На интервью это стоит произносить первым предложением ответа, а не оправданием в конце.</p>
 <h3 id="63-таблица-выбора-коллектора">6.3 Таблица выбора коллектора</h3>
 <p>Сервис проверки лимитов по картам жил на G1 с кучей 2 ГБ, и команда прочитала, что ZGC даёт паузы меньше миллисекунды. Переключили флагом <code>-XX:+UseZGC -XX:+ZGenerational</code> и получили то, чего не ждали: хвост задержек по большинству запросов не улучшился. Чтобы увидеть это на цифрах, проще всего повторить такое переключение на небольшой программе. Она держит в массиве 6 миллионов записей <code>Limit</code> (номер карты, суточный лимит, использованная сумма в копейках), в цикле выбирает случайную запись, формирует строку запроса (это мусор) и раз в 64 операции заменяет запись новой, то есть делает так, чтобы часть кэша переезжала в old. Время замеряется для пачек по 100 операций, итог за 15 секунд на JDK 21.0.10, куча <code>-Xms2g -Xmx2g</code>, 16 логических процессоров. Полный текст программы и варианты запуска приведены ниже, в разделе с примером; цифры получены одним прогоном на каждый сборщик.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сборщик</th>
@@ -800,40 +800,40 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 </thead>
 <tbody>
 <tr>
-<td>Serial</td>
-<td>77 млн</td>
-<td class="num">41.1 мкс</td>
-<td class="num">172.7 мс</td>
+<td data-label="Сборщик">Serial</td>
+<td data-label="Операций за 15 с">77 млн</td>
+<td data-label="p99 пачки" class="num">41.1 мкс</td>
+<td data-label="Максимальная задержка пачки" class="num">172.7 мс</td>
 </tr>
 <tr>
-<td>Parallel</td>
-<td>70 млн</td>
-<td class="num">42.8 мкс</td>
-<td class="num">78.0 мс</td>
+<td data-label="Сборщик">Parallel</td>
+<td data-label="Операций за 15 с">70 млн</td>
+<td data-label="p99 пачки" class="num">42.8 мкс</td>
+<td data-label="Максимальная задержка пачки" class="num">78.0 мс</td>
 </tr>
 <tr>
-<td>G1</td>
-<td>59 млн</td>
-<td class="num">49.0 мкс</td>
-<td class="num">9.3 мс</td>
+<td data-label="Сборщик">G1</td>
+<td data-label="Операций за 15 с">59 млн</td>
+<td data-label="p99 пачки" class="num">49.0 мкс</td>
+<td data-label="Максимальная задержка пачки" class="num">9.3 мс</td>
 </tr>
 <tr>
-<td>ZGC (generational)</td>
-<td>64 млн</td>
-<td class="num">48.8 мкс</td>
-<td class="num">3.4 мс</td>
+<td data-label="Сборщик">ZGC (generational)</td>
+<td data-label="Операций за 15 с">64 млн</td>
+<td data-label="p99 пачки" class="num">48.8 мкс</td>
+<td data-label="Максимальная задержка пачки" class="num">3.4 мс</td>
 </tr>
 <tr>
-<td>Shenandoah</td>
-<td>67 млн</td>
-<td class="num">48.9 мкс</td>
-<td class="num">2.9 мс</td>
+<td data-label="Сборщик">Shenandoah</td>
+<td data-label="Операций за 15 с">67 млн</td>
+<td data-label="p99 пачки" class="num">48.9 мкс</td>
+<td data-label="Максимальная задержка пачки" class="num">2.9 мс</td>
 </tr>
 </tbody>
 </table>
 <p>Таблица показывает главное и одно неожиданное. Максимум задержки пачки падает от Serial (172.7 мс) и Parallel (78.0 мс) к G1 (9.3 мс), ZGC (3.4 мс) и Shenandoah (2.9 мс), то есть на два порядка, как и обещано. А вот пропускная способность и p99 пачки в этом тесте различаются слабо: 59–77 млн операций и 41–49 мкс, без явной зависимости от сборщика, а разброс между прогонами сопоставим с этой разницей. Если ограничить процесс двумя процессорами (<code>-XX:ActiveProcessorCount=2</code>), максимум задержки у Parallel остаётся 172.3 мс, у G1 вырастает до 56.4 мс, а у ZGC остаётся 3.7 мс при 65 млн операций против 57 млн у G1 и 71 млн у Parallel. Из этого следует вывод: выбор сборщика определяет прежде всего хвост задержек и то, чем вы платите за его уменьшение (фоновые потоки и запас памяти у ZGC и Shenandoah, длина пауз у Parallel и Serial), а G1 стоит посередине. Числа получены на синтетическом цикле на одной машине и показывают порядок, а не прогноз для вашего сервиса.</p>
 <p>Таблица ниже сводит такой выбор в набор типовых ситуаций. Для каждой в ней указан сборщик и причина. Начинать стоит с первой строки: для большинства сервисов на Spring Boot ответом будет G1 без дополнительной настройки. Остальные строки описывают случаи, когда от этого выбора разумно отойти. Версионная оговорка про ZGC нужна, потому что режим менялся от релиза к релизу: в JDK 21 ZGC с поколениями включается флагом <code>-XX:+ZGenerational</code> (<a href="https://openjdk.org/jeps/439">JEP 439</a>; без флага <code>PrintFlagsFinal</code> на JDK 21.0.10 показывает <code>ZGenerational = false</code>), в JDK 23 этот режим стал режимом по умолчанию (<a href="https://openjdk.org/jeps/474">JEP 474</a>), а в JDK 24 режим без поколений удалили (<a href="https://openjdk.org/jeps/490">JEP 490</a>).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -843,39 +843,39 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 </thead>
 <tbody>
 <tr>
-<td>Сервис Spring Boot, куча 1–8 ГБ, SLA p99 ≤ 200–500 мс</td>
-<td><strong>G1</strong> (по умолчанию), ничего не трогать кроме <code>-Xmx</code>/<code>MaxRAMPercentage</code></td>
-<td>адаптивен, хорошо изучен, паузы обычно 10–50 мс</td>
+<td data-label="Ситуация">Сервис Spring Boot, куча 1–8 ГБ, SLA p99 ≤ 200–500 мс</td>
+<td data-label="Выбор"><strong>G1</strong> (по умолчанию), ничего не трогать кроме <code>-Xmx</code>/<code>MaxRAMPercentage</code></td>
+<td data-label="Почему">адаптивен, хорошо изучен, паузы обычно 10–50 мс</td>
 </tr>
 <tr>
-<td>Тот же сервис, но SLA p99 ≤ 20–50 мс или куча 16 ГБ+</td>
-<td><strong>ZGC</strong> (generational), <code>-Xmx</code> с запасом 25–30 %, ≥ 2–4 CPU</td>
-<td>паузы &lt; 1 мс, но нужны ресурсы</td>
+<td data-label="Ситуация">Тот же сервис, но SLA p99 ≤ 20–50 мс или куча 16 ГБ+</td>
+<td data-label="Выбор"><strong>ZGC</strong> (generational), <code>-Xmx</code> с запасом 25–30 %, ≥ 2–4 CPU</td>
+<td data-label="Почему">паузы &lt; 1 мс, но нужны ресурсы</td>
 </tr>
 <tr>
-<td>Не Oracle JDK, средняя куча, хочется низких пауз и compressed oops</td>
-<td><strong>Shenandoah</strong></td>
-<td>LRB, <code>compact</code>-эвристика для контейнеров</td>
+<td data-label="Ситуация">Не Oracle JDK, средняя куча, хочется низких пауз и compressed oops</td>
+<td data-label="Выбор"><strong>Shenandoah</strong></td>
+<td data-label="Почему">LRB, <code>compact</code>-эвристика для контейнеров</td>
 </tr>
 <tr>
-<td>Batch, ETL, отчёты, Spark/Flink-воркер</td>
-<td><strong>Parallel</strong></td>
-<td>максимум throughput, паузы никто не считает</td>
+<td data-label="Ситуация">Batch, ETL, отчёты, Spark/Flink-воркер</td>
+<td data-label="Выбор"><strong>Parallel</strong></td>
+<td data-label="Почему">максимум throughput, паузы никто не считает</td>
 </tr>
 <tr>
-<td>Sidecar, CLI, функция, куча &lt; 512 МБ, 1 CPU</td>
-<td><strong>Serial</strong> (JVM выберет сама)</td>
-<td>минимум footprint и CPU</td>
+<td data-label="Ситуация">Sidecar, CLI, функция, куча &lt; 512 МБ, 1 CPU</td>
+<td data-label="Выбор"><strong>Serial</strong> (JVM выберет сама)</td>
+<td data-label="Почему">минимум footprint и CPU</td>
 </tr>
 <tr>
-<td>Бенчмарк выделений памяти, тест «сколько мусора генерирует код»</td>
-<td><strong>Epsilon</strong> (<code>-XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC</code>)</td>
-<td>ничего не собирает, OOM при исчерпании — измеряет выделения памяти в чистом виде (<a href="https://openjdk.org/jeps/318">JEP 318</a>)</td>
+<td data-label="Ситуация">Бенчмарк выделений памяти, тест «сколько мусора генерирует код»</td>
+<td data-label="Выбор"><strong>Epsilon</strong> (<code>-XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC</code>)</td>
+<td data-label="Почему">ничего не собирает, OOM при исчерпании — измеряет выделения памяти в чистом виде (<a href="https://openjdk.org/jeps/318">JEP 318</a>)</td>
 </tr>
 <tr>
-<td>JDK 8 legacy с CMS</td>
-<td>миграция на G1 в JDK 11+</td>
-<td>CMS deprecated в 9 (JEP 291), удалён в 14 (JEP 363)</td>
+<td data-label="Ситуация">JDK 8 legacy с CMS</td>
+<td data-label="Выбор">миграция на G1 в JDK 11+</td>
+<td data-label="Почему">CMS deprecated в 9 (JEP 291), удалён в 14 (JEP 363)</td>
 </tr>
 </tbody>
 </table>
@@ -981,7 +981,7 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 </blockquote>
 <h3 id="72-другие-операции-с-остановкой-потоков">7.2 Другие операции с остановкой потоков</h3>
 <p>VM-операция — это действие JVM, для которого нужно остановить все Java-потоки в safepoint, и сборка мусора лишь одна из таких операций. <code>-Xlog:safepoint</code> показывает имена всех VM-операций, ради которых останавливали потоки. В таблице собраны типичные операции, не связанные с GC, и на неё стоит смотреть, когда паузы в приложении есть, а объяснения в GC-логе для них нет. Обратите внимание, что часть этих операций запускает сам мониторинг.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Операция</th>
@@ -990,36 +990,36 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 </thead>
 <tbody>
 <tr>
-<td><code>Deoptimize</code></td>
-<td>деоптимизация скомпилированного кода (глава 06): uncommon trap, загрузка класса, нарушившего CHA-предположение</td>
+<td data-label="Операция"><code>Deoptimize</code></td>
+<td data-label="Причина">деоптимизация скомпилированного кода (глава 06): uncommon trap, загрузка класса, нарушившего CHA-предположение</td>
 </tr>
 <tr>
-<td><code>RevokeBias</code> / <code>BulkRevokeBias</code></td>
-<td>до JDK 15 — отзыв biased lock; частая причина микропауз в JDK 8</td>
+<td data-label="Операция"><code>RevokeBias</code> / <code>BulkRevokeBias</code></td>
+<td data-label="Причина">до JDK 15 — отзыв biased lock; частая причина микропауз в JDK 8</td>
 </tr>
 <tr>
-<td><code>ThreadDump</code>, <code>PrintThreads</code></td>
-<td><code>jstack</code>, <code>jcmd Thread.print</code>, actuator <code>/threaddump</code> — да, каждый thread dump это STW</td>
+<td data-label="Операция"><code>ThreadDump</code>, <code>PrintThreads</code></td>
+<td data-label="Причина"><code>jstack</code>, <code>jcmd Thread.print</code>, actuator <code>/threaddump</code> — да, каждый thread dump это STW</td>
 </tr>
 <tr>
-<td><code>GetAllStackTraces</code></td>
-<td><code>Thread.getAllStackTraces()</code> — то же самое из кода; логгер, который вызывает это на каждый лог, — реальный кейс</td>
+<td data-label="Операция"><code>GetAllStackTraces</code></td>
+<td data-label="Причина"><code>Thread.getAllStackTraces()</code> — то же самое из кода; логгер, который вызывает это на каждый лог, — реальный кейс</td>
 </tr>
 <tr>
-<td><code>RedefineClasses</code></td>
-<td>Java-агенты, hot swap, JRebel, некоторые APM</td>
+<td data-label="Операция"><code>RedefineClasses</code></td>
+<td data-label="Причина">Java-агенты, hot swap, JRebel, некоторые APM</td>
 </tr>
 <tr>
-<td><code>ICBufferFull</code></td>
-<td>переполнение буфера inline caches; в JDK 21 ещё встречается, в JDK 23 убрано вместе с ICStubs (<a href="https://bugs.openjdk.org/browse/JDK-8322630">JDK-8322630</a>)</td>
+<td data-label="Операция"><code>ICBufferFull</code></td>
+<td data-label="Причина">переполнение буфера inline caches; в JDK 21 ещё встречается, в JDK 23 убрано вместе с ICStubs (<a href="https://bugs.openjdk.org/browse/JDK-8322630">JDK-8322630</a>)</td>
 </tr>
 <tr>
-<td><code>Cleanup</code></td>
-<td>периодический safepoint (<code>GuaranteedSafepointInterval</code>, 1 с) для внутренних задач</td>
+<td data-label="Операция"><code>Cleanup</code></td>
+<td data-label="Причина">периодический safepoint (<code>GuaranteedSafepointInterval</code>, 1 с) для внутренних задач</td>
 </tr>
 <tr>
-<td><code>ChangeBreakpoint</code>, <code>EnterInterpOnlyMode</code></td>
-<td>отладчик подключён к проду</td>
+<td data-label="Операция"><code>ChangeBreakpoint</code>, <code>EnterInterpOnlyMode</code></td>
+<td data-label="Причина">отладчик подключён к проду</td>
 </tr>
 </tbody>
 </table>
@@ -1124,7 +1124,7 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 <h3 id="91-reference-types-strong-soft-weak-phantom">9.1 Reference types: Strong, Soft, Weak, Phantom</h3>
 <p>Типы ссылок в Java (<em>reference types</em>) определяют, насколько сильно ссылка удерживает объект от сборки мусора: обычная ссылка держит его, пока она есть, а мягкая, слабая и фантомная позволяют сборщику объект забрать, каждая в свой момент. Ошибка в выборе типа ссылки бьёт по продакшену неожиданно и сразу по всему сервису. Пример такой. Сервис конвертации валют хранит справочник курсов, который целиком читается из базы за несколько секунд. Автор кэша решил, что JVM сама выбросит справочник, когда памяти не хватит, и обернул значения в <code>SoftReference</code>. Месяц всё работало. В час пик сборщик дошёл до Full GC, очистил сразу весь справочник, все запросы одновременно пошли в базу перечитывать курсы, и p99 ответа на время перечитывания вырос до секунд. Чтобы понять, почему так произошло и в каких случаях слабые ссылки уместны, нужно знать, чем отличаются виды ссылок в Java и когда сборщик их очищает.</p>
 <p>Типы ссылок (<em>reference types</em>) — это виды ссылок в Java, которые по-разному удерживают объект от сборки. Обычная, сильная ссылка (<em>strong reference</em>) — это любое поле или переменная: пока она есть, объект жив. Пакет <code>java.lang.ref</code> добавляет к ней три вида «слабых» ссылок. Это объекты-обёртки, которые указывают на другой объект (его называют referent), но не мешают сборщику его собрать. Различаются они тем, <em>когда</em> GC их обнуляет и <em>что</em> с ними после этого можно делать. <code>ReferenceQueue</code> в таблице — это очередь, в которую сборщик кладёт ссылку после того, как очистил её, и из которой код приложения может узнать об очистке. В таблице к трём типам добавлен четвёртый, внутренний, на котором держится финализация. Смотреть стоит на колонку «Когда очищается», потому что именно она определяет, где каждый тип уместен.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип</th>
@@ -1136,32 +1136,32 @@ GC(19) Pause Young (Concurrent Start) (G1 Evacuation Pause) 395M-&gt;374M(512M) 
 </thead>
 <tbody>
 <tr>
-<td><code>SoftReference</code></td>
-<td>когда памяти не хватает; эвристика <code>SoftRefLRUPolicyMSPerMB</code> = 1000 мс жизни на каждый свободный МБ кучи</td>
-<td><code>null</code></td>
-<td><code>ReferenceQueue</code> (опционально)</td>
-<td>кэши «пока есть память» — почти всегда плохая идея</td>
+<td data-label="Тип"><code>SoftReference</code></td>
+<td data-label="Когда очищается">когда памяти не хватает; эвристика <code>SoftRefLRUPolicyMSPerMB</code> = 1000 мс жизни на каждый свободный МБ кучи</td>
+<td data-label="get() после очистки"><code>null</code></td>
+<td data-label="Куда кладётся"><code>ReferenceQueue</code> (опционально)</td>
+<td data-label="Типичное применение">кэши «пока есть память» — почти всегда плохая идея</td>
 </tr>
 <tr>
-<td><code>WeakReference</code></td>
-<td>при первой же сборке, которая обнаружит, что сильных ссылок нет</td>
-<td><code>null</code></td>
-<td><code>ReferenceQueue</code></td>
-<td>канонизация (<code>WeakHashMap</code>), слушатели, <code>ThreadLocal</code>-ключи</td>
+<td data-label="Тип"><code>WeakReference</code></td>
+<td data-label="Когда очищается">при первой же сборке, которая обнаружит, что сильных ссылок нет</td>
+<td data-label="get() после очистки"><code>null</code></td>
+<td data-label="Куда кладётся"><code>ReferenceQueue</code></td>
+<td data-label="Типичное применение">канонизация (<code>WeakHashMap</code>), слушатели, <code>ThreadLocal</code>-ключи</td>
 </tr>
 <tr>
-<td><code>PhantomReference</code></td>
-<td>после того, как объект помечен как недостижимый и финализирован</td>
-<td>всегда <code>null</code></td>
-<td><code>ReferenceQueue</code> (обязательна)</td>
-<td>пост-мортем очистка native-ресурсов; основа <code>Cleaner</code></td>
+<td data-label="Тип"><code>PhantomReference</code></td>
+<td data-label="Когда очищается">после того, как объект помечен как недостижимый и финализирован</td>
+<td data-label="get() после очистки">всегда <code>null</code></td>
+<td data-label="Куда кладётся"><code>ReferenceQueue</code> (обязательна)</td>
+<td data-label="Типичное применение">пост-мортем очистка native-ресурсов; основа <code>Cleaner</code></td>
 </tr>
 <tr>
-<td><code>FinalReference</code> (внутренний)</td>
-<td>реализует <code>finalize()</code></td>
-<td>—</td>
-<td><code>Finalizer</code> queue</td>
-<td>не использовать</td>
+<td data-label="Тип"><code>FinalReference</code> (внутренний)</td>
+<td data-label="Когда очищается">реализует <code>finalize()</code></td>
+<td data-label="get() после очистки">—</td>
+<td data-label="Куда кладётся"><code>Finalizer</code> queue</td>
+<td data-label="Типичное применение">не использовать</td>
 </tr>
 </tbody>
 </table>
@@ -1546,7 +1546,7 @@ get: null, remove: null, size: 1
 </ul>
 <p>Вариант <code>unable to create native thread</code> на этой машине воспроизвести не удалось: Windows-JVM создала 60 000 потоков и со стеком 256 МБ, и со стеком 16 ГБ без ошибки, поэтому поведение для Linux и cgroup <code>pids.max</code> дано ниже по документации и исходникам ⚠️ не проверено запуском. Текст сообщения взят из исходников: <code>unable to create native thread: possibly out of memory or process/resource limits reached</code> (константа <code>OS_NATIVE_THREAD_CREATION_FAILED_MSG</code> в <code>os.hpp</code>, jdk-21-ga). То же относится к <code>Map failed</code> и к OOMKilled, для них нужны Linux и cgroup.</p>
 <p>В таблице собраны разновидности, которые встречаются в сервисах. Туда же включён OOMKilled, при котором Java-исключения нет вовсе: процесс убивает ядро ОС. В последней колонке стоит первый шаг диагностики для каждой разновидности.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сообщение</th>
@@ -1556,44 +1556,44 @@ get: null, remove: null, size: 1
 </thead>
 <tbody>
 <tr>
-<td><code>Java heap space</code></td>
-<td>куча</td>
-<td>heap dump, dominator tree</td>
+<td data-label="Сообщение"><code>Java heap space</code></td>
+<td data-label="Что кончилось">куча</td>
+<td data-label="Первый шаг">heap dump, dominator tree</td>
 </tr>
 <tr>
-<td><code>GC overhead limit exceeded</code> (Parallel; у G1 — редко)</td>
-<td>&gt; 98 % времени в GC, &lt; 2 % освобождено</td>
-<td>это куча, скоро будет <code>Java heap space</code></td>
+<td data-label="Сообщение"><code>GC overhead limit exceeded</code> (Parallel; у G1 — редко)</td>
+<td data-label="Что кончилось">&gt; 98 % времени в GC, &lt; 2 % освобождено</td>
+<td data-label="Первый шаг">это куча, скоро будет <code>Java heap space</code></td>
 </tr>
 <tr>
-<td><code>Metaspace</code> / <code>Compressed class space</code></td>
-<td>метаданные классов</td>
-<td><code>VM.metaspace</code>, classloader-утечка</td>
+<td data-label="Сообщение"><code>Metaspace</code> / <code>Compressed class space</code></td>
+<td data-label="Что кончилось">метаданные классов</td>
+<td data-label="Первый шаг"><code>VM.metaspace</code>, classloader-утечка</td>
 </tr>
 <tr>
-<td><code>Direct buffer memory</code> / <code>Cannot reserve N bytes of direct buffer memory</code></td>
-<td><code>MaxDirectMemorySize</code></td>
-<td>BufferPool MBean, Netty-метрики, <code>DisableExplicitGC</code>?</td>
+<td data-label="Сообщение"><code>Direct buffer memory</code> / <code>Cannot reserve N bytes of direct buffer memory</code></td>
+<td data-label="Что кончилось"><code>MaxDirectMemorySize</code></td>
+<td data-label="Первый шаг">BufferPool MBean, Netty-метрики, <code>DisableExplicitGC</code>?</td>
 </tr>
 <tr>
-<td><code>unable to create native thread: possibly out of memory or process/resource limits reached</code></td>
-<td>ОС не даёт поток: <code>ulimit -u</code>, <code>pids.max</code> cgroup, виртуальная память под стеки</td>
-<td><code>jcmd Thread.print</code>, число потоков, <code>Xss</code></td>
+<td data-label="Сообщение"><code>unable to create native thread: possibly out of memory or process/resource limits reached</code></td>
+<td data-label="Что кончилось">ОС не даёт поток: <code>ulimit -u</code>, <code>pids.max</code> cgroup, виртуальная память под стеки</td>
+<td data-label="Первый шаг"><code>jcmd Thread.print</code>, число потоков, <code>Xss</code></td>
 </tr>
 <tr>
-<td><code>Requested array size exceeds VM limit</code></td>
-<td>длина массива на пару элементов меньше <code>Integer.MAX_VALUE</code> (на JDK 21 x64 для <code>int[]</code> и <code>byte[]</code> уже <code>MAX_VALUE - 1</code>)</td>
-<td>не память, а логика</td>
+<td data-label="Сообщение"><code>Requested array size exceeds VM limit</code></td>
+<td data-label="Что кончилось">длина массива на пару элементов меньше <code>Integer.MAX_VALUE</code> (на JDK 21 x64 для <code>int[]</code> и <code>byte[]</code> уже <code>MAX_VALUE - 1</code>)</td>
+<td data-label="Первый шаг">не память, а логика</td>
 </tr>
 <tr>
-<td><code>Map failed</code> (<code>IOException</code> от <code>mmap</code>)</td>
-<td><code>vm.max_map_count</code>, адресное пространство</td>
-<td>sysctl, MappedByteBuffer</td>
+<td data-label="Сообщение"><code>Map failed</code> (<code>IOException</code> от <code>mmap</code>)</td>
+<td data-label="Что кончилось"><code>vm.max_map_count</code>, адресное пространство</td>
+<td data-label="Первый шаг">sysctl, MappedByteBuffer</td>
 </tr>
 <tr>
-<td>OOMKilled без Java-исключения</td>
-<td>RSS &gt; cgroup limit</td>
-<td>раздел 11: сумма всех областей, NMT</td>
+<td data-label="Сообщение">OOMKilled без Java-исключения</td>
+<td data-label="Что кончилось">RSS &gt; cgroup limit</td>
+<td data-label="Первый шаг">раздел 11: сумма всех областей, NMT</td>
 </tr>
 </tbody>
 </table>
@@ -1846,7 +1846,7 @@ jcmd &lt;pid&gt; VM.native_memory detail.diff        <span class="c1"># то ж�
 <p>Весь маршрут держится на двух правилах. Правило номер один: <strong>не перезапускать под, пока не сняли данные</strong>. Рестарт лечит симптом и уничтожает улику, а следующий инцидент случится через сутки, и начинать придётся с нуля. Правило номер два: сначала понять, какая именно память кончилась, и только потом снимать дамп. Heap dump на 8 ГБ стоит минуту полной остановки и совершенно бесполезен, если течёт direct-память.</p>
 <h3 id="121-шаг-1-симптом-и-первичная-сортировка">12.1 Шаг 1: симптом и первичная сортировка</h3>
 <p>Первичная сортировка — это пятиминутное определение того, с какой проблемой вы имеете дело. От неё зависит всё остальное: снимать ли дамп, какой именно и нужен ли он вообще. Снаружи видно четыре разных симптома, и означают они разное. В таблице для каждого указано, что за ним обычно стоит и к какому шагу маршрута переходить. Код выхода 137 в первой строке означает, что процесс убит сигналом <code>SIGKILL</code> (128 + 9); в Kubernetes так завершает контейнер OOM killer ядра (глава 15, раздел 2.8).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что видно</th>
@@ -1856,24 +1856,24 @@ jcmd &lt;pid&gt; VM.native_memory detail.diff        <span class="c1"># то ж�
 </thead>
 <tbody>
 <tr>
-<td><code>Restart Count</code> растёт, <code>Last State: Terminated, Reason: OOMKilled, Exit Code: 137</code></td>
-<td>RSS превысил <code>memory.limits</code>; JVM ни при чём — убило ядро</td>
-<td>12.1.2, бюджет RSS</td>
+<td data-label="Что видно"><code>Restart Count</code> растёт, <code>Last State: Terminated, Reason: OOMKilled, Exit Code: 137</code></td>
+<td data-label="Что это обычно">RSS превысил <code>memory.limits</code>; JVM ни при чём — убило ядро</td>
+<td data-label="Куда идти">12.1.2, бюджет RSS</td>
 </tr>
 <tr>
-<td>В логе <code>java.lang.OutOfMemoryError: Java heap space</code>, под перезапустился сам</td>
-<td>кончилась именно куча: утечка или рост live set</td>
-<td>12.2 → 12.3 → 12.4</td>
+<td data-label="Что видно">В логе <code>java.lang.OutOfMemoryError: Java heap space</code>, под перезапустился сам</td>
+<td data-label="Что это обычно">кончилась именно куча: утечка или рост live set</td>
+<td data-label="Куда идти">12.2 → 12.3 → 12.4</td>
 </tr>
 <tr>
-<td>p99 вырос в 5–20 раз, ошибок нет, рестартов нет</td>
-<td>паузы GC, throttling CPU или блокировка на внешнем ресурсе</td>
-<td>12.6, <code>-Xlog:safepoint</code> (раздел 7)</td>
+<td data-label="Что видно">p99 вырос в 5–20 раз, ошибок нет, рестартов нет</td>
+<td data-label="Что это обычно">паузы GC, throttling CPU или блокировка на внешнем ресурсе</td>
+<td data-label="Куда идти">12.6, <code>-Xlog:safepoint</code> (раздел 7)</td>
 </tr>
 <tr>
-<td>«Сервис тормозит», метрик нет, логи молчат</td>
-<td>сначала выяснить, жив ли он вообще: <code>Thread.print</code></td>
-<td>12.2, 12.6</td>
+<td data-label="Что видно">«Сервис тормозит», метрик нет, логи молчат</td>
+<td data-label="Что это обычно">сначала выяснить, жив ли он вообще: <code>Thread.print</code></td>
+<td data-label="Куда идти">12.2, 12.6</td>
 </tr>
 </tbody>
 </table>
@@ -2011,7 +2011,7 @@ gzip -c /proc/1/root/dumps/app.hprof &gt; /tmp/app.hprof.gz
 </ol>
 <h3 id="123-шаг-3-снять-heap-dump">12.3 Шаг 3: снять heap dump</h3>
 <p>Heap dump — это снимок всех объектов кучи со ссылками между ними, записанный в файл формата hprof. Перед тем как его снимать, надо помнить главное: <strong>дамп останавливает приложение, причём полностью</strong>. Это не «небольшие накладные расходы», а safepoint на всё время записи файла. Ниже порядок величин, который стоит назвать дежурному перед нажатием кнопки. После таблицы разобраны способы снять дамп, место, куда его писать, способы вытащить его наружу и то, как не дать поду умереть посреди записи.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Занятая куча</th>
@@ -2022,28 +2022,28 @@ gzip -c /proc/1/root/dumps/app.hprof &gt; /tmp/app.hprof.gz
 </thead>
 <tbody>
 <tr>
-<td class="num">1 ГБ</td>
-<td class="num">~1 ГБ</td>
-<td>2–5 с</td>
-<td>5–20 с</td>
+<td data-label="Занятая куча" class="num">1 ГБ</td>
+<td data-label="Размер файла" class="num">~1 ГБ</td>
+<td data-label="Пауза при записи на локальный SSD">2–5 с</td>
+<td data-label="На сетевой том (NFS/EBS gp3)">5–20 с</td>
 </tr>
 <tr>
-<td class="num">4 ГБ</td>
-<td class="num">~4 ГБ</td>
-<td>8–20 с</td>
-<td>30–90 с</td>
+<td data-label="Занятая куча" class="num">4 ГБ</td>
+<td data-label="Размер файла" class="num">~4 ГБ</td>
+<td data-label="Пауза при записи на локальный SSD">8–20 с</td>
+<td data-label="На сетевой том (NFS/EBS gp3)">30–90 с</td>
 </tr>
 <tr>
-<td class="num">8 ГБ</td>
-<td class="num">~8 ГБ</td>
-<td>20–60 с</td>
-<td>1–4 мин</td>
+<td data-label="Занятая куча" class="num">8 ГБ</td>
+<td data-label="Размер файла" class="num">~8 ГБ</td>
+<td data-label="Пауза при записи на локальный SSD">20–60 с</td>
+<td data-label="На сетевой том (NFS/EBS gp3)">1–4 мин</td>
 </tr>
 <tr>
-<td class="num">32 ГБ</td>
-<td class="num">~32 ГБ</td>
-<td>1.5–4 мин</td>
-<td>считайте, что не снимете</td>
+<td data-label="Занятая куча" class="num">32 ГБ</td>
+<td data-label="Размер файла" class="num">~32 ГБ</td>
+<td data-label="Пауза при записи на локальный SSD">1.5–4 мин</td>
+<td data-label="На сетевой том (NFS/EBS gp3)">считайте, что не снимете</td>
 </tr>
 </tbody>
 </table>
@@ -2246,7 +2246,7 @@ java.util.concurrent.ConcurrentHashMap$Node| 9,117,240| 291,751,680 | 3,120,375,
 </code></pre></div>
 
 <p>Корни в таком пути бывают разных видов, и каждый подсказывает свою причину. Таблица ниже помогает перевести вид корня в диагноз и следующий шаг:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Корень в MAT</th>
@@ -2256,34 +2256,34 @@ java.util.concurrent.ConcurrentHashMap$Node| 9,117,240| 291,751,680 | 3,120,375,
 </thead>
 <tbody>
 <tr>
-<td><code>&lt;system class loader&gt;</code> / <code>&lt;class&gt;</code></td>
-<td>статическое поле класса</td>
-<td>найти <code>static</code> и добавить политику вытеснения</td>
+<td data-label="Корень в MAT"><code>&lt;system class loader&gt;</code> / <code>&lt;class&gt;</code></td>
+<td data-label="Что это">статическое поле класса</td>
+<td data-label="Что делать">найти <code>static</code> и добавить политику вытеснения</td>
 </tr>
 <tr>
-<td><code>Thread @ ... "http-nio-8080-exec-7"</code> → <code>ThreadLocalMap</code> → <code>Entry[]</code></td>
-<td><code>ThreadLocal</code> в пуле</td>
-<td><code>finally { tl.remove() }</code>, глава 08</td>
+<td data-label="Корень в MAT"><code>Thread @ ... "http-nio-8080-exec-7"</code> → <code>ThreadLocalMap</code> → <code>Entry[]</code></td>
+<td data-label="Что это"><code>ThreadLocal</code> в пуле</td>
+<td data-label="Что делать"><code>finally { tl.remove() }</code>, глава 08</td>
 </tr>
 <tr>
-<td><code>&lt;Java Local&gt;</code> у потока</td>
-<td>объект на стеке живого потока</td>
-<td>что-то выполняется прямо сейчас: длинный запрос, пакет</td>
+<td data-label="Корень в MAT"><code>&lt;Java Local&gt;</code> у потока</td>
+<td data-label="Что это">объект на стеке живого потока</td>
+<td data-label="Что делать">что-то выполняется прямо сейчас: длинный запрос, пакет</td>
 </tr>
 <tr>
-<td><code>&lt;JNI Global&gt;</code></td>
-<td>ссылка из native-кода (агент, JNI-библиотека)</td>
-<td>смотреть агенты, профилировщики, драйверы</td>
+<td data-label="Корень в MAT"><code>&lt;JNI Global&gt;</code></td>
+<td data-label="Что это">ссылка из native-кода (агент, JNI-библиотека)</td>
+<td data-label="Что делать">смотреть агенты, профилировщики, драйверы</td>
 </tr>
 <tr>
-<td><code>&lt;Busy Monitor&gt;</code></td>
-<td>объект, на котором кто-то держит блокировку</td>
-<td>связать с thread dump (12.6)</td>
+<td data-label="Корень в MAT"><code>&lt;Busy Monitor&gt;</code></td>
+<td data-label="Что это">объект, на котором кто-то держит блокировку</td>
+<td data-label="Что делать">связать с thread dump (12.6)</td>
 </tr>
 <tr>
-<td><code>Finalizer</code> / <code>ReferenceQueue</code></td>
-<td>объект в очереди финализации</td>
-<td>медленный <code>finalize()</code>, раздел 9.2</td>
+<td data-label="Корень в MAT"><code>Finalizer</code> / <code>ReferenceQueue</code></td>
+<td data-label="Что это">объект в очереди финализации</td>
+<td data-label="Что делать">медленный <code>finalize()</code>, раздел 9.2</td>
 </tr>
 </tbody>
 </table>
@@ -2343,7 +2343,7 @@ sed -i <span class="s1">'s/^-Xmx.*/-Xmx24g/'</span> MemoryAnalyzer.ini
 <p><code>ParseHeapDump.sh</code> принимает те же <code>-vmargs</code>, что и графическая версия. Парсинг дампа на 32 ГБ с <code>-Xmx24g</code> занимает 20–40 минут, поэтому запускайте его под <code>nohup</code>/<code>tmux</code>, а не в живой SSH-сессии: обрыв соединения не должен обрывать разбор.</p>
 <h3 id="125-шаг-5-типовые-находки-и-их-интерпретация">12.5 Шаг 5: типовые находки и их интерпретация</h3>
 <p>Типовая находка — это узнаваемая картина на вершине dominator tree, за которой почти всегда стоит один и тот же диагноз. Пятый шаг — сопоставить то, что вы увидели в дампе, с таким диагнозом, и ради таблицы ниже главу и стоит держать под рукой. В каждой строке указано, что видно в дампе, что это значит, чем гипотезу подтвердить и как её лечить. Последняя строка описывает самый неприятный исход разбора.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что на вершине dominator tree</th>
@@ -2354,82 +2354,82 @@ sed -i <span class="s1">'s/^-Xmx.*/-Xmx24g/'</span> MemoryAnalyzer.ini
 </thead>
 <tbody>
 <tr>
-<td><code>Thread</code> → <code>ThreadLocal$ThreadLocalMap</code> → <code>Entry[]</code> у потоков <code>http-nio-*</code>/<code>ForkJoinPool</code></td>
-<td><code>ThreadLocal</code> в пуле: значение strong, поток бессмертен</td>
-<td>retained делится примерно поровну между N потоками, N = размеру пула</td>
-<td><code>try/finally { tl.remove() }</code> в фильтре; <code>ScopedValue</code> на виртуальных потоках (глава 08)</td>
+<td data-label="Что на вершине dominator tree"><code>Thread</code> → <code>ThreadLocal$ThreadLocalMap</code> → <code>Entry[]</code> у потоков <code>http-nio-*</code>/<code>ForkJoinPool</code></td>
+<td data-label="Диагноз"><code>ThreadLocal</code> в пуле: значение strong, поток бессмертен</td>
+<td data-label="Подтверждение">retained делится примерно поровну между N потоками, N = размеру пула</td>
+<td data-label="Лечение"><code>try/finally { tl.remove() }</code> в фильтре; <code>ScopedValue</code> на виртуальных потоках (глава 08)</td>
 </tr>
 <tr>
-<td><code>&lt;class&gt;</code> статическое поле → <code>HashMap</code>/<code>ArrayList</code> с миллионами записей</td>
-<td>статическая коллекция без границ</td>
-<td>путь к GC root идёт через <code>&lt;system class loader&gt;</code></td>
-<td>вытеснение, перенос в бин с политикой, ревью на изменяемую статику</td>
+<td data-label="Что на вершине dominator tree"><code>&lt;class&gt;</code> статическое поле → <code>HashMap</code>/<code>ArrayList</code> с миллионами записей</td>
+<td data-label="Диагноз">статическая коллекция без границ</td>
+<td data-label="Подтверждение">путь к GC root идёт через <code>&lt;system class loader&gt;</code></td>
+<td data-label="Лечение">вытеснение, перенос в бин с политикой, ревью на изменяемую статику</td>
 </tr>
 <tr>
-<td><code>ConcurrentHashMap</code> c ключами-строками из параметров запроса</td>
-<td>кэш без ограничения</td>
-<td>ключи в Inspector содержат URL/фильтры/пагинацию</td>
-<td>Caffeine с <code>maximumSize</code> + <code>expireAfterWrite</code> (глава 23)</td>
+<td data-label="Что на вершине dominator tree"><code>ConcurrentHashMap</code> c ключами-строками из параметров запроса</td>
+<td data-label="Диагноз">кэш без ограничения</td>
+<td data-label="Подтверждение">ключи в Inspector содержат URL/фильтры/пагинацию</td>
+<td data-label="Лечение">Caffeine с <code>maximumSize</code> + <code>expireAfterWrite</code> (глава 23)</td>
 </tr>
 <tr>
-<td>Много <code>ClassLoader</code>, <code>Duplicate Classes</code> показывает один класс от N загрузчиков</td>
-<td>classloader-утечка при hot redeploy или генерации классов во время работы</td>
-<td><code>jcmd VM.metaspace</code> растёт, <code>-Xlog:class+load</code> не замолкает после прогрева</td>
-<td>не делать hot redeploy в контейнере; чинить удержание loader'а (10.5)</td>
+<td data-label="Что на вершине dominator tree">Много <code>ClassLoader</code>, <code>Duplicate Classes</code> показывает один класс от N загрузчиков</td>
+<td data-label="Диагноз">classloader-утечка при hot redeploy или генерации классов во время работы</td>
+<td data-label="Подтверждение"><code>jcmd VM.metaspace</code> растёт, <code>-Xlog:class+load</code> не замолкает после прогрева</td>
+<td data-label="Лечение">не делать hot redeploy в контейнере; чинить удержание loader'а (10.5)</td>
 </tr>
 <tr>
-<td>Долгоживущий бин → <code>List&lt;Listener&gt;</code>/<code>CopyOnWriteArrayList</code> на сотни тысяч</td>
-<td>слушатели без отписки</td>
-<td>элементы списка — request-scoped объекты</td>
-<td>симметричная отписка, weak-слушатели</td>
+<td data-label="Что на вершине dominator tree">Долгоживущий бин → <code>List&lt;Listener&gt;</code>/<code>CopyOnWriteArrayList</code> на сотни тысяч</td>
+<td data-label="Диагноз">слушатели без отписки</td>
+<td data-label="Подтверждение">элементы списка — request-scoped объекты</td>
+<td data-label="Лечение">симметричная отписка, weak-слушатели</td>
 </tr>
 <tr>
-<td><code>DirectByteBuffer</code> в тысячах экземпляров, при этом куча маленькая</td>
-<td>direct-память: обёртки живут в old, native не освобождается</td>
-<td><code>BufferPoolMXBean</code> растёт, NMT <code>Other</code> растёт</td>
-<td>пул буферов, <code>PooledByteBufAllocator</code>, <code>-XX:MaxDirectMemorySize</code> явно (9.3)</td>
+<td data-label="Что на вершине dominator tree"><code>DirectByteBuffer</code> в тысячах экземпляров, при этом куча маленькая</td>
+<td data-label="Диагноз">direct-память: обёртки живут в old, native не освобождается</td>
+<td data-label="Подтверждение"><code>BufferPoolMXBean</code> растёт, NMT <code>Other</code> растёт</td>
+<td data-label="Лечение">пул буферов, <code>PooledByteBufAllocator</code>, <code>-XX:MaxDirectMemorySize</code> явно (9.3)</td>
 </tr>
 <tr>
-<td>Гигантские <code>char[]</code>/<code>byte[]</code> по 10–200 МБ каждый</td>
-<td>сериализация или логирование целиком в память</td>
-<td>Inspector показывает JSON, SQL или трассировку стека</td>
-<td>стриминг сериализации, обрезка логируемых тел, <code>StreamReadConstraints</code></td>
+<td data-label="Что на вершине dominator tree">Гигантские <code>char[]</code>/<code>byte[]</code> по 10–200 МБ каждый</td>
+<td data-label="Диагноз">сериализация или логирование целиком в память</td>
+<td data-label="Подтверждение">Inspector показывает JSON, SQL или трассировку стека</td>
+<td data-label="Лечение">стриминг сериализации, обрезка логируемых тел, <code>StreamReadConstraints</code></td>
 </tr>
 <tr>
-<td>Миллионы одинаковых <code>String</code> с одинаковым содержимым</td>
-<td>дубли строк: enum-подобные значения из БД/JSON</td>
-<td><em>Group by value</em> в гистограмме строк</td>
-<td><code>-XX:+UseStringDeduplication</code>, <code>intern()</code> на конечном домене, кэш канонизации</td>
+<td data-label="Что на вершине dominator tree">Миллионы одинаковых <code>String</code> с одинаковым содержимым</td>
+<td data-label="Диагноз">дубли строк: enum-подобные значения из БД/JSON</td>
+<td data-label="Подтверждение"><em>Group by value</em> в гистограмме строк</td>
+<td data-label="Лечение"><code>-XX:+UseStringDeduplication</code>, <code>intern()</code> на конечном домене, кэш канонизации</td>
 </tr>
 <tr>
-<td><code>ArrayList</code> с <code>elementData</code> на 2 млн, при <code>size</code> 3 000</td>
-<td>не утечка, а раздутый массив после <code>clear()</code> без <code>trimToSize()</code></td>
-<td>Inspector: <code>size</code> ≪ <code>elementData.length</code></td>
-<td>пересоздавать коллекцию вместо <code>clear()</code>, задавать начальную ёмкость</td>
+<td data-label="Что на вершине dominator tree"><code>ArrayList</code> с <code>elementData</code> на 2 млн, при <code>size</code> 3 000</td>
+<td data-label="Диагноз">не утечка, а раздутый массив после <code>clear()</code> без <code>trimToSize()</code></td>
+<td data-label="Подтверждение">Inspector: <code>size</code> ≪ <code>elementData.length</code></td>
+<td data-label="Лечение">пересоздавать коллекцию вместо <code>clear()</code>, задавать начальную ёмкость</td>
 </tr>
 <tr>
-<td><code>Object[]</code> таблицы <code>HashMap</code> на миллионы слотов при малом <code>size</code></td>
-<td>таблица раздулась на пике и не ужимается — <code>HashMap</code> никогда не уменьшает таблицу</td>
-<td><code>table.length</code> ≫ <code>size × 2</code></td>
-<td>новая мапа вместо <code>clear()</code>, ограничение на пик</td>
+<td data-label="Что на вершине dominator tree"><code>Object[]</code> таблицы <code>HashMap</code> на миллионы слотов при малом <code>size</code></td>
+<td data-label="Диагноз">таблица раздулась на пике и не ужимается — <code>HashMap</code> никогда не уменьшает таблицу</td>
+<td data-label="Подтверждение"><code>table.length</code> ≫ <code>size × 2</code></td>
+<td data-label="Лечение">новая мапа вместо <code>clear()</code>, ограничение на пик</td>
 </tr>
 <tr>
-<td><code>HikariCP</code> <code>PoolEntry</code> / <code>ResultSet</code> / <code>PreparedStatement</code> в большом числе</td>
-<td>утечка соединений или курсоров</td>
-<td>совпадает с <code>hikaricp_connections_active</code> на потолке</td>
-<td>try-with-resources, <code>leakDetectionThreshold</code> (глава 19)</td>
+<td data-label="Что на вершине dominator tree"><code>HikariCP</code> <code>PoolEntry</code> / <code>ResultSet</code> / <code>PreparedStatement</code> в большом числе</td>
+<td data-label="Диагноз">утечка соединений или курсоров</td>
+<td data-label="Подтверждение">совпадает с <code>hikaricp_connections_active</code> на потолке</td>
+<td data-label="Лечение">try-with-resources, <code>leakDetectionThreshold</code> (глава 19)</td>
 </tr>
 <tr>
-<td><code>FinalReference</code> в очереди на сотни тысяч</td>
-<td>финализаторы не успевают</td>
-<td><code>jcmd GC.finalizer_info</code>, растёт очередь</td>
-<td>убрать <code>finalize()</code>, <code>Cleaner</code> (9.2)</td>
+<td data-label="Что на вершине dominator tree"><code>FinalReference</code> в очереди на сотни тысяч</td>
+<td data-label="Диагноз">финализаторы не успевают</td>
+<td data-label="Подтверждение"><code>jcmd GC.finalizer_info</code>, растёт очередь</td>
+<td data-label="Лечение">убрать <code>finalize()</code>, <code>Cleaner</code> (9.2)</td>
 </tr>
 <tr>
-<td>Ничего не доминирует, куча равномерно забита бизнес-объектами</td>
-<td>это не утечка, а честный live set</td>
-<td>дельта между двумя дампами тоже равномерная</td>
-<td>уменьшать данные (пагинация, стриминг) или добавлять память</td>
+<td data-label="Что на вершине dominator tree">Ничего не доминирует, куча равномерно забита бизнес-объектами</td>
+<td data-label="Диагноз">это не утечка, а честный live set</td>
+<td data-label="Подтверждение">дельта между двумя дампами тоже равномерная</td>
+<td data-label="Лечение">уменьшать данные (пагинация, стриминг) или добавлять память</td>
 </tr>
 </tbody>
 </table>
@@ -2443,7 +2443,7 @@ jstack -l &lt;pid&gt; &gt; threads-1.txt            <span class="c1"># -l доб
 
 <p><strong>Снимайте три снимка с интервалом 10–20 секунд.</strong> Один снимок не отличает «поток завис» от «поток как раз работает», а сравнение трёх показывает, кто за это время не сдвинулся с места.</p>
 <p>Состояние каждого потока в дампе говорит о том, чем он занят, но на практике эти состояния легко понять неправильно. В таблице для каждого указан смысл и то, когда оно должно насторожить:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Состояние в дампе</th>
@@ -2453,34 +2453,34 @@ jstack -l &lt;pid&gt; &gt; threads-1.txt            <span class="c1"># -l доб
 </thead>
 <tbody>
 <tr>
-<td><code>RUNNABLE</code></td>
-<td>выполняется или ждёт в native (в том числе на сокете!)</td>
-<td>много потоков <code>RUNNABLE</code> на <code>socketRead0</code> — это не работа, это ожидание сети</td>
+<td data-label="Состояние в дампе"><code>RUNNABLE</code></td>
+<td data-label="Смысл">выполняется или ждёт в native (в том числе на сокете!)</td>
+<td data-label="Тревожно, если">много потоков <code>RUNNABLE</code> на <code>socketRead0</code> — это не работа, это ожидание сети</td>
 </tr>
 <tr>
-<td><code>BLOCKED (on object monitor)</code></td>
-<td>ждёт <code>synchronized</code></td>
-<td>десятки потоков на одном мониторе — точка сериализации</td>
+<td data-label="Состояние в дампе"><code>BLOCKED (on object monitor)</code></td>
+<td data-label="Смысл">ждёт <code>synchronized</code></td>
+<td data-label="Тревожно, если">десятки потоков на одном мониторе — точка сериализации</td>
 </tr>
 <tr>
-<td><code>WAITING (parking)</code></td>
-<td><code>LockSupport.park</code>: пул, очередь, <code>Future.get()</code></td>
-<td>все потоки пула ждут — это норма для холостого пула</td>
+<td data-label="Состояние в дампе"><code>WAITING (parking)</code></td>
+<td data-label="Смысл"><code>LockSupport.park</code>: пул, очередь, <code>Future.get()</code></td>
+<td data-label="Тревожно, если">все потоки пула ждут — это норма для холостого пула</td>
 </tr>
 <tr>
-<td><code>TIMED_WAITING (parking)</code></td>
-<td>то же с таймаутом: <code>poll(timeout)</code>, <code>awaitNanos</code></td>
-<td>само по себе нормально</td>
+<td data-label="Состояние в дампе"><code>TIMED_WAITING (parking)</code></td>
+<td data-label="Смысл">то же с таймаутом: <code>poll(timeout)</code>, <code>awaitNanos</code></td>
+<td data-label="Тревожно, если">само по себе нормально</td>
 </tr>
 <tr>
-<td><code>TIMED_WAITING (sleeping)</code></td>
-<td><code>Thread.sleep</code></td>
-<td>в обработчике запроса — почти всегда дефект</td>
+<td data-label="Состояние в дампе"><code>TIMED_WAITING (sleeping)</code></td>
+<td data-label="Смысл"><code>Thread.sleep</code></td>
+<td data-label="Тревожно, если">в обработчике запроса — почти всегда дефект</td>
 </tr>
 <tr>
-<td><code>IN_NATIVE</code> (в JFR/<code>jcmd</code> для виртуальных)</td>
-<td>в native-коде</td>
-<td>долгие JNI-вызовы блокируют не safepoint, но пиннят carrier (глава 02)</td>
+<td data-label="Состояние в дампе"><code>IN_NATIVE</code> (в JFR/<code>jcmd</code> для виртуальных)</td>
+<td data-label="Смысл">в native-коде</td>
+<td data-label="Тревожно, если">долгие JNI-вызовы блокируют не safepoint, но пиннят carrier (глава 02)</td>
 </tr>
 </tbody>
 </table>
@@ -2527,7 +2527,7 @@ jcmd &lt;pid&gt; VM.native_memory summary.diff
 </code></pre></div>
 
 <p>Diff читают по категориям: какая из них выросла, туда и идут дальше.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Категория выросла</th>
@@ -2537,39 +2537,39 @@ jcmd &lt;pid&gt; VM.native_memory summary.diff
 </thead>
 <tbody>
 <tr>
-<td><code>Java Heap</code></td>
-<td>куча и правда растёт — возвращайтесь к 12.2</td>
-<td></td>
+<td data-label="Категория выросла"><code>Java Heap</code></td>
+<td data-label="Что это">куча и правда растёт — возвращайтесь к 12.2</td>
+<td data-label="Куда дальше"></td>
 </tr>
 <tr>
-<td><code>Class</code></td>
-<td>classloader-утечка, metaspace</td>
-<td><code>jcmd VM.metaspace</code>, <code>VM.classloaders</code>, MAT <em>Duplicate Classes</em></td>
+<td data-label="Категория выросла"><code>Class</code></td>
+<td data-label="Что это">classloader-утечка, metaspace</td>
+<td data-label="Куда дальше"><code>jcmd VM.metaspace</code>, <code>VM.classloaders</code>, MAT <em>Duplicate Classes</em></td>
 </tr>
 <tr>
-<td><code>Thread</code></td>
-<td>потоки не умирают</td>
-<td><code>Thread.print</code>, счёт потоков, кто создаёт</td>
+<td data-label="Категория выросла"><code>Thread</code></td>
+<td data-label="Что это">потоки не умирают</td>
+<td data-label="Куда дальше"><code>Thread.print</code>, счёт потоков, кто создаёт</td>
 </tr>
 <tr>
-<td><code>Code</code></td>
-<td>раздулся code cache</td>
-<td>глава 06 (<code>06-jvm-internals.md</code>)</td>
+<td data-label="Категория выросла"><code>Code</code></td>
+<td data-label="Что это">раздулся code cache</td>
+<td data-label="Куда дальше">глава 06 (<code>06-jvm-internals.md</code>)</td>
 </tr>
 <tr>
-<td><code>GC</code></td>
-<td>раздутые remembered sets</td>
-<td>огромные мутирующие коллекции в old (раздел 14)</td>
+<td data-label="Категория выросла"><code>GC</code></td>
+<td data-label="Что это">раздутые remembered sets</td>
+<td data-label="Куда дальше">огромные мутирующие коллекции в old (раздел 14)</td>
 </tr>
 <tr>
-<td><code>Other</code></td>
-<td><code>Unsafe.allocateMemory</code>, FFM <code>Arena</code>, direct без учёта</td>
-<td>Netty, свои off-heap-структуры</td>
+<td data-label="Категория выросла"><code>Other</code></td>
+<td data-label="Что это"><code>Unsafe.allocateMemory</code>, FFM <code>Arena</code>, direct без учёта</td>
+<td data-label="Куда дальше">Netty, свои off-heap-структуры</td>
 </tr>
 <tr>
-<td><strong>ничего не выросло, а RSS вырос</strong></td>
-<td>это malloc вне JVM: JNI-библиотеки или арены glibc</td>
-<td><code>pmap</code>, глава 50</td>
+<td data-label="Категория выросла"><strong>ничего не выросло, а RSS вырос</strong></td>
+<td data-label="Что это">это malloc вне JVM: JNI-библиотеки или арены glibc</td>
+<td data-label="Куда дальше"><code>pmap</code>, глава 50</td>
 </tr>
 </tbody>
 </table>
@@ -2601,7 +2601,7 @@ grep -c . /proc/&lt;pid&gt;/maps       <span class="c1"># число отобр�
 <li><strong>Три вида действий</strong>: немедленное (что сделали, чтобы потушить), корневое (правка кода или конфига) и превентивное (метрика, оповещение, тест).</li>
 </ol>
 <p><strong>Метрики, которые должны собираться всегда</strong> (Micrometer + JVM binders, детали в главе 51). Без них разбор каждого следующего инцидента начинается с нуля, а с ними большую часть диагноза можно поставить прямо по дашборду:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Метрика</th>
@@ -2610,36 +2610,36 @@ grep -c . /proc/&lt;pid&gt;/maps       <span class="c1"># число отобр�
 </thead>
 <tbody>
 <tr>
-<td><code>jvm_memory_used_bytes{area="heap", id=~".*Old.*"}</code></td>
-<td>дно пилы — единственный честный индикатор утечки</td>
+<td data-label="Метрика"><code>jvm_memory_used_bytes{area="heap", id=~".*Old.*"}</code></td>
+<td data-label="Почему нужна">дно пилы — единственный честный индикатор утечки</td>
 </tr>
 <tr>
-<td><code>jvm_gc_pause_seconds</code> (гистограмма, по <code>action</code>/<code>cause</code>)</td>
-<td>p99 паузы и доля времени в GC</td>
+<td data-label="Метрика"><code>jvm_gc_pause_seconds</code> (гистограмма, по <code>action</code>/<code>cause</code>)</td>
+<td data-label="Почему нужна">p99 паузы и доля времени в GC</td>
 </tr>
 <tr>
-<td><code>jvm_gc_memory_promoted_bytes_total</code> / <code>jvm_gc_memory_allocated_bytes_total</code></td>
-<td>доля промоушена: ранний признак premature promotion и утечки</td>
+<td data-label="Метрика"><code>jvm_gc_memory_promoted_bytes_total</code> / <code>jvm_gc_memory_allocated_bytes_total</code></td>
+<td data-label="Почему нужна">доля промоушена: ранний признак premature promotion и утечки</td>
 </tr>
 <tr>
-<td><code>jvm_memory_committed_bytes</code> vs <code>container_memory_working_set_bytes</code></td>
-<td>весь не-heap одной разностью</td>
+<td data-label="Метрика"><code>jvm_memory_committed_bytes</code> vs <code>container_memory_working_set_bytes</code></td>
+<td data-label="Почему нужна">весь не-heap одной разностью</td>
 </tr>
 <tr>
-<td><code>jvm_buffer_memory_used_bytes{id="direct"}</code>, <code>jvm_buffer_count_buffers</code></td>
-<td>direct-память</td>
+<td data-label="Метрика"><code>jvm_buffer_memory_used_bytes{id="direct"}</code>, <code>jvm_buffer_count_buffers</code></td>
+<td data-label="Почему нужна">direct-память</td>
 </tr>
 <tr>
-<td><code>jvm_classes_loaded_classes</code></td>
-<td>classloader-утечка видна как монотонный рост</td>
+<td data-label="Метрика"><code>jvm_classes_loaded_classes</code></td>
+<td data-label="Почему нужна">classloader-утечка видна как монотонный рост</td>
 </tr>
 <tr>
-<td><code>jvm_threads_live_threads</code></td>
-<td>«unable to create native thread» предупреждается заранее</td>
+<td data-label="Метрика"><code>jvm_threads_live_threads</code></td>
+<td data-label="Почему нужна">«unable to create native thread» предупреждается заранее</td>
 </tr>
 <tr>
-<td><code>container_cpu_cfs_throttled_seconds_total</code></td>
-<td>объясняет паузы, которых нет в GC-логе</td>
+<td data-label="Метрика"><code>container_cpu_cfs_throttled_seconds_total</code></td>
+<td data-label="Почему нужна">объясняет паузы, которых нет в GC-логе</td>
 </tr>
 </tbody>
 </table>
@@ -2707,7 +2707,7 @@ grep -oP <span class="s1">'Pause \w+ .*? \K[0-9.]+(?=ms)'</span> gc.log <span cl
 </code></pre></div>
 
 <p>Оценивать полученную долю удобно по такой шкале:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Доля времени в GC</th>
@@ -2716,24 +2716,24 @@ grep -oP <span class="s1">'Pause \w+ .*? \K[0-9.]+(?=ms)'</span> gc.log <span cl
 </thead>
 <tbody>
 <tr>
-<td>&lt; 1 %</td>
-<td>отлично, тюнинг не нужен</td>
+<td data-label="Доля времени в GC">&lt; 1 %</td>
+<td data-label="Оценка">отлично, тюнинг не нужен</td>
 </tr>
 <tr>
-<td>1–3 %</td>
-<td>норма для сервиса на G1</td>
+<td data-label="Доля времени в GC">1–3 %</td>
+<td data-label="Оценка">норма для сервиса на G1</td>
 </tr>
 <tr>
-<td>3–10 %</td>
-<td>есть что улучшать; ищите причину, но это не авария</td>
+<td data-label="Доля времени в GC">3–10 %</td>
+<td data-label="Оценка">есть что улучшать; ищите причину, но это не авария</td>
 </tr>
 <tr>
-<td>10–30 %</td>
-<td>деградация: латентность уже испорчена, throughput потерян</td>
+<td data-label="Доля времени в GC">10–30 %</td>
+<td data-label="Оценка">деградация: латентность уже испорчена, throughput потерян</td>
 </tr>
 <tr>
-<td>&gt; 30 %</td>
-<td>агония; при 98 % Parallel бросит <code>GC overhead limit exceeded</code>, G1 будет умирать молча</td>
+<td data-label="Доля времени в GC">&gt; 30 %</td>
+<td data-label="Оценка">агония; при 98 % Parallel бросит <code>GC overhead limit exceeded</code>, G1 будет умирать молча</td>
 </tr>
 </tbody>
 </table>
@@ -2764,7 +2764,7 @@ grep -oP <span class="s1">'^\[\K[0-9.]+(?=s\])'</span> gc.log <span class="p">|<
 </code></pre></div>
 
 <p>Полученный средний интервал удобно сравнить с ориентирами из таблицы ниже:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Интервал young-сборок</th>
@@ -2773,20 +2773,20 @@ grep -oP <span class="s1">'^\[\K[0-9.]+(?=s\])'</span> gc.log <span class="p">|<
 </thead>
 <tbody>
 <tr>
-<td>&gt; 10 с</td>
-<td>спокойный сервис, ничего трогать не надо</td>
+<td data-label="Интервал young-сборок">&gt; 10 с</td>
+<td data-label="Что это значит">спокойный сервис, ничего трогать не надо</td>
 </tr>
 <tr>
-<td>2–10 с</td>
-<td>норма для нагруженного API</td>
+<td data-label="Интервал young-сборок">2–10 с</td>
+<td data-label="Что это значит">норма для нагруженного API</td>
 </tr>
 <tr>
-<td>0.5–2 с</td>
-<td>много мусора на запрос; посмотрите allocation profiling (глава 45)</td>
+<td data-label="Интервал young-сборок">0.5–2 с</td>
+<td data-label="Что это значит">много мусора на запрос; посмотрите allocation profiling (глава 45)</td>
 </tr>
 <tr>
-<td>&lt; 0.5 с</td>
-<td>либо eden крошечный (слишком низкий <code>MaxGCPauseMillis</code>, слишком маленькая куча), либо выделение памяти в гигабайтах в секунду</td>
+<td data-label="Интервал young-сборок">&lt; 0.5 с</td>
+<td data-label="Что это значит">либо eden крошечный (слишком низкий <code>MaxGCPauseMillis</code>, слишком маленькая куча), либо выделение памяти в гигабайтах в секунду</td>
 </tr>
 </tbody>
 </table>
@@ -2859,7 +2859,7 @@ jfr print --events ObjectAllocationOutsideTLAB recording.jfr <span class="p">|</
 
 <h3 id="134-целевые-значения-и-оповещения">13.4 Целевые значения и оповещения</h3>
 <p>Целевые значения — это пороги показателей GC, по которым сервис оценивают как здоровый или нет. Они нужны для того, чтобы разговор о GC на ревью шёл о цифрах, а не о вкусах. Ниже порядки величин для backend-сервиса на G1 с кучей 2–16 ГБ, и в каждой строке показано, где кончается «хорошо» и начинается «плохо».</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Показатель</th>
@@ -2870,52 +2870,52 @@ jfr print --events ObjectAllocationOutsideTLAB recording.jfr <span class="p">|</
 </thead>
 <tbody>
 <tr>
-<td>Доля времени в GC</td>
-<td>&lt; 2 %</td>
-<td>2–5 %</td>
-<td class="num">&gt; 10 %</td>
+<td data-label="Показатель">Доля времени в GC</td>
+<td data-label="Хорошо">&lt; 2 %</td>
+<td data-label="Терпимо">2–5 %</td>
+<td data-label="Плохо" class="num">&gt; 10 %</td>
 </tr>
 <tr>
-<td>p99 паузы young</td>
-<td>&lt; 50 мс</td>
-<td>50–150 мс</td>
-<td class="num">&gt; 200 мс</td>
+<td data-label="Показатель">p99 паузы young</td>
+<td data-label="Хорошо">&lt; 50 мс</td>
+<td data-label="Терпимо">50–150 мс</td>
+<td data-label="Плохо" class="num">&gt; 200 мс</td>
 </tr>
 <tr>
-<td>Максимальная пауза за сутки</td>
-<td>&lt; 200 мс</td>
-<td>&lt; 500 мс</td>
-<td class="num">&gt; 1 с</td>
+<td data-label="Показатель">Максимальная пауза за сутки</td>
+<td data-label="Хорошо">&lt; 200 мс</td>
+<td data-label="Терпимо">&lt; 500 мс</td>
+<td data-label="Плохо" class="num">&gt; 1 с</td>
 </tr>
 <tr>
-<td>Число Full GC за сутки</td>
-<td>0</td>
-<td>0</td>
-<td class="num">≥ 1</td>
+<td data-label="Показатель">Число Full GC за сутки</td>
+<td data-label="Хорошо">0</td>
+<td data-label="Терпимо">0</td>
+<td data-label="Плохо" class="num">≥ 1</td>
 </tr>
 <tr>
-<td>Число evacuation failure за сутки</td>
-<td>0</td>
-<td>единицы</td>
-<td class="num">десятки</td>
+<td data-label="Показатель">Число evacuation failure за сутки</td>
+<td data-label="Хорошо">0</td>
+<td data-label="Терпимо">единицы</td>
+<td data-label="Плохо" class="num">десятки</td>
 </tr>
 <tr>
-<td>Промоушен на young-сборку</td>
-<td>&lt; 2 % от eden</td>
-<td>2–10 %</td>
-<td class="num">&gt; 10 %</td>
+<td data-label="Показатель">Промоушен на young-сборку</td>
+<td data-label="Хорошо">&lt; 2 % от eden</td>
+<td data-label="Терпимо">2–10 %</td>
+<td data-label="Плохо" class="num">&gt; 10 %</td>
 </tr>
 <tr>
-<td>Occupancy old после mixed</td>
-<td>&lt; 50 % от <code>-Xmx</code></td>
-<td>50–70 %</td>
-<td class="num">&gt; 80 %</td>
+<td data-label="Показатель">Occupancy old после mixed</td>
+<td data-label="Хорошо">&lt; 50 % от <code>-Xmx</code></td>
+<td data-label="Терпимо">50–70 %</td>
+<td data-label="Плохо" class="num">&gt; 80 %</td>
 </tr>
 <tr>
-<td>Интервал young-сборок</td>
-<td>&gt; 2 с</td>
-<td>0.5–2 с</td>
-<td class="num">&lt; 0.5 с</td>
+<td data-label="Показатель">Интервал young-сборок</td>
+<td data-label="Хорошо">&gt; 2 с</td>
+<td data-label="Терпимо">0.5–2 с</td>
+<td data-label="Плохо" class="num">&lt; 0.5 с</td>
 </tr>
 </tbody>
 </table>
@@ -2933,7 +2933,7 @@ java -Xmx16g -Xms16g -Xlog:gc+init<span class="o">=</span>debug -version <span c
 </code></pre></div>
 
 <p>Для типичных размеров кучи (при <code>-Xms</code> = <code>-Xmx</code>, как и правильно делать в проде) получается таблица ниже. Последняя её колонка показывает, с какого размера объект становится humongous, то есть половину региона:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num"><code>-Xmx</code></th>
@@ -2944,46 +2944,46 @@ java -Xmx16g -Xms16g -Xlog:gc+init<span class="o">=</span>debug -version <span c
 </thead>
 <tbody>
 <tr>
-<td class="num">1 ГБ</td>
-<td class="num">1 МБ</td>
-<td class="num">1024</td>
-<td class="num">512 КБ</td>
+<td data-label="-Xmx" class="num">1 ГБ</td>
+<td data-label="Размер региона" class="num">1 МБ</td>
+<td data-label="Число регионов" class="num">1024</td>
+<td data-label="Порог humongous" class="num">512 КБ</td>
 </tr>
 <tr>
-<td class="num">2 ГБ</td>
-<td class="num">1 МБ</td>
-<td class="num">2048</td>
-<td class="num">512 КБ</td>
+<td data-label="-Xmx" class="num">2 ГБ</td>
+<td data-label="Размер региона" class="num">1 МБ</td>
+<td data-label="Число регионов" class="num">2048</td>
+<td data-label="Порог humongous" class="num">512 КБ</td>
 </tr>
 <tr>
-<td class="num">4 ГБ</td>
-<td class="num">2 МБ</td>
-<td class="num">2048</td>
-<td class="num">1 МБ</td>
+<td data-label="-Xmx" class="num">4 ГБ</td>
+<td data-label="Размер региона" class="num">2 МБ</td>
+<td data-label="Число регионов" class="num">2048</td>
+<td data-label="Порог humongous" class="num">1 МБ</td>
 </tr>
 <tr>
-<td class="num">8 ГБ</td>
-<td class="num">4 МБ</td>
-<td class="num">2048</td>
-<td class="num">2 МБ</td>
+<td data-label="-Xmx" class="num">8 ГБ</td>
+<td data-label="Размер региона" class="num">4 МБ</td>
+<td data-label="Число регионов" class="num">2048</td>
+<td data-label="Порог humongous" class="num">2 МБ</td>
 </tr>
 <tr>
-<td class="num">16 ГБ</td>
-<td class="num">8 МБ</td>
-<td class="num">2048</td>
-<td class="num">4 МБ</td>
+<td data-label="-Xmx" class="num">16 ГБ</td>
+<td data-label="Размер региона" class="num">8 МБ</td>
+<td data-label="Число регионов" class="num">2048</td>
+<td data-label="Порог humongous" class="num">4 МБ</td>
 </tr>
 <tr>
-<td class="num">32 ГБ</td>
-<td class="num">16 МБ</td>
-<td class="num">2048</td>
-<td class="num">8 МБ</td>
+<td data-label="-Xmx" class="num">32 ГБ</td>
+<td data-label="Размер региона" class="num">16 МБ</td>
+<td data-label="Число регионов" class="num">2048</td>
+<td data-label="Порог humongous" class="num">8 МБ</td>
 </tr>
 <tr>
-<td class="num">64 ГБ+</td>
-<td class="num">32 МБ (потолок эргономики)</td>
-<td class="num">2048+</td>
-<td class="num">16 МБ</td>
+<td data-label="-Xmx" class="num">64 ГБ+</td>
+<td data-label="Размер региона" class="num">32 МБ (потолок эргономики)</td>
+<td data-label="Число регионов" class="num">2048+</td>
+<td data-label="Порог humongous" class="num">16 МБ</td>
 </tr>
 </tbody>
 </table>
@@ -3013,7 +3013,7 @@ jcmd &lt;pid&gt; VM.native_memory summary <span class="p">|</span> grep -A3 <spa
 <p>SATB (snapshot-at-the-beginning, «снимок в начале») — это контракт, по которому <strong>всё, что было живым в момент старта разметки, считается живым до её конца</strong>. Приложение может удалить ссылку, но объект всё равно будет помечен, а собран только в следующем цикле. Из контракта следуют два свойства. Разметка завершается за конечное время, как бы активно ни работало приложение; при incremental update у CMS разметка могла «догонять» бесконечно. Зато часть мусора переживает цикл: это <strong>floating garbage</strong>, «плавающий мусор», и обычно он составляет единицы процентов кучи.</p>
 <p>Механика SATB держится на барьере. <strong>Pre-write barrier</strong> перед каждой записью ссылки сохраняет <strong>старое</strong> значение поля в SATB-буфер, свой у каждого потока, а заполненный буфер передаётся GC-потокам. Так объект, на который приложение только что потеряло ссылку, всё равно попадёт в разметку. Активен барьер только во время concurrent-разметки, а в остальное время лишь проверяет флаг и выходит. Но проверка выполняется всегда и входит в постоянную стоимость G1.</p>
 <p>Ниже фазы цикла в том порядке, в каком они идут. Для каждой указано, останавливает ли она приложение, что делает, сколько длится и что её раздувает:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Фаза</th>
@@ -3025,46 +3025,46 @@ jcmd &lt;pid&gt; VM.native_memory summary <span class="p">|</span> grep -A3 <spa
 </thead>
 <tbody>
 <tr>
-<td>Concurrent Start (часть young-паузы)</td>
-<td>да</td>
-<td>сканирование корней, включение SATB-барьера</td>
-<td>+1–5 мс к обычной young</td>
-<td>много потоков, глубокие стеки</td>
+<td data-label="Фаза">Concurrent Start (часть young-паузы)</td>
+<td data-label="STW?">да</td>
+<td data-label="Что делает">сканирование корней, включение SATB-барьера</td>
+<td data-label="Сколько длится">+1–5 мс к обычной young</td>
+<td data-label="Что раздувает">много потоков, глубокие стеки</td>
 </tr>
 <tr>
-<td>Concurrent Mark From Roots</td>
-<td>нет</td>
-<td>обход графа <code>ConcGCThreads</code> потоками</td>
-<td>сотни мс — секунды</td>
-<td>размер live set, мало CPU</td>
+<td data-label="Фаза">Concurrent Mark From Roots</td>
+<td data-label="STW?">нет</td>
+<td data-label="Что делает">обход графа <code>ConcGCThreads</code> потоками</td>
+<td data-label="Сколько длится">сотни мс — секунды</td>
+<td data-label="Что раздувает">размер live set, мало CPU</td>
 </tr>
 <tr>
-<td>Concurrent Preclean</td>
-<td>нет</td>
-<td>разбор накопленных SATB-буферов</td>
-<td>единицы мс</td>
-<td>высокая частота записей ссылок</td>
+<td data-label="Фаза">Concurrent Preclean</td>
+<td data-label="STW?">нет</td>
+<td data-label="Что делает">разбор накопленных SATB-буферов</td>
+<td data-label="Сколько длится">единицы мс</td>
+<td data-label="Что раздувает">высокая частота записей ссылок</td>
 </tr>
 <tr>
-<td>Remark</td>
-<td>да</td>
-<td>добивает SATB-очереди, обрабатывает <code>Reference</code>, выгружает классы</td>
-<td>5–30 мс</td>
-<td>миллионы Weak/Soft-ссылок, много классов</td>
+<td data-label="Фаза">Remark</td>
+<td data-label="STW?">да</td>
+<td data-label="Что делает">добивает SATB-очереди, обрабатывает <code>Reference</code>, выгружает классы</td>
+<td data-label="Сколько длится">5–30 мс</td>
+<td data-label="Что раздувает">миллионы Weak/Soft-ссылок, много классов</td>
 </tr>
 <tr>
-<td>Cleanup</td>
-<td>да</td>
-<td>считает liveness регионов, выбирает кандидатов, освобождает полностью пустые</td>
-<td>1–5 мс</td>
-<td>много регионов</td>
+<td data-label="Фаза">Cleanup</td>
+<td data-label="STW?">да</td>
+<td data-label="Что делает">считает liveness регионов, выбирает кандидатов, освобождает полностью пустые</td>
+<td data-label="Сколько длится">1–5 мс</td>
+<td data-label="Что раздувает">много регионов</td>
 </tr>
 <tr>
-<td>Rebuild Remembered Sets and Scrub Regions</td>
-<td>нет</td>
-<td>строит RSet для кандидатов (с JDK 11 — лениво, только для них)</td>
-<td>десятки–сотни мс</td>
-<td>плотность межрегионных ссылок</td>
+<td data-label="Фаза">Rebuild Remembered Sets and Scrub Regions</td>
+<td data-label="STW?">нет</td>
+<td data-label="Что делает">строит RSet для кандидатов (с JDK 11 — лениво, только для них)</td>
+<td data-label="Сколько длится">десятки–сотни мс</td>
+<td data-label="Что раздувает">плотность межрегионных ссылок</td>
 </tr>
 </tbody>
 </table>
@@ -3105,7 +3105,7 @@ asprof -e alloc --alloc 1m -d <span class="m">60</span> -f /tmp/alloc.html &lt;p
 </code></pre></div>
 
 <p>Способы лечения в таблице расположены по убыванию правильности. Сверху те, что убирают причину, снизу те, что лишь сдвигают порог или уносят проблему за пределы кучи.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Приём</th>
@@ -3115,34 +3115,34 @@ asprof -e alloc --alloc 1m -d <span class="m">60</span> -f /tmp/alloc.html &lt;p
 </thead>
 <tbody>
 <tr>
-<td>Стриминг вместо материализации: <code>InputStream</code> → парсер, <code>ResultSet</code> с <code>fetchSize</code>, <code>StreamingResponseBody</code></td>
-<td>почти всегда для файлов и больших ответов</td>
-<td>переписать код</td>
+<td data-label="Приём">Стриминг вместо материализации: <code>InputStream</code> → парсер, <code>ResultSet</code> с <code>fetchSize</code>, <code>StreamingResponseBody</code></td>
+<td data-label="Когда работает">почти всегда для файлов и больших ответов</td>
+<td data-label="Цена">переписать код</td>
 </tr>
 <tr>
-<td>Обработка порциями: по 1000 записей, а не всю выборку</td>
-<td>пакеты, экспорт, миграции</td>
-<td>переписать код</td>
+<td data-label="Приём">Обработка порциями: по 1000 записей, а не всю выборку</td>
+<td data-label="Когда работает">пакеты, экспорт, миграции</td>
+<td data-label="Цена">переписать код</td>
 </tr>
 <tr>
-<td>Пул повторно используемых буферов фиксированного размера ниже порога</td>
-<td>бинарные протоколы, сериализация</td>
-<td>нужен пул и дисциплина возврата</td>
+<td data-label="Приём">Пул повторно используемых буферов фиксированного размера ниже порога</td>
+<td data-label="Когда работает">бинарные протоколы, сериализация</td>
+<td data-label="Цена">нужен пул и дисциплина возврата</td>
 </tr>
 <tr>
-<td>Предразмер коллекций: <code>new ArrayList&lt;&gt;(expected)</code> вместо роста через <code>grow()</code></td>
-<td>известен размер</td>
-<td>тривиально</td>
+<td data-label="Приём">Предразмер коллекций: <code>new ArrayList&lt;&gt;(expected)</code> вместо роста через <code>grow()</code></td>
+<td data-label="Когда работает">известен размер</td>
+<td data-label="Цена">тривиально</td>
 </tr>
 <tr>
-<td><code>-XX:G1HeapRegionSize=16m</code> (поднять порог)</td>
-<td>как временная мера под инцидент</td>
-<td>грубее гранулярность пауз, больше внутренней фрагментации</td>
+<td data-label="Приём"><code>-XX:G1HeapRegionSize=16m</code> (поднять порог)</td>
+<td data-label="Когда работает">как временная мера под инцидент</td>
+<td data-label="Цена">грубее гранулярность пауз, больше внутренней фрагментации</td>
 </tr>
 <tr>
-<td>Off-heap для больших буферов (<code>ByteBuffer.allocateDirect</code>, FFM <code>Arena</code>)</td>
-<td>документы и буферы в десятки МБ</td>
-<td>ручное управление жизненным циклом (раздел 16)</td>
+<td data-label="Приём">Off-heap для больших буферов (<code>ByteBuffer.allocateDirect</code>, FFM <code>Arena</code>)</td>
+<td data-label="Когда работает">документы и буферы в десятки МБ</td>
+<td data-label="Цена">ручное управление жизненным циклом (раздел 16)</td>
 </tr>
 </tbody>
 </table>
@@ -3167,7 +3167,7 @@ asprof -e alloc --alloc 1m -d <span class="m">60</span> -f /tmp/alloc.html &lt;p
 <div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>java -XX:+PrintFlagsFinal -version <span class="p">|</span> grep -E <span class="s1">'G1|MaxGCPause|InitiatingHeap|ParallelGCThreads|ConcGCThreads'</span>
 </code></pre></div>
 
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Флаг</th>
@@ -3178,77 +3178,77 @@ asprof -e alloc --alloc 1m -d <span class="m">60</span> -f /tmp/alloc.html &lt;p
 </thead>
 <tbody>
 <tr>
-<td><code>G1HeapRegionSize</code></td>
-<td>эргономика, 1–32 МБ</td>
-<td>из <code>-Xms</code>/<code>-Xmx</code></td>
-<td>только с гипотезой (14.1)</td>
+<td data-label="Флаг"><code>G1HeapRegionSize</code></td>
+<td data-label="По умолчанию">эргономика, 1–32 МБ</td>
+<td data-label="Кто выставляет">из <code>-Xms</code>/<code>-Xmx</code></td>
+<td data-label="Трогать?">только с гипотезой (14.1)</td>
 </tr>
 <tr>
-<td><code>MaxGCPauseMillis</code></td>
-<td>200</td>
-<td>статически</td>
-<td>осторожно, 100–250</td>
+<td data-label="Флаг"><code>MaxGCPauseMillis</code></td>
+<td data-label="По умолчанию">200</td>
+<td data-label="Кто выставляет">статически</td>
+<td data-label="Трогать?">осторожно, 100–250</td>
 </tr>
 <tr>
-<td><code>InitiatingHeapOccupancyPercent</code></td>
-<td>45, дальше адаптивно</td>
-<td><code>G1UseAdaptiveIHOP</code></td>
-<td>только если адаптивный опаздывает</td>
+<td data-label="Флаг"><code>InitiatingHeapOccupancyPercent</code></td>
+<td data-label="По умолчанию">45, дальше адаптивно</td>
+<td data-label="Кто выставляет"><code>G1UseAdaptiveIHOP</code></td>
+<td data-label="Трогать?">только если адаптивный опаздывает</td>
 </tr>
 <tr>
-<td><code>G1NewSizePercent</code> / <code>G1MaxNewSizePercent</code></td>
-<td>5 / 60</td>
-<td>статически</td>
-<td>повышать нижнюю границу при premature promotion; флаги experimental, нужен <code>-XX:+UnlockExperimentalVMOptions</code></td>
+<td data-label="Флаг"><code>G1NewSizePercent</code> / <code>G1MaxNewSizePercent</code></td>
+<td data-label="По умолчанию">5 / 60</td>
+<td data-label="Кто выставляет">статически</td>
+<td data-label="Трогать?">повышать нижнюю границу при premature promotion; флаги experimental, нужен <code>-XX:+UnlockExperimentalVMOptions</code></td>
 </tr>
 <tr>
-<td><code>G1ReservePercent</code></td>
-<td>10</td>
-<td>статически</td>
-<td>15–20 при evacuation failure</td>
+<td data-label="Флаг"><code>G1ReservePercent</code></td>
+<td data-label="По умолчанию">10</td>
+<td data-label="Кто выставляет">статически</td>
+<td data-label="Трогать?">15–20 при evacuation failure</td>
 </tr>
 <tr>
-<td><code>G1HeapWastePercent</code></td>
-<td>5</td>
-<td>статически</td>
-<td>2–3 на больших кучах</td>
+<td data-label="Флаг"><code>G1HeapWastePercent</code></td>
+<td data-label="По умолчанию">5</td>
+<td data-label="Кто выставляет">статически</td>
+<td data-label="Трогать?">2–3 на больших кучах</td>
 </tr>
 <tr>
-<td><code>G1MixedGCCountTarget</code></td>
-<td>8</td>
-<td>статически</td>
-<td>редко</td>
+<td data-label="Флаг"><code>G1MixedGCCountTarget</code></td>
+<td data-label="По умолчанию">8</td>
+<td data-label="Кто выставляет">статически</td>
+<td data-label="Трогать?">редко</td>
 </tr>
 <tr>
-<td><code>G1MixedGCLiveThresholdPercent</code></td>
-<td>85</td>
-<td>статически</td>
-<td>65–75, если old не очищается</td>
+<td data-label="Флаг"><code>G1MixedGCLiveThresholdPercent</code></td>
+<td data-label="По умолчанию">85</td>
+<td data-label="Кто выставляет">статически</td>
+<td data-label="Трогать?">65–75, если old не очищается</td>
 </tr>
 <tr>
-<td><code>ParallelGCThreads</code></td>
-<td>по числу CPU</td>
-<td>эргономика</td>
-<td>только если GC мешает приложению делить CPU</td>
+<td data-label="Флаг"><code>ParallelGCThreads</code></td>
+<td data-label="По умолчанию">по числу CPU</td>
+<td data-label="Кто выставляет">эргономика</td>
+<td data-label="Трогать?">только если GC мешает приложению делить CPU</td>
 </tr>
 <tr>
-<td><code>ConcGCThreads</code></td>
-<td>≈ ¼ <code>ParallelGCThreads</code></td>
-<td>эргономика</td>
-<td>повышать при отставании разметки</td>
+<td data-label="Флаг"><code>ConcGCThreads</code></td>
+<td data-label="По умолчанию">≈ ¼ <code>ParallelGCThreads</code></td>
+<td data-label="Кто выставляет">эргономика</td>
+<td data-label="Трогать?">повышать при отставании разметки</td>
 </tr>
 <tr>
-<td><code>-Xmn</code> / <code>NewRatio</code></td>
-<td>—</td>
-<td>—</td>
-<td><strong>не задавать никогда</strong>: отключает адаптацию young</td>
+<td data-label="Флаг"><code>-Xmn</code> / <code>NewRatio</code></td>
+<td data-label="По умолчанию">—</td>
+<td data-label="Кто выставляет">—</td>
+<td data-label="Трогать?"><strong>не задавать никогда</strong>: отключает адаптацию young</td>
 </tr>
 </tbody>
 </table>
 <p>Флагов, которых в проде быть не должно, тоже набирается немало: <code>-Xmn</code>, <code>NewRatio</code>, <code>SurvivorRatio</code> (G1 его не игнорирует: по нему он считает максимальное число survivor-регионов как долю от целевого размера young, см. <a href="https://raw.githubusercontent.com/openjdk/jdk/jdk-21-ga/src/hotspot/share/gc/g1/g1Policy.cpp">g1Policy.cpp</a>, и трогать его стоит только при доказанном premature promotion, см. 2.2), <code>MaxTenuringThreshold</code> вручную, любые CMS-флаги, <code>UseBiasedLocking</code> (удалён) и <code>AggressiveOpts</code> (удалён).</p>
 <h3 id="148-ограничения-g1">14.8 Ограничения G1</h3>
 <p>Ограничения G1 — это профили нагрузки, на которых он проигрывает другим коллекторам, хотя как выбор по умолчанию он хорош. Узнать их стоит заранее, а не по инциденту. В таблице собраны такие ситуации вместе с причиной, по которой G1 не подходит, и тем, что взять вместо него.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -3258,39 +3258,39 @@ asprof -e alloc --alloc 1m -d <span class="m">60</span> -f /tmp/alloc.html &lt;p
 </thead>
 <tbody>
 <tr>
-<td>Куча &lt; 512 МБ, 1 CPU (sidecar, CLI, функция)</td>
-<td>накладные расходы на RSet, барьеры и concurrent-потоки съедают больше, чем экономят</td>
-<td>Serial (JVM выберет сама)</td>
+<td data-label="Ситуация">Куча &lt; 512 МБ, 1 CPU (sidecar, CLI, функция)</td>
+<td data-label="Почему G1 плохо">накладные расходы на RSet, барьеры и concurrent-потоки съедают больше, чем экономят</td>
+<td data-label="Что вместо">Serial (JVM выберет сама)</td>
 </tr>
 <tr>
-<td>Batch/ETL, throughput важнее пауз</td>
-<td>барьеры и concurrent-разметка стоят 5–15 % throughput впустую</td>
-<td>Parallel</td>
+<td data-label="Ситуация">Batch/ETL, throughput важнее пауз</td>
+<td data-label="Почему G1 плохо">барьеры и concurrent-разметка стоят 5–15 % throughput впустую</td>
+<td data-label="Что вместо">Parallel</td>
 </tr>
 <tr>
-<td>Требуется p99 паузы &lt; 10 мс</td>
-<td>G1 физически не может: эвакуация в STW</td>
-<td>ZGC (gen) или Shenandoah</td>
+<td data-label="Ситуация">Требуется p99 паузы &lt; 10 мс</td>
+<td data-label="Почему G1 плохо">G1 физически не может: эвакуация в STW</td>
+<td data-label="Что вместо">ZGC (gen) или Shenandoah</td>
 </tr>
 <tr>
-<td>Куча &gt; 32 ГБ с большим live set</td>
-<td>пауза ∝ живым объектам: mixed-сборки растут до сотен мс</td>
-<td>ZGC</td>
+<td data-label="Ситуация">Куча &gt; 32 ГБ с большим live set</td>
+<td data-label="Почему G1 плохо">пауза ∝ живым объектам: mixed-сборки растут до сотен мс</td>
+<td data-label="Что вместо">ZGC</td>
 </tr>
 <tr>
-<td>Контейнер с 1–2 CPU и кучей 4 ГБ+</td>
-<td>concurrent-разметке не хватает ядер, цикл не успевает → evacuation failure → Full GC</td>
-<td>дать CPU, либо Parallel при терпимых паузах, либо уменьшить кучу</td>
+<td data-label="Ситуация">Контейнер с 1–2 CPU и кучей 4 ГБ+</td>
+<td data-label="Почему G1 плохо">concurrent-разметке не хватает ядер, цикл не успевает → evacuation failure → Full GC</td>
+<td data-label="Что вместо">дать CPU, либо Parallel при терпимых паузах, либо уменьшить кучу</td>
 </tr>
 <tr>
-<td>Огромные объекты (десятки МБ) по природе задачи</td>
-<td>humongous-фрагментация</td>
-<td>ZGC (нет понятия humongous в том же виде) или off-heap</td>
+<td data-label="Ситуация">Огромные объекты (десятки МБ) по природе задачи</td>
+<td data-label="Почему G1 плохо">humongous-фрагментация</td>
+<td data-label="Что вместо">ZGC (нет понятия humongous в том же виде) или off-heap</td>
 </tr>
 <tr>
-<td>Измерение выделений памяти в бенчмарке</td>
-<td>сборка искажает результат</td>
-<td>Epsilon (<a href="https://openjdk.org/jeps/318">JEP 318</a>)</td>
+<td data-label="Ситуация">Измерение выделений памяти в бенчмарке</td>
+<td data-label="Почему G1 плохо">сборка искажает результат</td>
+<td data-label="Что вместо">Epsilon (<a href="https://openjdk.org/jeps/318">JEP 318</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -3322,7 +3322,7 @@ jnz  slow_path              ; цвет плохой -&gt; медленный п�
 <p>Есть и оборотная сторона: поток приложения может <strong>сам эвакуировать объект</strong>, на который наткнулся. Работа GC при этом размазывается по потокам приложения, и паузы нет, но латентность отдельного запроса может дёрнуться. А если выделения памяти обгоняют сборщик, Shenandoah переходит в <strong>degenerated GC</strong>: продолжает текущий цикл в STW-режиме с той точки, где остановился (<code>Pause Degenerated GC</code> в логе, десятки и сотни мс). В крайнем случае дело доходит до Full GC.</p>
 <h3 id="153-стоимость-барьеров-сводка">15.3 Стоимость барьеров: сводка</h3>
 <p>Сводка стоимости барьеров собирает цену всех трёх коллекторов в одном месте: сколько инструкций стоят чтение и запись ссылки, сколько throughput теряется по сравнению с Parallel, сколько памяти нужно сверх live set и как выглядит худший случай. Последняя строка на практике особенно полезна, потому что говорит, что делает этот худший случай реже.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -3333,47 +3333,47 @@ jnz  slow_path              ; цвет плохой -&gt; медленный п�
 </thead>
 <tbody>
 <tr>
-<td>Инструкций на чтение ссылки</td>
-<td>0 (только запись барьерится)</td>
-<td>2–3 + редкий slow path</td>
-<td>2–4 + редкий slow path</td>
+<td data-label="Что">Инструкций на чтение ссылки</td>
+<td data-label="G1">0 (только запись барьерится)</td>
+<td data-label="ZGC (gen)">2–3 + редкий slow path</td>
+<td data-label="Shenandoah">2–4 + редкий slow path</td>
 </tr>
 <tr>
-<td>Инструкций на запись ссылки</td>
-<td>pre-write (SATB) + post-write (card) ≈ 10–20 в худшем случае</td>
-<td>store barrier (с поколениями)</td>
-<td>SATB write barrier</td>
+<td data-label="Что">Инструкций на запись ссылки</td>
+<td data-label="G1">pre-write (SATB) + post-write (card) ≈ 10–20 в худшем случае</td>
+<td data-label="ZGC (gen)">store barrier (с поколениями)</td>
+<td data-label="Shenandoah">SATB write barrier</td>
 </tr>
 <tr>
-<td>Потеря throughput против Parallel</td>
-<td>5–15 %</td>
-<td>10–25 %</td>
-<td>10–25 %</td>
+<td data-label="Что">Потеря throughput против Parallel</td>
+<td data-label="G1">5–15 %</td>
+<td data-label="ZGC (gen)">10–25 %</td>
+<td data-label="Shenandoah">10–25 %</td>
 </tr>
 <tr>
-<td>Память сверх live set</td>
-<td>RSet + survivors, 10–20 %</td>
-<td>headroom 20–30 %, нет compressed oops</td>
-<td>10–20 %, compressed oops есть</td>
+<td data-label="Что">Память сверх live set</td>
+<td data-label="G1">RSet + survivors, 10–20 %</td>
+<td data-label="ZGC (gen)">headroom 20–30 %, нет compressed oops</td>
+<td data-label="Shenandoah">10–20 %, compressed oops есть</td>
 </tr>
 <tr>
-<td>Худший случай</td>
-<td>Full GC, секунды</td>
-<td>allocation stall, сотни мс–секунды</td>
-<td>degenerated GC, десятки–сотни мс</td>
+<td data-label="Что">Худший случай</td>
+<td data-label="G1">Full GC, секунды</td>
+<td data-label="ZGC (gen)">allocation stall, сотни мс–секунды</td>
+<td data-label="Shenandoah">degenerated GC, десятки–сотни мс</td>
 </tr>
 <tr>
-<td>Что делает худший случай реже</td>
-<td>запас кучи, ранний IHOP</td>
-<td><code>SoftMaxHeapSize</code>, больше <code>ConcGCThreads</code>, запас кучи</td>
-<td><code>compact</code>/<code>adaptive</code> эвристики, запас кучи</td>
+<td data-label="Что">Что делает худший случай реже</td>
+<td data-label="G1">запас кучи, ранний IHOP</td>
+<td data-label="ZGC (gen)"><code>SoftMaxHeapSize</code>, больше <code>ConcGCThreads</code>, запас кучи</td>
+<td data-label="Shenandoah"><code>compact</code>/<code>adaptive</code> эвристики, запас кучи</td>
 </tr>
 </tbody>
 </table>
 <p>Общее правило, которое стоит произнести на интервью: <strong>низкие паузы покупаются процессорным временем и памятью</strong>. Субмиллисекундных пауз бесплатно не даёт ни один коллектор. Если в контейнере нет запаса ни по CPU, ни по памяти, concurrent-сборщик сделает хуже, а не лучше.</p>
 <h3 id="154-выбор-коллектора-по-профилю-сервиса">15.4 Выбор коллектора по профилю сервиса</h3>
 <p>Выбор коллектора по профилю сервиса — это перевод всего сказанного в конкретное решение для типичных сервисов. Для каждого профиля в таблице указаны размер кучи, число CPU, коллектор и обоснование. Таблица задаёт отправную точку, а не окончательный ответ, и после неё приведён порядок, в котором решение принимают на практике.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Профиль сервиса</th>
@@ -3385,67 +3385,67 @@ jnz  slow_path              ; цвет плохой -&gt; медленный п�
 </thead>
 <tbody>
 <tr>
-<td>CRUD API, Spring Boot, p99 SLA 300 мс</td>
-<td>1–4 ГБ</td>
-<td>1–2</td>
-<td><strong>G1</strong> (по умолчанию)</td>
-<td>паузы 10–40 мс не видны на фоне SLA; ZGC отнимет CPU, которого нет</td>
+<td data-label="Профиль сервиса">CRUD API, Spring Boot, p99 SLA 300 мс</td>
+<td data-label="Куча">1–4 ГБ</td>
+<td data-label="CPU">1–2</td>
+<td data-label="Коллектор"><strong>G1</strong> (по умолчанию)</td>
+<td data-label="Обоснование">паузы 10–40 мс не видны на фоне SLA; ZGC отнимет CPU, которого нет</td>
 </tr>
 <tr>
-<td>Высоконагруженный API, p99 SLA 50 мс</td>
-<td>4–16 ГБ</td>
-<td>4–8</td>
-<td><strong>G1</strong> с проверкой, либо <strong>ZGC</strong></td>
-<td>измерить вклад GC в p99: если больше 20 % бюджета — ZGC</td>
+<td data-label="Профиль сервиса">Высоконагруженный API, p99 SLA 50 мс</td>
+<td data-label="Куча">4–16 ГБ</td>
+<td data-label="CPU">4–8</td>
+<td data-label="Коллектор"><strong>G1</strong> с проверкой, либо <strong>ZGC</strong></td>
+<td data-label="Обоснование">измерить вклад GC в p99: если больше 20 % бюджета — ZGC</td>
 </tr>
 <tr>
-<td>Торговый/платёжный шлюз, p99 SLA 10 мс</td>
-<td>8–32 ГБ</td>
-<td>8+</td>
-<td><strong>ZGC (gen)</strong></td>
-<td>G1 физически не уложится: эвакуация в STW</td>
+<td data-label="Профиль сервиса">Торговый/платёжный шлюз, p99 SLA 10 мс</td>
+<td data-label="Куча">8–32 ГБ</td>
+<td data-label="CPU">8+</td>
+<td data-label="Коллектор"><strong>ZGC (gen)</strong></td>
+<td data-label="Обоснование">G1 физически не уложится: эвакуация в STW</td>
 </tr>
 <tr>
-<td>Кэш-сервис с большим live set</td>
-<td>32–256 ГБ</td>
-<td>16+</td>
-<td><strong>ZGC (gen)</strong></td>
-<td>паузы G1 растут с объёмом живых данных</td>
+<td data-label="Профиль сервиса">Кэш-сервис с большим live set</td>
+<td data-label="Куча">32–256 ГБ</td>
+<td data-label="CPU">16+</td>
+<td data-label="Коллектор"><strong>ZGC (gen)</strong></td>
+<td data-label="Обоснование">паузы G1 растут с объёмом живых данных</td>
 </tr>
 <tr>
-<td>Стриминг (Kafka Streams, Flink task)</td>
-<td>4–16 ГБ</td>
-<td>4–8</td>
-<td><strong>G1</strong>, при жёстком SLA — ZGC</td>
-<td>много direct-памяти: кучу держать умеренной</td>
+<td data-label="Профиль сервиса">Стриминг (Kafka Streams, Flink task)</td>
+<td data-label="Куча">4–16 ГБ</td>
+<td data-label="CPU">4–8</td>
+<td data-label="Коллектор"><strong>G1</strong>, при жёстком SLA — ZGC</td>
+<td data-label="Обоснование">много direct-памяти: кучу держать умеренной</td>
 </tr>
 <tr>
-<td>Batch/ETL/отчёты</td>
-<td>любой</td>
-<td>много</td>
-<td><strong>Parallel</strong></td>
-<td>максимум throughput, паузы никого не интересуют</td>
+<td data-label="Профиль сервиса">Batch/ETL/отчёты</td>
+<td data-label="Куча">любой</td>
+<td data-label="CPU">много</td>
+<td data-label="Коллектор"><strong>Parallel</strong></td>
+<td data-label="Обоснование">максимум throughput, паузы никого не интересуют</td>
 </tr>
 <tr>
-<td>Sidecar, агент, CLI</td>
-<td>&lt; 512 МБ</td>
-<td>1</td>
-<td><strong>Serial</strong></td>
-<td>минимум footprint и CPU; JVM выберет сама</td>
+<td data-label="Профиль сервиса">Sidecar, агент, CLI</td>
+<td data-label="Куча">&lt; 512 МБ</td>
+<td data-label="CPU">1</td>
+<td data-label="Коллектор"><strong>Serial</strong></td>
+<td data-label="Обоснование">минимум footprint и CPU; JVM выберет сама</td>
 </tr>
 <tr>
-<td>Non-Oracle сборка, нужны низкие паузы и экономия памяти</td>
-<td>4–32 ГБ</td>
-<td>4+</td>
-<td><strong>Shenandoah</strong> (generational на JDK 25)</td>
-<td>compressed oops сохранены, <code>compact</code>-эвристика для контейнеров</td>
+<td data-label="Профиль сервиса">Non-Oracle сборка, нужны низкие паузы и экономия памяти</td>
+<td data-label="Куча">4–32 ГБ</td>
+<td data-label="CPU">4+</td>
+<td data-label="Коллектор"><strong>Shenandoah</strong> (generational на JDK 25)</td>
+<td data-label="Обоснование">compressed oops сохранены, <code>compact</code>-эвристика для контейнеров</td>
 </tr>
 <tr>
-<td>Бенчмарк выделений памяти</td>
-<td>любой</td>
-<td>любой</td>
-<td><strong>Epsilon</strong></td>
-<td>сборки нет — измеряется чистая выделение памяти</td>
+<td data-label="Профиль сервиса">Бенчмарк выделений памяти</td>
+<td data-label="Куча">любой</td>
+<td data-label="CPU">любой</td>
+<td data-label="Коллектор"><strong>Epsilon</strong></td>
+<td data-label="Обоснование">сборки нет — измеряется чистая выделение памяти</td>
 </tr>
 </tbody>
 </table>
@@ -3474,7 +3474,7 @@ jcmd &lt;pid&gt; VM.classloader_stats               <span class="c1"># клас�
 <p>Code cache — это область под машинный код, который сгенерировал JIT-компилятор. При tiered-компиляции (многоуровневой, когда метод сначала компилирует быстрый C1, а потом оптимизирующий C2) под неё резервируется 240 МБ (проверено: <code>ReservedCodeCacheSize = 251658240</code> на Temurin 21), а фактически у типичного сервиса занято 50–120 МБ. Переполнение даёт <code>CodeCache is full. Compiler has been disabled</code> и деградацию в разы. Механика сегментов, <code>-XX:-UseCodeCacheFlushing</code> и диагностика разобраны в главе 06 (<code>06-jvm-internals.md</code>). Здесь достаточно помнить, что в бюджете контейнера это 50–120 МБ и что раскладку показывает <code>jcmd &lt;pid&gt; Compiler.codecache</code>.</p>
 <h3 id="163-размер-стеков-потоков">16.3 Размер стеков потоков</h3>
 <p>Стек потока — это область памяти, где хранятся кадры вызванных методов с их локальными переменными, и его максимальный размер задаёт <code>-Xss</code> (он же <code>ThreadStackSize</code>): 1 МБ на Linux x64 и 2 МБ на AArch64. Но это <strong>виртуальная</strong> резервация: физически ОС выделяет только те страницы, которых поток коснулся (глава 15, раздел 2.3). Поэтому типичный HTTP-обработчик Spring с глубиной стека 60–120 кадров занимает 60–150 КБ. В таблице видно, как сильно расходятся виртуальный и резидентный объём в разных конфигурациях:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Конфигурация</th>
@@ -3484,24 +3484,24 @@ jcmd &lt;pid&gt; VM.classloader_stats               <span class="c1"># клас�
 </thead>
 <tbody>
 <tr>
-<td>200 потоков Tomcat, <code>-Xss1m</code></td>
-<td>200 МБ</td>
-<td>20–40 МБ</td>
+<td data-label="Конфигурация">200 потоков Tomcat, <code>-Xss1m</code></td>
+<td data-label="Виртуально">200 МБ</td>
+<td data-label="Резидентно (типично)">20–40 МБ</td>
 </tr>
 <tr>
-<td>500 потоков, <code>-Xss1m</code></td>
-<td>500 МБ</td>
-<td>50–100 МБ</td>
+<td data-label="Конфигурация">500 потоков, <code>-Xss1m</code></td>
+<td data-label="Виртуально">500 МБ</td>
+<td data-label="Резидентно (типично)">50–100 МБ</td>
 </tr>
 <tr>
-<td>500 потоков, <code>-Xss8m</code> (после «починки» StackOverflowError)</td>
-<td>4 ГБ виртуально</td>
-<td>те же 50–100 МБ, но виртуальное пространство и <code>pids</code> под угрозой</td>
+<td data-label="Конфигурация">500 потоков, <code>-Xss8m</code> (после «починки» StackOverflowError)</td>
+<td data-label="Виртуально">4 ГБ виртуально</td>
+<td data-label="Резидентно (типично)">те же 50–100 МБ, но виртуальное пространство и <code>pids</code> под угрозой</td>
 </tr>
 <tr>
-<td>1 млн виртуальных потоков</td>
-<td>~0 нативных стеков</td>
-<td>стеки лежат в <strong>куче</strong> как stack chunks, 0.5–2 КБ на поток в покое</td>
+<td data-label="Конфигурация">1 млн виртуальных потоков</td>
+<td data-label="Виртуально">~0 нативных стеков</td>
+<td data-label="Резидентно (типично)">стеки лежат в <strong>куче</strong> как stack chunks, 0.5–2 КБ на поток в покое</td>
 </tr>
 </tbody>
 </table>
@@ -3522,7 +3522,7 @@ jcmd &lt;pid&gt; VM.classloader_stats               <span class="c1"># клас�
 <p>Из этого следует, что сервис, который отображает 20 ГБ индекса при лимите 4 ГБ, работать может: ядро вытеснит лишнее. Но если обращения случайные по всему файлу, начнётся постоянная подкачка страниц с диска и их вытеснение (page-in/page-out), и вы увидите «непонятные паузы» с большим <code>Sys</code>. Ограничение <code>vm.max_map_count</code> (по умолчанию 65530) при тысячах отображений даёт <code>IOException: Map failed</code>, и это частая проблема сервисов наподобие Lucene и Elasticsearch. Детали разобраны в главе 50.</p>
 <h3 id="166-native-выделения-памяти-библиотек">16.6 Native-выделения памяти библиотек</h3>
 <p>Native-выделения памяти библиотек — это память, которую JVM не контролирует вообще: её выделяют нативные части библиотек через <code>malloc</code>, и ни один счётчик JVM её не видит. В таблице собраны типичные источники такой памяти, порядок объёмов, признак, по которому источник узнают, и способ лечения. Заметить такую память удаётся только косвенно, по расхождению RSS с тем, что показывает NMT.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Источник</th>
@@ -3533,34 +3533,34 @@ jcmd &lt;pid&gt; VM.classloader_stats               <span class="c1"># клас�
 </thead>
 <tbody>
 <tr>
-<td><code>java.util.zip.Inflater</code>/<code>Deflater</code> (zlib)</td>
-<td>32–256 КБ на экземпляр, но их бывают тысячи</td>
-<td>растёт при работе с gzip/zip; освобождается <code>end()</code> или финализатором</td>
-<td>try-with-resources, явный <code>end()</code></td>
+<td data-label="Источник"><code>java.util.zip.Inflater</code>/<code>Deflater</code> (zlib)</td>
+<td data-label="Сколько бывает">32–256 КБ на экземпляр, но их бывают тысячи</td>
+<td data-label="Признак">растёт при работе с gzip/zip; освобождается <code>end()</code> или финализатором</td>
+<td data-label="Лечение">try-with-resources, явный <code>end()</code></td>
 </tr>
 <tr>
-<td>OpenSSL / netty-tcnative</td>
-<td>десятки–сотни МБ при многих TLS-сессиях</td>
-<td>растёт с числом соединений</td>
-<td>лимит соединений, session cache</td>
+<td data-label="Источник">OpenSSL / netty-tcnative</td>
+<td data-label="Сколько бывает">десятки–сотни МБ при многих TLS-сессиях</td>
+<td data-label="Признак">растёт с числом соединений</td>
+<td data-label="Лечение">лимит соединений, session cache</td>
 </tr>
 <tr>
-<td>JDBC-драйверы с native-частью (Oracle OCI, некоторые ODBC)</td>
-<td>десятки МБ</td>
-<td></td>
-<td>предпочитать чистые Java-драйверы</td>
+<td data-label="Источник">JDBC-драйверы с native-частью (Oracle OCI, некоторые ODBC)</td>
+<td data-label="Сколько бывает">десятки МБ</td>
+<td data-label="Признак"></td>
+<td data-label="Лечение">предпочитать чистые Java-драйверы</td>
 </tr>
 <tr>
-<td>Крипто-провайдеры, компрессоры (zstd-jni, snappy, lz4)</td>
-<td>буферы на поток</td>
-<td>растёт с числом потоков</td>
-<td>пулы, ограничение параллелизма</td>
+<td data-label="Источник">Крипто-провайдеры, компрессоры (zstd-jni, snappy, lz4)</td>
+<td data-label="Сколько бывает">буферы на поток</td>
+<td data-label="Признак">растёт с числом потоков</td>
+<td data-label="Лечение">пулы, ограничение параллелизма</td>
 </tr>
 <tr>
-<td>JNI-библиотеки прикладного кода</td>
-<td>сколько угодно</td>
-<td>NMT молчит, RSS растёт</td>
-<td>jemalloc-профилирование</td>
+<td data-label="Источник">JNI-библиотеки прикладного кода</td>
+<td data-label="Сколько бывает">сколько угодно</td>
+<td data-label="Признак">NMT молчит, RSS растёт</td>
+<td data-label="Лечение">jemalloc-профилирование</td>
 </tr>
 </tbody>
 </table>
@@ -3574,7 +3574,7 @@ jcmd &lt;pid&gt; VM.classloader_stats               <span class="c1"># клас�
 <p>Стандартных мер против этого две. Первая — <code>MALLOC_ARENA_MAX=2</code> в переменных окружения контейнера: это снижает RSS на сотни мегабайт ценой конкуренции потоков за блокировку в многопоточном malloc. Вторая — переход на jemalloc/tcmalloc через <code>LD_PRELOAD</code>. Механика распределителей памяти, <code>M_TRIM_THRESHOLD</code> и профилирование подробно разобраны в главе 50 (<code>50-linux-and-networking.md</code>), выделение памяти через <code>malloc</code> — в главе 15, раздел 3.1, а базовые образы и musl — в главе 46 (<code>46-docker-jvm.md</code>).</p>
 <h3 id="168-категории-nmt-и-их-нормальные-значения">16.8 Категории NMT и их нормальные значения</h3>
 <p>Категория NMT — это строка в выводе <code>VM.native_memory</code>, которая показывает память одной подсистемы JVM. Абсолютные числа в этом выводе мало что говорят, пока их не с чем сравнить, поэтому ниже собраны нормальные и тревожные значения по каждой категории. Ориентиры даны для Spring Boot-сервиса с <code>-Xmx2g</code>, 300 потоками и 22 тыс. классов. Смотреть в таблице стоит прежде всего на правую колонку, где описано, какое изменение уже должно насторожить:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Категория NMT</th>
@@ -3584,54 +3584,54 @@ jcmd &lt;pid&gt; VM.classloader_stats               <span class="c1"># клас�
 </thead>
 <tbody>
 <tr>
-<td><code>Java Heap</code></td>
-<td>= <code>-Xmx</code> (G1 выделяет физическую память под давлением)</td>
-<td>—</td>
+<td data-label="Категория NMT"><code>Java Heap</code></td>
+<td data-label="Нормально (committed)">= <code>-Xmx</code> (G1 выделяет физическую память под давлением)</td>
+<td data-label="Тревожно">—</td>
 </tr>
 <tr>
-<td><code>Class</code></td>
-<td>120–200 МБ, <code>classes #</code> стабилен</td>
-<td>растёт <code>classes #</code> после прогрева</td>
+<td data-label="Категория NMT"><code>Class</code></td>
+<td data-label="Нормально (committed)">120–200 МБ, <code>classes #</code> стабилен</td>
+<td data-label="Тревожно">растёт <code>classes #</code> после прогрева</td>
 </tr>
 <tr>
-<td><code>Thread</code></td>
-<td>200–300 КБ × число потоков</td>
-<td>растёт <code>thread #</code></td>
+<td data-label="Категория NMT"><code>Thread</code></td>
+<td data-label="Нормально (committed)">200–300 КБ × число потоков</td>
+<td data-label="Тревожно">растёт <code>thread #</code></td>
 </tr>
 <tr>
-<td><code>Code</code></td>
-<td>60–120 МБ</td>
-<td>у потолка 240 МБ</td>
+<td data-label="Категория NMT"><code>Code</code></td>
+<td data-label="Нормально (committed)">60–120 МБ</td>
+<td data-label="Тревожно">у потолка 240 МБ</td>
 </tr>
 <tr>
-<td><code>GC</code></td>
-<td>5–10 % от кучи</td>
-<td>&gt; 15 % — RSet-давление (14.2)</td>
+<td data-label="Категория NMT"><code>GC</code></td>
+<td data-label="Нормально (committed)">5–10 % от кучи</td>
+<td data-label="Тревожно">&gt; 15 % — RSet-давление (14.2)</td>
 </tr>
 <tr>
-<td><code>Compiler</code></td>
-<td>10–50 МБ, пики при прогреве</td>
-<td>постоянно сотни МБ</td>
+<td data-label="Категория NMT"><code>Compiler</code></td>
+<td data-label="Нормально (committed)">10–50 МБ, пики при прогреве</td>
+<td data-label="Тревожно">постоянно сотни МБ</td>
 </tr>
 <tr>
-<td><code>Internal</code></td>
-<td>10–30 МБ</td>
-<td>—</td>
+<td data-label="Категория NMT"><code>Internal</code></td>
+<td data-label="Нормально (committed)">10–30 МБ</td>
+<td data-label="Тревожно">—</td>
 </tr>
 <tr>
-<td><code>Symbol</code></td>
-<td>20–50 МБ</td>
-<td>сотни МБ — интернирование строк или генерация классов</td>
+<td data-label="Категория NMT"><code>Symbol</code></td>
+<td data-label="Нормально (committed)">20–50 МБ</td>
+<td data-label="Тревожно">сотни МБ — интернирование строк или генерация классов</td>
 </tr>
 <tr>
-<td><code>Other</code></td>
-<td>сколько нужно direct-буферам</td>
-<td>растёт монотонно — off-heap-утечка</td>
+<td data-label="Категория NMT"><code>Other</code></td>
+<td data-label="Нормально (committed)">сколько нужно direct-буферам</td>
+<td data-label="Тревожно">растёт монотонно — off-heap-утечка</td>
 </tr>
 <tr>
-<td><code>Metaspace</code>/<code>Class space</code></td>
-<td>см. 16.1</td>
-<td>—</td>
+<td data-label="Категория NMT"><code>Metaspace</code>/<code>Class space</code></td>
+<td data-label="Нормально (committed)">см. 16.1</td>
+<td data-label="Тревожно">—</td>
 </tr>
 </tbody>
 </table>
@@ -4106,5 +4106,5 @@ Shallow size — это размер самого объекта: заголов
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-устройство-объекта-в-памяти">1. Устройство объекта в памяти</a></li><li><a href="#2-выделение-памяти-и-поколения">2. Выделение памяти и поколения</a></li><li><a href="#3-базовые-алгоритмы-сборки-serial-и-parallel">3. Базовые алгоритмы сборки, Serial и Parallel</a></li><li><a href="#4-g1-garbage-first">4. G1: Garbage-First</a></li><li><a href="#5-zgc-и-shenandoah-эвакуация-без-остановки-приложения">5. ZGC и Shenandoah: эвакуация без остановки приложения</a></li><li><a href="#6-выбор-коллектора-и-эргономика">6. Выбор коллектора и эргономика</a></li><li><a href="#7-safepoints-и-паузы-вне-gc">7. Safepoints и паузы вне GC</a></li><li><a href="#8-gc-логи-и--xloggc">8. GC-логи и -Xlog:gc*</a></li><li><a href="#9-ссылки-финализация-off-heap">9. Ссылки, финализация, off-heap</a></li><li><a href="#10-типовые-проблемы-с-памятью">10. Типовые проблемы с памятью</a></li><li><a href="#11-jvm-в-контейнере-heap-и-rss">11. JVM в контейнере: heap и RSS</a></li><li><a href="#12-проблема-с-памятью-в-контейнере-от-симптома-до-разбора-дампа">12. Проблема с памятью в контейнере: от симптома до разбора дампа</a></li><li><a href="#13-диагностика-по-gc-логу">13. Диагностика по GC-логу</a></li><li><a href="#14-устройство-g1-регионы-rset-satb-mixed">14. Устройство G1: регионы, RSet, SATB, mixed</a></li><li><a href="#15-барьеры-zgc-и-shenandoah">15. Барьеры ZGC и Shenandoah</a></li><li><a href="#16-память-вне-кучи-non-heap">16. Память вне кучи (non-heap)</a></li><li><a href="#17-разобранные-инциденты">17. Разобранные инциденты</a></li><li><a href="#18-грабли-и-антипаттерны">18. Грабли и антипаттерны</a></li><li><a href="#19-диагностика">19. Диагностика</a></li><li><a href="#20-вопросы-на-интервью">20. Вопросы на интервью</a></li><li><a href="#21-попробовать-руками">21. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

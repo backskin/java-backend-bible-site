@@ -3,7 +3,7 @@
 <title>69. Рекурсия, перебор и поиск с возвратом — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Рекурсия, перебор и поиск с возвратом">
 <a class="skip" href="#content">К тексту</a>
@@ -285,7 +285,7 @@
 <p><strong>Что спросят дальше.</strong> Как вычислить выражение со скобками и операциями (LeetCode 224)? Той же схемой: рекурсивный спуск по грамматике или два стека, операндов и знаков. Почему Java не устраняет хвостовые вызовы? В байт-коде JVM нет инструкции хвостового вызова, а полный стек вызовов нужен трассировкам исключений и инструментам, которые его просматривают ⚠️ причины приведены по памяти, в прочитанных источниках не разобраны; Kotlin обходит это на уровне компилятора, переписывая функцию в цикл.</p>
 <h3 id="16-опыт-глубина-рекурсии-jit-и-явный-стек">1.6 Опыт: глубина рекурсии, JIT и явный стек</h3>
 <p>Опыт проверяет утверждения подраздела 1.1 на JDK 21 (Windows, где стек основного потока оказался 1 МБ). Метод <code>thin(d)</code> вызывает себя и прибавляет единицу, <code>fat(d, …)</code> дополнительно держит восемь локальных <code>long</code>; глубина измеряется до <code>StackOverflowError</code>, в режиме по умолчанию после пяти прогревающих прогонов.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -295,34 +295,34 @@
 </thead>
 <tbody>
 <tr>
-<td>интерпретатор (<code>-Xint</code>)</td>
-<td class="num">10 380</td>
-<td class="num">3662</td>
+<td data-label="Режим">интерпретатор (<code>-Xint</code>)</td>
+<td data-label="thin" class="num">10 380</td>
+<td data-label="fat" class="num">3662</td>
 </tr>
 <tr>
-<td>только C1 (<code>-XX:TieredStopAtLevel=1</code>)</td>
-<td class="num">24 907</td>
-<td class="num">8893</td>
+<td data-label="Режим">только C1 (<code>-XX:TieredStopAtLevel=1</code>)</td>
+<td data-label="thin" class="num">24 907</td>
+<td data-label="fat" class="num">8893</td>
 </tr>
 <tr>
-<td>по умолчанию, первый вызов до прогрева</td>
-<td class="num">22 858</td>
-<td class="num">—</td>
+<td data-label="Режим">по умолчанию, первый вызов до прогрева</td>
+<td data-label="thin" class="num">22 858</td>
+<td data-label="fat" class="num">—</td>
 </tr>
 <tr>
-<td>по умолчанию после прогрева (C2)</td>
-<td class="num">62 245</td>
-<td class="num">41 491</td>
+<td data-label="Режим">по умолчанию после прогрева (C2)</td>
+<td data-label="thin" class="num">62 245</td>
+<td data-label="fat" class="num">41 491</td>
 </tr>
 <tr>
-<td>C2 без встраивания рекурсии (<code>-XX:MaxRecursiveInlineLevel=0</code>)</td>
-<td class="num">31 102</td>
-<td class="num">31 097</td>
+<td data-label="Режим">C2 без встраивания рекурсии (<code>-XX:MaxRecursiveInlineLevel=0</code>)</td>
+<td data-label="thin" class="num">31 102</td>
+<td data-label="fat" class="num">31 097</td>
 </tr>
 </tbody>
 </table>
 <p>В интерпретаторе простейший кадр занимает около 100 байт, а кадр с восемью <code>long</code> около 290. После C2 глубина втрое больше, и половина этого выигрыша от встраивания: флаг <code>MaxRecursiveInlineLevel</code> по умолчанию равен 1, то есть C2 встраивает один уровень рекурсивного вызова в себя, и с нулём глубина падает ровно вдвое. Без встраивания «тонкий» и «толстый» методы после C2 почти равны: по-видимому, компилятор держит локальные переменные в регистрах и почти ничего не добавляет в кадр. Первый вызов до прогрева уходит в стек интерпретируемыми кадрами и падает втрое раньше, чем тот же метод после прогрева.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Размер стека потока</th>
@@ -332,29 +332,29 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">256 КБ</td>
-<td class="num">13 051</td>
-<td class="num">8709</td>
+<td data-label="Размер стека потока" class="num">256 КБ</td>
+<td data-label="thin после прогрева" class="num">13 051</td>
+<td data-label="fat после прогрева" class="num">8709</td>
 </tr>
 <tr>
-<td class="num">1 МБ</td>
-<td class="num">62 277</td>
-<td class="num">41 457</td>
+<td data-label="Размер стека потока" class="num">1 МБ</td>
+<td data-label="thin после прогрева" class="num">62 277</td>
+<td data-label="fat после прогрева" class="num">41 457</td>
 </tr>
 <tr>
-<td class="num">8 МБ</td>
-<td class="num">521 023</td>
-<td class="num">347 335</td>
+<td data-label="Размер стека потока" class="num">8 МБ</td>
+<td data-label="thin после прогрева" class="num">521 023</td>
+<td data-label="fat после прогрева" class="num">347 335</td>
 </tr>
 <tr>
-<td class="num">64 МБ</td>
-<td class="num">4 190 953</td>
-<td class="num">2 794 005</td>
+<td data-label="Размер стека потока" class="num">64 МБ</td>
+<td data-label="thin после прогрева" class="num">4 190 953</td>
+<td data-label="fat после прогрева" class="num">2 794 005</td>
 </tr>
 <tr>
-<td class="num">виртуальный поток</td>
-<td class="num">62 131</td>
-<td class="num">41 419</td>
+<td data-label="Размер стека потока" class="num">виртуальный поток</td>
+<td data-label="thin после прогрева" class="num">62 131</td>
+<td data-label="fat после прогрева" class="num">41 419</td>
 </tr>
 </tbody>
 </table>
@@ -661,7 +661,7 @@
 <p><strong>Что спросят дальше.</strong> Чем это лучше <code>IntStream.range(0, n).parallel()</code>? Ничем по скорости: стрим внутри делит работу так же, и в опыте 2.7 они равны; свой <code>RecursiveTask</code> нужен, когда результат сложнее суммы или деление зависит от данных. Как балансировать неравные куски? ForkJoin крадёт задачи у занятых потоков (work stealing), поэтому мелкое деление само выравнивает нагрузку, ту самую, которой не хватило в истории Скиены о гипотезе Варинга.</p>
 <h3 id="27-опыт-ближайшая-пара-порог-forkjoin-и-параллельное-умножение">2.7 Опыт: ближайшая пара, порог ForkJoin и параллельное умножение</h3>
 <p>Опыт проверяет три утверждения раздела: деление выигрывает у перебора с ростом n, параллельное деление помогает только задачам, ограниченным процессором, и <code>BigInteger.parallelMultiply</code> окупается на больших числах. Машина с пятнадцатью потоками в общем пуле ForkJoin, JDK 21; время везде лучшее из нескольких прогонов после прогрева.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Точек</th>
@@ -671,30 +671,30 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">1000</td>
-<td class="num">1,3 мс</td>
-<td>6 мс</td>
+<td data-label="Точек" class="num">1000</td>
+<td data-label="Делением" class="num">1,3 мс</td>
+<td data-label="Перебором">6 мс</td>
 </tr>
 <tr>
-<td class="num">10 000</td>
-<td class="num">14,2 мс</td>
-<td>68 мс</td>
+<td data-label="Точек" class="num">10 000</td>
+<td data-label="Делением" class="num">14,2 мс</td>
+<td data-label="Перебором">68 мс</td>
 </tr>
 <tr>
-<td class="num">100 000</td>
-<td class="num">90,6 мс</td>
-<td>7461 мс</td>
+<td data-label="Точек" class="num">100 000</td>
+<td data-label="Делением" class="num">90,6 мс</td>
+<td data-label="Перебором">7461 мс</td>
 </tr>
 <tr>
-<td class="num">1 000 000</td>
-<td class="num">1379 мс</td>
-<td>не замерялось</td>
+<td data-label="Точек" class="num">1 000 000</td>
+<td data-label="Делением" class="num">1379 мс</td>
+<td data-label="Перебором">не замерялось</td>
 </tr>
 </tbody>
 </table>
 <p>На ста тысячах точек деление быстрее перебора в 82 раза, и разрыв растёт как n / log n. На тысяче точек выигрыш всего впятеро: сортировки, массивы рангов и списков стоят дороже простого двойного цикла по маленькому массиву.</p>
 <p>Сверка двух реестров по 2 · 10⁷ записей, только сравнение сумм:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Способ</th>
@@ -703,37 +703,37 @@
 </thead>
 <tbody>
 <tr>
-<td>последовательно, прогретый метод</td>
-<td class="num">5,8 мс</td>
+<td data-label="Способ">последовательно, прогретый метод</td>
+<td data-label="Время" class="num">5,8 мс</td>
 </tr>
 <tr>
-<td><code>IntStream.parallel()</code></td>
-<td class="num">5,1 мс</td>
+<td data-label="Способ"><code>IntStream.parallel()</code></td>
+<td data-label="Время" class="num">5,1 мс</td>
 </tr>
 <tr>
-<td>ForkJoin, порог 16 (≈ 2,5 · 10⁶ задач)</td>
-<td class="num">11,9 мс</td>
+<td data-label="Способ">ForkJoin, порог 16 (≈ 2,5 · 10⁶ задач)</td>
+<td data-label="Время" class="num">11,9 мс</td>
 </tr>
 <tr>
-<td>ForkJoin, порог 256</td>
-<td class="num">5,7 мс</td>
+<td data-label="Способ">ForkJoin, порог 256</td>
+<td data-label="Время" class="num">5,7 мс</td>
 </tr>
 <tr>
-<td>ForkJoin, порог 8192</td>
-<td class="num">4,9 мс</td>
+<td data-label="Способ">ForkJoin, порог 8192</td>
+<td data-label="Время" class="num">4,9 мс</td>
 </tr>
 <tr>
-<td>ForkJoin, порог 65 536 и 2²⁰</td>
-<td class="num">4,8–4,9 мс</td>
+<td data-label="Способ">ForkJoin, порог 65 536 и 2²⁰</td>
+<td data-label="Время" class="num">4,8–4,9 мс</td>
 </tr>
 <tr>
-<td>ForkJoin, одна задача</td>
-<td class="num">6,0 мс</td>
+<td data-label="Способ">ForkJoin, одна задача</td>
+<td data-label="Время" class="num">6,0 мс</td>
 </tr>
 </tbody>
 </table>
 <p>Пятнадцать потоков ускорили сверку всего в 1,2 раза: последовательный проход читает 320 МБ за 5,8 мс, и задача упирается в память, а не в процессор. Слишком мелкий порог делает работу вдвое медленнее одного потока. Первый замер последовательного цикла прямо в <code>main</code> показал 28 мс: цикл в методе, который выполняется один раз, компилируется на лету (on-stack replacement) хуже, и сравнивать с ним было бы нечестно; это частая ошибка ручных замеров, о которой глава 45. Если на каждую запись добавить вычисление контрольной суммы в 64 раунда перемешивания, то же разбиение даёт ускорение в 9,5 раза (974 мс против 103 мс): теперь работает процессор.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Размер чисел</th>
@@ -743,24 +743,24 @@
 </thead>
 <tbody>
 <tr>
-<td>10⁴ бит (312 слов)</td>
-<td>0,27–0,42 мс</td>
-<td>0,46–0,51 мс</td>
+<td data-label="Размер чисел">10⁴ бит (312 слов)</td>
+<td data-label="multiply">0,27–0,42 мс</td>
+<td data-label="parallelMultiply">0,46–0,51 мс</td>
 </tr>
 <tr>
-<td>10⁵ бит (3125 слов)</td>
-<td>4,3–5,4 мс</td>
-<td>2,4–2,8 мс</td>
+<td data-label="Размер чисел">10⁵ бит (3125 слов)</td>
+<td data-label="multiply">4,3–5,4 мс</td>
+<td data-label="parallelMultiply">2,4–2,8 мс</td>
 </tr>
 <tr>
-<td>10⁶ бит</td>
-<td>38,8–41,7 мс</td>
-<td>8,3–11,4 мс</td>
+<td data-label="Размер чисел">10⁶ бит</td>
+<td data-label="multiply">38,8–41,7 мс</td>
+<td data-label="parallelMultiply">8,3–11,4 мс</td>
 </tr>
 <tr>
-<td>10⁷ бит</td>
-<td>642–658 мс</td>
-<td>103–104 мс</td>
+<td data-label="Размер чисел">10⁷ бит</td>
+<td data-label="multiply">642–658 мс</td>
+<td data-label="parallelMultiply">103–104 мс</td>
 </tr>
 </tbody>
 </table>
@@ -1162,7 +1162,7 @@
 <p><strong>Что спросят дальше.</strong> Как найти k-ю последовательность в лексикографическом порядке без перебора? Посчитать динамикой число допустимых продолжений и идти по ним, как в задаче 9.4. Как удалить наименьшее число скобок, чтобы строка стала правильной (LeetCode 301)? Это задача 4.9.</p>
 <h3 id="310-опыт-узлы-копии-и-повторы">3.10 Опыт: узлы, копии и повторы</h3>
 <p>Опыт проверяет утверждения подраздела 3.1 о том, что в переборе дороже всего: сами узлы дерева, копии ответов или выбрасывание повторов. Все замеры после прогрева, лучший из трёх прогонов; перебор без хранения ответов «потребляет» каждый ответ хешем, чтобы JIT не выбросил работу как ненужную.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Перебор 10! = 3 628 800 перестановок</th>
@@ -1172,25 +1172,25 @@
 </thead>
 <tbody>
 <tr>
-<td>списки ответов (задача 3.4)</td>
-<td class="num">217 мс</td>
-<td>≈ 293 МБ живой кучи</td>
+<td data-label="Перебор 10! = 3 628 800 перестановок">списки ответов (задача 3.4)</td>
+<td data-label="Время" class="num">217 мс</td>
+<td data-label="Память">≈ 293 МБ живой кучи</td>
 </tr>
 <tr>
-<td><code>used[]</code> и <code>int[]</code> пути, без копий</td>
-<td class="num">51 мс</td>
-<td>O(n)</td>
+<td data-label="Перебор 10! = 3 628 800 перестановок"><code>used[]</code> и <code>int[]</code> пути, без копий</td>
+<td data-label="Время" class="num">51 мс</td>
+<td data-label="Память">O(n)</td>
 </tr>
 <tr>
-<td>обмен на месте, без копий</td>
-<td class="num">35 мс</td>
-<td>O(n)</td>
+<td data-label="Перебор 10! = 3 628 800 перестановок">обмен на месте, без копий</td>
+<td data-label="Время" class="num">35 мс</td>
+<td data-label="Память">O(n)</td>
 </tr>
 </tbody>
 </table>
 <p>Без копий и хранения перебор тех же перестановок вчетверо-вшестеро быстрее и почти не занимает памяти; узлов дерева в обеих версиях 9 864 101 (это сумма n! / k! по k, примерно e · n!). Обмен на месте быстрее флагов, потому что не перебирает уже занятые позиции, но выдаёт перестановки не в лексикографическом порядке.</p>
 <p>На мультимножестве <code>{1×4, 2×4, 3×2}</code> различных перестановок 3150. Перебор всех 10! с выбрасыванием повторов через <code>HashSet</code> занял 284 мс, отсечение равных из задачи 3.5 меньше миллисекунды: разница в тысячу раз, ровно во столько, во сколько всех перестановок больше различных.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Размен суммы номиналами 10, 50, 100, 200, 500, 1000, 2000, 5000 ₽</th>
@@ -1201,28 +1201,28 @@
 </thead>
 <tbody>
 <tr>
-<td>способов</td>
-<td class="num">344</td>
-<td class="num">15 280</td>
-<td class="num">135 817</td>
+<td data-label="Размен суммы номиналами 10, 50, 100, 200, 500, 1000, 2000, 5000 ₽">способов</td>
+<td data-label="1000 ₽" class="num">344</td>
+<td data-label="3000 ₽" class="num">15 280</td>
+<td data-label="5000 ₽" class="num">135 817</td>
 </tr>
 <tr>
-<td>рекурсивных вызовов</td>
-<td class="num">8929</td>
-<td class="num">934 575</td>
-<td class="num">12 519 887</td>
+<td data-label="Размен суммы номиналами 10, 50, 100, 200, 500, 1000, 2000, 5000 ₽">рекурсивных вызовов</td>
+<td data-label="1000 ₽" class="num">8929</td>
+<td data-label="3000 ₽" class="num">934 575</td>
+<td data-label="5000 ₽" class="num">12 519 887</td>
 </tr>
 <tr>
-<td>итераций цикла с <code>break</code></td>
-<td class="num">17 513</td>
-<td class="num">1 853 869</td>
-<td class="num">24 903 955</td>
+<td data-label="Размен суммы номиналами 10, 50, 100, 200, 500, 1000, 2000, 5000 ₽">итераций цикла с <code>break</code></td>
+<td data-label="1000 ₽" class="num">17 513</td>
+<td data-label="3000 ₽" class="num">1 853 869</td>
+<td data-label="5000 ₽" class="num">24 903 955</td>
 </tr>
 <tr>
-<td>итераций цикла с <code>continue</code></td>
-<td class="num">47 390</td>
-<td class="num">4 046 230</td>
-<td class="num">47 442 840</td>
+<td data-label="Размен суммы номиналами 10, 50, 100, 200, 500, 1000, 2000, 5000 ₽">итераций цикла с <code>continue</code></td>
+<td data-label="1000 ₽" class="num">47 390</td>
+<td data-label="3000 ₽" class="num">4 046 230</td>
+<td data-label="5000 ₽" class="num">47 442 840</td>
 </tr>
 </tbody>
 </table>
@@ -1752,7 +1752,7 @@
 <p><strong>Что спросят дальше.</strong> Как решить обходом в ширину? Уровни это строки с k удалениями, и первый уровень, на котором нашлась правильная строка, даёт все ответы; это проще доказать, но дороже по памяти. Как найти только длину ответа? Одним проходом: длина строки минус лишние открывающие и закрывающие.</p>
 <h3 id="410-опыт-стратегии-судоку-ферзи-и-симметрия-корзин">4.10 Опыт: стратегии судоку, ферзи и симметрия корзин</h3>
 <p>Опыт повторяет таблицу Скиены для судоку и проверяет два утверждения подраздела 4.1: о представлении состояния и об отсечениях по симметрии. Головоломки: поле из условия LeetCode 37, известная головоломка с 17 подсказками ⚠️ происхождение по памяти, и головоломка Инкалы; единственность решения у всех трёх проверена отдельным подсчётом решений.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Шагов (вызовов решателя)</th>
@@ -1763,33 +1763,33 @@
 </thead>
 <tbody>
 <tr>
-<td>первая свободная, локально</td>
-<td class="num">4209</td>
-<td>26 590 294 (1,4 с)</td>
-<td class="num">49 559</td>
+<td data-label="Шагов (вызовов решателя)">первая свободная, локально</td>
+<td data-label="LeetCode 37" class="num">4209</td>
+<td data-label="17 подсказок">26 590 294 (1,4 с)</td>
+<td data-label="Инкала" class="num">49 559</td>
 </tr>
 <tr>
-<td>первая свободная, заглядывание</td>
-<td class="num">517</td>
-<td>9 812 213 (1,8 с)</td>
-<td class="num">22 068</td>
+<td data-label="Шагов (вызовов решателя)">первая свободная, заглядывание</td>
+<td data-label="LeetCode 37" class="num">517</td>
+<td data-label="17 подсказок">9 812 213 (1,8 с)</td>
+<td data-label="Инкала" class="num">22 068</td>
 </tr>
 <tr>
-<td>самая ограниченная, локально</td>
-<td class="num">52</td>
-<td>4 987 328 (1,1 с)</td>
-<td class="num">99 576</td>
+<td data-label="Шагов (вызовов решателя)">самая ограниченная, локально</td>
+<td data-label="LeetCode 37" class="num">52</td>
+<td data-label="17 подсказок">4 987 328 (1,1 с)</td>
+<td data-label="Инкала" class="num">99 576</td>
 </tr>
 <tr>
-<td>самая ограниченная, заглядывание</td>
-<td class="num">52</td>
-<td>4836 (1 мс)</td>
-<td class="num">10 102</td>
+<td data-label="Шагов (вызовов решателя)">самая ограниченная, заглядывание</td>
+<td data-label="LeetCode 37" class="num">52</td>
+<td data-label="17 подсказок">4836 (1 мс)</td>
+<td data-label="Инкала" class="num">10 102</td>
 </tr>
 </tbody>
 </table>
 <p>Картина та же, что у Скиены: каждое улучшение по отдельности помогает непостоянно (на головоломке Инкалы самая ограниченная клетка без заглядывания даже хуже первой свободной), а вместе они дают выигрыш на порядки: на головоломке с 17 подсказками в 5500 раз по шагам и в тысячу раз по времени. «Самая ограниченная без заглядывания» реализована, как в сноске Скиены: выбирается клетка с наименьшим ненулевым числом кандидатов, и клетка без кандидатов обнаруживается поздно.<sup id="fnref16:a68-13"><a class="footnote-ref" href="#fn:a68-13">13</a></sup> Головоломка, объявленная самой трудной, для такого решателя средняя: трудность для человека и для перебора это разные вещи, о чём пишет и Скиена.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">n</th>
@@ -1801,31 +1801,31 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">10</td>
-<td class="num">724</td>
-<td class="num">9 мс</td>
-<td class="num">1 мс</td>
-<td class="num">0 мс</td>
+<td data-label="n" class="num">10</td>
+<td data-label="Расстановок" class="num">724</td>
+<td data-label="HashSet (Сюй и Гунавардане)" class="num">9 мс</td>
+<td data-label="boolean[]" class="num">1 мс</td>
+<td data-label="биты" class="num">0 мс</td>
 </tr>
 <tr>
-<td class="num">12</td>
-<td class="num">14 200</td>
-<td class="num">96 мс</td>
-<td class="num">33 мс</td>
-<td class="num">4 мс</td>
+<td data-label="n" class="num">12</td>
+<td data-label="Расстановок" class="num">14 200</td>
+<td data-label="HashSet (Сюй и Гунавардане)" class="num">96 мс</td>
+<td data-label="boolean[]" class="num">33 мс</td>
+<td data-label="биты" class="num">4 мс</td>
 </tr>
 <tr>
-<td class="num">13</td>
-<td class="num">73 712</td>
-<td class="num">490 мс</td>
-<td class="num">188 мс</td>
-<td class="num">25 мс</td>
+<td data-label="n" class="num">13</td>
+<td data-label="Расстановок" class="num">73 712</td>
+<td data-label="HashSet (Сюй и Гунавардане)" class="num">490 мс</td>
+<td data-label="boolean[]" class="num">188 мс</td>
+<td data-label="биты" class="num">25 мс</td>
 </tr>
 </tbody>
 </table>
 <p>Дерево перебора одно и то же, разница только в представлении: хеш-множества с упаковкой <code>Integer</code> в двадцать раз медленнее битов, массивы флагов в семь раз.</p>
 <p>Разбиение 16 чисел от 1 до 63 на 4 равные группы, пример без решения, выбранный как самый трудный из трёхсот случайных (цель 143):</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Вариант</th>
@@ -1834,24 +1834,24 @@
 </thead>
 <tbody>
 <tr>
-<td>по убыванию, оба отсечения</td>
-<td class="num">25 420</td>
+<td data-label="Вариант">по убыванию, оба отсечения</td>
+<td data-label="Узлов" class="num">25 420</td>
 </tr>
 <tr>
-<td>по убыванию, без симметрии корзин</td>
-<td class="num">27 982</td>
+<td data-label="Вариант">по убыванию, без симметрии корзин</td>
+<td data-label="Узлов" class="num">27 982</td>
 </tr>
 <tr>
-<td>по убыванию, без прерывания на пустой корзине</td>
-<td class="num">25 420</td>
+<td data-label="Вариант">по убыванию, без прерывания на пустой корзине</td>
+<td data-label="Узлов" class="num">25 420</td>
 </tr>
 <tr>
-<td>по убыванию, без отсечений</td>
-<td class="num">671 421</td>
+<td data-label="Вариант">по убыванию, без отсечений</td>
+<td data-label="Узлов" class="num">671 421</td>
 </tr>
 <tr>
-<td>по возрастанию, оба отсечения</td>
-<td class="num">2 406 395</td>
+<td data-label="Вариант">по возрастанию, оба отсечения</td>
+<td data-label="Узлов" class="num">2 406 395</td>
 </tr>
 </tbody>
 </table>
@@ -2100,7 +2100,7 @@
 <p><strong>Что спросят дальше.</strong> Когда лучше динамика? Когда ёмкость небольшое целое: O(n · W), глава 70. Как быть, если кредитов тысячи? Решатель целочисленного программирования или жадная эвристика с гарантией: лучшее из «жадного набора» и «самого доходного одиночного кредита» не меньше половины оптимума.</p>
 <h3 id="55-опыт-коммивояжёр-и-рюкзак">5.5 Опыт: коммивояжёр и рюкзак</h3>
 <p>Опыт повторяет таблицу Скиены для коммивояжёра (рис. 9.9) на случайных точках квадрата 10 × 10 км и проверяет, когда граница в рюкзаке отсекает, а когда нет. Ответы всех способов совпадают с Хелдом — Карпом и с динамикой по ёмкости, время везде одного прогона после компиляции.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">n</th>
@@ -2115,69 +2115,69 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">8</td>
-<td class="num">5040</td>
-<td class="num">76</td>
-<td class="num">33</td>
-<td class="num">13 700</td>
-<td class="num">2305</td>
-<td class="num">533</td>
-<td class="num">595</td>
+<td data-label="n" class="num">8</td>
+<td data-label="(n − 1)!" class="num">5040</td>
+<td data-label="полных туров: по стоимости" class="num">76</td>
+<td data-label="по оценке" class="num">33</td>
+<td data-label="узлов: без отсечений" class="num">13 700</td>
+<td data-label="по стоимости" class="num">2305</td>
+<td data-label="по оценке" class="num">533</td>
+<td data-label="очередь «сначала лучший»" class="num">595</td>
 </tr>
 <tr>
-<td class="num">9</td>
-<td class="num">40 320</td>
-<td class="num">435</td>
-<td class="num">184</td>
-<td class="num">109 601</td>
-<td class="num">13 313</td>
-<td class="num">3643</td>
-<td class="num">4214</td>
+<td data-label="n" class="num">9</td>
+<td data-label="(n − 1)!" class="num">40 320</td>
+<td data-label="полных туров: по стоимости" class="num">435</td>
+<td data-label="по оценке" class="num">184</td>
+<td data-label="узлов: без отсечений" class="num">109 601</td>
+<td data-label="по стоимости" class="num">13 313</td>
+<td data-label="по оценке" class="num">3643</td>
+<td data-label="очередь «сначала лучший»" class="num">4214</td>
 </tr>
 <tr>
-<td class="num">10</td>
-<td class="num">362 880</td>
-<td class="num">991</td>
-<td class="num">370</td>
-<td class="num">986 410</td>
-<td class="num">80 111</td>
-<td class="num">22 941</td>
-<td class="num">34 526</td>
+<td data-label="n" class="num">10</td>
+<td data-label="(n − 1)!" class="num">362 880</td>
+<td data-label="полных туров: по стоимости" class="num">991</td>
+<td data-label="по оценке" class="num">370</td>
+<td data-label="узлов: без отсечений" class="num">986 410</td>
+<td data-label="по стоимости" class="num">80 111</td>
+<td data-label="по оценке" class="num">22 941</td>
+<td data-label="очередь «сначала лучший»" class="num">34 526</td>
 </tr>
 <tr>
-<td class="num">11</td>
-<td class="num">3 628 800</td>
-<td class="num">768</td>
-<td class="num">150</td>
-<td class="num">9 864 101</td>
-<td class="num">411 607</td>
-<td class="num">20 186</td>
-<td class="num">35 353</td>
+<td data-label="n" class="num">11</td>
+<td data-label="(n − 1)!" class="num">3 628 800</td>
+<td data-label="полных туров: по стоимости" class="num">768</td>
+<td data-label="по оценке" class="num">150</td>
+<td data-label="узлов: без отсечений" class="num">9 864 101</td>
+<td data-label="по стоимости" class="num">411 607</td>
+<td data-label="по оценке" class="num">20 186</td>
+<td data-label="очередь «сначала лучший»" class="num">35 353</td>
 </tr>
 <tr>
-<td class="num">12</td>
-<td class="num">39 916 800</td>
-<td class="num">3594</td>
-<td class="num">904</td>
-<td class="num">108 505 112</td>
-<td class="num">1 453 023</td>
-<td class="num">149 006</td>
-<td class="num">258 109</td>
+<td data-label="n" class="num">12</td>
+<td data-label="(n − 1)!" class="num">39 916 800</td>
+<td data-label="полных туров: по стоимости" class="num">3594</td>
+<td data-label="по оценке" class="num">904</td>
+<td data-label="узлов: без отсечений" class="num">108 505 112</td>
+<td data-label="по стоимости" class="num">1 453 023</td>
+<td data-label="по оценке" class="num">149 006</td>
+<td data-label="очередь «сначала лучший»" class="num">258 109</td>
 </tr>
 <tr>
-<td class="num">13</td>
-<td class="num">479 001 600</td>
-<td class="num">3248</td>
-<td class="num">475</td>
-<td class="num">—</td>
-<td class="num">8 629 135</td>
-<td class="num">394 058</td>
-<td class="num">344 076</td>
+<td data-label="n" class="num">13</td>
+<td data-label="(n − 1)!" class="num">479 001 600</td>
+<td data-label="полных туров: по стоимости" class="num">3248</td>
+<td data-label="по оценке" class="num">475</td>
+<td data-label="узлов: без отсечений" class="num">—</td>
+<td data-label="по стоимости" class="num">8 629 135</td>
+<td data-label="по оценке" class="num">394 058</td>
+<td data-label="очередь «сначала лучший»" class="num">344 076</td>
 </tr>
 </tbody>
 </table>
 <p>Полных туров с оценкой по кратчайшим выездам из каждой точки на порядок меньше, чем у Скиены с единой минимальной длиной ребра (150 против 6391 при n = 11), потому что граница точнее. Узлов дерева при n = 12 без отсечений 108 миллионов (перебор занял почти секунду), с оценкой 149 тысяч (4 мс). Поиск «сначала лучший» держал до 258 тысяч частичных маршрутов в куче, у Скиены при n = 11 было 202 063; по времени он на 12–13 точках медленнее обхода в глубину (40–48 мс против 4–13 мс): копирование путей и операции с кучей дороже, чем узлы, которые он экономит. Хелд — Карп на 13 точках занял около миллисекунды, и для точного маршрута по десятку точек это лучший выбор.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Рюкзак</th>
@@ -2188,40 +2188,40 @@
 </thead>
 <tbody>
 <tr>
-<td>20 предметов, доход ≈ вес ± 100</td>
-<td>95 из 2²⁰</td>
-<td class="num">&lt; 0,1 мс</td>
-<td class="num">20 × 5996, 3,3 мс</td>
+<td data-label="Рюкзак">20 предметов, доход ≈ вес ± 100</td>
+<td data-label="Узлов ветвей и границ">95 из 2²⁰</td>
+<td data-label="Время" class="num">&lt; 0,1 мс</td>
+<td data-label="Динамика по ёмкости" class="num">20 × 5996, 3,3 мс</td>
 </tr>
 <tr>
-<td>40 предметов</td>
-<td>571 из 2⁴⁰</td>
-<td class="num">0,2 мс</td>
-<td class="num">1,2 мс</td>
+<td data-label="Рюкзак">40 предметов</td>
+<td data-label="Узлов ветвей и границ">571 из 2⁴⁰</td>
+<td data-label="Время" class="num">0,2 мс</td>
+<td data-label="Динамика по ёмкости" class="num">1,2 мс</td>
 </tr>
 <tr>
-<td>60 предметов</td>
-<td>566 из 2⁶⁰</td>
-<td class="num">&lt; 0,1 мс</td>
-<td class="num">2,6 мс</td>
+<td data-label="Рюкзак">60 предметов</td>
+<td data-label="Узлов ветвей и границ">566 из 2⁶⁰</td>
+<td data-label="Время" class="num">&lt; 0,1 мс</td>
+<td data-label="Динамика по ёмкости" class="num">2,6 мс</td>
 </tr>
 <tr>
-<td>20, доход = вес, чётные веса, нечётная ёмкость</td>
-<td>383 432</td>
-<td class="num">4,8 мс</td>
-<td class="num">0,3 мс</td>
+<td data-label="Рюкзак">20, доход = вес, чётные веса, нечётная ёмкость</td>
+<td data-label="Узлов ветвей и границ">383 432</td>
+<td data-label="Время" class="num">4,8 мс</td>
+<td data-label="Динамика по ёмкости" class="num">0,3 мс</td>
 </tr>
 <tr>
-<td>24, то же</td>
-<td>8 447 716</td>
-<td class="num">61,7 мс</td>
-<td class="num">0,3 мс</td>
+<td data-label="Рюкзак">24, то же</td>
+<td data-label="Узлов ветвей и границ">8 447 716</td>
+<td data-label="Время" class="num">61,7 мс</td>
+<td data-label="Динамика по ёмкости" class="num">0,3 мс</td>
 </tr>
 <tr>
-<td>28, то же</td>
-<td>125 003 180</td>
-<td class="num">668,5 мс</td>
-<td class="num">3,0 мс</td>
+<td data-label="Рюкзак">28, то же</td>
+<td data-label="Узлов ветвей и границ">125 003 180</td>
+<td data-label="Время" class="num">668,5 мс</td>
+<td data-label="Динамика по ёмкости" class="num">3,0 мс</td>
 </tr>
 </tbody>
 </table>
@@ -2423,7 +2423,7 @@
 <p><strong>Что спросят дальше.</strong> Как добавить ограничение глубины, если позиций слишком много? Это шахматная постановка Вайса: оценочная функция в листьях на ограниченной глубине и α–β отсечение, которое на практике обходит около √N узлов дерева.<sup id="fnref10:a68-14"><a class="footnote-ref" href="#fn:a68-14">14</a></sup> Можно ли без маски? Для этой игры нет; для игр, где позиция описывается одним числом (например, Nim с одной кучкой), состояние сжимается до числа.</p>
 <h3 id="66-опыт-вызовы-с-памятью-и-без">6.6 Опыт: вызовы с памятью и без</h3>
 <p>Опыт проверяет утверждения подраздела 6.1 на четырёх задачах раздела и на Фибоначчи Скиены: насколько растёт число вызовов без памяти, сколько их остаётся с памятью и сколько стоит ключ таблицы. Время после прогрева, одного прогона; ответы с памятью и без совпадают.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Задача</th>
@@ -2433,34 +2433,34 @@
 </thead>
 <tbody>
 <tr>
-<td>F(30)</td>
-<td>2 692 537 вызовов, 3 мс</td>
-<td>59 вызовов</td>
+<td data-label="Задача">F(30)</td>
+<td data-label="Без памяти">2 692 537 вызовов, 3 мс</td>
+<td data-label="С памятью">59 вызовов</td>
 </tr>
 <tr>
-<td>F(40)</td>
-<td>331 160 281 вызов, 411 мс</td>
-<td>79 вызовов</td>
+<td data-label="Задача">F(40)</td>
+<td data-label="Без памяти">331 160 281 вызов, 411 мс</td>
+<td data-label="С памятью">79 вызовов</td>
 </tr>
 <tr>
-<td>Word Break, <code>a×20 + b</code></td>
-<td>590 081 вызов, 35 мс</td>
-<td>75</td>
+<td data-label="Задача">Word Break, <code>a×20 + b</code></td>
+<td data-label="Без памяти">590 081 вызов, 35 мс</td>
+<td data-label="С памятью">75</td>
 </tr>
 <tr>
-<td>Word Break, <code>a×25 + b</code></td>
-<td>15 701 951 вызов, 614 мс</td>
-<td>95</td>
+<td data-label="Задача">Word Break, <code>a×25 + b</code></td>
+<td data-label="Без памяти">15 701 951 вызов, 614 мс</td>
+<td data-label="С памятью">95</td>
 </tr>
 <tr>
-<td>Word Break, <code>a×30 + b</code></td>
-<td>417 825 921 вызов, 14,4 с</td>
-<td>115</td>
+<td data-label="Задача">Word Break, <code>a×30 + b</code></td>
+<td data-label="Без памяти">417 825 921 вызов, 14,4 с</td>
+<td data-label="С памятью">115</td>
 </tr>
 <tr>
-<td>Target Sum, n = 28</td>
-<td>536 870 911 вызовов, 692 мс</td>
-<td>15 287 вызовов, 0,7 мс</td>
+<td data-label="Задача">Target Sum, n = 28</td>
+<td data-label="Без памяти">536 870 911 вызовов, 692 мс</td>
+<td data-label="С памятью">15 287 вызовов, 0,7 мс</td>
 </tr>
 </tbody>
 </table>
@@ -2705,7 +2705,7 @@
 <p><strong>Что спросят дальше.</strong> А если навыков 100? Покрытие множества NP-трудно, и для него есть жадная эвристика «каждый раз брать человека, покрывающего больше всего непокрытого», которая хуже оптимума не больше чем примерно в ln k раз ⚠️ оценка приведена по памяти, в прочитанных главах не разобрана. А если у людей стоимость? Та же динамика с суммой стоимостей вместо размера.</p>
 <h3 id="76-опыт-маски-против-рекурсии">7.6 Опыт: маски против рекурсии</h3>
 <p>Опыт проверяет утверждение подраздела 7.1 о том, что маски берут ради представления, а не ради скорости, и меряет цену 3ⁿ подмасок. Время лучшее из трёх прогонов после прогрева; ответы всех способов совпадают, и каждый результат «потребляется», чтобы JIT не выбросил работу.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Суммы всех подмножеств</th>
@@ -2716,27 +2716,27 @@
 </thead>
 <tbody>
 <tr>
-<td>2²⁰</td>
-<td class="num">2,0 мс</td>
-<td class="num">5,1 мс</td>
-<td>2,7 мс (8 МБ)</td>
+<td data-label="Суммы всех подмножеств">2²⁰</td>
+<td data-label="Рекурсия «взять или не взять»" class="num">2,0 мс</td>
+<td data-label="Маска, суммирование по битам" class="num">5,1 мс</td>
+<td data-label="Таблица от маски без младшего бита">2,7 мс (8 МБ)</td>
 </tr>
 <tr>
-<td>2²²</td>
-<td class="num">7,9 мс</td>
-<td class="num">26,0 мс</td>
-<td>10,8 мс (32 МБ)</td>
+<td data-label="Суммы всех подмножеств">2²²</td>
+<td data-label="Рекурсия «взять или не взять»" class="num">7,9 мс</td>
+<td data-label="Маска, суммирование по битам" class="num">26,0 мс</td>
+<td data-label="Таблица от маски без младшего бита">10,8 мс (32 МБ)</td>
 </tr>
 <tr>
-<td>2²⁴</td>
-<td class="num">32,3 мс</td>
-<td class="num">112,2 мс</td>
-<td>15,6 мс (128 МБ)</td>
+<td data-label="Суммы всех подмножеств">2²⁴</td>
+<td data-label="Рекурсия «взять или не взять»" class="num">32,3 мс</td>
+<td data-label="Маска, суммирование по битам" class="num">112,2 мс</td>
+<td data-label="Таблица от маски без младшего бита">15,6 мс (128 МБ)</td>
 </tr>
 </tbody>
 </table>
 <p>Рекурсия, которая несёт сумму в аргументе, втрое быстрее цикла по маскам, где сумма каждой маски считается заново. Таблица быстрее обоих на больших n, но платит памятью: 128 МБ при двадцати четырёх элементах.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сочетания</th>
@@ -2746,19 +2746,19 @@
 </thead>
 <tbody>
 <tr>
-<td>C(30, 6) = 593 775</td>
-<td class="num">1,8 мс</td>
-<td class="num">0,6 мс</td>
+<td data-label="Сочетания">C(30, 6) = 593 775</td>
+<td data-label="Трюк Госпера" class="num">1,8 мс</td>
+<td data-label="Рекурсия" class="num">0,6 мс</td>
 </tr>
 <tr>
-<td>C(40, 5) = 658 008</td>
-<td class="num">2,1 мс</td>
-<td class="num">0,5 мс</td>
+<td data-label="Сочетания">C(40, 5) = 658 008</td>
+<td data-label="Трюк Госпера" class="num">2,1 мс</td>
+<td data-label="Рекурсия" class="num">0,5 мс</td>
 </tr>
 <tr>
-<td>C(26, 13) = 10 400 600</td>
-<td class="num">31,9 мс</td>
-<td class="num">22,3 мс</td>
+<td data-label="Сочетания">C(26, 13) = 10 400 600</td>
+<td data-label="Трюк Госпера" class="num">31,9 мс</td>
+<td data-label="Рекурсия" class="num">22,3 мс</td>
 </tr>
 </tbody>
 </table>
@@ -2961,7 +2961,7 @@
 <p><strong>Что спросят дальше.</strong> А если размеры частей не ограничены? Это задача 8.4 с целью <code>total / 2</code>. Почему нельзя жадно (самые большие по очереди в меньшую часть)? Жадность даёт приближение, но не оптимум; в главе 64 разобраны случаи, когда она точна.</p>
 <h3 id="86-опыт-перебор-против-встречи-посередине">8.6 Опыт: перебор против встречи посередине</h3>
 <p>Опыт сравнивает полный перебор с ранним выходом и встречу посередине на сверке выписки из задачи 8.3. Худший случай: все суммы чётные (в копейках), итог нечётный, решения нет, и перебор обязан проверить всё. Отдельно проверено, что бывает, когда решение есть, но перебору с ним не повезло.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Платежей</th>
@@ -2972,40 +2972,40 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">24</td>
-<td>33 554 431 вызов, 33 мс</td>
-<td class="num">6 мс</td>
-<td>2 · 4096</td>
+<td data-label="Платежей" class="num">24</td>
+<td data-label="Перебор">33 554 431 вызов, 33 мс</td>
+<td data-label="Встреча посередине" class="num">6 мс</td>
+<td data-label="Сумм в половинах">2 · 4096</td>
 </tr>
 <tr>
-<td class="num">28</td>
-<td>536 870 911 вызовов, 696 мс</td>
-<td class="num">5 мс</td>
-<td>2 · 16 384</td>
+<td data-label="Платежей" class="num">28</td>
+<td data-label="Перебор">536 870 911 вызовов, 696 мс</td>
+<td data-label="Встреча посередине" class="num">5 мс</td>
+<td data-label="Сумм в половинах">2 · 16 384</td>
 </tr>
 <tr>
-<td class="num">32</td>
-<td>8 589 934 591 вызов, 11,1 с</td>
-<td class="num">20 мс</td>
-<td>2 · 65 536</td>
+<td data-label="Платежей" class="num">32</td>
+<td data-label="Перебор">8 589 934 591 вызов, 11,1 с</td>
+<td data-label="Встреча посередине" class="num">20 мс</td>
+<td data-label="Сумм в половинах">2 · 65 536</td>
 </tr>
 <tr>
-<td class="num">36</td>
-<td>—</td>
-<td class="num">169 мс</td>
-<td>2 · 262 144</td>
+<td data-label="Платежей" class="num">36</td>
+<td data-label="Перебор">—</td>
+<td data-label="Встреча посередине" class="num">169 мс</td>
+<td data-label="Сумм в половинах">2 · 262 144</td>
 </tr>
 <tr>
-<td class="num">40</td>
-<td>—</td>
-<td class="num">510 мс</td>
-<td>2 · 1 048 576</td>
+<td data-label="Платежей" class="num">40</td>
+<td data-label="Перебор">—</td>
+<td data-label="Встреча посередине" class="num">510 мс</td>
+<td data-label="Сумм в половинах">2 · 1 048 576</td>
 </tr>
 <tr>
-<td class="num">44</td>
-<td>—</td>
-<td class="num">3,1 с</td>
-<td>2 · 4 194 304</td>
+<td data-label="Платежей" class="num">44</td>
+<td data-label="Перебор">—</td>
+<td data-label="Встреча посередине" class="num">3,1 с</td>
+<td data-label="Сумм в половинах">2 · 4 194 304</td>
 </tr>
 </tbody>
 </table>
@@ -3299,7 +3299,7 @@
 <p><strong>Что спросят дальше.</strong> Почему пары, а не тройки? Эмпирическое наблюдение тестировщиков: большинство дефектов взаимодействия проявляется на паре параметров, а покрытие троек дороже в разы. Как встроить запреты? Не выбирать значение, которое запрещено уже выбранными, и не считать запрещённые пары подлежащими покрытию.</p>
 <h3 id="97-опыт-список-ленивость-отсечение-и-покрытие">9.7 Опыт: список, ленивость, отсечение и покрытие</h3>
 <p>Опыт проверяет утверждения подраздела 9.1 на двенадцати параметрах по четыре значения (16 777 216 сочетаний) и шести запретах вида «p₂ᵢ = a запрещает p₂ᵢ₊₁ = a»: во что обходятся список, ленивость, отсечение и сколько тестов нужно для попарного покрытия. Время одного прогона после прогрева.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -3310,27 +3310,27 @@
 </thead>
 <tbody>
 <tr>
-<td>перебор с отсечением запретами, карты и строки (задача 9.2)</td>
-<td class="num">11 390 625</td>
-<td class="num">5464 мс</td>
-<td>O(n)</td>
+<td data-label="Способ">перебор с отсечением запретами, карты и строки (задача 9.2)</td>
+<td data-label="Допустимых" class="num">11 390 625</td>
+<td data-label="Время" class="num">5464 мс</td>
+<td data-label="Память">O(n)</td>
 </tr>
 <tr>
-<td>одометр по целым индексам, проверка в конце</td>
-<td class="num">11 390 625</td>
-<td class="num">248 мс</td>
-<td>O(n)</td>
+<td data-label="Способ">одометр по целым индексам, проверка в конце</td>
+<td data-label="Допустимых" class="num">11 390 625</td>
+<td data-label="Время" class="num">248 мс</td>
+<td data-label="Память">O(n)</td>
 </tr>
 <tr>
-<td>первые 2 000 000 конфигураций списком <code>LinkedHashMap</code></td>
-<td class="num">—</td>
-<td class="num">1710 мс</td>
-<td>≈ 1,2 ГБ, ≈ 630 байт на конфигурацию</td>
+<td data-label="Способ">первые 2 000 000 конфигураций списком <code>LinkedHashMap</code></td>
+<td data-label="Допустимых" class="num">—</td>
+<td data-label="Время" class="num">1710 мс</td>
+<td data-label="Память">≈ 1,2 ГБ, ≈ 630 байт на конфигурацию</td>
 </tr>
 </tbody>
 </table>
 <p>Запреты отсекают лишь треть сочетаний (11,4 миллиона из 16,8), и выигрыш от отсечения меньше, чем цена обобщённого представления: строковые проверки правил и копии карт делают перебор с отсечением в 22 раза медленнее одометра по целым. Список конфигураций в виде карт съедает по 630 байт на каждую, и все 11 миллионов не поместились бы в разумную кучу; ленивая выдача потребителю решает это полностью.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Параметры</th>
@@ -3341,41 +3341,41 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">3, 3, 3, 3</td>
-<td class="num">12</td>
-<td class="num">81</td>
-<td class="num">4 мс</td>
+<td data-label="Параметры" class="num">3, 3, 3, 3</td>
+<td data-label="Тестов попарного покрытия" class="num">12</td>
+<td data-label="Полное произведение" class="num">81</td>
+<td data-label="Время" class="num">4 мс</td>
 </tr>
 <tr>
-<td class="num">2 × 10</td>
-<td class="num">9</td>
-<td class="num">1024</td>
-<td class="num">6 мс</td>
+<td data-label="Параметры" class="num">2 × 10</td>
+<td data-label="Тестов попарного покрытия" class="num">9</td>
+<td data-label="Полное произведение" class="num">1024</td>
+<td data-label="Время" class="num">6 мс</td>
 </tr>
 <tr>
-<td class="num">4 × 12</td>
-<td class="num">35</td>
-<td class="num">16 777 216</td>
-<td class="num">40 мс</td>
+<td data-label="Параметры" class="num">4 × 12</td>
+<td data-label="Тестов попарного покрытия" class="num">35</td>
+<td data-label="Полное произведение" class="num">16 777 216</td>
+<td data-label="Время" class="num">40 мс</td>
 </tr>
 <tr>
-<td class="num">5 × 8</td>
-<td class="num">41</td>
-<td class="num">390 625</td>
-<td class="num">25 мс</td>
+<td data-label="Параметры" class="num">5 × 8</td>
+<td data-label="Тестов попарного покрытия" class="num">41</td>
+<td data-label="Полное произведение" class="num">390 625</td>
+<td data-label="Время" class="num">25 мс</td>
 </tr>
 <tr>
-<td class="num">6, 4, 3, 3, 2, 2, 2, 2, 2, 2</td>
-<td class="num">25</td>
-<td class="num">13 824</td>
-<td class="num">10 мс</td>
+<td data-label="Параметры" class="num">6, 4, 3, 3, 2, 2, 2, 2, 2, 2</td>
+<td data-label="Тестов попарного покрытия" class="num">25</td>
+<td data-label="Полное произведение" class="num">13 824</td>
+<td data-label="Время" class="num">10 мс</td>
 </tr>
 </tbody>
 </table>
 <p>Размер покрытия растёт медленно: двенадцать параметров по четыре значения требуют 35 тестов при нижней границе 16. Жадный алгоритм зависит от случайного порядка: на четырёх параметрах по три значения с этим начальным значением он дал 12 тестов, а в тесте раздела с другим начальным значением оптимальные 9.</p>
 <h2 id="10-что-из-этого-встречается-в-бэкенде">10. Что из этого встречается в бэкенде</h2>
 <p>Перебор на собеседовании и перебор в сервисе отличаются главным: в сервисе у перебора есть бюджет времени и памяти, и он почти всегда должен уметь остановиться. Таблица отвечает на два вопроса: встречу ли я этот приём в работе и чем его заменяют, когда данных больше, чем выдерживает экспонента.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>приём</th>
@@ -3386,64 +3386,64 @@
 </thead>
 <tbody>
 <tr>
-<td>рекурсия по дереву</td>
-<td>регулярно</td>
-<td>постоянно</td>
-<td>обход категорий, плана счетов, вложенных документов; в базе рекурсивный CTE (глава 20); на глубоких данных явный стек</td>
+<td data-label="приём">рекурсия по дереву</td>
+<td data-label="в коде сервиса">регулярно</td>
+<td data-label="на собеседовании">постоянно</td>
+<td data-label="где встречается или чем заменяют">обход категорий, плана счетов, вложенных документов; в базе рекурсивный CTE (глава 20); на глубоких данных явный стек</td>
 </tr>
 <tr>
-<td>хвостовая рекурсия</td>
-<td>иногда в Kotlin</td>
-<td>редко</td>
-<td>итеративные расчёты графиков и сроков; <code>tailrec</code> превращает её в цикл</td>
+<td data-label="приём">хвостовая рекурсия</td>
+<td data-label="в коде сервиса">иногда в Kotlin</td>
+<td data-label="на собеседовании">редко</td>
+<td data-label="где встречается или чем заменяют">итеративные расчёты графиков и сроков; <code>tailrec</code> превращает её в цикл</td>
 </tr>
 <tr>
-<td>разделяй и властвуй</td>
-<td>редко в своём коде</td>
-<td>часто</td>
-<td><code>Arrays.parallelSort</code>, <code>BigInteger.parallelMultiply</code>, ForkJoin и параллельные стримы (глава 08), сортировка внешних файлов (глава 62)</td>
+<td data-label="приём">разделяй и властвуй</td>
+<td data-label="в коде сервиса">редко в своём коде</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют"><code>Arrays.parallelSort</code>, <code>BigInteger.parallelMultiply</code>, ForkJoin и параллельные стримы (глава 08), сортировка внешних файлов (глава 62)</td>
 </tr>
 <tr>
-<td>перебор подмножеств, перестановок, сочетаний</td>
-<td>редко, на малых n</td>
-<td>постоянно</td>
-<td>генерация тестовых наборов, перебор опций; на больших n попарное покрытие и выборка</td>
+<td data-label="приём">перебор подмножеств, перестановок, сочетаний</td>
+<td data-label="в коде сервиса">редко, на малых n</td>
+<td data-label="на собеседовании">постоянно</td>
+<td data-label="где встречается или чем заменяют">генерация тестовых наборов, перебор опций; на больших n попарное покрытие и выборка</td>
 </tr>
 <tr>
-<td>перебор с отсечениями</td>
-<td>редко</td>
-<td>часто</td>
-<td>проверка правил и конфигураций, раскладка по ресурсам на малых данных; на больших решатели ограничений</td>
+<td data-label="приём">перебор с отсечениями</td>
+<td data-label="в коде сервиса">редко</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют">проверка правил и конфигураций, раскладка по ресурсам на малых данных; на больших решатели ограничений</td>
 </tr>
 <tr>
-<td>ветви и границы</td>
-<td>редко</td>
-<td>средне</td>
-<td>маршруты на десятке точек, подбор портфеля; на больших решатели целочисленного программирования</td>
+<td data-label="приём">ветви и границы</td>
+<td data-label="в коде сервиса">редко</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="где встречается или чем заменяют">маршруты на десятке точек, подбор портфеля; на больших решатели целочисленного программирования</td>
 </tr>
 <tr>
-<td>мемоизация</td>
-<td>регулярно, но под другим именем</td>
-<td>часто</td>
-<td><code>@Cacheable</code> и кэши результатов (глава 23), разбор по словарю, подсчёт вариантов</td>
+<td data-label="приём">мемоизация</td>
+<td data-label="в коде сервиса">регулярно, но под другим именем</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют"><code>@Cacheable</code> и кэши результатов (глава 23), разбор по словарю, подсчёт вариантов</td>
 </tr>
 <tr>
-<td>битовые маски</td>
-<td>регулярно</td>
-<td>часто</td>
-<td>флаги прав и опций в одном <code>long</code> (глава 72), покрытие навыков и требований</td>
+<td data-label="приём">битовые маски</td>
+<td data-label="в коде сервиса">регулярно</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют">флаги прав и опций в одном <code>long</code> (глава 72), покрытие навыков и требований</td>
 </tr>
 <tr>
-<td>встреча посередине</td>
-<td>редко, но ценно</td>
-<td>средне</td>
-<td>сверка суммы выписки, подбор позиций под сумму оплаты</td>
+<td data-label="приём">встреча посередине</td>
+<td data-label="в коде сервиса">редко, но ценно</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="где встречается или чем заменяют">сверка суммы выписки, подбор позиций под сумму оплаты</td>
 </tr>
 <tr>
-<td>генерация вариантов тарифа</td>
-<td>регулярно в продуктовом коде</td>
-<td>средне (live coding)</td>
-<td>тарифные конструкторы, проверка изменений правил, матрицы тестов</td>
+<td data-label="приём">генерация вариантов тарифа</td>
+<td data-label="в коде сервиса">регулярно в продуктовом коде</td>
+<td data-label="на собеседовании">средне (live coding)</td>
+<td data-label="где встречается или чем заменяют">тарифные конструкторы, проверка изменений правил, матрицы тестов</td>
 </tr>
 </tbody>
 </table>
@@ -3498,7 +3498,7 @@
 <p>В <code>S10.java</code> этим тестом проверена нарочно сломанная версия задачи 3.3, где равные пропускаются по <code>i &gt; 0</code> вместо <code>i &gt; start</code>: тест останавливается на входе <code>[2, 2]</code> размера 2, где сломанная версия даёт 2 подмножества, а эталон 3. Все тесты в <code>algo-tests/69</code> устроены так же.</p>
 <h3 id="122-эталоны-и-проверки-для-каждого-приёма">12.2 Эталоны и проверки для каждого приёма</h3>
 <p>Для каждого приёма главы есть эталон, который ошибается в других местах, чем быстрое решение, и инвариант, который можно проверить без эталона. Таблица перечисляет те, что использованы в тестах главы; инвариант полезен и в продакшене, где эталона нет, а проверить результат перед отдачей пользователю можно.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>приём</th>
@@ -3508,74 +3508,74 @@
 </thead>
 <tbody>
 <tr>
-<td>рекурсия и явный стек</td>
-<td>друг друга</td>
-<td>одинаковые результаты на глубине, где рекурсия ещё не падает</td>
+<td data-label="приём">рекурсия и явный стек</td>
+<td data-label="эталон">друг друга</td>
+<td data-label="что ещё проверить">одинаковые результаты на глубине, где рекурсия ещё не падает</td>
 </tr>
 <tr>
-<td>подмножества, сочетания</td>
-<td>маски</td>
-<td>число ответов 2ⁿ, C(n, k); с повторами произведение (кратность + 1)</td>
+<td data-label="приём">подмножества, сочетания</td>
+<td data-label="эталон">маски</td>
+<td data-label="что ещё проверить">число ответов 2ⁿ, C(n, k); с повторами произведение (кратность + 1)</td>
 </tr>
 <tr>
-<td>перестановки</td>
-<td>множество всех перестановок</td>
-<td>число n! или n! / (k₁! · k₂! · …)</td>
+<td data-label="приём">перестановки</td>
+<td data-label="эталон">множество всех перестановок</td>
+<td data-label="что ещё проверить">число n! или n! / (k₁! · k₂! · …)</td>
 </tr>
 <tr>
-<td>сумма сочетаний, разбиения</td>
-<td>маски с проверкой суммы</td>
-<td>каждый ответ даёт сумму, ответы различны</td>
+<td data-label="приём">сумма сочетаний, разбиения</td>
+<td data-label="эталон">маски с проверкой суммы</td>
+<td data-label="что ещё проверить">каждый ответ даёт сумму, ответы различны</td>
 </tr>
 <tr>
-<td>скобки</td>
-<td>все 2²ⁿ строк с проверкой</td>
-<td>числа Каталана</td>
+<td data-label="приём">скобки</td>
+<td data-label="эталон">все 2²ⁿ строк с проверкой</td>
+<td data-label="что ещё проверить">числа Каталана</td>
 </tr>
 <tr>
-<td>ферзи</td>
-<td>известные значения 1, 0, 0, 2, 10, 4, 40, 92, 352, 724</td>
-<td>никакие два ферзя не бьют друг друга</td>
+<td data-label="приём">ферзи</td>
+<td data-label="эталон">известные значения 1, 0, 0, 2, 10, 4, 40, 92, 352, 724</td>
+<td data-label="что ещё проверить">никакие два ферзя не бьют друг друга</td>
 </tr>
 <tr>
-<td>судоку</td>
-<td>проверка заполненного поля</td>
-<td>подсказки сохранены, решение единственно (подсчёт решений до двух)</td>
+<td data-label="приём">судоку</td>
+<td data-label="эталон">проверка заполненного поля</td>
+<td data-label="что ещё проверить">подсказки сохранены, решение единственно (подсчёт решений до двух)</td>
 </tr>
 <tr>
-<td>k-разбиение</td>
-<td>все kⁿ раскладок</td>
-<td>суммы корзин равны</td>
+<td data-label="приём">k-разбиение</td>
+<td data-label="эталон">все kⁿ раскладок</td>
+<td data-label="что ещё проверить">суммы корзин равны</td>
 </tr>
 <tr>
-<td>восстановление точек</td>
-<td>построить расстояния по найденным точкам</td>
-<td>мультимножество совпадает</td>
+<td data-label="приём">восстановление точек</td>
+<td data-label="эталон">построить расстояния по найденным точкам</td>
+<td data-label="что ещё проверить">мультимножество совпадает</td>
 </tr>
 <tr>
-<td>коммивояжёр</td>
-<td>Хелд — Карп</td>
-<td>длина найденного тура по матрице равна ответу</td>
+<td data-label="приём">коммивояжёр</td>
+<td data-label="эталон">Хелд — Карп</td>
+<td data-label="что ещё проверить">длина найденного тура по матрице равна ответу</td>
 </tr>
 <tr>
-<td>рюкзак</td>
-<td>динамика по ёмкости</td>
-<td>вес набора не больше ёмкости, доход равен ответу</td>
+<td data-label="приём">рюкзак</td>
+<td data-label="эталон">динамика по ёмкости</td>
+<td data-label="что ещё проверить">вес набора не больше ёмкости, доход равен ответу</td>
 </tr>
 <tr>
-<td>мемоизация</td>
-<td>та же рекурсия без памяти</td>
-<td>одинаковые ответы, число вызовов с памятью не больше числа состояний</td>
+<td data-label="приём">мемоизация</td>
+<td data-label="эталон">та же рекурсия без памяти</td>
+<td data-label="что ещё проверить">одинаковые ответы, число вызовов с памятью не больше числа состояний</td>
 </tr>
 <tr>
-<td>встреча посередине</td>
-<td>полный перебор на n ≤ 15</td>
-<td>найденное подмножество даёт нужную сумму</td>
+<td data-label="приём">встреча посередине</td>
+<td data-label="эталон">полный перебор на n ≤ 15</td>
+<td data-label="что ещё проверить">найденное подмножество даёт нужную сумму</td>
 </tr>
 <tr>
-<td>попарное покрытие</td>
-<td>перебор всех пар</td>
-<td>каждая пара покрыта; тестов не меньше произведения двух больших размеров</td>
+<td data-label="приём">попарное покрытие</td>
+<td data-label="эталон">перебор всех пар</td>
+<td data-label="что ещё проверить">каждая пара покрыта; тестов не меньше произведения двух больших размеров</td>
 </tr>
 </tbody>
 </table>
@@ -3583,7 +3583,7 @@
 <p>Если решение расходится с эталоном, полезно напечатать дерево перебора на найденном минимальном входе: строка на узел с отступом по глубине, выбор, которым пришли в узел, и решение «отсечено, почему» или «ответ». На входе размера 3–5 такое дерево помещается в экран и обычно сразу показывает, где ветка пропущена (лишнее отсечение) или пройдена дважды (недостающее). Для ветвей и границ к узлу полезно печатать стоимость, границу и рекорд в момент проверки: если граница меньше стоимости уже найденного продолжения, она не оценка.</p>
 <h3 id="124-симптом-и-причина">12.4 Симптом и причина</h3>
 <p>Многие ошибки перебора узнаются по симптому без трассировки, потому что у каждой свой характерный след в ответе. Таблица собирает самые частые соответствия этой главы; если ответ отличается так, как описано слева, начинать поиск стоит со столбца справа, и обычно трассировка после этого уже не нужна.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>симптом</th>
@@ -3592,40 +3592,40 @@
 </thead>
 <tbody>
 <tr>
-<td>все ответы одинаковые или пустые</td>
-<td>в ответ положена ссылка на <code>path</code>, а не копия</td>
+<td data-label="симптом">все ответы одинаковые или пустые</td>
+<td data-label="вероятная причина">в ответ положена ссылка на <code>path</code>, а не копия</td>
 </tr>
 <tr>
-<td>ответов меньше, чем должно быть</td>
-<td>забыт откат; лишнее отсечение (<code>i &gt; 0</code> вместо <code>i &gt; start</code>); требование проверено слишком рано</td>
+<td data-label="симптом">ответов меньше, чем должно быть</td>
+<td data-label="вероятная причина">забыт откат; лишнее отсечение (<code>i &gt; 0</code> вместо <code>i &gt; start</code>); требование проверено слишком рано</td>
 </tr>
 <tr>
-<td>ответов больше, ответы повторяются</td>
-<td>нет сортировки или пропуска равных; рекурсия с <code>0</code> вместо <code>i</code> в сумме сочетаний</td>
+<td data-label="симптом">ответов больше, ответы повторяются</td>
+<td data-label="вероятная причина">нет сортировки или пропуска равных; рекурсия с <code>0</code> вместо <code>i</code> в сумме сочетаний</td>
 </tr>
 <tr>
-<td>одна комбинация во всех порядках</td>
-<td>рекурсия не с <code>start</code>, а с начала массива</td>
+<td data-label="симптом">одна комбинация во всех порядках</td>
+<td data-label="вероятная причина">рекурсия не с <code>start</code>, а с начала массива</td>
 </tr>
 <tr>
-<td>ответ ветвей и границ не оптимален</td>
-<td>граница не оценка; возвращён первый вынутый незамкнутый тур</td>
+<td data-label="симптом">ответ ветвей и границ не оптимален</td>
+<td data-label="вероятная причина">граница не оценка; возвращён первый вынутый незамкнутый тур</td>
 </tr>
 <tr>
-<td><code>StackOverflowError</code></td>
-<td>рекурсия по данным без ограничения глубины; холодный код</td>
+<td data-label="симптом"><code>StackOverflowError</code></td>
+<td data-label="вероятная причина">рекурсия по данным без ограничения глубины; холодный код</td>
 </tr>
 <tr>
-<td><code>ArrayIndexOutOfBoundsException</code> в делении</td>
-<td>неоднозначное деление при совпадающих ключах</td>
+<td data-label="симптом"><code>ArrayIndexOutOfBoundsException</code> в делении</td>
+<td data-label="вероятная причина">неоднозначное деление при совпадающих ключах</td>
 </tr>
 <tr>
-<td><code>OutOfMemoryError</code></td>
-<td>все ответы списком; встреча посередине на слишком большом n; таблица по маскам на n ≥ 28</td>
+<td data-label="симптом"><code>OutOfMemoryError</code></td>
+<td data-label="вероятная причина">все ответы списком; встреча посередине на слишком большом n; таблица по маскам на n ≥ 28</td>
 </tr>
 <tr>
-<td>бесконечный цикл в жадной генерации</td>
-<td>шаг может не дать прогресса (попарное покрытие без начальной непокрытой пары)</td>
+<td data-label="симптом">бесконечный цикл в жадной генерации</td>
+<td data-label="вероятная причина">шаг может не дать прогресса (попарное покрытие без начальной непокрытой пары)</td>
 </tr>
 </tbody>
 </table>
@@ -3787,5 +3787,5 @@
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-рекурсия-и-её-цена-в-jvm">1. Рекурсия и её цена в JVM</a></li><li><a href="#2-разделяй-и-властвуй">2. Разделяй и властвуй</a></li><li><a href="#3-поиск-с-возвратом-подмножества-перестановки-сочетания">3. Поиск с возвратом: подмножества, перестановки, сочетания</a></li><li><a href="#4-перебор-с-ограничениями-и-отсечения">4. Перебор с ограничениями и отсечения</a></li><li><a href="#5-ветви-и-границы">5. Ветви и границы</a></li><li><a href="#6-мемоизация-мост-к-динамическому-программированию">6. Мемоизация: мост к динамическому программированию</a></li><li><a href="#7-перебор-битовыми-масками">7. Перебор битовыми масками</a></li><li><a href="#8-встреча-посередине">8. Встреча посередине</a></li><li><a href="#9-генерация-вариантов-тарифа-и-набора-услуг">9. Генерация вариантов тарифа и набора услуг</a></li><li><a href="#10-что-из-этого-встречается-в-бэкенде">10. Что из этого встречается в бэкенде</a></li><li><a href="#11-грабли-и-антипаттерны">11. Грабли и антипаттерны</a></li><li><a href="#12-диагностика-отладка-решения">12. Диагностика: отладка решения</a></li><li><a href="#13-вопросы-на-интервью">13. Вопросы на интервью</a></li><li><a href="#14-попробовать-руками">14. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

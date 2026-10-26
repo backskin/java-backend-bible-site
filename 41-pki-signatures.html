@@ -3,7 +3,7 @@
 <title>41. PKI, сертификаты, электронная подпись — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="PKI, сертификаты, электронная подпись">
 <a class="skip" href="#content">К тексту</a>
@@ -53,7 +53,7 @@
 <p><strong>Bridge CA</strong> устроен иначе: вместо одного корня для всех существует несколько независимых иерархий, например у разных ведомств, и мост перекрёстно сертифицирует их корни попарно или через себя, так что доверие образует уже не дерево, а граф. Такую модель применяют в государственных PKI (FBCA в США, мосты между ведомственными PKI). Для разработчика из этого вытекает одно, и весьма неприятное, следствие: <strong>построение пути перестаёт быть тривиальным</strong>, потому что путей может оказаться несколько, часть из них некорректна, и наивный алгоритм «взять первый попавшийся issuer» упрётся в тупик. Подробно этот вопрос разобран в разделе 2.4.</p>
 <h3 id="14-альтернативные-модели-доверия">1.4 Альтернативные модели доверия</h3>
 <p>Иерархический CA — не единственная модель доверия и не всегда лучшая, и каждая из альтернатив появилась как ответ на какую-то его слабость. В таблице ниже собраны пять моделей; смотреть в ней стоит прежде всего на последний столбец, потому что именно слабое место и определяет, где модель уместна.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Модель</th>
@@ -64,34 +64,34 @@
 </thead>
 <tbody>
 <tr>
-<td>Иерархический CA (X.509)</td>
-<td>Централизованный якорь, цепочки</td>
-<td>Публичный веб, корпоративный контур, госсектор</td>
-<td>Любой CA в truststore может выпустить сертификат на любое имя</td>
+<td data-label="Модель">Иерархический CA (X.509)</td>
+<td data-label="Как устроена">Централизованный якорь, цепочки</td>
+<td data-label="Где уместна">Публичный веб, корпоративный контур, госсектор</td>
+<td data-label="Слабое место">Любой CA в truststore может выпустить сертификат на любое имя</td>
 </tr>
 <tr>
-<td>Web of Trust (PGP/GnuPG)</td>
-<td>Пользователи подписывают ключи друг друга, доверие транзитивно с весами</td>
-<td>Сообщества разработчиков, подпись релизов, почта энтузиастов</td>
-<td>Не масштабируется, отзыв работает плохо, UX кошмарный</td>
+<td data-label="Модель">Web of Trust (PGP/GnuPG)</td>
+<td data-label="Как устроена">Пользователи подписывают ключи друг друга, доверие транзитивно с весами</td>
+<td data-label="Где уместна">Сообщества разработчиков, подпись релизов, почта энтузиастов</td>
+<td data-label="Слабое место">Не масштабируется, отзыв работает плохо, UX кошмарный</td>
 </tr>
 <tr>
-<td>TOFU (Trust On First Use)</td>
-<td>Первый увиденный ключ запоминается, дальше сверяется</td>
-<td>SSH <code>known_hosts</code>, Signal safety numbers</td>
-<td>Первое соединение не защищено (MITM в момент знакомства)</td>
+<td data-label="Модель">TOFU (Trust On First Use)</td>
+<td data-label="Как устроена">Первый увиденный ключ запоминается, дальше сверяется</td>
+<td data-label="Где уместна">SSH <code>known_hosts</code>, Signal safety numbers</td>
+<td data-label="Слабое место">Первое соединение не защищено (MITM в момент знакомства)</td>
 </tr>
 <tr>
-<td>Certificate pinning</td>
-<td>Клиент жёстко знает конкретный сертификат/ключ/CA</td>
-<td>Мобильные приложения банков, межсервисное взаимодействие с фиксированным контрагентом</td>
-<td>Ротация превращается в релиз приложения; при ошибке — самоблокировка</td>
+<td data-label="Модель">Certificate pinning</td>
+<td data-label="Как устроена">Клиент жёстко знает конкретный сертификат/ключ/CA</td>
+<td data-label="Где уместна">Мобильные приложения банков, межсервисное взаимодействие с фиксированным контрагентом</td>
+<td data-label="Слабое место">Ротация превращается в релиз приложения; при ошибке — самоблокировка</td>
 </tr>
 <tr>
-<td>Certificate Transparency</td>
-<td>Публичные append-only логи выпущенных сертификатов</td>
-<td>Дополнение к публичной PKI, детект мис-выпуска</td>
-<td>Детектирующая, а не превентивная мера</td>
+<td data-label="Модель">Certificate Transparency</td>
+<td data-label="Как устроена">Публичные append-only логи выпущенных сертификатов</td>
+<td data-label="Где уместна">Дополнение к публичной PKI, детект мис-выпуска</td>
+<td data-label="Слабое место">Детектирующая, а не превентивная мера</td>
 </tr>
 </tbody>
 </table>
@@ -107,7 +107,7 @@
 <p>X.509 — стандарт формата сертификата, который описывает его как ASN.1-структуру с фиксированными полями и расширяемым списком расширений; почти всё, что в PKI может пойти не так, происходит из того, как проверяющая сторона эти поля читает. Разработчику, который пишет валидацию или разбирает аварию, нужно понимать не только «что там лежит», но и какие поля проверяются обязательно, какие служат подсказками, а какие молча игнорируются. Дальше разберём структуру сертификата, расширения, которые действительно влияют на решение, последствия игнорирования критичных флагов, построение пути, алгоритм валидации по RFC 5280 и, наконец, зоопарк кодировок и контейнеров.</p>
 <h3 id="21-структура-сертификата">2.1 Структура сертификата</h3>
 <p>Сертификат X.509 v3 описан в RFC 5280 как ASN.1-структура <code>Certificate ::= SEQUENCE { tbsCertificate, signatureAlgorithm, signatureValue }</code>. Подписывается ровно <code>tbsCertificate</code> («to be signed») в его DER-кодировке, и из этого вытекает важное следствие: нельзя не только изменить хотя бы байт в теле, но и пересобрать DER «эквивалентно, но иначе», потому что подпись считается по конкретным байтам. В таблице ниже перечислены поля <code>tbsCertificate</code>; самое полезное в ней — правый столбец, где собрано, на что смотреть при проверке.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Поле</th>
@@ -117,49 +117,49 @@
 </thead>
 <tbody>
 <tr>
-<td><code>version</code></td>
-<td>v1/v2/v3 (значение 0/1/2)</td>
-<td>v3 обязателен, если есть расширения</td>
+<td data-label="Поле"><code>version</code></td>
+<td data-label="Что в нём">v1/v2/v3 (значение 0/1/2)</td>
+<td data-label="На что смотреть">v3 обязателен, если есть расширения</td>
 </tr>
 <tr>
-<td><code>serialNumber</code></td>
-<td>Целое до 20 байт</td>
-<td>Уникален в пределах issuer; должен содержать ≥64 бит энтропии (защита от коллизионных атак на хеш)</td>
+<td data-label="Поле"><code>serialNumber</code></td>
+<td data-label="Что в нём">Целое до 20 байт</td>
+<td data-label="На что смотреть">Уникален в пределах issuer; должен содержать ≥64 бит энтропии (защита от коллизионных атак на хеш)</td>
 </tr>
 <tr>
-<td><code>signature</code></td>
-<td>OID алгоритма подписи</td>
-<td>Обязан совпадать с внешним <code>signatureAlgorithm</code>, иначе — атака на подмену</td>
+<td data-label="Поле"><code>signature</code></td>
+<td data-label="Что в нём">OID алгоритма подписи</td>
+<td data-label="На что смотреть">Обязан совпадать с внешним <code>signatureAlgorithm</code>, иначе — атака на подмену</td>
 </tr>
 <tr>
-<td><code>issuer</code></td>
-<td>DN издателя</td>
-<td>Байт-в-байт совпадает с <code>subject</code> издающего сертификата</td>
+<td data-label="Поле"><code>issuer</code></td>
+<td data-label="Что в нём">DN издателя</td>
+<td data-label="На что смотреть">Байт-в-байт совпадает с <code>subject</code> издающего сертификата</td>
 </tr>
 <tr>
-<td><code>validity</code></td>
-<td>notBefore / notAfter</td>
-<td>UTCTime до 2049, GeneralizedTime после</td>
+<td data-label="Поле"><code>validity</code></td>
+<td data-label="Что в нём">notBefore / notAfter</td>
+<td data-label="На что смотреть">UTCTime до 2049, GeneralizedTime после</td>
 </tr>
 <tr>
-<td><code>subject</code></td>
-<td>DN субъекта</td>
-<td>Может быть пустым, если есть критичный SAN</td>
+<td data-label="Поле"><code>subject</code></td>
+<td data-label="Что в нём">DN субъекта</td>
+<td data-label="На что смотреть">Может быть пустым, если есть критичный SAN</td>
 </tr>
 <tr>
-<td><code>subjectPublicKeyInfo</code></td>
-<td>OID алгоритма + сам ключ (BIT STRING)</td>
-<td>То, ради чего всё</td>
+<td data-label="Поле"><code>subjectPublicKeyInfo</code></td>
+<td data-label="Что в нём">OID алгоритма + сам ключ (BIT STRING)</td>
+<td data-label="На что смотреть">То, ради чего всё</td>
 </tr>
 <tr>
-<td><code>issuerUniqueID</code> / <code>subjectUniqueID</code></td>
-<td>v2-реликт</td>
-<td>Не использовать</td>
+<td data-label="Поле"><code>issuerUniqueID</code> / <code>subjectUniqueID</code></td>
+<td data-label="Что в нём">v2-реликт</td>
+<td data-label="На что смотреть">Не использовать</td>
 </tr>
 <tr>
-<td><code>extensions</code></td>
-<td>Список расширений v3</td>
-<td>Самое интересное</td>
+<td data-label="Поле"><code>extensions</code></td>
+<td data-label="Что в нём">Список расширений v3</td>
+<td data-label="На что смотреть">Самое интересное</td>
 </tr>
 </tbody>
 </table>
@@ -212,7 +212,7 @@
 </ol>
 <p>После цепочки идут проверки, которые зависят от приложения: EKU должен соответствовать задаче, а SAN — имени хоста, причём для TLS это отдельный шаг, который выполняется <strong>после</strong> валидации пути, по RFC 6125.</p>
 <p>Когда какая-то из этих проверок не проходит, в логах появляется сообщение, которое редко называет истинную причину прямо. В таблице ниже собраны типовые ошибки валидации в проде и то, что за каждой из них обычно стоит.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Сообщение</th>
@@ -221,36 +221,36 @@
 </thead>
 <tbody>
 <tr>
-<td><code>unable to get local issuer certificate</code></td>
-<td>Не хватает intermediate (на сервере или в truststore)</td>
+<td data-label="Сообщение"><code>unable to get local issuer certificate</code></td>
+<td data-label="Реальная причина">Не хватает intermediate (на сервере или в truststore)</td>
 </tr>
 <tr>
-<td><code>unable to verify the first certificate</code></td>
-<td>То же, но цепочка обрывается на первом звене</td>
+<td data-label="Сообщение"><code>unable to verify the first certificate</code></td>
+<td data-label="Реальная причина">То же, но цепочка обрывается на первом звене</td>
 </tr>
 <tr>
-<td><code>self signed certificate in certificate chain</code></td>
-<td>Корень не в truststore</td>
+<td data-label="Сообщение"><code>self signed certificate in certificate chain</code></td>
+<td data-label="Реальная причина">Корень не в truststore</td>
 </tr>
 <tr>
-<td><code>certificate has expired</code></td>
-<td>Истёк leaf или, реже, intermediate</td>
+<td data-label="Сообщение"><code>certificate has expired</code></td>
+<td data-label="Реальная причина">Истёк leaf или, реже, intermediate</td>
 </tr>
 <tr>
-<td><code>PKIX path building failed</code> (Java)</td>
-<td>Обобщённое: нет пути до якоря</td>
+<td data-label="Сообщение"><code>PKIX path building failed</code> (Java)</td>
+<td data-label="Реальная причина">Обобщённое: нет пути до якоря</td>
 </tr>
 <tr>
-<td><code>No subject alternative names present</code></td>
-<td>Сертификат без SAN, проверяется по IP/hostname</td>
+<td data-label="Сообщение"><code>No subject alternative names present</code></td>
+<td data-label="Реальная причина">Сертификат без SAN, проверяется по IP/hostname</td>
 </tr>
 <tr>
-<td><code>No name matching X found</code></td>
-<td>SAN есть, но не содержит нужного имени</td>
+<td data-label="Сообщение"><code>No name matching X found</code></td>
+<td data-label="Реальная причина">SAN есть, но не содержит нужного имени</td>
 </tr>
 <tr>
-<td><code>certificate signature failure</code></td>
-<td>Подмена или несовпадение алгоритма</td>
+<td data-label="Сообщение"><code>certificate signature failure</code></td>
+<td data-label="Реальная причина">Подмена или несовпадение алгоритма</td>
 </tr>
 </tbody>
 </table>
@@ -259,7 +259,7 @@
 <p><strong>DER</strong> (Distinguished Encoding Rules) — бинарная каноническая ASN.1-кодировка. Каноническая она в том смысле, что для данной структуры существует ровно одно корректное представление в байтах, и для подписи это критично. <strong>BER</strong> — её более свободный предок, и для подписанных структур он не годится.</p>
 <p><strong>PEM</strong> — это Base64 от DER с обрамлением <code>-----BEGIN X-----</code> / <code>-----END X-----</code>. Раз он текстовый, его можно скопировать в YAML и склеивать конкатенацией: цепочка записывается как несколько PEM-блоков подряд в одном файле, в порядке leaf, а затем intermediate снизу вверх.</p>
 <p>Таблица ниже помогает опознать файл по расширению; главное в ней — средний столбец, потому что расширение лишь подсказывает, что внутри, а окончательно это видно только по заголовку или по выводу команды из правого столбца.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Формат / расширение</th>
@@ -269,49 +269,49 @@
 </thead>
 <tbody>
 <tr>
-<td><code>.crt</code>, <code>.cer</code>, <code>.der</code></td>
-<td>Один сертификат, DER или PEM</td>
-<td><code>openssl x509 -in f -inform der -text -noout</code>, <code>keytool -printcert -file f</code></td>
+<td data-label="Формат / расширение"><code>.crt</code>, <code>.cer</code>, <code>.der</code></td>
+<td data-label="Что внутри">Один сертификат, DER или PEM</td>
+<td data-label="Чем открыть"><code>openssl x509 -in f -inform der -text -noout</code>, <code>keytool -printcert -file f</code></td>
 </tr>
 <tr>
-<td><code>.pem</code></td>
-<td>Что угодно в Base64: сертификат, ключ, цепочка, CSR</td>
-<td>Смотреть на заголовок BEGIN</td>
+<td data-label="Формат / расширение"><code>.pem</code></td>
+<td data-label="Что внутри">Что угодно в Base64: сертификат, ключ, цепочка, CSR</td>
+<td data-label="Чем открыть">Смотреть на заголовок BEGIN</td>
 </tr>
 <tr>
-<td><code>.key</code></td>
-<td>Приватный ключ (PKCS#1 <code>BEGIN RSA PRIVATE KEY</code> или PKCS#8 <code>BEGIN PRIVATE KEY</code> / <code>BEGIN ENCRYPTED PRIVATE KEY</code>)</td>
-<td><code>openssl pkey -in f -text -noout</code></td>
+<td data-label="Формат / расширение"><code>.key</code></td>
+<td data-label="Что внутри">Приватный ключ (PKCS#1 <code>BEGIN RSA PRIVATE KEY</code> или PKCS#8 <code>BEGIN PRIVATE KEY</code> / <code>BEGIN ENCRYPTED PRIVATE KEY</code>)</td>
+<td data-label="Чем открыть"><code>openssl pkey -in f -text -noout</code></td>
 </tr>
 <tr>
-<td><code>.csr</code>, <code>.req</code></td>
-<td>PKCS#10 — запрос на сертификат</td>
-<td><code>openssl req -in f -text -noout</code></td>
+<td data-label="Формат / расширение"><code>.csr</code>, <code>.req</code></td>
+<td data-label="Что внутри">PKCS#10 — запрос на сертификат</td>
+<td data-label="Чем открыть"><code>openssl req -in f -text -noout</code></td>
 </tr>
 <tr>
-<td><code>.p7b</code>, <code>.p7c</code></td>
-<td>PKCS#7/CMS без содержимого — набор сертификатов и CRL</td>
-<td><code>openssl pkcs7 -in f -print_certs</code></td>
+<td data-label="Формат / расширение"><code>.p7b</code>, <code>.p7c</code></td>
+<td data-label="Что внутри">PKCS#7/CMS без содержимого — набор сертификатов и CRL</td>
+<td data-label="Чем открыть"><code>openssl pkcs7 -in f -print_certs</code></td>
 </tr>
 <tr>
-<td><code>.p7s</code></td>
-<td>PKCS#7/CMS SignedData — подпись (attached или detached)</td>
-<td><code>openssl cms -verify</code> / <code>openssl asn1parse</code></td>
+<td data-label="Формат / расширение"><code>.p7s</code></td>
+<td data-label="Что внутри">PKCS#7/CMS SignedData — подпись (attached или detached)</td>
+<td data-label="Чем открыть"><code>openssl cms -verify</code> / <code>openssl asn1parse</code></td>
 </tr>
 <tr>
-<td><code>.p12</code>, <code>.pfx</code></td>
-<td>PKCS#12 — ключ + цепочка, под паролем</td>
-<td><code>openssl pkcs12 -info -in f</code>, <code>keytool -list -keystore f -storetype PKCS12</code></td>
+<td data-label="Формат / расширение"><code>.p12</code>, <code>.pfx</code></td>
+<td data-label="Что внутри">PKCS#12 — ключ + цепочка, под паролем</td>
+<td data-label="Чем открыть"><code>openssl pkcs12 -info -in f</code>, <code>keytool -list -keystore f -storetype PKCS12</code></td>
 </tr>
 <tr>
-<td><code>.jks</code></td>
-<td>Java KeyStore, проприетарный формат, legacy</td>
-<td><code>keytool -list -keystore f</code></td>
+<td data-label="Формат / расширение"><code>.jks</code></td>
+<td data-label="Что внутри">Java KeyStore, проприетарный формат, legacy</td>
+<td data-label="Чем открыть"><code>keytool -list -keystore f</code></td>
 </tr>
 <tr>
-<td><code>.crl</code></td>
-<td>Список отозванных</td>
-<td><code>openssl crl -in f -text -noout</code></td>
+<td data-label="Формат / расширение"><code>.crl</code></td>
+<td data-label="Что внутри">Список отозванных</td>
+<td data-label="Чем открыть"><code>openssl crl -in f -text -noout</code></td>
 </tr>
 </tbody>
 </table>
@@ -353,7 +353,7 @@ openssl x509 -in leaf.pem -pubkey -noout <span class="p">|</span> openssl sha256
 <h3 id="27-побайтовый-разбор-asn1-и-der">2.7 Побайтовый разбор ASN.1 и DER</h3>
 <p>Разбирать сертификат руками приходится редко, но когда приходится, то обычно потому, что «библиотека не читает, а openssl читает» или наоборот, и тогда без понимания кодировки не обойтись. DER записывает любую структуру как последовательность троек <strong>TLV: Tag (1+ байт) — Length (1+ байт) — Value</strong>. Ниже разберём, как кодируются теги и длина, как опознать сертификат в дампе, почему подписанные структуры требуют именно DER и откуда берутся проблемы с серийным номером.</p>
 <p>Тег кодирует класс (universal/application/context-specific/private), признак «составной» (constructed) и номер типа. В таблице перечислены универсальные теги, которые в сертификате встречаются постоянно; запоминать её целиком не нужно, но <code>30</code>, <code>06</code> и <code>04</code> стоит узнавать с первого взгляда.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тег (hex)</th>
@@ -363,59 +363,59 @@ openssl x509 -in leaf.pem -pubkey -noout <span class="p">|</span> openssl sha256
 </thead>
 <tbody>
 <tr>
-<td><code>02</code></td>
-<td>INTEGER</td>
-<td><code>version</code>, <code>serialNumber</code>, модуль и экспонента RSA</td>
+<td data-label="Тег (hex)"><code>02</code></td>
+<td data-label="Тип ASN.1">INTEGER</td>
+<td data-label="Где встречается"><code>version</code>, <code>serialNumber</code>, модуль и экспонента RSA</td>
 </tr>
 <tr>
-<td><code>03</code></td>
-<td>BIT STRING</td>
-<td><code>subjectPublicKey</code>, <code>signatureValue</code>, <code>keyUsage</code></td>
+<td data-label="Тег (hex)"><code>03</code></td>
+<td data-label="Тип ASN.1">BIT STRING</td>
+<td data-label="Где встречается"><code>subjectPublicKey</code>, <code>signatureValue</code>, <code>keyUsage</code></td>
 </tr>
 <tr>
-<td><code>04</code></td>
-<td>OCTET STRING</td>
-<td><code>extnValue</code> (внутри — ещё один DER)</td>
+<td data-label="Тег (hex)"><code>04</code></td>
+<td data-label="Тип ASN.1">OCTET STRING</td>
+<td data-label="Где встречается"><code>extnValue</code> (внутри — ещё один DER)</td>
 </tr>
 <tr>
-<td><code>05</code></td>
-<td>NULL</td>
-<td>параметры алгоритма для RSA-PKCS#1</td>
+<td data-label="Тег (hex)"><code>05</code></td>
+<td data-label="Тип ASN.1">NULL</td>
+<td data-label="Где встречается">параметры алгоритма для RSA-PKCS#1</td>
 </tr>
 <tr>
-<td><code>06</code></td>
-<td>OBJECT IDENTIFIER</td>
-<td>все OID: алгоритмы, расширения, атрибуты DN</td>
+<td data-label="Тег (hex)"><code>06</code></td>
+<td data-label="Тип ASN.1">OBJECT IDENTIFIER</td>
+<td data-label="Где встречается">все OID: алгоритмы, расширения, атрибуты DN</td>
 </tr>
 <tr>
-<td><code>0C</code></td>
-<td>UTF8String</td>
-<td>современные строки DN</td>
+<td data-label="Тег (hex)"><code>0C</code></td>
+<td data-label="Тип ASN.1">UTF8String</td>
+<td data-label="Где встречается">современные строки DN</td>
 </tr>
 <tr>
-<td><code>13</code></td>
-<td>PrintableString</td>
-<td>старые строки DN (<code>C</code>, часто <code>CN</code>)</td>
+<td data-label="Тег (hex)"><code>13</code></td>
+<td data-label="Тип ASN.1">PrintableString</td>
+<td data-label="Где встречается">старые строки DN (<code>C</code>, часто <code>CN</code>)</td>
 </tr>
 <tr>
-<td><code>17</code> / <code>18</code></td>
-<td>UTCTime / GeneralizedTime</td>
-<td><code>notBefore</code>, <code>notAfter</code></td>
+<td data-label="Тег (hex)"><code>17</code> / <code>18</code></td>
+<td data-label="Тип ASN.1">UTCTime / GeneralizedTime</td>
+<td data-label="Где встречается"><code>notBefore</code>, <code>notAfter</code></td>
 </tr>
 <tr>
-<td><code>30</code></td>
-<td>SEQUENCE (constructed)</td>
-<td>почти всё</td>
+<td data-label="Тег (hex)"><code>30</code></td>
+<td data-label="Тип ASN.1">SEQUENCE (constructed)</td>
+<td data-label="Где встречается">почти всё</td>
 </tr>
 <tr>
-<td><code>31</code></td>
-<td>SET (constructed)</td>
-<td><code>RelativeDistinguishedName</code>, <code>signerInfos</code></td>
+<td data-label="Тег (hex)"><code>31</code></td>
+<td data-label="Тип ASN.1">SET (constructed)</td>
+<td data-label="Где встречается"><code>RelativeDistinguishedName</code>, <code>signerInfos</code></td>
 </tr>
 <tr>
-<td><code>A0</code>…<code>A3</code></td>
-<td>context-specific constructed <code>[0]</code>…<code>[3]</code></td>
-<td><code>version</code>, <code>extensions</code>, <code>certificates</code> в CMS</td>
+<td data-label="Тег (hex)"><code>A0</code>…<code>A3</code></td>
+<td data-label="Тип ASN.1">context-specific constructed <code>[0]</code>…<code>[3]</code></td>
+<td data-label="Где встречается"><code>version</code>, <code>extensions</code>, <code>certificates</code> в CMS</td>
 </tr>
 </tbody>
 </table>
@@ -900,7 +900,7 @@ vault write pki_int/issue/internal-service <span class="nv">common_name</span><s
 <p>Ответ Vault содержит <code>certificate</code>, <code>issuing_ca</code>, <code>ca_chain</code> и <code>private_key</code>, и на последнее поле стоит обратить внимание: здесь <strong>ключ генерирует Vault</strong> и отдаёт его по сети. Для внутреннего mTLS с недельным TTL это приемлемый компромисс, а для сертификата подписи документов — категорически нет, потому что там нужен CSR-flow (<code>pki_int/sign/...</code>) и ключ, который не покидает носитель.</p>
 <h3 id="310-проверка-отзыва-в-jvm">3.10 Проверка отзыва в JVM</h3>
 <p>Проверка отзыва в JVM — место, где ожидания расходятся с реальностью чаще всего: разработчик уверен, что Java проверяет отзыв «как браузер», а на деле по умолчанию не проверяется почти ничего. В таблице ниже по контекстам собрано, что включено по умолчанию и каким свойством включается остальное; смотрите на средний столбец, потому что слово «выключено» там встречается в четырёх строках из шести, а ещё в одной включённый механизм без проверки отзыва ни на что не влияет.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Контекст</th>
@@ -910,34 +910,34 @@ vault write pki_int/issue/internal-service <span class="nv">common_name</span><s
 </thead>
 <tbody>
 <tr>
-<td>JSSE / <code>TrustManagerFactory.init(KeyStore)</code> (то есть обычный HTTPS-клиент)</td>
-<td><strong>выключена</strong></td>
-<td><code>-Dcom.sun.net.ssl.checkRevocation=true</code></td>
+<td data-label="Контекст">JSSE / <code>TrustManagerFactory.init(KeyStore)</code> (то есть обычный HTTPS-клиент)</td>
+<td data-label="Проверка отзыва по умолчанию"><strong>выключена</strong></td>
+<td data-label="Чем включается"><code>-Dcom.sun.net.ssl.checkRevocation=true</code></td>
 </tr>
 <tr>
-<td><code>PKIXParameters</code> / <code>PKIXBuilderParameters</code>, созданные вручную</td>
-<td><code>isRevocationEnabled()</code> = <strong>true</strong></td>
-<td>ничего, но нужны источники</td>
+<td data-label="Контекст"><code>PKIXParameters</code> / <code>PKIXBuilderParameters</code>, созданные вручную</td>
+<td data-label="Проверка отзыва по умолчанию"><code>isRevocationEnabled()</code> = <strong>true</strong></td>
+<td data-label="Чем включается">ничего, но нужны источники</td>
 </tr>
 <tr>
-<td>Получение CRL по URL из <code>cRLDistributionPoints</code></td>
-<td><strong>выключено</strong></td>
-<td><code>-Dcom.sun.security.enableCRLDP=true</code></td>
+<td data-label="Контекст">Получение CRL по URL из <code>cRLDistributionPoints</code></td>
+<td data-label="Проверка отзыва по умолчанию"><strong>выключено</strong></td>
+<td data-label="Чем включается"><code>-Dcom.sun.security.enableCRLDP=true</code></td>
 </tr>
 <tr>
-<td>Поход в OCSP по URL из AIA</td>
-<td><strong>выключено</strong></td>
-<td>свойство безопасности <code>ocsp.enable=true</code></td>
+<td data-label="Контекст">Поход в OCSP по URL из AIA</td>
+<td data-label="Проверка отзыва по умолчанию"><strong>выключено</strong></td>
+<td data-label="Чем включается">свойство безопасности <code>ocsp.enable=true</code></td>
 </tr>
 <tr>
-<td>Догрузка издателя по AIA <code>caIssuers</code></td>
-<td><strong>выключено</strong></td>
-<td><code>-Dcom.sun.security.enableAIAcaIssuers=true</code></td>
+<td data-label="Контекст">Догрузка издателя по AIA <code>caIssuers</code></td>
+<td data-label="Проверка отзыва по умолчанию"><strong>выключено</strong></td>
+<td data-label="Чем включается"><code>-Dcom.sun.security.enableAIAcaIssuers=true</code></td>
 </tr>
 <tr>
-<td>OCSP stapling на клиенте</td>
-<td>запрос staple <strong>включён</strong> (<code>jdk.tls.client.enableStatusRequestExtension</code> = true), но присланный ответ учитывается только при включённой проверке отзыва</td>
-<td><code>-Dcom.sun.net.ssl.checkRevocation=true</code> или <code>setRevocationEnabled(true)</code> в своих <code>PKIXBuilderParameters</code></td>
+<td data-label="Контекст">OCSP stapling на клиенте</td>
+<td data-label="Проверка отзыва по умолчанию">запрос staple <strong>включён</strong> (<code>jdk.tls.client.enableStatusRequestExtension</code> = true), но присланный ответ учитывается только при включённой проверке отзыва</td>
+<td data-label="Чем включается"><code>-Dcom.sun.net.ssl.checkRevocation=true</code> или <code>setRevocationEnabled(true)</code> в своих <code>PKIXBuilderParameters</code></td>
 </tr>
 </tbody>
 </table>
@@ -967,7 +967,7 @@ vault write pki_int/issue/internal-service <span class="nv">common_name</span><s
 </blockquote>
 <h3 id="311-средства-построения-внутреннего-уц">3.11 Средства построения внутреннего УЦ</h3>
 <p>Написать свой CA на Bouncy Castle можно за день, а вот эксплуатировать его придётся всегда: отзыв, публикация CRL, ротация, аудит, разграничение доступа, бэкап ключа. Поэтому внутренний удостоверяющий центр почти всегда собирают из готового продукта, и вопрос только в том, из какого. В таблице ниже сравниваются шесть вариантов; для выбора важнее всего правый столбец, где названо, чем за каждый из них придётся платить.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вариант</th>
@@ -978,40 +978,40 @@ vault write pki_int/issue/internal-service <span class="nv">common_name</span><s
 </thead>
 <tbody>
 <tr>
-<td><strong>HashiCorp Vault PKI</strong></td>
-<td>Secrets engine, API-first</td>
-<td>Уже есть в контуре, если Vault используется для секретов; короткие TTL, roles с <code>allowed_domains</code>, встроенные CRL и OCSP, issuer для cert-manager</td>
-<td>Vault становится критичным по доступности для всего mTLS; в OSS-версии ключ CA хранится в Vault (HSM — только Enterprise Managed Keys)</td>
+<td data-label="Вариант"><strong>HashiCorp Vault PKI</strong></td>
+<td data-label="Модель">Secrets engine, API-first</td>
+<td data-label="Сильная сторона">Уже есть в контуре, если Vault используется для секретов; короткие TTL, roles с <code>allowed_domains</code>, встроенные CRL и OCSP, issuer для cert-manager</td>
+<td data-label="Чем платим">Vault становится критичным по доступности для всего mTLS; в OSS-версии ключ CA хранится в Vault (HSM — только Enterprise Managed Keys)</td>
 </tr>
 <tr>
-<td><strong>step-ca (Smallstep)</strong></td>
-<td>Отдельный CA-демон</td>
-<td>Встроенный ACME-сервер — внутренние сервисы обновляются тем же протоколом, что и Let's Encrypt; SSH-сертификаты; лёгкий, ставится за час</td>
-<td>Один узел с общей БД для HA; экосистема и enterprise-функции беднее; масштаб — тысячи выпусков в день, не десятки тысяч</td>
+<td data-label="Вариант"><strong>step-ca (Smallstep)</strong></td>
+<td data-label="Модель">Отдельный CA-демон</td>
+<td data-label="Сильная сторона">Встроенный ACME-сервер — внутренние сервисы обновляются тем же протоколом, что и Let's Encrypt; SSH-сертификаты; лёгкий, ставится за час</td>
+<td data-label="Чем платим">Один узел с общей БД для HA; экосистема и enterprise-функции беднее; масштаб — тысячи выпусков в день, не десятки тысяч</td>
 </tr>
 <tr>
-<td><strong>cfssl (Cloudflare)</strong></td>
-<td>Библиотека + HTTP API</td>
-<td>Простой инструмент для генерации и подписи, хорош как «скриптовый» CA и для bootstrap кластеров</td>
-<td>Это toolkit, а не платформа: нет UI, слабая история жизненного цикла, отзыв и аудит делать самим</td>
+<td data-label="Вариант"><strong>cfssl (Cloudflare)</strong></td>
+<td data-label="Модель">Библиотека + HTTP API</td>
+<td data-label="Сильная сторона">Простой инструмент для генерации и подписи, хорош как «скриптовый» CA и для bootstrap кластеров</td>
+<td data-label="Чем платим">Это toolkit, а не платформа: нет UI, слабая история жизненного цикла, отзыв и аудит делать самим</td>
 </tr>
 <tr>
-<td><strong>Microsoft AD CS</strong></td>
-<td>Часть Windows-домена</td>
-<td>Autoenrollment через GPO — рабочие станции и Windows-серверы получают сертификаты сами; интеграция с AD как RA бесплатно</td>
-<td>Нет ACME из коробки; плохо ложится на Kubernetes и Linux; масштабирование вертикальное</td>
+<td data-label="Вариант"><strong>Microsoft AD CS</strong></td>
+<td data-label="Модель">Часть Windows-домена</td>
+<td data-label="Сильная сторона">Autoenrollment через GPO — рабочие станции и Windows-серверы получают сертификаты сами; интеграция с AD как RA бесплатно</td>
+<td data-label="Чем платим">Нет ACME из коробки; плохо ложится на Kubernetes и Linux; масштабирование вертикальное</td>
 </tr>
 <tr>
-<td><strong>EJBCA</strong></td>
-<td>Полноценная PKI-платформа</td>
-<td>Широкий набор протоколов (CMP, SCEP, EST, ACME), многоуровневые иерархии, сертификации — то, что требуют в регулируемых отраслях</td>
-<td>Тяжёлый: Java EE-приложение, своя БД, ощутимый порог входа и стоимость Enterprise</td>
+<td data-label="Вариант"><strong>EJBCA</strong></td>
+<td data-label="Модель">Полноценная PKI-платформа</td>
+<td data-label="Сильная сторона">Широкий набор протоколов (CMP, SCEP, EST, ACME), многоуровневые иерархии, сертификации — то, что требуют в регулируемых отраслях</td>
+<td data-label="Чем платим">Тяжёлый: Java EE-приложение, своя БД, ощутимый порог входа и стоимость Enterprise</td>
 </tr>
 <tr>
-<td><strong>Облачный CA</strong> (AWS Private CA, GCP CAS)</td>
-<td>Управляемый сервис</td>
-<td>Ключ в управляемом HSM, аудит и HA — заботы провайдера</td>
-<td>Ежемесячная плата за сам CA плюс за выпуск; зависимость от облака; в российском контуре обычно неприменимо</td>
+<td data-label="Вариант"><strong>Облачный CA</strong> (AWS Private CA, GCP CAS)</td>
+<td data-label="Модель">Управляемый сервис</td>
+<td data-label="Сильная сторона">Ключ в управляемом HSM, аудит и HA — заботы провайдера</td>
+<td data-label="Чем платим">Ежемесячная плата за сам CA плюс за выпуск; зависимость от облака; в российском контуре обычно неприменимо</td>
 </tr>
 </tbody>
 </table>
@@ -1031,7 +1031,7 @@ vault write pki_int/intermediate/set-signed <span class="nv">certificate</span><
 
 <h3 id="312-хранение-приватного-ключа">3.12 Хранение приватного ключа</h3>
 <p>Место хранения приватного ключа определяет, кто может его извлечь, и тем самым — чего стоит подпись или TLS-сессия, сделанная этим ключом. Вариантов семь, от файла на диске пода до токена в руках пользователя, и они различаются не только безопасностью, но и тем, можно ли вообще автоматизировать работу с ключом. В таблице важнее всего второй столбец: именно ответ на вопрос «кто может извлечь ключ» решает, годится ли вариант для подписи с юридическим весом.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Место хранения</th>
@@ -1042,46 +1042,46 @@ vault write pki_int/intermediate/set-signed <span class="nv">certificate</span><
 </thead>
 <tbody>
 <tr>
-<td>Файл на диске пода (<code>.p12</code>, PEM)</td>
-<td>Любой с доступом к ФС или к дампу памяти</td>
-<td>Короткоживущие сертификаты mTLS, выпущенные автоматически</td>
-<td>Ключ утекает вместе с любым RCE или ошибочно смонтированным volume</td>
+<td data-label="Место хранения">Файл на диске пода (<code>.p12</code>, PEM)</td>
+<td data-label="Кто может извлечь ключ">Любой с доступом к ФС или к дампу памяти</td>
+<td data-label="Когда оправдано">Короткоживущие сертификаты mTLS, выпущенные автоматически</td>
+<td data-label="Чем платим">Ключ утекает вместе с любым RCE или ошибочно смонтированным volume</td>
 </tr>
 <tr>
-<td>Kubernetes Secret</td>
-<td>Любой с <code>get secrets</code> в namespace, и etcd-админ</td>
-<td>То же, плюс управление через cert-manager</td>
-<td>Secret по умолчанию <strong>не шифруется</strong> в etcd без <code>EncryptionConfiguration</code> (глава 47)</td>
+<td data-label="Место хранения">Kubernetes Secret</td>
+<td data-label="Кто может извлечь ключ">Любой с <code>get secrets</code> в namespace, и etcd-админ</td>
+<td data-label="Когда оправдано">То же, плюс управление через cert-manager</td>
+<td data-label="Чем платим">Secret по умолчанию <strong>не шифруется</strong> в etcd без <code>EncryptionConfiguration</code> (глава 47)</td>
 </tr>
 <tr>
-<td>Vault + выдача при старте</td>
-<td>Vault-оператор</td>
-<td>Сервисы, которым нужен ключ в памяти</td>
-<td>Ключ всё равно оказывается в куче приложения</td>
+<td data-label="Место хранения">Vault + выдача при старте</td>
+<td data-label="Кто может извлечь ключ">Vault-оператор</td>
+<td data-label="Когда оправдано">Сервисы, которым нужен ключ в памяти</td>
+<td data-label="Чем платим">Ключ всё равно оказывается в куче приложения</td>
 </tr>
 <tr>
-<td>Vault Transit / KMS (подпись как сервис)</td>
-<td>Никто: ключ не покидает сервис</td>
-<td>Подпись артефактов, токенов, внутренних документов</td>
-<td>Сетевой вызов на каждую подпись; лимиты и латентность</td>
+<td data-label="Место хранения">Vault Transit / KMS (подпись как сервис)</td>
+<td data-label="Кто может извлечь ключ">Никто: ключ не покидает сервис</td>
+<td data-label="Когда оправдано">Подпись артефактов, токенов, внутренних документов</td>
+<td data-label="Чем платим">Сетевой вызов на каждую подпись; лимиты и латентность</td>
 </tr>
 <tr>
-<td>Облачный KMS (AWS KMS, GCP KMS)</td>
-<td>Никто, при корректных политиках</td>
-<td>То же плюс аудит</td>
-<td>Платно за операцию; ограниченный набор алгоритмов; нет ГОСТ</td>
+<td data-label="Место хранения">Облачный KMS (AWS KMS, GCP KMS)</td>
+<td data-label="Кто может извлечь ключ">Никто, при корректных политиках</td>
+<td data-label="Когда оправдано">То же плюс аудит</td>
+<td data-label="Чем платим">Платно за операцию; ограниченный набор алгоритмов; нет ГОСТ</td>
 </tr>
 <tr>
-<td>Сетевой HSM (PKCS#11)</td>
-<td>Никто (FIPS 140-2/3 L3 — физически неизвлекаем)</td>
-<td>УЦ, сервис подписи КЭП, ключи с юридическим весом</td>
-<td>Дорого, отдельная эксплуатация, ограниченный TPS</td>
+<td data-label="Место хранения">Сетевой HSM (PKCS#11)</td>
+<td data-label="Кто может извлечь ключ">Никто (FIPS 140-2/3 L3 — физически неизвлекаем)</td>
+<td data-label="Когда оправдано">УЦ, сервис подписи КЭП, ключи с юридическим весом</td>
+<td data-label="Чем платим">Дорого, отдельная эксплуатация, ограниченный TPS</td>
 </tr>
 <tr>
-<td>Токен у пользователя (Рутокен/JaCarta)</td>
-<td>Никто, включая владельца</td>
-<td>Личная КЭП физлица</td>
-<td>Привязка к рабочему месту, невозможность автоматизации</td>
+<td data-label="Место хранения">Токен у пользователя (Рутокен/JaCarta)</td>
+<td data-label="Кто может извлечь ключ">Никто, включая владельца</td>
+<td data-label="Когда оправдано">Личная КЭП физлица</td>
+<td data-label="Чем платим">Привязка к рабочему месту, невозможность автоматизации</td>
 </tr>
 </tbody>
 </table>
@@ -1123,7 +1123,7 @@ vault write pki_int/intermediate/set-signed <span class="nv">certificate</span><
 <p>В Java с сертификатами работают через несколько слоёв API: <code>KeyStore</code> хранит ключи и сертификаты, <code>CertificateFactory</code> их разбирает, <code>CertPathBuilder</code> и <code>CertPathValidator</code> строят и проверяют цепочку, а <code>TrustManager</code> и <code>KeyManager</code> связывают всё это с TLS. Ошибки здесь почти всегда одни и те же — пустой или не тот truststore, отключённая проверка, TrustAll, скопированный из тестового контура, — и проявляются они только в проде. Ниже пройдём по этим слоям снизу вверх, затем посмотрим на hostname verification, SSL Bundles в Spring Boot, отладку TLS и отключение алгоритмов в <code>java.security</code>.</p>
 <h3 id="41-keystore-api">4.1 KeyStore API</h3>
 <p><code>java.security.KeyStore</code> — абстракция над хранилищем ключей и сертификатов, доступ к которым идёт по псевдониму, и почти любая работа с PKI в Java начинается с загрузки такого хранилища. Записи в нём бывают трёх типов: <code>PrivateKeyEntry</code> хранит приватный ключ вместе с цепочкой сертификатов, <code>TrustedCertificateEntry</code> — только доверенный сертификат, а <code>SecretKeyEntry</code> — симметричный ключ, который JKS не поддерживает, а PKCS#12 поддерживает. Сами хранилища тоже бывают разных типов, и в таблице ниже перечислены те, что встречаются на практике; на столбец с паролями стоит посмотреть внимательно, потому что именно на нём спотыкаются при миграции с JKS.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип</th>
@@ -1133,29 +1133,29 @@ vault write pki_int/intermediate/set-signed <span class="nv">certificate</span><
 </thead>
 <tbody>
 <tr>
-<td><code>PKCS12</code></td>
-<td>Стандартный, по умолчанию с JDK 9</td>
-<td>Пароль хранилища и пароль ключа; в PKCS#12 они должны совпадать</td>
+<td data-label="Тип"><code>PKCS12</code></td>
+<td data-label="Что это">Стандартный, по умолчанию с JDK 9</td>
+<td data-label="Пароли">Пароль хранилища и пароль ключа; в PKCS#12 они должны совпадать</td>
 </tr>
 <tr>
-<td><code>JKS</code></td>
-<td>Legacy Sun-формат</td>
-<td>Раздельные пароли хранилища и ключа</td>
+<td data-label="Тип"><code>JKS</code></td>
+<td data-label="Что это">Legacy Sun-формат</td>
+<td data-label="Пароли">Раздельные пароли хранилища и ключа</td>
 </tr>
 <tr>
-<td><code>JCEKS</code></td>
-<td>Расширенный JKS (3DES для секретных ключей)</td>
-<td>Legacy</td>
+<td data-label="Тип"><code>JCEKS</code></td>
+<td data-label="Что это">Расширенный JKS (3DES для секретных ключей)</td>
+<td data-label="Пароли">Legacy</td>
 </tr>
 <tr>
-<td><code>PKCS11</code></td>
-<td>Прокси к аппаратному токену/HSM через нативную библиотеку</td>
-<td>PIN вместо пароля</td>
+<td data-label="Тип"><code>PKCS11</code></td>
+<td data-label="Что это">Прокси к аппаратному токену/HSM через нативную библиотеку</td>
+<td data-label="Пароли">PIN вместо пароля</td>
 </tr>
 <tr>
-<td><code>Windows-MY</code> / <code>Windows-ROOT</code></td>
-<td>Системные хранилища Windows (провайдер SunMSCAPI)</td>
-<td>—</td>
+<td data-label="Тип"><code>Windows-MY</code> / <code>Windows-ROOT</code></td>
+<td data-label="Что это">Системные хранилища Windows (провайдер SunMSCAPI)</td>
+<td data-label="Пароли">—</td>
 </tr>
 </tbody>
 </table>
@@ -1454,7 +1454,7 @@ keytool -printcert -sslserver api.bank.ru:443
 <li><strong><code>jdk.tls.disabledAlgorithms</code></strong> ограничивает <strong>параметры TLS</strong>: версии протокола (<code>SSLv3</code>, <code>TLSv1</code>, <code>TLSv1.1</code> давно в списке), cipher suites, размеры ключей DH/RSA и схемы подписи в handshake.</li>
 </ul>
 <p>Синтаксис ограничений богаче, чем кажется, и читать его нужно уметь; в таблице ниже разобраны конструкции, которые встречаются в значении выше, и важнее всего в ней первая строка, потому что именно из-за <code>jdkCA</code> корпоративный корень ведёт себя иначе, чем публичный.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Конструкция</th>
@@ -1463,24 +1463,24 @@ keytool -printcert -sslserver api.bank.ru:443
 </thead>
 <tbody>
 <tr>
-<td><code>SHA1 jdkCA</code></td>
-<td>запрет SHA-1 только для цепочек, ведущих к якорям <strong>из штатного <code>cacerts</code></strong> — собственный корпоративный корень под это не попадает</td>
+<td data-label="Конструкция"><code>SHA1 jdkCA</code></td>
+<td data-label="Смысл">запрет SHA-1 только для цепочек, ведущих к якорям <strong>из штатного <code>cacerts</code></strong> — собственный корпоративный корень под это не попадает</td>
 </tr>
 <tr>
-<td><code>&amp; usage TLSServer</code></td>
-<td>ограничение действует только для указанного применения (<code>TLSServer</code>, <code>TLSClient</code>, <code>SignedJAR</code>)</td>
+<td data-label="Конструкция"><code>&amp; usage TLSServer</code></td>
+<td data-label="Смысл">ограничение действует только для указанного применения (<code>TLSServer</code>, <code>TLSClient</code>, <code>SignedJAR</code>)</td>
 </tr>
 <tr>
-<td><code>denyAfter 2019-01-01</code></td>
-<td>алгоритм запрещён для подписей, сделанных <strong>после</strong> этой даты (сравнивается с временем подписи, а не с «сейчас»)</td>
+<td data-label="Конструкция"><code>denyAfter 2019-01-01</code></td>
+<td data-label="Смысл">алгоритм запрещён для подписей, сделанных <strong>после</strong> этой даты (сравнивается с временем подписи, а не с «сейчас»)</td>
 </tr>
 <tr>
-<td><code>keySize &lt; 1024</code></td>
-<td>запрет по длине ключа</td>
+<td data-label="Конструкция"><code>keySize &lt; 1024</code></td>
+<td data-label="Смысл">запрет по длине ключа</td>
 </tr>
 <tr>
-<td><code>include jdk.disabled.namedCurves</code></td>
-<td>подстановка списка запрещённых кривых</td>
+<td data-label="Конструкция"><code>include jdk.disabled.namedCurves</code></td>
+<td data-label="Смысл">подстановка списка запрещённых кривых</td>
 </tr>
 </tbody>
 </table>
@@ -1554,7 +1554,7 @@ openssl s_client -connect h:443 -servername h -CAfile corp-root.pem -verify <spa
 <h3 id="51-подпись-байтов-и-формат-подписи">5.1 Подпись байтов и формат подписи</h3>
 <p><code>Signature.getInstance("SHA256withRSA")</code> даёт вам массив байтов, и через год этот массив окажется бесполезен, потому что проверяющий не будет знать, каким алгоритмом и каким ключом подписано, кому принадлежит ключ, когда поставлена подпись и что именно подписано — весь файл или часть и в какой кодировке. Поэтому формат подписи служит контейнером, который несёт подпись <strong>вместе с метаданными</strong>, позволяющими проверить её независимо от того, кто её поставил.</p>
 <p>В минимальный набор метаданных входят идентификатор алгоритма подписи и хеша, сертификат подписанта или ссылка на него, цепочка, время подписания и описание того, что подписано. Дальше форматы расходятся в том, как всё это упаковано и что добавлено сверх минимума, и таблица ниже сводит основные форматы вместе; для выбора полезнее всего столбцы «Где применяется» и «Чем работать в Java».</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Формат</th>
@@ -1565,40 +1565,40 @@ openssl s_client -connect h:443 -servername h -CAfile corp-root.pem -verify <spa
 </thead>
 <tbody>
 <tr>
-<td>CMS / PKCS#7 SignedData</td>
-<td>RFC 5652</td>
-<td>Корпоративный документооборот, госсектор РФ, S/MIME, подпись пакетов</td>
-<td>Bouncy Castle (<code>CMSSignedData</code>), КриптоПро JCP</td>
+<td data-label="Формат">CMS / PKCS#7 SignedData</td>
+<td data-label="Стандарт">RFC 5652</td>
+<td data-label="Где применяется">Корпоративный документооборот, госсектор РФ, S/MIME, подпись пакетов</td>
+<td data-label="Чем работать в Java">Bouncy Castle (<code>CMSSignedData</code>), КриптоПро JCP</td>
 </tr>
 <tr>
-<td>CAdES (BES/T/LT/LTA)</td>
-<td>ETSI EN 319 122</td>
-<td>Юридически значимая подпись в ЕС и РФ</td>
-<td>BC (<code>cades</code>), DSS (EU), КриптоПро CAdES</td>
+<td data-label="Формат">CAdES (BES/T/LT/LTA)</td>
+<td data-label="Стандарт">ETSI EN 319 122</td>
+<td data-label="Где применяется">Юридически значимая подпись в ЕС и РФ</td>
+<td data-label="Чем работать в Java">BC (<code>cades</code>), DSS (EU), КриптоПро CAdES</td>
 </tr>
 <tr>
-<td>XMLDSig</td>
-<td>W3C Rec</td>
-<td>SOAP-сервисы, СМЭВ, банковские XML-обмены</td>
-<td>JSR-105 <code>javax.xml.crypto.dsig</code> (в JDK), Apache Santuario</td>
+<td data-label="Формат">XMLDSig</td>
+<td data-label="Стандарт">W3C Rec</td>
+<td data-label="Где применяется">SOAP-сервисы, СМЭВ, банковские XML-обмены</td>
+<td data-label="Чем работать в Java">JSR-105 <code>javax.xml.crypto.dsig</code> (в JDK), Apache Santuario</td>
 </tr>
 <tr>
-<td>XAdES</td>
-<td>ETSI EN 319 132</td>
-<td>XML-документы с юридической силой</td>
-<td>Santuario + xades4j, DSS, КриптоПро JCPxml</td>
+<td data-label="Формат">XAdES</td>
+<td data-label="Стандарт">ETSI EN 319 132</td>
+<td data-label="Где применяется">XML-документы с юридической силой</td>
+<td data-label="Чем работать в Java">Santuario + xades4j, DSS, КриптоПро JCPxml</td>
 </tr>
 <tr>
-<td>PAdES</td>
-<td>ETSI EN 319 142</td>
-<td>PDF-документы, договоры</td>
-<td>iText, PDFBox + BC, DSS</td>
+<td data-label="Формат">PAdES</td>
+<td data-label="Стандарт">ETSI EN 319 142</td>
+<td data-label="Где применяется">PDF-документы, договоры</td>
+<td data-label="Чем работать в Java">iText, PDFBox + BC, DSS</td>
 </tr>
 <tr>
-<td>JWS / JOSE</td>
-<td>RFC 7515</td>
-<td>API-токены, webhook, межсервисное взаимодействие</td>
-<td>Nimbus JOSE+JWT, jjwt, Spring Security OAuth2</td>
+<td data-label="Формат">JWS / JOSE</td>
+<td data-label="Стандарт">RFC 7515</td>
+<td data-label="Где применяется">API-токены, webhook, межсервисное взаимодействие</td>
+<td data-label="Чем работать в Java">Nimbus JOSE+JWT, jjwt, Spring Security OAuth2</td>
 </tr>
 </tbody>
 </table>
@@ -1727,7 +1727,7 @@ SignerInfo ::= SEQUENCE {
 </blockquote>
 <h3 id="57-выбор-между-jws-и-cms">5.7 Выбор между JWS и CMS</h3>
 <p>Выбор между JWS и CMS/CAdES сводится к двум вопросам: как долго подпись должна оставаться проверяемой и нужен ли ей юридический вес. Таблица ниже сравнивает оба формата по семи критериям; решающими для российского контура оказываются строки о юридической значимости и ГОСТ-алгоритмах.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -1737,39 +1737,39 @@ SignerInfo ::= SEQUENCE {
 </thead>
 <tbody>
 <tr>
-<td>Читаемость, размер</td>
-<td>JSON/Base64URL, компактно</td>
-<td>ASN.1 DER, бинарно</td>
+<td data-label="Критерий">Читаемость, размер</td>
+<td data-label="JWS">JSON/Base64URL, компактно</td>
+<td data-label="CMS/CAdES">ASN.1 DER, бинарно</td>
 </tr>
 <tr>
-<td>Инструменты</td>
-<td>Любой язык, нативно в вебе</td>
-<td>OpenSSL, BC, специализированные</td>
+<td data-label="Критерий">Инструменты</td>
+<td data-label="JWS">Любой язык, нативно в вебе</td>
+<td data-label="CMS/CAdES">OpenSSL, BC, специализированные</td>
 </tr>
 <tr>
-<td>Юридическая значимость в РФ</td>
-<td>Не применяется</td>
-<td>Основной формат для КЭП</td>
+<td data-label="Критерий">Юридическая значимость в РФ</td>
+<td data-label="JWS">Не применяется</td>
+<td data-label="CMS/CAdES">Основной формат для КЭП</td>
 </tr>
 <tr>
-<td>Долговременное хранение</td>
-<td>JAdES (ETSI, редко используется)</td>
-<td>CAdES-LT/LTA — зрелый стандарт</td>
+<td data-label="Критерий">Долговременное хранение</td>
+<td data-label="JWS">JAdES (ETSI, редко используется)</td>
+<td data-label="CMS/CAdES">CAdES-LT/LTA — зрелый стандарт</td>
 </tr>
 <tr>
-<td>Метка времени</td>
-<td>Нет в базовом стандарте</td>
-<td>Штатный неподписанный атрибут</td>
+<td data-label="Критерий">Метка времени</td>
+<td data-label="JWS">Нет в базовом стандарте</td>
+<td data-label="CMS/CAdES">Штатный неподписанный атрибут</td>
 </tr>
 <tr>
-<td>Несколько подписантов</td>
-<td>Только в JSON serialization</td>
-<td>Штатно (<code>signerInfos</code>, контрасигнатура)</td>
+<td data-label="Критерий">Несколько подписантов</td>
+<td data-label="JWS">Только в JSON serialization</td>
+<td data-label="CMS/CAdES">Штатно (<code>signerInfos</code>, контрасигнатура)</td>
 </tr>
 <tr>
-<td>ГОСТ-алгоритмы</td>
-<td>Не стандартизованы в JOSE</td>
-<td>Поддержаны КриптоПро</td>
+<td data-label="Критерий">ГОСТ-алгоритмы</td>
+<td data-label="JWS">Не стандартизованы в JOSE</td>
+<td data-label="CMS/CAdES">Поддержаны КриптоПро</td>
 </tr>
 </tbody>
 </table>
@@ -1815,7 +1815,7 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 </blockquote>
 <h3 id="63-уровни-ades-bes-t-lt-lta">6.3 Уровни AdES: BES / T / LT / LTA</h3>
 <p>Уровни AdES — это ступени «усиления» подписи, которые определяет семейство стандартов ETSI (CAdES для CMS, XAdES для XML, PAdES для PDF, JAdES для JOSE), и каждая следующая ступень включает предыдущую. Нужны они потому, что голая подпись со временем теряет доказательную силу, а каждый уровень закрывает одну конкретную причину такой потери. Таблица ниже показывает, что добавляет каждый уровень и что это даёт; читать её лучше сверху вниз, как историю наращивания.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -1825,24 +1825,24 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 </thead>
 <tbody>
 <tr>
-<td><strong>B / BES</strong> (Basic Electronic Signature)</td>
-<td>Подписанные атрибуты: <code>signingCertificateV2</code> (защита от подмены сертификата), политика подписи, тип контента</td>
-<td>Подпись самодостаточна, привязана к конкретному сертификату</td>
+<td data-label="Уровень"><strong>B / BES</strong> (Basic Electronic Signature)</td>
+<td data-label="Что добавляется">Подписанные атрибуты: <code>signingCertificateV2</code> (защита от подмены сертификата), политика подписи, тип контента</td>
+<td data-label="Что это даёт">Подпись самодостаточна, привязана к конкретному сертификату</td>
 </tr>
 <tr>
-<td><strong>T</strong> (Timestamp)</td>
-<td>Метка времени RFC 3161 на значение подписи</td>
-<td>Доказано, что подпись существовала до момента T</td>
+<td data-label="Уровень"><strong>T</strong> (Timestamp)</td>
+<td data-label="Что добавляется">Метка времени RFC 3161 на значение подписи</td>
+<td data-label="Что это даёт">Доказано, что подпись существовала до момента T</td>
 </tr>
 <tr>
-<td><strong>LT</strong> (Long Term)</td>
-<td>В контейнер вкладываются <strong>полная цепочка сертификатов</strong>, CRL и/или OCSP-ответы, актуальные на момент проверки</td>
-<td>Проверка возможна офлайн, без обращения к CA, даже если тот исчез</td>
+<td data-label="Уровень"><strong>LT</strong> (Long Term)</td>
+<td data-label="Что добавляется">В контейнер вкладываются <strong>полная цепочка сертификатов</strong>, CRL и/или OCSP-ответы, актуальные на момент проверки</td>
+<td data-label="Что это даёт">Проверка возможна офлайн, без обращения к CA, даже если тот исчез</td>
 </tr>
 <tr>
-<td><strong>LTA</strong> (Long Term with Archive timestamp)</td>
-<td>Архивная метка времени поверх всего контейнера (включая вложенные доказательства)</td>
-<td>Защита от устаревания алгоритмов: можно переподписать заново перед тем, как старый алгоритм ослабнет</td>
+<td data-label="Уровень"><strong>LTA</strong> (Long Term with Archive timestamp)</td>
+<td data-label="Что добавляется">Архивная метка времени поверх всего контейнера (включая вложенные доказательства)</td>
+<td data-label="Что это даёт">Защита от устаревания алгоритмов: можно переподписать заново перед тем, как старый алгоритм ослабнет</td>
 </tr>
 </tbody>
 </table>
@@ -1856,7 +1856,7 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 </blockquote>
 <h3 id="65-старая-номенклатура-cades-bes-epes-t-c-x-long-a">6.5 Старая номенклатура CAdES: BES, EPES, T, C, X Long, A</h3>
 <p>Уровни B/T/LT/LTA — это современная «baseline»-номенклатура ETSI EN 319 122, а до неё действовала ETSI TS 101 733 с другими обозначениями. Именно старые обозначения до сих пор используются в российской практике и в документации КриптоПро, поэтому их нужно знать и уметь переводить в baseline. Таблица ниже сопоставляет старые формы с современными уровнями; правый столбец показывает, какие из них в baseline сохранились, а какие растворились.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Форма</th>
@@ -1866,39 +1866,39 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 </thead>
 <tbody>
 <tr>
-<td><strong>CAdES-BES</strong></td>
-<td>подписанные атрибуты: <code>contentType</code>, <code>messageDigest</code>, <code>signingCertificateV2</code></td>
-<td>≈ B</td>
+<td data-label="Форма"><strong>CAdES-BES</strong></td>
+<td data-label="Что добавляется к предыдущей">подписанные атрибуты: <code>contentType</code>, <code>messageDigest</code>, <code>signingCertificateV2</code></td>
+<td data-label="Соответствие baseline">≈ B</td>
 </tr>
 <tr>
-<td><strong>CAdES-EPES</strong></td>
-<td>явная ссылка на политику подписи (<code>signaturePolicyIdentifier</code>) — подписант заявляет, по каким правилам подписывает</td>
-<td>— (вошло в B как опция)</td>
+<td data-label="Форма"><strong>CAdES-EPES</strong></td>
+<td data-label="Что добавляется к предыдущей">явная ссылка на политику подписи (<code>signaturePolicyIdentifier</code>) — подписант заявляет, по каким правилам подписывает</td>
+<td data-label="Соответствие baseline">— (вошло в B как опция)</td>
 </tr>
 <tr>
-<td><strong>CAdES-T</strong></td>
-<td>метка времени RFC 3161 на значение подписи (<code>signatureTimeStampToken</code>)</td>
-<td>T</td>
+<td data-label="Форма"><strong>CAdES-T</strong></td>
+<td data-label="Что добавляется к предыдущей">метка времени RFC 3161 на значение подписи (<code>signatureTimeStampToken</code>)</td>
+<td data-label="Соответствие baseline">T</td>
 </tr>
 <tr>
-<td><strong>CAdES-C</strong></td>
-<td><strong>ссылки</strong> на полную цепочку и на доказательства отзыва (<code>complete-certificate-references</code>, <code>complete-revocation-references</code>) — не сами данные, а их идентификаторы и хеши</td>
-<td>—</td>
+<td data-label="Форма"><strong>CAdES-C</strong></td>
+<td data-label="Что добавляется к предыдущей"><strong>ссылки</strong> на полную цепочку и на доказательства отзыва (<code>complete-certificate-references</code>, <code>complete-revocation-references</code>) — не сами данные, а их идентификаторы и хеши</td>
+<td data-label="Соответствие baseline">—</td>
 </tr>
 <tr>
-<td><strong>CAdES-X Type 1 / Type 2</strong></td>
-<td>метка времени поверх ссылок из C (Type 1 — на всё вместе, Type 2 — отдельно на ссылки)</td>
-<td>—</td>
+<td data-label="Форма"><strong>CAdES-X Type 1 / Type 2</strong></td>
+<td data-label="Что добавляется к предыдущей">метка времени поверх ссылок из C (Type 1 — на всё вместе, Type 2 — отдельно на ссылки)</td>
+<td data-label="Соответствие baseline">—</td>
 </tr>
 <tr>
-<td><strong>CAdES-X Long</strong></td>
-<td>к ссылкам добавлены <strong>сами</strong> сертификаты и CRL/OCSP-ответы (<code>certificate-values</code>, <code>revocation-values</code>)</td>
-<td>≈ LT</td>
+<td data-label="Форма"><strong>CAdES-X Long</strong></td>
+<td data-label="Что добавляется к предыдущей">к ссылкам добавлены <strong>сами</strong> сертификаты и CRL/OCSP-ответы (<code>certificate-values</code>, <code>revocation-values</code>)</td>
+<td data-label="Соответствие baseline">≈ LT</td>
 </tr>
 <tr>
-<td><strong>CAdES-A</strong></td>
-<td>архивная метка времени (<code>archive-time-stamp</code>, ATSv2/ATSv3) поверх всего контейнера, повторяемая</td>
-<td>LTA</td>
+<td data-label="Форма"><strong>CAdES-A</strong></td>
+<td data-label="Что добавляется к предыдущей">архивная метка времени (<code>archive-time-stamp</code>, ATSv2/ATSv3) поверх всего контейнера, повторяемая</td>
+<td data-label="Соответствие baseline">LTA</td>
 </tr>
 </tbody>
 </table>
@@ -1906,7 +1906,7 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 <p>В российском обиходе стандартом де-факто стал <strong>CAdES-X Long Type 1</strong>, который несёт и метку времени на подпись, и метку на доказательства, и сами доказательства. Если в требованиях написано просто «усиленная подпись с меткой времени», уточняйте уровень, потому что «CAdES-T» и «CAdES-X Long Type 1» различаются именно тем, можно ли проверить подпись через пять лет без доступа к УЦ.</p>
 <h3 id="66-сравнение-форматов-подписи">6.6 Сравнение форматов подписи</h3>
 <p>Форматы подписи из раздела 5 различаются не только устройством, но и тем, насколько они пригодны для долгого хранения и чего стоят в эксплуатации. Таблица ниже сводит их вместе по одной схеме — где применяется формат, что он даёт и чем за это платят; ключевой для выбора оказывается правая колонка. После таблицы отдельно разобран выбор между attached и detached, потому что у него есть последствия, которые не видны на этапе проектирования.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Формат</th>
@@ -1917,46 +1917,46 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 </thead>
 <tbody>
 <tr>
-<td><strong>Сырая подпись</strong> (<code>Signature.sign()</code>)</td>
-<td>внутри протокола, где всё остальное известно из контекста</td>
-<td>минимальный размер, никакого парсинга</td>
-<td>ничего не самоописывает: алгоритм, ключ, время — снаружи; непригодна для хранения</td>
+<td data-label="Формат"><strong>Сырая подпись</strong> (<code>Signature.sign()</code>)</td>
+<td data-label="Где применяется">внутри протокола, где всё остальное известно из контекста</td>
+<td data-label="Что даёт">минимальный размер, никакого парсинга</td>
+<td data-label="Чем платим">ничего не самоописывает: алгоритм, ключ, время — снаружи; непригодна для хранения</td>
 </tr>
 <tr>
-<td><strong>CMS/PKCS#7</strong></td>
-<td>ЭДО, S/MIME, подпись пакетов, база для CAdES</td>
-<td>сертификаты и цепочка внутри, подписанные атрибуты, несколько подписантов, контрасигнатуры</td>
-<td>ASN.1/DER: нужны специализированные библиотеки, глазами не читается</td>
+<td data-label="Формат"><strong>CMS/PKCS#7</strong></td>
+<td data-label="Где применяется">ЭДО, S/MIME, подпись пакетов, база для CAdES</td>
+<td data-label="Что даёт">сертификаты и цепочка внутри, подписанные атрибуты, несколько подписантов, контрасигнатуры</td>
+<td data-label="Чем платим">ASN.1/DER: нужны специализированные библиотеки, глазами не читается</td>
 </tr>
 <tr>
-<td><strong>CAdES</strong> (над CMS)</td>
-<td>юридически значимая подпись в ЕС и РФ, ЭДО, отчётность</td>
-<td>метка времени, вложенные доказательства корректности, архивные метки, политика подписи</td>
-<td>размер контейнера растёт кратно; нужен доступ к TSA; проверка становится многошаговой процедурой</td>
+<td data-label="Формат"><strong>CAdES</strong> (над CMS)</td>
+<td data-label="Где применяется">юридически значимая подпись в ЕС и РФ, ЭДО, отчётность</td>
+<td data-label="Что даёт">метка времени, вложенные доказательства корректности, архивные метки, политика подписи</td>
+<td data-label="Чем платим">размер контейнера растёт кратно; нужен доступ к TSA; проверка становится многошаговой процедурой</td>
 </tr>
 <tr>
-<td><strong>XAdES</strong> (над XMLDSig)</td>
-<td>СМЭВ, отчётность, ЭДО в XML-форматах, счета-фактуры</td>
-<td>подпись части документа, несколько подписей разных узлов, те же уровни AdES</td>
-<td>канонизация: подпись ломается от любой пересериализации; класс атак XSW; отладка тяжёлая</td>
+<td data-label="Формат"><strong>XAdES</strong> (над XMLDSig)</td>
+<td data-label="Где применяется">СМЭВ, отчётность, ЭДО в XML-форматах, счета-фактуры</td>
+<td data-label="Что даёт">подпись части документа, несколько подписей разных узлов, те же уровни AdES</td>
+<td data-label="Чем платим">канонизация: подпись ломается от любой пересериализации; класс атак XSW; отладка тяжёлая</td>
 </tr>
 <tr>
-<td><strong>PAdES</strong> (над CMS, внутри PDF)</td>
-<td>договоры, акты, документы «для человека»</td>
-<td>документ остаётся одним файлом и открывается стандартным вьюером, видимый штамп, LTV-словарь, несколько подписей поверх друг друга</td>
-<td>привязка к формату PDF; атаки на инкрементальное обновление; нужны PDF-библиотеки</td>
+<td data-label="Формат"><strong>PAdES</strong> (над CMS, внутри PDF)</td>
+<td data-label="Где применяется">договоры, акты, документы «для человека»</td>
+<td data-label="Что даёт">документ остаётся одним файлом и открывается стандартным вьюером, видимый штамп, LTV-словарь, несколько подписей поверх друг друга</td>
+<td data-label="Чем платим">привязка к формату PDF; атаки на инкрементальное обновление; нужны PDF-библиотеки</td>
 </tr>
 <tr>
-<td><strong>JWS/JOSE</strong></td>
-<td>токены, webhook, подпись API-запросов, межсервисное взаимодействие</td>
-<td>компактность, нативность в вебе, всё есть в любом языке</td>
-<td>нет штатной метки времени и доказательств отзыва; юридической практики в РФ нет</td>
+<td data-label="Формат"><strong>JWS/JOSE</strong></td>
+<td data-label="Где применяется">токены, webhook, подпись API-запросов, межсервисное взаимодействие</td>
+<td data-label="Что даёт">компактность, нативность в вебе, всё есть в любом языке</td>
+<td data-label="Чем платим">нет штатной метки времени и доказательств отзыва; юридической практики в РФ нет</td>
 </tr>
 <tr>
-<td><strong>JAdES</strong> (над JWS)</td>
-<td>попытка принести AdES в JSON-мир; в ЕС применяется в eIDAS-сценариях с REST</td>
-<td>уровни B/T/LT/LTA поверх JWS, метка времени как заголовок <code>sigT</code>/<code>etsiU</code></td>
-<td>зрелость и поддержка библиотек существенно ниже CAdES; в РФ не применяется</td>
+<td data-label="Формат"><strong>JAdES</strong> (над JWS)</td>
+<td data-label="Где применяется">попытка принести AdES в JSON-мир; в ЕС применяется в eIDAS-сценариях с REST</td>
+<td data-label="Что даёт">уровни B/T/LT/LTA поверх JWS, метка времени как заголовок <code>sigT</code>/<code>etsiU</code></td>
+<td data-label="Чем платим">зрелость и поддержка библиотек существенно ниже CAdES; в РФ не применяется</td>
 </tr>
 </tbody>
 </table>
@@ -1971,7 +1971,7 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 <p>Отсюда практическое правило: <strong>для detached-подписи храните ровно те байты, которые подписывали, и хеш от них</strong>. Храниться должен не «документ», а blob с зафиксированным хешем, и всё, что показывают человеку, генерируется из этого blob, а не наоборот. Заодно это даёт дешёвую проверку целостности хранилища без всякой криптографии.</p>
 <h3 id="67-недоступность-tsa">6.7 Недоступность TSA</h3>
 <p>TSA — внешний сервис, и с ним случается всё, что случается с внешними сервисами: он падает, у него кончаются лимиты, у него истекает сертификат. Поведение на этот случай нужно выбрать заранее, потому что от него зависит, получите вы недоказуемую подпись или отказ в операции. В таблице ниже сравниваются четыре стратегии; правый столбец показывает, когда каждая из них применима, а у второй там стоит прямое предупреждение.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -1981,24 +1981,24 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 </thead>
 <tbody>
 <tr>
-<td><strong>Fail-closed</strong></td>
-<td>операция подписи не выполняется вовсе</td>
-<td>документы с юридическим весом: лучше не подписать, чем подписать недоказуемо</td>
+<td data-label="Стратегия"><strong>Fail-closed</strong></td>
+<td data-label="Поведение">операция подписи не выполняется вовсе</td>
+<td data-label="Когда применима">документы с юридическим весом: лучше не подписать, чем подписать недоказуемо</td>
 </tr>
 <tr>
-<td><strong>Подписать без метки, дометить позже</strong></td>
-<td>контейнер сохраняется как BES, отдельный воркер дометит</td>
-<td><strong>опасно</strong>: если сертификат истечёт или будет отозван до дометки, доказать время уже нечем. Допустимо только с жёстким SLA на дометку (часы) и оповещением</td>
+<td data-label="Стратегия"><strong>Подписать без метки, дометить позже</strong></td>
+<td data-label="Поведение">контейнер сохраняется как BES, отдельный воркер дометит</td>
+<td data-label="Когда применима"><strong>опасно</strong>: если сертификат истечёт или будет отозван до дометки, доказать время уже нечем. Допустимо только с жёстким SLA на дометку (часы) и оповещением</td>
 </tr>
 <tr>
-<td><strong>Несколько TSA с приоритетом</strong></td>
-<td>попробовать основную, при ошибке — резервную</td>
-<td>правильное поведение по умолчанию: TSA от двух разных провайдеров, обе в конфиге</td>
+<td data-label="Стратегия"><strong>Несколько TSA с приоритетом</strong></td>
+<td data-label="Поведение">попробовать основную, при ошибке — резервную</td>
+<td data-label="Когда применима">правильное поведение по умолчанию: TSA от двух разных провайдеров, обе в конфиге</td>
 </tr>
 <tr>
-<td><strong>Очередь с повторными попытками</strong></td>
-<td>подпись создаётся, запрос метки ставится в очередь с гарантией доставки</td>
-<td>компромисс, если операция не может ждать сеть</td>
+<td data-label="Стратегия"><strong>Очередь с повторными попытками</strong></td>
+<td data-label="Поведение">подпись создаётся, запрос метки ставится в очередь с гарантией доставки</td>
+<td data-label="Когда применима">компромисс, если операция не может ждать сеть</td>
 </tr>
 </tbody>
 </table>
@@ -2046,7 +2046,7 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 <p><strong>2. Усиленная неквалифицированная электронная подпись (НЭП).</strong> Её получают в результате криптографического преобразования с использованием ключа электронной подписи, и она позволяет определить подписанта и обнаружить изменение документа после подписания, а создают её с помощью средств электронной подписи. Сертификат для НЭП может выдать любой УЦ, в том числе неаккредитованный и даже «внутренний» УЦ организации, а средства подписи не обязаны быть сертифицированы ФСБ. Юридическую значимость такой подписи определяет соглашение сторон, и поэтому её типично применяют во внутреннем документообороте компании, в кадровом ЭДО (после поправок 2021 г. НЭП допущена для ряда кадровых документов) и в B2B-обмене между контрагентами, заключившими соглашение.</p>
 <p><strong>3. Усиленная квалифицированная электронная подпись (КЭП).</strong> Это НЭП, к которой добавлены два условия: ключ проверки указан в <strong>квалифицированном сертификате</strong> ключа проверки электронной подписи (КСКПЭП), выданном <strong>аккредитованным удостоверяющим центром</strong>, а для создания и проверки подписи используются <strong>средства электронной подписи, получившие подтверждение соответствия требованиям ФСБ России</strong>. Документ, подписанный КЭП, признаётся равнозначным бумажному с собственноручной подписью <strong>по умолчанию, без отдельного соглашения</strong>, за исключением случаев, когда закон прямо требует бумаги, и именно в этом её ключевое отличие от остальных видов.</p>
 <p>Таблица ниже сводит три вида подписи по семи признакам; на практике выбор чаще всего решают две последние строки.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2057,46 +2057,46 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 </thead>
 <tbody>
 <tr>
-<td>Криптография</td>
-<td>Нет</td>
-<td>Да</td>
-<td>Да, сертифицированные СКЗИ</td>
+<td data-label="">Криптография</td>
+<td data-label="ПЭП">Нет</td>
+<td data-label="НЭП">Да</td>
+<td data-label="КЭП">Да, сертифицированные СКЗИ</td>
 </tr>
 <tr>
-<td>Обнаруживает изменение документа</td>
-<td>Нет</td>
-<td>Да</td>
-<td>Да</td>
+<td data-label="">Обнаруживает изменение документа</td>
+<td data-label="ПЭП">Нет</td>
+<td data-label="НЭП">Да</td>
+<td data-label="КЭП">Да</td>
 </tr>
 <tr>
-<td>УЦ</td>
-<td>Не требуется</td>
-<td>Любой</td>
-<td>Только аккредитованный</td>
+<td data-label="">УЦ</td>
+<td data-label="ПЭП">Не требуется</td>
+<td data-label="НЭП">Любой</td>
+<td data-label="КЭП">Только аккредитованный</td>
 </tr>
 <tr>
-<td>Сертификат</td>
-<td>Нет</td>
-<td>Необязателен</td>
-<td>Квалифицированный (КСКПЭП)</td>
+<td data-label="">Сертификат</td>
+<td data-label="ПЭП">Нет</td>
+<td data-label="НЭП">Необязателен</td>
+<td data-label="КЭП">Квалифицированный (КСКПЭП)</td>
 </tr>
 <tr>
-<td>Носитель ключа</td>
-<td>—</td>
-<td>Любой</td>
-<td>Как правило, сертифицированный токен</td>
+<td data-label="">Носитель ключа</td>
+<td data-label="ПЭП">—</td>
+<td data-label="НЭП">Любой</td>
+<td data-label="КЭП">Как правило, сертифицированный токен</td>
 </tr>
 <tr>
-<td>Равнозначность бумаге</td>
-<td>По соглашению/закону</td>
-<td>По соглашению</td>
-<td>По умолчанию</td>
+<td data-label="">Равнозначность бумаге</td>
+<td data-label="ПЭП">По соглашению/закону</td>
+<td data-label="НЭП">По соглашению</td>
+<td data-label="КЭП">По умолчанию</td>
 </tr>
 <tr>
-<td>Отчётность в ФНС, торги, ЕГАИС</td>
-<td>Нет</td>
-<td>Нет</td>
-<td>Да</td>
+<td data-label="">Отчётность в ФНС, торги, ЕГАИС</td>
+<td data-label="ПЭП">Нет</td>
+<td data-label="НЭП">Нет</td>
+<td data-label="КЭП">Да</td>
 </tr>
 </tbody>
 </table>
@@ -2111,7 +2111,7 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 <p>Для разработчика отсюда следует, что <strong>проверка подписи усложняется до проверки пакета</strong>: подпись, доверенность и цепочка полномочий, возможно с передоверием (МЧД на МЧД).</p>
 <h3 id="73-гост-криптография">7.3 ГОСТ-криптография</h3>
 <p>ГОСТ-криптография — набор российских стандартов на подпись, хеширование и шифрование, и для квалифицированной подписи использовать нужно именно их. Таблица ниже перечисляет четыре стандарта с их параметрами; обратите внимание на размеры подписи в первой строке, потому что они понадобятся при разборе кодировки в 7.8.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стандарт</th>
@@ -2121,24 +2121,24 @@ openssl ts -verify -in response.tsr -data contract.pdf -CAfile tsa-chain.pem
 </thead>
 <tbody>
 <tr>
-<td>ГОСТ Р 34.10-2012</td>
-<td>Подпись на эллиптических кривых</td>
-<td>Два варианта: 256 бит (подпись 512 бит) и 512 бит (подпись 1024 бита)</td>
+<td data-label="Стандарт">ГОСТ Р 34.10-2012</td>
+<td data-label="Что">Подпись на эллиптических кривых</td>
+<td data-label="Параметры">Два варианта: 256 бит (подпись 512 бит) и 512 бит (подпись 1024 бита)</td>
 </tr>
 <tr>
-<td>ГОСТ Р 34.11-2012 «Стрибог»</td>
-<td>Хеш</td>
-<td>256 и 512 бит</td>
+<td data-label="Стандарт">ГОСТ Р 34.11-2012 «Стрибог»</td>
+<td data-label="Что">Хеш</td>
+<td data-label="Параметры">256 и 512 бит</td>
 </tr>
 <tr>
-<td>ГОСТ Р 34.12-2015</td>
-<td>Блочные шифры</td>
-<td>«Кузнечик» (128-бит блок, 256-бит ключ) и «Магма» (64-бит блок, 256-бит ключ, наследник ГОСТ 28147-89)</td>
+<td data-label="Стандарт">ГОСТ Р 34.12-2015</td>
+<td data-label="Что">Блочные шифры</td>
+<td data-label="Параметры">«Кузнечик» (128-бит блок, 256-бит ключ) и «Магма» (64-бит блок, 256-бит ключ, наследник ГОСТ 28147-89)</td>
 </tr>
 <tr>
-<td>ГОСТ Р 34.13-2015</td>
-<td>Режимы работы блочных шифров</td>
-<td>ECB, CTR, OFB, CBC, CFB, MAC</td>
+<td data-label="Стандарт">ГОСТ Р 34.13-2015</td>
+<td data-label="Что">Режимы работы блочных шифров</td>
+<td data-label="Параметры">ECB, CTR, OFB, CBC, CFB, MAC</td>
 </tr>
 </tbody>
 </table>
@@ -2201,7 +2201,7 @@ attributes(*,CKO_PRIVATE_KEY,*) = { CKA_SIGN = true }
 </blockquote>
 <h3 id="78-гост-подпись-в-коде-на-java">7.8 ГОСТ-подпись в коде на Java</h3>
 <p>ГОСТ Р 34.10-2012 — схема подписи на эллиптических кривых, которая по идее родственна ECDSA (умножение точки на скаляр, случайный эфемерный <code>k</code>), но отличается деталями формирования подписи, собственными наборами параметров и обязательным хешем «Стрибог». Математика разобрана в главе 40 (<code>40-cryptography.md</code>), а здесь речь пойдёт о том, что видит разработчик: о размерах ключей и подписей, о кодировке подписи, из-за которой ломается совместимость библиотек, о регистрации провайдера и о самопроверке на старте. Начнём с размеров, которые стоит помнить:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вариант</th>
@@ -2212,16 +2212,16 @@ attributes(*,CKO_PRIVATE_KEY,*) = { CKA_SIGN = true }
 </thead>
 <tbody>
 <tr>
-<td>ГОСТ Р 34.10-2012-256</td>
-<td>256 бит (открытый ключ — точка, 512 бит)</td>
-<td><strong>512 бит / 64 байта</strong> (пара <code>r</code>, <code>s</code> по 256 бит)</td>
-<td>ГОСТ Р 34.11-2012-256</td>
+<td data-label="Вариант">ГОСТ Р 34.10-2012-256</td>
+<td data-label="Размер ключа">256 бит (открытый ключ — точка, 512 бит)</td>
+<td data-label="Размер подписи"><strong>512 бит / 64 байта</strong> (пара <code>r</code>, <code>s</code> по 256 бит)</td>
+<td data-label="Хеш">ГОСТ Р 34.11-2012-256</td>
 </tr>
 <tr>
-<td>ГОСТ Р 34.10-2012-512</td>
-<td>512 бит (точка — 1024 бита)</td>
-<td><strong>1024 бита / 128 байт</strong></td>
-<td>ГОСТ Р 34.11-2012-512</td>
+<td data-label="Вариант">ГОСТ Р 34.10-2012-512</td>
+<td data-label="Размер ключа">512 бит (точка — 1024 бита)</td>
+<td data-label="Размер подписи"><strong>1024 бита / 128 байт</strong></td>
+<td data-label="Хеш">ГОСТ Р 34.11-2012-512</td>
 </tr>
 </tbody>
 </table>
@@ -2280,7 +2280,7 @@ attributes(*,CKO_PRIVATE_KEY,*) = { CKA_SIGN = true }
 <p>МЧД появилась по более широкой причине: <strong>сертификат юрлица выдаётся только руководителю</strong>, а сотрудники подписывают сертификатами физлиц. Для интеграций это изменило всю модель. Раньше «сертификат организации» лежал на сервере, и им подписывался поток документов, а теперь автоматическая подпись от имени организации технически возможна либо сертификатом руководителя, что организационно спорно, либо сертификатом сотрудника вместе с МЧД, и проектируя сервис подписи, закладывайте второй вариант.</p>
 <h3 id="710-гост-криптография-в-контейнерах-и-в-ci">7.10 ГОСТ-криптография в контейнерах и в CI</h3>
 <p>Проблемы интеграции, которые в разделе 7.5 перечислены списком, при планировании проекта удобнее держать в виде таблицы, где у каждой проблемы указаны проявление и принятое решение. В таком виде её можно почти без правок переносить в оценку работ и в чек-лист готовности образа; смотреть в ней стоит прежде всего на правый столбец.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Проблема</th>
@@ -2290,49 +2290,49 @@ attributes(*,CKO_PRIVATE_KEY,*) = { CKA_SIGN = true }
 </thead>
 <tbody>
 <tr>
-<td>Нет ГОСТ в штатном JDK</td>
-<td><code>NoSuchAlgorithmException</code> при любой операции</td>
-<td>отдельный образ с установленным СКЗИ; ГОСТ-операции — в выделенный сервис</td>
+<td data-label="Проблема">Нет ГОСТ в штатном JDK</td>
+<td data-label="Проявление"><code>NoSuchAlgorithmException</code> при любой операции</td>
+<td data-label="Что делают">отдельный образ с установленным СКЗИ; ГОСТ-операции — в выделенный сервис</td>
 </tr>
 <tr>
-<td>Нативные библиотеки и glibc</td>
-<td>образ на Alpine не запускается, <code>.so</code> не грузится</td>
-<td>базовый образ на glibc (Debian slim, UBI); проверка <code>ldd</code> на сборке</td>
+<td data-label="Проблема">Нативные библиотеки и glibc</td>
+<td data-label="Проявление">образ на Alpine не запускается, <code>.so</code> не грузится</td>
+<td data-label="Что делают">базовый образ на glibc (Debian slim, UBI); проверка <code>ldd</code> на сборке</td>
 </tr>
 <tr>
-<td>Установочный скрипт вендора ждёт systemd и root</td>
-<td>сборка образа падает или «проходит», но провайдер не работает</td>
-<td>разбирать установку на шаги (распаковать пакет, разложить файлы, прописать конфиг), фиксировать результат в образе</td>
+<td data-label="Проблема">Установочный скрипт вендора ждёт systemd и root</td>
+<td data-label="Проявление">сборка образа падает или «проходит», но провайдер не работает</td>
+<td data-label="Что делают">разбирать установку на шаги (распаковать пакет, разложить файлы, прописать конфиг), фиксировать результат в образе</td>
 </tr>
 <tr>
-<td>Лицензия</td>
-<td>падение при инициализации провайдера, невнятный код ошибки</td>
-<td>лицензия как секрет, монтируемая во время выполнения; отдельная договорённость с вендором о схеме лицензирования под контейнеры</td>
+<td data-label="Проблема">Лицензия</td>
+<td data-label="Проявление">падение при инициализации провайдера, невнятный код ошибки</td>
+<td data-label="Что делают">лицензия как секрет, монтируемая во время выполнения; отдельная договорённость с вендором о схеме лицензирования под контейнеры</td>
 </tr>
 <tr>
-<td>USB-токен в кластере</td>
-<td>ключ не виден из пода</td>
-<td>не пробрасывать USB в Kubernetes: сетевой HSM либо отдельный физический хост подписи вне кластера</td>
+<td data-label="Проблема">USB-токен в кластере</td>
+<td data-label="Проявление">ключ не виден из пода</td>
+<td data-label="Что делают">не пробрасывать USB в Kubernetes: сетевой HSM либо отдельный физический хост подписи вне кластера</td>
 </tr>
 <tr>
-<td>Энтропия</td>
-<td>зависание на инициализации</td>
-<td><code>haveged</code>/<code>rng-tools</code> на хосте, проброс <code>/dev/urandom</code>, проверка при старте</td>
+<td data-label="Проблема">Энтропия</td>
+<td data-label="Проявление">зависание на инициализации</td>
+<td data-label="Что делают"><code>haveged</code>/<code>rng-tools</code> на хосте, проброс <code>/dev/urandom</code>, проверка при старте</td>
 </tr>
 <tr>
-<td>CI</td>
-<td>тесты, требующие СКЗИ, не запускаются на обычных исполнителях</td>
-<td>выделенный исполнитель с образом СКЗИ; в основном конвейере — тесты на BC (проверка) и заглушки сервиса подписи</td>
+<td data-label="Проблема">CI</td>
+<td data-label="Проявление">тесты, требующие СКЗИ, не запускаются на обычных исполнителях</td>
+<td data-label="Что делают">выделенный исполнитель с образом СКЗИ; в основном конвейере — тесты на BC (проверка) и заглушки сервиса подписи</td>
 </tr>
 <tr>
-<td>Обновление СКЗИ</td>
-<td>смена версии ломает имена алгоритмов или поведение</td>
-<td>версия СКЗИ — часть контракта образа; апгрейд через отдельный релиз с прогоном контрольного набора подписей</td>
+<td data-label="Проблема">Обновление СКЗИ</td>
+<td data-label="Проявление">смена версии ломает имена алгоритмов или поведение</td>
+<td data-label="Что делают">версия СКЗИ — часть контракта образа; апгрейд через отдельный релиз с прогоном контрольного набора подписей</td>
 </tr>
 <tr>
-<td>Отладка</td>
-<td>ошибки приходят кодами вендора, логи СКЗИ вне stdout</td>
-<td>заранее настроить трассировку СКЗИ в файл и собирать его в общий сборщик логов (глава 52, <code>52-observability-stack.md</code>)</td>
+<td data-label="Проблема">Отладка</td>
+<td data-label="Проявление">ошибки приходят кодами вендора, логи СКЗИ вне stdout</td>
+<td data-label="Что делают">заранее настроить трассировку СКЗИ в файл и собирать его в общий сборщик логов (глава 52, <code>52-observability-stack.md</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -2959,5 +2959,5 @@ BES — базовая подпись с подписанными атрибут
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-pki-модель-доверия">1. PKI: модель доверия</a></li><li><a href="#2-сертификат-x509">2. Сертификат X.509</a></li><li><a href="#3-жизненный-цикл-сертификата">3. Жизненный цикл сертификата</a></li><li><a href="#4-работа-с-сертификатами-в-java">4. Работа с сертификатами в Java</a></li><li><a href="#5-подпись-данных-форматы">5. Подпись данных: форматы</a></li><li><a href="#6-долговременное-хранение-подписи">6. Долговременное хранение подписи</a></li><li><a href="#7-российская-специфика-63-фз-и-гост">7. Российская специфика: 63-ФЗ и ГОСТ</a></li><li><a href="#8-проектирование-сервиса-подписи">8. Проектирование сервиса подписи</a></li><li><a href="#9-разобранные-инциденты">9. Разобранные инциденты</a></li><li><a href="#10-грабли-и-антипаттерны">10. Грабли и антипаттерны</a></li><li><a href="#11-диагностика">11. Диагностика</a></li><li><a href="#12-вопросы-на-интервью">12. Вопросы на интервью</a></li><li><a href="#13-попробовать-руками">13. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

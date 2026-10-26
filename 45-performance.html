@@ -3,7 +3,7 @@
 <title>45. Производительность — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Производительность">
 <a class="skip" href="#content">К тексту</a>
@@ -46,7 +46,7 @@
 <p><strong>USE (Utilization, Saturation, Errors)</strong> — метод Брендана Грегга для ресурсов. Формулировка автора: «For every resource, check utilization, saturation, and errors», где utilization — «the average time that the resource was busy servicing work», saturation — «the degree to which the resource has extra work which it can't service, often queued», errors — «the count of error events» (<a href="https://www.brendangregg.com/usemethod.html">The USE Method, brendangregg.com</a>). У Java-бэкенда ресурсами считаются не только CPU, память (heap и RSS), диск и сеть, но и «программные» ресурсы: пул потоков, пул соединений к БД, пул HTTP-клиента и очередь исполнителя.</p>
 <p>Главная польза USE сосредоточена в колонке saturation, о которой почти все забывают. Утилизация пула соединений в 100 % сама по себе ещё не беда; беда начинается тогда, когда одновременно с ней <code>hikaricp_connections_pending &gt; 0</code>, то есть кто-то уже стоит в очереди. Грегг отдельно предупреждает: «A burst of high utilization can cause saturation and performance issues, even though utilization is <em>low</em> when averaged over a long interval». Иначе говоря, средняя утилизация 30 % за минуту может скрывать секунду стопроцентной загрузки.</p>
 <p>В таблице ниже USE разложен на конкретные метрики Spring Boot-сервиса в Kubernetes; обратите внимание на выделенные метрики насыщения, потому что именно они первыми показывают, что ресурс перестал справляться.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ресурс</th>
@@ -57,40 +57,40 @@
 </thead>
 <tbody>
 <tr>
-<td>CPU</td>
-<td><code>container_cpu_usage_seconds_total</code> / limit</td>
-<td><code>container_cpu_cfs_throttled_seconds_total</code></td>
-<td>—</td>
+<td data-label="Ресурс">CPU</td>
+<td data-label="Utilization"><code>container_cpu_usage_seconds_total</code> / limit</td>
+<td data-label="Saturation"><code>container_cpu_cfs_throttled_seconds_total</code></td>
+<td data-label="Errors">—</td>
 </tr>
 <tr>
-<td>Heap</td>
-<td><code>jvm_memory_used_bytes{area="heap"}</code> / max</td>
-<td>доля времени в GC, <code>jvm_gc_pause_seconds</code></td>
-<td><code>OutOfMemoryError</code> в логе</td>
+<td data-label="Ресурс">Heap</td>
+<td data-label="Utilization"><code>jvm_memory_used_bytes{area="heap"}</code> / max</td>
+<td data-label="Saturation">доля времени в GC, <code>jvm_gc_pause_seconds</code></td>
+<td data-label="Errors"><code>OutOfMemoryError</code> в логе</td>
 </tr>
 <tr>
-<td>Пул БД</td>
-<td><code>hikaricp_connections_active</code> / <code>max</code></td>
-<td><strong><code>hikaricp_connections_pending</code></strong></td>
-<td><code>hikaricp_connections_timeout_total</code></td>
+<td data-label="Ресурс">Пул БД</td>
+<td data-label="Utilization"><code>hikaricp_connections_active</code> / <code>max</code></td>
+<td data-label="Saturation"><strong><code>hikaricp_connections_pending</code></strong></td>
+<td data-label="Errors"><code>hikaricp_connections_timeout_total</code></td>
 </tr>
 <tr>
-<td>Пул потоков Tomcat</td>
-<td><code>tomcat_threads_busy</code> / <code>tomcat_threads_config_max</code></td>
-<td>длина accept-очереди, <code>tomcat_threads_current</code> на максимуме</td>
-<td>503 от коннектора</td>
+<td data-label="Ресурс">Пул потоков Tomcat</td>
+<td data-label="Utilization"><code>tomcat_threads_busy</code> / <code>tomcat_threads_config_max</code></td>
+<td data-label="Saturation">длина accept-очереди, <code>tomcat_threads_current</code> на максимуме</td>
+<td data-label="Errors">503 от коннектора</td>
 </tr>
 <tr>
-<td>Executor</td>
-<td><code>executor_active</code> / <code>executor_pool_max</code></td>
-<td><strong><code>executor_queued</code></strong></td>
-<td><code>RejectedExecutionException</code></td>
+<td data-label="Ресурс">Executor</td>
+<td data-label="Utilization"><code>executor_active</code> / <code>executor_pool_max</code></td>
+<td data-label="Saturation"><strong><code>executor_queued</code></strong></td>
+<td data-label="Errors"><code>RejectedExecutionException</code></td>
 </tr>
 <tr>
-<td>Сеть/клиент</td>
-<td>активные соединения пула</td>
-<td>ожидание лизинга соединения</td>
-<td>таймауты, <code>ConnectException</code></td>
+<td data-label="Ресурс">Сеть/клиент</td>
+<td data-label="Utilization">активные соединения пула</td>
+<td data-label="Saturation">ожидание лизинга соединения</td>
+<td data-label="Errors">таймауты, <code>ConnectException</code></td>
 </tr>
 </tbody>
 </table>
@@ -195,7 +195,7 @@
 </code></pre></div>
 
 <p>Подставим <code>S = 20 мс</code> и посмотрим, как растёт среднее время при увеличении утилизации; следите за правым столбцом в последних строках таблицы.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Утилизация ρ</th>
@@ -205,39 +205,39 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">0,10</td>
-<td class="num">1,11</td>
-<td class="num">22 мс</td>
+<td data-label="Утилизация ρ" class="num">0,10</td>
+<td data-label="Множитель 1/(1−ρ)" class="num">1,11</td>
+<td data-label="Среднее время W" class="num">22 мс</td>
 </tr>
 <tr>
-<td class="num">0,50</td>
-<td class="num">2,00</td>
-<td class="num">40 мс</td>
+<td data-label="Утилизация ρ" class="num">0,50</td>
+<td data-label="Множитель 1/(1−ρ)" class="num">2,00</td>
+<td data-label="Среднее время W" class="num">40 мс</td>
 </tr>
 <tr>
-<td class="num">0,70</td>
-<td class="num">3,33</td>
-<td class="num">67 мс</td>
+<td data-label="Утилизация ρ" class="num">0,70</td>
+<td data-label="Множитель 1/(1−ρ)" class="num">3,33</td>
+<td data-label="Среднее время W" class="num">67 мс</td>
 </tr>
 <tr>
-<td class="num">0,80</td>
-<td class="num">5,00</td>
-<td class="num">100 мс</td>
+<td data-label="Утилизация ρ" class="num">0,80</td>
+<td data-label="Множитель 1/(1−ρ)" class="num">5,00</td>
+<td data-label="Среднее время W" class="num">100 мс</td>
 </tr>
 <tr>
-<td class="num">0,90</td>
-<td class="num">10,0</td>
-<td class="num">200 мс</td>
+<td data-label="Утилизация ρ" class="num">0,90</td>
+<td data-label="Множитель 1/(1−ρ)" class="num">10,0</td>
+<td data-label="Среднее время W" class="num">200 мс</td>
 </tr>
 <tr>
-<td class="num">0,95</td>
-<td class="num">20,0</td>
-<td class="num">400 мс</td>
+<td data-label="Утилизация ρ" class="num">0,95</td>
+<td data-label="Множитель 1/(1−ρ)" class="num">20,0</td>
+<td data-label="Среднее время W" class="num">400 мс</td>
 </tr>
 <tr>
-<td class="num">0,99</td>
-<td class="num">100</td>
-<td class="num">2000 мс</td>
+<td data-label="Утилизация ρ" class="num">0,99</td>
+<td data-label="Множитель 1/(1−ρ)" class="num">100</td>
+<td data-label="Среднее время W" class="num">2000 мс</td>
 </tr>
 </tbody>
 </table>
@@ -252,7 +252,7 @@
 <p>Распределение латентности в бэкенде всегда скошено вправо и обычно имеет несколько пиков: попадание в кеш занимает 2 мс, поход в БД — 30 мс, поход в БД вместе с GC-паузой — 300 мс, а повтор после таймаута — 3 с. Среднее по такому распределению не описывает ни одного реального запроса.</p>
 <p>Снимать нужно p50 (типичный случай), p90, p99 (то, что чувствует активный пользователь), p99.9 (то, что видит служба поддержки) и max (то, что попадает в инцидент). Micrometer умеет и клиентские перцентили, и агрегируемые гистограммы, и путать их нельзя: <code>publishPercentiles</code> считает значения на экземпляре, и <strong>агрегировать их по тегам нельзя</strong>, а <code>publishPercentileHistogram</code> отдаёт бакеты, по которым <code>histogram_quantile()</code> считает перцентиль в PromQL (см. главу 51 и FACTS).</p>
 <p><strong>Tail latency amplification</strong> — главный аргумент в пользу p99. Если один запрос пользователя порождает <code>n</code> независимых подзапросов, а ответ отдаётся после последнего из них, то вероятность того, что <em>все</em> уложились в p99, равна <code>0,99^n</code>. Таблица показывает, как быстро эта вероятность падает с ростом <code>n</code>:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">n подзапросов</th>
@@ -262,29 +262,29 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td class="num">99,0 %</td>
-<td class="num">1 %</td>
+<td data-label="n подзапросов" class="num">1</td>
+<td data-label="P(все ≤ p99)" class="num">99,0 %</td>
+<td data-label="Доля запросов, задетых «хвостом»" class="num">1 %</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td class="num">95,1 %</td>
-<td class="num">4,9 %</td>
+<td data-label="n подзапросов" class="num">5</td>
+<td data-label="P(все ≤ p99)" class="num">95,1 %</td>
+<td data-label="Доля запросов, задетых «хвостом»" class="num">4,9 %</td>
 </tr>
 <tr>
-<td class="num">10</td>
-<td class="num">90,4 %</td>
-<td class="num">9,6 %</td>
+<td data-label="n подзапросов" class="num">10</td>
+<td data-label="P(все ≤ p99)" class="num">90,4 %</td>
+<td data-label="Доля запросов, задетых «хвостом»" class="num">9,6 %</td>
 </tr>
 <tr>
-<td class="num">50</td>
-<td class="num">60,5 %</td>
-<td class="num">39,5 %</td>
+<td data-label="n подзапросов" class="num">50</td>
+<td data-label="P(все ≤ p99)" class="num">60,5 %</td>
+<td data-label="Доля запросов, задетых «хвостом»" class="num">39,5 %</td>
 </tr>
 <tr>
-<td class="num">100</td>
-<td class="num">36,6 %</td>
-<td class="num">63,4 %</td>
+<td data-label="n подзапросов" class="num">100</td>
+<td data-label="P(все ≤ p99)" class="num">36,6 %</td>
+<td data-label="Доля запросов, задетых «хвостом»" class="num">63,4 %</td>
 </tr>
 </tbody>
 </table>
@@ -304,7 +304,7 @@
 <h3 id="25-порядки-задержек-основных-операций">2.5 Порядки задержек основных операций</h3>
 <p>Числа, которые нужно знать, — это порядки задержек основных операций, от такта процессора до межконтинентального round-trip. Они нужны для двух вещей: для прикидки на system design (глава 36) и для проверки измерений на здравый смысл, потому что если вы «намерили» чтение с диска за 5 нс, значит, вы измерили что-то не то. Ниже таблица порядков, оговорка о том, откуда они взяты, и пример того, как с их помощью отбрасывать неправдоподобные гипотезы.</p>
 <p>В таблице значения идут по возрастанию, и полезно запомнить не отдельные цифры, а скачки между уровнями: кеш, память, диск, сеть внутри ДЦ и сеть между континентами.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Операция</th>
@@ -314,104 +314,104 @@
 </thead>
 <tbody>
 <tr>
-<td>Такт CPU 3 ГГц</td>
-<td>0,3 нс</td>
-<td></td>
+<td data-label="Операция">Такт CPU 3 ГГц</td>
+<td data-label="Порядок">0,3 нс</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td>Попадание в L1</td>
-<td>~1 нс</td>
-<td>~4 такта</td>
+<td data-label="Операция">Попадание в L1</td>
+<td data-label="Порядок">~1 нс</td>
+<td data-label="Комментарий">~4 такта</td>
 </tr>
 <tr>
-<td>Попадание в L2</td>
-<td>~4 нс</td>
-<td></td>
+<td data-label="Операция">Попадание в L2</td>
+<td data-label="Порядок">~4 нс</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td>Попадание в L3</td>
-<td>~15–40 нс</td>
-<td>зависит от сокета</td>
+<td data-label="Операция">Попадание в L3</td>
+<td data-label="Порядок">~15–40 нс</td>
+<td data-label="Комментарий">зависит от сокета</td>
 </tr>
 <tr>
-<td>Промах кеша / поход в DRAM</td>
-<td>~80–100 нс</td>
-<td></td>
+<td data-label="Операция">Промах кеша / поход в DRAM</td>
+<td data-label="Порядок">~80–100 нс</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td>Неуспешное предсказание ветвления</td>
-<td>~5–15 нс</td>
-<td>~15–20 тактов</td>
+<td data-label="Операция">Неуспешное предсказание ветвления</td>
+<td data-label="Порядок">~5–15 нс</td>
+<td data-label="Комментарий">~15–20 тактов</td>
 </tr>
 <tr>
-<td><code>System.nanoTime()</code></td>
-<td>~15–30 нс</td>
-<td>см. ниже</td>
+<td data-label="Операция"><code>System.nanoTime()</code></td>
+<td data-label="Порядок">~15–30 нс</td>
+<td data-label="Комментарий">см. ниже</td>
 </tr>
 <tr>
-<td>Выделение памяти объекта в TLAB</td>
-<td>~5–15 нс</td>
-<td>инкремент указателя</td>
+<td data-label="Операция">Выделение памяти объекта в TLAB</td>
+<td data-label="Порядок">~5–15 нс</td>
+<td data-label="Комментарий">инкремент указателя</td>
 </tr>
 <tr>
-<td>Мьютекс без контеншена (lightweight)</td>
-<td>~20 нс</td>
-<td></td>
+<td data-label="Операция">Мьютекс без контеншена (lightweight)</td>
+<td data-label="Порядок">~20 нс</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td>Мьютекс с контеншеном (inflated, park/unpark)</td>
-<td>~1–10 мкс</td>
-<td></td>
+<td data-label="Операция">Мьютекс с контеншеном (inflated, park/unpark)</td>
+<td data-label="Порядок">~1–10 мкс</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td>Переключение контекста потоков ОС</td>
-<td>~1–5 мкс</td>
-<td></td>
+<td data-label="Операция">Переключение контекста потоков ОС</td>
+<td data-label="Порядок">~1–5 мкс</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td>Чтение 1 МБ из памяти последовательно</td>
-<td>~30–100 мкс</td>
-<td></td>
+<td data-label="Операция">Чтение 1 МБ из памяти последовательно</td>
+<td data-label="Порядок">~30–100 мкс</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td>Случайное чтение с NVMe SSD</td>
-<td>~20–100 мкс</td>
-<td></td>
+<td data-label="Операция">Случайное чтение с NVMe SSD</td>
+<td data-label="Порядок">~20–100 мкс</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td>Случайное чтение с SATA SSD</td>
-<td>~100–200 мкс</td>
-<td></td>
+<td data-label="Операция">Случайное чтение с SATA SSD</td>
+<td data-label="Порядок">~100–200 мкс</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td>Сетевой round-trip внутри ДЦ</td>
-<td>~0,2–0,5 мс</td>
-<td></td>
+<td data-label="Операция">Сетевой round-trip внутри ДЦ</td>
+<td data-label="Порядок">~0,2–0,5 мс</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td><code>SELECT</code> по индексу из PostgreSQL по сети</td>
-<td>~0,3–1 мс</td>
-<td>с учётом round-trip</td>
+<td data-label="Операция"><code>SELECT</code> по индексу из PostgreSQL по сети</td>
+<td data-label="Порядок">~0,3–1 мс</td>
+<td data-label="Комментарий">с учётом round-trip</td>
 </tr>
 <tr>
-<td>Случайное чтение с HDD (seek)</td>
-<td>~5–10 мс</td>
-<td></td>
+<td data-label="Операция">Случайное чтение с HDD (seek)</td>
+<td data-label="Порядок">~5–10 мс</td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td>TLS-handshake (полный, 1-RTT TLS 1.3)</td>
-<td>~1–2 RTT</td>
-<td>внутри ДЦ единицы мс, через интернет десятки</td>
+<td data-label="Операция">TLS-handshake (полный, 1-RTT TLS 1.3)</td>
+<td data-label="Порядок">~1–2 RTT</td>
+<td data-label="Комментарий">внутри ДЦ единицы мс, через интернет десятки</td>
 </tr>
 <tr>
-<td>Round-trip Москва — Франкфурт</td>
-<td>~30–40 мс</td>
-<td>ограничение скорости света в волокне</td>
+<td data-label="Операция">Round-trip Москва — Франкфурт</td>
+<td data-label="Порядок">~30–40 мс</td>
+<td data-label="Комментарий">ограничение скорости света в волокне</td>
 </tr>
 <tr>
-<td>Round-trip Москва — Нью-Йорк</td>
-<td>~110–130 мс</td>
-<td></td>
+<td data-label="Операция">Round-trip Москва — Нью-Йорк</td>
+<td data-label="Порядок">~110–130 мс</td>
+<td data-label="Комментарий"></td>
 </tr>
 </tbody>
 </table>
@@ -565,7 +565,7 @@ java -jar target/benchmarks.jar
 <h3 id="35-режимы-jmh-профилировщики-и-чтение-результата">3.5 Режимы JMH, профилировщики и чтение результата</h3>
 <p>Собранный бенчмарк можно запускать в разных режимах, подключать к нему встроенные профилировщики и получать таблицу с результатом, которую нужно ещё уметь прочитать. Чаще всего ошибаются именно на последнем шаге, принимая за разницу то, что укладывается в погрешность, поэтому ниже по очереди разобраны режимы, профилировщики JMH и правила чтения вывода.</p>
 <p><strong>Режимы (<code>@BenchmarkMode</code>).</strong> В таблице перечислено, что меряет каждый режим и в какой ситуации его выбирать; отдельно стоит присмотреться к <code>SampleTime</code>, о котором речь пойдёт сразу после таблицы.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -575,29 +575,29 @@ java -jar target/benchmarks.jar
 </thead>
 <tbody>
 <tr>
-<td><code>Throughput</code></td>
-<td>операций в единицу времени</td>
-<td>пропускная способность, сравнение реализаций</td>
+<td data-label="Режим"><code>Throughput</code></td>
+<td data-label="Что меряет">операций в единицу времени</td>
+<td data-label="Когда использовать">пропускная способность, сравнение реализаций</td>
 </tr>
 <tr>
-<td><code>AverageTime</code></td>
-<td>среднее время на операцию</td>
-<td>латентность короткой операции</td>
+<td data-label="Режим"><code>AverageTime</code></td>
+<td data-label="Что меряет">среднее время на операцию</td>
+<td data-label="Когда использовать">латентность короткой операции</td>
 </tr>
 <tr>
-<td><code>SampleTime</code></td>
-<td>распределение времени (перцентили!)</td>
-<td>когда важен хвост, а не среднее</td>
+<td data-label="Режим"><code>SampleTime</code></td>
+<td data-label="Что меряет">распределение времени (перцентили!)</td>
+<td data-label="Когда использовать">когда важен хвост, а не среднее</td>
 </tr>
 <tr>
-<td><code>SingleShotTime</code></td>
-<td>одно измерение без прогрева</td>
-<td>холодный старт, стоимость первого вызова</td>
+<td data-label="Режим"><code>SingleShotTime</code></td>
+<td data-label="Что меряет">одно измерение без прогрева</td>
+<td data-label="Когда использовать">холодный старт, стоимость первого вызова</td>
 </tr>
 <tr>
-<td><code>All</code></td>
-<td>всё сразу</td>
-<td>разведка</td>
+<td data-label="Режим"><code>All</code></td>
+<td data-label="Что меряет">всё сразу</td>
+<td data-label="Когда использовать">разведка</td>
 </tr>
 </tbody>
 </table>
@@ -707,7 +707,7 @@ MapLookupBenchmark.treeMapGet  10000  avgt   30   84,915 ±  3,061  ns/op
 <p>async-profiler — профилировщик по отсчётам для HotSpot, который снимает стеки по сигналу и поэтому свободен от safepoint bias; он умеет профилировать CPU, выделения памяти, блокировки, календарное время и нативную память. На практике главное в нём — правильно выбрать режим под симптом, иначе профиль покажет не ту проблему, и ниже разобраны режимы, типовые команды запуска и требования к контейнеру.</p>
 <p>Текущая стабильная версия — 4.5, поддерживаются Linux (x64, arm64) и macOS (<a href="https://github.com/async-profiler/async-profiler">async-profiler</a>). Профилировать можно из командной строки по PID, через <code>-agentpath</code> при старте или через <code>jcmd</code>.</p>
 <p>Режим задаётся флагом <code>-e</code>, и в таблице ниже для каждого режима указано, что он показывает и при каком симптоме его брать; особенно внимательно посмотрите на строки <code>cpu</code> и <code>wall</code>, разница между ними разобрана сразу после таблицы.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -717,44 +717,44 @@ MapLookupBenchmark.treeMapGet  10000  avgt   30   84,915 ±  3,061  ns/op
 </thead>
 <tbody>
 <tr>
-<td><code>cpu</code></td>
-<td>где горит CPU (через <code>perf_event</code>, видны нативные и ядерные фреймы)</td>
-<td>сервис упирается в CPU</td>
+<td data-label="Режим"><code>cpu</code></td>
+<td data-label="Что показывает">где горит CPU (через <code>perf_event</code>, видны нативные и ядерные фреймы)</td>
+<td data-label="Когда нужен">сервис упирается в CPU</td>
 </tr>
 <tr>
-<td><code>itimer</code></td>
-<td>то же, но через <code>setitimer</code> — работает без прав на perf, без ядерных фреймов</td>
-<td>контейнер без <code>perf_event_paranoid</code></td>
+<td data-label="Режим"><code>itimer</code></td>
+<td data-label="Что показывает">то же, но через <code>setitimer</code> — работает без прав на perf, без ядерных фреймов</td>
+<td data-label="Когда нужен">контейнер без <code>perf_event_paranoid</code></td>
 </tr>
 <tr>
-<td><code>ctimer</code></td>
-<td>по CPU-времени потока (POSIX timer), точнее itimer при многих потоках</td>
-<td>контейнеры, где perf недоступен</td>
+<td data-label="Режим"><code>ctimer</code></td>
+<td data-label="Что показывает">по CPU-времени потока (POSIX timer), точнее itimer при многих потоках</td>
+<td data-label="Когда нужен">контейнеры, где perf недоступен</td>
 </tr>
 <tr>
-<td><code>alloc</code></td>
-<td>места, где выделяется память (по TLAB-событиям), в байтах</td>
-<td>давление на GC, поиск горячей точки выделения памяти</td>
+<td data-label="Режим"><code>alloc</code></td>
+<td data-label="Что показывает">места, где выделяется память (по TLAB-событиям), в байтах</td>
+<td data-label="Когда нужен">давление на GC, поиск горячей точки выделения памяти</td>
 </tr>
 <tr>
-<td><code>lock</code></td>
-<td>где потоки ждут монитор/<code>ReentrantLock</code>, в наносекундах ожидания</td>
-<td>контеншен</td>
+<td data-label="Режим"><code>lock</code></td>
+<td data-label="Что показывает">где потоки ждут монитор/<code>ReentrantLock</code>, в наносекундах ожидания</td>
+<td data-label="Когда нужен">контеншен</td>
 </tr>
 <tr>
-<td><code>wall</code></td>
-<td>где потоки проводят <strong>календарное</strong> время, включая ожидание</td>
-<td><strong>I/O-bound код</strong>, «CPU 10 %, а тормозит»</td>
+<td data-label="Режим"><code>wall</code></td>
+<td data-label="Что показывает">где потоки проводят <strong>календарное</strong> время, включая ожидание</td>
+<td data-label="Когда нужен"><strong>I/O-bound код</strong>, «CPU 10 %, а тормозит»</td>
 </tr>
 <tr>
-<td><code>nativemem</code></td>
-<td>нативные выделения памяти и утечки вне кучи</td>
-<td>рост RSS при стабильном heap</td>
+<td data-label="Режим"><code>nativemem</code></td>
+<td data-label="Что показывает">нативные выделения памяти и утечки вне кучи</td>
+<td data-label="Когда нужен">рост RSS при стабильном heap</td>
 </tr>
 <tr>
-<td>произвольный perf-event</td>
-<td><code>cache-misses</code>, <code>page-faults</code>, <code>context-switches</code>, <code>branch-misses</code></td>
-<td>микроархитектурные расследования</td>
+<td data-label="Режим">произвольный perf-event</td>
+<td data-label="Что показывает"><code>cache-misses</code>, <code>page-faults</code>, <code>context-switches</code>, <code>branch-misses</code></td>
+<td data-label="Когда нужен">микроархитектурные расследования</td>
 </tr>
 </tbody>
 </table>
@@ -843,7 +843,7 @@ jfr print --events jdk.SocketRead rec.jfr <span class="p">|</span> grep -A3 dura
 </code></pre></div>
 
 <p><strong>JFR против async-profiler.</strong> Таблица ниже честно сравнивает два инструмента по тем критериям, которые важны при выборе; обратите внимание на строки, помеченные «уникально», потому что ради них JFR держат включённым даже там, где есть async-profiler:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -853,49 +853,49 @@ jfr print --events jdk.SocketRead rec.jfr <span class="p">|</span> grep -A3 dura
 </thead>
 <tbody>
 <tr>
-<td>Встроен в JVM</td>
-<td>да, ничего ставить не надо</td>
-<td>нужен .so и права</td>
+<td data-label="Критерий">Встроен в JVM</td>
+<td data-label="JFR">да, ничего ставить не надо</td>
+<td data-label="async-profiler">нужен .so и права</td>
 </tr>
 <tr>
-<td>Safepoint bias в CPU-профиле</td>
-<td>классического нет (до JDK 24 асинхронный обход, с JDK 25 обход в safepoint с поправкой, JEP 518), но отсчёты снимаются с подмножества потоков и только Java-код (JEP 509)</td>
-<td>отсутствует (AsyncGetCallTrace)</td>
+<td data-label="Критерий">Safepoint bias в CPU-профиле</td>
+<td data-label="JFR">классического нет (до JDK 24 асинхронный обход, с JDK 25 обход в safepoint с поправкой, JEP 518), но отсчёты снимаются с подмножества потоков и только Java-код (JEP 509)</td>
+<td data-label="async-profiler">отсутствует (AsyncGetCallTrace)</td>
 </tr>
 <tr>
-<td>Нативные и ядерные фреймы</td>
-<td>нет</td>
-<td>да (режим <code>cpu</code> через perf)</td>
+<td data-label="Критерий">Нативные и ядерные фреймы</td>
+<td data-label="JFR">нет</td>
+<td data-label="async-profiler">да (режим <code>cpu</code> через perf)</td>
 </tr>
 <tr>
-<td>Wall-clock профиль</td>
-<td>косвенно (события I/O, park)</td>
-<td>прямой режим <code>wall</code></td>
+<td data-label="Критерий">Wall-clock профиль</td>
+<td data-label="JFR">косвенно (события I/O, park)</td>
+<td data-label="async-profiler">прямой режим <code>wall</code></td>
 </tr>
 <tr>
-<td>Выделения памяти</td>
-<td>да, TLAB-события со стеками</td>
-<td>да, обычно точнее и дешевле</td>
+<td data-label="Критерий">Выделения памяти</td>
+<td data-label="JFR">да, TLAB-события со стеками</td>
+<td data-label="async-profiler">да, обычно точнее и дешевле</td>
 </tr>
 <tr>
-<td>Блокирующий I/O с адресами</td>
-<td><strong>да, уникально</strong></td>
-<td>только косвенно через <code>wall</code></td>
+<td data-label="Критерий">Блокирующий I/O с адресами</td>
+<td data-label="JFR"><strong>да, уникально</strong></td>
+<td data-label="async-profiler">только косвенно через <code>wall</code></td>
 </tr>
 <tr>
-<td>Исключения, компиляции, деопты, safepoints</td>
-<td><strong>да, уникально</strong></td>
-<td>нет</td>
+<td data-label="Критерий">Исключения, компиляции, деопты, safepoints</td>
+<td data-label="JFR"><strong>да, уникально</strong></td>
+<td data-label="async-profiler">нет</td>
 </tr>
 <tr>
-<td>Непрерывная запись в проде</td>
-<td>да, штатный сценарий</td>
-<td>возможна, но не штатная</td>
+<td data-label="Критерий">Непрерывная запись в проде</td>
+<td data-label="JFR">да, штатный сценарий</td>
+<td data-label="async-profiler">возможна, но не штатная</td>
 </tr>
 <tr>
-<td>Накладные расходы <code>default</code></td>
-<td>«typically less than 1%»</td>
-<td>~1 % при 100 Гц</td>
+<td data-label="Критерий">Накладные расходы <code>default</code></td>
+<td data-label="JFR">«typically less than 1%»</td>
+<td data-label="async-profiler">~1 % при 100 Гц</td>
 </tr>
 </tbody>
 </table>
@@ -1314,7 +1314,7 @@ lscpu <span class="p">|</span> grep -i numa               <span class="c1"># к�
 <p>Нагрузочное тестирование проверяет, как сервис ведёт себя под заданным потоком запросов: держит ли он SLO, где его предел и что происходит при перегрузке. От него зависят и capacity planning, и уверенность перед релизом, но полезен он только тогда, когда генератор нагрузки не врёт, а стенд похож на прод. В разделе разобраны виды тестов, главный подвох под названием coordinated omission, инструменты, проектирование теста, выбор места запуска, чтение результатов, профилирование под нагрузкой и контроль регрессий в CI.</p>
 <h3 id="61-виды-нагрузочных-тестов">6.1 Виды нагрузочных тестов</h3>
 <p>Под словами «нагрузочный тест» на деле скрываются шесть разных тестов с разными целями, и из-за путаницы между ними появляются бесполезные отчёты: команда гоняет load-тест, а ответ ищет на вопрос, который задают stress или soak. В таблице ниже для каждого вида указаны профиль нагрузки, вопрос, на который он отвечает, и то, что он ловит; сразу после неё разобраны два самых недооценённых вида и breakpoint-тест.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вид</th>
@@ -1325,40 +1325,40 @@ lscpu <span class="p">|</span> grep -i numa               <span class="c1"># к�
 </thead>
 <tbody>
 <tr>
-<td><strong>Smoke</strong></td>
-<td>1–5 пользователей, 1–2 мин</td>
-<td>«сценарий вообще работает?»</td>
-<td>ошибки в скрипте, тестовых данных, окружении</td>
+<td data-label="Вид"><strong>Smoke</strong></td>
+<td data-label="Профиль нагрузки">1–5 пользователей, 1–2 мин</td>
+<td data-label="Вопрос, на который отвечает">«сценарий вообще работает?»</td>
+<td data-label="Что ловит">ошибки в скрипте, тестовых данных, окружении</td>
 </tr>
 <tr>
-<td><strong>Load</strong></td>
-<td>целевая нагрузка, 15–60 мин</td>
-<td>«держим ли мы SLO на ожидаемом трафике?»</td>
-<td>несоответствие SLO, узкие места при нормальной работе</td>
+<td data-label="Вид"><strong>Load</strong></td>
+<td data-label="Профиль нагрузки">целевая нагрузка, 15–60 мин</td>
+<td data-label="Вопрос, на который отвечает">«держим ли мы SLO на ожидаемом трафике?»</td>
+<td data-label="Что ловит">несоответствие SLO, узкие места при нормальной работе</td>
 </tr>
 <tr>
-<td><strong>Stress</strong></td>
-<td>плавный рост до отказа</td>
-<td>«где предел и как мы ломаемся?»</td>
-<td>точка насыщения, характер деградации, каскады</td>
+<td data-label="Вид"><strong>Stress</strong></td>
+<td data-label="Профиль нагрузки">плавный рост до отказа</td>
+<td data-label="Вопрос, на который отвечает">«где предел и как мы ломаемся?»</td>
+<td data-label="Что ловит">точка насыщения, характер деградации, каскады</td>
 </tr>
 <tr>
-<td><strong>Spike</strong></td>
-<td>резкий скачок ×5–×10 и обратно</td>
-<td>«переживём ли всплеск и восстановимся ли?»</td>
-<td>переполнение очередей, retry storm, отсутствие load shedding, холодное масштабирование</td>
+<td data-label="Вид"><strong>Spike</strong></td>
+<td data-label="Профиль нагрузки">резкий скачок ×5–×10 и обратно</td>
+<td data-label="Вопрос, на который отвечает">«переживём ли всплеск и восстановимся ли?»</td>
+<td data-label="Что ловит">переполнение очередей, retry storm, отсутствие load shedding, холодное масштабирование</td>
 </tr>
 <tr>
-<td><strong>Soak / endurance</strong></td>
-<td>60–80 % целевой, 4–24 часа</td>
-<td>«не деградируем ли со временем?»</td>
-<td>утечки памяти и соединений, рост bloat в БД, накопление в кешах, фрагментация, утечки FD</td>
+<td data-label="Вид"><strong>Soak / endurance</strong></td>
+<td data-label="Профиль нагрузки">60–80 % целевой, 4–24 часа</td>
+<td data-label="Вопрос, на который отвечает">«не деградируем ли со временем?»</td>
+<td data-label="Что ловит">утечки памяти и соединений, рост bloat в БД, накопление в кешах, фрагментация, утечки FD</td>
 </tr>
 <tr>
-<td><strong>Breakpoint / capacity</strong></td>
-<td>ступенчатый рост до нарушения SLO</td>
-<td>«сколько RPS держит один под?»</td>
-<td>цифра для capacity planning</td>
+<td data-label="Вид"><strong>Breakpoint / capacity</strong></td>
+<td data-label="Профиль нагрузки">ступенчатый рост до нарушения SLO</td>
+<td data-label="Вопрос, на который отвечает">«сколько RPS держит один под?»</td>
+<td data-label="Что ловит">цифра для capacity planning</td>
 </tr>
 </tbody>
 </table>
@@ -1393,7 +1393,7 @@ wrk2 -t8 -c200 -d5m -R2000 --latency http://svc:8080/api/orders
 <h3 id="63-инструменты-нагрузочного-тестирования">6.3 Инструменты нагрузочного тестирования</h3>
 <p>Инструменты нагрузочного тестирования различаются языком сценария, моделью нагрузки и тем, насколько сами они становятся узким местом при больших RPS. Для Java-команды выбор обычно сводится к Gatling или k6, но полезно понимать, чем плохи остальные; ниже сравнительная таблица, а после неё полный сценарий на Gatling и аналог на k6.</p>
 <p>В таблице стоит смотреть прежде всего на колонку «Модель»: инструмент, который умеет только closed-модель, по умолчанию страдает от coordinated omission.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Инструмент</th>
@@ -1405,39 +1405,39 @@ wrk2 -t8 -c200 -d5m -R2000 --latency http://svc:8080/api/orders
 </thead>
 <tbody>
 <tr>
-<td><strong>Gatling</strong></td>
-<td>Java/Kotlin/Scala DSL</td>
-<td>open и closed</td>
-<td>производительный движок на Netty (Akka в зависимостях актуальной ветки уже нет), богатый HTML-отчёт, assertions в CI, feeders</td>
-<td>порог входа в DSL; в open-source нет распределённого запуска «из коробки»</td>
+<td data-label="Инструмент"><strong>Gatling</strong></td>
+<td data-label="Язык сценария">Java/Kotlin/Scala DSL</td>
+<td data-label="Модель">open и closed</td>
+<td data-label="Сильные стороны">производительный движок на Netty (Akka в зависимостях актуальной ветки уже нет), богатый HTML-отчёт, assertions в CI, feeders</td>
+<td data-label="Ограничения">порог входа в DSL; в open-source нет распределённого запуска «из коробки»</td>
 </tr>
 <tr>
-<td><strong>k6</strong></td>
-<td>JavaScript (ES6), движок на Go</td>
-<td>open (executors) и closed (VU)</td>
-<td>простые сценарии, отличные thresholds, хорошо ложится в CI, экспорт в Prometheus</td>
-<td>JS-сценарий не повторно использует Java-код; сложная логика неудобна</td>
+<td data-label="Инструмент"><strong>k6</strong></td>
+<td data-label="Язык сценария">JavaScript (ES6), движок на Go</td>
+<td data-label="Модель">open (executors) и closed (VU)</td>
+<td data-label="Сильные стороны">простые сценарии, отличные thresholds, хорошо ложится в CI, экспорт в Prometheus</td>
+<td data-label="Ограничения">JS-сценарий не повторно использует Java-код; сложная логика неудобна</td>
 </tr>
 <tr>
-<td><strong>JMeter</strong></td>
-<td>GUI/XML</td>
-<td>по сути closed</td>
-<td>зрелость, море плагинов, знаком тестировщикам</td>
-<td>поток на пользователя → сам становится узким местом; GUI-режим нельзя использовать для прогона; coordinated omission по умолчанию</td>
+<td data-label="Инструмент"><strong>JMeter</strong></td>
+<td data-label="Язык сценария">GUI/XML</td>
+<td data-label="Модель">по сути closed</td>
+<td data-label="Сильные стороны">зрелость, море плагинов, знаком тестировщикам</td>
+<td data-label="Ограничения">поток на пользователя → сам становится узким местом; GUI-режим нельзя использовать для прогона; coordinated omission по умолчанию</td>
 </tr>
 <tr>
-<td><strong>wrk2</strong></td>
-<td>Lua</td>
-<td>open (<code>-R</code>)</td>
-<td>минимальные накладные расходы, корректные перцентили, HDR-гистограмма</td>
-<td>только HTTP, примитивные сценарии</td>
+<td data-label="Инструмент"><strong>wrk2</strong></td>
+<td data-label="Язык сценария">Lua</td>
+<td data-label="Модель">open (<code>-R</code>)</td>
+<td data-label="Сильные стороны">минимальные накладные расходы, корректные перцентили, HDR-гистограмма</td>
+<td data-label="Ограничения">только HTTP, примитивные сценарии</td>
 </tr>
 <tr>
-<td><strong>Locust</strong></td>
-<td>Python</td>
-<td>closed (по умолчанию)</td>
-<td>питонисты, распределённый запуск</td>
-<td>GIL, требует много воркеров</td>
+<td data-label="Инструмент"><strong>Locust</strong></td>
+<td data-label="Язык сценария">Python</td>
+<td data-label="Модель">closed (по умолчанию)</td>
+<td data-label="Сильные стороны">питонисты, распределённый запуск</td>
+<td data-label="Ограничения">GIL, требует много воркеров</td>
 </tr>
 </tbody>
 </table>
@@ -1595,7 +1595,7 @@ kubectl cp pay-svc-0:/tmp/cpu.html ./cpu.html
 <p>Оптимизация — это изменение, которое уменьшает время или ресурсы на найденном узком месте, и в этом разделе речь пойдёт уже о том, что делать после измерения. Главная ловушка здесь в том, что эффект от приёмов различается на порядки, а заметнее всего в коде именно те, что дают меньше всего. Ниже разобраны иерархия приёмов по отдаче, дисциплина изменений, быстрые победы, опасные «оптимизации», честный тюнинг JVM, компромисс с читаемостью, escape analysis и векторизация.</p>
 <h3 id="71-уровни-оптимизации">7.1 Уровни оптимизации</h3>
 <p>Иерархия эффективности упорядочивает уровни оптимизации — от архитектуры до микрооптимизаций кода — по типичной отдаче. Правило простое: <strong>не спускайтесь на уровень ниже, пока не исчерпан уровень выше</strong>, иначе вы выиграете 3 % там, где рядом лежат 300 %. В таблице ниже для каждого уровня указаны типичная отдача, примеры и цена; сравните первые две колонки у верхних и нижних строк, чтобы увидеть разницу в порядках.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -1606,34 +1606,34 @@ kubectl cp pay-svc-0:/tmp/cpu.html ./cpu.html
 </thead>
 <tbody>
 <tr>
-<td>1. Архитектура</td>
-<td>10–100×</td>
-<td>не делать вызов вообще; кеш; асинхронность вместо ожидания; денормализация чтения; перенос работы в фон; изменение границ сервисов</td>
-<td>высокая: риск, время, сложность</td>
+<td data-label="Уровень">1. Архитектура</td>
+<td data-label="Типичная отдача">10–100×</td>
+<td data-label="Примеры">не делать вызов вообще; кеш; асинхронность вместо ожидания; денормализация чтения; перенос работы в фон; изменение границ сервисов</td>
+<td data-label="Цена">высокая: риск, время, сложность</td>
 </tr>
 <tr>
-<td>2. Алгоритм и структура данных</td>
-<td>2–50×</td>
-<td>O(n²) → O(n log n); <code>HashMap</code> вместо линейного поиска; примитивный массив вместо списка обёрток</td>
-<td>средняя</td>
+<td data-label="Уровень">2. Алгоритм и структура данных</td>
+<td data-label="Типичная отдача">2–50×</td>
+<td data-label="Примеры">O(n²) → O(n log n); <code>HashMap</code> вместо линейного поиска; примитивный массив вместо списка обёрток</td>
+<td data-label="Цена">средняя</td>
 </tr>
 <tr>
-<td>3. Работа с БД</td>
-<td>2–100×</td>
-<td>индекс; убрать N+1; пакет; keyset-пагинация; проекция вместо сущности</td>
-<td>низкая, эффект часто мгновенный</td>
+<td data-label="Уровень">3. Работа с БД</td>
+<td data-label="Типичная отдача">2–100×</td>
+<td data-label="Примеры">индекс; убрать N+1; пакет; keyset-пагинация; проекция вместо сущности</td>
+<td data-label="Цена">низкая, эффект часто мгновенный</td>
 </tr>
 <tr>
-<td>4. Настройки</td>
-<td>1,2–5×</td>
-<td>размер пула; <code>fetch_size</code>; <code>batch_size</code>; heap и GC; буферы; keep-alive</td>
-<td>очень низкая</td>
+<td data-label="Уровень">4. Настройки</td>
+<td data-label="Типичная отдача">1,2–5×</td>
+<td data-label="Примеры">размер пула; <code>fetch_size</code>; <code>batch_size</code>; heap и GC; буферы; keep-alive</td>
+<td data-label="Цена">очень низкая</td>
 </tr>
 <tr>
-<td>5. Микрооптимизация кода</td>
-<td>1,01–1,3×</td>
-<td><code>StringBuilder</code>; избавление от упаковки в горячем цикле; ручной цикл вместо стрима</td>
-<td>низкая по усилию, высокая по читаемости</td>
+<td data-label="Уровень">5. Микрооптимизация кода</td>
+<td data-label="Типичная отдача">1,01–1,3×</td>
+<td data-label="Примеры"><code>StringBuilder</code>; избавление от упаковки в горячем цикле; ручной цикл вместо стрима</td>
+<td data-label="Цена">низкая по усилию, высокая по читаемости</td>
 </tr>
 </tbody>
 </table>
@@ -1677,7 +1677,7 @@ kubectl cp pay-svc-0:/tmp/cpu.html ./cpu.html
 <h3 id="75-настройка-jvm">7.5 Настройка JVM</h3>
 <p>Тюнинг JVM — это ручная настройка флагов памяти, сборщика и диагностики вместо тех значений, которые HotSpot выбирает сам. Правду об этом говорят редко: <strong>эргономика HotSpot в JDK 17+ хорошо работает по умолчанию</strong>, и список флагов, которые стоит менять осознанно, получается коротким. Ниже таблица флагов, которые трогать стоит, список тех, что без измерения лучше не трогать, объяснение вреда копипасты и пример осмысленной конфигурации пода.</p>
 <p><strong>Что стоит настраивать.</strong> В таблице для каждого флага указано, зачем он нужен и какие у него оговорки; первые две строки важнее всего для контейнера, а диагностические флаги в нижней половине стоят почти ноль и нужны всегда:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Флаг</th>
@@ -1687,59 +1687,59 @@ kubectl cp pay-svc-0:/tmp/cpu.html ./cpu.html
 </thead>
 <tbody>
 <tr>
-<td><code>-XX:MaxRAMPercentage</code></td>
-<td>задать долю памяти контейнера под heap</td>
-<td>основной способ в контейнере; 60–75 % для сервисов с умеренным off-heap. Детали — глава 46</td>
+<td data-label="Флаг"><code>-XX:MaxRAMPercentage</code></td>
+<td data-label="Зачем">задать долю памяти контейнера под heap</td>
+<td data-label="Замечание">основной способ в контейнере; 60–75 % для сервисов с умеренным off-heap. Детали — глава 46</td>
 </tr>
 <tr>
-<td><code>-XX:InitialRAMPercentage</code></td>
-<td>= MaxRAM, чтобы не было роста heap под нагрузкой</td>
-<td>убирает «пилу» в начале жизни пода</td>
+<td data-label="Флаг"><code>-XX:InitialRAMPercentage</code></td>
+<td data-label="Зачем">= MaxRAM, чтобы не было роста heap под нагрузкой</td>
+<td data-label="Замечание">убирает «пилу» в начале жизни пода</td>
 </tr>
 <tr>
-<td>выбор GC (<code>-XX:+UseG1GC</code> / <code>UseZGC</code> / <code>UseSerialGC</code>)</td>
-<td>компромисс паузы/throughput</td>
-<td>G1 — сборщик по умолчанию и правильный выбор в большинстве случаев (до JDK 26 включительно при одном CPU или меньше 1792 МБ памяти JVM сама выбирала Serial, а с JDK 27 G1 выбирается во всех окружениях, <a href="https://openjdk.org/jeps/523">JEP 523</a>); ZGC — когда нужны паузы &lt; 1 мс и есть запас CPU/памяти; Serial — для очень маленьких подов (&lt; 1 CPU)</td>
+<td data-label="Флаг">выбор GC (<code>-XX:+UseG1GC</code> / <code>UseZGC</code> / <code>UseSerialGC</code>)</td>
+<td data-label="Зачем">компромисс паузы/throughput</td>
+<td data-label="Замечание">G1 — сборщик по умолчанию и правильный выбор в большинстве случаев (до JDK 26 включительно при одном CPU или меньше 1792 МБ памяти JVM сама выбирала Serial, а с JDK 27 G1 выбирается во всех окружениях, <a href="https://openjdk.org/jeps/523">JEP 523</a>); ZGC — когда нужны паузы &lt; 1 мс и есть запас CPU/памяти; Serial — для очень маленьких подов (&lt; 1 CPU)</td>
 </tr>
 <tr>
-<td><code>-XX:MaxGCPauseMillis</code> (G1)</td>
-<td>целевая пауза</td>
-<td>это цель, а не гарантия; слишком малое значение заставит G1 уменьшить young и участить сборки</td>
+<td data-label="Флаг"><code>-XX:MaxGCPauseMillis</code> (G1)</td>
+<td data-label="Зачем">целевая пауза</td>
+<td data-label="Замечание">это цель, а не гарантия; слишком малое значение заставит G1 уменьшить young и участить сборки</td>
 </tr>
 <tr>
-<td><code>-Xss</code></td>
-<td>глубина стека</td>
-<td>поднимают при глубокой рекурсии, снижают при тысячах платформенных потоков</td>
+<td data-label="Флаг"><code>-Xss</code></td>
+<td data-label="Зачем">глубина стека</td>
+<td data-label="Замечание">поднимают при глубокой рекурсии, снижают при тысячах платформенных потоков</td>
 </tr>
 <tr>
-<td><code>-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=...</code></td>
-<td>посмертная диагностика</td>
-<td>обязательно, стоит ноль</td>
+<td data-label="Флаг"><code>-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=...</code></td>
+<td data-label="Зачем">посмертная диагностика</td>
+<td data-label="Замечание">обязательно, стоит ноль</td>
 </tr>
 <tr>
-<td><code>-XX:+ExitOnOutOfMemoryError</code></td>
-<td>быстрый рестарт вместо зомби</td>
-<td>для stateless-подов в k8s почти всегда правильно (с дампом в PVC)</td>
+<td data-label="Флаг"><code>-XX:+ExitOnOutOfMemoryError</code></td>
+<td data-label="Зачем">быстрый рестарт вместо зомби</td>
+<td data-label="Замечание">для stateless-подов в k8s почти всегда правильно (с дампом в PVC)</td>
 </tr>
 <tr>
-<td><code>-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints</code></td>
-<td>точные стеки в async-profiler</td>
-<td>практически бесплатно</td>
+<td data-label="Флаг"><code>-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints</code></td>
+<td data-label="Зачем">точные стеки в async-profiler</td>
+<td data-label="Замечание">практически бесплатно</td>
 </tr>
 <tr>
-<td><code>-XX:StartFlightRecording:...maxage=15m</code></td>
-<td>«чёрный ящик»</td>
-<td>&lt; 1 % по документации Oracle</td>
+<td data-label="Флаг"><code>-XX:StartFlightRecording:...maxage=15m</code></td>
+<td data-label="Зачем">«чёрный ящик»</td>
+<td data-label="Замечание">&lt; 1 % по документации Oracle</td>
 </tr>
 <tr>
-<td><code>-XX:-OmitStackTraceInFastThrow</code></td>
-<td>не терять трассировки стека</td>
-<td>платите производительностью в патологии, получаете диагностируемость</td>
+<td data-label="Флаг"><code>-XX:-OmitStackTraceInFastThrow</code></td>
+<td data-label="Зачем">не терять трассировки стека</td>
+<td data-label="Замечание">платите производительностью в патологии, получаете диагностируемость</td>
 </tr>
 <tr>
-<td><code>-XX:ActiveProcessorCount</code></td>
-<td>когда JVM неверно определяет ядра</td>
-<td>иногда нужно при CPU limit в долях ядра</td>
+<td data-label="Флаг"><code>-XX:ActiveProcessorCount</code></td>
+<td data-label="Зачем">когда JVM неверно определяет ядра</td>
+<td data-label="Замечание">иногда нужно при CPU limit в долях ядра</td>
 </tr>
 </tbody>
 </table>
@@ -1809,7 +1809,7 @@ java -jar target/benchmarks.jar EscapeBenchmark -prof gc -f <span class="m">3</s
 
 <p>Третий способ — посмотреть на выделение памяти со стороны прода: если в профиле выделений памяти (<code>asprof -e alloc</code>) или в событиях <code>jdk.ObjectAllocationInNewTLAB</code> вашего класса нет, объекты действительно не создаются. Этот способ самый честный, но и самый поздний.</p>
 <p><strong>Что ломает оптимизацию.</strong> В таблице ниже перечислены правки, каждая из которых на ревью выглядит безобидно и каждая способна вернуть выделение памяти. Одно замечание перед ней: список неполон и зависит от версии, поэтому пользоваться им надо как набором гипотез для проверки бенчмарком, а не как законом.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Правка</th>
@@ -1819,44 +1819,44 @@ java -jar target/benchmarks.jar EscapeBenchmark -prof gc -f <span class="m">3</s
 </thead>
 <tbody>
 <tr>
-<td>Сохранить объект в поле (пусть даже приватное)</td>
-<td>ссылка становится глобально видимой, <code>GlobalEscape</code></td>
-<td>держать значение в локальной переменной</td>
+<td data-label="Правка">Сохранить объект в поле (пусть даже приватное)</td>
+<td data-label="Почему ломает">ссылка становится глобально видимой, <code>GlobalEscape</code></td>
+<td data-label="Что делать">держать значение в локальной переменной</td>
 </tr>
 <tr>
-<td>Вернуть объект из метода наружу</td>
-<td>ссылка уходит за границу компилируемого кода</td>
-<td>возвращать примитив или разложить на поля</td>
+<td data-label="Правка">Вернуть объект из метода наружу</td>
+<td data-label="Почему ломает">ссылка уходит за границу компилируемого кода</td>
+<td data-label="Что делать">возвращать примитив или разложить на поля</td>
 </tr>
 <tr>
-<td>Положить в коллекцию, массив или <code>Optional</code></td>
-<td>тот же <code>GlobalEscape</code></td>
-<td>не заворачивать промежуточные значения</td>
+<td data-label="Правка">Положить в коллекцию, массив или <code>Optional</code></td>
+<td data-label="Почему ломает">тот же <code>GlobalEscape</code></td>
+<td data-label="Что делать">не заворачивать промежуточные значения</td>
 </tr>
 <tr>
-<td>Передать в метод, который не встроился</td>
-<td>для анализа это непрозрачный вызов</td>
-<td>уменьшить метод, проверить <code>PrintInlining</code></td>
+<td data-label="Правка">Передать в метод, который не встроился</td>
+<td data-label="Почему ломает">для анализа это непрозрачный вызов</td>
+<td data-label="Что делать">уменьшить метод, проверить <code>PrintInlining</code></td>
 </tr>
 <tr>
-<td>Добавить в цепочку третью реализацию интерфейса</td>
-<td>call site становится мегаморфным, встраивание прекращается</td>
-<td>разделить обработку по типам (см. разбор 9.6)</td>
+<td data-label="Правка">Добавить в цепочку третью реализацию интерфейса</td>
+<td data-label="Почему ломает">call site становится мегаморфным, встраивание прекращается</td>
+<td data-label="Что делать">разделить обработку по типам (см. разбор 9.6)</td>
 </tr>
 <tr>
-<td>Увеличить метод сверх порога встраивания</td>
-<td>фабрика перестаёт встраиваться</td>
-<td>вынести холодный код в отдельный метод</td>
+<td data-label="Правка">Увеличить метод сверх порога встраивания</td>
+<td data-label="Почему ломает">фабрика перестаёт встраиваться</td>
+<td data-label="Что делать">вынести холодный код в отдельный метод</td>
 </tr>
 <tr>
-<td>Добавить <code>synchronized</code> на объект</td>
-<td>блокировка мешает устранению; в лучшем случае снимется elision, в худшем выделение памяти вернётся</td>
-<td>синхронизировать не на короткоживущем объекте</td>
+<td data-label="Правка">Добавить <code>synchronized</code> на объект</td>
+<td data-label="Почему ломает">блокировка мешает устранению; в лучшем случае снимется elision, в худшем выделение памяти вернётся</td>
+<td data-label="Что делать">синхронизировать не на короткоживущем объекте</td>
 </tr>
 <tr>
-<td>Бросить исключение из середины</td>
-<td>путь становится сложнее для анализа</td>
-<td>не использовать исключения в горячем пути</td>
+<td data-label="Правка">Бросить исключение из середины</td>
+<td data-label="Почему ломает">путь становится сложнее для анализа</td>
+<td data-label="Что делать">не использовать исключения в горячем пути</td>
 </tr>
 </tbody>
 </table>
@@ -1987,7 +1987,7 @@ java -jar target/benchmarks.jar SumBenchmark -prof perfasm -f <span class="m">1<
 </ul>
 <h3 id="83-вертикальное-и-горизонтальное-масштабирование-jvm">8.3 Вертикальное и горизонтальное масштабирование JVM</h3>
 <p>Выбор между вертикальным и горизонтальным масштабированием сводится к вопросу «десять подов по 2 ГБ или два пода по 10 ГБ», и для JVM он не решается простой арифметикой. Размер пода влияет на паузы GC, на качество JIT-компиляции, на накладные расходы памяти и на то, какую долю трафика задевает отказ одного экземпляра. В таблице ниже эти критерии сопоставлены для обоих вариантов; обратите внимание, что строки тянут в разные стороны, поэтому после таблицы приведён практический ориентир.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -1997,49 +1997,49 @@ java -jar target/benchmarks.jar SumBenchmark -prof perfasm -f <span class="m">1<
 </thead>
 <tbody>
 <tr>
-<td>Паузы GC</td>
-<td>меньше heap → короче паузы; Serial/G1 на 1–2 ГБ дают миллисекунды</td>
-<td>большой heap → длиннее паузы у G1; нужен ZGC</td>
+<td data-label="Критерий">Паузы GC</td>
+<td data-label="Много маленьких подов">меньше heap → короче паузы; Serial/G1 на 1–2 ГБ дают миллисекунды</td>
+<td data-label="Мало больших подов">большой heap → длиннее паузы у G1; нужен ZGC</td>
 </tr>
 <tr>
-<td>Прогрев</td>
-<td>каждый под прогревается отдельно; при 20 подах и частых деплоях суммарная «холодная» доля трафика выше</td>
-<td>меньше экземпляров прогревать</td>
+<td data-label="Критерий">Прогрев</td>
+<td data-label="Много маленьких подов">каждый под прогревается отдельно; при 20 подах и частых деплоях суммарная «холодная» доля трафика выше</td>
+<td data-label="Мало больших подов">меньше экземпляров прогревать</td>
 </tr>
 <tr>
-<td>JIT-эффективность</td>
-<td>на 1 ядро C2-компиляция конкурирует с полезной работой; профиль накапливается медленнее (меньше трафика на под)</td>
-<td>больше трафика на JVM → быстрее и качественнее профилирование и компиляция</td>
+<td data-label="Критерий">JIT-эффективность</td>
+<td data-label="Много маленьких подов">на 1 ядро C2-компиляция конкурирует с полезной работой; профиль накапливается медленнее (меньше трафика на под)</td>
+<td data-label="Мало больших подов">больше трафика на JVM → быстрее и качественнее профилирование и компиляция</td>
 </tr>
 <tr>
-<td>Накладные расходы памяти</td>
-<td>metaspace, code cache, стеки потоков, GC-структуры дублируются в каждом поде (легко 200–400 МБ overhead на JVM)</td>
-<td>overhead платится один раз</td>
+<td data-label="Критерий">Накладные расходы памяти</td>
+<td data-label="Много маленьких подов">metaspace, code cache, стеки потоков, GC-структуры дублируются в каждом поде (легко 200–400 МБ overhead на JVM)</td>
+<td data-label="Мало больших подов">overhead платится один раз</td>
 </tr>
 <tr>
-<td>Отказоустойчивость</td>
-<td>потеря одного пода = потеря 1/20 ёмкости</td>
-<td>потеря одного пода = потеря 1/2 ёмкости</td>
+<td data-label="Критерий">Отказоустойчивость</td>
+<td data-label="Много маленьких подов">потеря одного пода = потеря 1/20 ёмкости</td>
+<td data-label="Мало больших подов">потеря одного пода = потеря 1/2 ёмкости</td>
 </tr>
 <tr>
-<td>Хвост латентности</td>
-<td>GC-пауза бьёт по 1/20 трафика</td>
-<td>пауза бьёт по 1/2 трафика</td>
+<td data-label="Критерий">Хвост латентности</td>
+<td data-label="Много маленьких подов">GC-пауза бьёт по 1/20 трафика</td>
+<td data-label="Мало больших подов">пауза бьёт по 1/2 трафика</td>
 </tr>
 <tr>
-<td>Соединения к БД</td>
-<td>пулы суммируются, легко перебрать <code>max_connections</code></td>
-<td>меньше соединений суммарно</td>
+<td data-label="Критерий">Соединения к БД</td>
+<td data-label="Много маленьких подов">пулы суммируются, легко перебрать <code>max_connections</code></td>
+<td data-label="Мало больших подов">меньше соединений суммарно</td>
 </tr>
 <tr>
-<td>Скорость масштабирования</td>
-<td>новый маленький под стартует быстрее</td>
-<td>большой под стартует дольше</td>
+<td data-label="Критерий">Скорость масштабирования</td>
+<td data-label="Много маленьких подов">новый маленький под стартует быстрее</td>
+<td data-label="Мало больших подов">большой под стартует дольше</td>
 </tr>
 <tr>
-<td>Утилизация ядер</td>
-<td>под с CPU limit 0,5 ядра: JVM видит мало процессоров, GC и JIT потоки конкурируют с приложением</td>
-<td>нормальный параллелизм GC/JIT</td>
+<td data-label="Критерий">Утилизация ядер</td>
+<td data-label="Много маленьких подов">под с CPU limit 0,5 ядра: JVM видит мало процессоров, GC и JIT потоки конкурируют с приложением</td>
+<td data-label="Мало больших подов">нормальный параллелизм GC/JIT</td>
 </tr>
 </tbody>
 </table>
@@ -2076,7 +2076,7 @@ java -jar target/benchmarks.jar SumBenchmark -prof perfasm -f <span class="m">1<
 <p>Об оптимизации почти всегда говорят в миллисекундах и процентах утилизации, а решают, делать её или нет, в деньгах и человеко-неделях. Переводить одно в другое обязан уметь инженер, который хочет, чтобы его работу приоритизировали, и этот же навык защищает от самой дорогой ошибки в этой области — месяца оптимизации ради экономии, которая меньше стоимости этого месяца. В этом подразделе посчитаем на конкретных числах, во сколько подов обходится латентность, как снижение p99 превращается в экономию инфраструктуры, когда честный ответ звучит как «дешевле докупить железо», сколько стоит избыточный запас и почему связь утилизации с надёжностью не даёт довести экономию до конца.</p>
 <p><strong>Откуда берётся связь латентности и числа подов.</strong> Связь эта прямая и вытекает из закона Литтла. Число одновременно обрабатываемых запросов равно интенсивности, умноженной на время обработки, а число подов определяется тем, сколько одновременных запросов один под способен переварить при соблюдении SLO. Значит, если время обработки сократилось, а интенсивность осталась прежней, потребность в мощности сокращается пропорционально. Если в SLO упирается именно p99, то его снижение позволяет поднять рабочую точку каждого пода по RPS, и экономия получается почти линейной.</p>
 <p>Посчитаем целиком на примере сервиса из раздела 6.6, где breakpoint-тест дал колено на 400 RPS и рабочую точку 300 RPS на под. Пусть пиковая нагрузка составляет 1 200 RPS, под сконфигурирован на 2 ядра и 2 ГБ памяти, а прейскурант облака даёт 38 долларов в месяц за ядро и 4 доллара за гигабайт памяти. Тогда один под стоит <code>2 × 38 + 2 × 4 = 84</code> доллара в месяц, а таблица ниже прослеживает расчёт до и после оптимизации по шагам из 8.1:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Шаг расчёта</th>
@@ -2086,34 +2086,34 @@ java -jar target/benchmarks.jar SumBenchmark -prof perfasm -f <span class="m">1<
 </thead>
 <tbody>
 <tr>
-<td>Рабочая точка на под</td>
-<td class="num">300 RPS</td>
-<td class="num">375 RPS</td>
+<td data-label="Шаг расчёта">Рабочая точка на под</td>
+<td data-label="До оптимизации" class="num">300 RPS</td>
+<td data-label="После снижения p99 на 20 %" class="num">375 RPS</td>
 </tr>
 <tr>
-<td>Базовое число подов на пик 1 200 RPS</td>
-<td class="num">4</td>
-<td class="num">3,2 (округляется только итог: 3,2 × 1,75 = 5,6 → 6)</td>
+<td data-label="Шаг расчёта">Базовое число подов на пик 1 200 RPS</td>
+<td data-label="До оптимизации" class="num">4</td>
+<td data-label="После снижения p99 на 20 %" class="num">3,2 (округляется только итог: 3,2 × 1,75 = 5,6 → 6)</td>
 </tr>
 <tr>
-<td>Множитель запаса (отказ, выкат, рост)</td>
-<td class="num">1,75</td>
-<td class="num">1,75</td>
+<td data-label="Шаг расчёта">Множитель запаса (отказ, выкат, рост)</td>
+<td data-label="До оптимизации" class="num">1,75</td>
+<td data-label="После снижения p99 на 20 %" class="num">1,75</td>
 </tr>
 <tr>
-<td>Итого подов</td>
-<td class="num">7</td>
-<td class="num">6</td>
+<td data-label="Шаг расчёта">Итого подов</td>
+<td data-label="До оптимизации" class="num">7</td>
+<td data-label="После снижения p99 на 20 %" class="num">6</td>
 </tr>
 <tr>
-<td>Стоимость в месяц</td>
-<td class="num">588 $</td>
-<td class="num">504 $</td>
+<td data-label="Шаг расчёта">Стоимость в месяц</td>
+<td data-label="До оптимизации" class="num">588 $</td>
+<td data-label="После снижения p99 на 20 %" class="num">504 $</td>
 </tr>
 <tr>
-<td>Экономия в год</td>
-<td class="num">—</td>
-<td class="num">1 008 $</td>
+<td data-label="Шаг расчёта">Экономия в год</td>
+<td data-label="До оптимизации" class="num">—</td>
+<td data-label="После снижения p99 на 20 %" class="num">1 008 $</td>
 </tr>
 </tbody>
 </table>
@@ -2741,5 +2741,5 @@ kubectl <span class="nb">exec</span> -it &lt;pod&gt; -- cat /sys/fs/cgroup/cpu.s
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-методология-анализа-производительности">1. Методология анализа производительности</a></li><li><a href="#2-математика-производительности">2. Математика производительности</a></li><li><a href="#3-микробенчмарки-и-jmh">3. Микробенчмарки и JMH</a></li><li><a href="#4-профилирование">4. Профилирование</a></li><li><a href="#5-типовые-узкие-места-java-бэкенда">5. Типовые узкие места Java-бэкенда</a></li><li><a href="#6-нагрузочное-тестирование">6. Нагрузочное тестирование</a></li><li><a href="#7-оптимизация">7. Оптимизация</a></li><li><a href="#8-планирование-мощности-capacity-planning">8. Планирование мощности (capacity planning)</a></li><li><a href="#9-разобранные-инциденты">9. Разобранные инциденты</a></li><li><a href="#10-грабли-и-антипаттерны">10. Грабли и антипаттерны</a></li><li><a href="#11-диагностика">11. Диагностика</a></li><li><a href="#12-вопросы-на-интервью">12. Вопросы на интервью</a></li><li><a href="#13-попробовать-руками">13. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

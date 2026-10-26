@@ -3,7 +3,7 @@
 <title>50. Linux и сеть для бэкенд-разработчика — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Linux и сеть для бэкенд-разработчика">
 <a class="skip" href="#content">К тексту</a>
@@ -62,7 +62,7 @@ Threads:    287
 <p><code>PPid: 1</code> в контейнере означает, что процесс — прямой потомок PID 1, а если ещё и <code>Pid: 1</code>, то JVM сама является init-процессом со всеми вытекающими (не пожинает сирот, игнорирует сигналы без явного обработчика). Подробности про PID 1, <code>--init</code>, tini и зомби — в главе 46 (<code>46-docker-jvm.md</code>).</p>
 <h3 id="12-состояния-процесса-r-s-d-z-t">1.2 Состояния процесса: R, S, D, Z, T</h3>
 <p>Колонка <code>STAT</code> в <code>ps</code> и <code>S</code> в <code>top</code> — одна буква, которая часто решает инцидент. Значения документированы в <code>proc_pid_stat(5)</code> (<a href="https://man7.org/linux/man-pages/man5/proc_pid_stat.5.html">man7.org</a>):</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Код</th>
@@ -72,44 +72,44 @@ Threads:    287
 </thead>
 <tbody>
 <tr>
-<td><code>R</code></td>
-<td>Running</td>
-<td>Выполняется на CPU <strong>или стоит в runqueue</strong> готовый к выполнению. <code>R</code> не значит «жрёт процессор прямо сейчас» — значит «хочет процессор».</td>
+<td data-label="Код"><code>R</code></td>
+<td data-label="Название по man">Running</td>
+<td data-label="Что это значит на практике">Выполняется на CPU <strong>или стоит в runqueue</strong> готовый к выполнению. <code>R</code> не значит «жрёт процессор прямо сейчас» — значит «хочет процессор».</td>
 </tr>
 <tr>
-<td><code>S</code></td>
-<td>Sleeping in an interruptible wait</td>
-<td>Ждёт события и может быть разбужен сигналом. Нормальное состояние 95 % потоков JVM: ждут на <code>epoll_wait</code>, <code>futex</code>, <code>poll</code>.</td>
+<td data-label="Код"><code>S</code></td>
+<td data-label="Название по man">Sleeping in an interruptible wait</td>
+<td data-label="Что это значит на практике">Ждёт события и может быть разбужен сигналом. Нормальное состояние 95 % потоков JVM: ждут на <code>epoll_wait</code>, <code>futex</code>, <code>poll</code>.</td>
 </tr>
 <tr>
-<td><code>D</code></td>
-<td>Waiting in uninterruptible disk sleep</td>
-<td>Ждёт завершения операции ввода-вывода в ядре и <strong>не реагирует на сигналы, включая SIGKILL</strong>.</td>
+<td data-label="Код"><code>D</code></td>
+<td data-label="Название по man">Waiting in uninterruptible disk sleep</td>
+<td data-label="Что это значит на практике">Ждёт завершения операции ввода-вывода в ядре и <strong>не реагирует на сигналы, включая SIGKILL</strong>.</td>
 </tr>
 <tr>
-<td><code>Z</code></td>
-<td>Zombie</td>
-<td>Завершился, но родитель не вызвал <code>wait()</code>. Занимает только запись в таблице процессов.</td>
+<td data-label="Код"><code>Z</code></td>
+<td data-label="Название по man">Zombie</td>
+<td data-label="Что это значит на практике">Завершился, но родитель не вызвал <code>wait()</code>. Занимает только запись в таблице процессов.</td>
 </tr>
 <tr>
-<td><code>T</code></td>
-<td>Stopped (on a signal)</td>
-<td>Остановлен <code>SIGSTOP</code>/<code>SIGTSTP</code>, продолжается <code>SIGCONT</code>.</td>
+<td data-label="Код"><code>T</code></td>
+<td data-label="Название по man">Stopped (on a signal)</td>
+<td data-label="Что это значит на практике">Остановлен <code>SIGSTOP</code>/<code>SIGTSTP</code>, продолжается <code>SIGCONT</code>.</td>
 </tr>
 <tr>
-<td><code>t</code></td>
-<td>Tracing stop (Linux 2.6.33+)</td>
-<td>Остановлен отладчиком (<code>ptrace</code>), в том числе <code>strace</code>/<code>gdb</code>/<code>jattach</code>.</td>
+<td data-label="Код"><code>t</code></td>
+<td data-label="Название по man">Tracing stop (Linux 2.6.33+)</td>
+<td data-label="Что это значит на практике">Остановлен отладчиком (<code>ptrace</code>), в том числе <code>strace</code>/<code>gdb</code>/<code>jattach</code>.</td>
 </tr>
 <tr>
-<td><code>I</code></td>
-<td>Idle (Linux 4.14+)</td>
-<td>Простаивающий поток ядра; не учитывается в load average.</td>
+<td data-label="Код"><code>I</code></td>
+<td data-label="Название по man">Idle (Linux 4.14+)</td>
+<td data-label="Что это значит на практике">Простаивающий поток ядра; не учитывается в load average.</td>
 </tr>
 <tr>
-<td><code>X</code></td>
-<td>Dead</td>
-<td>Переходное, в выводе практически не встречается.</td>
+<td data-label="Код"><code>X</code></td>
+<td data-label="Название по man">Dead</td>
+<td data-label="Что это значит на практике">Переходное, в выводе практически не встречается.</td>
 </tr>
 </tbody>
 </table>
@@ -146,7 +146,7 @@ cat /proc/12345/task/12399/wchan<span class="p">;</span> <span class="nb">echo</
 </blockquote>
 <h3 id="13-псевдофайловая-система-procltpidgt">1.3 Псевдофайловая система <code>/proc/&lt;pid&gt;/</code></h3>
 <p>Псевдофайловая система <code>/proc</code> — единственное место, где можно посмотреть реальное состояние процесса без всяких агентов. Всё документировано в <code>proc(5)</code>. Что реально нужно бэкенд-разработчику:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Путь</th>
@@ -156,74 +156,74 @@ cat /proc/12345/task/12399/wchan<span class="p">;</span> <span class="nb">echo</
 </thead>
 <tbody>
 <tr>
-<td><code>status</code></td>
-<td>Имя, состояние, PPid, <code>Threads</code>, <code>VmRSS</code>, <code>VmSwap</code>, <code>VmPeak</code>, <code>FDSize</code>, <code>Cpus_allowed_list</code>, <code>voluntary_ctxt_switches</code></td>
-<td>Первое, что читаешь. Всё важное одной командой.</td>
+<td data-label="Путь"><code>status</code></td>
+<td data-label="Что даёт">Имя, состояние, PPid, <code>Threads</code>, <code>VmRSS</code>, <code>VmSwap</code>, <code>VmPeak</code>, <code>FDSize</code>, <code>Cpus_allowed_list</code>, <code>voluntary_ctxt_switches</code></td>
+<td data-label="Когда нужно">Первое, что читаешь. Всё важное одной командой.</td>
 </tr>
 <tr>
-<td><code>limits</code></td>
-<td>Эффективные лимиты <strong>этого конкретного процесса</strong> (soft/hard)</td>
-<td>Когда <code>ulimit -n</code> в твоей shell говорит одно, а сервис упал с <code>Too many open files</code>.</td>
+<td data-label="Путь"><code>limits</code></td>
+<td data-label="Что даёт">Эффективные лимиты <strong>этого конкретного процесса</strong> (soft/hard)</td>
+<td data-label="Когда нужно">Когда <code>ulimit -n</code> в твоей shell говорит одно, а сервис упал с <code>Too many open files</code>.</td>
 </tr>
 <tr>
-<td><code>fd/</code></td>
-<td>Символические ссылки на все открытые дескрипторы</td>
-<td>Поиск утечки fd.</td>
+<td data-label="Путь"><code>fd/</code></td>
+<td data-label="Что даёт">Символические ссылки на все открытые дескрипторы</td>
+<td data-label="Когда нужно">Поиск утечки fd.</td>
 </tr>
 <tr>
-<td><code>fdinfo/&lt;n&gt;</code></td>
-<td>Позиция, флаги, для epoll — список отслеживаемых fd</td>
-<td>Разбор поведения Netty/NIO.</td>
+<td data-label="Путь"><code>fdinfo/&lt;n&gt;</code></td>
+<td data-label="Что даёт">Позиция, флаги, для epoll — список отслеживаемых fd</td>
+<td data-label="Когда нужно">Разбор поведения Netty/NIO.</td>
 </tr>
 <tr>
-<td><code>maps</code></td>
-<td>Карта виртуальной памяти: диапазоны, права, файл</td>
-<td>Что замапплено, где нативные библиотеки.</td>
+<td data-label="Путь"><code>maps</code></td>
+<td data-label="Что даёт">Карта виртуальной памяти: диапазоны, права, файл</td>
+<td data-label="Когда нужно">Что замапплено, где нативные библиотеки.</td>
 </tr>
 <tr>
-<td><code>smaps</code> / <code>smaps_rollup</code></td>
-<td>То же плюс RSS/PSS/USS/Swap по каждому отображению</td>
-<td>Разбор роста RSS. <code>smaps_rollup</code> — итог одной строкой, читается на порядок быстрее.</td>
+<td data-label="Путь"><code>smaps</code> / <code>smaps_rollup</code></td>
+<td data-label="Что даёт">То же плюс RSS/PSS/USS/Swap по каждому отображению</td>
+<td data-label="Когда нужно">Разбор роста RSS. <code>smaps_rollup</code> — итог одной строкой, читается на порядок быстрее.</td>
 </tr>
 <tr>
-<td><code>stack</code></td>
-<td>Ядровый стек (нужен root и <code>CONFIG_STACKTRACE</code>)</td>
-<td>Разбор <code>D</code>-состояния.</td>
+<td data-label="Путь"><code>stack</code></td>
+<td data-label="Что даёт">Ядровый стек (нужен root и <code>CONFIG_STACKTRACE</code>)</td>
+<td data-label="Когда нужно">Разбор <code>D</code>-состояния.</td>
 </tr>
 <tr>
-<td><code>environ</code></td>
-<td>Переменные окружения на момент старта (<code>\0</code>-разделённые)</td>
-<td>Проверить, какие <code>JAVA_OPTS</code> реально долетели.</td>
+<td data-label="Путь"><code>environ</code></td>
+<td data-label="Что даёт">Переменные окружения на момент старта (<code>\0</code>-разделённые)</td>
+<td data-label="Когда нужно">Проверить, какие <code>JAVA_OPTS</code> реально долетели.</td>
 </tr>
 <tr>
-<td><code>cmdline</code></td>
-<td>Аргументы запуска</td>
-<td>То же самое для флагов JVM.</td>
+<td data-label="Путь"><code>cmdline</code></td>
+<td data-label="Что даёт">Аргументы запуска</td>
+<td data-label="Когда нужно">То же самое для флагов JVM.</td>
 </tr>
 <tr>
-<td><code>task/&lt;tid&gt;/</code></td>
-<td>То же для каждого потока</td>
-<td>Поиск потока-пожирателя CPU.</td>
+<td data-label="Путь"><code>task/&lt;tid&gt;/</code></td>
+<td data-label="Что даёт">То же для каждого потока</td>
+<td data-label="Когда нужно">Поиск потока-пожирателя CPU.</td>
 </tr>
 <tr>
-<td><code>io</code></td>
-<td><code>read_bytes</code>, <code>write_bytes</code>, <code>rchar</code>, <code>wchar</code></td>
-<td>Кто пишет на диск.</td>
+<td data-label="Путь"><code>io</code></td>
+<td data-label="Что даёт"><code>read_bytes</code>, <code>write_bytes</code>, <code>rchar</code>, <code>wchar</code></td>
+<td data-label="Когда нужно">Кто пишет на диск.</td>
 </tr>
 <tr>
-<td><code>sched</code> / <code>schedstat</code></td>
-<td>Время на CPU, время в runqueue, число переключений</td>
-<td>Доказательство, что процесс ждёт CPU, а не работает.</td>
+<td data-label="Путь"><code>sched</code> / <code>schedstat</code></td>
+<td data-label="Что даёт">Время на CPU, время в runqueue, число переключений</td>
+<td data-label="Когда нужно">Доказательство, что процесс ждёт CPU, а не работает.</td>
 </tr>
 <tr>
-<td><code>net/</code></td>
-<td>Сетевые счётчики <strong>сетевого namespace</strong> процесса</td>
-<td>В контейнере — единственный способ увидеть его собственную статистику.</td>
+<td data-label="Путь"><code>net/</code></td>
+<td data-label="Что даёт">Сетевые счётчики <strong>сетевого namespace</strong> процесса</td>
+<td data-label="Когда нужно">В контейнере — единственный способ увидеть его собственную статистику.</td>
 </tr>
 <tr>
-<td><code>cgroup</code></td>
-<td>В какой cgroup находится процесс</td>
-<td>Найти путь под <code>/sys/fs/cgroup</code>.</td>
+<td data-label="Путь"><code>cgroup</code></td>
+<td data-label="Что даёт">В какой cgroup находится процесс</td>
+<td data-label="Когда нужно">Найти путь под <code>/sys/fs/cgroup</code>.</td>
 </tr>
 </tbody>
 </table>
@@ -278,7 +278,7 @@ ionice -c <span class="m">2</span> -n <span class="m">7</span> -p <span class="m
 <p>В контейнерах вместо nice правильнее использовать <code>cpu.weight</code> в cgroup — см. раздел 3.</p>
 <h3 id="15-сигналы">1.5 Сигналы</h3>
 <p>Сигнал — асинхронное уведомление процессу. Номера и действия по умолчанию — из <code>signal(7)</code> (<a href="https://man7.org/linux/man-pages/man7/signal.7.html">man7.org</a>):</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сигнал</th>
@@ -290,102 +290,102 @@ ionice -c <span class="m">2</span> -n <span class="m">7</span> -p <span class="m
 </thead>
 <tbody>
 <tr>
-<td><code>SIGHUP</code></td>
-<td class="num">1</td>
-<td>Term</td>
-<td>Обрыв терминала / «перечитай конфиг» по соглашению</td>
-<td>Завершение (shutdown hooks выполняются)</td>
+<td data-label="Сигнал"><code>SIGHUP</code></td>
+<td data-label="№ (x86/ARM)" class="num">1</td>
+<td data-label="Действие по умолчанию">Term</td>
+<td data-label="Смысл">Обрыв терминала / «перечитай конфиг» по соглашению</td>
+<td data-label="Что делает JVM">Завершение (shutdown hooks выполняются)</td>
 </tr>
 <tr>
-<td><code>SIGINT</code></td>
-<td class="num">2</td>
-<td>Term</td>
-<td>Ctrl+C</td>
-<td>Завершение через shutdown hooks</td>
+<td data-label="Сигнал"><code>SIGINT</code></td>
+<td data-label="№ (x86/ARM)" class="num">2</td>
+<td data-label="Действие по умолчанию">Term</td>
+<td data-label="Смысл">Ctrl+C</td>
+<td data-label="Что делает JVM">Завершение через shutdown hooks</td>
 </tr>
 <tr>
-<td><code>SIGQUIT</code></td>
-<td class="num">3</td>
-<td><strong>Core</strong></td>
-<td>Ctrl+\</td>
-<td><strong>Печатает thread dump в stdout и продолжает работать</strong></td>
+<td data-label="Сигнал"><code>SIGQUIT</code></td>
+<td data-label="№ (x86/ARM)" class="num">3</td>
+<td data-label="Действие по умолчанию"><strong>Core</strong></td>
+<td data-label="Смысл">Ctrl+\</td>
+<td data-label="Что делает JVM"><strong>Печатает thread dump в stdout и продолжает работать</strong></td>
 </tr>
 <tr>
-<td><code>SIGABRT</code></td>
-<td class="num">6</td>
-<td>Core</td>
-<td><code>abort()</code>, внутренняя ошибка</td>
-<td>Аварийное завершение, <code>hs_err_pid*.log</code></td>
+<td data-label="Сигнал"><code>SIGABRT</code></td>
+<td data-label="№ (x86/ARM)" class="num">6</td>
+<td data-label="Действие по умолчанию">Core</td>
+<td data-label="Смысл"><code>abort()</code>, внутренняя ошибка</td>
+<td data-label="Что делает JVM">Аварийное завершение, <code>hs_err_pid*.log</code></td>
 </tr>
 <tr>
-<td><code>SIGBUS</code></td>
-<td class="num">7</td>
-<td>Core</td>
-<td>Некорректный доступ к памяти (выравнивание, обрезанный mmap-файл)</td>
-<td><code>hs_err_pid*.log</code>, краш</td>
+<td data-label="Сигнал"><code>SIGBUS</code></td>
+<td data-label="№ (x86/ARM)" class="num">7</td>
+<td data-label="Действие по умолчанию">Core</td>
+<td data-label="Смысл">Некорректный доступ к памяти (выравнивание, обрезанный mmap-файл)</td>
+<td data-label="Что делает JVM"><code>hs_err_pid*.log</code>, краш</td>
 </tr>
 <tr>
-<td><code>SIGKILL</code></td>
-<td class="num">9</td>
-<td>Term</td>
-<td>Убить немедленно</td>
-<td><strong>Перехватить нельзя</strong>, hooks не выполняются</td>
+<td data-label="Сигнал"><code>SIGKILL</code></td>
+<td data-label="№ (x86/ARM)" class="num">9</td>
+<td data-label="Действие по умолчанию">Term</td>
+<td data-label="Смысл">Убить немедленно</td>
+<td data-label="Что делает JVM"><strong>Перехватить нельзя</strong>, hooks не выполняются</td>
 </tr>
 <tr>
-<td><code>SIGUSR1</code></td>
-<td class="num">10</td>
-<td>Term</td>
-<td>Пользовательский</td>
-<td>Используется JVM внутренне (в т.ч. для safepoint-механик на некоторых платформах)</td>
+<td data-label="Сигнал"><code>SIGUSR1</code></td>
+<td data-label="№ (x86/ARM)" class="num">10</td>
+<td data-label="Действие по умолчанию">Term</td>
+<td data-label="Смысл">Пользовательский</td>
+<td data-label="Что делает JVM">Используется JVM внутренне (в т.ч. для safepoint-механик на некоторых платформах)</td>
 </tr>
 <tr>
-<td><code>SIGSEGV</code></td>
-<td class="num">11</td>
-<td>Core</td>
-<td>Обращение по некорректному адресу</td>
-<td>JVM <strong>штатно</strong> ловит для null-check и обработки stack banging; настоящий краш → <code>hs_err_pid*.log</code></td>
+<td data-label="Сигнал"><code>SIGSEGV</code></td>
+<td data-label="№ (x86/ARM)" class="num">11</td>
+<td data-label="Действие по умолчанию">Core</td>
+<td data-label="Смысл">Обращение по некорректному адресу</td>
+<td data-label="Что делает JVM">JVM <strong>штатно</strong> ловит для null-check и обработки stack banging; настоящий краш → <code>hs_err_pid*.log</code></td>
 </tr>
 <tr>
-<td><code>SIGUSR2</code></td>
-<td class="num">12</td>
-<td>Term</td>
-<td>Пользовательский</td>
-<td>Используется JVM внутренне</td>
+<td data-label="Сигнал"><code>SIGUSR2</code></td>
+<td data-label="№ (x86/ARM)" class="num">12</td>
+<td data-label="Действие по умолчанию">Term</td>
+<td data-label="Смысл">Пользовательский</td>
+<td data-label="Что делает JVM">Используется JVM внутренне</td>
 </tr>
 <tr>
-<td><code>SIGPIPE</code></td>
-<td class="num">13</td>
-<td>Term</td>
-<td>Запись в закрытый сокет/пайп</td>
-<td>JVM игнорирует, <code>write()</code> возвращает <code>EPIPE</code> → <code>IOException: Broken pipe</code></td>
+<td data-label="Сигнал"><code>SIGPIPE</code></td>
+<td data-label="№ (x86/ARM)" class="num">13</td>
+<td data-label="Действие по умолчанию">Term</td>
+<td data-label="Смысл">Запись в закрытый сокет/пайп</td>
+<td data-label="Что делает JVM">JVM игнорирует, <code>write()</code> возвращает <code>EPIPE</code> → <code>IOException: Broken pipe</code></td>
 </tr>
 <tr>
-<td><code>SIGTERM</code></td>
-<td class="num">15</td>
-<td>Term</td>
-<td>Вежливая просьба завершиться</td>
-<td>Запускает shutdown hooks</td>
+<td data-label="Сигнал"><code>SIGTERM</code></td>
+<td data-label="№ (x86/ARM)" class="num">15</td>
+<td data-label="Действие по умолчанию">Term</td>
+<td data-label="Смысл">Вежливая просьба завершиться</td>
+<td data-label="Что делает JVM">Запускает shutdown hooks</td>
 </tr>
 <tr>
-<td><code>SIGCHLD</code></td>
-<td class="num">17</td>
-<td>Ign</td>
-<td>Дочерний процесс завершился</td>
-<td>Обрабатывается механизмом <code>Process</code></td>
+<td data-label="Сигнал"><code>SIGCHLD</code></td>
+<td data-label="№ (x86/ARM)" class="num">17</td>
+<td data-label="Действие по умолчанию">Ign</td>
+<td data-label="Смысл">Дочерний процесс завершился</td>
+<td data-label="Что делает JVM">Обрабатывается механизмом <code>Process</code></td>
 </tr>
 <tr>
-<td><code>SIGCONT</code></td>
-<td class="num">18</td>
-<td>Cont</td>
-<td>Продолжить после остановки</td>
-<td>—</td>
+<td data-label="Сигнал"><code>SIGCONT</code></td>
+<td data-label="№ (x86/ARM)" class="num">18</td>
+<td data-label="Действие по умолчанию">Cont</td>
+<td data-label="Смысл">Продолжить после остановки</td>
+<td data-label="Что делает JVM">—</td>
 </tr>
 <tr>
-<td><code>SIGSTOP</code></td>
-<td class="num">19</td>
-<td>Stop</td>
-<td>Остановить</td>
-<td><strong>Перехватить нельзя</strong></td>
+<td data-label="Сигнал"><code>SIGSTOP</code></td>
+<td data-label="№ (x86/ARM)" class="num">19</td>
+<td data-label="Действие по умолчанию">Stop</td>
+<td data-label="Смысл">Остановить</td>
+<td data-label="Что делает JVM"><strong>Перехватить нельзя</strong></td>
 </tr>
 </tbody>
 </table>
@@ -513,7 +513,7 @@ java -Djdk.lang.Process.launchMechanism<span class="o">=</span>POSIX_SPAWN -jar 
 <h2 id="2-память-процесса">2. Память процесса</h2>
 <h3 id="21-виртуальная-и-физическая-память-vsz-rss-pss-uss">2.1 Виртуальная и физическая память: VSZ, RSS, PSS, USS</h3>
 <p>Процесс видит <strong>виртуальное</strong> адресное пространство. Ядро отображает его куски на физические страницы — не все и не сразу. Отсюда четыре разные метрики, которые постоянно путают, и путаница стоит неверных решений о лимитах.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метрика</th>
@@ -524,28 +524,28 @@ java -Djdk.lang.Process.launchMechanism<span class="o">=</span>POSIX_SPAWN -jar 
 </thead>
 <tbody>
 <tr>
-<td><strong>VSZ</strong> (VmSize)</td>
-<td>Весь зарезервированный виртуальный адрес: heap, стеки, все mmap, включая никогда не тронутые страницы</td>
-<td><code>ps -o vsz</code>, <code>/proc/&lt;pid&gt;/status</code> → <code>VmSize</code></td>
-<td>Для JVM всегда огромен (десятки-сотни ГБ) и почти ничего не значит. <code>-Xmx32g</code> даёт +32 ГБ к VSZ в момент старта, даже если занято 200 МБ.</td>
+<td data-label="Метрика"><strong>VSZ</strong> (VmSize)</td>
+<td data-label="Что считает">Весь зарезервированный виртуальный адрес: heap, стеки, все mmap, включая никогда не тронутые страницы</td>
+<td data-label="Где смотреть"><code>ps -o vsz</code>, <code>/proc/&lt;pid&gt;/status</code> → <code>VmSize</code></td>
+<td data-label="Почему врёт">Для JVM всегда огромен (десятки-сотни ГБ) и почти ничего не значит. <code>-Xmx32g</code> даёт +32 ГБ к VSZ в момент старта, даже если занято 200 МБ.</td>
 </tr>
 <tr>
-<td><strong>RSS</strong> (VmRSS)</td>
-<td>Физические страницы, реально отображённые на процесс</td>
-<td><code>ps -o rss</code>, <code>top</code>, <code>/proc/&lt;pid&gt;/status</code> → <code>VmRSS</code></td>
-<td><strong>Считает shared-страницы целиком у каждого процесса.</strong> Два процесса, разделяющие 100 МБ библиотеки, дадут суммарно 200 МБ RSS при 100 МБ реальных.</td>
+<td data-label="Метрика"><strong>RSS</strong> (VmRSS)</td>
+<td data-label="Что считает">Физические страницы, реально отображённые на процесс</td>
+<td data-label="Где смотреть"><code>ps -o rss</code>, <code>top</code>, <code>/proc/&lt;pid&gt;/status</code> → <code>VmRSS</code></td>
+<td data-label="Почему врёт"><strong>Считает shared-страницы целиком у каждого процесса.</strong> Два процесса, разделяющие 100 МБ библиотеки, дадут суммарно 200 МБ RSS при 100 МБ реальных.</td>
 </tr>
 <tr>
-<td><strong>PSS</strong> (Proportional Set Size)</td>
-<td>Приватные страницы полностью + shared-страницы, делённые на число разделяющих процессов</td>
-<td><code>/proc/&lt;pid&gt;/smaps</code>, <code>smaps_rollup</code> → <code>Pss</code></td>
-<td>Считается только Linux-специфично; сумма PSS всех процессов = реально занятая память. Самая честная метрика.</td>
+<td data-label="Метрика"><strong>PSS</strong> (Proportional Set Size)</td>
+<td data-label="Что считает">Приватные страницы полностью + shared-страницы, делённые на число разделяющих процессов</td>
+<td data-label="Где смотреть"><code>/proc/&lt;pid&gt;/smaps</code>, <code>smaps_rollup</code> → <code>Pss</code></td>
+<td data-label="Почему врёт">Считается только Linux-специфично; сумма PSS всех процессов = реально занятая память. Самая честная метрика.</td>
 </tr>
 <tr>
-<td><strong>USS</strong> (Unique Set Size)</td>
-<td>Только приватные страницы (<code>Private_Clean</code> + <code>Private_Dirty</code>)</td>
-<td>сумма из <code>smaps</code></td>
-<td>Показывает, сколько освободится, если убить процесс.</td>
+<td data-label="Метрика"><strong>USS</strong> (Unique Set Size)</td>
+<td data-label="Что считает">Только приватные страницы (<code>Private_Clean</code> + <code>Private_Dirty</code>)</td>
+<td data-label="Где смотреть">сумма из <code>smaps</code></td>
+<td data-label="Почему врёт">Показывает, сколько освободится, если убить процесс.</td>
 </tr>
 </tbody>
 </table>
@@ -722,7 +722,7 @@ java -XX:+UseLargePages -Xmx16g -Xms16g ...
 <p>Минус: если страниц не хватит, JVM либо не стартует, либо молча откатится на обычные (зависит от <code>-XX:+UseLargePages</code> vs <code>-XX:LargePageSizeInBytes</code>). И память забронирована навсегда, даже если JVM не запущена.</p>
 <h3 id="26-три-вида-oom">2.6 Три вида OOM</h3>
 <p>Слово «OOM» в логах и в чатах означает три принципиально разные вещи. Путаница здесь — самая частая причина неверной диагностики.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -733,46 +733,46 @@ java -XX:+UseLargePages -Xmx16g -Xms16g ...
 </thead>
 <tbody>
 <tr>
-<td>Кто решает</td>
-<td>JVM</td>
-<td>Ядро Linux (глобально)</td>
-<td>Ядро Linux (в рамках cgroup)</td>
+<td data-label="">Кто решает</td>
+<td data-label="java.lang.OutOfMemoryError">JVM</td>
+<td data-label="Linux OOM killer">Ядро Linux (глобально)</td>
+<td data-label="Container OOMKilled">Ядро Linux (в рамках cgroup)</td>
 </tr>
 <tr>
-<td>Причина</td>
-<td>Не удалось выделить в управляемой JVM области: heap, metaspace, direct memory, стек потока, code cache</td>
-<td>Кончилась физическая память <strong>всей системы</strong> (или overcommit исчерпан)</td>
-<td>Процессы cgroup превысили <code>memory.max</code></td>
+<td data-label="">Причина</td>
+<td data-label="java.lang.OutOfMemoryError">Не удалось выделить в управляемой JVM области: heap, metaspace, direct memory, стек потока, code cache</td>
+<td data-label="Linux OOM killer">Кончилась физическая память <strong>всей системы</strong> (или overcommit исчерпан)</td>
+<td data-label="Container OOMKilled">Процессы cgroup превысили <code>memory.max</code></td>
 </tr>
 <tr>
-<td>Симптом</td>
-<td>Исключение в Java-коде, трассировка стека, приложение может продолжить работу</td>
-<td>Процесс исчез мгновенно, <strong>без единой записи в логе приложения</strong></td>
-<td>Контейнер перезапущен, <code>reason: OOMKilled</code>, <code>exitCode: 137</code></td>
+<td data-label="">Симптом</td>
+<td data-label="java.lang.OutOfMemoryError">Исключение в Java-коде, трассировка стека, приложение может продолжить работу</td>
+<td data-label="Linux OOM killer">Процесс исчез мгновенно, <strong>без единой записи в логе приложения</strong></td>
+<td data-label="Container OOMKilled">Контейнер перезапущен, <code>reason: OOMKilled</code>, <code>exitCode: 137</code></td>
 </tr>
 <tr>
-<td>Где искать</td>
-<td>Логи приложения, <code>-XX:+HeapDumpOnOutOfMemoryError</code></td>
-<td><code>dmesg -T</code>, <code>/var/log/kern.log</code>, <code>journalctl -k</code></td>
-<td><code>kubectl describe pod</code>, <code>memory.events</code> → <code>oom_kill</code></td>
+<td data-label="">Где искать</td>
+<td data-label="java.lang.OutOfMemoryError">Логи приложения, <code>-XX:+HeapDumpOnOutOfMemoryError</code></td>
+<td data-label="Linux OOM killer"><code>dmesg -T</code>, <code>/var/log/kern.log</code>, <code>journalctl -k</code></td>
+<td data-label="Container OOMKilled"><code>kubectl describe pod</code>, <code>memory.events</code> → <code>oom_kill</code></td>
 </tr>
 <tr>
-<td>Сигнал</td>
-<td>нет (исключение)</td>
-<td><code>SIGKILL</code> (9)</td>
-<td><code>SIGKILL</code> (9)</td>
+<td data-label="">Сигнал</td>
+<td data-label="java.lang.OutOfMemoryError">нет (исключение)</td>
+<td data-label="Linux OOM killer"><code>SIGKILL</code> (9)</td>
+<td data-label="Container OOMKilled"><code>SIGKILL</code> (9)</td>
 </tr>
 <tr>
-<td>Shutdown hooks</td>
-<td>Выполняются (если не <code>-XX:+ExitOnOutOfMemoryError</code>)</td>
-<td><strong>Нет</strong></td>
-<td><strong>Нет</strong></td>
+<td data-label="">Shutdown hooks</td>
+<td data-label="java.lang.OutOfMemoryError">Выполняются (если не <code>-XX:+ExitOnOutOfMemoryError</code>)</td>
+<td data-label="Linux OOM killer"><strong>Нет</strong></td>
+<td data-label="Container OOMKilled"><strong>Нет</strong></td>
 </tr>
 <tr>
-<td>Типовая причина в Java</td>
-<td>Утечка, слишком маленький <code>-Xmx</code>, огромный запрос, много потоков</td>
-<td>Неверный sizing хоста, сосед съел память, <code>vm.overcommit</code></td>
-<td><code>-Xmx</code> близок к лимиту контейнера без запаса на non-heap</td>
+<td data-label="">Типовая причина в Java</td>
+<td data-label="java.lang.OutOfMemoryError">Утечка, слишком маленький <code>-Xmx</code>, огромный запрос, много потоков</td>
+<td data-label="Linux OOM killer">Неверный sizing хоста, сосед съел память, <code>vm.overcommit</code></td>
+<td data-label="Container OOMKilled"><code>-Xmx</code> близок к лимиту контейнера без запаса на non-heap</td>
 </tr>
 </tbody>
 </table>
@@ -847,7 +847,7 @@ java -jar app.jar
 <span class="nv">LD_PRELOAD</span><span class="o">=</span>/usr/lib/x86_64-linux-gnu/libtcmalloc.so.4 java -jar app.jar
 </code></pre></div>
 
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Распределитель памяти</th>
@@ -857,24 +857,24 @@ java -jar app.jar
 </thead>
 <tbody>
 <tr>
-<td>glibc malloc</td>
-<td>Везде есть, ничего не надо ставить</td>
-<td>Фрагментация, арены, плохо возвращает память</td>
+<td data-label="Распределитель памяти">glibc malloc</td>
+<td data-label="Сильная сторона">Везде есть, ничего не надо ставить</td>
+<td data-label="Слабая сторона">Фрагментация, арены, плохо возвращает память</td>
 </tr>
 <tr>
-<td>jemalloc</td>
-<td>Низкая фрагментация, агрессивный возврат (<code>decay</code>), <strong>встроенный профилировщик кучи</strong></td>
-<td>Отдельная зависимость; надо следить за версией</td>
+<td data-label="Распределитель памяти">jemalloc</td>
+<td data-label="Сильная сторона">Низкая фрагментация, агрессивный возврат (<code>decay</code>), <strong>встроенный профилировщик кучи</strong></td>
+<td data-label="Слабая сторона">Отдельная зависимость; надо следить за версией</td>
 </tr>
 <tr>
-<td>tcmalloc</td>
-<td>Быстрые thread-local кеши, хорош на многопоточных выделениях памяти</td>
-<td>Профилирование слабее, возврат памяти консервативнее</td>
+<td data-label="Распределитель памяти">tcmalloc</td>
+<td data-label="Сильная сторона">Быстрые thread-local кеши, хорош на многопоточных выделениях памяти</td>
+<td data-label="Слабая сторона">Профилирование слабее, возврат памяти консервативнее</td>
 </tr>
 <tr>
-<td>mimalloc</td>
-<td>Часто быстрее обоих на микробенчмарках</td>
-<td>Реже встречается в дистрибутивах, меньше опыта эксплуатации</td>
+<td data-label="Распределитель памяти">mimalloc</td>
+<td data-label="Сильная сторона">Часто быстрее обоих на микробенчмарках</td>
+<td data-label="Слабая сторона">Реже встречается в дистрибутивах, меньше опыта эксплуатации</td>
 </tr>
 </tbody>
 </table>
@@ -939,7 +939,7 @@ mount <span class="p">|</span> grep cgroup
 </code></pre></div>
 
 <p>Актуальные дистрибутивы (RHEL 9+, Ubuntu 22.04+, Debian 11+, Fedora 31+) по умолчанию на v2. Kubernetes поддерживает v2 стабильно с 1.25.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -949,64 +949,64 @@ mount <span class="p">|</span> grep cgroup
 </thead>
 <tbody>
 <tr>
-<td>Лимит памяти</td>
-<td><code>memory/memory.limit_in_bytes</code></td>
-<td><code>memory.max</code></td>
+<td data-label="Что">Лимит памяти</td>
+<td data-label="cgroup v1"><code>memory/memory.limit_in_bytes</code></td>
+<td data-label="cgroup v2"><code>memory.max</code></td>
 </tr>
 <tr>
-<td>Мягкий лимит</td>
-<td><code>memory/memory.soft_limit_in_bytes</code></td>
-<td><code>memory.high</code> (реально работает, в отличие от soft_limit)</td>
+<td data-label="Что">Мягкий лимит</td>
+<td data-label="cgroup v1"><code>memory/memory.soft_limit_in_bytes</code></td>
+<td data-label="cgroup v2"><code>memory.high</code> (реально работает, в отличие от soft_limit)</td>
 </tr>
 <tr>
-<td>Текущее потребление</td>
-<td><code>memory/memory.usage_in_bytes</code></td>
-<td><code>memory.current</code></td>
+<td data-label="Что">Текущее потребление</td>
+<td data-label="cgroup v1"><code>memory/memory.usage_in_bytes</code></td>
+<td data-label="cgroup v2"><code>memory.current</code></td>
 </tr>
 <tr>
-<td>Статистика</td>
-<td><code>memory/memory.stat</code></td>
-<td><code>memory.stat</code></td>
+<td data-label="Что">Статистика</td>
+<td data-label="cgroup v1"><code>memory/memory.stat</code></td>
+<td data-label="cgroup v2"><code>memory.stat</code></td>
 </tr>
 <tr>
-<td>События OOM</td>
-<td><code>memory/memory.oom_control</code></td>
-<td><code>memory.events</code> (<code>oom</code>, <code>oom_kill</code>)</td>
+<td data-label="Что">События OOM</td>
+<td data-label="cgroup v1"><code>memory/memory.oom_control</code></td>
+<td data-label="cgroup v2"><code>memory.events</code> (<code>oom</code>, <code>oom_kill</code>)</td>
 </tr>
 <tr>
-<td>Swap</td>
-<td><code>memory/memory.memsw.limit_in_bytes</code> (суммарно mem+swap)</td>
-<td><code>memory.swap.max</code> (отдельно)</td>
+<td data-label="Что">Swap</td>
+<td data-label="cgroup v1"><code>memory/memory.memsw.limit_in_bytes</code> (суммарно mem+swap)</td>
+<td data-label="cgroup v2"><code>memory.swap.max</code> (отдельно)</td>
 </tr>
 <tr>
-<td>Квота CPU</td>
-<td><code>cpu/cpu.cfs_quota_us</code> + <code>cpu.cfs_period_us</code></td>
-<td><code>cpu.max</code> = <code>"&lt;quota&gt; &lt;period&gt;"</code></td>
+<td data-label="Что">Квота CPU</td>
+<td data-label="cgroup v1"><code>cpu/cpu.cfs_quota_us</code> + <code>cpu.cfs_period_us</code></td>
+<td data-label="cgroup v2"><code>cpu.max</code> = <code>"&lt;quota&gt; &lt;period&gt;"</code></td>
 </tr>
 <tr>
-<td>Доля CPU</td>
-<td><code>cpu/cpu.shares</code> (2..262144, значение по умолчанию 1024)</td>
-<td><code>cpu.weight</code> (1..10000, значение по умолчанию 100)</td>
+<td data-label="Что">Доля CPU</td>
+<td data-label="cgroup v1"><code>cpu/cpu.shares</code> (2..262144, значение по умолчанию 1024)</td>
+<td data-label="cgroup v2"><code>cpu.weight</code> (1..10000, значение по умолчанию 100)</td>
 </tr>
 <tr>
-<td>Throttling</td>
-<td><code>cpu/cpu.stat</code></td>
-<td><code>cpu.stat</code></td>
+<td data-label="Что">Throttling</td>
+<td data-label="cgroup v1"><code>cpu/cpu.stat</code></td>
+<td data-label="cgroup v2"><code>cpu.stat</code></td>
 </tr>
 <tr>
-<td>Лимит процессов</td>
-<td><code>pids/pids.max</code></td>
-<td><code>pids.max</code></td>
+<td data-label="Что">Лимит процессов</td>
+<td data-label="cgroup v1"><code>pids/pids.max</code></td>
+<td data-label="cgroup v2"><code>pids.max</code></td>
 </tr>
 <tr>
-<td>I/O</td>
-<td><code>blkio/*</code> (плохо работал с buffered writes)</td>
-<td><code>io.max</code>, <code>io.stat</code>, <code>io.pressure</code></td>
+<td data-label="Что">I/O</td>
+<td data-label="cgroup v1"><code>blkio/*</code> (плохо работал с buffered writes)</td>
+<td data-label="cgroup v2"><code>io.max</code>, <code>io.stat</code>, <code>io.pressure</code></td>
 </tr>
 <tr>
-<td>PSI (pressure stall)</td>
-<td>нет</td>
-<td><code>cpu.pressure</code>, <code>memory.pressure</code>, <code>io.pressure</code></td>
+<td data-label="Что">PSI (pressure stall)</td>
+<td data-label="cgroup v1">нет</td>
+<td data-label="cgroup v2"><code>cpu.pressure</code>, <code>memory.pressure</code>, <code>io.pressure</code></td>
 </tr>
 </tbody>
 </table>
@@ -1527,7 +1527,7 @@ MiB Swap:   4096.0 total,   4096.0 free,      0.0 used.  12284.2 avail Mem
 </code></pre></div>
 
 <p>Колонки <code>%Cpu(s)</code> — то, на что смотрят в первую очередь:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Колонка</th>
@@ -1537,39 +1537,39 @@ MiB Swap:   4096.0 total,   4096.0 free,      0.0 used.  12284.2 avail Mem
 </thead>
 <tbody>
 <tr>
-<td><code>us</code></td>
-<td>user — прикладной код</td>
-<td>Высокое — ищи горячий код профилировщиком</td>
+<td data-label="Колонка"><code>us</code></td>
+<td data-label="Значение">user — прикладной код</td>
+<td data-label="Тревожный признак">Высокое — ищи горячий код профилировщиком</td>
 </tr>
 <tr>
-<td><code>sy</code></td>
-<td>system — код ядра (syscalls)</td>
-<td>&gt; 20 % — слишком много системных вызовов: мелкие read/write, сетевой шторм, contention на локах ядра</td>
+<td data-label="Колонка"><code>sy</code></td>
+<td data-label="Значение">system — код ядра (syscalls)</td>
+<td data-label="Тревожный признак">&gt; 20 % — слишком много системных вызовов: мелкие read/write, сетевой шторм, contention на локах ядра</td>
 </tr>
 <tr>
-<td><code>ni</code></td>
-<td>user-код с изменённым nice</td>
-<td>Обычно 0</td>
+<td data-label="Колонка"><code>ni</code></td>
+<td data-label="Значение">user-код с изменённым nice</td>
+<td data-label="Тревожный признак">Обычно 0</td>
 </tr>
 <tr>
-<td><code>id</code></td>
-<td>idle</td>
-<td>—</td>
+<td data-label="Колонка"><code>id</code></td>
+<td data-label="Значение">idle</td>
+<td data-label="Тревожный признак">—</td>
 </tr>
 <tr>
-<td><code>wa</code></td>
-<td>iowait — CPU простаивал, пока был незавершённый I/O</td>
-<td>&gt; 10 % — дисковая подсистема узкое место</td>
+<td data-label="Колонка"><code>wa</code></td>
+<td data-label="Значение">iowait — CPU простаивал, пока был незавершённый I/O</td>
+<td data-label="Тревожный признак">&gt; 10 % — дисковая подсистема узкое место</td>
 </tr>
 <tr>
-<td><code>hi</code>/<code>si</code></td>
-<td>обработка аппаратных / программных прерываний</td>
-<td><code>si</code> высок при большом сетевом трафике (обработка пакетов)</td>
+<td data-label="Колонка"><code>hi</code>/<code>si</code></td>
+<td data-label="Значение">обработка аппаратных / программных прерываний</td>
+<td data-label="Тревожный признак"><code>si</code> высок при большом сетевом трафике (обработка пакетов)</td>
 </tr>
 <tr>
-<td><code>st</code></td>
-<td><strong>steal time</strong> — гипервизор отобрал CPU у этой VM</td>
-<td><strong>Любое устойчивое значение &gt; 1–2 % — проблема у провайдера или пересаженный узел</strong></td>
+<td data-label="Колонка"><code>st</code></td>
+<td data-label="Значение"><strong>steal time</strong> — гипервизор отобрал CPU у этой VM</td>
+<td data-label="Тревожный признак"><strong>Любое устойчивое значение &gt; 1–2 % — проблема у провайдера или пересаженный узел</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1616,7 +1616,7 @@ top -H -b -n <span class="m">1</span> -p <span class="nv">$pid</span> <span clas
 </code></pre></div>
 
 <p>Что где:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Колонка</th>
@@ -1626,44 +1626,44 @@ top -H -b -n <span class="m">1</span> -p <span class="nv">$pid</span> <span clas
 </thead>
 <tbody>
 <tr>
-<td><code>r</code></td>
-<td>Задачи в runqueue (готовы, ждут CPU)</td>
-<td>Устойчиво &gt; числа ядер — нехватка CPU</td>
+<td data-label="Колонка"><code>r</code></td>
+<td data-label="Смысл">Задачи в runqueue (готовы, ждут CPU)</td>
+<td data-label="Когда тревожно">Устойчиво &gt; числа ядер — нехватка CPU</td>
 </tr>
 <tr>
-<td><code>b</code></td>
-<td>Задачи в uninterruptible sleep (<code>D</code>)</td>
-<td><strong>&gt; 0 устойчиво — проблема с диском</strong></td>
+<td data-label="Колонка"><code>b</code></td>
+<td data-label="Смысл">Задачи в uninterruptible sleep (<code>D</code>)</td>
+<td data-label="Когда тревожно"><strong>&gt; 0 устойчиво — проблема с диском</strong></td>
 </tr>
 <tr>
-<td><code>swpd</code></td>
-<td>Использовано swap (КБ)</td>
-<td>Любое ненулевое для JVM — плохо</td>
+<td data-label="Колонка"><code>swpd</code></td>
+<td data-label="Смысл">Использовано swap (КБ)</td>
+<td data-label="Когда тревожно">Любое ненулевое для JVM — плохо</td>
 </tr>
 <tr>
-<td><code>si</code>/<code>so</code></td>
-<td>Страниц загружено/выгружено в swap за секунду</td>
-<td><strong>Ненулевое = активный своппинг = катастрофа</strong></td>
+<td data-label="Колонка"><code>si</code>/<code>so</code></td>
+<td data-label="Смысл">Страниц загружено/выгружено в swap за секунду</td>
+<td data-label="Когда тревожно"><strong>Ненулевое = активный своппинг = катастрофа</strong></td>
 </tr>
 <tr>
-<td><code>bi</code>/<code>bo</code></td>
-<td>Блоков прочитано/записано с устройств</td>
-<td>Резкий рост при падении производительности</td>
+<td data-label="Колонка"><code>bi</code>/<code>bo</code></td>
+<td data-label="Смысл">Блоков прочитано/записано с устройств</td>
+<td data-label="Когда тревожно">Резкий рост при падении производительности</td>
 </tr>
 <tr>
-<td><code>in</code></td>
-<td>Прерываний в секунду</td>
-<td>Очень высоко при сетевом шторме</td>
+<td data-label="Колонка"><code>in</code></td>
+<td data-label="Смысл">Прерываний в секунду</td>
+<td data-label="Когда тревожно">Очень высоко при сетевом шторме</td>
 </tr>
 <tr>
-<td><code>cs</code></td>
-<td><strong>Переключений контекста в секунду</strong></td>
-<td>См. ниже</td>
+<td data-label="Колонка"><code>cs</code></td>
+<td data-label="Смысл"><strong>Переключений контекста в секунду</strong></td>
+<td data-label="Когда тревожно">См. ниже</td>
 </tr>
 <tr>
-<td><code>us</code>/<code>sy</code>/<code>id</code>/<code>wa</code>/<code>st</code></td>
-<td>То же, что в <code>top</code></td>
-<td><code>wa</code> высок — диск; <code>st</code> — гипервизор</td>
+<td data-label="Колонка"><code>us</code>/<code>sy</code>/<code>id</code>/<code>wa</code>/<code>st</code></td>
+<td data-label="Смысл">То же, что в <code>top</code></td>
+<td data-label="Когда тревожно"><code>wa</code> высок — диск; <code>st</code> — гипервизор</td>
 </tr>
 </tbody>
 </table>
@@ -1849,7 +1849,7 @@ numactl --cpunodebind<span class="o">=</span><span class="m">0</span> --membind<
 </code></pre></div>
 
 <p>Полная таблица состояний, которые ты увидишь в <code>ss</code>:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Состояние</th>
@@ -1860,70 +1860,70 @@ numactl --cpunodebind<span class="o">=</span><span class="m">0</span> --membind<
 </thead>
 <tbody>
 <tr>
-<td><code>LISTEN</code></td>
-<td>Сервер</td>
-<td>Сокет ждёт соединений</td>
-<td>—</td>
+<td data-label="Состояние"><code>LISTEN</code></td>
+<td data-label="Кто в нём">Сервер</td>
+<td data-label="Что означает">Сокет ждёт соединений</td>
+<td data-label="Когда это проблема">—</td>
 </tr>
 <tr>
-<td><code>SYN-SENT</code></td>
-<td>Клиент</td>
-<td>Отправил SYN, ждёт ответа</td>
-<td>Много и надолго → сервер недоступен, firewall дропает</td>
+<td data-label="Состояние"><code>SYN-SENT</code></td>
+<td data-label="Кто в нём">Клиент</td>
+<td data-label="Что означает">Отправил SYN, ждёт ответа</td>
+<td data-label="Когда это проблема">Много и надолго → сервер недоступен, firewall дропает</td>
 </tr>
 <tr>
-<td><code>SYN-RECV</code></td>
-<td>Сервер</td>
-<td>Получил SYN, отправил SYN+ACK, ждёт ACK</td>
-<td>Много → SYN flood или потери пакетов</td>
+<td data-label="Состояние"><code>SYN-RECV</code></td>
+<td data-label="Кто в нём">Сервер</td>
+<td data-label="Что означает">Получил SYN, отправил SYN+ACK, ждёт ACK</td>
+<td data-label="Когда это проблема">Много → SYN flood или потери пакетов</td>
 </tr>
 <tr>
-<td><code>ESTABLISHED</code></td>
-<td>Оба</td>
-<td>Рабочее состояние</td>
-<td>Количество &gt; ожидаемого → утечка соединений</td>
+<td data-label="Состояние"><code>ESTABLISHED</code></td>
+<td data-label="Кто в нём">Оба</td>
+<td data-label="Что означает">Рабочее состояние</td>
+<td data-label="Когда это проблема">Количество &gt; ожидаемого → утечка соединений</td>
 </tr>
 <tr>
-<td><code>FIN-WAIT-1</code></td>
-<td>Активный закрыватель</td>
-<td>Отправил FIN, ждёт ACK</td>
-<td>Много → пир не отвечает</td>
+<td data-label="Состояние"><code>FIN-WAIT-1</code></td>
+<td data-label="Кто в нём">Активный закрыватель</td>
+<td data-label="Что означает">Отправил FIN, ждёт ACK</td>
+<td data-label="Когда это проблема">Много → пир не отвечает</td>
 </tr>
 <tr>
-<td><code>FIN-WAIT-2</code></td>
-<td>Активный закрыватель</td>
-<td>Свой FIN подтверждён, ждёт FIN от пира</td>
-<td><strong>Много → пир не закрывает свою сторону</strong> (у него <code>CLOSE_WAIT</code>)</td>
+<td data-label="Состояние"><code>FIN-WAIT-2</code></td>
+<td data-label="Кто в нём">Активный закрыватель</td>
+<td data-label="Что означает">Свой FIN подтверждён, ждёт FIN от пира</td>
+<td data-label="Когда это проблема"><strong>Много → пир не закрывает свою сторону</strong> (у него <code>CLOSE_WAIT</code>)</td>
 </tr>
 <tr>
-<td><code>CLOSE-WAIT</code></td>
-<td><strong>Пассивный закрыватель</strong></td>
-<td>Получил FIN, <strong>ждёт, когда приложение вызовет <code>close()</code></strong></td>
-<td><strong>Почти всегда баг в приложении</strong></td>
+<td data-label="Состояние"><code>CLOSE-WAIT</code></td>
+<td data-label="Кто в нём"><strong>Пассивный закрыватель</strong></td>
+<td data-label="Что означает">Получил FIN, <strong>ждёт, когда приложение вызовет <code>close()</code></strong></td>
+<td data-label="Когда это проблема"><strong>Почти всегда баг в приложении</strong></td>
 </tr>
 <tr>
-<td><code>LAST-ACK</code></td>
-<td>Пассивный закрыватель</td>
-<td>Отправил свой FIN, ждёт последний ACK</td>
-<td>Обычно мимолётно</td>
+<td data-label="Состояние"><code>LAST-ACK</code></td>
+<td data-label="Кто в нём">Пассивный закрыватель</td>
+<td data-label="Что означает">Отправил свой FIN, ждёт последний ACK</td>
+<td data-label="Когда это проблема">Обычно мимолётно</td>
 </tr>
 <tr>
-<td><code>TIME-WAIT</code></td>
-<td>Активный закрыватель</td>
-<td>Ждёт 2×MSL, чтобы «дозревшие» пакеты не попали в новое соединение</td>
-<td>Десятки тысяч → исчерпание портов</td>
+<td data-label="Состояние"><code>TIME-WAIT</code></td>
+<td data-label="Кто в нём">Активный закрыватель</td>
+<td data-label="Что означает">Ждёт 2×MSL, чтобы «дозревшие» пакеты не попали в новое соединение</td>
+<td data-label="Когда это проблема">Десятки тысяч → исчерпание портов</td>
 </tr>
 <tr>
-<td><code>CLOSING</code></td>
-<td>Оба</td>
-<td>Одновременное закрытие</td>
-<td>Редко</td>
+<td data-label="Состояние"><code>CLOSING</code></td>
+<td data-label="Кто в нём">Оба</td>
+<td data-label="Что означает">Одновременное закрытие</td>
+<td data-label="Когда это проблема">Редко</td>
 </tr>
 <tr>
-<td><code>CLOSED</code></td>
-<td>—</td>
-<td>Сокета нет</td>
-<td>—</td>
+<td data-label="Состояние"><code>CLOSED</code></td>
+<td data-label="Кто в нём">—</td>
+<td data-label="Что означает">Сокета нет</td>
+<td data-label="Когда это проблема">—</td>
 </tr>
 </tbody>
 </table>
@@ -1982,7 +1982,7 @@ ss -tan state established <span class="p">|</span> awk <span class="s1">'NR&gt;1
      retrans:0/24 dsack_dups:2 rcv_rtt:4.1 rcv_space:14480 minrtt:2.891
 </code></pre></div>
 
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Поле</th>
@@ -1992,49 +1992,49 @@ ss -tan state established <span class="p">|</span> awk <span class="s1">'NR&gt;1
 </thead>
 <tbody>
 <tr>
-<td><code>cubic</code></td>
-<td>Алгоритм congestion control</td>
-<td>—</td>
+<td data-label="Поле"><code>cubic</code></td>
+<td data-label="Смысл">Алгоритм congestion control</td>
+<td data-label="Тревожный признак">—</td>
 </tr>
 <tr>
-<td><code>rto</code></td>
-<td>Retransmission timeout, мс</td>
-<td>Большой при высоком jitter</td>
+<td data-label="Поле"><code>rto</code></td>
+<td data-label="Смысл">Retransmission timeout, мс</td>
+<td data-label="Тревожный признак">Большой при высоком jitter</td>
 </tr>
 <tr>
-<td><code>rtt:3.412/1.221</code></td>
-<td>Сглаженный RTT / отклонение</td>
-<td>Скачок RTT — проблема в сети</td>
+<td data-label="Поле"><code>rtt:3.412/1.221</code></td>
+<td data-label="Смысл">Сглаженный RTT / отклонение</td>
+<td data-label="Тревожный признак">Скачок RTT — проблема в сети</td>
 </tr>
 <tr>
-<td><code>cwnd</code></td>
-<td>Congestion window в сегментах</td>
-<td>Маленький (&lt; 10) при большом BDP — потери душат пропускную</td>
+<td data-label="Поле"><code>cwnd</code></td>
+<td data-label="Смысл">Congestion window в сегментах</td>
+<td data-label="Тревожный признак">Маленький (&lt; 10) при большом BDP — потери душат пропускную</td>
 </tr>
 <tr>
-<td><code>ssthresh</code></td>
-<td>Порог slow start</td>
-<td>Падение — были потери</td>
+<td data-label="Поле"><code>ssthresh</code></td>
+<td data-label="Смысл">Порог slow start</td>
+<td data-label="Тревожный признак">Падение — были потери</td>
 </tr>
 <tr>
-<td><code>retrans:0/24</code></td>
-<td>Текущие и общее число повторных передач</td>
-<td><strong>Любые повторные передачи в LAN — потери пакетов, ищи железо</strong></td>
+<td data-label="Поле"><code>retrans:0/24</code></td>
+<td data-label="Смысл">Текущие и общее число повторных передач</td>
+<td data-label="Тревожный признак"><strong>Любые повторные передачи в LAN — потери пакетов, ищи железо</strong></td>
 </tr>
 <tr>
-<td><code>bytes_retrans</code></td>
-<td>Байт переслано повторно</td>
-<td>Доля от <code>bytes_sent</code> &gt; 0.1 % — плохая сеть</td>
+<td data-label="Поле"><code>bytes_retrans</code></td>
+<td data-label="Смысл">Байт переслано повторно</td>
+<td data-label="Тревожный признак">Доля от <code>bytes_sent</code> &gt; 0.1 % — плохая сеть</td>
 </tr>
 <tr>
-<td><code>send</code>/<code>delivery_rate</code></td>
-<td>Оценочная и реальная скорость</td>
-<td>Разрыв — узкое место в сети</td>
+<td data-label="Поле"><code>send</code>/<code>delivery_rate</code></td>
+<td data-label="Смысл">Оценочная и реальная скорость</td>
+<td data-label="Тревожный признак">Разрыв — узкое место в сети</td>
 </tr>
 <tr>
-<td><code>lastsnd</code>/<code>lastrcv</code></td>
-<td>Мс с последней отправки/приёма</td>
-<td>Большие значения на «активных» соединениях — залипшее соединение</td>
+<td data-label="Поле"><code>lastsnd</code>/<code>lastrcv</code></td>
+<td data-label="Смысл">Мс с последней отправки/приёма</td>
+<td data-label="Тревожный признак">Большие значения на «активных» соединениях — залипшее соединение</td>
 </tr>
 </tbody>
 </table>
@@ -2194,7 +2194,7 @@ nstat -az <span class="p">|</span> grep -i syncookie
 <p>Цена SYN cookies: теряются TCP-опции, согласуемые в SYN (частично восстанавливаются через timestamps), окно ограничено. Для нормальной работы это не режим, а аварийный клапан. Ненулевой <code>SyncookiesSent</code> на внутреннем сервисе — не атака, а перегрузка: SYN queue переполнилась от легитимного трафика.</p>
 <h3 id="66-два-механизма-keep-alive">6.6 Два механизма keep-alive</h3>
 <p>Слово «keep-alive» означает две совершенно разные вещи, и их постоянно смешивают.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2204,29 +2204,29 @@ nstat -az <span class="p">|</span> grep -i syncookie
 </thead>
 <tbody>
 <tr>
-<td>Уровень</td>
-<td>Транспортный, в ядре</td>
-<td>Прикладной, в HTTP</td>
+<td data-label="">Уровень</td>
+<td data-label="TCP keep-alive">Транспортный, в ядре</td>
+<td data-label="HTTP keep-alive (persistent connections)">Прикладной, в HTTP</td>
 </tr>
 <tr>
-<td>Что делает</td>
-<td>Периодически шлёт пустые пробы, чтобы понять, жив ли пир</td>
-<td>Не закрывает TCP-соединение после ответа, повторно использует для следующего запроса</td>
+<td data-label="">Что делает</td>
+<td data-label="TCP keep-alive">Периодически шлёт пустые пробы, чтобы понять, жив ли пир</td>
+<td data-label="HTTP keep-alive (persistent connections)">Не закрывает TCP-соединение после ответа, повторно использует для следующего запроса</td>
 </tr>
 <tr>
-<td>Настраивается</td>
-<td><code>SO_KEEPALIVE</code> + sysctl / per-socket опции</td>
-<td><code>Connection: keep-alive</code> (HTTP/1.1 — по умолчанию), <code>Keep-Alive: timeout=N, max=M</code></td>
+<td data-label="">Настраивается</td>
+<td data-label="TCP keep-alive"><code>SO_KEEPALIVE</code> + sysctl / per-socket опции</td>
+<td data-label="HTTP keep-alive (persistent connections)"><code>Connection: keep-alive</code> (HTTP/1.1 — по умолчанию), <code>Keep-Alive: timeout=N, max=M</code></td>
 </tr>
 <tr>
-<td>Зачем</td>
-<td>Обнаружить мёртвого пира, не дать NAT/firewall выбросить запись</td>
-<td>Сэкономить RTT и TLS-handshake</td>
+<td data-label="">Зачем</td>
+<td data-label="TCP keep-alive">Обнаружить мёртвого пира, не дать NAT/firewall выбросить запись</td>
+<td data-label="HTTP keep-alive (persistent connections)">Сэкономить RTT и TLS-handshake</td>
 </tr>
 <tr>
-<td>Значение по умолчанию</td>
-<td><strong>Выключен</strong> на уровне сокета</td>
-<td>Включён в HTTP/1.1</td>
+<td data-label="">Значение по умолчанию</td>
+<td data-label="TCP keep-alive"><strong>Выключен</strong> на уровне сокета</td>
+<td data-label="HTTP keep-alive (persistent connections)">Включён в HTTP/1.1</td>
 </tr>
 </tbody>
 </table>
@@ -2349,7 +2349,7 @@ sysctl net.ipv4.tcp_available_congestion_control
 <span class="c1"># reno cubic bbr</span>
 </code></pre></div>
 
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Алгоритм</th>
@@ -2360,22 +2360,22 @@ sysctl net.ipv4.tcp_available_congestion_control
 </thead>
 <tbody>
 <tr>
-<td><strong>Reno</strong></td>
-<td>Потеря = перегрузка, AIMD</td>
-<td>Простой, всегда доступен («The algorithm 'reno' is always available»)</td>
-<td>Плохо масштабируется на быстрых каналах</td>
+<td data-label="Алгоритм"><strong>Reno</strong></td>
+<td data-label="Модель">Потеря = перегрузка, AIMD</td>
+<td data-label="Сильная сторона">Простой, всегда доступен («The algorithm 'reno' is always available»)</td>
+<td data-label="Слабая сторона">Плохо масштабируется на быстрых каналах</td>
 </tr>
 <tr>
-<td><strong>CUBIC</strong></td>
-<td>Потеря = перегрузка, кубический рост окна</td>
-<td>Значение по умолчанию Linux с 2006 года, хорошо работает на LFN</td>
-<td>Заполняет буферы маршрутизаторов до потерь → bufferbloat, растущая latency</td>
+<td data-label="Алгоритм"><strong>CUBIC</strong></td>
+<td data-label="Модель">Потеря = перегрузка, кубический рост окна</td>
+<td data-label="Сильная сторона">Значение по умолчанию Linux с 2006 года, хорошо работает на LFN</td>
+<td data-label="Слабая сторона">Заполняет буферы маршрутизаторов до потерь → bufferbloat, растущая latency</td>
 </tr>
 <tr>
-<td><strong>BBR</strong></td>
-<td>Моделирует полосу и минимальный RTT, не ждёт потерь</td>
-<td>Заметно выше пропускная способность на каналах с потерями (WAN, мобильные сети), не раздувает очереди</td>
-<td>Может быть агрессивным к CUBIC-потокам на общем узком месте; поведение v1 и v3 различается</td>
+<td data-label="Алгоритм"><strong>BBR</strong></td>
+<td data-label="Модель">Моделирует полосу и минимальный RTT, не ждёт потерь</td>
+<td data-label="Сильная сторона">Заметно выше пропускная способность на каналах с потерями (WAN, мобильные сети), не раздувает очереди</td>
+<td data-label="Слабая сторона">Может быть агрессивным к CUBIC-потокам на общем узком месте; поведение v1 и v3 различается</td>
 </tr>
 </tbody>
 </table>
@@ -2395,7 +2395,7 @@ sysctl -w net.core.default_qdisc<span class="o">=</span>fq          <span class=
 
 <h3 id="611-стоимость-нового-соединения">6.11 Стоимость нового соединения</h3>
 <p>Новое соединение обходится дорого, потому что до первого байта ответа клиент проходит разрешение имени, TCP-рукопожатие и TLS, и каждый этап добавляет круги по сети. Соберём разобранные выше этапы вместе и посчитаем, во что обходится одно новое HTTPS-соединение к сервису с RTT 20 мс:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Фаза</th>
@@ -2405,39 +2405,39 @@ sysctl -w net.core.default_qdisc<span class="o">=</span>fq          <span class=
 </thead>
 <tbody>
 <tr>
-<td>Разрешение имени в DNS (если не в кеше)</td>
-<td>1–2 RTT до распознавателя + возможные таймауты</td>
-<td>См. раздел 7</td>
+<td data-label="Фаза">Разрешение имени в DNS (если не в кеше)</td>
+<td data-label="Стоимость">1–2 RTT до распознавателя + возможные таймауты</td>
+<td data-label="Комментарий">См. раздел 7</td>
 </tr>
 <tr>
-<td>TCP handshake</td>
-<td>1 RTT = 20 мс</td>
-<td>Обязательно</td>
+<td data-label="Фаза">TCP handshake</td>
+<td data-label="Стоимость">1 RTT = 20 мс</td>
+<td data-label="Комментарий">Обязательно</td>
 </tr>
 <tr>
-<td>TLS 1.3 handshake</td>
-<td>1 RTT = 20 мс</td>
-<td>TLS 1.2 — 2 RTT = 40 мс</td>
+<td data-label="Фаза">TLS 1.3 handshake</td>
+<td data-label="Стоимость">1 RTT = 20 мс</td>
+<td data-label="Комментарий">TLS 1.2 — 2 RTT = 40 мс</td>
 </tr>
 <tr>
-<td>Slow start</td>
-<td>Начальное окно 10 сегментов ≈ 14 КБ; ответ 100 КБ потребует ещё 2–3 RTT</td>
-<td><code>tcp_slow_start_after_idle</code> возвращает это и на «отдохнувших» соединениях</td>
+<td data-label="Фаза">Slow start</td>
+<td data-label="Стоимость">Начальное окно 10 сегментов ≈ 14 КБ; ответ 100 КБ потребует ещё 2–3 RTT</td>
+<td data-label="Комментарий"><code>tcp_slow_start_after_idle</code> возвращает это и на «отдохнувших» соединениях</td>
 </tr>
 <tr>
-<td>Порт в <code>TIME_WAIT</code> после закрытия</td>
-<td>60 секунд занятости эфемерного порта</td>
-<td>Потолок ~470 conn/s к одному адресу</td>
+<td data-label="Фаза">Порт в <code>TIME_WAIT</code> после закрытия</td>
+<td data-label="Стоимость">60 секунд занятости эфемерного порта</td>
+<td data-label="Комментарий">Потолок ~470 conn/s к одному адресу</td>
 </tr>
 <tr>
-<td>Память ядра</td>
-<td>~4–10 КБ на сокет (структуры + буферы)</td>
-<td>При 100 тыс. соединений — сотни МБ</td>
+<td data-label="Фаза">Память ядра</td>
+<td data-label="Стоимость">~4–10 КБ на сокет (структуры + буферы)</td>
+<td data-label="Комментарий">При 100 тыс. соединений — сотни МБ</td>
 </tr>
 <tr>
-<td>fd</td>
-<td>1 на соединение</td>
-<td>Лимит <code>nofile</code></td>
+<td data-label="Фаза">fd</td>
+<td data-label="Стоимость">1 на соединение</td>
+<td data-label="Комментарий">Лимит <code>nofile</code></td>
 </tr>
 </tbody>
 </table>
@@ -2517,7 +2517,7 @@ getent hosts example.com         <span class="c1"># резолв через nssw
 
 <p><strong>Уровень 3: JVM.</strong> Это то, что обязан знать каждый Java-разработчик.</p>
 <p><code>InetAddress</code> кеширует результаты в статическом кеше процесса. Управление — свойствами безопасности (<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/InetAddress.html">docs.oracle.com JDK 21</a>):</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Свойство</th>
@@ -2527,19 +2527,19 @@ getent hosts example.com         <span class="c1"># резолв через nssw
 </thead>
 <tbody>
 <tr>
-<td><code>networkaddress.cache.ttl</code></td>
-<td>Сколько секунд кешировать <strong>успешные</strong> разрешения имён. <code>-1</code> = «cache forever»</td>
-<td>«Implementation specific period of time»</td>
+<td data-label="Свойство"><code>networkaddress.cache.ttl</code></td>
+<td data-label="Что задаёт">Сколько секунд кешировать <strong>успешные</strong> разрешения имён. <code>-1</code> = «cache forever»</td>
+<td data-label="Значение по умолчанию">«Implementation specific period of time»</td>
 </tr>
 <tr>
-<td><code>networkaddress.cache.negative.ttl</code></td>
-<td>Сколько кешировать <strong>неудачные</strong>. <code>0</code> = не кешировать, <code>-1</code> = вечно</td>
-<td><strong>10</strong> секунд</td>
+<td data-label="Свойство"><code>networkaddress.cache.negative.ttl</code></td>
+<td data-label="Что задаёт">Сколько кешировать <strong>неудачные</strong>. <code>0</code> = не кешировать, <code>-1</code> = вечно</td>
+<td data-label="Значение по умолчанию"><strong>10</strong> секунд</td>
 </tr>
 <tr>
-<td><code>networkaddress.cache.stale.ttl</code> (JDK 21+)</td>
-<td>Сколько держать протухшие имена, чтобы отдавать их при недоступности DNS</td>
-<td>«Implementation specific»; <code>0</code> или не задано = не использовать</td>
+<td data-label="Свойство"><code>networkaddress.cache.stale.ttl</code> (JDK 21+)</td>
+<td data-label="Что задаёт">Сколько держать протухшие имена, чтобы отдавать их при недоступности DNS</td>
+<td data-label="Значение по умолчанию">«Implementation specific»; <code>0</code> или не задано = не использовать</td>
 </tr>
 </tbody>
 </table>
@@ -2742,7 +2742,7 @@ curl -sS -o /dev/null -w <span class="s2">"@/tmp/curl-format.txt"</span> https:/
 </code></pre></div>
 
 <p><strong>Как читать — это и есть ответ на вопрос «разложи медленный запрос по фазам»:</strong></p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Разность</th>
@@ -2752,34 +2752,34 @@ curl -sS -o /dev/null -w <span class="s2">"@/tmp/curl-format.txt"</span> https:/
 </thead>
 <tbody>
 <tr>
-<td><code>time_namelookup</code></td>
-<td>разрешение имени в DNS</td>
-<td>&gt; 50 мс — проблема DNS: <code>ndots</code>, нет кеша, медленный распознаватель</td>
+<td data-label="Разность"><code>time_namelookup</code></td>
+<td data-label="Что это">разрешение имени в DNS</td>
+<td data-label="Что означает большое значение">&gt; 50 мс — проблема DNS: <code>ndots</code>, нет кеша, медленный распознаватель</td>
 </tr>
 <tr>
-<td><code>time_connect − time_namelookup</code></td>
-<td>TCP handshake</td>
-<td>≈ RTT. Гораздо больше RTT — потери SYN, переполнение accept-очереди, firewall</td>
+<td data-label="Разность"><code>time_connect − time_namelookup</code></td>
+<td data-label="Что это">TCP handshake</td>
+<td data-label="Что означает большое значение">≈ RTT. Гораздо больше RTT — потери SYN, переполнение accept-очереди, firewall</td>
 </tr>
 <tr>
-<td><code>time_appconnect − time_connect</code></td>
-<td>TLS handshake</td>
-<td>1–2 RTT нормально. Много — слабый CPU, большая цепочка сертификатов, OCSP-проверка</td>
+<td data-label="Разность"><code>time_appconnect − time_connect</code></td>
+<td data-label="Что это">TLS handshake</td>
+<td data-label="Что означает большое значение">1–2 RTT нормально. Много — слабый CPU, большая цепочка сертификатов, OCSP-проверка</td>
 </tr>
 <tr>
-<td><code>time_pretransfer − time_appconnect</code></td>
-<td>Подготовка запроса</td>
-<td>Практически всегда ~0</td>
+<td data-label="Разность"><code>time_pretransfer − time_appconnect</code></td>
+<td data-label="Что это">Подготовка запроса</td>
+<td data-label="Что означает большое значение">Практически всегда ~0</td>
 </tr>
 <tr>
-<td><code>time_starttransfer − time_pretransfer</code></td>
-<td><strong>Время обработки на сервере (TTFB)</strong></td>
-<td>Здесь сидит latency приложения</td>
+<td data-label="Разность"><code>time_starttransfer − time_pretransfer</code></td>
+<td data-label="Что это"><strong>Время обработки на сервере (TTFB)</strong></td>
+<td data-label="Что означает большое значение">Здесь сидит latency приложения</td>
 </tr>
 <tr>
-<td><code>time_total − time_starttransfer</code></td>
-<td>Передача тела</td>
-<td>Большое при большом ответе или узком канале</td>
+<td data-label="Разность"><code>time_total − time_starttransfer</code></td>
+<td data-label="Что это">Передача тела</td>
+<td data-label="Что означает большое значение">Большое при большом ответе или узком канале</td>
 </tr>
 </tbody>
 </table>
@@ -2855,7 +2855,7 @@ strace -f -o /tmp/trace.log java -jar app.jar
 nvme0n1 12.0 842.0  192.0 84320.0   0.0   142.0    0.41   18.42  15.82  98.40
 </code></pre></div>
 
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Колонка</th>
@@ -2865,29 +2865,29 @@ nvme0n1 12.0 842.0  192.0 84320.0   0.0   142.0    0.41   18.42  15.82  98.40
 </thead>
 <tbody>
 <tr>
-<td><code>r/s</code>, <code>w/s</code></td>
-<td>Операций в секунду</td>
-<td>Сравнивать с паспортными IOPS устройства</td>
+<td data-label="Колонка"><code>r/s</code>, <code>w/s</code></td>
+<td data-label="Что">Операций в секунду</td>
+<td data-label="Тревожно">Сравнивать с паспортными IOPS устройства</td>
 </tr>
 <tr>
-<td><code>rkB/s</code>, <code>wkB/s</code></td>
-<td>Пропускная способность</td>
-<td>Сравнивать с паспортной</td>
+<td data-label="Колонка"><code>rkB/s</code>, <code>wkB/s</code></td>
+<td data-label="Что">Пропускная способность</td>
+<td data-label="Тревожно">Сравнивать с паспортной</td>
 </tr>
 <tr>
-<td><code>r_await</code>, <code>w_await</code></td>
-<td>Среднее время операции (мс), включая ожидание в очереди</td>
-<td><strong>&gt; 10 мс для SSD — насыщение</strong></td>
+<td data-label="Колонка"><code>r_await</code>, <code>w_await</code></td>
+<td data-label="Что">Среднее время операции (мс), включая ожидание в очереди</td>
+<td data-label="Тревожно"><strong>&gt; 10 мс для SSD — насыщение</strong></td>
 </tr>
 <tr>
-<td><code>aqu-sz</code></td>
-<td>Средняя длина очереди</td>
-<td>&gt; 1–2 устойчиво — очередь растёт, устройство не справляется</td>
+<td data-label="Колонка"><code>aqu-sz</code></td>
+<td data-label="Что">Средняя длина очереди</td>
+<td data-label="Тревожно">&gt; 1–2 устойчиво — очередь растёт, устройство не справляется</td>
 </tr>
 <tr>
-<td><code>%util</code></td>
-<td>Доля времени, когда была хоть одна операция</td>
-<td>Для SSD/NVMe <strong>не показатель насыщения</strong> (они параллельны): 100 % при 5 % реальной загрузки — норма. Смотри <code>await</code> и <code>aqu-sz</code></td>
+<td data-label="Колонка"><code>%util</code></td>
+<td data-label="Что">Доля времени, когда была хоть одна операция</td>
+<td data-label="Тревожно">Для SSD/NVMe <strong>не показатель насыщения</strong> (они параллельны): 100 % при 5 % реальной загрузки — норма. Смотри <code>await</code> и <code>aqu-sz</code></td>
 </tr>
 </tbody>
 </table>
@@ -2973,7 +2973,7 @@ sudo bpftrace -e <span class="s1">'kprobe:tcp_connect { printf("%s pid=%d\n", co
 </code></pre></div>
 
 <p>Готовые инструменты из bcc (пакет <code>bpfcc-tools</code> в Debian/Ubuntu, <code>bcc-tools</code> в RHEL), обычно в <code>/usr/share/bcc/tools/</code>:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Инструмент</th>
@@ -2982,52 +2982,52 @@ sudo bpftrace -e <span class="s1">'kprobe:tcp_connect { printf("%s pid=%d\n", co
 </thead>
 <tbody>
 <tr>
-<td><code>biolatency</code></td>
-<td>Гистограмма латентности блочного I/O — сразу видно бимодальность и хвосты</td>
+<td data-label="Инструмент"><code>biolatency</code></td>
+<td data-label="Что показывает">Гистограмма латентности блочного I/O — сразу видно бимодальность и хвосты</td>
 </tr>
 <tr>
-<td><code>biosnoop</code></td>
-<td>Каждая операция I/O: процесс, устройство, размер, latency</td>
+<td data-label="Инструмент"><code>biosnoop</code></td>
+<td data-label="Что показывает">Каждая операция I/O: процесс, устройство, размер, latency</td>
 </tr>
 <tr>
-<td><code>tcpconnect</code></td>
-<td>Каждое исходящее TCP-соединение: процесс, адрес, порт</td>
+<td data-label="Инструмент"><code>tcpconnect</code></td>
+<td data-label="Что показывает">Каждое исходящее TCP-соединение: процесс, адрес, порт</td>
 </tr>
 <tr>
-<td><code>tcpaccept</code></td>
-<td>Каждое входящее соединение</td>
+<td data-label="Инструмент"><code>tcpaccept</code></td>
+<td data-label="Что показывает">Каждое входящее соединение</td>
 </tr>
 <tr>
-<td><code>tcpretrans</code></td>
-<td>Каждая повторная передача — прямое доказательство потерь</td>
+<td data-label="Инструмент"><code>tcpretrans</code></td>
+<td data-label="Что показывает">Каждая повторная передача — прямое доказательство потерь</td>
 </tr>
 <tr>
-<td><code>tcplife</code></td>
-<td>Время жизни соединений и объём переданного — отлично для поиска коротких соединений</td>
+<td data-label="Инструмент"><code>tcplife</code></td>
+<td data-label="Что показывает">Время жизни соединений и объём переданного — отлично для поиска коротких соединений</td>
 </tr>
 <tr>
-<td><code>execsnoop</code></td>
-<td>Каждый <code>exec()</code> — найти, кто запускает процессы из JVM</td>
+<td data-label="Инструмент"><code>execsnoop</code></td>
+<td data-label="Что показывает">Каждый <code>exec()</code> — найти, кто запускает процессы из JVM</td>
 </tr>
 <tr>
-<td><code>opensnoop</code></td>
-<td>Каждый <code>open()</code></td>
+<td data-label="Инструмент"><code>opensnoop</code></td>
+<td data-label="Что показывает">Каждый <code>open()</code></td>
 </tr>
 <tr>
-<td><code>runqlat</code></td>
-<td>Гистограмма времени ожидания в runqueue — та самая метрика, которую рекомендует Грегг</td>
+<td data-label="Инструмент"><code>runqlat</code></td>
+<td data-label="Что показывает">Гистограмма времени ожидания в runqueue — та самая метрика, которую рекомендует Грегг</td>
 </tr>
 <tr>
-<td><code>cachestat</code></td>
-<td>Hit/miss page cache</td>
+<td data-label="Инструмент"><code>cachestat</code></td>
+<td data-label="Что показывает">Hit/miss page cache</td>
 </tr>
 <tr>
-<td><code>profile</code></td>
-<td>CPU-профиль всей системы со стеками</td>
+<td data-label="Инструмент"><code>profile</code></td>
+<td data-label="Что показывает">CPU-профиль всей системы со стеками</td>
 </tr>
 <tr>
-<td><code>offcputime</code></td>
-<td>Где потоки проводят время <strong>вне</strong> CPU — блокировки, I/O, локи</td>
+<td data-label="Инструмент"><code>offcputime</code></td>
+<td data-label="Что показывает">Где потоки проводят время <strong>вне</strong> CPU — блокировки, I/O, локи</td>
 </tr>
 </tbody>
 </table>
@@ -3054,7 +3054,7 @@ sudo /usr/share/bcc/tools/tcpretrans
 
 <p>⚠️ Требования: ядро 4.9+ (лучше 5.x), <code>CAP_BPF</code>/<code>CAP_SYS_ADMIN</code>, <code>kernel.unprivileged_bpf_disabled</code> может блокировать. В Kubernetes — с узла или через privileged-под.</p>
 <h3 id="84-сводная-таблица-симптомов-и-инструментов">8.4 Сводная таблица симптомов и инструментов</h3>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Симптом</th>
@@ -3065,112 +3065,112 @@ sudo /usr/share/bcc/tools/tcpretrans
 </thead>
 <tbody>
 <tr>
-<td>Сервис не отвечает на порту</td>
-<td><code>ss -lntp \| grep :8080</code></td>
-<td><code>curl -v localhost:8080</code></td>
-<td><code>ss -s</code>, <code>dmesg -T \| tail</code></td>
+<td data-label="Симптом">Сервис не отвечает на порту</td>
+<td data-label="Первая команда"><code>ss -lntp \| grep :8080</code></td>
+<td data-label="Вторая"><code>curl -v localhost:8080</code></td>
+<td data-label="Третья"><code>ss -s</code>, <code>dmesg -T \| tail</code></td>
 </tr>
 <tr>
-<td>Отвечает медленно, все запросы</td>
-<td><code>curl -w @format</code> (разложить по фазам)</td>
-<td><code>top -H -p PID</code></td>
-<td><code>jcmd PID Thread.print</code></td>
+<td data-label="Симптом">Отвечает медленно, все запросы</td>
+<td data-label="Первая команда"><code>curl -w @format</code> (разложить по фазам)</td>
+<td data-label="Вторая"><code>top -H -p PID</code></td>
+<td data-label="Третья"><code>jcmd PID Thread.print</code></td>
 </tr>
 <tr>
-<td>Отвечает медленно, хвосты</td>
-<td><code>biolatency</code>, <code>runqlat</code></td>
-<td><code>cat /sys/fs/cgroup/cpu.stat</code></td>
-<td>GC-логи</td>
+<td data-label="Симптом">Отвечает медленно, хвосты</td>
+<td data-label="Первая команда"><code>biolatency</code>, <code>runqlat</code></td>
+<td data-label="Вторая"><code>cat /sys/fs/cgroup/cpu.stat</code></td>
+<td data-label="Третья">GC-логи</td>
 </tr>
 <tr>
-<td>Процесс висит, не убивается</td>
-<td><code>ps -o stat</code>, <code>cat /proc/PID/stack</code></td>
-<td><code>iostat -xz 1</code></td>
-<td><code>dmesg \| grep blocked</code></td>
+<td data-label="Симптом">Процесс висит, не убивается</td>
+<td data-label="Первая команда"><code>ps -o stat</code>, <code>cat /proc/PID/stack</code></td>
+<td data-label="Вторая"><code>iostat -xz 1</code></td>
+<td data-label="Третья"><code>dmesg \| grep blocked</code></td>
 </tr>
 <tr>
-<td><code>Too many open files</code></td>
-<td><code>ls /proc/PID/fd \| wc -l</code></td>
-<td><code>cat /proc/PID/limits</code></td>
-<td><code>ss -tanp state close-wait</code></td>
+<td data-label="Симптом"><code>Too many open files</code></td>
+<td data-label="Первая команда"><code>ls /proc/PID/fd \| wc -l</code></td>
+<td data-label="Вторая"><code>cat /proc/PID/limits</code></td>
+<td data-label="Третья"><code>ss -tanp state close-wait</code></td>
 </tr>
 <tr>
-<td>RSS растёт, heap не растёт</td>
-<td><code>smaps_rollup</code>, <code>pmap -x</code></td>
-<td><code>jcmd VM.native_memory</code></td>
-<td><code>pmap \| grep 65536</code> (арены)</td>
+<td data-label="Симптом">RSS растёт, heap не растёт</td>
+<td data-label="Первая команда"><code>smaps_rollup</code>, <code>pmap -x</code></td>
+<td data-label="Вторая"><code>jcmd VM.native_memory</code></td>
+<td data-label="Третья"><code>pmap \| grep 65536</code> (арены)</td>
 </tr>
 <tr>
-<td>Процесс исчез без логов</td>
-<td><code>dmesg -T \| grep -i oom</code></td>
-<td><code>journalctl -k</code></td>
-<td><code>cat memory.events</code></td>
+<td data-label="Симптом">Процесс исчез без логов</td>
+<td data-label="Первая команда"><code>dmesg -T \| grep -i oom</code></td>
+<td data-label="Вторая"><code>journalctl -k</code></td>
+<td data-label="Третья"><code>cat memory.events</code></td>
 </tr>
 <tr>
-<td>Высокий CPU</td>
-<td><code>top -H -p PID</code> → <code>printf '0x%x'</code></td>
-<td><code>jcmd Thread.print</code></td>
-<td><code>asprof -d 30</code></td>
+<td data-label="Симптом">Высокий CPU</td>
+<td data-label="Первая команда"><code>top -H -p PID</code> → <code>printf '0x%x'</code></td>
+<td data-label="Вторая"><code>jcmd Thread.print</code></td>
+<td data-label="Третья"><code>asprof -d 30</code></td>
 </tr>
 <tr>
-<td>Высокий CPU, но <code>sy</code> большой</td>
-<td><code>strace -c -f -p PID</code></td>
-<td><code>perf top</code></td>
-<td><code>vmstat 1</code> (колонка <code>cs</code>)</td>
+<td data-label="Симптом">Высокий CPU, но <code>sy</code> большой</td>
+<td data-label="Первая команда"><code>strace -c -f -p PID</code></td>
+<td data-label="Вторая"><code>perf top</code></td>
+<td data-label="Третья"><code>vmstat 1</code> (колонка <code>cs</code>)</td>
 </tr>
 <tr>
-<td>Соединения не устанавливаются</td>
-<td><code>ss -lnt</code> (Recv-Q!)</td>
-<td><code>nstat \| grep -i overflow</code></td>
-<td><code>tcpdump 'tcp[tcpflags] &amp; tcp-syn != 0'</code></td>
+<td data-label="Симптом">Соединения не устанавливаются</td>
+<td data-label="Первая команда"><code>ss -lnt</code> (Recv-Q!)</td>
+<td data-label="Вторая"><code>nstat \| grep -i overflow</code></td>
+<td data-label="Третья"><code>tcpdump 'tcp[tcpflags] &amp; tcp-syn != 0'</code></td>
 </tr>
 <tr>
-<td>Случайная latency 1 с / 3 с</td>
-<td><code>ss -lnt</code> (accept-очередь)</td>
-<td><code>netstat -s \| grep -i listen</code></td>
-<td><code>tcpdump</code> (повторы SYN)</td>
+<td data-label="Симптом">Случайная latency 1 с / 3 с</td>
+<td data-label="Первая команда"><code>ss -lnt</code> (accept-очередь)</td>
+<td data-label="Вторая"><code>netstat -s \| grep -i listen</code></td>
+<td data-label="Третья"><code>tcpdump</code> (повторы SYN)</td>
 </tr>
 <tr>
-<td>Соединения рвутся</td>
-<td><code>tcpdump 'tcp[tcpflags] &amp; tcp-rst != 0'</code></td>
-<td><code>ss -tani</code> (retrans)</td>
-<td><code>dmesg \| grep conntrack</code></td>
+<td data-label="Симптом">Соединения рвутся</td>
+<td data-label="Первая команда"><code>tcpdump 'tcp[tcpflags] &amp; tcp-rst != 0'</code></td>
+<td data-label="Вторая"><code>ss -tani</code> (retrans)</td>
+<td data-label="Третья"><code>dmesg \| grep conntrack</code></td>
 </tr>
 <tr>
-<td>Медленно и стабильно +40 мс</td>
-<td>проверить <code>TCP_NODELAY</code></td>
-<td><code>tcpdump</code> (видно паузу)</td>
-<td>—</td>
+<td data-label="Симптом">Медленно и стабильно +40 мс</td>
+<td data-label="Первая команда">проверить <code>TCP_NODELAY</code></td>
+<td data-label="Вторая"><code>tcpdump</code> (видно паузу)</td>
+<td data-label="Третья">—</td>
 </tr>
 <tr>
-<td>Медленно только большие ответы</td>
-<td><code>ping -M do -s 1472</code> (PMTU)</td>
-<td><code>ss -tani</code> (MSS)</td>
-<td><code>ip link</code> (MTU)</td>
+<td data-label="Симптом">Медленно только большие ответы</td>
+<td data-label="Первая команда"><code>ping -M do -s 1472</code> (PMTU)</td>
+<td data-label="Вторая"><code>ss -tani</code> (MSS)</td>
+<td data-label="Третья"><code>ip link</code> (MTU)</td>
 </tr>
 <tr>
-<td>Первый запрос медленный</td>
-<td><code>curl -w</code> (<code>time_namelookup</code>)</td>
-<td><code>getent hosts</code></td>
-<td><code>dig</code> + TTL</td>
+<td data-label="Симптом">Первый запрос медленный</td>
+<td data-label="Первая команда"><code>curl -w</code> (<code>time_namelookup</code>)</td>
+<td data-label="Вторая"><code>getent hosts</code></td>
+<td data-label="Третья"><code>dig</code> + TTL</td>
 </tr>
 <tr>
-<td>Диск полон, а файлов нет</td>
-<td><code>df -i</code></td>
-<td><code>lsof +L1</code></td>
-<td><code>du -xhd 2</code></td>
+<td data-label="Симптом">Диск полон, а файлов нет</td>
+<td data-label="Первая команда"><code>df -i</code></td>
+<td data-label="Вторая"><code>lsof +L1</code></td>
+<td data-label="Третья"><code>du -xhd 2</code></td>
 </tr>
 <tr>
-<td>Latency скачет, CPU средний</td>
-<td><code>cat /sys/fs/cgroup/cpu.stat</code></td>
-<td><code>mpstat -P ALL 1</code></td>
-<td><code>top</code> (колонка <code>st</code>)</td>
+<td data-label="Симптом">Latency скачет, CPU средний</td>
+<td data-label="Первая команда"><code>cat /sys/fs/cgroup/cpu.stat</code></td>
+<td data-label="Вторая"><code>mpstat -P ALL 1</code></td>
+<td data-label="Третья"><code>top</code> (колонка <code>st</code>)</td>
 </tr>
 <tr>
-<td>Всё медленно после ночи</td>
-<td><code>sar -u -f /var/log/sa/saNN</code></td>
-<td><code>sar -n DEV</code></td>
-<td><code>journalctl --since</code></td>
+<td data-label="Симптом">Всё медленно после ночи</td>
+<td data-label="Первая команда"><code>sar -u -f /var/log/sa/saNN</code></td>
+<td data-label="Вторая"><code>sar -n DEV</code></td>
+<td data-label="Третья"><code>journalctl --since</code></td>
 </tr>
 </tbody>
 </table>
@@ -3769,7 +3769,7 @@ split -l <span class="m">1000000</span> huge.log chunk_
 <span class="nv">IFS</span><span class="o">=</span><span class="s1">$'\n\t'</span>
 </code></pre></div>
 
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Флаг</th>
@@ -3779,24 +3779,24 @@ split -l <span class="m">1000000</span> huge.log chunk_
 </thead>
 <tbody>
 <tr>
-<td><code>-e</code> (<code>errexit</code>)</td>
-<td>Прервать скрипт при ненулевом коде возврата</td>
-<td><code>cd /nonexistent; rm -rf *</code> — классика удаления не того каталога</td>
+<td data-label="Флаг"><code>-e</code> (<code>errexit</code>)</td>
+<td data-label="Что делает">Прервать скрипт при ненулевом коде возврата</td>
+<td data-label="Что предотвращает"><code>cd /nonexistent; rm -rf *</code> — классика удаления не того каталога</td>
 </tr>
 <tr>
-<td><code>-u</code> (<code>nounset</code>)</td>
-<td>Ошибка при использовании неустановленной переменной</td>
-<td><code>rm -rf "$PREFIX/data"</code> при пустом <code>PREFIX</code> = <code>rm -rf /data</code></td>
+<td data-label="Флаг"><code>-u</code> (<code>nounset</code>)</td>
+<td data-label="Что делает">Ошибка при использовании неустановленной переменной</td>
+<td data-label="Что предотвращает"><code>rm -rf "$PREFIX/data"</code> при пустом <code>PREFIX</code> = <code>rm -rf /data</code></td>
 </tr>
 <tr>
-<td><code>-o pipefail</code></td>
-<td>Код возврата конвейера = код первой упавшей команды</td>
-<td><code>curl bad-url \| jq .</code> вернёт 0, потому что <code>jq</code> отработал</td>
+<td data-label="Флаг"><code>-o pipefail</code></td>
+<td data-label="Что делает">Код возврата конвейера = код первой упавшей команды</td>
+<td data-label="Что предотвращает"><code>curl bad-url \| jq .</code> вернёт 0, потому что <code>jq</code> отработал</td>
 </tr>
 <tr>
-<td><code>IFS=$'\n\t'</code></td>
-<td>Убрать пробел из разделителей полей</td>
-<td>Разваливание путей с пробелами при word splitting</td>
+<td data-label="Флаг"><code>IFS=$'\n\t'</code></td>
+<td data-label="Что делает">Убрать пробел из разделителей полей</td>
+<td data-label="Что предотвращает">Разваливание путей с пробелами при word splitting</td>
 </tr>
 </tbody>
 </table>
@@ -4303,5 +4303,5 @@ iostat -xz <span class="m">1</span>
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-процессы-и-их-жизненный-цикл">1. Процессы и их жизненный цикл</a></li><li><a href="#2-память-процесса">2. Память процесса</a></li><li><a href="#3-cgroups-и-контейнерные-лимиты">3. cgroups и контейнерные лимиты</a></li><li><a href="#4-файловые-дескрипторы-и-ввод-вывод">4. Файловые дескрипторы и ввод-вывод</a></li><li><a href="#5-cpu-и-планировщик">5. CPU и планировщик</a></li><li><a href="#6-tcp-в-работе-бэкенда">6. TCP в работе бэкенда</a></li><li><a href="#7-dns">7. DNS</a></li><li><a href="#8-инструменты-диагностики">8. Инструменты диагностики</a></li><li><a href="#9-разобранные-инциденты">9. Разобранные инциденты</a></li><li><a href="#10-командная-оболочка-для-разработчика">10. Командная оболочка для разработчика</a></li><li><a href="#11-грабли-и-антипаттерны">11. Грабли и антипаттерны</a></li><li><a href="#12-диагностика-чеклисты">12. Диагностика: чеклисты</a></li><li><a href="#13-вопросы-на-интервью">13. Вопросы на интервью</a></li><li><a href="#14-попробовать-руками">14. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

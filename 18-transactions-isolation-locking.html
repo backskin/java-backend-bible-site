@@ -3,7 +3,7 @@
 <title>18. Транзакции, изоляция, блокировки — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Транзакции, изоляция, блокировки">
 <a class="skip" href="#content">К тексту</a>
@@ -636,7 +636,7 @@ SERIALIZABLE                   T2 отклонена: 40001 ERROR: could not ser
 <p>Беренсон и соавторы добавили эту аномалию под кодом P0 и показали, что без её запрета база не может даже корректно откатиться. Пусть <code>T1</code> изменила строку, <code>T2</code> поверх неё записала своё значение, а затем <code>T1</code> откатилась: вернуть старое значение нельзя, не уничтожив изменение <code>T2</code>, а оставить новое нельзя, потому что откат должен убрать изменение <code>T1</code>. Поэтому любой <code>UPDATE</code> строки ждёт завершения транзакции, которая эту строку уже изменила. В PostgreSQL ожидание устроено так: каждая транзакция держит исключительную блокировку на собственный номер XID, а ждущая транзакция запрашивает на этот номер разделяемую (share) блокировку и получает её, только когда писатель завершится (см. 4.6). Из этого следует полезное правило: <strong>запрет dirty write даёт вам блокировку строки «бесплатно» на любом уровне изоляции</strong>.</p>
 <h3 id="29-сводная-таблица-аномалий">2.9 Сводная таблица аномалий</h3>
 <p>Сводная таблица аномалий собирает в одном месте всё, что разобрано в подразделах 2.1–2.8. Для каждой аномалии в ней указан код из работы Беренсона и соавторов, то, что видит пострадавшая транзакция, и минимальный уровень изоляции в PostgreSQL, который от неё защищает. Смотреть стоит прежде всего на две нижние строки: там помощь приходит только от <code>SERIALIZABLE</code>.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аномалия</th>
@@ -647,52 +647,52 @@ SERIALIZABLE                   T2 отклонена: 40001 ERROR: could not ser
 </thead>
 <tbody>
 <tr>
-<td>Dirty write</td>
-<td>P0</td>
-<td>перезапись чужого незафиксированного</td>
-<td>любой (MVCC + блокировка записи)</td>
+<td data-label="Аномалия">Dirty write</td>
+<td data-label="Код у Berenson">P0</td>
+<td data-label="Что видно">перезапись чужого незафиксированного</td>
+<td data-label="Минимальный уровень в PostgreSQL, который защищает">любой (MVCC + блокировка записи)</td>
 </tr>
 <tr>
-<td>Dirty read</td>
-<td>P1 / A1</td>
-<td>чужое незафиксированное</td>
-<td>любой (в PG нет никогда)</td>
+<td data-label="Аномалия">Dirty read</td>
+<td data-label="Код у Berenson">P1 / A1</td>
+<td data-label="Что видно">чужое незафиксированное</td>
+<td data-label="Минимальный уровень в PostgreSQL, который защищает">любой (в PG нет никогда)</td>
 </tr>
 <tr>
-<td>Non-repeatable read</td>
-<td>P2 / A2</td>
-<td>строка изменилась между чтениями</td>
-<td>REPEATABLE READ</td>
+<td data-label="Аномалия">Non-repeatable read</td>
+<td data-label="Код у Berenson">P2 / A2</td>
+<td data-label="Что видно">строка изменилась между чтениями</td>
+<td data-label="Минимальный уровень в PostgreSQL, который защищает">REPEATABLE READ</td>
 </tr>
 <tr>
-<td>Phantom read</td>
-<td>P3 / A3</td>
-<td>изменился набор строк</td>
-<td>REPEATABLE READ (в PG; по стандарту — SERIALIZABLE)</td>
+<td data-label="Аномалия">Phantom read</td>
+<td data-label="Код у Berenson">P3 / A3</td>
+<td data-label="Что видно">изменился набор строк</td>
+<td data-label="Минимальный уровень в PostgreSQL, который защищает">REPEATABLE READ (в PG; по стандарту — SERIALIZABLE)</td>
 </tr>
 <tr>
-<td>Lost update</td>
-<td>P4</td>
-<td>затёртое изменение</td>
-<td>REPEATABLE READ (упадёт с 40001)</td>
+<td data-label="Аномалия">Lost update</td>
+<td data-label="Код у Berenson">P4</td>
+<td data-label="Что видно">затёртое изменение</td>
+<td data-label="Минимальный уровень в PostgreSQL, который защищает">REPEATABLE READ (упадёт с 40001)</td>
 </tr>
 <tr>
-<td>Read skew</td>
-<td>A5A</td>
-<td>несогласованный срез нескольких строк</td>
-<td>REPEATABLE READ</td>
+<td data-label="Аномалия">Read skew</td>
+<td data-label="Код у Berenson">A5A</td>
+<td data-label="Что видно">несогласованный срез нескольких строк</td>
+<td data-label="Минимальный уровень в PostgreSQL, который защищает">REPEATABLE READ</td>
 </tr>
 <tr>
-<td>Write skew</td>
-<td>A5B</td>
-<td>обе проверили, обе записали</td>
-<td><strong>SERIALIZABLE</strong></td>
+<td data-label="Аномалия">Write skew</td>
+<td data-label="Код у Berenson">A5B</td>
+<td data-label="Что видно">обе проверили, обе записали</td>
+<td data-label="Минимальный уровень в PostgreSQL, который защищает"><strong>SERIALIZABLE</strong></td>
 </tr>
 <tr>
-<td>Read-only anomaly</td>
-<td>—</td>
-<td>read-only видит невозможное состояние</td>
-<td><strong>SERIALIZABLE</strong></td>
+<td data-label="Аномалия">Read-only anomaly</td>
+<td data-label="Код у Berenson">—</td>
+<td data-label="Что видно">read-only видит невозможное состояние</td>
+<td data-label="Минимальный уровень в PostgreSQL, который защищает"><strong>SERIALIZABLE</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1308,7 +1308,7 @@ HINT:  The transaction might succeed if retried.
 <p>Этот сценарий отвечает на вопрос, может ли <code>SELECT</code> получить ошибку сериализации. Может: читатель C видит изменение B, но не видит изменения A, хотя A по смыслу предшествует B (A читала данные до изменения B), и такого порядка при последовательном выполнении не бывает. Именно поэтому режим <code>SERIALIZABLE READ ONLY DEFERRABLE</code> существует не для красоты (4.7).</p>
 <h3 id="211-матрица-проявления-аномалий">2.11 Матрица проявления аномалий</h3>
 <p>Матрица проявления аномалий показывает, какие аномалии возможны на каждом уровне изоляции в PostgreSQL и в InnoDB. Сводная таблица из раздела 2.9 говорила только о PostgreSQL, а на практике важно сравнить его с InnoDB, где те же названия уровней означают другое поведение. В матрице по строкам идут аномалии, по столбцам — уровни изоляции двух СУБД (RU — <code>READ UNCOMMITTED</code>, RC — <code>READ COMMITTED</code>, RR — <code>REPEATABLE READ</code>, SER — <code>SERIALIZABLE</code>), а «да» означает, что аномалия на этом уровне возможна. Смотреть стоит на сноски: в них объяснено, почему «нет» на уровнях PostgreSQL выше RC не избавляет приложение от работы.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аномалия</th>
@@ -1324,103 +1324,103 @@ HINT:  The transaction might succeed if retried.
 </thead>
 <tbody>
 <tr>
-<td>Dirty read</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>не использовать RU в MySQL</td>
+<td data-label="Аномалия">Dirty read</td>
+<td data-label="PG RC">нет</td>
+<td data-label="PG RR">нет</td>
+<td data-label="PG SER">нет</td>
+<td data-label="InnoDB RU"><strong>да</strong></td>
+<td data-label="InnoDB RC">нет</td>
+<td data-label="InnoDB RR">нет</td>
+<td data-label="InnoDB SER">нет</td>
+<td data-label="Чем лечить в приложении">не использовать RU в MySQL</td>
 </tr>
 <tr>
-<td>Non-repeatable read</td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>нет</td>
-<td>да</td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>нет</td>
-<td>RR для многошаговых чтений</td>
+<td data-label="Аномалия">Non-repeatable read</td>
+<td data-label="PG RC"><strong>да</strong></td>
+<td data-label="PG RR">нет</td>
+<td data-label="PG SER">нет</td>
+<td data-label="InnoDB RU">да</td>
+<td data-label="InnoDB RC"><strong>да</strong></td>
+<td data-label="InnoDB RR">нет</td>
+<td data-label="InnoDB SER">нет</td>
+<td data-label="Чем лечить в приложении">RR для многошаговых чтений</td>
 </tr>
 <tr>
-<td>Phantom (plain SELECT)</td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>нет</td>
-<td>да</td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>нет</td>
-<td>RR</td>
+<td data-label="Аномалия">Phantom (plain SELECT)</td>
+<td data-label="PG RC"><strong>да</strong></td>
+<td data-label="PG RR">нет</td>
+<td data-label="PG SER">нет</td>
+<td data-label="InnoDB RU">да</td>
+<td data-label="InnoDB RC"><strong>да</strong></td>
+<td data-label="InnoDB RR">нет</td>
+<td data-label="InnoDB SER">нет</td>
+<td data-label="Чем лечить в приложении">RR</td>
 </tr>
 <tr>
-<td>Phantom (SELECT ... FOR UPDATE)</td>
-<td><strong>да</strong></td>
-<td>н/д¹</td>
-<td>нет</td>
-<td>да</td>
-<td><strong>да</strong></td>
-<td>нет (next-key)</td>
-<td>нет</td>
-<td>RR/SER или next-key</td>
+<td data-label="Аномалия">Phantom (SELECT ... FOR UPDATE)</td>
+<td data-label="PG RC"><strong>да</strong></td>
+<td data-label="PG RR">н/д¹</td>
+<td data-label="PG SER">нет</td>
+<td data-label="InnoDB RU">да</td>
+<td data-label="InnoDB RC"><strong>да</strong></td>
+<td data-label="InnoDB RR">нет (next-key)</td>
+<td data-label="InnoDB SER">нет</td>
+<td data-label="Чем лечить в приложении">RR/SER или next-key</td>
 </tr>
 <tr>
-<td>Lost update (read-modify-write)</td>
-<td><strong>да</strong></td>
-<td>нет²</td>
-<td>нет²</td>
-<td>да</td>
-<td><strong>да</strong></td>
-<td><strong>да</strong>³</td>
-<td>нет</td>
-<td>атомарный UPDATE / FOR UPDATE / @Version</td>
+<td data-label="Аномалия">Lost update (read-modify-write)</td>
+<td data-label="PG RC"><strong>да</strong></td>
+<td data-label="PG RR">нет²</td>
+<td data-label="PG SER">нет²</td>
+<td data-label="InnoDB RU">да</td>
+<td data-label="InnoDB RC"><strong>да</strong></td>
+<td data-label="InnoDB RR"><strong>да</strong>³</td>
+<td data-label="InnoDB SER">нет</td>
+<td data-label="Чем лечить в приложении">атомарный UPDATE / FOR UPDATE / @Version</td>
 </tr>
 <tr>
-<td>Read skew</td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>нет</td>
-<td>да</td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>нет</td>
-<td>RR READ ONLY</td>
+<td data-label="Аномалия">Read skew</td>
+<td data-label="PG RC"><strong>да</strong></td>
+<td data-label="PG RR">нет</td>
+<td data-label="PG SER">нет</td>
+<td data-label="InnoDB RU">да</td>
+<td data-label="InnoDB RC"><strong>да</strong></td>
+<td data-label="InnoDB RR">нет</td>
+<td data-label="InnoDB SER">нет</td>
+<td data-label="Чем лечить в приложении">RR READ ONLY</td>
 </tr>
 <tr>
-<td>Write skew</td>
-<td><strong>да</strong></td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>да</td>
-<td><strong>да</strong></td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>SERIALIZABLE / материализация конфликта</td>
+<td data-label="Аномалия">Write skew</td>
+<td data-label="PG RC"><strong>да</strong></td>
+<td data-label="PG RR"><strong>да</strong></td>
+<td data-label="PG SER">нет</td>
+<td data-label="InnoDB RU">да</td>
+<td data-label="InnoDB RC"><strong>да</strong></td>
+<td data-label="InnoDB RR"><strong>да</strong></td>
+<td data-label="InnoDB SER">нет</td>
+<td data-label="Чем лечить в приложении">SERIALIZABLE / материализация конфликта</td>
 </tr>
 <tr>
-<td>Read-only anomaly</td>
-<td><strong>да</strong></td>
-<td><strong>да</strong></td>
-<td>нет</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>нет</td>
-<td>SERIALIZABLE (или DEFERRABLE)</td>
+<td data-label="Аномалия">Read-only anomaly</td>
+<td data-label="PG RC"><strong>да</strong></td>
+<td data-label="PG RR"><strong>да</strong></td>
+<td data-label="PG SER">нет</td>
+<td data-label="InnoDB RU">да</td>
+<td data-label="InnoDB RC">да</td>
+<td data-label="InnoDB RR">да</td>
+<td data-label="InnoDB SER">нет</td>
+<td data-label="Чем лечить в приложении">SERIALIZABLE (или DEFERRABLE)</td>
 </tr>
 <tr>
-<td>Dirty write</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>— (запрещён везде)</td>
+<td data-label="Аномалия">Dirty write</td>
+<td data-label="PG RC">нет</td>
+<td data-label="PG RR">нет</td>
+<td data-label="PG SER">нет</td>
+<td data-label="InnoDB RU">нет</td>
+<td data-label="InnoDB RC">нет</td>
+<td data-label="InnoDB RR">нет</td>
+<td data-label="InnoDB SER">нет</td>
+<td data-label="Чем лечить в приложении">— (запрещён везде)</td>
 </tr>
 </tbody>
 </table>
@@ -1494,7 +1494,7 @@ HINT:  The transaction might succeed if retried.
 
 <p><code>FOR UPDATE</code> блокирует только <strong>существующие строки, которые попали в выборку</strong>. Если строк нет, блокировать нечего, и обе сессии спокойно идут дальше. Но и когда строки есть, их блокировка никак не мешает кому-то вставить новую. Это ключевая мысль, которую нужно уметь произнести на интервью: <strong><code>FOR UPDATE</code> защищает от изменения того, что есть, и не защищает от появления того, чего нет</strong>. Write skew через <code>INSERT</code> оказывается фантомом, а фантом строчной блокировкой не ловится по определению.</p>
 <p><strong>Что помогает.</strong> Рабочих способов четыре, и в таблице они перечислены в порядке предпочтения; для каждого указано, как он выглядит в коде, что даёт и чем за него придётся платить.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -1505,28 +1505,28 @@ HINT:  The transaction might succeed if retried.
 </thead>
 <tbody>
 <tr>
-<td>Материализация конфликта</td>
-<td><code>SELECT ... FROM clients WHERE id=77 FOR UPDATE</code> в начале обеих транзакций</td>
-<td>работает на RC, предсказуемо, без повторных попыток</td>
-<td>сериализует всю работу по клиенту; надо не забыть во <strong>всех</strong> местах кода</td>
+<td data-label="Способ">Материализация конфликта</td>
+<td data-label="Как выглядит"><code>SELECT ... FROM clients WHERE id=77 FOR UPDATE</code> в начале обеих транзакций</td>
+<td data-label="Плюс">работает на RC, предсказуемо, без повторных попыток</td>
+<td data-label="Минус">сериализует всю работу по клиенту; надо не забыть во <strong>всех</strong> местах кода</td>
 </tr>
 <tr>
-<td>Сведение инварианта к строке</td>
-<td>колонка <code>clients.withdrawn_today</code> + <code>CHECK (withdrawn_today &lt;= limit)</code>, обновляется тем же оператором</td>
-<td>база защищает инвариант сама, при любой изоляции</td>
-<td>нужен сброс счётчика по расписанию, денормализация</td>
+<td data-label="Способ">Сведение инварианта к строке</td>
+<td data-label="Как выглядит">колонка <code>clients.withdrawn_today</code> + <code>CHECK (withdrawn_today &lt;= limit)</code>, обновляется тем же оператором</td>
+<td data-label="Плюс">база защищает инвариант сама, при любой изоляции</td>
+<td data-label="Минус">нужен сброс счётчика по расписанию, денормализация</td>
 </tr>
 <tr>
-<td><code>SERIALIZABLE</code></td>
-<td><code>BEGIN ISOLATION LEVEL SERIALIZABLE</code> в обеих транзакциях</td>
-<td>код не меняется, инвариант защищён на уровне БД</td>
-<td>обязательны повторы при <code>40001</code>, цена под нагрузкой (4.7)</td>
+<td data-label="Способ"><code>SERIALIZABLE</code></td>
+<td data-label="Как выглядит"><code>BEGIN ISOLATION LEVEL SERIALIZABLE</code> в обеих транзакциях</td>
+<td data-label="Плюс">код не меняется, инвариант защищён на уровне БД</td>
+<td data-label="Минус">обязательны повторы при <code>40001</code>, цена под нагрузкой (4.7)</td>
 </tr>
 <tr>
-<td>ограничение <code>EXCLUDE</code>/<code>UNIQUE</code></td>
-<td>когда инвариант выражается как «не более одной строки на ключ» или «диапазоны не пересекаются»</td>
-<td>ловится всегда, дешевле всех</td>
-<td>применим не ко всякому инварианту</td>
+<td data-label="Способ">ограничение <code>EXCLUDE</code>/<code>UNIQUE</code></td>
+<td data-label="Как выглядит">когда инвариант выражается как «не более одной строки на ключ» или «диапазоны не пересекаются»</td>
+<td data-label="Плюс">ловится всегда, дешевле всех</td>
+<td data-label="Минус">применим не ко всякому инварианту</td>
 </tr>
 </tbody>
 </table>
@@ -1585,7 +1585,7 @@ READ COMMITTED + SELECT ... FOR UPDATE по всем строкам клиент
 <h2 id="4-уровни-изоляции-в-postgresql">4. Уровни изоляции в PostgreSQL</h2>
 <p>Уровень изоляции в PostgreSQL определяет две вещи: когда транзакция берёт снимок данных и что происходит, если строку, которую она хочет изменить, уже изменил кто-то другой. От этого зависит, увидит ли отчёт согласованный срез, потеряет ли списание чужое обновление и получит ли приложение ошибку <code>40001</code>, которую надо обработать. В этом разделе мы пройдём по уровням снизу вверх: почему грязного чтения здесь не бывает в принципе, как <code>READ COMMITTED</code> берёт снимок на каждый оператор и перепроверяет строки механизмом EvalPlanQual, как <code>REPEATABLE READ</code> реализует snapshot isolation и как <code>SERIALIZABLE</code> достраивает его до SSI. После этого сформулируем рабочее правило выбора уровня и отдельно, по шагам, разберём EvalPlanQual и внутреннее устройство SSI.</p>
 <p>PostgreSQL принимает все четыре имени уровней из стандарта, но <strong>реализованы в нём только три</strong>: «PostgreSQL's Read Uncommitted mode behaves like Read Committed» (<a href="https://www.postgresql.org/docs/current/transaction-iso.html">Transaction Isolation</a>). По умолчанию используется <code>READ COMMITTED</code>; значение по умолчанию задаёт параметр <code>default_transaction_isolation</code> (<a href="https://www.postgresql.org/docs/current/runtime-config-client.html">Client Connection Defaults</a>). В таблице ниже для каждого уровня показано, какие аномалии он допускает и как реализован на самом деле. Обратите внимание на выделенную клетку с фантомами на <code>REPEATABLE READ</code>: здесь PostgreSQL строже стандарта.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -1598,36 +1598,36 @@ READ COMMITTED + SELECT ... FOR UPDATE по всем строкам клиент
 </thead>
 <tbody>
 <tr>
-<td>READ UNCOMMITTED</td>
-<td>нет</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>= READ COMMITTED</td>
+<td data-label="Уровень">READ UNCOMMITTED</td>
+<td data-label="Dirty read">нет</td>
+<td data-label="Non-repeatable">да</td>
+<td data-label="Phantom">да</td>
+<td data-label="Serialization anomaly">да</td>
+<td data-label="Реальная реализация">= READ COMMITTED</td>
 </tr>
 <tr>
-<td>READ COMMITTED</td>
-<td>нет</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>снимок на каждый оператор</td>
+<td data-label="Уровень">READ COMMITTED</td>
+<td data-label="Dirty read">нет</td>
+<td data-label="Non-repeatable">да</td>
+<td data-label="Phantom">да</td>
+<td data-label="Serialization anomaly">да</td>
+<td data-label="Реальная реализация">снимок на каждый оператор</td>
 </tr>
 <tr>
-<td>REPEATABLE READ</td>
-<td>нет</td>
-<td>нет</td>
-<td><strong>нет</strong></td>
-<td>да</td>
-<td>snapshot isolation</td>
+<td data-label="Уровень">REPEATABLE READ</td>
+<td data-label="Dirty read">нет</td>
+<td data-label="Non-repeatable">нет</td>
+<td data-label="Phantom"><strong>нет</strong></td>
+<td data-label="Serialization anomaly">да</td>
+<td data-label="Реальная реализация">snapshot isolation</td>
 </tr>
 <tr>
-<td>SERIALIZABLE</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>SSI поверх SI</td>
+<td data-label="Уровень">SERIALIZABLE</td>
+<td data-label="Dirty read">нет</td>
+<td data-label="Non-repeatable">нет</td>
+<td data-label="Phantom">нет</td>
+<td data-label="Serialization anomaly">нет</td>
+<td data-label="Реальная реализация">SSI поверх SI</td>
 </tr>
 </tbody>
 </table>
@@ -1843,7 +1843,7 @@ SQLSTATE: 40001
 </code></pre></div>
 
 <p>Договоры у двух уровней принципиально разные: на RC вы получаете правдоподобный, но, возможно, неполный результат без всякой ошибки, а на RR — ошибку вместо неправильного результата. Для денежных операций второй договор честнее, и это отдельный, недооценённый довод в пользу связки «<code>REPEATABLE READ</code> плюс повтор транзакции» в платёжных сервисах. Таблица ниже сводит оба договора по типовым ситуациям; главное в ней — вторая строка, где RC молча теряет строку.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -1853,29 +1853,29 @@ SQLSTATE: 40001
 </thead>
 <tbody>
 <tr>
-<td>Строку изменил другой и <code>WHERE</code> по-прежнему истинно</td>
-<td>обновляем новую версию</td>
-<td class="num"><code>40001</code></td>
+<td data-label="Ситуация">Строку изменил другой и <code>WHERE</code> по-прежнему истинно</td>
+<td data-label="READ COMMITTED">обновляем новую версию</td>
+<td data-label="REPEATABLE READ / SERIALIZABLE" class="num"><code>40001</code></td>
 </tr>
 <tr>
-<td>Строку изменил другой, <code>WHERE</code> стало ложным</td>
-<td><strong>строка молча пропущена</strong></td>
-<td class="num"><code>40001</code></td>
+<td data-label="Ситуация">Строку изменил другой, <code>WHERE</code> стало ложным</td>
+<td data-label="READ COMMITTED"><strong>строка молча пропущена</strong></td>
+<td data-label="REPEATABLE READ / SERIALIZABLE" class="num"><code>40001</code></td>
 </tr>
 <tr>
-<td>Строку удалил другой</td>
-<td>строка молча пропущена</td>
-<td class="num"><code>40001</code></td>
+<td data-label="Ситуация">Строку удалил другой</td>
+<td data-label="READ COMMITTED">строка молча пропущена</td>
+<td data-label="REPEATABLE READ / SERIALIZABLE" class="num"><code>40001</code></td>
 </tr>
 <tr>
-<td><code>SELECT ... FOR UPDATE</code> по изменённой строке</td>
-<td>вернёт новую версию</td>
-<td class="num"><code>40001</code></td>
+<td data-label="Ситуация"><code>SELECT ... FOR UPDATE</code> по изменённой строке</td>
+<td data-label="READ COMMITTED">вернёт новую версию</td>
+<td data-label="REPEATABLE READ / SERIALIZABLE" class="num"><code>40001</code></td>
 </tr>
 <tr>
-<td>Итог для приложения</td>
-<td>проверяй <code>updated == 0</code></td>
-<td class="num">лови <code>40001</code> и повторяй транзакцию</td>
+<td data-label="Ситуация">Итог для приложения</td>
+<td data-label="READ COMMITTED">проверяй <code>updated == 0</code></td>
+<td data-label="REPEATABLE READ / SERIALIZABLE" class="num">лови <code>40001</code> и повторяй транзакцию</td>
 </tr>
 </tbody>
 </table>
@@ -1894,7 +1894,7 @@ SQLSTATE: 40001
 <p>Синоним в русском: «насколько крупный кусок данных мы защищаем одной меткой».</p>
 <p>Для SSI это выглядит так. Если транзакция читает по индексу, метка ставится на узкий диапазон: нужную страницу, конкретный ключ или набор кортежей. Если транзакция делает <code>Seq Scan</code>, метка ставится на <strong>всё отношение</strong>. Тогда любая вставка/обновление в таблице конфликтует с этим чтением, даже если строки не пересекаются. Вот почему индекс часто решает проблему с <code>SERIALIZABLE</code> лучше, чем «просто поднять изоляцию».</p>
 <p>Таблица ниже показывает, на что берётся SIReadLock при каждом способе и к чему это приводит. Смотреть стоит на две крайние строки: Seq Scan и чтение по несуществующему ключу.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Как читали</th>
@@ -1904,29 +1904,29 @@ SQLSTATE: 40001
 </thead>
 <tbody>
 <tr>
-<td>Index Scan по btree</td>
-<td>на конкретные страницы/кортежи индекса и heap</td>
-<td>узкий предикат, мало ложных конфликтов</td>
+<td data-label="Как читали">Index Scan по btree</td>
+<td data-label="На что берётся SIReadLock">на конкретные страницы/кортежи индекса и heap</td>
+<td data-label="Последствие">узкий предикат, мало ложных конфликтов</td>
 </tr>
 <tr>
-<td>Index Scan с широким диапазоном</td>
-<td>на много страниц индекса</td>
-<td>больше конфликтов</td>
+<td data-label="Как читали">Index Scan с широким диапазоном</td>
+<td data-label="На что берётся SIReadLock">на много страниц индекса</td>
+<td data-label="Последствие">больше конфликтов</td>
 </tr>
 <tr>
-<td>Seq Scan</td>
-<td><strong>на всё отношение</strong></td>
-<td>любая запись в таблицу конфликтует с этим чтением</td>
+<td data-label="Как читали">Seq Scan</td>
+<td data-label="На что берётся SIReadLock"><strong>на всё отношение</strong></td>
+<td data-label="Последствие">любая запись в таблицу конфликтует с этим чтением</td>
 </tr>
 <tr>
-<td>Bitmap Heap Scan</td>
-<td>на страницы heap</td>
-<td>средняя гранулярность</td>
+<td data-label="Как читали">Bitmap Heap Scan</td>
+<td data-label="На что берётся SIReadLock">на страницы heap</td>
+<td data-label="Последствие">средняя гранулярность</td>
 </tr>
 <tr>
-<td>Чтение по несуществующему ключу</td>
-<td>на страницу индекса, где ключ был бы</td>
-<td>ловит фантомные <code>INSERT</code> — именно так SSI ловит write skew через вставку</td>
+<td data-label="Как читали">Чтение по несуществующему ключу</td>
+<td data-label="На что берётся SIReadLock">на страницу индекса, где ключ был бы</td>
+<td data-label="Последствие">ловит фантомные <code>INSERT</code> — именно так SSI ловит write skew через вставку</td>
 </tr>
 </tbody>
 </table>
@@ -1975,7 +1975,7 @@ SQLSTATE: 40001
 
 <p>Рост <code>relation_level</code> прямо сигнализирует, что пора поднимать <code>max_pred_locks_per_transaction</code> (для этого нужен перезапуск сервера) или сужать транзакции.</p>
 <p><strong>Что именно замедляется на SERIALIZABLE.</strong> Чтобы не отвечать на интервью «он просто медленнее», полезно знать честный список источников накладных расходов. Таблица ниже сводит их вместе с тем, как каждый из них проявляется и чем его смягчают; p99 в ней — 99-й процентиль времени ответа, то есть время, быстрее которого укладываются 99 из 100 запросов, а jitter — случайная добавка к задержке между повторами, чтобы они не шли одновременно.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Источник накладных расходов</th>
@@ -1985,29 +1985,29 @@ SQLSTATE: 40001
 </thead>
 <tbody>
 <tr>
-<td>Регистрация SIRead-локов на каждом чтении</td>
-<td>+CPU на чтении, рост потребления shared memory</td>
-<td>индексы вместо Seq Scan, <code>READ ONLY</code>-транзакции</td>
+<td data-label="Источник накладных расходов">Регистрация SIRead-локов на каждом чтении</td>
+<td data-label="Проявление">+CPU на чтении, рост потребления shared memory</td>
+<td data-label="Чем смягчается">индексы вместо Seq Scan, <code>READ ONLY</code>-транзакции</td>
 </tr>
 <tr>
-<td>Хранение информации о завершённых транзакциях</td>
-<td>старые транзакции не выбрасываются, пока живёт самая старая параллельная</td>
-<td>не держать долгие транзакции</td>
+<td data-label="Источник накладных расходов">Хранение информации о завершённых транзакциях</td>
+<td data-label="Проявление">старые транзакции не выбрасываются, пока живёт самая старая параллельная</td>
+<td data-label="Чем смягчается">не держать долгие транзакции</td>
 </tr>
 <tr>
-<td>Проверка конфликтов при каждой записи</td>
-<td>+CPU на записи</td>
-<td>сужать транзакции</td>
+<td data-label="Источник накладных расходов">Проверка конфликтов при каждой записи</td>
+<td data-label="Проявление">+CPU на записи</td>
+<td data-label="Чем смягчается">сужать транзакции</td>
 </tr>
 <tr>
-<td>Откаты и повторы</td>
-<td>рост p99 и лишняя работа</td>
-<td>jitter, малые задержки, идемпотентность</td>
+<td data-label="Источник накладных расходов">Откаты и повторы</td>
+<td data-label="Проявление">рост p99 и лишняя работа</td>
+<td data-label="Чем смягчается">jitter, малые задержки, идемпотентность</td>
 </tr>
 <tr>
-<td>Блокировка на <code>LWLock SerializableXactHash</code></td>
-<td>при высокой параллельной нагрузке — конкуренция за ресурс</td>
-<td>меньше активных соединений (пул!)</td>
+<td data-label="Источник накладных расходов">Блокировка на <code>LWLock SerializableXactHash</code></td>
+<td data-label="Проявление">при высокой параллельной нагрузке — конкуренция за ресурс</td>
+<td data-label="Чем смягчается">меньше активных соединений (пул!)</td>
 </tr>
 </tbody>
 </table>
@@ -2019,7 +2019,7 @@ SQLSTATE: 40001
 </code></pre></div>
 
 <p>Такая транзакция никогда не откатывается и не ставит SIRead-локов, а значит, не создаёт конфликтов для других, но <strong>может долго ждать старта</strong>. Кто именно мешает ей стартовать, показывает <code>pg_safe_snapshot_blocking_pids(pid)</code>. На базе, где всегда есть активные писатели, она может вообще не стартовать, и тогда честнее взять <code>REPEATABLE READ READ ONLY</code>: он не гарантирует отсутствия аномалии сериализации, зато стартует мгновенно. Таблица ниже сравнивает четыре варианта запуска отчёта; смотреть в ней стоит на два средних столбца, где видно, кто может упасть с 40001 и кто мешает остальным.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вариант для отчёта</th>
@@ -2031,32 +2031,32 @@ SQLSTATE: 40001
 </thead>
 <tbody>
 <tr>
-<td><code>READ COMMITTED</code></td>
-<td>да</td>
-<td>нет</td>
-<td>нет</td>
-<td>никакой (read skew)</td>
+<td data-label="Вариант для отчёта"><code>READ COMMITTED</code></td>
+<td data-label="Стартует сразу">да</td>
+<td data-label="Может упасть с 40001">нет</td>
+<td data-label="Мешает другим">нет</td>
+<td data-label="Гарантия">никакой (read skew)</td>
 </tr>
 <tr>
-<td><code>REPEATABLE READ READ ONLY</code></td>
-<td>да</td>
-<td>нет¹</td>
-<td>нет</td>
-<td>согласованный срез</td>
+<td data-label="Вариант для отчёта"><code>REPEATABLE READ READ ONLY</code></td>
+<td data-label="Стартует сразу">да</td>
+<td data-label="Может упасть с 40001">нет¹</td>
+<td data-label="Мешает другим">нет</td>
+<td data-label="Гарантия">согласованный срез</td>
 </tr>
 <tr>
-<td><code>SERIALIZABLE READ ONLY</code></td>
-<td>да</td>
-<td><strong>да</strong></td>
-<td>берёт SIRead-локи</td>
-<td>полная сериализуемость</td>
+<td data-label="Вариант для отчёта"><code>SERIALIZABLE READ ONLY</code></td>
+<td data-label="Стартует сразу">да</td>
+<td data-label="Может упасть с 40001"><strong>да</strong></td>
+<td data-label="Мешает другим">берёт SIRead-локи</td>
+<td data-label="Гарантия">полная сериализуемость</td>
 </tr>
 <tr>
-<td><code>SERIALIZABLE READ ONLY DEFERRABLE</code></td>
-<td><strong>нет</strong>, ждёт safe snapshot</td>
-<td>нет</td>
-<td>нет</td>
-<td>полная сериализуемость</td>
+<td data-label="Вариант для отчёта"><code>SERIALIZABLE READ ONLY DEFERRABLE</code></td>
+<td data-label="Стартует сразу"><strong>нет</strong>, ждёт safe snapshot</td>
+<td data-label="Может упасть с 40001">нет</td>
+<td data-label="Мешает другим">нет</td>
+<td data-label="Гарантия">полная сериализуемость</td>
 </tr>
 </tbody>
 </table>
@@ -2086,7 +2086,7 @@ SQLSTATE: 40001
 <p>Oracle поддерживает <strong>только два</strong> уровня — <code>READ COMMITTED</code> (он действует по умолчанию) и <code>SERIALIZABLE</code> — и дополнительно режим <code>READ ONLY</code>, а <code>READ UNCOMMITTED</code> и <code>REPEATABLE READ</code> не поддерживает вовсе (<a href="https://docs.oracle.com/en/database/oracle/oracle-database/23/cncpt/data-concurrency-and-consistency.html">Oracle, Data Concurrency and Consistency</a>). При этом Oracle <code>SERIALIZABLE</code> на деле реализует snapshot isolation: «A transaction sees only changes committed at the time the transaction — not the query — began». Документация называет это согласованностью чтения на уровне транзакции (transaction-level read consistency), и это ровно то, что в PostgreSQL называется <code>REPEATABLE READ</code>. При конфликте записей Oracle возвращает <code>ORA-08177: can't serialize access for this transaction</code>, а транзакции только для чтения, по словам документации, «not susceptible to the ORA-08177 error».</p>
 <h3 id="53-сравнение-postgresql-innodb-и-oracle">5.3 Сравнение PostgreSQL, InnoDB и Oracle</h3>
 <p>Сравнение трёх СУБД сводит в одну таблицу то, что разобрано выше: где каждая хранит старые версии строк, что на деле скрывается за каждым именем уровня, от чего она защищает и чем платит за откат. Особенно внимательно стоит прочитать строку про защиту от write skew: у Oracle её нет ни на одном уровне, потому что его <code>SERIALIZABLE</code> — это snapshot isolation.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2097,58 +2097,58 @@ SQLSTATE: 40001
 </thead>
 <tbody>
 <tr>
-<td>Хранение старых версий</td>
-<td>версии в самой таблице (heap), уборка vacuum</td>
-<td>undo-лог (rollback segments)</td>
-<td>undo tablespace</td>
+<td data-label="">Хранение старых версий</td>
+<td data-label="PostgreSQL 16–18">версии в самой таблице (heap), уборка vacuum</td>
+<td data-label="MySQL 8.x / InnoDB">undo-лог (rollback segments)</td>
+<td data-label="Oracle 19c–23ai">undo tablespace</td>
 </tr>
 <tr>
-<td>Уровень по умолчанию</td>
-<td>READ COMMITTED</td>
-<td>REPEATABLE READ</td>
-<td>READ COMMITTED</td>
+<td data-label="">Уровень по умолчанию</td>
+<td data-label="PostgreSQL 16–18">READ COMMITTED</td>
+<td data-label="MySQL 8.x / InnoDB">REPEATABLE READ</td>
+<td data-label="Oracle 19c–23ai">READ COMMITTED</td>
 </tr>
 <tr>
-<td>READ UNCOMMITTED</td>
-<td>принимается, работает как RC</td>
-<td>реально есть (грязное чтение)</td>
-<td>не поддерживается</td>
+<td data-label="">READ UNCOMMITTED</td>
+<td data-label="PostgreSQL 16–18">принимается, работает как RC</td>
+<td data-label="MySQL 8.x / InnoDB">реально есть (грязное чтение)</td>
+<td data-label="Oracle 19c–23ai">не поддерживается</td>
 </tr>
 <tr>
-<td>REPEATABLE READ</td>
-<td>snapshot isolation, фантомов нет</td>
-<td>снимок для plain SELECT + next-key для locking read</td>
-<td>не поддерживается</td>
+<td data-label="">REPEATABLE READ</td>
+<td data-label="PostgreSQL 16–18">snapshot isolation, фантомов нет</td>
+<td data-label="MySQL 8.x / InnoDB">снимок для plain SELECT + next-key для locking read</td>
+<td data-label="Oracle 19c–23ai">не поддерживается</td>
 </tr>
 <tr>
-<td>SERIALIZABLE</td>
-<td>SSI (неблокирующие предикатные локи, откат 40001)</td>
-<td>2PL: plain SELECT → SELECT ... FOR SHARE</td>
-<td>snapshot isolation, ORA-08177</td>
+<td data-label="">SERIALIZABLE</td>
+<td data-label="PostgreSQL 16–18">SSI (неблокирующие предикатные локи, откат 40001)</td>
+<td data-label="MySQL 8.x / InnoDB">2PL: plain SELECT → SELECT ... FOR SHARE</td>
+<td data-label="Oracle 19c–23ai">snapshot isolation, ORA-08177</td>
 </tr>
 <tr>
-<td>Защита от write skew</td>
-<td>только на SERIALIZABLE</td>
-<td>только на SERIALIZABLE</td>
-<td>нет ни на одном уровне</td>
+<td data-label="">Защита от write skew</td>
+<td data-label="PostgreSQL 16–18">только на SERIALIZABLE</td>
+<td data-label="MySQL 8.x / InnoDB">только на SERIALIZABLE</td>
+<td data-label="Oracle 19c–23ai">нет ни на одном уровне</td>
 </tr>
 <tr>
-<td>Ошибка сериализации</td>
-<td><code>40001</code></td>
-<td><code>ER_LOCK_DEADLOCK</code> (1213, SQLSTATE 40001) при взаимоблокировке</td>
-<td><code>ORA-08177</code></td>
+<td data-label="">Ошибка сериализации</td>
+<td data-label="PostgreSQL 16–18"><code>40001</code></td>
+<td data-label="MySQL 8.x / InnoDB"><code>ER_LOCK_DEADLOCK</code> (1213, SQLSTATE 40001) при взаимоблокировке</td>
+<td data-label="Oracle 19c–23ai"><code>ORA-08177</code></td>
 </tr>
 <tr>
-<td>Блокировка диапазона</td>
-<td>нет (кроме SSI-предикатов)</td>
-<td>next-key / gap locks</td>
-<td>нет</td>
+<td data-label="">Блокировка диапазона</td>
+<td data-label="PostgreSQL 16–18">нет (кроме SSI-предикатов)</td>
+<td data-label="MySQL 8.x / InnoDB">next-key / gap locks</td>
+<td data-label="Oracle 19c–23ai">нет</td>
 </tr>
 <tr>
-<td>Откат</td>
-<td>дёшев по времени, оставляет dead tuples</td>
-<td>применение undo, может быть долгим</td>
-<td>применение undo</td>
+<td data-label="">Откат</td>
+<td data-label="PostgreSQL 16–18">дёшев по времени, оставляет dead tuples</td>
+<td data-label="MySQL 8.x / InnoDB">применение undo, может быть долгим</td>
+<td data-label="Oracle 19c–23ai">применение undo</td>
 </tr>
 </tbody>
 </table>
@@ -2185,7 +2185,7 @@ SQLSTATE: 40001
 </ul>
 <h3 id="55-расширенное-сравнение-трёх-субд">5.5 Расширенное сравнение трёх СУБД</h3>
 <p>Расширенное сравнение — это та же таблица, что в 5.3, дополненная измерениями, важными при переезде: цена отката и долгого чтения, эскалация блокировок, поведение при взаимоблокировке, автоматическая фиксация. Короткой таблицы из 5.3 хватает для интервью, но код при переезде ломается именно на этих дополнительных строках. После таблицы мы отдельно разберём две из них, которые ломают больше всего кода.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Измерение</th>
@@ -2196,106 +2196,106 @@ SQLSTATE: 40001
 </thead>
 <tbody>
 <tr>
-<td>Модель версионности</td>
-<td>версии строк в heap, «новая версия — новая строка»</td>
-<td>страница на месте + undo-лог</td>
-<td>блок на месте + undo tablespace</td>
+<td data-label="Измерение">Модель версионности</td>
+<td data-label="PostgreSQL 16–18">версии строк в heap, «новая версия — новая строка»</td>
+<td data-label="MySQL 8.x / InnoDB">страница на месте + undo-лог</td>
+<td data-label="Oracle 19c и новее">блок на месте + undo tablespace</td>
 </tr>
 <tr>
-<td>Цена отката</td>
-<td>почти нулевая, оставляет dead tuples</td>
-<td>применение undo, пропорционально объёму</td>
-<td>применение undo, пропорционально объёму</td>
+<td data-label="Измерение">Цена отката</td>
+<td data-label="PostgreSQL 16–18">почти нулевая, оставляет dead tuples</td>
+<td data-label="MySQL 8.x / InnoDB">применение undo, пропорционально объёму</td>
+<td data-label="Oracle 19c и новее">применение undo, пропорционально объёму</td>
 </tr>
 <tr>
-<td>Цена долгого чтения</td>
-<td>bloat и задержка vacuum</td>
-<td>рост undo, <code>History list length</code></td>
-<td><code>ORA-01555 snapshot too old</code> (гл. 21)</td>
+<td data-label="Измерение">Цена долгого чтения</td>
+<td data-label="PostgreSQL 16–18">bloat и задержка vacuum</td>
+<td data-label="MySQL 8.x / InnoDB">рост undo, <code>History list length</code></td>
+<td data-label="Oracle 19c и новее"><code>ORA-01555 snapshot too old</code> (гл. 21)</td>
 </tr>
 <tr>
-<td>Набор уровней</td>
-<td>RU(=RC), RC, RR, SER</td>
-<td>RU, RC, RR, SER</td>
-<td>RC, SER, READ ONLY</td>
+<td data-label="Измерение">Набор уровней</td>
+<td data-label="PostgreSQL 16–18">RU(=RC), RC, RR, SER</td>
+<td data-label="MySQL 8.x / InnoDB">RU, RC, RR, SER</td>
+<td data-label="Oracle 19c и новее">RC, SER, READ ONLY</td>
 </tr>
 <tr>
-<td>Уровень по умолчанию</td>
-<td>READ COMMITTED</td>
-<td>REPEATABLE READ</td>
-<td>READ COMMITTED</td>
+<td data-label="Измерение">Уровень по умолчанию</td>
+<td data-label="PostgreSQL 16–18">READ COMMITTED</td>
+<td data-label="MySQL 8.x / InnoDB">REPEATABLE READ</td>
+<td data-label="Oracle 19c и новее">READ COMMITTED</td>
 </tr>
 <tr>
-<td>Что реально делает RR</td>
-<td>snapshot isolation, фантомов нет, write skew есть</td>
-<td>снимок для plain SELECT; next-key для locking read и DML</td>
-<td>уровня нет</td>
+<td data-label="Измерение">Что реально делает RR</td>
+<td data-label="PostgreSQL 16–18">snapshot isolation, фантомов нет, write skew есть</td>
+<td data-label="MySQL 8.x / InnoDB">снимок для plain SELECT; next-key для locking read и DML</td>
+<td data-label="Oracle 19c и новее">уровня нет</td>
 </tr>
 <tr>
-<td>Что реально делает SERIALIZABLE</td>
-<td>SSI: неблокирующие предикатные локи + откат по опасной структуре</td>
-<td>2PL: plain SELECT → неявный <code>FOR SHARE</code></td>
-<td>snapshot isolation (не сериализуемость!)</td>
+<td data-label="Измерение">Что реально делает SERIALIZABLE</td>
+<td data-label="PostgreSQL 16–18">SSI: неблокирующие предикатные локи + откат по опасной структуре</td>
+<td data-label="MySQL 8.x / InnoDB">2PL: plain SELECT → неявный <code>FOR SHARE</code></td>
+<td data-label="Oracle 19c и новее">snapshot isolation (не сериализуемость!)</td>
 </tr>
 <tr>
-<td>Защита от write skew</td>
-<td>только SERIALIZABLE</td>
-<td>только SERIALIZABLE</td>
-<td>нет ни на одном уровне</td>
+<td data-label="Измерение">Защита от write skew</td>
+<td data-label="PostgreSQL 16–18">только SERIALIZABLE</td>
+<td data-label="MySQL 8.x / InnoDB">только SERIALIZABLE</td>
+<td data-label="Oracle 19c и новее">нет ни на одном уровне</td>
 </tr>
 <tr>
-<td>Блокировка диапазонов</td>
-<td>нет (кроме SIRead-меток)</td>
-<td><strong>да</strong>: gap / next-key / insert intention</td>
-<td>нет</td>
+<td data-label="Измерение">Блокировка диапазонов</td>
+<td data-label="PostgreSQL 16–18">нет (кроме SIRead-меток)</td>
+<td data-label="MySQL 8.x / InnoDB"><strong>да</strong>: gap / next-key / insert intention</td>
+<td data-label="Oracle 19c и новее">нет</td>
 </tr>
 <tr>
-<td>Поведение <code>SELECT FOR UPDATE</code> на RR</td>
-<td>ошибка <code>40001</code>, если строка изменилась</td>
-<td>вернёт последнюю версию (read latest)</td>
-<td>ошибка <code>ORA-08177</code> на SERIALIZABLE</td>
+<td data-label="Измерение">Поведение <code>SELECT FOR UPDATE</code> на RR</td>
+<td data-label="PostgreSQL 16–18">ошибка <code>40001</code>, если строка изменилась</td>
+<td data-label="MySQL 8.x / InnoDB">вернёт последнюю версию (read latest)</td>
+<td data-label="Oracle 19c и новее">ошибка <code>ORA-08177</code> на SERIALIZABLE</td>
 </tr>
 <tr>
-<td>Эскалация блокировок</td>
-<td>нет (но на SER предикатные SIRead-локи укрупняются: кортежи → страница → отношение)</td>
-<td>нет</td>
-<td>«never escalates locks» — прямая цитата документации</td>
+<td data-label="Измерение">Эскалация блокировок</td>
+<td data-label="PostgreSQL 16–18">нет (но на SER предикатные SIRead-локи укрупняются: кортежи → страница → отношение)</td>
+<td data-label="MySQL 8.x / InnoDB">нет</td>
+<td data-label="Oracle 19c и новее">«never escalates locks» — прямая цитата документации</td>
 </tr>
 <tr>
-<td>Неиндексированный FK</td>
-<td>обычный <code>FOR KEY SHARE</code> на родителе, но <code>DELETE</code> родителя вызывает Seq Scan детей</td>
-<td>блокирует записи кластерного индекса детей</td>
-<td><strong>полная табличная блокировка дочерней таблицы</strong> при изменении PK родителя</td>
+<td data-label="Измерение">Неиндексированный FK</td>
+<td data-label="PostgreSQL 16–18">обычный <code>FOR KEY SHARE</code> на родителе, но <code>DELETE</code> родителя вызывает Seq Scan детей</td>
+<td data-label="MySQL 8.x / InnoDB">блокирует записи кластерного индекса детей</td>
+<td data-label="Oracle 19c и новее"><strong>полная табличная блокировка дочерней таблицы</strong> при изменении PK родителя</td>
 </tr>
 <tr>
-<td>Автоматическая фиксация</td>
-<td>на стороне клиента (psql/JDBC), сервер всегда в транзакции</td>
-<td><code>autocommit = 1</code> по умолчанию, серверная настройка</td>
-<td>автоматической фиксации нет: <code>DML</code> открывает транзакцию, нужен явный <code>COMMIT</code></td>
+<td data-label="Измерение">Автоматическая фиксация</td>
+<td data-label="PostgreSQL 16–18">на стороне клиента (psql/JDBC), сервер всегда в транзакции</td>
+<td data-label="MySQL 8.x / InnoDB"><code>autocommit = 1</code> по умолчанию, серверная настройка</td>
+<td data-label="Oracle 19c и новее">автоматической фиксации нет: <code>DML</code> открывает транзакцию, нужен явный <code>COMMIT</code></td>
 </tr>
 <tr>
-<td>Обнаружение взаимоблокировок</td>
-<td>ленивое, через <code>deadlock_timeout</code> (1 s)</td>
-<td>немедленное (граф ожидания), можно отключить</td>
-<td>немедленное, <code>ORA-00060</code></td>
+<td data-label="Измерение">Обнаружение взаимоблокировок</td>
+<td data-label="PostgreSQL 16–18">ленивое, через <code>deadlock_timeout</code> (1 s)</td>
+<td data-label="MySQL 8.x / InnoDB">немедленное (граф ожидания), можно отключить</td>
+<td data-label="Oracle 19c и новее">немедленное, <code>ORA-00060</code></td>
 </tr>
 <tr>
-<td>Что откатывается при взаимоблокировке</td>
-<td><strong>вся транзакция</strong></td>
-<td>вся транзакция</td>
-<td><strong>только оператор</strong> (транзакция остаётся живой)</td>
+<td data-label="Измерение">Что откатывается при взаимоблокировке</td>
+<td data-label="PostgreSQL 16–18"><strong>вся транзакция</strong></td>
+<td data-label="MySQL 8.x / InnoDB">вся транзакция</td>
+<td data-label="Oracle 19c и новее"><strong>только оператор</strong> (транзакция остаётся живой)</td>
 </tr>
 <tr>
-<td>Код ошибки конфликта</td>
-<td><code>40001</code> / <code>40P01</code></td>
-<td><code>1213</code> (SQLSTATE 40001)</td>
-<td><code>ORA-08177</code> / <code>ORA-00060</code></td>
+<td data-label="Измерение">Код ошибки конфликта</td>
+<td data-label="PostgreSQL 16–18"><code>40001</code> / <code>40P01</code></td>
+<td data-label="MySQL 8.x / InnoDB"><code>1213</code> (SQLSTATE 40001)</td>
+<td data-label="Oracle 19c и новее"><code>ORA-08177</code> / <code>ORA-00060</code></td>
 </tr>
 <tr>
-<td>Цена длинной транзакции</td>
-<td>xmin-горизонт на весь кластер</td>
-<td>рост undo и History list</td>
-<td>рост undo, риск <code>ORA-01555</code> у читателей</td>
+<td data-label="Измерение">Цена длинной транзакции</td>
+<td data-label="PostgreSQL 16–18">xmin-горизонт на весь кластер</td>
+<td data-label="MySQL 8.x / InnoDB">рост undo и History list</td>
+<td data-label="Oracle 19c и новее">рост undo, риск <code>ORA-01555</code> у читателей</td>
 </tr>
 </tbody>
 </table>
@@ -2308,7 +2308,7 @@ SQLSTATE: 40001
 <h3 id="61-режимы-табличных-блокировок">6.1 Режимы табличных блокировок</h3>
 <p>Режим табличной блокировки — это вид блокировки, который определяет, какие другие режимы могут одновременно держать ту же таблицу; в PostgreSQL таких режимов восемь, и их имена скорее путают, чем помогают. Ниже перечислено, кто какой режим берёт и с чем он конфликтует, а затем сформулированы четыре факта, которых на практике хватает вместо всей матрицы. Из-за имён режимов на интервью часто путают табличные и строчные блокировки, поэтому начнём с того, что означает каждый режим.</p>
 <p>PostgreSQL определяет восемь табличных режимов (<a href="https://www.postgresql.org/docs/current/explicit-locking.html">Explicit Locking</a>), и их имена исторические и вводят в заблуждение. Так, <code>ROW EXCLUSIVE</code> — это <strong>табличная</strong> блокировка, которую берут операторы, изменяющие строки, а вовсе не блокировка строки. В таблице для каждого режима указано, какие команды его берут и с какими режимами он конфликтует:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -2318,44 +2318,44 @@ SQLSTATE: 40001
 </thead>
 <tbody>
 <tr>
-<td><code>ACCESS SHARE</code></td>
-<td><code>SELECT</code></td>
-<td>только <code>ACCESS EXCLUSIVE</code></td>
+<td data-label="Режим"><code>ACCESS SHARE</code></td>
+<td data-label="Кто берёт"><code>SELECT</code></td>
+<td data-label="Конфликтует с">только <code>ACCESS EXCLUSIVE</code></td>
 </tr>
 <tr>
-<td><code>ROW SHARE</code></td>
-<td><code>SELECT ... FOR UPDATE/SHARE/...</code></td>
-<td><code>EXCLUSIVE</code>, <code>ACCESS EXCLUSIVE</code></td>
+<td data-label="Режим"><code>ROW SHARE</code></td>
+<td data-label="Кто берёт"><code>SELECT ... FOR UPDATE/SHARE/...</code></td>
+<td data-label="Конфликтует с"><code>EXCLUSIVE</code>, <code>ACCESS EXCLUSIVE</code></td>
 </tr>
 <tr>
-<td><code>ROW EXCLUSIVE</code></td>
-<td><code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE</code></td>
-<td><code>SHARE</code>, <code>SHARE ROW EXCLUSIVE</code>, <code>EXCLUSIVE</code>, <code>ACCESS EXCLUSIVE</code></td>
+<td data-label="Режим"><code>ROW EXCLUSIVE</code></td>
+<td data-label="Кто берёт"><code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE</code></td>
+<td data-label="Конфликтует с"><code>SHARE</code>, <code>SHARE ROW EXCLUSIVE</code>, <code>EXCLUSIVE</code>, <code>ACCESS EXCLUSIVE</code></td>
 </tr>
 <tr>
-<td><code>SHARE UPDATE EXCLUSIVE</code></td>
-<td><code>VACUUM</code> (без FULL), <code>ANALYZE</code>, <code>CREATE INDEX CONCURRENTLY</code>, <code>REINDEX CONCURRENTLY</code>, часть форм <code>ALTER TABLE</code></td>
-<td>сам с собой и всё «выше»</td>
+<td data-label="Режим"><code>SHARE UPDATE EXCLUSIVE</code></td>
+<td data-label="Кто берёт"><code>VACUUM</code> (без FULL), <code>ANALYZE</code>, <code>CREATE INDEX CONCURRENTLY</code>, <code>REINDEX CONCURRENTLY</code>, часть форм <code>ALTER TABLE</code></td>
+<td data-label="Конфликтует с">сам с собой и всё «выше»</td>
 </tr>
 <tr>
-<td><code>SHARE</code></td>
-<td><code>CREATE INDEX</code> (без CONCURRENTLY)</td>
-<td><code>ROW EXCLUSIVE</code>, <code>SHARE UPDATE EXCLUSIVE</code> и режимы сильнее <code>SHARE</code>; <strong>сам с собой не конфликтует</strong></td>
+<td data-label="Режим"><code>SHARE</code></td>
+<td data-label="Кто берёт"><code>CREATE INDEX</code> (без CONCURRENTLY)</td>
+<td data-label="Конфликтует с"><code>ROW EXCLUSIVE</code>, <code>SHARE UPDATE EXCLUSIVE</code> и режимы сильнее <code>SHARE</code>; <strong>сам с собой не конфликтует</strong></td>
 </tr>
 <tr>
-<td><code>SHARE ROW EXCLUSIVE</code></td>
-<td><code>CREATE TRIGGER</code>, часть форм <code>ALTER TABLE</code></td>
-<td>сам с собой, <code>ROW EXCLUSIVE</code> и выше</td>
+<td data-label="Режим"><code>SHARE ROW EXCLUSIVE</code></td>
+<td data-label="Кто берёт"><code>CREATE TRIGGER</code>, часть форм <code>ALTER TABLE</code></td>
+<td data-label="Конфликтует с">сам с собой, <code>ROW EXCLUSIVE</code> и выше</td>
 </tr>
 <tr>
-<td><code>EXCLUSIVE</code></td>
-<td><code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code></td>
-<td>всё, кроме <code>ACCESS SHARE</code></td>
+<td data-label="Режим"><code>EXCLUSIVE</code></td>
+<td data-label="Кто берёт"><code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code></td>
+<td data-label="Конфликтует с">всё, кроме <code>ACCESS SHARE</code></td>
 </tr>
 <tr>
-<td><code>ACCESS EXCLUSIVE</code></td>
-<td><code>DROP TABLE</code>, <code>TRUNCATE</code>, <code>REINDEX</code>, <code>CLUSTER</code>, <code>VACUUM FULL</code>, <code>REFRESH MATERIALIZED VIEW</code>, большинство <code>ALTER TABLE</code>, <code>LOCK TABLE</code> без указания режима</td>
-<td><strong>со всем, включая <code>SELECT</code></strong></td>
+<td data-label="Режим"><code>ACCESS EXCLUSIVE</code></td>
+<td data-label="Кто берёт"><code>DROP TABLE</code>, <code>TRUNCATE</code>, <code>REINDEX</code>, <code>CLUSTER</code>, <code>VACUUM FULL</code>, <code>REFRESH MATERIALIZED VIEW</code>, большинство <code>ALTER TABLE</code>, <code>LOCK TABLE</code> без указания режима</td>
+<td data-label="Конфликтует с"><strong>со всем, включая <code>SELECT</code></strong></td>
 </tr>
 </tbody>
 </table>
@@ -2404,7 +2404,7 @@ t=3..  Сессии D, E, F, ... — все запросы к таблице в�
 <h3 id="63-полная-матрица-конфликтов-восьми-режимов">6.3 Полная матрица конфликтов восьми режимов</h3>
 <p>Матрица конфликтов — это таблица, которая для каждой пары режимов говорит, может ли один процесс получить блокировку в первом режиме, пока другой держит второй. Четырёх фактов из 6.1 хватает для повседневной работы, но при разборе инцидента бывает нужна вся матрица, чтобы точно сказать, кто кого ждёт. Здесь приведены полная матрица, полный список команд по режимам, три наблюдения, которые делают матрицу запоминаемой, и случаи, когда блокировку стоит взять явно через <code>LOCK TABLE</code>.</p>
 <p>Матрица ниже взята из документации (<a href="https://www.postgresql.org/docs/current/explicit-locking.html">Explicit Locking, Table 13.2</a>), и <code>X</code> в ней означает «конфликтует, запрашивающий будет ждать». Читать её можно в обе стороны, потому что она симметрична: если <code>A</code> конфликтует с <code>B</code>, то и <code>B</code> конфликтует с <code>A</code>.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Запрашиваемый ↓ / удерживаемый →</th>
@@ -2420,97 +2420,97 @@ t=3..  Сессии D, E, F, ... — все запросы к таблице в�
 </thead>
 <tbody>
 <tr>
-<td><strong>ACCESS SHARE</strong></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>X</td>
+<td data-label="Запрашиваемый ↓ / удерживаемый →"><strong>ACCESS SHARE</strong></td>
+<td data-label="ACCESS SHARE"></td>
+<td data-label="ROW SHARE"></td>
+<td data-label="ROW EXCL"></td>
+<td data-label="SHARE UPD EXCL"></td>
+<td data-label="SHARE"></td>
+<td data-label="SHARE ROW EXCL"></td>
+<td data-label="EXCL"></td>
+<td data-label="ACCESS EXCL">X</td>
 </tr>
 <tr>
-<td><strong>ROW SHARE</strong></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>X</td>
-<td>X</td>
+<td data-label="Запрашиваемый ↓ / удерживаемый →"><strong>ROW SHARE</strong></td>
+<td data-label="ACCESS SHARE"></td>
+<td data-label="ROW SHARE"></td>
+<td data-label="ROW EXCL"></td>
+<td data-label="SHARE UPD EXCL"></td>
+<td data-label="SHARE"></td>
+<td data-label="SHARE ROW EXCL"></td>
+<td data-label="EXCL">X</td>
+<td data-label="ACCESS EXCL">X</td>
 </tr>
 <tr>
-<td><strong>ROW EXCLUSIVE</strong></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
+<td data-label="Запрашиваемый ↓ / удерживаемый →"><strong>ROW EXCLUSIVE</strong></td>
+<td data-label="ACCESS SHARE"></td>
+<td data-label="ROW SHARE"></td>
+<td data-label="ROW EXCL"></td>
+<td data-label="SHARE UPD EXCL"></td>
+<td data-label="SHARE">X</td>
+<td data-label="SHARE ROW EXCL">X</td>
+<td data-label="EXCL">X</td>
+<td data-label="ACCESS EXCL">X</td>
 </tr>
 <tr>
-<td><strong>SHARE UPDATE EXCLUSIVE</strong></td>
-<td></td>
-<td></td>
-<td></td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
+<td data-label="Запрашиваемый ↓ / удерживаемый →"><strong>SHARE UPDATE EXCLUSIVE</strong></td>
+<td data-label="ACCESS SHARE"></td>
+<td data-label="ROW SHARE"></td>
+<td data-label="ROW EXCL"></td>
+<td data-label="SHARE UPD EXCL">X</td>
+<td data-label="SHARE">X</td>
+<td data-label="SHARE ROW EXCL">X</td>
+<td data-label="EXCL">X</td>
+<td data-label="ACCESS EXCL">X</td>
 </tr>
 <tr>
-<td><strong>SHARE</strong></td>
-<td></td>
-<td></td>
-<td>X</td>
-<td>X</td>
-<td></td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
+<td data-label="Запрашиваемый ↓ / удерживаемый →"><strong>SHARE</strong></td>
+<td data-label="ACCESS SHARE"></td>
+<td data-label="ROW SHARE"></td>
+<td data-label="ROW EXCL">X</td>
+<td data-label="SHARE UPD EXCL">X</td>
+<td data-label="SHARE"></td>
+<td data-label="SHARE ROW EXCL">X</td>
+<td data-label="EXCL">X</td>
+<td data-label="ACCESS EXCL">X</td>
 </tr>
 <tr>
-<td><strong>SHARE ROW EXCLUSIVE</strong></td>
-<td></td>
-<td></td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
+<td data-label="Запрашиваемый ↓ / удерживаемый →"><strong>SHARE ROW EXCLUSIVE</strong></td>
+<td data-label="ACCESS SHARE"></td>
+<td data-label="ROW SHARE"></td>
+<td data-label="ROW EXCL">X</td>
+<td data-label="SHARE UPD EXCL">X</td>
+<td data-label="SHARE">X</td>
+<td data-label="SHARE ROW EXCL">X</td>
+<td data-label="EXCL">X</td>
+<td data-label="ACCESS EXCL">X</td>
 </tr>
 <tr>
-<td><strong>EXCLUSIVE</strong></td>
-<td></td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
+<td data-label="Запрашиваемый ↓ / удерживаемый →"><strong>EXCLUSIVE</strong></td>
+<td data-label="ACCESS SHARE"></td>
+<td data-label="ROW SHARE">X</td>
+<td data-label="ROW EXCL">X</td>
+<td data-label="SHARE UPD EXCL">X</td>
+<td data-label="SHARE">X</td>
+<td data-label="SHARE ROW EXCL">X</td>
+<td data-label="EXCL">X</td>
+<td data-label="ACCESS EXCL">X</td>
 </tr>
 <tr>
-<td><strong>ACCESS EXCLUSIVE</strong></td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
-<td>X</td>
+<td data-label="Запрашиваемый ↓ / удерживаемый →"><strong>ACCESS EXCLUSIVE</strong></td>
+<td data-label="ACCESS SHARE">X</td>
+<td data-label="ROW SHARE">X</td>
+<td data-label="ROW EXCL">X</td>
+<td data-label="SHARE UPD EXCL">X</td>
+<td data-label="SHARE">X</td>
+<td data-label="SHARE ROW EXCL">X</td>
+<td data-label="EXCL">X</td>
+<td data-label="ACCESS EXCL">X</td>
 </tr>
 </tbody>
 </table>
 <p>Полный список того, какая команда какой режим берёт, тоже взят из документации:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Режим</th>
@@ -2519,36 +2519,36 @@ t=3..  Сессии D, E, F, ... — все запросы к таблице в�
 </thead>
 <tbody>
 <tr>
-<td><code>ACCESS SHARE</code></td>
-<td><code>SELECT</code>, <code>COPY TO</code></td>
+<td data-label="Режим"><code>ACCESS SHARE</code></td>
+<td data-label="Команды"><code>SELECT</code>, <code>COPY TO</code></td>
 </tr>
 <tr>
-<td><code>ROW SHARE</code></td>
-<td><code>SELECT ... FOR UPDATE / FOR NO KEY UPDATE / FOR SHARE / FOR KEY SHARE</code></td>
+<td data-label="Режим"><code>ROW SHARE</code></td>
+<td data-label="Команды"><code>SELECT ... FOR UPDATE / FOR NO KEY UPDATE / FOR SHARE / FOR KEY SHARE</code></td>
 </tr>
 <tr>
-<td><code>ROW EXCLUSIVE</code></td>
-<td><code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE</code>, <code>COPY FROM</code></td>
+<td data-label="Режим"><code>ROW EXCLUSIVE</code></td>
+<td data-label="Команды"><code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE</code>, <code>COPY FROM</code></td>
 </tr>
 <tr>
-<td><code>SHARE UPDATE EXCLUSIVE</code></td>
-<td><code>VACUUM</code> (без FULL), <code>ANALYZE</code>, <code>CREATE INDEX CONCURRENTLY</code>, <code>REINDEX CONCURRENTLY</code>, <code>CREATE STATISTICS</code>, <code>COMMENT ON</code>, часть <code>ALTER INDEX</code> и <code>ALTER TABLE</code> (в т.ч. <code>SET STATISTICS</code>, <code>VALIDATE CONSTRAINT</code>, <code>SET (autovacuum_*)</code>)</td>
+<td data-label="Режим"><code>SHARE UPDATE EXCLUSIVE</code></td>
+<td data-label="Команды"><code>VACUUM</code> (без FULL), <code>ANALYZE</code>, <code>CREATE INDEX CONCURRENTLY</code>, <code>REINDEX CONCURRENTLY</code>, <code>CREATE STATISTICS</code>, <code>COMMENT ON</code>, часть <code>ALTER INDEX</code> и <code>ALTER TABLE</code> (в т.ч. <code>SET STATISTICS</code>, <code>VALIDATE CONSTRAINT</code>, <code>SET (autovacuum_*)</code>)</td>
 </tr>
 <tr>
-<td><code>SHARE</code></td>
-<td><code>CREATE INDEX</code> без <code>CONCURRENTLY</code></td>
+<td data-label="Режим"><code>SHARE</code></td>
+<td data-label="Команды"><code>CREATE INDEX</code> без <code>CONCURRENTLY</code></td>
 </tr>
 <tr>
-<td><code>SHARE ROW EXCLUSIVE</code></td>
-<td><code>CREATE TRIGGER</code>, часть форм <code>ALTER TABLE</code> (например, <code>ADD FOREIGN KEY</code> на ссылающейся стороне)</td>
+<td data-label="Режим"><code>SHARE ROW EXCLUSIVE</code></td>
+<td data-label="Команды"><code>CREATE TRIGGER</code>, часть форм <code>ALTER TABLE</code> (например, <code>ADD FOREIGN KEY</code> на ссылающейся стороне)</td>
 </tr>
 <tr>
-<td><code>EXCLUSIVE</code></td>
-<td><code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code></td>
+<td data-label="Режим"><code>EXCLUSIVE</code></td>
+<td data-label="Команды"><code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code></td>
 </tr>
 <tr>
-<td><code>ACCESS EXCLUSIVE</code></td>
-<td><code>DROP TABLE</code>, <code>TRUNCATE</code>, <code>REINDEX</code>, <code>CLUSTER</code>, <code>VACUUM FULL</code>, <code>REFRESH MATERIALIZED VIEW</code> (без CONCURRENTLY), большинство форм <code>ALTER TABLE</code>, <code>LOCK TABLE</code> без указания режима</td>
+<td data-label="Режим"><code>ACCESS EXCLUSIVE</code></td>
+<td data-label="Команды"><code>DROP TABLE</code>, <code>TRUNCATE</code>, <code>REINDEX</code>, <code>CLUSTER</code>, <code>VACUUM FULL</code>, <code>REFRESH MATERIALIZED VIEW</code> (без CONCURRENTLY), большинство форм <code>ALTER TABLE</code>, <code>LOCK TABLE</code> без указания режима</td>
 </tr>
 </tbody>
 </table>
@@ -2620,7 +2620,7 @@ t=720.0  Отчёт A завершился → B получил ACCESS EXCLUSIVE
 
 <p>В результате вы получаете список «корневых» сессий. В сценарии выше в него попадёт сессия A с отчётом, а не миграция B, хотя на первый взгляд виновата именно миграция. Это важный поворот в диагностике: <strong>завершать надо корень, а не того, кто громче всех жалуется</strong>.</p>
 <p><strong>Три способа не попасть в эту ситуацию.</strong> Нужны все три одновременно, потому что каждый закрывает свою дыру и не закрывает чужую. Таблица ниже показывает, что даёт каждая мера и чего она не даёт; <code>statement_timeout</code> ограничивает время одного оператора, а <code>transaction_timeout</code> — время всей транзакции.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Мера</th>
@@ -2630,19 +2630,19 @@ t=720.0  Отчёт A завершился → B получил ACCESS EXCLUSIVE
 </thead>
 <tbody>
 <tr>
-<td><code>SET lock_timeout = '2s'</code> перед DDL</td>
-<td>DDL падает с <code>55P03</code>, очередь не образуется</td>
-<td>не поможет, если DDL уже получил лок и долго работает</td>
+<td data-label="Мера"><code>SET lock_timeout = '2s'</code> перед DDL</td>
+<td data-label="Что даёт">DDL падает с <code>55P03</code>, очередь не образуется</td>
+<td data-label="Чего не даёт">не поможет, если DDL уже получил лок и долго работает</td>
 </tr>
 <tr>
-<td><code>statement_timeout</code> на роли отчётов</td>
-<td>ограничивает длину «держателя»</td>
-<td>не поможет против <code>idle in transaction</code></td>
+<td data-label="Мера"><code>statement_timeout</code> на роли отчётов</td>
+<td data-label="Что даёт">ограничивает длину «держателя»</td>
+<td data-label="Чего не даёт">не поможет против <code>idle in transaction</code></td>
 </tr>
 <tr>
-<td>Запрет длинных транзакций в API-роли (<code>transaction_timeout</code>, PostgreSQL 17+)</td>
-<td>убирает саму возможность держателя</td>
-<td>не поможет против отчётной роли, которой это разрешено</td>
+<td data-label="Мера">Запрет длинных транзакций в API-роли (<code>transaction_timeout</code>, PostgreSQL 17+)</td>
+<td data-label="Что даёт">убирает саму возможность держателя</td>
+<td data-label="Чего не даёт">не поможет против отчётной роли, которой это разрешено</td>
 </tr>
 </tbody>
 </table>
@@ -2907,7 +2907,7 @@ SKIP LOCKED при одной занятой строке из 12: получе�
 <p>Multixact — это механизм, которым PostgreSQL записывает в строку блокировку сразу нескольких транзакций, и, как и у XID, у него есть свой предел, при исчерпании которого останавливается запись. Для банковской базы это не экзотика: достаточно горячей строки-справочника, на которую ссылаются внешним ключом миллионы операций. Разберём, когда multixact возникает, ключевые числа, почему авария реальна, по каким симптомам её узнать, как её диагностировать и чем лечить.</p>
 <p><strong>Когда возникает.</strong> В <code>xmax</code> помещается ровно один XID, поэтому как только строку нужно пометить блокировкой нескольких транзакций, PostgreSQL создаёт <strong>multixact ID</strong> (mxid). Так бывает, например, когда две транзакции взяли <code>FOR KEY SHARE</code> или одна взяла <code>FOR SHARE</code>, а другая выполняет <code>FOR NO KEY UPDATE</code>. Идентификатор ссылается на список транзакций с их режимами, и база кладёт его в <code>xmax</code>, выставив соответствующий бит infomask. Сам список живёт в двух SLRU-структурах: в <code>pg_multixact/offsets</code> записано, с какого места начинается список для данного mxid, а в <code>pg_multixact/members</code> лежат сами элементы.</p>
 <p><strong>Ключевые числа</strong> (<a href="https://www.postgresql.org/docs/current/routine-vacuuming.html">Routine Vacuuming</a>) сведены в таблицу ниже. Самые важные строки в ней — пороги, при которых база начинает предупреждать и отказывается выдавать новые mxid, и то, что именно встаёт при исчерпании. Переполнение (wraparound) здесь означает то же, что для XID: 32-битный счётчик доходит до предела и начинается заново, и чтобы старые номера не спутались с новыми, vacuum должен заранее «заморозить» старые строки.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Факт</th>
@@ -2916,36 +2916,36 @@ SKIP LOCKED при одной занятой строке из 12: получе�
 </thead>
 <tbody>
 <tr>
-<td>Счётчик multixact ID</td>
-<td>32-битный, как и XID, со своим wraparound</td>
+<td data-label="Факт">Счётчик multixact ID</td>
+<td data-label="Значение">32-битный, как и XID, со своим wraparound</td>
 </tr>
 <tr>
-<td>Хранилище members</td>
-<td>растёт примерно до <strong>20 ГБ</strong> до wraparound</td>
+<td data-label="Факт">Хранилище members</td>
+<td data-label="Значение">растёт примерно до <strong>20 ГБ</strong> до wraparound</td>
 </tr>
 <tr>
-<td>Порог учащения агрессивного vacuum</td>
-<td>при превышении <strong>~10 ГБ</strong> members</td>
+<td data-label="Факт">Порог учащения агрессивного vacuum</td>
+<td data-label="Значение">при превышении <strong>~10 ГБ</strong> members</td>
 </tr>
 <tr>
-<td>Предупреждения в логе</td>
-<td>когда до wraparound остаётся 40 млн</td>
+<td data-label="Факт">Предупреждения в логе</td>
+<td data-label="Значение">когда до wraparound остаётся 40 млн</td>
 </tr>
 <tr>
-<td>Отказ выдавать новые mxid</td>
-<td>когда остаётся менее <strong>3 млн</strong></td>
+<td data-label="Факт">Отказ выдавать новые mxid</td>
+<td data-label="Значение">когда остаётся менее <strong>3 млн</strong></td>
 </tr>
 <tr>
-<td>Что именно встаёт при исчерпании</td>
-<td><strong>только записи, использующие строчные блокировки</strong> (в отличие от исчерпания XID, где встают все записи)</td>
+<td data-label="Факт">Что именно встаёт при исчерпании</td>
+<td data-label="Значение"><strong>только записи, использующие строчные блокировки</strong> (в отличие от исчерпания XID, где встают все записи)</td>
 </tr>
 <tr>
-<td>Параметры заморозки</td>
-<td><code>vacuum_multixact_freeze_min_age</code>, <code>vacuum_multixact_freeze_table_age</code>, <code>autovacuum_multixact_freeze_max_age</code></td>
+<td data-label="Факт">Параметры заморозки</td>
+<td data-label="Значение"><code>vacuum_multixact_freeze_min_age</code>, <code>vacuum_multixact_freeze_table_age</code>, <code>autovacuum_multixact_freeze_max_age</code></td>
 </tr>
 <tr>
-<td>Где смотреть возраст</td>
-<td><code>pg_class.relminmxid</code>, <code>SELECT mxid_age(relminmxid) FROM pg_class</code></td>
+<td data-label="Факт">Где смотреть возраст</td>
+<td data-label="Значение"><code>pg_class.relminmxid</code>, <code>SELECT mxid_age(relminmxid) FROM pg_class</code></td>
 </tr>
 </tbody>
 </table>
@@ -2975,7 +2975,7 @@ SKIP LOCKED при одной занятой строке из 12: получе�
 </code></pre></div>
 
 <p><strong>Лечение и профилактика.</strong> Меры в таблице ниже расположены от немедленной помощи к устранению причины: <code>VACUUM (FREEZE)</code> снимает остроту прямо сейчас, а остальные строки убирают источник multixact.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Мера</th>
@@ -2984,24 +2984,24 @@ SKIP LOCKED при одной занятой строке из 12: получе�
 </thead>
 <tbody>
 <tr>
-<td><code>VACUUM (FREEZE)</code> на таблицах с большим <code>mxid_age</code></td>
-<td>немедленно двигает <code>relminmxid</code>, освобождает members</td>
+<td data-label="Мера"><code>VACUUM (FREEZE)</code> на таблицах с большим <code>mxid_age</code></td>
+<td data-label="Эффект">немедленно двигает <code>relminmxid</code>, освобождает members</td>
 </tr>
 <tr>
-<td>Снизить <code>autovacuum_multixact_freeze_max_age</code> (по умолчанию 400 млн) до 100–200 млн</td>
-<td>vacuum приходит раньше, до накопления</td>
+<td data-label="Мера">Снизить <code>autovacuum_multixact_freeze_max_age</code> (по умолчанию 400 млн) до 100–200 млн</td>
+<td data-label="Эффект">vacuum приходит раньше, до накопления</td>
 </tr>
 <tr>
-<td>Убрать FK на сверхгорячую справочную строку (заменить на проверку в приложении или, начиная с PostgreSQL 18, объявить ключ <code>NOT ENFORCED</code> и добавить периодическую сверку; <code>NOT VALID</code> не поможет, потому что такой ключ пропускает только проверку существующих строк, а каждую новую вставку проверяет и берёт <code>FOR KEY SHARE</code>)</td>
-<td>убирает источник <code>FOR KEY SHARE</code></td>
+<td data-label="Мера">Убрать FK на сверхгорячую справочную строку (заменить на проверку в приложении или, начиная с PostgreSQL 18, объявить ключ <code>NOT ENFORCED</code> и добавить периодическую сверку; <code>NOT VALID</code> не поможет, потому что такой ключ пропускает только проверку существующих строк, а каждую новую вставку проверяет и берёт <code>FOR KEY SHARE</code>)</td>
+<td data-label="Эффект">убирает источник <code>FOR KEY SHARE</code></td>
 </tr>
 <tr>
-<td>Денормализовать справочное значение в дочернюю таблицу</td>
-<td>то же</td>
+<td data-label="Мера">Денормализовать справочное значение в дочернюю таблицу</td>
+<td data-label="Эффект">то же</td>
 </tr>
 <tr>
-<td>Избавиться от явных <code>FOR SHARE</code> в коде</td>
-<td>самый частый рукотворный источник multixact</td>
+<td data-label="Мера">Избавиться от явных <code>FOR SHARE</code> в коде</td>
+<td data-label="Эффект">самый частый рукотворный источник multixact</td>
 </tr>
 </tbody>
 </table>
@@ -3119,7 +3119,7 @@ SKIP LOCKED при одной занятой строке из 12: получе�
 <p>Во втором варианте «the LIMIT is not guaranteed to be applied before the locking function is executed», поэтому вы можете заблокировать гораздо больше сотни ключей и даже не узнать об этом. Третий вариант безопасен, потому что <code>LIMIT</code> применяется в подзапросе раньше, чем внешняя выборка вызывает функцию.</p>
 <h3 id="84-advisory-лок-shedlock-и-redis">8.4 Advisory-лок, ShedLock и Redis</h3>
 <p>Advisory-лок, ShedLock и Redis — три распространённых способа не дать двум экземплярам сервиса выполнять одну работу, и различаются они тем, где хранится блокировка, как она освобождается при падении узла и нужно ли подбирать время её жизни (<em>time to live</em>, TTL). ShedLock — библиотека, которая хранит блокировку для <code>@Scheduled</code>-задач строкой в таблице базы, а в Redis блокировку делают ключом с TTL, записанным командой <code>SET NX PX</code>. Таблица ниже сравнивает все три варианта; обратите особое внимание на строки про TTL и про сетевые разделения, потому что именно там у advisory-лока главное преимущество.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -3130,52 +3130,52 @@ SKIP LOCKED при одной занятой строке из 12: получе�
 </thead>
 <tbody>
 <tr>
-<td>Хранилище</td>
-<td>shared memory PostgreSQL</td>
-<td>строка в таблице</td>
-<td>ключ в Redis</td>
+<td data-label="">Хранилище</td>
+<td data-label="pg_advisory_xact_lock">shared memory PostgreSQL</td>
+<td data-label="ShedLock (JDBC)">строка в таблице</td>
+<td data-label="Redis (SET NX PX) / Redisson">ключ в Redis</td>
 </tr>
 <tr>
-<td>Освобождение при падении узла</td>
-<td>мгновенно (обрыв сессии)</td>
-<td>по истечении <code>lockAtMostFor</code></td>
-<td>по истечении TTL</td>
+<td data-label="">Освобождение при падении узла</td>
+<td data-label="pg_advisory_xact_lock">мгновенно (обрыв сессии)</td>
+<td data-label="ShedLock (JDBC)">по истечении <code>lockAtMostFor</code></td>
+<td data-label="Redis (SET NX PX) / Redisson">по истечении TTL</td>
 </tr>
 <tr>
-<td>Нужен TTL/подбор таймаута</td>
-<td>нет</td>
-<td>да, и он критичен</td>
-<td>да, и он критичен</td>
+<td data-label="">Нужен TTL/подбор таймаута</td>
+<td data-label="pg_advisory_xact_lock">нет</td>
+<td data-label="ShedLock (JDBC)">да, и он критичен</td>
+<td data-label="Redis (SET NX PX) / Redisson">да, и он критичен</td>
 </tr>
 <tr>
-<td>Транзакционность</td>
-<td>полная (снимается с транзакцией)</td>
-<td>нет (отдельная запись)</td>
-<td>нет</td>
+<td data-label="">Транзакционность</td>
+<td data-label="pg_advisory_xact_lock">полная (снимается с транзакцией)</td>
+<td data-label="ShedLock (JDBC)">нет (отдельная запись)</td>
+<td data-label="Redis (SET NX PX) / Redisson">нет</td>
 </tr>
 <tr>
-<td>Лишняя инфраструктура</td>
-<td>нет, если БД уже есть</td>
-<td>нет</td>
-<td>да, Redis</td>
+<td data-label="">Лишняя инфраструктура</td>
+<td data-label="pg_advisory_xact_lock">нет, если БД уже есть</td>
+<td data-label="ShedLock (JDBC)">нет</td>
+<td data-label="Redis (SET NX PX) / Redisson">да, Redis</td>
 </tr>
 <tr>
-<td>Латентность</td>
-<td>как обычный запрос к БД</td>
-<td>как запрос к БД</td>
-<td>микросекунды</td>
+<td data-label="">Латентность</td>
+<td data-label="pg_advisory_xact_lock">как обычный запрос к БД</td>
+<td data-label="ShedLock (JDBC)">как запрос к БД</td>
+<td data-label="Redis (SET NX PX) / Redisson">микросекунды</td>
 </tr>
 <tr>
-<td>Корректность при сетевых разделениях</td>
-<td>лок = сессия, split-brain не бывает</td>
-<td>зависит от часов узлов</td>
-<td>Redlock спорный, см. главу 34</td>
+<td data-label="">Корректность при сетевых разделениях</td>
+<td data-label="pg_advisory_xact_lock">лок = сессия, split-brain не бывает</td>
+<td data-label="ShedLock (JDBC)">зависит от часов узлов</td>
+<td data-label="Redis (SET NX PX) / Redisson">Redlock спорный, см. главу 34</td>
 </tr>
 <tr>
-<td>Масштаб</td>
-<td>ограничен <code>max_locks_per_transaction × max_connections</code></td>
-<td>ограничен БД</td>
-<td>практически не ограничен</td>
+<td data-label="">Масштаб</td>
+<td data-label="pg_advisory_xact_lock">ограничен <code>max_locks_per_transaction × max_connections</code></td>
+<td data-label="ShedLock (JDBC)">ограничен БД</td>
+<td data-label="Redis (SET NX PX) / Redisson">практически не ограничен</td>
 </tr>
 </tbody>
 </table>
@@ -3225,7 +3225,7 @@ SKIP LOCKED при одной занятой строке из 12: получе�
 </code></pre></div>
 
 <p>Проблему целиком снимают несколько правил, и в таблице ниже рядом с каждым объяснено, почему оно работает:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Правило</th>
@@ -3234,24 +3234,24 @@ SKIP LOCKED при одной занятой строке из 12: получе�
 </thead>
 <tbody>
 <tr>
-<td>Имена локов — константы из enum, не динамические строки</td>
-<td>список конечный, коллизии проверяются один раз тестом</td>
+<td data-label="Правило">Имена локов — константы из enum, не динамические строки</td>
+<td data-label="Почему">список конечный, коллизии проверяются один раз тестом</td>
 </tr>
 <tr>
-<td>Один тест в CI: «все константы дают разные ключи»</td>
-<td>ловит коллизию при добавлении нового имени</td>
+<td data-label="Правило">Один тест в CI: «все константы дают разные ключи»</td>
+<td data-label="Почему">ловит коллизию при добавлении нового имени</td>
 </tr>
 <tr>
-<td>Пара <code>(домен, id)</code> вместо <code>hashtext(строка)</code> там, где есть числовой id</td>
-<td>коллизий нет по построению</td>
+<td data-label="Правило">Пара <code>(домен, id)</code> вместо <code>hashtext(строка)</code> там, где есть числовой id</td>
+<td data-label="Почему">коллизий нет по построению</td>
 </tr>
 <tr>
-<td><code>hashtextextended(text, seed)</code> → <code>bigint</code>, если строк действительно много</td>
-<td>64 бита вместо 32, вероятность коллизии падает на 4 млрд</td>
+<td data-label="Правило"><code>hashtextextended(text, seed)</code> → <code>bigint</code>, если строк действительно много</td>
+<td data-label="Почему">64 бита вместо 32, вероятность коллизии падает на 4 млрд</td>
 </tr>
 <tr>
-<td>Реестр доменов в одном файле репозитория и в вики</td>
-<td>защищает от коллизий между сервисами</td>
+<td data-label="Правило">Реестр доменов в одном файле репозитория и в вики</td>
+<td data-label="Почему">защищает от коллизий между сервисами</td>
 </tr>
 </tbody>
 </table>
@@ -3374,7 +3374,7 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 <h3 id="96-обязательные-таймауты">9.6 Обязательные таймауты</h3>
 <p>Таймауты PostgreSQL — это параметры, которые ограничивают, сколько транзакция может ждать блокировку, выполнять оператор или простаивать; из коробки все они выключены. Ниже перечислены эти параметры с разумными значениями для сервиса обработки транзакций (<em>online transaction processing</em>, OLTP), объяснено, почему их задают на роль, а не глобально, и какие ошибки они приносят в приложение.</p>
 <p>Все пять параметров по умолчанию равны <code>0</code>, то есть <strong>выключены</strong> (<a href="https://www.postgresql.org/docs/current/runtime-config-client.html">Client Connection Defaults</a>). Из коробки база согласна ждать вечно: «a transaction seeking either a table-level or row-level lock will wait indefinitely for conflicting locks to be released». В таблице для каждого параметра указано, что он ограничивает, какое у него значение по умолчанию и что разумно выставить для OLTP-сервиса:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Параметр</th>
@@ -3385,34 +3385,34 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </thead>
 <tbody>
 <tr>
-<td><code>statement_timeout</code></td>
-<td>время выполнения одного оператора</td>
-<td class="num">0</td>
-<td>5–30 s (на роль приложения)</td>
+<td data-label="Параметр"><code>statement_timeout</code></td>
+<td data-label="Что ограничивает">время выполнения одного оператора</td>
+<td data-label="По умолчанию" class="num">0</td>
+<td data-label="Разумно для OLTP-сервиса">5–30 s (на роль приложения)</td>
 </tr>
 <tr>
-<td><code>lock_timeout</code></td>
-<td>ожидание одной блокировки</td>
-<td class="num">0</td>
-<td>1–3 s (и обязательно перед DDL)</td>
+<td data-label="Параметр"><code>lock_timeout</code></td>
+<td data-label="Что ограничивает">ожидание одной блокировки</td>
+<td data-label="По умолчанию" class="num">0</td>
+<td data-label="Разумно для OLTP-сервиса">1–3 s (и обязательно перед DDL)</td>
 </tr>
 <tr>
-<td><code>idle_in_transaction_session_timeout</code></td>
-<td>простой <strong>внутри открытой транзакции</strong></td>
-<td class="num">0</td>
-<td>30–60 s</td>
+<td data-label="Параметр"><code>idle_in_transaction_session_timeout</code></td>
+<td data-label="Что ограничивает">простой <strong>внутри открытой транзакции</strong></td>
+<td data-label="По умолчанию" class="num">0</td>
+<td data-label="Разумно для OLTP-сервиса">30–60 s</td>
 </tr>
 <tr>
-<td><code>idle_session_timeout</code></td>
-<td>простой вне транзакции</td>
-<td class="num">0</td>
-<td>обычно не нужен при пуле</td>
+<td data-label="Параметр"><code>idle_session_timeout</code></td>
+<td data-label="Что ограничивает">простой вне транзакции</td>
+<td data-label="По умолчанию" class="num">0</td>
+<td data-label="Разумно для OLTP-сервиса">обычно не нужен при пуле</td>
 </tr>
 <tr>
-<td><code>transaction_timeout</code> (PostgreSQL 17+)</td>
-<td>общая длительность транзакции</td>
-<td class="num">0</td>
-<td>60 s для API-ролей</td>
+<td data-label="Параметр"><code>transaction_timeout</code> (PostgreSQL 17+)</td>
+<td data-label="Что ограничивает">общая длительность транзакции</td>
+<td data-label="По умолчанию" class="num">0</td>
+<td data-label="Разумно для OLTP-сервиса">60 s для API-ролей</td>
 </tr>
 </tbody>
 </table>
@@ -3447,7 +3447,7 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </code></pre></div>
 
 <p>Теперь по строкам: в левом столбце таблицы — фрагмент сообщения, в правом — что из него следует для расследования.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Строка</th>
@@ -3456,44 +3456,44 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </thead>
 <tbody>
 <tr>
-<td><code>[21877]</code></td>
-<td>PID бэкенда — по нему ищем сессию в <code>pg_stat_activity</code>, если она ещё жива</td>
+<td data-label="Строка"><code>[21877]</code></td>
+<td data-label="Что из неё следует">PID бэкенда — по нему ищем сессию в <code>pg_stat_activity</code>, если она ещё жива</td>
 </tr>
 <tr>
-<td><code>payments@core</code></td>
-<td>пользователь и база (<code>%u@%d</code> в <code>log_line_prefix</code>) — сразу видно, чей код</td>
+<td data-label="Строка"><code>payments@core</code></td>
+<td data-label="Что из неё следует">пользователь и база (<code>%u@%d</code> в <code>log_line_prefix</code>) — сразу видно, чей код</td>
 </tr>
 <tr>
-<td><code>app=payments-api</code></td>
-<td><code>application_name</code> — <strong>единственный</strong> способ понять, какой из сервисов виноват, когда все ходят под одной ролью</td>
+<td data-label="Строка"><code>app=payments-api</code></td>
+<td data-label="Что из неё следует"><code>application_name</code> — <strong>единственный</strong> способ понять, какой из сервисов виноват, когда все ходят под одной ролью</td>
 </tr>
 <tr>
-<td><code>ERROR: deadlock detected</code></td>
-<td>эту транзакцию откатили целиком; SQLSTATE <code>40P01</code></td>
+<td data-label="Строка"><code>ERROR: deadlock detected</code></td>
+<td data-label="Что из неё следует">эту транзакцию откатили целиком; SQLSTATE <code>40P01</code></td>
 </tr>
 <tr>
-<td><code>waits for ShareLock on transaction 44120871</code></td>
-<td>ждём <strong>чужую транзакцию</strong>, а не таблицу. Значит, конфликт по строке. Если бы было <code>waits for AccessExclusiveLock on relation 16412</code>, конфликт был бы по объекту</td>
+<td data-label="Строка"><code>waits for ShareLock on transaction 44120871</code></td>
+<td data-label="Что из неё следует">ждём <strong>чужую транзакцию</strong>, а не таблицу. Значит, конфликт по строке. Если бы было <code>waits for AccessExclusiveLock on relation 16412</code>, конфликт был бы по объекту</td>
 </tr>
 <tr>
-<td><code>blocked by process 21903</code></td>
-<td>вторая вершина цикла</td>
+<td data-label="Строка"><code>blocked by process 21903</code></td>
+<td data-label="Что из неё следует">вторая вершина цикла</td>
 </tr>
 <tr>
-<td>вторая строка <code>DETAIL</code> симметрична</td>
-<td>цикл длины 2 — самый частый. Бывают циклы из трёх и более: тогда строк будет больше</td>
+<td data-label="Строка">вторая строка <code>DETAIL</code> симметрична</td>
+<td data-label="Что из неё следует">цикл длины 2 — самый частый. Бывают циклы из трёх и более: тогда строк будет больше</td>
 </tr>
 <tr>
-<td><code>Process 21877: UPDATE ...</code></td>
-<td><strong>последний</strong> оператор каждого процесса, не весь путь. Параметры показаны как <code>$1</code>, <code>$2</code>; значения параметров в сообщение об ошибке добавляет только <code>log_parameter_max_length_on_error</code></td>
+<td data-label="Строка"><code>Process 21877: UPDATE ...</code></td>
+<td data-label="Что из неё следует"><strong>последний</strong> оператор каждого процесса, не весь путь. Параметры показаны как <code>$1</code>, <code>$2</code>; значения параметров в сообщение об ошибке добавляет только <code>log_parameter_max_length_on_error</code></td>
 </tr>
 <tr>
-<td><code>CONTEXT: while updating tuple (14,3)</code></td>
-<td>физический адрес строки: блок 14, смещение 3. <code>SELECT * FROM accounts WHERE ctid = '(14,3)'</code> покажет, о какой именно строке речь</td>
+<td data-label="Строка"><code>CONTEXT: while updating tuple (14,3)</code></td>
+<td data-label="Что из неё следует">физический адрес строки: блок 14, смещение 3. <code>SELECT * FROM accounts WHERE ctid = '(14,3)'</code> покажет, о какой именно строке речь</td>
 </tr>
 <tr>
-<td><code>STATEMENT:</code></td>
-<td>оператор, на котором упали именно мы</td>
+<td data-label="Строка"><code>STATEMENT:</code></td>
+<td data-label="Что из неё следует">оператор, на котором упали именно мы</td>
 </tr>
 </tbody>
 </table>
@@ -3578,7 +3578,7 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 
 <p>Правило простое: <strong><code>lock_timeout</code> &lt; <code>statement_timeout</code> &lt; <code>transaction_timeout</code> &lt; таймаут HTTP-сервера &lt; таймаут HTTP-клиента</strong>. Если порядок нарушен, нижний уровень теряет смысл: при <code>statement_timeout ≤ lock_timeout</code> дело до срабатывания <code>lock_timeout</code> не дойдёт никогда, и вместо информативного <code>55P03 lock_not_available</code> вы получите <code>57014 query_canceled</code>.</p>
 <p>Таблица ниже проходит по всем уровням и показывает для каждого, что произойдёт при срабатывании таймаута и что будет, если его нет вовсе; правый столбец полезно показать тем, кто считает таймауты лишней настройкой.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -3589,52 +3589,52 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </thead>
 <tbody>
 <tr>
-<td>Ожидание блокировки</td>
-<td><code>lock_timeout</code></td>
-<td><code>55P03</code>, транзакция в состоянии aborted; продолжить её можно, только если оператор был обёрнут в <code>SAVEPOINT</code></td>
-<td>миграция встаёт в очередь и парализует таблицу</td>
+<td data-label="Уровень">Ожидание блокировки</td>
+<td data-label="Параметр"><code>lock_timeout</code></td>
+<td data-label="Что произойдёт при срабатывании"><code>55P03</code>, транзакция в состоянии aborted; продолжить её можно, только если оператор был обёрнут в <code>SAVEPOINT</code></td>
+<td data-label="Что будет, если его нет">миграция встаёт в очередь и парализует таблицу</td>
 </tr>
 <tr>
-<td>Один оператор</td>
-<td><code>statement_timeout</code></td>
-<td><code>57014</code>, транзакция в состоянии aborted</td>
-<td>тяжёлый отчёт держит соединение и xmin-горизонт</td>
+<td data-label="Уровень">Один оператор</td>
+<td data-label="Параметр"><code>statement_timeout</code></td>
+<td data-label="Что произойдёт при срабатывании"><code>57014</code>, транзакция в состоянии aborted</td>
+<td data-label="Что будет, если его нет">тяжёлый отчёт держит соединение и xmin-горизонт</td>
 </tr>
 <tr>
-<td>Простой в транзакции</td>
-<td><code>idle_in_transaction_session_timeout</code></td>
-<td><code>25P03</code>, сессия убита</td>
-<td>«открыл транзакцию и ушёл» останавливает vacuum по всей базе</td>
+<td data-label="Уровень">Простой в транзакции</td>
+<td data-label="Параметр"><code>idle_in_transaction_session_timeout</code></td>
+<td data-label="Что произойдёт при срабатывании"><code>25P03</code>, сессия убита</td>
+<td data-label="Что будет, если его нет">«открыл транзакцию и ушёл» останавливает vacuum по всей базе</td>
 </tr>
 <tr>
-<td>Вся транзакция</td>
-<td><code>transaction_timeout</code> (17+)</td>
-<td>сессия завершается</td>
-<td>транзакция из тысячи быстрых операторов живёт часами легально</td>
+<td data-label="Уровень">Вся транзакция</td>
+<td data-label="Параметр"><code>transaction_timeout</code> (17+)</td>
+<td data-label="Что произойдёт при срабатывании">сессия завершается</td>
+<td data-label="Что будет, если его нет">транзакция из тысячи быстрых операторов живёт часами легально</td>
 </tr>
 <tr>
-<td>Простой вне транзакции</td>
-<td><code>idle_session_timeout</code></td>
-<td>сессия закрыта</td>
-<td>при пуле обычно неважно; важно для psql-сессий инженеров</td>
+<td data-label="Уровень">Простой вне транзакции</td>
+<td data-label="Параметр"><code>idle_session_timeout</code></td>
+<td data-label="Что произойдёт при срабатывании">сессия закрыта</td>
+<td data-label="Что будет, если его нет">при пуле обычно неважно; важно для psql-сессий инженеров</td>
 </tr>
 <tr>
-<td>Получение соединения</td>
-<td>Hikari <code>connectionTimeout</code> (30 s по умолчанию)</td>
-<td><code>SQLTransientConnectionException</code></td>
-<td>запросы копятся, очередь растёт, сервис «висит»</td>
+<td data-label="Уровень">Получение соединения</td>
+<td data-label="Параметр">Hikari <code>connectionTimeout</code> (30 s по умолчанию)</td>
+<td data-label="Что произойдёт при срабатывании"><code>SQLTransientConnectionException</code></td>
+<td data-label="Что будет, если его нет">запросы копятся, очередь растёт, сервис «висит»</td>
 </tr>
 <tr>
-<td>Жизнь соединения</td>
-<td>Hikari <code>maxLifetime</code> (30 мин)</td>
-<td>соединение пересоздаётся</td>
-<td>зависшие соединения не обновляются</td>
+<td data-label="Уровень">Жизнь соединения</td>
+<td data-label="Параметр">Hikari <code>maxLifetime</code> (30 мин)</td>
+<td data-label="Что произойдёт при срабатывании">соединение пересоздаётся</td>
+<td data-label="Что будет, если его нет">зависшие соединения не обновляются</td>
 </tr>
 <tr>
-<td>HTTP-вызов наружу</td>
-<td>таймауты клиента</td>
-<td>исключение, транзакция откатится</td>
-<td>внешний сервис «держит» ваш пул (раздел 13)</td>
+<td data-label="Уровень">HTTP-вызов наружу</td>
+<td data-label="Параметр">таймауты клиента</td>
+<td data-label="Что произойдёт при срабатывании">исключение, транзакция откатится</td>
+<td data-label="Что будет, если его нет">внешний сервис «держит» ваш пул (раздел 13)</td>
 </tr>
 </tbody>
 </table>
@@ -3701,7 +3701,7 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 <p>Формально <code>REPEATABLE READ</code>/<code>SERIALIZABLE</code> в PostgreSQL — тоже форма оптимистичного контроля, только реализует её сама база: она ничего не блокирует заранее, а обнаруживает конфликт при записи или фиксации и откатывает транзакцию с <code>40001</code>.</p>
 <h3 id="102-стоимость-каждого-подхода">10.2 Стоимость каждого подхода</h3>
 <p>Стоимость подхода — это ресурс, которым приходится платить за защиту от конфликта: пессимистичный подход платит временем ожидания и занятыми соединениями, оптимистичный — повторной работой. Ни один из подходов не бесплатен. Таблица ниже сравнивает их по семи признакам; главное в ней — строка про рост параллельной нагрузки, потому что именно там подходы деградируют по-разному.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -3711,39 +3711,39 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </thead>
 <tbody>
 <tr>
-<td>Что тратим</td>
-<td>время ожидания в очереди, удержание соединения</td>
-<td>процессорное время на повторы, latency хвоста</td>
+<td data-label="">Что тратим</td>
+<td data-label="Пессимистичная">время ожидания в очереди, удержание соединения</td>
+<td data-label="Оптимистичная">процессорное время на повторы, latency хвоста</td>
 </tr>
 <tr>
-<td>Поведение при росте параллельной нагрузки</td>
-<td>очередь растёт линейно, latency растёт, соединения кончаются</td>
-<td>доля повторов растёт нелинейно, возможен <strong>livelock</strong> (все повторяют, никто не проходит)</td>
+<td data-label="">Поведение при росте параллельной нагрузки</td>
+<td data-label="Пессимистичная">очередь растёт линейно, latency растёт, соединения кончаются</td>
+<td data-label="Оптимистичная">доля повторов растёт нелинейно, возможен <strong>livelock</strong> (все повторяют, никто не проходит)</td>
 </tr>
 <tr>
-<td>Взаимоблокировки</td>
-<td>да, реальный риск</td>
-<td>нет (ничего не держим)</td>
+<td data-label="">Взаимоблокировки</td>
+<td data-label="Пессимистичная">да, реальный риск</td>
+<td data-label="Оптимистичная">нет (ничего не держим)</td>
 </tr>
 <tr>
-<td>Работает через паузы (пользователь думает 5 минут)</td>
-<td>нет — нельзя держать транзакцию</td>
-<td><strong>да</strong> — версия несётся в форме и проверяется при сохранении</td>
+<td data-label="">Работает через паузы (пользователь думает 5 минут)</td>
+<td data-label="Пессимистичная">нет — нельзя держать транзакцию</td>
+<td data-label="Оптимистичная"><strong>да</strong> — версия несётся в форме и проверяется при сохранении</td>
 </tr>
 <tr>
-<td>Работает между микросервисами</td>
-<td>нет</td>
-<td>да</td>
+<td data-label="">Работает между микросервисами</td>
+<td data-label="Пессимистичная">нет</td>
+<td data-label="Оптимистичная">да</td>
 </tr>
 <tr>
-<td>Сложность кода</td>
-<td>низкая</td>
-<td>средняя: нужны корректный повтор + идемпотентность</td>
+<td data-label="">Сложность кода</td>
+<td data-label="Пессимистичная">низкая</td>
+<td data-label="Оптимистичная">средняя: нужны корректный повтор + идемпотентность</td>
 </tr>
 <tr>
-<td>Наблюдаемость проблемы</td>
-<td>видно в <code>pg_locks</code>/<code>pg_stat_activity</code></td>
-<td>видно только по метрике повторов, которую надо завести</td>
+<td data-label="">Наблюдаемость проблемы</td>
+<td data-label="Пессимистичная">видно в <code>pg_locks</code>/<code>pg_stat_activity</code></td>
+<td data-label="Оптимистичная">видно только по метрике повторов, которую надо завести</td>
 </tr>
 </tbody>
 </table>
@@ -3814,7 +3814,7 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 <h3 id="111-ошибки-допускающие-повтор">11.1 Ошибки, допускающие повтор</h3>
 <p>Ошибка, допускающая повтор, — это ошибка, после которой точно известно, что транзакция не применилась, и у повторной попытки есть шанс пройти. Повторять можно далеко не любую ошибку базы, и ошибиться здесь можно в обе стороны: повторить то, что уже применилось, или не повторить то, что гарантированно откатилось. Ниже перечислены коды ошибок с решением для каждого и показано, как надёжно определить код в Java.</p>
 <p>Код ошибки PostgreSQL называется SQLSTATE: это пятисимвольный код из стандарта SQL, первые два символа которого задают класс ошибки (класс 40 — откат транзакции, класс 08 — проблемы соединения). Таблица ниже перечисляет основные коды; обратите внимание на последнюю строку, где повтор допустим только при идемпотентной операции.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>SQLSTATE</th>
@@ -3824,39 +3824,39 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </thead>
 <tbody>
 <tr>
-<td><code>40001</code></td>
-<td><code>serialization_failure</code></td>
-<td><strong>да</strong>, обязательно</td>
+<td data-label="SQLSTATE"><code>40001</code></td>
+<td data-label="Условие"><code>serialization_failure</code></td>
+<td data-label="Повторять?"><strong>да</strong>, обязательно</td>
 </tr>
 <tr>
-<td><code>40P01</code></td>
-<td><code>deadlock_detected</code></td>
-<td><strong>да</strong></td>
+<td data-label="SQLSTATE"><code>40P01</code></td>
+<td data-label="Условие"><code>deadlock_detected</code></td>
+<td data-label="Повторять?"><strong>да</strong></td>
 </tr>
 <tr>
-<td><code>55P03</code></td>
-<td><code>lock_not_available</code> (<code>lock_timeout</code>/<code>NOWAIT</code>)</td>
-<td>да, с задержкой и ограниченно</td>
+<td data-label="SQLSTATE"><code>55P03</code></td>
+<td data-label="Условие"><code>lock_not_available</code> (<code>lock_timeout</code>/<code>NOWAIT</code>)</td>
+<td data-label="Повторять?">да, с задержкой и ограниченно</td>
 </tr>
 <tr>
-<td><code>23505</code></td>
-<td><code>unique_violation</code></td>
-<td>нет — это бизнес-конфликт (кроме гонки на <code>INSERT</code>, где повтор = «читай существующее»)</td>
+<td data-label="SQLSTATE"><code>23505</code></td>
+<td data-label="Условие"><code>unique_violation</code></td>
+<td data-label="Повторять?">нет — это бизнес-конфликт (кроме гонки на <code>INSERT</code>, где повтор = «читай существующее»)</td>
 </tr>
 <tr>
-<td><code>57014</code></td>
-<td><code>query_canceled</code> (<code>statement_timeout</code>)</td>
-<td>нет — повтор упадёт так же</td>
+<td data-label="SQLSTATE"><code>57014</code></td>
+<td data-label="Условие"><code>query_canceled</code> (<code>statement_timeout</code>)</td>
+<td data-label="Повторять?">нет — повтор упадёт так же</td>
 </tr>
 <tr>
-<td><code>25P03</code></td>
-<td><code>idle_in_transaction_session_timeout</code></td>
-<td>нет — это баг</td>
+<td data-label="SQLSTATE"><code>25P03</code></td>
+<td data-label="Условие"><code>idle_in_transaction_session_timeout</code></td>
+<td data-label="Повторять?">нет — это баг</td>
 </tr>
 <tr>
-<td><code>08006</code>/<code>08003</code></td>
-<td>обрыв соединения</td>
-<td><strong>только если операция идемпотентна</strong> (см. 11.4)</td>
+<td data-label="SQLSTATE"><code>08006</code>/<code>08003</code></td>
+<td data-label="Условие">обрыв соединения</td>
+<td data-label="Повторять?"><strong>только если операция идемпотентна</strong> (см. 11.4)</td>
 </tr>
 </tbody>
 </table>
@@ -4065,7 +4065,7 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </code></pre></div>
 
 <p>Что делать с этими метриками, показывает таблица ниже: по строкам в ней идут типовые наблюдения, а справа — их смысл и действие.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Наблюдение</th>
@@ -4075,34 +4075,34 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </thead>
 <tbody>
 <tr>
-<td>доля повторов &lt; 1 %</td>
-<td>здоровая система</td>
-<td>ничего</td>
+<td data-label="Наблюдение">доля повторов &lt; 1 %</td>
+<td data-label="Что это значит">здоровая система</td>
+<td data-label="Действие">ничего</td>
 </tr>
 <tr>
-<td>1–5 % на конкретной операции</td>
-<td>есть горячая точка</td>
-<td>сузить транзакцию, проверить индексы (на SERIALIZABLE)</td>
+<td data-label="Наблюдение">1–5 % на конкретной операции</td>
+<td data-label="Что это значит">есть горячая точка</td>
+<td data-label="Действие">сузить транзакцию, проверить индексы (на SERIALIZABLE)</td>
 </tr>
 <tr>
-<td>&gt; 10 %</td>
-<td>конфликты системные</td>
-<td>менять модель: шардировать строку, разделить транзакцию, материализовать конфликт</td>
+<td data-label="Наблюдение">&gt; 10 %</td>
+<td data-label="Что это значит">конфликты системные</td>
+<td data-label="Действие">менять модель: шардировать строку, разделить транзакцию, материализовать конфликт</td>
 </tr>
 <tr>
-<td>растёт <code>exhausted</code> при неизменной нагрузке</td>
-<td>появился долгий держатель</td>
-<td>искать длинные транзакции, <code>VACUUM</code>, блокировки</td>
+<td data-label="Наблюдение">растёт <code>exhausted</code> при неизменной нагрузке</td>
+<td data-label="Что это значит">появился долгий держатель</td>
+<td data-label="Действие">искать длинные транзакции, <code>VACUUM</code>, блокировки</td>
 </tr>
 <tr>
-<td>повторы есть, а <code>pg_stat_database.deadlocks</code> не растёт</td>
-<td>это <code>40001</code>, а не взаимоблокировки</td>
-<td>смотреть уровень изоляции и предикатные локи</td>
+<td data-label="Наблюдение">повторы есть, а <code>pg_stat_database.deadlocks</code> не растёт</td>
+<td data-label="Что это значит">это <code>40001</code>, а не взаимоблокировки</td>
+<td data-label="Действие">смотреть уровень изоляции и предикатные локи</td>
 </tr>
 <tr>
-<td><code>attempts</code> распределены равномерно до максимума</td>
-<td>задержка подобрана неверно</td>
-<td>увеличить base delay или разнести операции</td>
+<td data-label="Наблюдение"><code>attempts</code> распределены равномерно до максимума</td>
+<td data-label="Что это значит">задержка подобрана неверно</td>
+<td data-label="Действие">увеличить base delay или разнести операции</td>
 </tr>
 </tbody>
 </table>
@@ -4288,7 +4288,7 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </code></pre></div>
 
 <p>Таблица ниже применяет эту формулу к пулам трёх размеров и разному содержимому транзакции (TPS — транзакций в секунду). Смотреть в ней стоит на выделенную колонку пула на 20 соединений.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что внутри транзакции</th>
@@ -4300,39 +4300,39 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </thead>
 <tbody>
 <tr>
-<td>Только БД, 3 быстрых запроса</td>
-<td class="num">3 мс</td>
-<td class="num">~6 600 TPS</td>
-<td class="num">~16 600 TPS</td>
-<td class="num">~33 000 TPS</td>
+<td data-label="Что внутри транзакции">Только БД, 3 быстрых запроса</td>
+<td data-label="Время удержания" class="num">3 мс</td>
+<td data-label="Пул 20" class="num">~6 600 TPS</td>
+<td data-label="Пул 50" class="num">~16 600 TPS</td>
+<td data-label="Пул 100" class="num">~33 000 TPS</td>
 </tr>
 <tr>
-<td>БД + один HTTP-вызов, p50 = 50 мс</td>
-<td class="num">53 мс</td>
-<td class="num">~375 TPS</td>
-<td class="num">~940 TPS</td>
-<td class="num">~1 880 TPS</td>
+<td data-label="Что внутри транзакции">БД + один HTTP-вызов, p50 = 50 мс</td>
+<td data-label="Время удержания" class="num">53 мс</td>
+<td data-label="Пул 20" class="num">~375 TPS</td>
+<td data-label="Пул 50" class="num">~940 TPS</td>
+<td data-label="Пул 100" class="num">~1 880 TPS</td>
 </tr>
 <tr>
-<td>БД + HTTP, p50 = 200 мс</td>
-<td class="num">203 мс</td>
-<td class="num"><strong>~98 TPS</strong></td>
-<td class="num">~246 TPS</td>
-<td class="num">~492 TPS</td>
+<td data-label="Что внутри транзакции">БД + HTTP, p50 = 200 мс</td>
+<td data-label="Время удержания" class="num">203 мс</td>
+<td data-label="Пул 20" class="num"><strong>~98 TPS</strong></td>
+<td data-label="Пул 50" class="num">~246 TPS</td>
+<td data-label="Пул 100" class="num">~492 TPS</td>
 </tr>
 <tr>
-<td>БД + HTTP при деградации, 2 с</td>
-<td class="num">2 с</td>
-<td class="num"><strong>10 TPS</strong></td>
-<td class="num">25 TPS</td>
-<td class="num">50 TPS</td>
+<td data-label="Что внутри транзакции">БД + HTTP при деградации, 2 с</td>
+<td data-label="Время удержания" class="num">2 с</td>
+<td data-label="Пул 20" class="num"><strong>10 TPS</strong></td>
+<td data-label="Пул 50" class="num">25 TPS</td>
+<td data-label="Пул 100" class="num">50 TPS</td>
 </tr>
 <tr>
-<td>БД + HTTP при таймауте 30 с</td>
-<td class="num">30 с</td>
-<td class="num"><strong>0,67 TPS</strong></td>
-<td class="num">1,7 TPS</td>
-<td class="num">3,3 TPS</td>
+<td data-label="Что внутри транзакции">БД + HTTP при таймауте 30 с</td>
+<td data-label="Время удержания" class="num">30 с</td>
+<td data-label="Пул 20" class="num"><strong>0,67 TPS</strong></td>
+<td data-label="Пул 50" class="num">1,7 TPS</td>
+<td data-label="Пул 100" class="num">3,3 TPS</td>
 </tr>
 </tbody>
 </table>
@@ -4372,7 +4372,7 @@ pg_stat_database.sessions_fatal: было 0, стало 1 (сервер сам �
 </code></pre></div>
 
 <p>Таблица ниже идёт по стеку сверху вниз, от Hibernate до сервера PostgreSQL и маршрутизации, и показывает, что делает флаг на каждом уровне:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -4381,24 +4381,24 @@ pg_stat_database.sessions_fatal: было 0, стало 1 (сервер сам �
 </thead>
 <tbody>
 <tr>
-<td>Hibernate</td>
-<td>ставит <code>FlushMode.MANUAL</code>: грязная проверка не выполняется, изменения сущностей не сбрасываются (глава 12)</td>
+<td data-label="Уровень">Hibernate</td>
+<td data-label="Что делает readOnly = true">ставит <code>FlushMode.MANUAL</code>: грязная проверка не выполняется, изменения сущностей не сбрасываются (глава 12)</td>
 </tr>
 <tr>
-<td>Spring JDBC</td>
-<td>передаёт флаг в <code>Connection.setReadOnly(true)</code></td>
+<td data-label="Уровень">Spring JDBC</td>
+<td data-label="Что делает readOnly = true">передаёт флаг в <code>Connection.setReadOnly(true)</code></td>
 </tr>
 <tr>
-<td>PostgreSQL JDBC</td>
-<td>при <code>readOnlyMode=transaction</code> (значение по умолчанию — <code>transaction</code> в актуальных драйверах) выполняет <code>SET TRANSACTION READ ONLY</code></td>
+<td data-label="Уровень">PostgreSQL JDBC</td>
+<td data-label="Что делает readOnly = true">при <code>readOnlyMode=transaction</code> (значение по умолчанию — <code>transaction</code> в актуальных драйверах) выполняет <code>SET TRANSACTION READ ONLY</code></td>
 </tr>
 <tr>
-<td>PostgreSQL сервер</td>
-<td>запрещает любые записи в этой транзакции (<code>25006 read_only_sql_transaction</code>), позволяет использовать <code>DEFERRABLE</code></td>
+<td data-label="Уровень">PostgreSQL сервер</td>
+<td data-label="Что делает readOnly = true">запрещает любые записи в этой транзакции (<code>25006 read_only_sql_transaction</code>), позволяет использовать <code>DEFERRABLE</code></td>
 </tr>
 <tr>
-<td>Маршрутизация</td>
-<td>ваш собственный <code>AbstractRoutingDataSource</code> может по этому флагу отправить запрос на реплику</td>
+<td data-label="Уровень">Маршрутизация</td>
+<td data-label="Что делает readOnly = true">ваш собственный <code>AbstractRoutingDataSource</code> может по этому флагу отправить запрос на реплику</td>
 </tr>
 </tbody>
 </table>
@@ -4430,7 +4430,7 @@ pg_stat_database.sessions_fatal: было 0, стало 1 (сервер сам �
 </code></pre></div>
 
 <p>Момент инвалидации можно выбрать тремя способами, и правильный из них один, как показывает таблица:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Момент инвалидации</th>
@@ -4439,16 +4439,16 @@ pg_stat_database.sessions_fatal: было 0, стало 1 (сервер сам �
 </thead>
 <tbody>
 <tr>
-<td>До изменения в БД</td>
-<td>между удалением из кеша и фиксацией другой поток прочитает старое значение из БД и снова его закеширует</td>
+<td data-label="Момент инвалидации">До изменения в БД</td>
+<td data-label="Проблема">между удалением из кеша и фиксацией другой поток прочитает старое значение из БД и снова его закеширует</td>
 </tr>
 <tr>
-<td>Внутри транзакции, после <code>UPDATE</code></td>
-<td>при откате в кеше останется мусор... или, наоборот, будет вычищено то, что не менялось</td>
+<td data-label="Момент инвалидации">Внутри транзакции, после <code>UPDATE</code></td>
+<td data-label="Проблема">при откате в кеше останется мусор... или, наоборот, будет вычищено то, что не менялось</td>
 </tr>
 <tr>
-<td><strong><code>afterCommit</code></strong></td>
-<td>корректно; остаётся окно, в котором кто-то читает устаревшее значение, — но это неизбежная цена кеша</td>
+<td data-label="Момент инвалидации"><strong><code>afterCommit</code></strong></td>
+<td data-label="Проблема">корректно; остаётся окно, в котором кто-то читает устаревшее значение, — но это неизбежная цена кеша</td>
 </tr>
 </tbody>
 </table>
@@ -4649,7 +4649,7 @@ FOR UPDATE по пустой выборке               итого вывед�
 - сократили транзакции записи операций, вынеся HTTP-вызов наружу (раздел 14.2).</p>
 <p><strong>Как не допустить.</strong> Мониторить <code>mxid_age</code> наравне с <code>age(relfrozenxid)</code>, помнить правило «FK на справочник из десятка строк при десятках тысяч вставок в секунду порождает multixact» и проводить аудит <code>FOR SHARE</code> в коде.</p>
 <p>Все восемь историй сведены в таблицу ниже: для каждой указаны корневая причина и одно правило, которое бы её предотвратило, и правый столбец годится как готовый чек-лист для ревью.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Инцидент</th>
@@ -4659,44 +4659,44 @@ FOR UPDATE по пустой выборке               итого вывед�
 </thead>
 <tbody>
 <tr>
-<td>15.1 Потерянный баланс</td>
-<td>read-modify-write в Java</td>
-<td>деньги меняются только выражением в SQL</td>
+<td data-label="Инцидент">15.1 Потерянный баланс</td>
+<td data-label="Корневая причина">read-modify-write в Java</td>
+<td data-label="Одно правило, которое бы его предотвратило">деньги меняются только выражением в SQL</td>
 </tr>
 <tr>
-<td>15.2 <code>ALTER TABLE</code> положил таблицу</td>
-<td>soft block в очереди локов</td>
-<td><code>lock_timeout</code> на миграционной роли</td>
+<td data-label="Инцидент">15.2 <code>ALTER TABLE</code> положил таблицу</td>
+<td data-label="Корневая причина">soft block в очереди локов</td>
+<td data-label="Одно правило, которое бы его предотвратило"><code>lock_timeout</code> на миграционной роли</td>
 </tr>
 <tr>
-<td>15.3 Взаимоблокировка на <code>INSERT</code></td>
-<td>FK + разный порядок родителей</td>
-<td>сортировка пачки по ключу блокировки</td>
+<td data-label="Инцидент">15.3 Взаимоблокировка на <code>INSERT</code></td>
+<td data-label="Корневая причина">FK + разный порядок родителей</td>
+<td data-label="Одно правило, которое бы его предотвратило">сортировка пачки по ключу блокировки</td>
 </tr>
 <tr>
-<td>15.4 <code>idle in transaction</code></td>
-<td>человек с открытой транзакцией</td>
-<td><code>idle_in_transaction_session_timeout</code> на всех ролях</td>
+<td data-label="Инцидент">15.4 <code>idle in transaction</code></td>
+<td data-label="Корневая причина">человек с открытой транзакцией</td>
+<td data-label="Одно правило, которое бы его предотвратило"><code>idle_in_transaction_session_timeout</code> на всех ролях</td>
 </tr>
 <tr>
-<td>15.5 Двойное списание</td>
-<td>повтор без идемпотентности</td>
-<td>есть повтор — есть ключ идемпотентности</td>
+<td data-label="Инцидент">15.5 Двойное списание</td>
+<td data-label="Корневая причина">повтор без идемпотентности</td>
+<td data-label="Одно правило, которое бы его предотвратило">есть повтор — есть ключ идемпотентности</td>
 </tr>
 <tr>
-<td>15.6 Коллизия advisory-лока</td>
-<td>совпадение 32-битного <code>hashtext</code> у имён двух заданий</td>
-<td>константные ключи из реестра доменов</td>
+<td data-label="Инцидент">15.6 Коллизия advisory-лока</td>
+<td data-label="Корневая причина">совпадение 32-битного <code>hashtext</code> у имён двух заданий</td>
+<td data-label="Одно правило, которое бы его предотвратило">константные ключи из реестра доменов</td>
 </tr>
 <tr>
-<td>15.7 Превышение лимита</td>
-<td>write skew через <code>INSERT</code></td>
-<td><code>FOR UPDATE</code> не защищает от вставки</td>
+<td data-label="Инцидент">15.7 Превышение лимита</td>
+<td data-label="Корневая причина">write skew через <code>INSERT</code></td>
+<td data-label="Одно правило, которое бы его предотвратило"><code>FOR UPDATE</code> не защищает от вставки</td>
 </tr>
 <tr>
-<td>15.8 Multixact</td>
-<td>FK на горячую строку справочника</td>
-<td>мониторинг <code>mxid_age</code>, аудит <code>FOR SHARE</code></td>
+<td data-label="Инцидент">15.8 Multixact</td>
+<td data-label="Корневая причина">FK на горячую строку справочника</td>
+<td data-label="Одно правило, которое бы его предотвратило">мониторинг <code>mxid_age</code>, аудит <code>FOR SHARE</code></td>
 </tr>
 </tbody>
 </table>
@@ -4948,7 +4948,7 @@ FOR UPDATE по пустой выборке               итого вывед�
 <p>Механика разбухания, настройка autovacuum и восстановление места разобраны в главе 17 (<code>17-postgresql-internals.md</code>), а здесь важно за одну минуту связать «база растёт» с «кто-то держит транзакцию».</p>
 <h3 id="179-логирование-на-стороне-приложения">17.9 Логирование на стороне приложения</h3>
 <p>Логирование на стороне приложения — это запись того, что видело само приложение: какие ошибки базы оно получало, сколько длились транзакции и сколько было попыток. Серверная диагностика показывает состояние базы «сейчас», а без этих данных многие инциденты из раздела 15 было бы невозможно разобрать задним числом. Таблица ниже перечисляет, что именно логировать, зачем и каким способом; MDC (<em>mapped diagnostic context</em>) в ней — контекст логгера, значения из которого автоматически попадают в каждую строку лога текущего потока.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -4958,34 +4958,34 @@ FOR UPDATE по пустой выборке               итого вывед�
 </thead>
 <tbody>
 <tr>
-<td>SQLSTATE каждой ошибки БД</td>
-<td>отличить <code>40001</code> от <code>40P01</code> и от <code>55P03</code></td>
-<td>счётчик с тегом <code>sqlstate</code></td>
+<td data-label="Что">SQLSTATE каждой ошибки БД</td>
+<td data-label="Зачем">отличить <code>40001</code> от <code>40P01</code> и от <code>55P03</code></td>
+<td data-label="Как">счётчик с тегом <code>sqlstate</code></td>
 </tr>
 <tr>
-<td>Длительность транзакции (не запроса)</td>
-<td>найти те, что вылезают за бюджет</td>
-<td>таймер вокруг транзакционного метода</td>
+<td data-label="Что">Длительность транзакции (не запроса)</td>
+<td data-label="Зачем">найти те, что вылезают за бюджет</td>
+<td data-label="Как">таймер вокруг транзакционного метода</td>
 </tr>
 <tr>
-<td>Число попыток на операцию</td>
-<td>понять, окупается ли оптимистичная схема</td>
-<td><code>db.tx.attempts</code> (11.5)</td>
+<td data-label="Что">Число попыток на операцию</td>
+<td data-label="Зачем">понять, окупается ли оптимистичная схема</td>
+<td data-label="Как"><code>db.tx.attempts</code> (11.5)</td>
 </tr>
 <tr>
-<td><code>application_name</code> с именем операции</td>
-<td>связать лог PostgreSQL с кодом</td>
-<td><code>SET application_name</code> перед транзакцией</td>
+<td data-label="Что"><code>application_name</code> с именем операции</td>
+<td data-label="Зачем">связать лог PostgreSQL с кодом</td>
+<td data-label="Как"><code>SET application_name</code> перед транзакцией</td>
 </tr>
 <tr>
-<td>Ключ идемпотентности в MDC</td>
-<td>связать повторы одного запроса</td>
-<td>логирование <code>Idempotency-Key</code></td>
+<td data-label="Что">Ключ идемпотентности в MDC</td>
+<td data-label="Зачем">связать повторы одного запроса</td>
+<td data-label="Как">логирование <code>Idempotency-Key</code></td>
 </tr>
 <tr>
-<td>Время ожидания соединения в пуле</td>
-<td>ранний признак «транзакции удлинились»</td>
-<td>метрики Hikari <code>hikaricp.connections.acquire</code></td>
+<td data-label="Что">Время ожидания соединения в пуле</td>
+<td data-label="Зачем">ранний признак «транзакции удлинились»</td>
+<td data-label="Как">метрики Hikari <code>hikaricp.connections.acquire</code></td>
 </tr>
 </tbody>
 </table>
@@ -5264,5 +5264,5 @@ FOR UPDATE по пустой выборке               итого вывед�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-свойства-acid">1. Свойства ACID</a></li><li><a href="#2-аномалии-параллельных-транзакций">2. Аномалии параллельных транзакций</a></li><li><a href="#3-стандарт-ansi-sql-92-и-его-критика">3. Стандарт ANSI SQL-92 и его критика</a></li><li><a href="#4-уровни-изоляции-в-postgresql">4. Уровни изоляции в PostgreSQL</a></li><li><a href="#5-изоляция-в-innodb-и-oracle">5. Изоляция в InnoDB и Oracle</a></li><li><a href="#6-табличные-блокировки-в-postgresql">6. Табличные блокировки в PostgreSQL</a></li><li><a href="#7-строчные-блокировки">7. Строчные блокировки</a></li><li><a href="#8-рекомендательные-блокировки-advisory-locks">8. Рекомендательные блокировки (advisory locks)</a></li><li><a href="#9-взаимоблокировки-и-таймауты">9. Взаимоблокировки и таймауты</a></li><li><a href="#10-оптимистичная-и-пессимистичная-блокировка">10. Оптимистичная и пессимистичная блокировка</a></li><li><a href="#11-повторные-попытки-и-идемпотентность">11. Повторные попытки и идемпотентность</a></li><li><a href="#12-распределённые-транзакции-2pcxa">12. Распределённые транзакции: 2PC/XA</a></li><li><a href="#13-долгие-транзакции-и-внешние-вызовы">13. Долгие транзакции и внешние вызовы</a></li><li><a href="#14-проектирование-границ-транзакции">14. Проектирование границ транзакции</a></li><li><a href="#15-разобранные-инциденты">15. Разобранные инциденты</a></li><li><a href="#16-грабли-и-антипаттерны">16. Грабли и антипаттерны</a></li><li><a href="#17-диагностика">17. Диагностика</a></li><li><a href="#18-вопросы-на-интервью">18. Вопросы на интервью</a></li><li><a href="#19-попробовать-руками">19. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

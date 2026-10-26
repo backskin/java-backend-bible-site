@@ -3,7 +3,7 @@
 <title>24. Пакетная обработка и планировщики — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Пакетная обработка и планировщики">
 <a class="skip" href="#content">К тексту</a>
@@ -25,7 +25,7 @@
 <p>Онлайн-сервис и пакет оптимизируют разные величины: первый борется за время ответа на отдельный запрос, второй — за объём, пропущенный через окно, и почти все остальные различия между ними следуют из этой одной разницы. Ниже разберём, какие именно, и покажем, почему единицей корректности в пакете становится не запрос, а период.</p>
 <p>Онлайн-обработка борется за <strong>латентность одного запроса</strong>, поэтому p99 в 200 мс для неё важнее суммарной пропускной способности. Пакет же оптимизирует <strong>пропускную способность на окне</strong>: никого не интересует, сколько миллисекунд обрабатывалась строка 4 712 093, зато всех интересует, уложился ли весь прогон в три часа.</p>
 <p>Когда меняется целевая функция, вслед за ней меняется почти всё остальное, и таблица ниже сводит эти различия по строкам; читать её стоит сверху вниз, обращая внимание на последнюю строку.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Свойство</th>
@@ -35,39 +35,39 @@
 </thead>
 <tbody>
 <tr>
-<td>Метрика успеха</td>
-<td>p99 латентности, доступность</td>
-<td>время прогона, объём, укладывание в окно</td>
+<td data-label="Свойство">Метрика успеха</td>
+<td data-label="Онлайн">p99 латентности, доступность</td>
+<td data-label="Пакет">время прогона, объём, укладывание в окно</td>
 </tr>
 <tr>
-<td>Гранулярность транзакции</td>
-<td>одна бизнес-операция</td>
-<td>порция из N записей (сотни–тысячи)</td>
+<td data-label="Свойство">Гранулярность транзакции</td>
+<td data-label="Онлайн">одна бизнес-операция</td>
+<td data-label="Пакет">порция из N записей (сотни–тысячи)</td>
 </tr>
 <tr>
-<td>Реакция на ошибку записи</td>
-<td>вернуть 4xx/5xx клиенту</td>
-<td>пропустить и записать в протокол, либо остановить всё</td>
+<td data-label="Свойство">Реакция на ошибку записи</td>
+<td data-label="Онлайн">вернуть 4xx/5xx клиенту</td>
+<td data-label="Пакет">пропустить и записать в протокол, либо остановить всё</td>
 </tr>
 <tr>
-<td>Потребление ресурсов</td>
-<td>ровное, предсказуемое</td>
-<td>пик на окне, желательно на отдельных мощностях</td>
+<td data-label="Свойство">Потребление ресурсов</td>
+<td data-label="Онлайн">ровное, предсказуемое</td>
+<td data-label="Пакет">пик на окне, желательно на отдельных мощностях</td>
 </tr>
 <tr>
-<td>Повтор</td>
-<td>клиент повторит сам</td>
-<td>перезапуск оператором или расписанием</td>
+<td data-label="Свойство">Повтор</td>
+<td data-label="Онлайн">клиент повторит сам</td>
+<td data-label="Пакет">перезапуск оператором или расписанием</td>
 </tr>
 <tr>
-<td>Наблюдатель</td>
-<td>пользователь заметит сразу</td>
-<td>никто не заметит до утра</td>
+<td data-label="Свойство">Наблюдатель</td>
+<td data-label="Онлайн">пользователь заметит сразу</td>
+<td data-label="Пакет">никто не заметит до утра</td>
 </tr>
 <tr>
-<td>Гарантия</td>
-<td>«этот запрос выполнен»</td>
-<td>«весь период посчитан ровно один раз»</td>
+<td data-label="Свойство">Гарантия</td>
+<td data-label="Онлайн">«этот запрос выполнен»</td>
+<td data-label="Пакет">«весь период посчитан ровно один раз»</td>
 </tr>
 </tbody>
 </table>
@@ -115,7 +115,7 @@
 <h3 id="15-пакетная-и-потоковая-обработка">1.5 Пакетная и потоковая обработка</h3>
 <p>Классический совет «переходите на стриминг» справедлив далеко не всегда, и выбор между пакетом и потоковой обработкой (stream processing) зависит от того, как бизнес формулирует саму задачу. Сначала сравним оба подхода по признакам, затем разберём, почему «конец дня» плохо ложится на стрим, и отдельно поговорим о микробатче как гибриде двух подходов.</p>
 <p>Таблица ниже проводит честную границу: в левой колонке признаки, при которых стоит остаться на пакете, в правой — те, при которых пора переходить в стрим.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Признак</th>
@@ -125,34 +125,34 @@
 </thead>
 <tbody>
 <tr>
-<td>Требование к свежести</td>
-<td>«к утру», «за вчера»</td>
-<td>«в течение минуты»</td>
+<td data-label="Признак">Требование к свежести</td>
+<td data-label="Остаёмся на пакете">«к утру», «за вчера»</td>
+<td data-label="Пора в стрим (гл. 29)">«в течение минуты»</td>
 </tr>
 <tr>
-<td>Природа расчёта</td>
-<td>нужен полный срез периода (баланс на конец дня)</td>
-<td>инкрементальное событие</td>
+<td data-label="Признак">Природа расчёта</td>
+<td data-label="Остаёмся на пакете">нужен полный срез периода (баланс на конец дня)</td>
+<td data-label="Пора в стрим (гл. 29)">инкрементальное событие</td>
 </tr>
 <tr>
-<td>Источник данных</td>
-<td>файл, таблица, выгрузка</td>
-<td>поток событий уже есть</td>
+<td data-label="Признак">Источник данных</td>
+<td data-label="Остаёмся на пакете">файл, таблица, выгрузка</td>
+<td data-label="Пора в стрим (гл. 29)">поток событий уже есть</td>
 </tr>
 <tr>
-<td>Стоимость ошибки в одной записи</td>
-<td>можно отложить и пересчитать</td>
-<td>нужно реагировать сразу</td>
+<td data-label="Признак">Стоимость ошибки в одной записи</td>
+<td data-label="Остаёмся на пакете">можно отложить и пересчитать</td>
+<td data-label="Пора в стрим (гл. 29)">нужно реагировать сразу</td>
 </tr>
 <tr>
-<td>Сложность отладки</td>
-<td>нужен воспроизводимый прогон</td>
-<td>готовы жить с «событие пришло дважды»</td>
+<td data-label="Признак">Сложность отладки</td>
+<td data-label="Остаёмся на пакете">нужен воспроизводимый прогон</td>
+<td data-label="Пора в стрим (гл. 29)">готовы жить с «событие пришло дважды»</td>
 </tr>
 <tr>
-<td>Пересчёт за прошлое</td>
-<td>естественная операция</td>
-<td>требует replay-инфраструктуры</td>
+<td data-label="Признак">Пересчёт за прошлое</td>
+<td data-label="Остаёмся на пакете">естественная операция</td>
+<td data-label="Пора в стрим (гл. 29)">требует replay-инфраструктуры</td>
 </tr>
 </tbody>
 </table>
@@ -405,7 +405,7 @@
 <p><strong>Слишком большая порция (N = 50 000)</strong> означает длинную транзакцию со всеми последствиями для vacuum и блокировок (гл. 18 <code>18-transactions-isolation-locking.md</code>), большой откат при ошибке и много памяти, потому что вся порция живёт в списке. А при skip-обработке повторный проход по такой порции обходится катастрофически дорого (см. 4.2).</p>
 <p>Рабочий диапазон лежит в пределах <strong>100…5000</strong>, и подбирают его замером. Полезная эвристика такая: увеличивайте порцию, пока время прогона падает больше чем на 10 %, а как только выигрыш стал меньше, остановитесь, потому что дальше вы только удлиняете транзакцию.</p>
 <p>Таблица ниже сводит, как с ростом порции меняются число фиксаций, расход памяти и цена ошибки; смотреть стоит на две правые колонки, где видно, что за экономию на фиксациях платят размером отката и повторного прохода.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Порция</th>
@@ -417,32 +417,32 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td class="num">1 000 000</td>
-<td>минимальная</td>
-<td>нулевая</td>
-<td>нулевая</td>
+<td data-label="Порция" class="num">1</td>
+<td data-label="Фиксаций на 1 млн" class="num">1 000 000</td>
+<td data-label="Память">минимальная</td>
+<td data-label="Цена отката">нулевая</td>
+<td data-label="Цена skip-скана">нулевая</td>
 </tr>
 <tr>
-<td class="num">100</td>
-<td class="num">10 000</td>
-<td>~100 объектов</td>
-<td>100 записей</td>
-<td>до 100 повторов</td>
+<td data-label="Порция" class="num">100</td>
+<td data-label="Фиксаций на 1 млн" class="num">10 000</td>
+<td data-label="Память">~100 объектов</td>
+<td data-label="Цена отката">100 записей</td>
+<td data-label="Цена skip-скана">до 100 повторов</td>
 </tr>
 <tr>
-<td class="num">1 000</td>
-<td class="num">1 000</td>
-<td>~1000 объектов</td>
-<td>1000 записей</td>
-<td>до 1000 повторов</td>
+<td data-label="Порция" class="num">1 000</td>
+<td data-label="Фиксаций на 1 млн" class="num">1 000</td>
+<td data-label="Память">~1000 объектов</td>
+<td data-label="Цена отката">1000 записей</td>
+<td data-label="Цена skip-скана">до 1000 повторов</td>
 </tr>
 <tr>
-<td class="num">10 000</td>
-<td class="num">100</td>
-<td>риск OOM на тяжёлых объектах</td>
-<td>10 000 записей</td>
-<td>до 10 000 повторов</td>
+<td data-label="Порция" class="num">10 000</td>
+<td data-label="Фиксаций на 1 млн" class="num">100</td>
+<td data-label="Память">риск OOM на тяжёлых объектах</td>
+<td data-label="Цена отката">10 000 записей</td>
+<td data-label="Цена skip-скана">до 10 000 повторов</td>
 </tr>
 </tbody>
 </table>
@@ -452,7 +452,7 @@
 <h3 id="33-jobrepository-и-метаданные">3.3 JobRepository и метаданные</h3>
 <p><code>JobRepository</code> хранит в базе сведения о каждом прогоне, каждой попытке и каждом шаге, и его часто ошибочно принимают за «логирование прогонов». На самом деле без него не работают ни идентичность прогона, ни рестарт, ни защита от параллельного запуска. Ниже перечислены его таблицы с тем, что в них лежит, и разобрано главное правило идентичности, о которое спотыкаются почти все.</p>
 <p>Таблицы метаданных перечислены ниже (префикс <code>BATCH_</code> настраивается); в правой колонке сказано, зачем про каждую знать на практике.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Таблица</th>
@@ -462,39 +462,39 @@
 </thead>
 <tbody>
 <tr>
-<td><code>BATCH_JOB_INSTANCE</code></td>
-<td>имя job + хеш идентифицирующих параметров</td>
-<td>здесь живёт «этот прогон уже был»</td>
+<td data-label="Таблица"><code>BATCH_JOB_INSTANCE</code></td>
+<td data-label="Что хранит">имя job + хеш идентифицирующих параметров</td>
+<td data-label="Зачем вам это знать">здесь живёт «этот прогон уже был»</td>
 </tr>
 <tr>
-<td><code>BATCH_JOB_EXECUTION_PARAMS</code></td>
-<td>параметры с флагом identifying</td>
-<td>по ней видно, чем отличались попытки</td>
+<td data-label="Таблица"><code>BATCH_JOB_EXECUTION_PARAMS</code></td>
+<td data-label="Что хранит">параметры с флагом identifying</td>
+<td data-label="Зачем вам это знать">по ней видно, чем отличались попытки</td>
 </tr>
 <tr>
-<td><code>BATCH_JOB_EXECUTION</code></td>
-<td>попытка запуска экземпляра: статус, времена, exit status</td>
-<td>статус <code>STARTED</code> у мёртвой попытки блокирует рестарт</td>
+<td data-label="Таблица"><code>BATCH_JOB_EXECUTION</code></td>
+<td data-label="Что хранит">попытка запуска экземпляра: статус, времена, exit status</td>
+<td data-label="Зачем вам это знать">статус <code>STARTED</code> у мёртвой попытки блокирует рестарт</td>
 </tr>
 <tr>
-<td><code>BATCH_JOB_EXECUTION_CONTEXT</code></td>
-<td>контекст уровня job</td>
-<td>сохраняется <strong>между шагами</strong></td>
+<td data-label="Таблица"><code>BATCH_JOB_EXECUTION_CONTEXT</code></td>
+<td data-label="Что хранит">контекст уровня job</td>
+<td data-label="Зачем вам это знать">сохраняется <strong>между шагами</strong></td>
 </tr>
 <tr>
-<td><code>BATCH_STEP_EXECUTION</code></td>
-<td>попытка шага: счётчики read/write/skip/commit/rollback</td>
-<td>вся статистика прогона — отсюда</td>
+<td data-label="Таблица"><code>BATCH_STEP_EXECUTION</code></td>
+<td data-label="Что хранит">попытка шага: счётчики read/write/skip/commit/rollback</td>
+<td data-label="Зачем вам это знать">вся статистика прогона — отсюда</td>
 </tr>
 <tr>
-<td><code>BATCH_STEP_EXECUTION_CONTEXT</code></td>
-<td>контекст уровня шага (контрольная точка ридера)</td>
-<td>сохраняется <strong>на каждой фиксации</strong></td>
+<td data-label="Таблица"><code>BATCH_STEP_EXECUTION_CONTEXT</code></td>
+<td data-label="Что хранит">контекст уровня шага (контрольная точка ридера)</td>
+<td data-label="Зачем вам это знать">сохраняется <strong>на каждой фиксации</strong></td>
 </tr>
 <tr>
-<td><code>BATCH_*_SEQ</code></td>
-<td>последовательности</td>
-<td>при ручной чистке про них забывают</td>
+<td data-label="Таблица"><code>BATCH_*_SEQ</code></td>
+<td data-label="Что хранит">последовательности</td>
+<td data-label="Зачем вам это знать">при ручной чистке про них забывают</td>
 </tr>
 </tbody>
 </table>
@@ -531,7 +531,7 @@
 <h3 id="35-executioncontext-как-контрольная-точка">3.5 ExecutionContext как контрольная точка</h3>
 <p><code>ExecutionContext</code> — это <code>Map&lt;String, Object&gt;</code>, которую Spring Batch сохраняет в БД, причём значения в ней обязаны быть сериализуемыми. Именно через неё реализован контрольная точка из раздела 2.2, и важно понимать, что уровней у контекста два и сохраняются они с разной периодичностью. Ниже разберём оба уровня, покажем самописный возобновляемый ридер и объясним, почему класть в контекст большие объекты нельзя.</p>
 <p>Про периодичность документация говорит прямо: «The one scoped to the Step is saved at every commit point in the Step, whereas the one scoped to the Job is saved in between every Step execution» (<a href="https://docs.spring.io/spring-batch/reference/domain.html">domain language</a>). Таблица ниже сравнивает оба уровня по тому, когда контекст сохраняется, что в него кладут и что от него остаётся при рестарте.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -541,24 +541,24 @@
 </thead>
 <tbody>
 <tr>
-<td>Когда сохраняется</td>
-<td>на каждой фиксации порции</td>
-<td>между шагами</td>
+<td data-label="">Когда сохраняется</td>
+<td data-label="Step-контекст">на каждой фиксации порции</td>
+<td data-label="Job-контекст">между шагами</td>
 </tr>
 <tr>
-<td>Что туда кладут</td>
-<td>позиция ридера (<code>piece.count</code>, <code>current.line</code>), свои счётчики</td>
-<td>результат шага для следующего шага</td>
+<td data-label="">Что туда кладут</td>
+<td data-label="Step-контекст">позиция ридера (<code>piece.count</code>, <code>current.line</code>), свои счётчики</td>
+<td data-label="Job-контекст">результат шага для следующего шага</td>
 </tr>
 <tr>
-<td>Что видно при рестарте</td>
-<td>да, шаг продолжится с этой позиции</td>
-<td>да</td>
+<td data-label="">Что видно при рестарте</td>
+<td data-label="Step-контекст">да, шаг продолжится с этой позиции</td>
+<td data-label="Job-контекст">да</td>
 </tr>
 <tr>
-<td>Размер</td>
-<td>небольшой (колонка <code>SHORT_CONTEXT</code> ограничена, длинное уходит в <code>SERIALIZED_CONTEXT</code>)</td>
-<td>то же</td>
+<td data-label="">Размер</td>
+<td data-label="Step-контекст">небольшой (колонка <code>SHORT_CONTEXT</code> ограничена, длинное уходит в <code>SERIALIZED_CONTEXT</code>)</td>
+<td data-label="Job-контекст">то же</td>
 </tr>
 </tbody>
 </table>
@@ -670,7 +670,7 @@
 <li>для незавершённого шага создаёт новый <code>StepExecution</code> и восстанавливает <code>ExecutionContext</code> предыдущего, так что ридер и райтер получают его в <code>open()</code> и продолжают с сохранённой позиции.</li>
 </ol>
 <p>Этим поведением управляют три атрибута шага, и таблица ниже показывает их значения по умолчанию и то, что каждый меняет.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Атрибут</th>
@@ -680,19 +680,19 @@
 </thead>
 <tbody>
 <tr>
-<td><code>allowStartIfComplete(true)</code></td>
-<td><code>false</code></td>
-<td>шаг выполняется заново даже при рестарте (для подготовительных шагов: «создать временную таблицу», «скачать файл»)</td>
+<td data-label="Атрибут"><code>allowStartIfComplete(true)</code></td>
+<td data-label="По умолчанию"><code>false</code></td>
+<td data-label="Что делает">шаг выполняется заново даже при рестарте (для подготовительных шагов: «создать временную таблицу», «скачать файл»)</td>
 </tr>
 <tr>
-<td><code>startLimit(n)</code></td>
-<td><code>Integer.MAX_VALUE</code></td>
-<td>сколько раз шаг может стартовать в рамках одного <code>JobInstance</code>; защита от бесконечных перезапусков</td>
+<td data-label="Атрибут"><code>startLimit(n)</code></td>
+<td data-label="По умолчанию"><code>Integer.MAX_VALUE</code></td>
+<td data-label="Что делает">сколько раз шаг может стартовать в рамках одного <code>JobInstance</code>; защита от бесконечных перезапусков</td>
 </tr>
 <tr>
-<td><code>saveState(false)</code> (на ридере)</td>
-<td><code>true</code></td>
-<td>не сохранять состояние — обязательно для многопоточного шага, но убивает возобновляемость</td>
+<td data-label="Атрибут"><code>saveState(false)</code> (на ридере)</td>
+<td data-label="По умолчанию"><code>true</code></td>
+<td data-label="Что делает">не сохранять состояние — обязательно для многопоточного шага, но убивает возобновляемость</td>
 </tr>
 </tbody>
 </table>
@@ -797,7 +797,7 @@
 <p><strong>Курсорный ридер</strong> (<code>JdbcCursorItemReader</code>) выполняет <strong>один</strong> запрос и двигает по нему курсор: «opens a cursor on initialization, moves cursor forward one row per <code>read()</code> call… connection remains held open» (<a href="https://docs.spring.io/spring-batch/reference/readers-and-writers/database.html">database readers</a>). Свойство <code>fetchSize</code> подсказывает драйверу, сколько строк тянуть за один round-trip, а по умолчанию никакой подсказки не даётся.</p>
 <p><strong>Пейджинговый ридер</strong> (<code>JdbcPagingItemReader</code>), наоборот, выполняет <strong>N запросов</strong>, каждый со своим окном, и между страницами отпускает соединение.</p>
 <p>Таблица ниже сравнивает их по основным свойствам; главное в ней — строки про соединение, снимок и сортировку, потому что именно они определяют, какой ридер подходит для вашего шага.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -807,39 +807,39 @@
 </thead>
 <tbody>
 <tr>
-<td>Запросов к БД</td>
-<td>1</td>
-<td>⌈rows / pageSize⌉</td>
+<td data-label="">Запросов к БД</td>
+<td data-label="Курсор">1</td>
+<td data-label="Пейджинг">⌈rows / pageSize⌉</td>
 </tr>
 <tr>
-<td>Соединение</td>
-<td>удерживается весь шаг</td>
-<td>берётся и отдаётся на страницу</td>
+<td data-label="">Соединение</td>
+<td data-label="Курсор">удерживается весь шаг</td>
+<td data-label="Пейджинг">берётся и отдаётся на страницу</td>
 </tr>
 <tr>
-<td>Согласованность снимка</td>
-<td>один снимок на весь обход</td>
-<td>каждая страница видит своё состояние</td>
+<td data-label="">Согласованность снимка</td>
+<td data-label="Курсор">один снимок на весь обход</td>
+<td data-label="Пейджинг">каждая страница видит своё состояние</td>
 </tr>
 <tr>
-<td>Требование к сортировке</td>
-<td>нет</td>
-<td><strong>обязателен уникальный <code>sortKey</code></strong></td>
+<td data-label="">Требование к сортировке</td>
+<td data-label="Курсор">нет</td>
+<td data-label="Пейджинг"><strong>обязателен уникальный <code>sortKey</code></strong></td>
 </tr>
 <tr>
-<td>Многопоточный шаг</td>
-<td>небезопасен</td>
-<td>безопасен (при уникальном ключе)</td>
+<td data-label="">Многопоточный шаг</td>
+<td data-label="Курсор">небезопасен</td>
+<td data-label="Пейджинг">безопасен (при уникальном ключе)</td>
 </tr>
 <tr>
-<td>Риск</td>
-<td>долгая транзакция, занятое соединение, у pgJDBC — загрузка всего результата в память при неверных настройках</td>
-<td>пропуск/дублирование строк при неуникальной сортировке; деградация на больших OFFSET</td>
+<td data-label="">Риск</td>
+<td data-label="Курсор">долгая транзакция, занятое соединение, у pgJDBC — загрузка всего результата в память при неверных настройках</td>
+<td data-label="Пейджинг">пропуск/дублирование строк при неуникальной сортировке; деградация на больших OFFSET</td>
 </tr>
 <tr>
-<td>Когда брать</td>
-<td>однопоточный шаг, нужна согласованность среза, объём не гигантский</td>
-<td>параллелизм, длинные прогоны, реплика с ограничением на длительность запроса</td>
+<td data-label="">Когда брать</td>
+<td data-label="Курсор">однопоточный шаг, нужна согласованность среза, объём не гигантский</td>
+<td data-label="Пейджинг">параллелизм, длинные прогоны, реплика с ограничением на длительность запроса</td>
 </tr>
 </tbody>
 </table>
@@ -941,7 +941,7 @@
 <h3 id="47-listeners-и-их-назначение">4.7 Listeners и их назначение</h3>
 <p>Слушатели (listeners) — это точки расширения, через которые Spring Batch вызывает ваш код до и после job, шага, порции или отдельного элемента, а также при пропуске и повторе. Если повесить логику не на тот уровень, она либо не сработает в нужный момент, либо будет вызываться тысячи раз и незаметно съест половину прогона. Ниже в таблице перечислены слушатели и их типичные применения, показан слушатель протокола отклонений и разобрана ловушка с тяжёлым <code>ChunkListener</code>.</p>
 <p>Таблица сводит слушатели от уровня job до уровня элемента; стоит заметить, что главное применение <code>SkipListener</code> — протокол отклонений.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Listener</th>
@@ -951,34 +951,34 @@
 </thead>
 <tbody>
 <tr>
-<td><code>JobExecutionListener</code></td>
-<td>before/after job</td>
-<td>старт/финиш в аудит, метрика длительности, уведомление</td>
+<td data-label="Listener"><code>JobExecutionListener</code></td>
+<td data-label="Точки">before/after job</td>
+<td data-label="Типичное применение">старт/финиш в аудит, метрика длительности, уведомление</td>
 </tr>
 <tr>
-<td><code>StepExecutionListener</code></td>
-<td>before/after step</td>
-<td>итоговые счётчики, решение об <code>ExitStatus</code></td>
+<td data-label="Listener"><code>StepExecutionListener</code></td>
+<td data-label="Точки">before/after step</td>
+<td data-label="Типичное применение">итоговые счётчики, решение об <code>ExitStatus</code></td>
 </tr>
 <tr>
-<td><code>ChunkListener</code></td>
-<td>before/after/onError порции</td>
-<td>ограничение скорости между порциями, прогресс-лог, проверка окна</td>
+<td data-label="Listener"><code>ChunkListener</code></td>
+<td data-label="Точки">before/after/onError порции</td>
+<td data-label="Типичное применение">ограничение скорости между порциями, прогресс-лог, проверка окна</td>
 </tr>
 <tr>
-<td><code>ItemReadListener</code> / <code>ItemProcessListener</code> / <code>ItemWriteListener</code></td>
-<td>по элементам</td>
-<td>детальная диагностика (осторожно — накладные расходы)</td>
+<td data-label="Listener"><code>ItemReadListener</code> / <code>ItemProcessListener</code> / <code>ItemWriteListener</code></td>
+<td data-label="Точки">по элементам</td>
+<td data-label="Типичное применение">детальная диагностика (осторожно — накладные расходы)</td>
 </tr>
 <tr>
-<td><code>SkipListener</code></td>
-<td><code>onSkipInRead/Process/Write</code></td>
-<td><strong>протокол отклонений</strong> — главное применение</td>
+<td data-label="Listener"><code>SkipListener</code></td>
+<td data-label="Точки"><code>onSkipInRead/Process/Write</code></td>
+<td data-label="Типичное применение"><strong>протокол отклонений</strong> — главное применение</td>
 </tr>
 <tr>
-<td><code>RetryListener</code></td>
-<td>попытки</td>
-<td>счётчик повторов в метрики</td>
+<td data-label="Listener"><code>RetryListener</code></td>
+<td data-label="Точки">попытки</td>
+<td data-label="Типичное применение">счётчик повторов в метрики</td>
 </tr>
 </tbody>
 </table>
@@ -1023,7 +1023,7 @@
 <h3 id="52-способы-распараллеливания">5.2 Способы распараллеливания</h3>
 <p>Spring Batch предлагает четыре способа распараллелить работу, и различаются они тем, где именно появляется параллелизм: внутри одного шага, между независимыми шагами, между копиями шага на разных диапазонах данных или между несколькими JVM. От этого выбора зависят требования к потокобезопасности ридеров и райтеров, транзакционная семантика и возможность рестарта. Ниже способы сначала сведены в таблицу, затем каждый разобран отдельно, с особым вниманием к изменениям в 6.0 и к партиционированию как самому управляемому варианту.</p>
 <p>В таблице стоит смотреть на колонку «Когда брать»: она показывает, какое узкое место каждый способ снимает.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -1034,28 +1034,28 @@
 </thead>
 <tbody>
 <tr>
-<td>Multi-threaded step</td>
-<td>внутри одного шага, несколько потоков</td>
-<td>см. ниже про 6.0</td>
-<td>узкое место в <code>process()</code>, один процесс</td>
+<td data-label="Способ">Multi-threaded step</td>
+<td data-label="Где параллелизм">внутри одного шага, несколько потоков</td>
+<td data-label="Требования">см. ниже про 6.0</td>
+<td data-label="Когда брать">узкое место в <code>process()</code>, один процесс</td>
 </tr>
 <tr>
-<td>Parallel steps (split)</td>
-<td>независимые шаги одновременно</td>
-<td>шаги не зависят друг от друга</td>
-<td>«загрузить три разных файла», «посчитать три витрины»</td>
+<td data-label="Способ">Parallel steps (split)</td>
+<td data-label="Где параллелизм">независимые шаги одновременно</td>
+<td data-label="Требования">шаги не зависят друг от друга</td>
+<td data-label="Когда брать">«загрузить три разных файла», «посчитать три витрины»</td>
 </tr>
 <tr>
-<td>Partitioning (local)</td>
-<td>N копий шага, каждая на своём диапазоне</td>
-<td>детерминированное разбиение входа</td>
-<td>самый частый и самый управляемый вариант</td>
+<td data-label="Способ">Partitioning (local)</td>
+<td data-label="Где параллелизм">N копий шага, каждая на своём диапазоне</td>
+<td data-label="Требования">детерминированное разбиение входа</td>
+<td data-label="Когда брать">самый частый и самый управляемый вариант</td>
 </tr>
 <tr>
-<td>Partitioning (remote) / remote chunking</td>
-<td>несколько JVM</td>
-<td>брокер (JMS/Kafka/AMQP)</td>
-<td>объём не влезает в одну машину</td>
+<td data-label="Способ">Partitioning (remote) / remote chunking</td>
+<td data-label="Где параллелизм">несколько JVM</td>
+<td data-label="Требования">брокер (JMS/Kafka/AMQP)</td>
+<td data-label="Когда брать">объём не влезает в одну машину</td>
 </tr>
 </tbody>
 </table>
@@ -1117,7 +1117,7 @@
 <p>⚠️ <strong>Грабли.</strong> Данные распределены неравномерно, а партиционируют их по равным диапазонам id. В итоге семь воркеров заканчивают за 4 минуты, восьмой идёт полтора часа, и общее время равно времени худшей партиции. Причина в том, что в один диапазон попал кусок с массовой миграцией, где активных договоров на порядок больше. Лечится это партиционированием по <code>ntile()</code> или по количеству записей, а не по границам id, например запросом <code>SELECT id, ntile(32) OVER (ORDER BY id) FROM contract WHERE active</code> с последующей раздачей групп, либо тем, что партиций делают в 5–10 раз больше, чем потоков.</p>
 </blockquote>
 <p><strong>Remote partitioning и remote chunking.</strong> Обе схемы распределяют работу между JVM, но устроены по-разному, и таблица ниже показывает, в чём именно; главное различие в первой строке — кто читает данные.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1127,29 +1127,29 @@
 </thead>
 <tbody>
 <tr>
-<td>Кто читает</td>
-<td><strong>мастер</strong> читает всё и рассылает элементы</td>
-<td>каждый воркер читает свою часть сам</td>
+<td data-label="">Кто читает</td>
+<td data-label="Remote chunking"><strong>мастер</strong> читает всё и рассылает элементы</td>
+<td data-label="Remote partitioning">каждый воркер читает свою часть сам</td>
 </tr>
 <tr>
-<td>Нагрузка на мастер</td>
-<td>высокая, может стать узким местом</td>
-<td>низкая (только раздать метаданные)</td>
+<td data-label="">Нагрузка на мастер</td>
+<td data-label="Remote chunking">высокая, может стать узким местом</td>
+<td data-label="Remote partitioning">низкая (только раздать метаданные)</td>
 </tr>
 <tr>
-<td>Трафик через брокер</td>
-<td>все данные</td>
-<td>только описания партиций</td>
+<td data-label="">Трафик через брокер</td>
+<td data-label="Remote chunking">все данные</td>
+<td data-label="Remote partitioning">только описания партиций</td>
 </tr>
 <tr>
-<td>Требование к middleware</td>
-<td>durable, guaranteed delivery (JMS)</td>
-<td>достаточно обычного канала + метаданные в общем <code>JobRepository</code></td>
+<td data-label="">Требование к middleware</td>
+<td data-label="Remote chunking">durable, guaranteed delivery (JMS)</td>
+<td data-label="Remote partitioning">достаточно обычного канала + метаданные в общем <code>JobRepository</code></td>
 </tr>
 <tr>
-<td>Когда уместно</td>
-<td>обработка сильно дороже чтения («processing must be more expensive than the reading of items»)</td>
-<td>вход делится естественно (по id, по дате, по файлам)</td>
+<td data-label="">Когда уместно</td>
+<td data-label="Remote chunking">обработка сильно дороже чтения («processing must be more expensive than the reading of items»)</td>
+<td data-label="Remote partitioning">вход делится естественно (по id, по дате, по файлам)</td>
 </tr>
 </tbody>
 </table>
@@ -1277,7 +1277,7 @@
 
 <p>Режимы отличаются точкой отсчёта: для <code>fixedDelay</code> «the period is measured from the completion time of each preceding invocation», а для <code>fixedRate</code> период «measured between the successive start times of each invocation» (<a href="https://docs.spring.io/spring-framework/reference/integration/scheduling.html">Spring Framework: scheduling</a>).</p>
 <p>Что это значит, когда задача идёт дольше периода, показывает таблица ниже: в ней задача длится 90 с при периоде 60 с, и в правой колонке виден риск каждого режима.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -1287,19 +1287,19 @@
 </thead>
 <tbody>
 <tr>
-<td><code>fixedDelay = 60s</code></td>
-<td>запуски в 0, 150, 300, … — дрейф, но без наложения</td>
-<td>«отстаём» от желаемой частоты</td>
+<td data-label="Режим"><code>fixedDelay = 60s</code></td>
+<td data-label="Задача идёт 90 с, период 60 с">запуски в 0, 150, 300, … — дрейф, но без наложения</td>
+<td data-label="Риск">«отстаём» от желаемой частоты</td>
 </tr>
 <tr>
-<td><code>fixedRate = 60s</code></td>
-<td>следующий запуск <strong>сразу</strong> после завершения; при однопоточном планировщике накопления очереди не будет, но паузы исчезнут</td>
-<td>с <code>@Async</code> или на <code>SimpleAsyncTaskScheduler</code> (виртуальные потоки) — <strong>наложение запусков</strong></td>
+<td data-label="Режим"><code>fixedRate = 60s</code></td>
+<td data-label="Задача идёт 90 с, период 60 с">следующий запуск <strong>сразу</strong> после завершения; при однопоточном планировщике накопления очереди не будет, но паузы исчезнут</td>
+<td data-label="Риск">с <code>@Async</code> или на <code>SimpleAsyncTaskScheduler</code> (виртуальные потоки) — <strong>наложение запусков</strong></td>
 </tr>
 <tr>
-<td><code>cron</code></td>
-<td>пропущенные тики просто не происходят</td>
-<td>тихий пропуск, никакого «догоняющего» запуска</td>
+<td data-label="Режим"><code>cron</code></td>
+<td data-label="Задача идёт 90 с, период 60 с">пропущенные тики просто не происходят</td>
+<td data-label="Риск">тихий пропуск, никакого «догоняющего» запуска</td>
 </tr>
 </tbody>
 </table>
@@ -1353,7 +1353,7 @@
 <p>Поддерживаются также макросы: <code>@yearly</code>/<code>@annually</code> (<code>0 0 0 1 1 *</code>), <code>@monthly</code>, <code>@weekly</code>, <code>@daily</code>/<code>@midnight</code>, <code>@hourly</code> (там же).</p>
 <p>Первым при переезде с Unix cron или с Quartz ломается <strong>число полей</strong>. В Unix <code>0 2 * * *</code> означает «в 02:00», а в Spring то же выражение выглядело бы как «в 2 минуты каждого часа каждой секунды»; точнее, парсер выдаст ошибку, потому что полей пять, но выражения <code>0 0 2 * * *</code> (Spring, 02:00 ежедневно) и <code>0 2 * * *</code> (Unix, 02:00) выглядят обманчиво похоже. Quartz же использует <strong>семь</strong> полей (добавляется необязательный год) и по-другому трактует <code>?</code> в полях дня.</p>
 <p>Таблица ниже сравнивает три диалекта; при переносе выражения смотреть стоит прежде всего на число полей и на нумерацию дней недели.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1364,28 +1364,28 @@
 </thead>
 <tbody>
 <tr>
-<td>Полей</td>
-<td>5</td>
-<td>6 (секунды первые)</td>
-<td>6–7 (секунды первые, год последний)</td>
+<td data-label="">Полей</td>
+<td data-label="Unix cron">5</td>
+<td data-label="Spring">6 (секунды первые)</td>
+<td data-label="Quartz">6–7 (секунды первые, год последний)</td>
 </tr>
 <tr>
-<td><code>?</code> в day-of-month/week</td>
-<td>нет</td>
-<td>допустим вместо <code>*</code>, но не обязателен</td>
-<td>обязателен в одном из двух</td>
+<td data-label=""><code>?</code> в day-of-month/week</td>
+<td data-label="Unix cron">нет</td>
+<td data-label="Spring">допустим вместо <code>*</code>, но не обязателен</td>
+<td data-label="Quartz">обязателен в одном из двух</td>
 </tr>
 <tr>
-<td>День недели</td>
-<td>0–7</td>
-<td>0–7 (0 и 7 = вс)</td>
-<td>1–7 (1 = вс)</td>
+<td data-label="">День недели</td>
+<td data-label="Unix cron">0–7</td>
+<td data-label="Spring">0–7 (0 и 7 = вс)</td>
+<td data-label="Quartz">1–7 (1 = вс)</td>
 </tr>
 <tr>
-<td><code>L</code>, <code>W</code>, <code>#</code></td>
-<td>нет</td>
-<td><code>L</code>, <code>L-n</code>, <code>LW</code>, <code>nW</code> в дне месяца, <code>dL</code> и <code>d#n</code> в дне недели (Spring 5.3+)</td>
-<td>да</td>
+<td data-label=""><code>L</code>, <code>W</code>, <code>#</code></td>
+<td data-label="Unix cron">нет</td>
+<td data-label="Spring"><code>L</code>, <code>L-n</code>, <code>LW</code>, <code>nW</code> в дне месяца, <code>dL</code> и <code>d#n</code> в дне недели (Spring 5.3+)</td>
+<td data-label="Quartz">да</td>
 </tr>
 </tbody>
 </table>
@@ -1490,7 +1490,7 @@
 <p><strong>Durable и persistent jobs.</strong> <code>JobDetail</code> с <code>storeDurably(true)</code> остаётся в сторе и без триггеров, что нужно для заданий, которые запускают только вручную или по API. <code>@PersistJobDataAfterExecution</code> сохраняет изменённый <code>JobDataMap</code> после выполнения, и вместе с <code>@DisallowConcurrentExecution</code>, который запрещает параллельное выполнение одного <code>JobDetail</code>, они образуют стандартную пару для stateful-заданий.</p>
 <h4>ShedLock и Quartz</h4>
 <p>Выбор между ShedLock и Quartz чаще всего сводится к одному вопросу: живут ли расписания в коде или становятся данными, которыми управляет бизнес. Таблица ниже сравнивает оба варианта по основным критериям, и решающая строка в ней последняя.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -1500,49 +1500,49 @@
 </thead>
 <tbody>
 <tr>
-<td>Таблиц в схеме</td>
-<td>1</td>
-<td>11</td>
+<td data-label="Критерий">Таблиц в схеме</td>
+<td data-label="@Scheduled + ShedLock">1</td>
+<td data-label="Quartz (JDBC clustered)">11</td>
 </tr>
 <tr>
-<td>Расписание</td>
-<td>в коде/конфиге, статично</td>
-<td>в БД, меняется во время выполнения</td>
+<td data-label="Критерий">Расписание</td>
+<td data-label="@Scheduled + ShedLock">в коде/конфиге, статично</td>
+<td data-label="Quartz (JDBC clustered)">в БД, меняется во время выполнения</td>
 </tr>
 <tr>
-<td>Управление из UI/API</td>
-<td>нет</td>
-<td>да</td>
+<td data-label="Критерий">Управление из UI/API</td>
+<td data-label="@Scheduled + ShedLock">нет</td>
+<td data-label="Quartz (JDBC clustered)">да</td>
 </tr>
 <tr>
-<td>История прогонов</td>
-<td>нет (пишете сами)</td>
-<td>частично (state в таблицах)</td>
+<td data-label="Критерий">История прогонов</td>
+<td data-label="@Scheduled + ShedLock">нет (пишете сами)</td>
+<td data-label="Quartz (JDBC clustered)">частично (state в таблицах)</td>
 </tr>
 <tr>
-<td>Misfire</td>
-<td>нет понятия (тик просто пропущен)</td>
-<td>политики на триггер</td>
+<td data-label="Критерий">Misfire</td>
+<td data-label="@Scheduled + ShedLock">нет понятия (тик просто пропущен)</td>
+<td data-label="Quartz (JDBC clustered)">политики на триггер</td>
 </tr>
 <tr>
-<td>Гарантия</td>
-<td>«не более одного»</td>
-<td>«ровно один узел на срабатывание»</td>
+<td data-label="Критерий">Гарантия</td>
+<td data-label="@Scheduled + ShedLock">«не более одного»</td>
+<td data-label="Quartz (JDBC clustered)">«ровно один узел на срабатывание»</td>
 </tr>
 <tr>
-<td>Сложность внедрения</td>
-<td>час</td>
-<td>день-два + эксплуатация схемы</td>
+<td data-label="Критерий">Сложность внедрения</td>
+<td data-label="@Scheduled + ShedLock">час</td>
+<td data-label="Quartz (JDBC clustered)">день-два + эксплуатация схемы</td>
 </tr>
 <tr>
-<td>Требование к часам</td>
-<td>смягчается <code>usingDbTime()</code></td>
-<td>жёсткое: «within a second of each other»</td>
+<td data-label="Критерий">Требование к часам</td>
+<td data-label="@Scheduled + ShedLock">смягчается <code>usingDbTime()</code></td>
+<td data-label="Quartz (JDBC clustered)">жёсткое: «within a second of each other»</td>
 </tr>
 <tr>
-<td>Когда брать</td>
-<td>фиксированный набор задач, известный на этапе сборки</td>
-<td>расписания задаёт бизнес, нужна отмена/перенос конкретного запуска</td>
+<td data-label="Критерий">Когда брать</td>
+<td data-label="@Scheduled + ShedLock">фиксированный набор задач, известный на этапе сборки</td>
+<td data-label="Quartz (JDBC clustered)">расписания задаёт бизнес, нужна отмена/перенос конкретного запуска</td>
 </tr>
 </tbody>
 </table>
@@ -1559,7 +1559,7 @@
 <p>Главное отличие от ShedLock в том, что db-scheduler умеет <strong>одноразовые задачи, запланированные на будущее</strong> («через 3 дня напомнить»), а для ShedLock это невозможно в принципе, потому что такая задача — уже очередь задач (раздел 7), а не замок.</p>
 <p><strong>JobRunr</strong> — библиотека фоновых задач, которая хранит их в БД, из коробки даёт dashboard и API вида <code>BackgroundJob.enqueue(() -&gt; service.doWork(id))</code> и <code>BackgroundJob.schedule(Instant, ...)</code>. Её ставят ради UI и «fire-and-forget» задач, которые запускаются из бизнес-кода. Проект жив: последний релиз на момент сверки — <strong>v8.8.2</strong> (август 2026). Открытая версия распространяется под <strong>LGPLv3</strong>, а рядом существует коммерческая лицензия по подписке для платной редакции, поэтому перед внедрением стоит сверить, какие нужные вам функции входят в открытую часть (<a href="https://github.com/jobrunr/jobrunr">GitHub</a>).</p>
 <p>Итоговая таблица ниже сводит все пять вариантов; смотреть в ней стоит на строки «Гарантия» и «Изоляция ресурсов от онлайна», потому что именно они обычно и решают выбор.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1572,52 +1572,52 @@
 </thead>
 <tbody>
 <tr>
-<td>Таблиц</td>
-<td>1</td>
-<td>11</td>
-<td>1</td>
-<td>несколько</td>
-<td>0</td>
+<td data-label="">Таблиц</td>
+<td data-label="ShedLock">1</td>
+<td data-label="Quartz">11</td>
+<td data-label="db-scheduler">1</td>
+<td data-label="JobRunr">несколько</td>
+<td data-label="K8s CronJob">0</td>
 </tr>
 <tr>
-<td>Одноразовые задачи «на будущее»</td>
-<td>нет</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>нет</td>
+<td data-label="">Одноразовые задачи «на будущее»</td>
+<td data-label="ShedLock">нет</td>
+<td data-label="Quartz">да</td>
+<td data-label="db-scheduler">да</td>
+<td data-label="JobRunr">да</td>
+<td data-label="K8s CronJob">нет</td>
 </tr>
 <tr>
-<td>Динамическое расписание</td>
-<td>нет</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>нет (правка манифеста)</td>
+<td data-label="">Динамическое расписание</td>
+<td data-label="ShedLock">нет</td>
+<td data-label="Quartz">да</td>
+<td data-label="db-scheduler">да</td>
+<td data-label="JobRunr">да</td>
+<td data-label="K8s CronJob">нет (правка манифеста)</td>
 </tr>
 <tr>
-<td>UI</td>
-<td>нет</td>
-<td>сторонние</td>
-<td>базовый</td>
-<td>да</td>
-<td>kubectl/дашборд</td>
+<td data-label="">UI</td>
+<td data-label="ShedLock">нет</td>
+<td data-label="Quartz">сторонние</td>
+<td data-label="db-scheduler">базовый</td>
+<td data-label="JobRunr">да</td>
+<td data-label="K8s CronJob">kubectl/дашборд</td>
 </tr>
 <tr>
-<td>Гарантия</td>
-<td>не более одного</td>
-<td>ровно один</td>
-<td>at-least-once</td>
-<td>at-least-once</td>
-<td>зависит от <code>concurrencyPolicy</code></td>
+<td data-label="">Гарантия</td>
+<td data-label="ShedLock">не более одного</td>
+<td data-label="Quartz">ровно один</td>
+<td data-label="db-scheduler">at-least-once</td>
+<td data-label="JobRunr">at-least-once</td>
+<td data-label="K8s CronJob">зависит от <code>concurrencyPolicy</code></td>
 </tr>
 <tr>
-<td>Изоляция ресурсов от онлайна</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td><strong>да</strong></td>
+<td data-label="">Изоляция ресурсов от онлайна</td>
+<td data-label="ShedLock">нет</td>
+<td data-label="Quartz">нет</td>
+<td data-label="db-scheduler">нет</td>
+<td data-label="JobRunr">нет</td>
+<td data-label="K8s CronJob"><strong>да</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1802,7 +1802,7 @@
 </blockquote>
 <h3 id="75-выбор-между-очередью-в-бд-и-брокером">7.5 Выбор между очередью в БД и брокером</h3>
 <p>Очередь в БД не заменяет брокер во всём, но и брокер не заменяет её, и граница между ними проходит не по моде, а по нескольким вполне измеримым признакам: нагрузке, составу потребителей, модели доставки и транзакционности с бизнес-данными. Таблица ниже сводит эти признаки, а после неё разобран главный аргумент в пользу БД-очереди, о котором обычно забывают.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Признак</th>
@@ -1812,44 +1812,44 @@
 </thead>
 <tbody>
 <tr>
-<td>Пропускная способность</td>
-<td>до ~1000–5000 задач/с на приличном железе</td>
-<td>десятки тысяч и выше</td>
+<td data-label="Признак">Пропускная способность</td>
+<td data-label="БД-очередь достаточна">до ~1000–5000 задач/с на приличном железе</td>
+<td data-label="Нужен брокер (гл. 29/27)">десятки тысяч и выше</td>
 </tr>
 <tr>
-<td>Потребители</td>
-<td>ваши же сервисы, знающие вашу БД</td>
-<td>другие команды, другие языки, другие БД</td>
+<td data-label="Признак">Потребители</td>
+<td data-label="БД-очередь достаточна">ваши же сервисы, знающие вашу БД</td>
+<td data-label="Нужен брокер (гл. 29/27)">другие команды, другие языки, другие БД</td>
 </tr>
 <tr>
-<td>Модель</td>
-<td>work queue: каждую задачу берёт один</td>
-<td>pub/sub: одно событие — много подписчиков</td>
+<td data-label="Признак">Модель</td>
+<td data-label="БД-очередь достаточна">work queue: каждую задачу берёт один</td>
+<td data-label="Нужен брокер (гл. 29/27)">pub/sub: одно событие — много подписчиков</td>
 </tr>
 <tr>
-<td>Транзакционность с бизнес-данными</td>
-<td><strong>идеально</strong>: задача ставится в той же транзакции</td>
-<td>нужен outbox (гл. 31)</td>
+<td data-label="Признак">Транзакционность с бизнес-данными</td>
+<td data-label="БД-очередь достаточна"><strong>идеально</strong>: задача ставится в той же транзакции</td>
+<td data-label="Нужен брокер (гл. 29/27)">нужен outbox (гл. 31)</td>
 </tr>
 <tr>
-<td>Отложенные задачи и приоритеты</td>
-<td>тривиально</td>
-<td>сложно или невозможно</td>
+<td data-label="Признак">Отложенные задачи и приоритеты</td>
+<td data-label="БД-очередь достаточна">тривиально</td>
+<td data-label="Нужен брокер (гл. 29/27)">сложно или невозможно</td>
 </tr>
 <tr>
-<td>Срок хранения и повторное чтение</td>
-<td>нет реплея, задача исчезает</td>
-<td>лог с retention, реплей со смещения</td>
+<td data-label="Признак">Срок хранения и повторное чтение</td>
+<td data-label="БД-очередь достаточна">нет реплея, задача исчезает</td>
+<td data-label="Нужен брокер (гл. 29/27)">лог с retention, реплей со смещения</td>
 </tr>
 <tr>
-<td>Порядок</td>
-<td>по приоритету/времени, строгого нет</td>
-<td>по партиции строгий</td>
+<td data-label="Признак">Порядок</td>
+<td data-label="БД-очередь достаточна">по приоритету/времени, строгого нет</td>
+<td data-label="Нужен брокер (гл. 29/27)">по партиции строгий</td>
 </tr>
 <tr>
-<td>Операционная стоимость</td>
-<td>ноль (БД уже есть)</td>
-<td>кластер, мониторинг, экспертиза</td>
+<td data-label="Признак">Операционная стоимость</td>
+<td data-label="БД-очередь достаточна">ноль (БД уже есть)</td>
+<td data-label="Нужен брокер (гл. 29/27)">кластер, мониторинг, экспертиза</td>
 </tr>
 </tbody>
 </table>
@@ -2171,7 +2171,7 @@ control_sum_amount: 84920113.47
 <h3 id="94-шаблонизаторы">9.4 Шаблонизаторы</h3>
 <p>Шаблонизатор отделяет текст и макет документа от кода, который подставляет в него данные. Для документов берут те же движки, что и для веба, но требования к ним другие: важна не производительность, а предсказуемость и возможность править шаблон без релиза. Ниже движки сравнены в таблице, а затем разобрано, чем оборачивается хранение шаблонов в БД.</p>
 <p>В таблице для каждого движка указано, чем он хорош именно для документов и чем плох.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Движок</th>
@@ -2181,24 +2181,24 @@ control_sum_amount: 84920113.47
 </thead>
 <tbody>
 <tr>
-<td>Thymeleaf</td>
-<td>натуральный HTML (шаблон открывается в браузере), Spring-интеграция</td>
-<td>медленнее остальных, избыточен вне HTML</td>
+<td data-label="Движок">Thymeleaf</td>
+<td data-label="Плюсы для документов">натуральный HTML (шаблон открывается в браузере), Spring-интеграция</td>
+<td data-label="Минусы">медленнее остальных, избыточен вне HTML</td>
 </tr>
 <tr>
-<td>FreeMarker</td>
-<td>мощные директивы, хорош для текста и XML, понятные ошибки</td>
-<td>свой синтаксис, легко написать логику в шаблоне</td>
+<td data-label="Движок">FreeMarker</td>
+<td data-label="Плюсы для документов">мощные директивы, хорош для текста и XML, понятные ошибки</td>
+<td data-label="Минусы">свой синтаксис, легко написать логику в шаблоне</td>
 </tr>
 <tr>
-<td>Velocity</td>
-<td>простой, стабильный</td>
-<td>проект малоактивен</td>
+<td data-label="Движок">Velocity</td>
+<td data-label="Плюсы для документов">простой, стабильный</td>
+<td data-label="Минусы">проект малоактивен</td>
 </tr>
 <tr>
-<td>Mustache</td>
-<td>логики нет by design — вся логика в коде</td>
-<td>иногда логики не хватает</td>
+<td data-label="Движок">Mustache</td>
+<td data-label="Плюсы для документов">логики нет by design — вся логика в коде</td>
+<td data-label="Минусы">иногда логики не хватает</td>
 </tr>
 </tbody>
 </table>
@@ -2245,7 +2245,7 @@ GET  /reports/{id}/file    → 302 на presigned URL хранилища
 <p>Массовой обработкой называют операции над миллионами строк за раз: загрузку реестра, пересчёт истории, заполнение новой колонки, сверку двух больших наборов. Здесь выбор способа записи меняет время прогона на три порядка, а неудачный выбор границ транзакции может остановить vacuum во всей базе или сломать реплики. В этом разделе разобраны лестница скоростей записи в PostgreSQL, правильный JDBC batch и <code>COPY</code>, причины не делать одну гигантскую транзакцию, параллельная обработка <code>SKIP LOCKED</code>-воркерами, backfill без влияния на прод и сверка как самостоятельный класс пакетов.</p>
 <h3 id="101-способы-записи-и-их-скорость">10.1 Способы записи и их скорость</h3>
 <p>Способы записи в PostgreSQL различаются по скорости не в разы, а на порядки, и именно этот разброс чаще всего объясняет, почему пакет не влезает в окно. Таблица ниже выстраивает их от медленного к быстрому; смотреть стоит на колонку с комментарием, где сказано, какую именно издержку убирает каждая следующая ступень.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -2255,29 +2255,29 @@ GET  /reports/{id}/file    → 302 на presigned URL хранилища
 </thead>
 <tbody>
 <tr>
-<td><code>INSERT</code> по одному, autocommit</td>
-<td>10²–10³ строк/с</td>
-<td>round-trip + fsync на каждую строку</td>
+<td data-label="Способ"><code>INSERT</code> по одному, autocommit</td>
+<td data-label="Порядок скорости">10²–10³ строк/с</td>
+<td data-label="Комментарий">round-trip + fsync на каждую строку</td>
 </tr>
 <tr>
-<td><code>INSERT</code> по одному в транзакции</td>
-<td>10³–10⁴</td>
-<td>fsync амортизирован, round-trip остался</td>
+<td data-label="Способ"><code>INSERT</code> по одному в транзакции</td>
+<td data-label="Порядок скорости">10³–10⁴</td>
+<td data-label="Комментарий">fsync амортизирован, round-trip остался</td>
 </tr>
 <tr>
-<td>JDBC <code>addBatch</code>/<code>executeBatch</code></td>
-<td>10⁴</td>
-<td>один round-trip на пакет</td>
+<td data-label="Способ">JDBC <code>addBatch</code>/<code>executeBatch</code></td>
+<td data-label="Порядок скорости">10⁴</td>
+<td data-label="Комментарий">один round-trip на пакет</td>
 </tr>
 <tr>
-<td>JDBC batch + <code>reWriteBatchedInserts=true</code></td>
-<td>×2–3 к предыдущему</td>
-<td>драйвер склеивает в многострочный <code>INSERT</code></td>
+<td data-label="Способ">JDBC batch + <code>reWriteBatchedInserts=true</code></td>
+<td data-label="Порядок скорости">×2–3 к предыдущему</td>
+<td data-label="Комментарий">драйвер склеивает в многострочный <code>INSERT</code></td>
 </tr>
 <tr>
-<td><code>COPY</code> через <code>CopyManager</code></td>
-<td>10⁵–10⁶</td>
-<td>бинарный/текстовый поток без парсинга отдельных операторов</td>
+<td data-label="Способ"><code>COPY</code> через <code>CopyManager</code></td>
+<td data-label="Порядок скорости">10⁵–10⁶</td>
+<td data-label="Комментарий">бинарный/текстовый поток без парсинга отдельных операторов</td>
 </tr>
 </tbody>
 </table>
@@ -2483,7 +2483,7 @@ GET  /reports/{id}/file    → 302 на presigned URL хранилища
 
 <p>Хранить значения в собственных <code>AtomicLong</code> приходится потому, что <code>MeterRegistry.gauge(...)</code> держит на наблюдаемый объект только слабую ссылку. Если передать туда <code>long</code>, упакованный в <code>Long</code>, объект соберёт GC, и gauge начнёт отдавать <code>NaN</code> или вовсе пропадёт (зависит от реестра), а повторная регистрация с тем же именем и тегами вернёт уже существующий gauge и нового значения не запишет (<a href="https://docs.micrometer.io/micrometer/reference/concepts/gauges.html">Micrometer: gauges</a>).</p>
 <p>Таблица ниже показывает, какие оповещения вешают на эти метрики и с какими порогами; обратите внимание, что единственное оповещение уровня critical без предупреждения стоит на возрасте последнего успеха.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Метрика</th>
@@ -2492,28 +2492,28 @@ GET  /reports/{id}/file    → 302 на presigned URL хранилища
 </thead>
 <tbody>
 <tr>
-<td><code>batch_job_duration_seconds</code></td>
-<td>превысила 50 % окна — warning; 80 % — critical</td>
+<td data-label="Метрика"><code>batch_job_duration_seconds</code></td>
+<td data-label="Оповещение">превысила 50 % окна — warning; 80 % — critical</td>
 </tr>
 <tr>
-<td><code>batch_job_skip_total</code></td>
-<td><code>&gt; 0</code> — warning; рост доли — critical</td>
+<td data-label="Метрика"><code>batch_job_skip_total</code></td>
+<td data-label="Оповещение"><code>&gt; 0</code> — warning; рост доли — critical</td>
 </tr>
 <tr>
-<td><code>batch_job_rollback_total</code></td>
-<td>резкий рост — признак попадания в skip-сканирование</td>
+<td data-label="Метрика"><code>batch_job_rollback_total</code></td>
+<td data-label="Оповещение">резкий рост — признак попадания в skip-сканирование</td>
 </tr>
 <tr>
-<td><code>batch_job_last_success_epoch_seconds</code></td>
-<td><code>time() - metric &gt; ожидаемый_период × 1.5</code> — <strong>critical</strong></td>
+<td data-label="Метрика"><code>batch_job_last_success_epoch_seconds</code></td>
+<td data-label="Оповещение"><code>time() - metric &gt; ожидаемый_период × 1.5</code> — <strong>critical</strong></td>
 </tr>
 <tr>
-<td>лаг расписания (факт старта − план)</td>
-<td>&gt; 15 мин</td>
+<td data-label="Метрика">лаг расписания (факт старта − план)</td>
+<td data-label="Оповещение">&gt; 15 мин</td>
 </tr>
 <tr>
-<td>размер входного файла</td>
-<td>отклонение от медианы за 30 дней в разы</td>
+<td data-label="Метрика">размер входного файла</td>
+<td data-label="Оповещение">отклонение от медианы за 30 дней в разы</td>
 </tr>
 </tbody>
 </table>
@@ -2557,7 +2557,7 @@ GET  /reports/{id}/file    → 302 на presigned URL хранилища
 <li><strong>Видимый результат.</strong> После запуска дежурный должен видеть прогресс, а не гадать.</li>
 </ul>
 <p>В таблице ниже слева перечислены типовые ситуации, а справа — правильное действие для каждой; особенно внимательно стоит прочитать строку про <code>COMPLETED</code> с неверным результатом.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -2566,24 +2566,24 @@ GET  /reports/{id}/file    → 302 на presigned URL хранилища
 </thead>
 <tbody>
 <tr>
-<td>Задание <code>FAILED</code></td>
-<td>рестарт с теми же параметрами — продолжит с контрольной точки</td>
+<td data-label="Ситуация">Задание <code>FAILED</code></td>
+<td data-label="Правильное действие">рестарт с теми же параметрами — продолжит с контрольной точки</td>
 </tr>
 <tr>
-<td>Задание <code>STARTED</code>, но процесс мёртв</td>
-<td><code>JobOperator.recover()</code> в 6.0 (на старых версиях ручной перевод в <code>FAILED</code>), потом рестарт; <code>abandon</code> здесь не подходит, он запрещает рестарт</td>
+<td data-label="Ситуация">Задание <code>STARTED</code>, но процесс мёртв</td>
+<td data-label="Правильное действие"><code>JobOperator.recover()</code> в 6.0 (на старых версиях ручной перевод в <code>FAILED</code>), потом рестарт; <code>abandon</code> здесь не подходит, он запрещает рестарт</td>
 </tr>
 <tr>
-<td>Задание <code>COMPLETED</code>, но результат неверный</td>
-<td><strong>не</strong> рестарт: сначала отмена/сторнирование результата, потом новый прогон с новой версией расчёта</td>
+<td data-label="Ситуация">Задание <code>COMPLETED</code>, но результат неверный</td>
+<td data-label="Правильное действие"><strong>не</strong> рестарт: сначала отмена/сторнирование результата, потом новый прогон с новой версией расчёта</td>
 </tr>
 <tr>
-<td>Пропущен день</td>
-<td>запуск с бизнес-датой пропущенного дня, не «сегодня»</td>
+<td data-label="Ситуация">Пропущен день</td>
+<td data-label="Правильное действие">запуск с бизнес-датой пропущенного дня, не «сегодня»</td>
 </tr>
 <tr>
-<td>Нужен пересчёт за месяц</td>
-<td>отдельное задание-обёртка, идущее по датам последовательно, с ограничением скорости</td>
+<td data-label="Ситуация">Нужен пересчёт за месяц</td>
+<td data-label="Правильное действие">отдельное задание-обёртка, идущее по датам последовательно, с ограничением скорости</td>
 </tr>
 </tbody>
 </table>
@@ -2987,5 +2987,5 @@ ShedLock — это только замок поверх существующе�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-пакетная-обработка-как-класс-задач">1. Пакетная обработка как класс задач</a></li><li><a href="#2-требования-к-пакетной-обработке">2. Требования к пакетной обработке</a></li><li><a href="#3-spring-batch-модель-и-метаданные">3. Spring Batch: модель и метаданные</a></li><li><a href="#4-spring-batch-ошибки-рестарт-ридеры-и-райтеры">4. Spring Batch: ошибки, рестарт, ридеры и райтеры</a></li><li><a href="#5-spring-batch-масштабирование-тестирование-границы-применимости">5. Spring Batch: масштабирование, тестирование, границы применимости</a></li><li><a href="#6-планировщики">6. Планировщики</a></li><li><a href="#7-очереди-задач-в-бд">7. Очереди задач в БД</a></li><li><a href="#8-работа-с-файлами">8. Работа с файлами</a></li><li><a href="#9-отчёты-и-документы">9. Отчёты и документы</a></li><li><a href="#10-массовая-обработка-данных">10. Массовая обработка данных</a></li><li><a href="#11-эксплуатация-пакетов">11. Эксплуатация пакетов</a></li><li><a href="#12-разобранные-инциденты">12. Разобранные инциденты</a></li><li><a href="#13-грабли-и-антипаттерны">13. Грабли и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

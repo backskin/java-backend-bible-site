@@ -3,7 +3,7 @@
 <title>4. Время, деньги и текст — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Время, деньги и текст">
 <a class="skip" href="#content">К тексту</a>
@@ -211,7 +211,7 @@
 <p>⚠️ <strong>Грабли (разобранный инцидент).</strong> Сервис выгрузки в АБС разбирал дату валютирования из входного файла через статический <code>SimpleDateFormat</code>, и пока файлы обрабатывались в один поток, всё работало 4 года. Когда включили параллельную обработку файлов на пуле из 8 потоков, раз в несколько тысяч записей дата валютирования стала уезжать на другой год, причём ровно на тот, который в этот момент разбирал соседний поток. Заметили это через два месяца, когда в отчёте по остаткам появились проводки, датированные 2019 годом. Поиск <code>grep -rn "static.*SimpleDateFormat" src/</code> нашёл в проекте 11 таких мест, и все их заменили на <code>DateTimeFormatter</code>, который по контракту иммутабелен и потокобезопасен. Чтобы ошибка не вернулась, нужно правило статического анализа: у SpotBugs есть детектор <code>STCAL_STATIC_SIMPLE_DATE_FORMAT_INSTANCE</code>, и его стоит включить в quality gate.</p>
 </blockquote>
 <p>В старом коде встречаются и промежуточные «решения», и их нужно уметь оценить. В таблице они сведены вместе с тем, чем каждое расплачивается:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Подход</th>
@@ -220,27 +220,27 @@
 </thead>
 <tbody>
 <tr>
-<td><code>synchronized</code> вокруг <code>format</code>/<code>parse</code></td>
-<td>Работает, но сериализует горячий путь. На 50k rps форматирование становится узким местом.</td>
+<td data-label="Подход"><code>synchronized</code> вокруг <code>format</code>/<code>parse</code></td>
+<td data-label="Оценка">Работает, но сериализует горячий путь. На 50k rps форматирование становится узким местом.</td>
 </tr>
 <tr>
-<td><code>ThreadLocal&lt;SimpleDateFormat&gt;</code></td>
-<td>Работает, но на пуле из тысяч потоков (или виртуальных потоков!) это тысячи объектов, а на virtual threads ещё и бессмысленно, потому что их миллионы. См. главу 08 про утечки <code>ThreadLocal</code>.</td>
+<td data-label="Подход"><code>ThreadLocal&lt;SimpleDateFormat&gt;</code></td>
+<td data-label="Оценка">Работает, но на пуле из тысяч потоков (или виртуальных потоков!) это тысячи объектов, а на virtual threads ещё и бессмысленно, потому что их миллионы. См. главу 08 про утечки <code>ThreadLocal</code>.</td>
 </tr>
 <tr>
-<td>Новый экземпляр на каждый вызов</td>
-<td>Работает и безопасно; выделение памяти <code>SimpleDateFormat</code> дороже, чем кажется (создаёт <code>Calendar</code>, <code>DateFormatSymbols</code>, компилирует паттерн), но при умеренной нагрузке приемлемо.</td>
+<td data-label="Подход">Новый экземпляр на каждый вызов</td>
+<td data-label="Оценка">Работает и безопасно; выделение памяти <code>SimpleDateFormat</code> дороже, чем кажется (создаёт <code>Calendar</code>, <code>DateFormatSymbols</code>, компилирует паттерн), но при умеренной нагрузке приемлемо.</td>
 </tr>
 <tr>
-<td><code>DateTimeFormatter</code></td>
-<td>Правильный ответ. Иммутабелен, потокобезопасен, один статический экземпляр на приложение.</td>
+<td data-label="Подход"><code>DateTimeFormatter</code></td>
+<td data-label="Оценка">Правильный ответ. Иммутабелен, потокобезопасен, один статический экземпляр на приложение.</td>
 </tr>
 </tbody>
 </table>
 <p><strong><code>java.sql.Date</code>, <code>java.sql.Time</code>, <code>java.sql.Timestamp</code></strong> добавляют к этому отдельный слой боли. Все три наследуются от <code>java.util.Date</code> и тем самым нарушают LSP: например, <code>java.sql.Date</code> бросает <code>IllegalArgumentException</code> из <code>getHours()</code>, а <code>Timestamp.equals(Date)</code> несимметричен. Начиная с JDBC 4.2 они больше не нужны, потому что драйвер умеет <code>setObject(i, instant)</code> и <code>getObject(i, Instant.class)</code>; подробнее об этом говорится в разделе 5.2.</p>
 <h3 id="22-типы-javatime-и-выбор-между-ними">2.2 Типы <code>java.time</code> и выбор между ними</h3>
 <p>Каждый тип <code>java.time</code> отвечает на один вопрос: что именно он хранит и знает ли он о поясе. Если держать эту разницу в голове, выбор типа для поля почти всегда очевиден, поэтому ниже сначала приведена сводная таблица с типичными применениями, а после неё правило выбора из четырёх шагов.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип</th>
@@ -251,46 +251,46 @@
 </thead>
 <tbody>
 <tr>
-<td><code>Instant</code></td>
-<td>момент на шкале UTC, секунды+наносекунды от эпохи</td>
-<td>нет (всегда UTC)</td>
-<td><strong>выбор по умолчанию для хранения и передачи</strong>: <code>created_at</code>, <code>expires_at</code>, время события</td>
+<td data-label="Тип"><code>Instant</code></td>
+<td data-label="Что это">момент на шкале UTC, секунды+наносекунды от эпохи</td>
+<td data-label="Хранит зону?">нет (всегда UTC)</td>
+<td data-label="Типичное применение"><strong>выбор по умолчанию для хранения и передачи</strong>: <code>created_at</code>, <code>expires_at</code>, время события</td>
 </tr>
 <tr>
-<td><code>LocalDate</code></td>
-<td>календарная дата</td>
-<td>нет</td>
-<td>дата рождения, отчётная дата, дата валютирования, срок погашения</td>
+<td data-label="Тип"><code>LocalDate</code></td>
+<td data-label="Что это">календарная дата</td>
+<td data-label="Хранит зону?">нет</td>
+<td data-label="Типичное применение">дата рождения, отчётная дата, дата валютирования, срок погашения</td>
 </tr>
 <tr>
-<td><code>LocalTime</code></td>
-<td>время суток</td>
-<td>нет</td>
-<td>«магазин открывается в 09:00», расписание</td>
+<td data-label="Тип"><code>LocalTime</code></td>
+<td data-label="Что это">время суток</td>
+<td data-label="Хранит зону?">нет</td>
+<td data-label="Типичное применение">«магазин открывается в 09:00», расписание</td>
 </tr>
 <tr>
-<td><code>LocalDateTime</code></td>
-<td>дата+время без зоны</td>
-<td>нет</td>
-<td><strong>редко</strong>: только когда зона правда не нужна или хранится отдельно</td>
+<td data-label="Тип"><code>LocalDateTime</code></td>
+<td data-label="Что это">дата+время без зоны</td>
+<td data-label="Хранит зону?">нет</td>
+<td data-label="Типичное применение"><strong>редко</strong>: только когда зона правда не нужна или хранится отдельно</td>
 </tr>
 <tr>
-<td><code>OffsetDateTime</code></td>
-<td>момент + фиксированное смещение</td>
-<td>смещение, но не правила</td>
-<td>обмен по сети, если нужно сохранить смещение отправителя; отображение на <code>timestamptz</code></td>
+<td data-label="Тип"><code>OffsetDateTime</code></td>
+<td data-label="Что это">момент + фиксированное смещение</td>
+<td data-label="Хранит зону?">смещение, но не правила</td>
+<td data-label="Типичное применение">обмен по сети, если нужно сохранить смещение отправителя; отображение на <code>timestamptz</code></td>
 </tr>
 <tr>
-<td><code>ZonedDateTime</code></td>
-<td>момент + <code>ZoneId</code> с полными правилами</td>
-<td>да</td>
-<td><strong>будущие события в конкретном месте</strong>; расчёты в гражданском времени</td>
+<td data-label="Тип"><code>ZonedDateTime</code></td>
+<td data-label="Что это">момент + <code>ZoneId</code> с полными правилами</td>
+<td data-label="Хранит зону?">да</td>
+<td data-label="Типичное применение"><strong>будущие события в конкретном месте</strong>; расчёты в гражданском времени</td>
 </tr>
 <tr>
-<td><code>Year</code>, <code>YearMonth</code>, <code>MonthDay</code></td>
-<td>частичные даты</td>
-<td>нет</td>
-<td>срок действия карты (<code>YearMonth</code>), годовщина (<code>MonthDay</code>), отчётный год</td>
+<td data-label="Тип"><code>Year</code>, <code>YearMonth</code>, <code>MonthDay</code></td>
+<td data-label="Что это">частичные даты</td>
+<td data-label="Хранит зону?">нет</td>
+<td data-label="Типичное применение">срок действия карты (<code>YearMonth</code>), годовщина (<code>MonthDay</code>), отчётный год</td>
 </tr>
 </tbody>
 </table>
@@ -446,7 +446,7 @@
 <code>plusHours(24)</code> работает со <strong>шкалой</strong> и означает «ровно 24 часа спустя», поэтому в результате получается час дня, а не полдень.</p>
 <p>Формально дело в том, что для единиц от <code>DAYS</code> и крупнее <code>ZonedDateTime</code> считает в локальном времени и лишь потом пересчитывает смещение (<code>ChronoUnit.isDateBased()</code>), а для <code>HOURS</code> и мельче прибавляет к <code>Instant</code>. Осенью картина зеркальная: <code>plusDays(1)</code> через осенний переход даст 25 часов реального времени.</p>
 <p>Из этого вытекает практическое правило, которое удобно держать в виде таблицы «намерение — метод»:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Намерение</th>
@@ -455,16 +455,16 @@
 </thead>
 <tbody>
 <tr>
-<td>«Через сутки по календарю, в тот же час»: напоминание, ежедневный отчёт</td>
-<td><code>plusDays(1)</code> на <code>ZonedDateTime</code></td>
+<td data-label="Намерение">«Через сутки по календарю, в тот же час»: напоминание, ежедневный отчёт</td>
+<td data-label="Метод"><code>plusDays(1)</code> на <code>ZonedDateTime</code></td>
 </tr>
 <tr>
-<td>«Ровно через 24 часа»: TTL, таймаут, окно блокировки</td>
-<td><code>plus(Duration.ofHours(24))</code> или арифметика на <code>Instant</code></td>
+<td data-label="Намерение">«Ровно через 24 часа»: TTL, таймаут, окно блокировки</td>
+<td data-label="Метод"><code>plus(Duration.ofHours(24))</code> или арифметика на <code>Instant</code></td>
 </tr>
 <tr>
-<td>«В конце дня»</td>
-<td><code>.toLocalDate().plusDays(1).atStartOfDay(zone)</code></td>
+<td data-label="Намерение">«В конце дня»</td>
+<td data-label="Метод"><code>.toLocalDate().plusDays(1).atStartOfDay(zone)</code></td>
 </tr>
 </tbody>
 </table>
@@ -544,7 +544,7 @@
 </code></pre></div>
 
 <p>У <code>Clock</code> несколько фабрик, и каждая нужна для своего случая, от продового кода до тестов «что будет через три дня»:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Фабрика</th>
@@ -553,32 +553,32 @@
 </thead>
 <tbody>
 <tr>
-<td><code>Clock.systemUTC()</code></td>
-<td>системное время, зона UTC</td>
+<td data-label="Фабрика"><code>Clock.systemUTC()</code></td>
+<td data-label="Поведение">системное время, зона UTC</td>
 </tr>
 <tr>
-<td><code>Clock.systemDefaultZone()</code></td>
-<td>системное время, зона JVM; избегайте, зона неявная</td>
+<td data-label="Фабрика"><code>Clock.systemDefaultZone()</code></td>
+<td data-label="Поведение">системное время, зона JVM; избегайте, зона неявная</td>
 </tr>
 <tr>
-<td><code>Clock.system(zone)</code></td>
-<td>системное время, явная зона</td>
+<td data-label="Фабрика"><code>Clock.system(zone)</code></td>
+<td data-label="Поведение">системное время, явная зона</td>
 </tr>
 <tr>
-<td><code>Clock.fixed(instant, zone)</code></td>
-<td><strong>всегда одно и то же значение</strong>, для тестов</td>
+<td data-label="Фабрика"><code>Clock.fixed(instant, zone)</code></td>
+<td data-label="Поведение"><strong>всегда одно и то же значение</strong>, для тестов</td>
 </tr>
 <tr>
-<td><code>Clock.offset(base, duration)</code></td>
-<td>базовые часы со сдвигом: «а что будет через 3 дня»</td>
+<td data-label="Фабрика"><code>Clock.offset(base, duration)</code></td>
+<td data-label="Поведение">базовые часы со сдвигом: «а что будет через 3 дня»</td>
 </tr>
 <tr>
-<td><code>Clock.tick(base, duration)</code></td>
-<td>усечение до заданной гранулярности</td>
+<td data-label="Фабрика"><code>Clock.tick(base, duration)</code></td>
+<td data-label="Поведение">усечение до заданной гранулярности</td>
 </tr>
 <tr>
-<td><code>Clock.tickMillis/tickSeconds/tickMinutes(zone)</code></td>
-<td>усечение до мс/с/мин</td>
+<td data-label="Фабрика"><code>Clock.tickMillis/tickSeconds/tickMinutes(zone)</code></td>
+<td data-label="Поведение">усечение до мс/с/мин</td>
 </tr>
 </tbody>
 </table>
@@ -620,7 +620,7 @@ noClasses().that().resideInAPackage("..domain..")
   .because("время берётся только из Clock");</code></p>
 </blockquote>
 <p><strong>У <code>Clock</code> есть альтернативы</strong>, которые встречаются на практике, и их нужно уметь оценить. В таблице они сравниваются по плюсам и минусам:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Подход</th>
@@ -630,29 +630,29 @@ noClasses().that().resideInAPackage("..domain..")
 </thead>
 <tbody>
 <tr>
-<td><code>Clock</code> в конструкторе</td>
-<td>явная зависимость, стандартный API, работает везде</td>
-<td>нужно протащить через все слои</td>
+<td data-label="Подход"><code>Clock</code> в конструкторе</td>
+<td data-label="Плюсы">явная зависимость, стандартный API, работает везде</td>
+<td data-label="Минусы">нужно протащить через все слои</td>
 </tr>
 <tr>
-<td>Статический <code>TimeProvider</code> с сеттером</td>
-<td>не надо менять сигнатуры</td>
-<td>глобальное состояние, тесты нельзя гонять параллельно</td>
+<td data-label="Подход">Статический <code>TimeProvider</code> с сеттером</td>
+<td data-label="Плюсы">не надо менять сигнатуры</td>
+<td data-label="Минусы">глобальное состояние, тесты нельзя гонять параллельно</td>
 </tr>
 <tr>
-<td>Мокирование статики (Mockito <code>mockStatic(Instant.class)</code>)</td>
-<td>работает со старым кодом без изменений</td>
-<td>хрупко, замедляет тесты, не помогает продовому коду</td>
+<td data-label="Подход">Мокирование статики (Mockito <code>mockStatic(Instant.class)</code>)</td>
+<td data-label="Плюсы">работает со старым кодом без изменений</td>
+<td data-label="Минусы">хрупко, замедляет тесты, не помогает продовому коду</td>
 </tr>
 <tr>
-<td>Подмена системных часов в контейнере (libfaketime)</td>
-<td>тестирует всё, включая БД и tzdata</td>
-<td>тяжело, не для юнит-тестов</td>
+<td data-label="Подход">Подмена системных часов в контейнере (libfaketime)</td>
+<td data-label="Плюсы">тестирует всё, включая БД и tzdata</td>
+<td data-label="Минусы">тяжело, не для юнит-тестов</td>
 </tr>
 <tr>
-<td>Передача <code>Instant now</code> параметром метода</td>
-<td>максимально явно, чисто функционально</td>
-<td>«протекает» в публичное API</td>
+<td data-label="Подход">Передача <code>Instant now</code> параметром метода</td>
+<td data-label="Плюсы">максимально явно, чисто функционально</td>
+<td data-label="Минусы">«протекает» в публичное API</td>
 </tr>
 </tbody>
 </table>
@@ -707,7 +707,7 @@ noClasses().that().resideInAPackage("..domain..")
 
 <p>Здесь важно помнить, что методы <code>with*</code> возвращают <strong>новый</strong> форматтер, а существующий не меняют. Поэтому вызов <code>FMT.withZone(zone)</code> без присваивания ничего не делает, и на ревью это типичная находка.</p>
 <p>В JDK уже есть предопределённые константы, и их стоит знать наизусть; в таблице для каждой приведён пример вывода и оговорка, если она нужна:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Константа</th>
@@ -717,44 +717,44 @@ noClasses().that().resideInAPackage("..domain..")
 </thead>
 <tbody>
 <tr>
-<td><code>ISO_INSTANT</code></td>
-<td><code>2026-09-21T13:45:00.123Z</code></td>
-<td>только UTC, для <code>Instant</code></td>
+<td data-label="Константа"><code>ISO_INSTANT</code></td>
+<td data-label="Пример вывода"><code>2026-09-21T13:45:00.123Z</code></td>
+<td data-label="Комментарий">только UTC, для <code>Instant</code></td>
 </tr>
 <tr>
-<td><code>ISO_LOCAL_DATE</code></td>
-<td><code>2026-09-21</code></td>
-<td></td>
+<td data-label="Константа"><code>ISO_LOCAL_DATE</code></td>
+<td data-label="Пример вывода"><code>2026-09-21</code></td>
+<td data-label="Комментарий"></td>
 </tr>
 <tr>
-<td><code>ISO_LOCAL_DATE_TIME</code></td>
-<td><code>2026-09-21T13:45:00.123</code></td>
-<td>без зоны</td>
+<td data-label="Константа"><code>ISO_LOCAL_DATE_TIME</code></td>
+<td data-label="Пример вывода"><code>2026-09-21T13:45:00.123</code></td>
+<td data-label="Комментарий">без зоны</td>
 </tr>
 <tr>
-<td><code>ISO_OFFSET_DATE_TIME</code></td>
-<td><code>2026-09-21T13:45:00.123+03:00</code></td>
-<td><strong>это и есть RFC 3339</strong></td>
+<td data-label="Константа"><code>ISO_OFFSET_DATE_TIME</code></td>
+<td data-label="Пример вывода"><code>2026-09-21T13:45:00.123+03:00</code></td>
+<td data-label="Комментарий"><strong>это и есть RFC 3339</strong></td>
 </tr>
 <tr>
-<td><code>ISO_ZONED_DATE_TIME</code></td>
-<td><code>2026-09-21T13:45+03:00[Europe/Moscow]</code></td>
-<td>суффикс в скобках — <strong>расширение Java, не ISO 8601</strong>; внешние парсеры его не поймут</td>
+<td data-label="Константа"><code>ISO_ZONED_DATE_TIME</code></td>
+<td data-label="Пример вывода"><code>2026-09-21T13:45+03:00[Europe/Moscow]</code></td>
+<td data-label="Комментарий">суффикс в скобках — <strong>расширение Java, не ISO 8601</strong>; внешние парсеры его не поймут</td>
 </tr>
 <tr>
-<td><code>ISO_DATE_TIME</code></td>
-<td>принимает оба</td>
-<td>«мягкая» константа для парсинга</td>
+<td data-label="Константа"><code>ISO_DATE_TIME</code></td>
+<td data-label="Пример вывода">принимает оба</td>
+<td data-label="Комментарий">«мягкая» константа для парсинга</td>
 </tr>
 <tr>
-<td><code>RFC_1123_DATE_TIME</code></td>
-<td><code>Mon, 21 Sep 2026 13:45:00 GMT</code></td>
-<td>для HTTP-заголовков</td>
+<td data-label="Константа"><code>RFC_1123_DATE_TIME</code></td>
+<td data-label="Пример вывода"><code>Mon, 21 Sep 2026 13:45:00 GMT</code></td>
+<td data-label="Комментарий">для HTTP-заголовков</td>
 </tr>
 <tr>
-<td><code>BASIC_ISO_DATE</code></td>
-<td><code>20260921</code></td>
-<td>компактный, для имён файлов и обмена фиксированной ширины</td>
+<td data-label="Константа"><code>BASIC_ISO_DATE</code></td>
+<td data-label="Пример вывода"><code>20260921</code></td>
+<td data-label="Комментарий">компактный, для имён файлов и обмена фиксированной ширины</td>
 </tr>
 </tbody>
 </table>
@@ -763,7 +763,7 @@ noClasses().that().resideInAPackage("..domain..")
 </blockquote>
 <h3 id="42-буквы-паттерна-форматирования">4.2 Буквы паттерна форматирования</h3>
 <p>Паттерн форматтера — это строка из букв, каждая из которых обозначает поле даты, и символы <code>DateTimeFormatter</code> <strong>не совпадают</strong> с символами <code>SimpleDateFormat</code>. Из-за этого механический перенос старых шаблонов ломается, а несколько букв выглядят настолько похоже, что путаются и в новом коде. В таблице перечислены символы вместе с ошибками, которые с ними совершают, а после неё разобран самый дорогой из этих багов.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Символ</th>
@@ -773,79 +773,79 @@ noClasses().that().resideInAPackage("..domain..")
 </thead>
 <tbody>
 <tr>
-<td><code>y</code></td>
-<td>year-of-era</td>
-<td></td>
+<td data-label="Символ"><code>y</code></td>
+<td data-label="Значение">year-of-era</td>
+<td data-label="Частая ошибка"></td>
 </tr>
 <tr>
-<td><code>u</code></td>
-<td>proleptic year</td>
-<td>для дат до н.э. и строгого разрешения нужен <code>u</code>, а не <code>y</code></td>
+<td data-label="Символ"><code>u</code></td>
+<td data-label="Значение">proleptic year</td>
+<td data-label="Частая ошибка">для дат до н.э. и строгого разрешения нужен <code>u</code>, а не <code>y</code></td>
 </tr>
 <tr>
-<td><code>Y</code></td>
-<td><strong>week-based year</strong></td>
-<td><strong>главная ловушка</strong>: <code>YYYY-MM-dd</code> даёт неверный год в последние дни декабря</td>
+<td data-label="Символ"><code>Y</code></td>
+<td data-label="Значение"><strong>week-based year</strong></td>
+<td data-label="Частая ошибка"><strong>главная ловушка</strong>: <code>YYYY-MM-dd</code> даёт неверный год в последние дни декабря</td>
 </tr>
 <tr>
-<td><code>M</code></td>
-<td>месяц</td>
-<td></td>
+<td data-label="Символ"><code>M</code></td>
+<td data-label="Значение">месяц</td>
+<td data-label="Частая ошибка"></td>
 </tr>
 <tr>
-<td><code>m</code></td>
-<td>минута</td>
-<td><code>MM:mm</code> против <code>mm:MM</code>, классика</td>
+<td data-label="Символ"><code>m</code></td>
+<td data-label="Значение">минута</td>
+<td data-label="Частая ошибка"><code>MM:mm</code> против <code>mm:MM</code>, классика</td>
 </tr>
 <tr>
-<td><code>D</code></td>
-<td>день года (1–366)</td>
-<td><code>DD-MM-yyyy</code> работает не так, как ожидают</td>
+<td data-label="Символ"><code>D</code></td>
+<td data-label="Значение">день года (1–366)</td>
+<td data-label="Частая ошибка"><code>DD-MM-yyyy</code> работает не так, как ожидают</td>
 </tr>
 <tr>
-<td><code>d</code></td>
-<td>день месяца</td>
-<td></td>
+<td data-label="Символ"><code>d</code></td>
+<td data-label="Значение">день месяца</td>
+<td data-label="Частая ошибка"></td>
 </tr>
 <tr>
-<td><code>H</code></td>
-<td>час 0–23</td>
-<td></td>
+<td data-label="Символ"><code>H</code></td>
+<td data-label="Значение">час 0–23</td>
+<td data-label="Частая ошибка"></td>
 </tr>
 <tr>
-<td><code>h</code></td>
-<td>час 1–12</td>
-<td>без <code>a</code> (AM/PM) бессмысленно</td>
+<td data-label="Символ"><code>h</code></td>
+<td data-label="Значение">час 1–12</td>
+<td data-label="Частая ошибка">без <code>a</code> (AM/PM) бессмысленно</td>
 </tr>
 <tr>
-<td><code>S</code></td>
-<td>доля секунды</td>
-<td>не «секунды»; секунды обозначает <code>s</code></td>
+<td data-label="Символ"><code>S</code></td>
+<td data-label="Значение">доля секунды</td>
+<td data-label="Частая ошибка">не «секунды»; секунды обозначает <code>s</code></td>
 </tr>
 <tr>
-<td><code>n</code></td>
-<td>наносекунда</td>
-<td></td>
+<td data-label="Символ"><code>n</code></td>
+<td data-label="Значение">наносекунда</td>
+<td data-label="Частая ошибка"></td>
 </tr>
 <tr>
-<td><code>X</code></td>
-<td>смещение ISO, <code>Z</code> вместо нуля</td>
-<td><code>X</code>=<code>+03</code>, <code>XX</code>=<code>+0300</code>, <code>XXX</code>=<code>+03:00</code></td>
+<td data-label="Символ"><code>X</code></td>
+<td data-label="Значение">смещение ISO, <code>Z</code> вместо нуля</td>
+<td data-label="Частая ошибка"><code>X</code>=<code>+03</code>, <code>XX</code>=<code>+0300</code>, <code>XXX</code>=<code>+03:00</code></td>
 </tr>
 <tr>
-<td><code>Z</code></td>
-<td>смещение, <code>+0000</code> вместо <code>Z</code></td>
-<td><code>ZZZZZ</code> = <code>+03:00</code> с <code>Z</code> для нуля</td>
+<td data-label="Символ"><code>Z</code></td>
+<td data-label="Значение">смещение, <code>+0000</code> вместо <code>Z</code></td>
+<td data-label="Частая ошибка"><code>ZZZZZ</code> = <code>+03:00</code> с <code>Z</code> для нуля</td>
 </tr>
 <tr>
-<td><code>V</code></td>
-<td>zone-id (<code>Europe/Moscow</code>)</td>
-<td>только <code>VV</code>, другой длины не бывает</td>
+<td data-label="Символ"><code>V</code></td>
+<td data-label="Значение">zone-id (<code>Europe/Moscow</code>)</td>
+<td data-label="Частая ошибка">только <code>VV</code>, другой длины не бывает</td>
 </tr>
 <tr>
-<td><code>z</code></td>
-<td>имя зоны (<code>MSK</code>)</td>
-<td>локализовано и неоднозначно при парсинге</td>
+<td data-label="Символ"><code>z</code></td>
+<td data-label="Значение">имя зоны (<code>MSK</code>)</td>
+<td data-label="Частая ошибка">локализовано и неоднозначно при парсинге</td>
 </tr>
 </tbody>
 </table>
@@ -977,7 +977,7 @@ noClasses().that().resideInAPackage("..domain..")
 <p>Последний запрос показывает типовой правильный способ посчитать «за день по Москве» из колонки <code>timestamptz</code> вне зависимости от зоны сессии. Обратите внимание, что <code>date_trunc('day', created_at)</code> без <code>at time zone</code> усечёт значение по зоне <strong>сессии</strong>, а зона сессии в пуле соединений может оказаться не той, которую вы ждёте.</p>
 <p>⚠️ Кроме формы <code>date_trunc</code> с 2 аргументами существует трёхаргументная форма <code>date_trunc(field, timestamptz, zone)</code>, которая удобнее и возвращает <code>timestamptz</code>. Точная версия PostgreSQL, в которой она появилась, в рамках главы не проверялась; если в вашей версии её нет, используйте <code>at time zone</code>.</p>
 <p>Ещё несколько функций текущего времени часто путают между собой, хотя возвращают они разное:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Функция</th>
@@ -986,16 +986,16 @@ noClasses().that().resideInAPackage("..domain..")
 </thead>
 <tbody>
 <tr>
-<td><code>now()</code>, <code>current_timestamp</code>, <code>transaction_timestamp()</code></td>
-<td>момент <strong>начала транзакции</strong>, не меняется внутри неё</td>
+<td data-label="Функция"><code>now()</code>, <code>current_timestamp</code>, <code>transaction_timestamp()</code></td>
+<td data-label="Что возвращает">момент <strong>начала транзакции</strong>, не меняется внутри неё</td>
 </tr>
 <tr>
-<td><code>statement_timestamp()</code></td>
-<td>момент начала текущего оператора</td>
+<td data-label="Функция"><code>statement_timestamp()</code></td>
+<td data-label="Что возвращает">момент начала текущего оператора</td>
 </tr>
 <tr>
-<td><code>clock_timestamp()</code></td>
-<td>реальное текущее время, меняется при каждом вызове</td>
+<td data-label="Функция"><code>clock_timestamp()</code></td>
+<td data-label="Что возвращает">реальное текущее время, меняется при каждом вызове</td>
 </tr>
 </tbody>
 </table>
@@ -1003,7 +1003,7 @@ noClasses().that().resideInAPackage("..domain..")
 <h3 id="52-jdbc-отображение-instant-offsetdatetime-и-настройки-hibernate">5.2 JDBC-отображение: <code>Instant</code>, <code>OffsetDateTime</code> и настройки Hibernate</h3>
 <p>JDBC-отображение определяет, в какой тип Java превращается колонка при чтении и что драйвер делает со значением при записи, и именно здесь чаще всего всплывает зависимость от пояса JVM. Ниже приведены соответствия из спецификации, правильный способ читать и писать время через JDBC, настройка Hibernate 6, от которой зависит судьба смещения, и гигиена процесса, которая делает такие ошибки воспроизводимыми.</p>
 <p>Начиная с <strong>JDBC 4.2</strong> драйверы обязаны поддерживать <code>setObject</code>/<code>getObject</code> с типами java.time, и спецификация рекомендует такие соответствия:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>SQL-тип</th>
@@ -1012,20 +1012,20 @@ noClasses().that().resideInAPackage("..domain..")
 </thead>
 <tbody>
 <tr>
-<td><code>DATE</code></td>
-<td><code>LocalDate</code></td>
+<td data-label="SQL-тип"><code>DATE</code></td>
+<td data-label="Java-тип"><code>LocalDate</code></td>
 </tr>
 <tr>
-<td><code>TIME</code></td>
-<td><code>LocalTime</code></td>
+<td data-label="SQL-тип"><code>TIME</code></td>
+<td data-label="Java-тип"><code>LocalTime</code></td>
 </tr>
 <tr>
-<td><code>TIMESTAMP</code></td>
-<td><code>LocalDateTime</code></td>
+<td data-label="SQL-тип"><code>TIMESTAMP</code></td>
+<td data-label="Java-тип"><code>LocalDateTime</code></td>
 </tr>
 <tr>
-<td><code>TIMESTAMP WITH TIME ZONE</code></td>
-<td><code>OffsetDateTime</code></td>
+<td data-label="SQL-тип"><code>TIMESTAMP WITH TIME ZONE</code></td>
+<td data-label="Java-тип"><code>OffsetDateTime</code></td>
 </tr>
 </tbody>
 </table>
@@ -1043,7 +1043,7 @@ noClasses().that().resideInAPackage("..domain..")
 
 <p><strong>В новом коде никогда не используйте <code>rs.getTimestamp(i)</code> и <code>ps.setTimestamp(i, ts)</code> без календаря</strong>, потому что <code>java.sql.Timestamp</code> переводится через зону JVM по умолчанию, и результат зависит от <code>user.timezone</code>. Именно эта пара методов порождает половину инцидентов вида «после переезда сервиса все даты уехали на 3 часа».</p>
 <p>В Hibernate 6 ключевая настройка называется <strong><code>hibernate.timezone.default_storage</code></strong>, и от её значения зависит, сохранится ли смещение:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Значение</th>
@@ -1052,28 +1052,28 @@ noClasses().that().resideInAPackage("..domain..")
 </thead>
 <tbody>
 <tr>
-<td><code>NORMALIZE</code></td>
-<td><code>OffsetDateTime</code>/<code>ZonedDateTime</code> нормализуются в зону JDBC-сессии и пишутся в <code>timestamp</code> (без зоны). Смещение теряется.</td>
+<td data-label="Значение"><code>NORMALIZE</code></td>
+<td data-label="Поведение"><code>OffsetDateTime</code>/<code>ZonedDateTime</code> нормализуются в зону JDBC-сессии и пишутся в <code>timestamp</code> (без зоны). Смещение теряется.</td>
 </tr>
 <tr>
-<td><code>NORMALIZE_UTC</code></td>
-<td>Нормализуются в UTC и пишутся в <code>timestamp</code>. Смещение теряется, но шкала единая.</td>
+<td data-label="Значение"><code>NORMALIZE_UTC</code></td>
+<td data-label="Поведение">Нормализуются в UTC и пишутся в <code>timestamp</code>. Смещение теряется, но шкала единая.</td>
 </tr>
 <tr>
-<td><code>COLUMN</code></td>
-<td>Дополнительная колонка со смещением (<code>@TimeZoneColumn</code>).</td>
+<td data-label="Значение"><code>COLUMN</code></td>
+<td data-label="Поведение">Дополнительная колонка со смещением (<code>@TimeZoneColumn</code>).</td>
 </tr>
 <tr>
-<td><code>NATIVE</code></td>
-<td>Используется нативный тип БД <code>timestamp with time zone</code>.</td>
+<td data-label="Значение"><code>NATIVE</code></td>
+<td data-label="Поведение">Используется нативный тип БД <code>timestamp with time zone</code>.</td>
 </tr>
 <tr>
-<td><code>AUTO</code></td>
-<td><code>NATIVE</code>, если диалект поддерживает, иначе <code>COLUMN</code>.</td>
+<td data-label="Значение"><code>AUTO</code></td>
+<td data-label="Поведение"><code>NATIVE</code>, если диалект поддерживает, иначе <code>COLUMN</code>.</td>
 </tr>
 <tr>
-<td><code>DEFAULT</code></td>
-<td>Значение по умолчанию в Hibernate 6.x.</td>
+<td data-label="Значение"><code>DEFAULT</code></td>
+<td data-label="Поведение">Значение по умолчанию в Hibernate 6.x.</td>
 </tr>
 </tbody>
 </table>
@@ -1155,7 +1155,7 @@ noClasses().that().resideInAPackage("..domain..")
 <li><strong>Осенью</strong>, когда часы переводят назад, 02:30 случается дважды, и задача может запуститься <strong>дважды</strong> или один раз, в зависимости от реализации планировщика.</li>
 </ul>
 <p>Конкретные планировщики ведут себя в этой ситуации по-разному, и их поведение сведено в таблицу:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Планировщик</th>
@@ -1164,20 +1164,20 @@ noClasses().that().resideInAPackage("..domain..")
 </thead>
 <tbody>
 <tr>
-<td>Unix <code>cron</code> (Vixie/cronie)</td>
-<td>Задачи из «пропавшего» часа при переводе вперёд запускает сразу после перевода (если сдвиг &lt; 3 ч); при переводе назад задачи в повторённом часе <strong>не</strong> выполняются повторно. Поведение зависит от реализации и версии.</td>
+<td data-label="Планировщик">Unix <code>cron</code> (Vixie/cronie)</td>
+<td data-label="Поведение">Задачи из «пропавшего» часа при переводе вперёд запускает сразу после перевода (если сдвиг &lt; 3 ч); при переводе назад задачи в повторённом часе <strong>не</strong> выполняются повторно. Поведение зависит от реализации и версии.</td>
 </tr>
 <tr>
-<td>Spring <code>@Scheduled(cron=...)</code></td>
-<td>Вычисляет следующее время через <code>CronExpression</code> в указанной <code>zone</code>. Несуществующее время пропускается, повторённое выполняется один раз (следующий триггер ищется строго после предыдущего).</td>
+<td data-label="Планировщик">Spring <code>@Scheduled(cron=...)</code></td>
+<td data-label="Поведение">Вычисляет следующее время через <code>CronExpression</code> в указанной <code>zone</code>. Несуществующее время пропускается, повторённое выполняется один раз (следующий триггер ищется строго после предыдущего).</td>
 </tr>
 <tr>
-<td>Quartz <code>CronTrigger</code></td>
-<td>Аналогично: <code>getFireTimeAfter</code> идёт по возрастанию, повторного запуска в перекрытии не будет, пропущенный час пропускается. Для случая «планировщик лежал» есть misfire-политики.</td>
+<td data-label="Планировщик">Quartz <code>CronTrigger</code></td>
+<td data-label="Поведение">Аналогично: <code>getFireTimeAfter</code> идёт по возрастанию, повторного запуска в перекрытии не будет, пропущенный час пропускается. Для случая «планировщик лежал» есть misfire-политики.</td>
 </tr>
 <tr>
-<td>Kubernetes <code>CronJob</code></td>
-<td>Работает в зоне, заданной полем <code>timeZone</code> (стабильно с k8s 1.27), а без него в зоне kube-controller-manager. Дополнительно есть <code>startingDeadlineSeconds</code> и <code>concurrencyPolicy</code>.</td>
+<td data-label="Планировщик">Kubernetes <code>CronJob</code></td>
+<td data-label="Поведение">Работает в зоне, заданной полем <code>timeZone</code> (стабильно с k8s 1.27), а без него в зоне kube-controller-manager. Дополнительно есть <code>startingDeadlineSeconds</code> и <code>concurrencyPolicy</code>.</td>
 </tr>
 </tbody>
 </table>
@@ -1854,7 +1854,7 @@ DECIMAL128 с последующим setScale(2, HALF_EVEN)      0.33
 </ul>
 <h3 id="75-режимы-округления">7.5 Режимы округления</h3>
 <p>Тариф банка берёт комиссию 0,5 % с каждого платежа и округляет её до копейки. На платеже 1,00 руб. комиссия составляет ровно 0,005 руб., то есть лежит между 0,00 и 0,01 ровно посередине, и от того, в какую сторону банк округлит такую «ничью», зависит, сколько он в итоге заберёт у клиентов. Режим округления (<code>RoundingMode</code>) отвечает на вопрос, куда уходит значение, которое не помещается в заданный scale, и для денег этот ответ определяет не программист, а договор и регулятор. Ниже в таблице перечислены все восемь режимов, затем на числах показано, чем <code>HALF_UP</code> отличается от <code>HALF_EVEN</code>, и объяснено, откуда у второго название «банковское» и почему из этого не следует, что его нужно использовать всегда.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -1864,49 +1864,49 @@ DECIMAL128 с последующим setScale(2, HALF_EVEN)      0.33
 </thead>
 <tbody>
 <tr>
-<td><code>UP</code></td>
-<td>от нуля</td>
-<td>комиссии в пользу банка (агрессивно)</td>
+<td data-label="Режим"><code>UP</code></td>
+<td data-label="Правило">от нуля</td>
+<td data-label="Где применяют">комиссии в пользу банка (агрессивно)</td>
 </tr>
 <tr>
-<td><code>DOWN</code></td>
-<td>к нулю (усечение)</td>
-<td>начисления клиенту (консервативно)</td>
+<td data-label="Режим"><code>DOWN</code></td>
+<td data-label="Правило">к нулю (усечение)</td>
+<td data-label="Где применяют">начисления клиенту (консервативно)</td>
 </tr>
 <tr>
-<td><code>CEILING</code></td>
-<td>к +∞</td>
-<td>границы «не меньше» в оценках; для расчётных сумм встречается редко</td>
+<td data-label="Режим"><code>CEILING</code></td>
+<td data-label="Правило">к +∞</td>
+<td data-label="Где применяют">границы «не меньше» в оценках; для расчётных сумм встречается редко</td>
 </tr>
 <tr>
-<td><code>FLOOR</code></td>
-<td>к −∞</td>
-<td>границы «не больше» в оценках; для расчётных сумм встречается редко</td>
+<td data-label="Режим"><code>FLOOR</code></td>
+<td data-label="Правило">к −∞</td>
+<td data-label="Где применяют">границы «не больше» в оценках; для расчётных сумм встречается редко</td>
 </tr>
 <tr>
-<td><code>HALF_UP</code></td>
-<td>ближайшее, ничья — от нуля</td>
-<td><strong>школьное округление</strong>; стандарт де-факто для розничных сумм, требование многих регуляторов</td>
+<td data-label="Режим"><code>HALF_UP</code></td>
+<td data-label="Правило">ближайшее, ничья — от нуля</td>
+<td data-label="Где применяют"><strong>школьное округление</strong>; стандарт де-факто для розничных сумм, требование многих регуляторов</td>
 </tr>
 <tr>
-<td><code>HALF_DOWN</code></td>
-<td>ближайшее, ничья — к нулю</td>
-<td>редко</td>
+<td data-label="Режим"><code>HALF_DOWN</code></td>
+<td data-label="Правило">ближайшее, ничья — к нулю</td>
+<td data-label="Где применяют">редко</td>
 </tr>
 <tr>
-<td><code>HALF_EVEN</code></td>
-<td>ближайшее, ничья — к чётному</td>
-<td><strong>банковское</strong>; режим по умолчанию в <code>MathContext.DECIMAL*</code> (<code>DECIMAL32</code>, <code>DECIMAL64</code>, <code>DECIMAL128</code>), а в IEEE 754 для двоичных чисел</td>
+<td data-label="Режим"><code>HALF_EVEN</code></td>
+<td data-label="Правило">ближайшее, ничья — к чётному</td>
+<td data-label="Где применяют"><strong>банковское</strong>; режим по умолчанию в <code>MathContext.DECIMAL*</code> (<code>DECIMAL32</code>, <code>DECIMAL64</code>, <code>DECIMAL128</code>), а в IEEE 754 для двоичных чисел</td>
 </tr>
 <tr>
-<td><code>UNNECESSARY</code></td>
-<td>утверждение, что округление не требуется; иначе <code>ArithmeticException</code></td>
-<td>валидация инвариантов</td>
+<td data-label="Режим"><code>UNNECESSARY</code></td>
+<td data-label="Правило">утверждение, что округление не требуется; иначе <code>ArithmeticException</code></td>
+<td data-label="Где применяют">валидация инвариантов</td>
 </tr>
 </tbody>
 </table>
 <p>Различия режимов проще всего увидеть на числах, где отброшенная часть равна, больше или меньше половины. Запуск <code>setScale(0, режим)</code> на JDK 21 даёт такие результаты:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Значение</th>
@@ -1921,64 +1921,64 @@ DECIMAL128 с последующим setScale(2, HALF_EVEN)      0.33
 </thead>
 <tbody>
 <tr>
-<td class="num"><code>5.5</code></td>
-<td class="num">6</td>
-<td class="num">5</td>
-<td class="num">6</td>
-<td class="num">5</td>
-<td class="num">6</td>
-<td class="num">5</td>
-<td class="num">6</td>
+<td data-label="Значение" class="num"><code>5.5</code></td>
+<td data-label="UP" class="num">6</td>
+<td data-label="DOWN" class="num">5</td>
+<td data-label="CEILING" class="num">6</td>
+<td data-label="FLOOR" class="num">5</td>
+<td data-label="HALF_UP" class="num">6</td>
+<td data-label="HALF_DOWN" class="num">5</td>
+<td data-label="HALF_EVEN" class="num">6</td>
 </tr>
 <tr>
-<td class="num"><code>2.5</code></td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td class="num">2</td>
+<td data-label="Значение" class="num"><code>2.5</code></td>
+<td data-label="UP" class="num">3</td>
+<td data-label="DOWN" class="num">2</td>
+<td data-label="CEILING" class="num">3</td>
+<td data-label="FLOOR" class="num">2</td>
+<td data-label="HALF_UP" class="num">3</td>
+<td data-label="HALF_DOWN" class="num">2</td>
+<td data-label="HALF_EVEN" class="num">2</td>
 </tr>
 <tr>
-<td class="num"><code>1.6</code></td>
-<td class="num">2</td>
-<td class="num">1</td>
-<td class="num">2</td>
-<td class="num">1</td>
-<td class="num">2</td>
-<td class="num">2</td>
-<td class="num">2</td>
+<td data-label="Значение" class="num"><code>1.6</code></td>
+<td data-label="UP" class="num">2</td>
+<td data-label="DOWN" class="num">1</td>
+<td data-label="CEILING" class="num">2</td>
+<td data-label="FLOOR" class="num">1</td>
+<td data-label="HALF_UP" class="num">2</td>
+<td data-label="HALF_DOWN" class="num">2</td>
+<td data-label="HALF_EVEN" class="num">2</td>
 </tr>
 <tr>
-<td class="num"><code>1.1</code></td>
-<td class="num">2</td>
-<td class="num">1</td>
-<td class="num">2</td>
-<td class="num">1</td>
-<td class="num">1</td>
-<td class="num">1</td>
-<td class="num">1</td>
+<td data-label="Значение" class="num"><code>1.1</code></td>
+<td data-label="UP" class="num">2</td>
+<td data-label="DOWN" class="num">1</td>
+<td data-label="CEILING" class="num">2</td>
+<td data-label="FLOOR" class="num">1</td>
+<td data-label="HALF_UP" class="num">1</td>
+<td data-label="HALF_DOWN" class="num">1</td>
+<td data-label="HALF_EVEN" class="num">1</td>
 </tr>
 <tr>
-<td class="num"><code>-1.1</code></td>
-<td class="num">-2</td>
-<td class="num">-1</td>
-<td class="num">-1</td>
-<td class="num">-2</td>
-<td class="num">-1</td>
-<td class="num">-1</td>
-<td class="num">-1</td>
+<td data-label="Значение" class="num"><code>-1.1</code></td>
+<td data-label="UP" class="num">-2</td>
+<td data-label="DOWN" class="num">-1</td>
+<td data-label="CEILING" class="num">-1</td>
+<td data-label="FLOOR" class="num">-2</td>
+<td data-label="HALF_UP" class="num">-1</td>
+<td data-label="HALF_DOWN" class="num">-1</td>
+<td data-label="HALF_EVEN" class="num">-1</td>
 </tr>
 <tr>
-<td class="num"><code>-2.5</code></td>
-<td class="num">-3</td>
-<td class="num">-2</td>
-<td class="num">-2</td>
-<td class="num">-3</td>
-<td class="num">-3</td>
-<td class="num">-2</td>
-<td class="num">-2</td>
+<td data-label="Значение" class="num"><code>-2.5</code></td>
+<td data-label="UP" class="num">-3</td>
+<td data-label="DOWN" class="num">-2</td>
+<td data-label="CEILING" class="num">-2</td>
+<td data-label="FLOOR" class="num">-3</td>
+<td data-label="HALF_UP" class="num">-3</td>
+<td data-label="HALF_DOWN" class="num">-2</td>
+<td data-label="HALF_EVEN" class="num">-2</td>
 </tr>
 </tbody>
 </table>
@@ -2122,7 +2122,7 @@ ArithmeticException: Rounding necessary
 <blockquote class="cb-num">
 <p>📊 <strong>Цифры.</strong> В таблице приведены порядки, а не точные значения (JMH, JDK 21, x86-64; снимайте свои):</p>
 </blockquote>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Операция</th>
@@ -2131,28 +2131,28 @@ ArithmeticException: Rounding necessary
 </thead>
 <tbody>
 <tr>
-<td><code>long</code> сложение</td>
-<td>1× (единицы наносекунд, часто 0 после JIT)</td>
+<td data-label="Операция"><code>long</code> сложение</td>
+<td data-label="Относительная стоимость">1× (единицы наносекунд, часто 0 после JIT)</td>
 </tr>
 <tr>
-<td><code>double</code> сложение</td>
-<td>~1×</td>
+<td data-label="Операция"><code>double</code> сложение</td>
+<td data-label="Относительная стоимость">~1×</td>
 </tr>
 <tr>
-<td><code>BigDecimal.add</code> (обе в <code>intCompact</code>)</td>
-<td>~10–30×</td>
+<td data-label="Операция"><code>BigDecimal.add</code> (обе в <code>intCompact</code>)</td>
+<td data-label="Относительная стоимость">~10–30×</td>
 </tr>
 <tr>
-<td><code>BigDecimal.multiply</code></td>
-<td>~20–50×</td>
+<td data-label="Операция"><code>BigDecimal.multiply</code></td>
+<td data-label="Относительная стоимость">~20–50×</td>
 </tr>
 <tr>
-<td><code>BigDecimal.divide</code> с scale и режимом</td>
-<td>~50–200×</td>
+<td data-label="Операция"><code>BigDecimal.divide</code> с scale и режимом</td>
+<td data-label="Относительная стоимость">~50–200×</td>
 </tr>
 <tr>
-<td><code>new BigDecimal(String)</code></td>
-<td>~100× (парсинг + выделение памяти)</td>
+<td data-label="Операция"><code>new BigDecimal(String)</code></td>
+<td data-label="Относительная стоимость">~100× (парсинг + выделение памяти)</td>
 </tr>
 </tbody>
 </table>
@@ -2204,7 +2204,7 @@ ArithmeticException: Rounding necessary
 </li>
 </ol>
 <p>После этого разбора все подходы к хранению денег удобно сравнить в одной таблице:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Подход</th>
@@ -2215,34 +2215,34 @@ ArithmeticException: Rounding necessary
 </thead>
 <tbody>
 <tr>
-<td><code>BigDecimal</code> + <code>Currency</code> (Value Object)</td>
-<td><strong>выбор по умолчанию для бизнес-приложения</strong>: платежи, счета, проводки</td>
-<td>естественная точность, любой scale, читаемый код, прямое отображение на <code>numeric</code></td>
-<td>медленнее в 10–100×, выделения памяти, ловушки <code>equals</code>/<code>divide</code></td>
+<td data-label="Подход"><code>BigDecimal</code> + <code>Currency</code> (Value Object)</td>
+<td data-label="Когда выбирать"><strong>выбор по умолчанию для бизнес-приложения</strong>: платежи, счета, проводки</td>
+<td data-label="Плюсы">естественная точность, любой scale, читаемый код, прямое отображение на <code>numeric</code></td>
+<td data-label="Минусы">медленнее в 10–100×, выделения памяти, ловушки <code>equals</code>/<code>divide</code></td>
 </tr>
 <tr>
-<td><code>long</code> минорных единиц + <code>Currency</code></td>
-<td>высоконагруженные расчёты, биржевые движки, где объём операций критичен</td>
-<td>максимальная скорость, точность по определению, компактность (<code>bigint</code> в БД)</td>
-<td>ломается на валютах с ≠2 знаками и на крипте, дробные промежуточные значения требуют масштабирования, риск переполнения</td>
+<td data-label="Подход"><code>long</code> минорных единиц + <code>Currency</code></td>
+<td data-label="Когда выбирать">высоконагруженные расчёты, биржевые движки, где объём операций критичен</td>
+<td data-label="Плюсы">максимальная скорость, точность по определению, компактность (<code>bigint</code> в БД)</td>
+<td data-label="Минусы">ломается на валютах с ≠2 знаками и на крипте, дробные промежуточные значения требуют масштабирования, риск переполнения</td>
 </tr>
 <tr>
-<td><code>BigInteger</code> минорных единиц</td>
-<td>крипта, произвольная точность без дробей</td>
-<td>нет переполнения</td>
-<td>громоздко, медленно</td>
+<td data-label="Подход"><code>BigInteger</code> минорных единиц</td>
+<td data-label="Когда выбирать">крипта, произвольная точность без дробей</td>
+<td data-label="Плюсы">нет переполнения</td>
+<td data-label="Минусы">громоздко, медленно</td>
 </tr>
 <tr>
-<td><code>double</code></td>
-<td>никогда для сумм; только аналитика и графики</td>
-<td>скорость</td>
-<td>неточность</td>
+<td data-label="Подход"><code>double</code></td>
+<td data-label="Когда выбирать">никогда для сумм; только аналитика и графики</td>
+<td data-label="Плюсы">скорость</td>
+<td data-label="Минусы">неточность</td>
 </tr>
 <tr>
-<td>JSR-354 <code>MonetaryAmount</code> (Moneta)</td>
-<td>когда нужна стандартная модель с форматированием и конвертацией «из коробки»</td>
-<td>продуманный API, <code>FastMoney</code>/<code>Money</code>, операторы, провайдеры курсов</td>
-<td>ещё одна зависимость, не в JDK, редко встречается в командах, отображение в JPA руками</td>
+<td data-label="Подход">JSR-354 <code>MonetaryAmount</code> (Moneta)</td>
+<td data-label="Когда выбирать">когда нужна стандартная модель с форматированием и конвертацией «из коробки»</td>
+<td data-label="Плюсы">продуманный API, <code>FastMoney</code>/<code>Money</code>, операторы, провайдеры курсов</td>
+<td data-label="Минусы">ещё одна зависимость, не в JDK, редко встречается в командах, отображение в JPA руками</td>
 </tr>
 </tbody>
 </table>
@@ -2928,7 +2928,7 @@ ArithmeticException: long overflow
 <h3 id="87-хранение-в-бд-и-передача-в-json">8.7 Хранение в БД и передача в JSON</h3>
 <p>Платёж на 100,10 руб. проходит из <code>Money</code> в колонку PostgreSQL, оттуда в ответ API и дальше в JavaScript-клиент банка, а клиент показывает пользователю <code>100.1</code> и складывает суммы с ошибкой в копейки. Деньги покидают Java двумя основными путями, в колонку базы данных и в поле JSON (а между сервисами ещё и в protobuf), и на каждом из них можно незаметно потерять точность или смысл. Для базы вопрос сводится к выбору типа колонки и к тонкостям <code>numeric</code> в PostgreSQL, для JSON к тому, что большинство парсеров читают любое число как <code>double</code>. Ниже мы разберём оба пути, а в конце посмотрим, как передавать деньги в protobuf, где decimal-типа нет вовсе.</p>
 <p><strong>В PostgreSQL деньги хранят в <code>numeric</code></strong>, и документация рекомендует этот тип для денежных сумм и других величин, где нужна точность (<a href="https://www.postgresql.org/docs/current/datatype-numeric.html">datatype-numeric</a>). Он занимает два байта на каждую группу из четырёх десятичных цифр плюс 3–8 байт накладных расходов, а арифметика на нём медленнее целочисленной и плавающей, зато точная. Допустимая точность в объявлении колонки не больше 1000 цифр, а у <code>numeric</code> без модификаторов предел определяют общие границы типа: до 131072 цифр до запятой и до 16383 после. Варианты колонки сравниваются в таблице:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Вариант</th>
@@ -2937,28 +2937,28 @@ ArithmeticException: long overflow
 </thead>
 <tbody>
 <tr>
-<td><code>numeric(19,4)</code></td>
-<td><strong>выбор по умолчанию</strong>. 4 знака покрывают валюты с 3 знаками и оставляют запас для промежуточных значений; 15 знаков целой части дают до 10¹⁵.</td>
+<td data-label="Вариант"><code>numeric(19,4)</code></td>
+<td data-label="Оценка"><strong>выбор по умолчанию</strong>. 4 знака покрывают валюты с 3 знаками и оставляют запас для промежуточных значений; 15 знаков целой части дают до 10¹⁵.</td>
 </tr>
 <tr>
-<td><code>numeric(19,2)</code></td>
-<td>если точно только валюты с 2 знаками и промежуточных значений в БД нет</td>
+<td data-label="Вариант"><code>numeric(19,2)</code></td>
+<td data-label="Оценка">если точно только валюты с 2 знаками и промежуточных значений в БД нет</td>
 </tr>
 <tr>
-<td><code>numeric</code> без модификаторов</td>
-<td>точность не ограничена, но и не проверяется: в колонку заедет <code>100.123456789</code>. Для денег лучше ограничить, constraint даёт валидацию бесплатно.</td>
+<td data-label="Вариант"><code>numeric</code> без модификаторов</td>
+<td data-label="Оценка">точность не ограничена, но и не проверяется: в колонку заедет <code>100.123456789</code>. Для денег лучше ограничить, constraint даёт валидацию бесплатно.</td>
 </tr>
 <tr>
-<td><code>bigint</code> минорных единиц</td>
-<td>быстро, компактно, точно; требует хранить валюту рядом и знать её exponent; неудобно писать SQL-отчёты (<code>sum(amount)/100.0</code>)</td>
+<td data-label="Вариант"><code>bigint</code> минорных единиц</td>
+<td data-label="Оценка">быстро, компактно, точно; требует хранить валюту рядом и знать её exponent; неудобно писать SQL-отчёты (<code>sum(amount)/100.0</code>)</td>
 </tr>
 <tr>
-<td><code>money</code></td>
-<td><strong>не использовать</strong>. Число знаков берётся из настройки базы <code>lc_monetary</code>, а не из валюты суммы, а загрузка дампа в базу с другой локалью, по предупреждению документации, может не сработать (см. главу 19).</td>
+<td data-label="Вариант"><code>money</code></td>
+<td data-label="Оценка"><strong>не использовать</strong>. Число знаков берётся из настройки базы <code>lc_monetary</code>, а не из валюты суммы, а загрузка дампа в базу с другой локалью, по предупреждению документации, может не сработать (см. главу 19).</td>
 </tr>
 <tr>
-<td><code>double precision</code></td>
-<td>никогда</td>
+<td data-label="Вариант"><code>double precision</code></td>
+<td data-label="Оценка">никогда</td>
 </tr>
 </tbody>
 </table>
@@ -3160,7 +3160,7 @@ ToStringSerializer, сумма 1E+3:    {"amount":"1E+3","currency":"RUB"}
 <p>Текст в Unicode описывается на трёх уровнях: кодовая единица (code unit) — это то, что лежит в памяти, кодовая точка (code point) — абстрактный символ стандарта, а графемный кластер (grapheme cluster) — то, что человек считает одним знаком. Большинство ошибок со строками возникает, когда код считает на одном уровне, а пользователь на другом, поэтому ниже мы определим каждый уровень, объясним, почему Java работает с UTF-16, и посмотрим, как посчитать каждое из трёх количеств.</p>
 <p>Unicode задаёт <strong>кодовые точки</strong> (code points), то есть числа от U+0000 до U+10FFFF, каждое из которых обозначает абстрактный символ. Всего их чуть больше миллиона, и из них назначено около 150 тысяч.</p>
 <p>Кодовая точка — это ещё не байты. Чтобы записать её в память, нужна <strong>кодировка</strong> (encoding form), которая превращает точку в последовательность <strong>кодовых единиц</strong> (code units), и разные кодировки делают это по-разному:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Кодировка</th>
@@ -3170,19 +3170,19 @@ ToStringSerializer, сумма 1E+3:    {"amount":"1E+3","currency":"RUB"}
 </thead>
 <tbody>
 <tr>
-<td>UTF-8</td>
-<td>8 бит</td>
-<td>1–4</td>
+<td data-label="Кодировка">UTF-8</td>
+<td data-label="Размер единицы">8 бит</td>
+<td data-label="Сколько единиц на точку">1–4</td>
 </tr>
 <tr>
-<td>UTF-16</td>
-<td>16 бит</td>
-<td>1 или 2</td>
+<td data-label="Кодировка">UTF-16</td>
+<td data-label="Размер единицы">16 бит</td>
+<td data-label="Сколько единиц на точку">1 или 2</td>
 </tr>
 <tr>
-<td>UTF-32</td>
-<td>32 бита</td>
-<td>всегда 1</td>
+<td data-label="Кодировка">UTF-32</td>
+<td data-label="Размер единицы">32 бита</td>
+<td data-label="Сколько единиц на точку">всегда 1</td>
 </tr>
 </tbody>
 </table>
@@ -3293,7 +3293,7 @@ ToStringSerializer, сумма 1E+3:    {"amount":"1E+3","currency":"RUB"}
 <li><strong>Совместимая эквивалентность</strong> связывает семантически близкие, но визуально различные формы: лигатура <code>ﬁ</code> (U+FB01) ≈ <code>fi</code>, ① ≈ <code>1</code>, полноширинная <code>Ａ</code> ≈ <code>A</code>, верхний индекс <code>²</code> ≈ <code>2</code>.</li>
 </ul>
 <p>Из двух видов эквивалентности и двух операций, декомпозиции и композиции, получаются четыре нормальные формы, и в таблице видно, что каждая делает с <code>é</code> и с лигатурой:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Форма</th>
@@ -3304,28 +3304,28 @@ ToStringSerializer, сумма 1E+3:    {"amount":"1E+3","currency":"RUB"}
 </thead>
 <tbody>
 <tr>
-<td><strong>NFD</strong></td>
-<td>каноническая декомпозиция</td>
-<td><code>e</code> + U+0301 (2 точки)</td>
-<td><code>ﬁ</code> (не меняется)</td>
+<td data-label="Форма"><strong>NFD</strong></td>
+<td data-label="Операция">каноническая декомпозиция</td>
+<td data-label="Результат для é"><code>e</code> + U+0301 (2 точки)</td>
+<td data-label="Результат для ﬁ"><code>ﬁ</code> (не меняется)</td>
 </tr>
 <tr>
-<td><strong>NFC</strong></td>
-<td>декомпозиция + композиция</td>
-<td>U+00E9 (1 точка)</td>
-<td><code>ﬁ</code> (не меняется)</td>
+<td data-label="Форма"><strong>NFC</strong></td>
+<td data-label="Операция">декомпозиция + композиция</td>
+<td data-label="Результат для é">U+00E9 (1 точка)</td>
+<td data-label="Результат для ﬁ"><code>ﬁ</code> (не меняется)</td>
 </tr>
 <tr>
-<td><strong>NFKD</strong></td>
-<td>совместимая декомпозиция</td>
-<td><code>e</code> + U+0301</td>
-<td><code>f</code> + <code>i</code></td>
+<td data-label="Форма"><strong>NFKD</strong></td>
+<td data-label="Операция">совместимая декомпозиция</td>
+<td data-label="Результат для é"><code>e</code> + U+0301</td>
+<td data-label="Результат для ﬁ"><code>f</code> + <code>i</code></td>
 </tr>
 <tr>
-<td><strong>NFKC</strong></td>
-<td>совместимая декомпозиция + композиция</td>
-<td>U+00E9</td>
-<td><code>f</code> + <code>i</code></td>
+<td data-label="Форма"><strong>NFKC</strong></td>
+<td data-label="Операция">совместимая декомпозиция + композиция</td>
+<td data-label="Результат для é">U+00E9</td>
+<td data-label="Результат для ﬁ"><code>f</code> + <code>i</code></td>
 </tr>
 </tbody>
 </table>
@@ -3428,7 +3428,7 @@ ToStringSerializer, сумма 1E+3:    {"amount":"1E+3","currency":"RUB"}
 </code></pre></div>
 
 <p>Насколько тонко <code>Collator</code> различает строки, задаёт уровень «силы» (strength), и уровней четыре:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -3437,20 +3437,20 @@ ToStringSerializer, сумма 1E+3:    {"amount":"1E+3","currency":"RUB"}
 </thead>
 <tbody>
 <tr>
-<td><code>PRIMARY</code></td>
-<td>только базовые буквы: <code>a</code> = <code>A</code> = <code>á</code></td>
+<td data-label="Уровень"><code>PRIMARY</code></td>
+<td data-label="Что различает">только базовые буквы: <code>a</code> = <code>A</code> = <code>á</code></td>
 </tr>
 <tr>
-<td><code>SECONDARY</code></td>
-<td>+ диакритика: <code>a</code> = <code>A</code>, но <code>a</code> ≠ <code>á</code></td>
+<td data-label="Уровень"><code>SECONDARY</code></td>
+<td data-label="Что различает">+ диакритика: <code>a</code> = <code>A</code>, но <code>a</code> ≠ <code>á</code></td>
 </tr>
 <tr>
-<td><code>TERTIARY</code> (по умолчанию)</td>
-<td>+ регистр: <code>a</code> ≠ <code>A</code></td>
+<td data-label="Уровень"><code>TERTIARY</code> (по умолчанию)</td>
+<td data-label="Что различает">+ регистр: <code>a</code> ≠ <code>A</code></td>
 </tr>
 <tr>
-<td><code>IDENTICAL</code></td>
-<td>+ всё остальное, включая форму нормализации</td>
+<td data-label="Уровень"><code>IDENTICAL</code></td>
+<td data-label="Что различает">+ всё остальное, включая форму нормализации</td>
 </tr>
 </tbody>
 </table>
@@ -3525,7 +3525,7 @@ ToStringSerializer, сумма 1E+3:    {"amount":"1E+3","currency":"RUB"}
 </code></pre></div>
 
 <p><strong>«Кракозябры»</strong> получаются, когда байты читают не в той кодировке, и по их виду можно понять, что именно произошло:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Что видно</th>
@@ -3534,24 +3534,24 @@ ToStringSerializer, сумма 1E+3:    {"amount":"1E+3","currency":"RUB"}
 </thead>
 <tbody>
 <tr>
-<td><code>ÐŸÑ€Ð¸Ð²ÐµÑ‚</code></td>
-<td>UTF-8 байты прочитаны как windows-1251</td>
+<td data-label="Что видно"><code>ÐŸÑ€Ð¸Ð²ÐµÑ‚</code></td>
+<td data-label="Что произошло">UTF-8 байты прочитаны как windows-1251</td>
 </tr>
 <tr>
-<td><code>Ïðèâåò</code></td>
-<td>windows-1251 байты прочитаны как ISO-8859-1</td>
+<td data-label="Что видно"><code>Ïðèâåò</code></td>
+<td data-label="Что произошло">windows-1251 байты прочитаны как ISO-8859-1</td>
 </tr>
 <tr>
-<td><code>??????</code></td>
-<td>преобразование в кодировку, не поддерживающую символы (ASCII, ISO-8859-1) — <strong>данные потеряны безвозвратно</strong></td>
+<td data-label="Что видно"><code>??????</code></td>
+<td data-label="Что произошло">преобразование в кодировку, не поддерживающую символы (ASCII, ISO-8859-1) — <strong>данные потеряны безвозвратно</strong></td>
 </tr>
 <tr>
-<td><code>�����</code> (U+FFFD)</td>
-<td>некорректная последовательность при декодировании</td>
+<td data-label="Что видно"><code>�����</code> (U+FFFD)</td>
+<td data-label="Что произошло">некорректная последовательность при декодировании</td>
 </tr>
 <tr>
-<td><code>При</code></td>
-<td>строка прошла через Unicode-escaping (часто Jackson или <code>native2ascii</code>)</td>
+<td data-label="Что видно"><code>При</code></td>
+<td data-label="Что произошло">строка прошла через Unicode-escaping (часто Jackson или <code>native2ascii</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -3589,7 +3589,7 @@ Content-Type: text/csv; charset=windows-1251
 <h3 id="104-валидация-и-безопасность-текста">10.4 Валидация и безопасность текста</h3>
 <p>Проверка текста на входе — это не только ограничение длины, но и защита от строк, которые выглядят не тем, чем являются: логинов с подменёнными буквами, получателей платежа, неотличимых от настоящих, и невидимых символов, переставляющих текст на экране. Ниже мы сначала разберёмся, в каких единицах считают длину разные системы, затем перейдём к гомоглифам и спуфингу, к невидимым символам и фильтру для них, а закончим эмодзи в полях, которые уходят во внешние системы.</p>
 <p><strong>Длину можно мерить в символах, кодовых точках или байтах</strong>, и это три разных ограничения, поэтому нужно знать, какое из них действует у вас. В таблице собрано, в чём считают разные системы:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Где</th>
@@ -3598,32 +3598,32 @@ Content-Type: text/csv; charset=windows-1251
 </thead>
 <tbody>
 <tr>
-<td>PostgreSQL <code>varchar(n)</code></td>
-<td>символы (кодовые точки)</td>
+<td data-label="Где">PostgreSQL <code>varchar(n)</code></td>
+<td data-label="Единица">символы (кодовые точки)</td>
 </tr>
 <tr>
-<td>Oracle <code>VARCHAR2(n)</code> (по умолчанию)</td>
-<td><strong>байты</strong></td>
+<td data-label="Где">Oracle <code>VARCHAR2(n)</code> (по умолчанию)</td>
+<td data-label="Единица"><strong>байты</strong></td>
 </tr>
 <tr>
-<td>Oracle <code>VARCHAR2(n CHAR)</code></td>
-<td>символы</td>
+<td data-label="Где">Oracle <code>VARCHAR2(n CHAR)</code></td>
+<td data-label="Единица">символы</td>
 </tr>
 <tr>
-<td>MySQL <code>varchar(n)</code></td>
-<td>символы; но индекс ограничен байтами (767/3072)</td>
+<td data-label="Где">MySQL <code>varchar(n)</code></td>
+<td data-label="Единица">символы; но индекс ограничен байтами (767/3072)</td>
 </tr>
 <tr>
-<td>Java <code>String.length()</code></td>
-<td>UTF-16 code units</td>
+<td data-label="Где">Java <code>String.length()</code></td>
+<td data-label="Единица">UTF-16 code units</td>
 </tr>
 <tr>
-<td>Bean Validation <code>@Size(max = n)</code></td>
-<td><code>String.length()</code>, то есть code units</td>
+<td data-label="Где">Bean Validation <code>@Size(max = n)</code></td>
+<td data-label="Единица"><code>String.length()</code>, то есть code units</td>
 </tr>
 <tr>
-<td>Форматы обмена (SWIFT, ФФД, ГОСТ)</td>
-<td>обычно символы из ограниченного набора</td>
+<td data-label="Где">Форматы обмена (SWIFT, ФФД, ГОСТ)</td>
+<td data-label="Единица">обычно символы из ограниченного набора</td>
 </tr>
 </tbody>
 </table>
@@ -3717,7 +3717,7 @@ Content-Type: text/csv; charset=windows-1251
 </blockquote>
 <p>Собственного кеша у <code>Pattern</code> нет, в отличие, скажем, от .NET. Если паттерны динамические, то есть строятся из пользовательского ввода или конфигурации, кеш придётся сделать самим, например на Caffeine с ограничением по размеру (см. главу 23). <strong>Неограниченный <code>HashMap&lt;String, Pattern&gt;</code> на пользовательском вводе делать нельзя</strong>, потому что это утечка памяти и вектор атаки.</p>
 <p>Поведение паттерна меняют флаги, и полезные из них собраны в таблице:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Флаг</th>
@@ -3726,32 +3726,32 @@ Content-Type: text/csv; charset=windows-1251
 </thead>
 <tbody>
 <tr>
-<td><code>CASE_INSENSITIVE</code></td>
-<td>без учёта регистра — <strong>только ASCII</strong>, если не добавлен <code>UNICODE_CASE</code></td>
+<td data-label="Флаг"><code>CASE_INSENSITIVE</code></td>
+<td data-label="Действие">без учёта регистра — <strong>только ASCII</strong>, если не добавлен <code>UNICODE_CASE</code></td>
 </tr>
 <tr>
-<td><code>UNICODE_CASE</code></td>
-<td>регистронезависимость по правилам Unicode</td>
+<td data-label="Флаг"><code>UNICODE_CASE</code></td>
+<td data-label="Действие">регистронезависимость по правилам Unicode</td>
 </tr>
 <tr>
-<td><code>UNICODE_CHARACTER_CLASS</code></td>
-<td><code>\w</code>, <code>\d</code>, <code>\s</code>, <code>\b</code> работают по Unicode, а не по ASCII</td>
+<td data-label="Флаг"><code>UNICODE_CHARACTER_CLASS</code></td>
+<td data-label="Действие"><code>\w</code>, <code>\d</code>, <code>\s</code>, <code>\b</code> работают по Unicode, а не по ASCII</td>
 </tr>
 <tr>
-<td><code>DOTALL</code></td>
-<td><code>.</code> совпадает и с переводом строки</td>
+<td data-label="Флаг"><code>DOTALL</code></td>
+<td data-label="Действие"><code>.</code> совпадает и с переводом строки</td>
 </tr>
 <tr>
-<td><code>MULTILINE</code></td>
-<td><code>^</code>/<code>$</code> матчат границы строк, а не всего ввода</td>
+<td data-label="Флаг"><code>MULTILINE</code></td>
+<td data-label="Действие"><code>^</code>/<code>$</code> матчат границы строк, а не всего ввода</td>
 </tr>
 <tr>
-<td><code>COMMENTS</code></td>
-<td>пробелы игнорируются, <code>#</code> — комментарий (читаемые сложные паттерны)</td>
+<td data-label="Флаг"><code>COMMENTS</code></td>
+<td data-label="Действие">пробелы игнорируются, <code>#</code> — комментарий (читаемые сложные паттерны)</td>
 </tr>
 <tr>
-<td><code>LITERAL</code></td>
-<td>паттерн как литерал (эквивалент <code>Pattern.quote</code>)</td>
+<td data-label="Флаг"><code>LITERAL</code></td>
+<td data-label="Действие">паттерн как литерал (эквивалент <code>Pattern.quote</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -3776,7 +3776,7 @@ Content-Type: text/csv; charset=windows-1251
 
 <p>Механизм здесь такой: <code>(a+)+</code> может разбить строку из n букв <code>a</code> на группы экспоненциально многими способами, и пока последний символ <code>!</code> не совпадает, движок честно перебирает все эти разбиения.</p>
 <p>Типовые уязвимые конструкции перечислены в таблице вместе с тем, почему каждая из них опасна:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Шаблон</th>
@@ -3786,24 +3786,24 @@ Content-Type: text/csv; charset=windows-1251
 </thead>
 <tbody>
 <tr>
-<td>Вложенные квантификаторы</td>
-<td><code>(a+)+</code>, <code>(a*)*</code>, <code>(\d+)*</code></td>
-<td>экспоненциальное число разбиений</td>
+<td data-label="Шаблон">Вложенные квантификаторы</td>
+<td data-label="Пример"><code>(a+)+</code>, <code>(a*)*</code>, <code>(\d+)*</code></td>
+<td data-label="Почему плохо">экспоненциальное число разбиений</td>
 </tr>
 <tr>
-<td>Альтернация с перекрытием под квантификатором</td>
-<td><code>(a\|aa)+</code>, <code>(\w\|\d)+</code></td>
-<td>ветви матчат одно и то же</td>
+<td data-label="Шаблон">Альтернация с перекрытием под квантификатором</td>
+<td data-label="Пример"><code>(a\|aa)+</code>, <code>(\w\|\d)+</code></td>
+<td data-label="Почему плохо">ветви матчат одно и то же</td>
 </tr>
 <tr>
-<td>Смежные жадные квантификаторы</td>
-<td><code>.*.*=.*</code></td>
-<td>квадратично или хуже</td>
+<td data-label="Шаблон">Смежные жадные квантификаторы</td>
+<td data-label="Пример"><code>.*.*=.*</code></td>
+<td data-label="Почему плохо">квадратично или хуже</td>
 </tr>
 <tr>
-<td><code>(.*\|.+)*</code> в валидаторах email</td>
-<td>реальные паттерны email из интернета</td>
-<td>классический источник ReDoS</td>
+<td data-label="Шаблон"><code>(.*\|.+)*</code> в валидаторах email</td>
+<td data-label="Пример">реальные паттерны email из интернета</td>
+<td data-label="Почему плохо">классический источник ReDoS</td>
 </tr>
 </tbody>
 </table>
@@ -3928,7 +3928,7 @@ Content-Type: text/csv; charset=windows-1251
 - <strong>Откат на локаль JVM по умолчанию (fallback).</strong> Если бандла для <code>fr</code> нет, будет взят бандл для <code>Locale.getDefault()</code>, а не базовый, и в итоге французский пользователь видит русский текст. Лечится это через <code>ResourceBundle.Control.getNoFallbackControl(FORMAT_DEFAULT)</code> или явную базовую локаль.
 - <strong>Одинарные кавычки в <code>MessageFormat</code>.</strong> Апостроф в <code>MessageFormat</code> служит экранирующим символом, так что строка <code>Don't {0}</code> напечатает <code>Dont {0}</code> (!), и одинарную кавычку приходится удваивать: <code>Don''t {0}</code>. Это стабильно ломает переводы на французский и итальянский.</p>
 <p><strong>Плюрализация</strong>, то есть выбор формы слова по числу, в английском обходится двумя формами (1 item / 2 items), а в русском их <strong>три</strong>, как видно из таблицы:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Число</th>
@@ -3938,19 +3938,19 @@ Content-Type: text/csv; charset=windows-1251
 </thead>
 <tbody>
 <tr>
-<td>1, 21, 31, 101… (кроме 11)</td>
-<td>one</td>
-<td>1 платёж, 21 платёж</td>
+<td data-label="Число">1, 21, 31, 101… (кроме 11)</td>
+<td data-label="Форма">one</td>
+<td data-label="Пример">1 платёж, 21 платёж</td>
 </tr>
 <tr>
-<td>2–4, 22–24… (кроме 12–14)</td>
-<td>few</td>
-<td>2 платежа, 23 платежа</td>
+<td data-label="Число">2–4, 22–24… (кроме 12–14)</td>
+<td data-label="Форма">few</td>
+<td data-label="Пример">2 платежа, 23 платежа</td>
 </tr>
 <tr>
-<td>0, 5–20, 25–30…</td>
-<td>many</td>
-<td>5 платежей, 11 платежей, 0 платежей</td>
+<td data-label="Число">0, 5–20, 25–30…</td>
+<td data-label="Форма">many</td>
+<td data-label="Пример">5 платежей, 11 платежей, 0 платежей</td>
 </tr>
 </tbody>
 </table>
@@ -4443,5 +4443,5 @@ grep -rn <span class="s1">'static.*SimpleDateFormat\|static.*NumberFormat\|stati
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-модель-времени-момент-и-календарная-дата">1. Модель времени: момент и календарная дата</a></li><li><a href="#2-javatime-типы-и-правило-выбора">2. java.time: типы и правило выбора</a></li><li><a href="#3-арифметика-времени-и-тестируемость">3. Арифметика времени и тестируемость</a></li><li><a href="#4-форматирование-и-парсинг">4. Форматирование и парсинг</a></li><li><a href="#5-время-в-системе-бд-api-планировщики-монотонность">5. Время в системе: БД, API, планировщики, монотонность</a></li><li><a href="#6-денежные-суммы-и-тип-double">6. Денежные суммы и тип double</a></li><li><a href="#7-устройство-bigdecimal">7. Устройство BigDecimal</a></li><li><a href="#8-модель-денег-минорные-единицы-value-object-мультивалютность">8. Модель денег: минорные единицы, Value Object, мультивалютность</a></li><li><a href="#9-unicode-и-длина-строки">9. Unicode и длина строки</a></li><li><a href="#10-кодировки-байты-и-символы">10. Кодировки: байты и символы</a></li><li><a href="#11-регулярные-выражения-форматирование-чисел-и-i18n">11. Регулярные выражения, форматирование чисел и i18n</a></li><li><a href="#12-грабли-и-антипаттерны">12. Грабли и антипаттерны</a></li><li><a href="#13-диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

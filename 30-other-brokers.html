@@ -3,7 +3,7 @@
 <title>30. Другие брокеры: RabbitMQ, NATS, Pulsar, ActiveMQ — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Другие брокеры: RabbitMQ, NATS, Pulsar, ActiveMQ">
 <a class="skip" href="#content">К тексту</a>
@@ -30,7 +30,7 @@
 </blockquote>
 <h3 id="12-сравнительная-таблица-моделей">1.2 Сравнительная таблица моделей</h3>
 <p>Таблица ниже сводит различия двух моделей по тем свойствам, которые приходится взвешивать при выборе брокера. Читать её лучше построчно и спрашивать себя про каждую строку, важно ли это свойство для вашей задачи: почти всегда оказывается, что решают две-три строки, а не вся таблица целиком, и именно эти строки называют правильную модель.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Свойство</th>
@@ -40,69 +40,69 @@
 </thead>
 <tbody>
 <tr>
-<td>Что происходит после ack</td>
-<td>сообщение удаляется</td>
-<td>ничего, данные лежат до срока хранения</td>
+<td data-label="Свойство">Что происходит после ack</td>
+<td data-label="Очередь (queue)">сообщение удаляется</td>
+<td data-label="Лог (log)">ничего, данные лежат до срока хранения</td>
 </tr>
 <tr>
-<td>Где состояние доставки</td>
-<td>у брокера, <strong>на каждое сообщение</strong></td>
-<td>у потребителя, <strong>одно число на партицию</strong></td>
+<td data-label="Свойство">Где состояние доставки</td>
+<td data-label="Очередь (queue)">у брокера, <strong>на каждое сообщение</strong></td>
+<td data-label="Лог (log)">у потребителя, <strong>одно число на партицию</strong></td>
 </tr>
 <tr>
-<td>Перечитать историю</td>
-<td>нельзя (сообщений уже нет)</td>
-<td>штатная операция (seek)</td>
+<td data-label="Свойство">Перечитать историю</td>
+<td data-label="Очередь (queue)">нельзя (сообщений уже нет)</td>
+<td data-label="Лог (log)">штатная операция (seek)</td>
 </tr>
 <tr>
-<td>Несколько независимых потребителей одних данных</td>
-<td>нужно N копий сообщения (fanout в N очередей)</td>
-<td>бесплатно: N групп читают один лог</td>
+<td data-label="Свойство">Несколько независимых потребителей одних данных</td>
+<td data-label="Очередь (queue)">нужно N копий сообщения (fanout в N очередей)</td>
+<td data-label="Лог (log)">бесплатно: N групп читают один лог</td>
 </tr>
 <tr>
-<td>Единица параллелизма</td>
-<td>потребитель (их можно добавлять на лету)</td>
-<td>партиция (потолок параллелизма фиксирован)</td>
+<td data-label="Свойство">Единица параллелизма</td>
+<td data-label="Очередь (queue)">потребитель (их можно добавлять на лету)</td>
+<td data-label="Лог (log)">партиция (потолок параллелизма фиксирован)</td>
 </tr>
 <tr>
-<td>Порядок</td>
-<td>глобальный в очереди при одном потребителе; при нескольких не гарантирован</td>
-<td>строгий внутри партиции при любом числе групп</td>
+<td data-label="Свойство">Порядок</td>
+<td data-label="Очередь (queue)">глобальный в очереди при одном потребителе; при нескольких не гарантирован</td>
+<td data-label="Лог (log)">строгий внутри партиции при любом числе групп</td>
 </tr>
 <tr>
-<td>Одно «медленное» или битое сообщение</td>
-<td>не блокирует остальные: nack → DLQ, остальные идут дальше</td>
-<td>блокирует всю партицию до решения</td>
+<td data-label="Свойство">Одно «медленное» или битое сообщение</td>
+<td data-label="Очередь (queue)">не блокирует остальные: nack → DLQ, остальные идут дальше</td>
+<td data-label="Лог (log)">блокирует всю партицию до решения</td>
 </tr>
 <tr>
-<td>Индивидуальный retry и задержка</td>
-<td>естественны (nack, TTL+DLX, visibility timeout, retry-topic)</td>
-<td>требуют внешней машинерии (retry-топики, DLT)</td>
+<td data-label="Свойство">Индивидуальный retry и задержка</td>
+<td data-label="Очередь (queue)">естественны (nack, TTL+DLX, visibility timeout, retry-topic)</td>
+<td data-label="Лог (log)">требуют внешней машинерии (retry-топики, DLT)</td>
 </tr>
 <tr>
-<td>Приоритеты</td>
-<td>поддерживаются (с оговорками)</td>
-<td>принципиально невозможны</td>
+<td data-label="Свойство">Приоритеты</td>
+<td data-label="Очередь (queue)">поддерживаются (с оговорками)</td>
+<td data-label="Лог (log)">принципиально невозможны</td>
 </tr>
 <tr>
-<td>Сложная маршрутизация</td>
-<td>сильная сторона (exchange, binding, selector)</td>
-<td>отсутствует: только топик и ключ партиционирования</td>
+<td data-label="Свойство">Сложная маршрутизация</td>
+<td data-label="Очередь (queue)">сильная сторона (exchange, binding, selector)</td>
+<td data-label="Лог (log)">отсутствует: только топик и ключ партиционирования</td>
 </tr>
 <tr>
-<td>Стоимость бэклога</td>
-<td>высокая: длинная очередь бьёт по памяти и латентности</td>
-<td>почти нулевая: это просто файлы</td>
+<td data-label="Свойство">Стоимость бэклога</td>
+<td data-label="Очередь (queue)">высокая: длинная очередь бьёт по памяти и латентности</td>
+<td data-label="Лог (log)">почти нулевая: это просто файлы</td>
 </tr>
 <tr>
-<td>Типичная пропускная способность одного узла</td>
-<td>десятки тысяч msg/s</td>
-<td>от сотен тысяч до миллионов msg/s</td>
+<td data-label="Свойство">Типичная пропускная способность одного узла</td>
+<td data-label="Очередь (queue)">десятки тысяч msg/s</td>
+<td data-label="Лог (log)">от сотен тысяч до миллионов msg/s</td>
 </tr>
 <tr>
-<td>Типовая задача</td>
-<td>«выполни работу»: команда, задача, RPC</td>
-<td>«произошло событие»: поток, аудит, интеграция</td>
+<td data-label="Свойство">Типовая задача</td>
+<td data-label="Очередь (queue)">«выполни работу»: команда, задача, RPC</td>
+<td data-label="Лог (log)">«произошло событие»: поток, аудит, интеграция</td>
 </tr>
 </tbody>
 </table>
@@ -152,7 +152,7 @@
 </blockquote>
 <h3 id="22-типы-обменников">2.2 Типы обменников</h3>
 <p>Тип обменника определяет правило, по которому exchange сопоставляет routing key сообщения с привязками очередей, и от этого выбора зависит, насколько гибкой получится маршрутизация. В AMQP 0-9-1 таких типов четыре; в таблице для каждого показаны правило и типовое применение, а ниже разобраны шаблоны <code>topic</code>, на которых построено большинство реальных топологий.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип</th>
@@ -162,24 +162,24 @@
 </thead>
 <tbody>
 <tr>
-<td><code>direct</code></td>
-<td>routing key очереди == routing key сообщения (строгое равенство)</td>
-<td>адресная доставка, роутинг по типу задачи</td>
+<td data-label="Тип"><code>direct</code></td>
+<td data-label="Правило маршрутизации">routing key очереди == routing key сообщения (строгое равенство)</td>
+<td data-label="Типовое применение">адресная доставка, роутинг по типу задачи</td>
 </tr>
 <tr>
-<td><code>fanout</code></td>
-<td>всем привязанным очередям, routing key игнорируется</td>
-<td>широковещательная рассылка, инвалидация кэша</td>
+<td data-label="Тип"><code>fanout</code></td>
+<td data-label="Правило маршрутизации">всем привязанным очередям, routing key игнорируется</td>
+<td data-label="Типовое применение">широковещательная рассылка, инвалидация кэша</td>
 </tr>
 <tr>
-<td><code>topic</code></td>
-<td>сопоставление routing key с шаблоном по «словам», разделённым точками</td>
-<td>подписка по иерархии событий</td>
+<td data-label="Тип"><code>topic</code></td>
+<td data-label="Правило маршрутизации">сопоставление routing key с шаблоном по «словам», разделённым точками</td>
+<td data-label="Типовое применение">подписка по иерархии событий</td>
 </tr>
 <tr>
-<td><code>headers</code></td>
-<td>сопоставление заголовков, <code>x-match: all\|any</code></td>
-<td>маршрутизация по нескольким атрибутам, когда строки routing key не хватает</td>
+<td data-label="Тип"><code>headers</code></td>
+<td data-label="Правило маршрутизации">сопоставление заголовков, <code>x-match: all\|any</code></td>
+<td data-label="Типовое применение">маршрутизация по нескольким атрибутам, когда строки routing key не хватает</td>
 </tr>
 </tbody>
 </table>
@@ -256,7 +256,7 @@ rabbitmqctl set_policy task-retry <span class="s2">"^task\."</span> <span class=
 <p>Надёжность RabbitMQ держится на двух подтверждениях, которые легко перепутать: потребитель подтверждает брокеру, что обработал сообщение, а брокер подтверждает публикатору, что принял его. Между этими двумя точками работает регулирование потока, от prefetch на стороне потребителя до оповещений, которыми брокер защищает себя от переполнения памяти и диска. Почти все инциденты с RabbitMQ, которые случаются на проде, связаны именно с этой механикой: ненастроенный prefetch, confirm, которого никто не ждёт, или публикатор, зависший на заблокированном соединении. В этом разделе разберём по порядку consumer acknowledgements, prefetch, publisher confirms, flow control и оповещения, из чего складывается память узла и, наконец, где на пути от базы данных до потребителя сообщение может потеряться.</p>
 <h3 id="31-consumer-acknowledgements">3.1 Consumer acknowledgements</h3>
 <p>Consumer acknowledgement — это сообщение от потребителя брокеру о том, что делать с полученной доставкой: удалить её, вернуть в очередь или отбросить. Получая доставку (<code>basic.deliver</code>), потребитель вместе с ней получает <strong>delivery tag</strong>, целое число, которое монотонно растёт в пределах канала, и именно этим тегом он потом подтверждает или отвергает сообщение. Исходов у доставки три, и таблица ниже показывает, какой метод к какому приводит (<a href="https://www.rabbitmq.com/docs/confirms">Consumer Acknowledgements and Publisher Confirms</a>).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метод</th>
@@ -266,19 +266,19 @@ rabbitmqctl set_policy task-retry <span class="s2">"^task\."</span> <span class=
 </thead>
 <tbody>
 <tr>
-<td><code>basic.ack(tag, multiple)</code></td>
-<td>подтверждение</td>
-<td>удаляется из очереди</td>
+<td data-label="Метод"><code>basic.ack(tag, multiple)</code></td>
+<td data-label="Что делает">подтверждение</td>
+<td data-label="Куда денется сообщение">удаляется из очереди</td>
 </tr>
 <tr>
-<td><code>basic.nack(tag, multiple, requeue)</code></td>
-<td>отрицательное, поддерживает <code>multiple</code> (расширение RabbitMQ)</td>
-<td><code>requeue=true</code> — обратно в очередь; <code>false</code> — в DLX или в никуда</td>
+<td data-label="Метод"><code>basic.nack(tag, multiple, requeue)</code></td>
+<td data-label="Что делает">отрицательное, поддерживает <code>multiple</code> (расширение RabbitMQ)</td>
+<td data-label="Куда денется сообщение"><code>requeue=true</code> — обратно в очередь; <code>false</code> — в DLX или в никуда</td>
 </tr>
 <tr>
-<td><code>basic.reject(tag, requeue)</code></td>
-<td>то же, но всегда на одно сообщение</td>
-<td>так же</td>
+<td data-label="Метод"><code>basic.reject(tag, requeue)</code></td>
+<td data-label="Что делает">то же, но всегда на одно сообщение</td>
+<td data-label="Куда денется сообщение">так же</td>
 </tr>
 </tbody>
 </table>
@@ -377,7 +377,7 @@ rabbitmqctl set_policy ae <span class="s2">"^payments</span>$<span class="s2">"<
 <hr>
 <h3 id="35-состав-памяти-узла">3.5 Состав памяти узла</h3>
 <p>Memory alarm сообщает лишь о том, что память кончилась, но не говорит, на что она ушла, а лечение у разных потребителей памяти совершенно разное: длинные очереди разгружают, лишние соединения закрывают, большие сообщения запрещают. Поэтому, когда оповещение сработало, первым делом надо выяснить, что именно занято. Ответ на этот вопрос даёт <code>rabbitmq-diagnostics memory_breakdown</code>, и в таблице ниже расшифрованы его категории вместе с тем, о чём говорит большое значение в каждой; после таблицы разобраны три настройки, которые стоит сделать до продакшена, и механика flow control изнутри.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Категория</th>
@@ -387,44 +387,44 @@ rabbitmqctl set_policy ae <span class="s2">"^payments</span>$<span class="s2">"<
 </thead>
 <tbody>
 <tr>
-<td><code>queue_procs</code></td>
-<td>процессы Erlang, обслуживающие классические очереди, вместе с их индексами и «горячими» сообщениями</td>
-<td>длинные очереди; много очередей; сообщения не уходят на диск</td>
+<td data-label="Категория"><code>queue_procs</code></td>
+<td data-label="Что это">процессы Erlang, обслуживающие классические очереди, вместе с их индексами и «горячими» сообщениями</td>
+<td data-label="Что означает большое значение">длинные очереди; много очередей; сообщения не уходят на диск</td>
 </tr>
 <tr>
-<td><code>quorum_queue_procs</code> / <code>quorum_ets</code></td>
-<td>процессы и ETS-таблицы quorum-очередей: индекс лога, кэш недавних записей</td>
-<td>много quorum-очередей или очень длинный неподтверждённый лог</td>
+<td data-label="Категория"><code>quorum_queue_procs</code> / <code>quorum_ets</code></td>
+<td data-label="Что это">процессы и ETS-таблицы quorum-очередей: индекс лога, кэш недавних записей</td>
+<td data-label="Что означает большое значение">много quorum-очередей или очень длинный неподтверждённый лог</td>
 </tr>
 <tr>
-<td><code>binary</code></td>
-<td>бинарные данные вне куч процессов: <strong>тела сообщений</strong></td>
-<td>большие сообщения или их много в памяти; сюда же утекает <code>binary</code> при «залипших» ссылках</td>
+<td data-label="Категория"><code>binary</code></td>
+<td data-label="Что это">бинарные данные вне куч процессов: <strong>тела сообщений</strong></td>
+<td data-label="Что означает большое значение">большие сообщения или их много в памяти; сюда же утекает <code>binary</code> при «залипших» ссылках</td>
 </tr>
 <tr>
-<td><code>connection_readers</code> / <code>connection_writers</code> / <code>connection_channels</code></td>
-<td>буферы соединений и каналов</td>
-<td>тысячи соединений, огромный prefetch, много каналов на соединение</td>
+<td data-label="Категория"><code>connection_readers</code> / <code>connection_writers</code> / <code>connection_channels</code></td>
+<td data-label="Что это">буферы соединений и каналов</td>
+<td data-label="Что означает большое значение">тысячи соединений, огромный prefetch, много каналов на соединение</td>
 </tr>
 <tr>
-<td><code>mnesia</code> / <code>metadata_store</code></td>
-<td>метаданные: очереди, привязки, политики, пользователи</td>
-<td>десятки тысяч очередей и привязок (типично для «очередь на клиента»)</td>
+<td data-label="Категория"><code>mnesia</code> / <code>metadata_store</code></td>
+<td data-label="Что это">метаданные: очереди, привязки, политики, пользователи</td>
+<td data-label="Что означает большое значение">десятки тысяч очередей и привязок (типично для «очередь на клиента»)</td>
 </tr>
 <tr>
-<td><code>msg_index</code></td>
-<td>индекс message store классических очередей</td>
-<td>длинный бэклог persistent-сообщений</td>
+<td data-label="Категория"><code>msg_index</code></td>
+<td data-label="Что это">индекс message store классических очередей</td>
+<td data-label="Что означает большое значение">длинный бэклог persistent-сообщений</td>
 </tr>
 <tr>
-<td><code>allocated_unused</code></td>
-<td>выделено средой выполнения, но не занято</td>
-<td>нормальная фрагментация распределителя памяти; не паникуйте</td>
+<td data-label="Категория"><code>allocated_unused</code></td>
+<td data-label="Что это">выделено средой выполнения, но не занято</td>
+<td data-label="Что означает большое значение">нормальная фрагментация распределителя памяти; не паникуйте</td>
 </tr>
 <tr>
-<td><code>reserved_unallocated</code></td>
-<td>разница между RSS и тем, что видит Erlang</td>
-<td>обычно артефакт учёта</td>
+<td data-label="Категория"><code>reserved_unallocated</code></td>
+<td data-label="Что это">разница между RSS и тем, что видит Erlang</td>
+<td data-label="Что означает большое значение">обычно артефакт учёта</td>
 </tr>
 </tbody>
 </table>
@@ -453,7 +453,7 @@ rabbitmqctl set_policy ae <span class="s2">"^payments</span>$<span class="s2">"<
 <p>Отсюда следствие, которое идёт вразрез с интуицией: <strong>соединение в состоянии <code>flow</code> при всплеске нагрузки — это норма, а постоянное пребывание в нём — симптом</strong>. Смотреть надо не на сам факт, а на длительность. Если соединение минутами не выходит из <code>flow</code>, значит, публикация устойчиво обгоняет обработку, и разговаривать надо уже не о брокере, а о ёмкости потребителей.</p>
 <h3 id="36-надёжность-end-to-end-и-точки-потери-сообщений">3.6 Надёжность end-to-end и точки потери сообщений</h3>
 <p>Сквозная надёжность (end-to-end) означает, что сообщение, записанное приложением в своей транзакции, в итоге будет обработано потребителем, и ни одно звено по дороге его не потеряет. Звеньев на этом пути больше десятка, и у каждого своя защита, поэтому полезно один раз выписать все точки потери на пути от базы данных приложения до потребителя и напротив каждой указать механизм, который её закрывает. Получается готовый чек-лист для ревью архитектуры и почти готовый ответ на интервью; после таблицы идёт код потребителя, который переживает падение в любой точке.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Точка</th>
@@ -463,64 +463,64 @@ rabbitmqctl set_policy ae <span class="s2">"^payments</span>$<span class="s2">"<
 </thead>
 <tbody>
 <tr>
-<td>Транзакция БД зафиксирована, публикация не выполнена (упал под)</td>
-<td>классический dual write</td>
-<td><strong>Transactional Outbox</strong> (глава 31); XA только в JMS-мире</td>
+<td data-label="Точка">Транзакция БД зафиксирована, публикация не выполнена (упал под)</td>
+<td data-label="Что происходит">классический dual write</td>
+<td data-label="Чем закрывается"><strong>Transactional Outbox</strong> (глава 31); XA только в JMS-мире</td>
 </tr>
 <tr>
-<td>Публикация отправлена, брокер не принял</td>
-<td>сеть, оповещение, рестарт брокера</td>
-<td>publisher confirms + обработка <code>nack</code>/таймаута</td>
+<td data-label="Точка">Публикация отправлена, брокер не принял</td>
+<td data-label="Что происходит">сеть, оповещение, рестарт брокера</td>
+<td data-label="Чем закрывается">publisher confirms + обработка <code>nack</code>/таймаута</td>
 </tr>
 <tr>
-<td>Брокер принял, но маршрута нет</td>
-<td>опечатка в routing key, удалён binding</td>
-<td><code>mandatory=true</code> + <code>ReturnsCallback</code> или <code>alternate-exchange</code></td>
+<td data-label="Точка">Брокер принял, но маршрута нет</td>
+<td data-label="Что происходит">опечатка в routing key, удалён binding</td>
+<td data-label="Чем закрывается"><code>mandatory=true</code> + <code>ReturnsCallback</code> или <code>alternate-exchange</code></td>
 </tr>
 <tr>
-<td>Брокер принял, но не записал на диск</td>
-<td><code>deliveryMode=1</code>, non-durable queue, падение до fsync</td>
-<td>durable exchange + durable/quorum queue + persistent + ждать confirm</td>
+<td data-label="Точка">Брокер принял, но не записал на диск</td>
+<td data-label="Что происходит"><code>deliveryMode=1</code>, non-durable queue, падение до fsync</td>
+<td data-label="Чем закрывается">durable exchange + durable/quorum queue + persistent + ждать confirm</td>
 </tr>
 <tr>
-<td>Записал на один узел, узел умер</td>
-<td>classic-очередь без реплик</td>
-<td>quorum-очередь с 3 репликами</td>
+<td data-label="Точка">Записал на один узел, узел умер</td>
+<td data-label="Что происходит">classic-очередь без реплик</td>
+<td data-label="Чем закрывается">quorum-очередь с 3 репликами</td>
 </tr>
 <tr>
-<td>Очередь переполнена</td>
-<td><code>max-length</code> с <code>drop-head</code></td>
-<td><code>overflow: reject-publish</code> (+ <code>-dlx</code>)</td>
+<td data-label="Точка">Очередь переполнена</td>
+<td data-label="Что происходит"><code>max-length</code> с <code>drop-head</code></td>
+<td data-label="Чем закрывается"><code>overflow: reject-publish</code> (+ <code>-dlx</code>)</td>
 </tr>
 <tr>
-<td>TTL истёк раньше обработки</td>
-<td>слишком агрессивный <code>message-ttl</code> в политике</td>
-<td>DLX на рабочей очереди, оповещение на <code>expired</code> в <code>x-death</code></td>
+<td data-label="Точка">TTL истёк раньше обработки</td>
+<td data-label="Что происходит">слишком агрессивный <code>message-ttl</code> в политике</td>
+<td data-label="Чем закрывается">DLX на рабочей очереди, оповещение на <code>expired</code> в <code>x-death</code></td>
 </tr>
 <tr>
-<td>Потребитель получил и упал до обработки</td>
-<td>auto-ack</td>
-<td>manual ack <strong>после</strong> фиксации бизнес-транзакции</td>
+<td data-label="Точка">Потребитель получил и упал до обработки</td>
+<td data-label="Что происходит">auto-ack</td>
+<td data-label="Чем закрывается">manual ack <strong>после</strong> фиксации бизнес-транзакции</td>
 </tr>
 <tr>
-<td>Потребитель обработал и упал до ack</td>
-<td>нормальная ситуация</td>
-<td>идемпотентность потребителя (глава 31), дубль неизбежен</td>
+<td data-label="Точка">Потребитель обработал и упал до ack</td>
+<td data-label="Что происходит">нормальная ситуация</td>
+<td data-label="Чем закрывается">идемпотентность потребителя (глава 31), дубль неизбежен</td>
 </tr>
 <tr>
-<td>Потребитель отверг без DLX</td>
-<td><code>nack(requeue=false)</code> в очередь без <code>dead-letter-exchange</code></td>
-<td>DLX политикой <strong>на все</strong> рабочие очереди</td>
+<td data-label="Точка">Потребитель отверг без DLX</td>
+<td data-label="Что происходит"><code>nack(requeue=false)</code> в очередь без <code>dead-letter-exchange</code></td>
+<td data-label="Чем закрывается">DLX политикой <strong>на все</strong> рабочие очереди</td>
 </tr>
 <tr>
-<td>Сообщение ушло в DLQ и там осталось навсегда</td>
-<td>нет оповещения на длину DLQ</td>
-<td>оповещение <code>dlq_depth &gt; 0</code> и регламент разбора</td>
+<td data-label="Точка">Сообщение ушло в DLQ и там осталось навсегда</td>
+<td data-label="Что происходит">нет оповещения на длину DLQ</td>
+<td data-label="Чем закрывается">оповещение <code>dlq_depth &gt; 0</code> и регламент разбора</td>
 </tr>
 <tr>
-<td>Сообщение зациклилось между DLX и очередью</td>
-<td>DLX указывает обратно на источник без счётчика</td>
-<td><code>delivery-limit</code> (quorum) или счётчик по <code>x-death</code></td>
+<td data-label="Точка">Сообщение зациклилось между DLX и очередью</td>
+<td data-label="Что происходит">DLX указывает обратно на источник без счётчика</td>
+<td data-label="Чем закрывается"><code>delivery-limit</code> (quorum) или счётчик по <code>x-death</code></td>
 </tr>
 </tbody>
 </table>
@@ -556,7 +556,7 @@ rabbitmqctl set_policy ae <span class="s2">"^payments</span>$<span class="s2">"<
 <p>От типа очереди в RabbitMQ зависит почти всё, что важно в эксплуатации: переживёт ли очередь падение узла, сколько памяти она съест на длинном бэклоге, умеет ли она считать доставки и надёжно отправлять сообщения в DLX. К этому добавляется retry с задержкой, которого в брокере нет готового и который собирают из TTL и dead-letter exchange, и кластер, устроенный совсем не так, как кластер Kafka. В этом разделе мы сравним classic, quorum и stream-очереди, соберём работающую лестницу повторных попыток, разберём приоритеты и переполнение, кластер и федерацию, внутреннее устройство quorum-очередей, защиту от отравленных сообщений, переезд с classic на quorum и, наконец, streams и то, как Rabbit связывает несколько кластеров.</p>
 <h3 id="41-classic-quorum-streams">4.1 Classic, quorum, streams</h3>
 <p>Начиная с RabbitMQ 4.x тип очереди становится первым архитектурным решением, а не деталью настройки: зеркалированных classic-очередей больше нет, и всё, что должно переживать падение узла, приходится делать quorum-очередью, а всё, что читают как лог, делать стримом. Таблица ниже сравнивает три типа по возможностям, и главное в ней последняя строка, где сказано, какой тип под какую задачу брать; под таблицей собраны факты, которые надо знать точно, и короткий разбор streams.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -567,70 +567,70 @@ rabbitmqctl set_policy ae <span class="s2">"^payments</span>$<span class="s2">"<
 </thead>
 <tbody>
 <tr>
-<td>Репликация</td>
-<td>нет (один узел)</td>
-<td>Raft, нечётное число реплик</td>
-<td>реплицированный лог</td>
+<td data-label="">Репликация</td>
+<td data-label="Classic">нет (один узел)</td>
+<td data-label="Quorum">Raft, нечётное число реплик</td>
+<td data-label="Stream">реплицированный лог</td>
 </tr>
 <tr>
-<td>Модель</td>
-<td>очередь</td>
-<td>очередь</td>
-<td><strong>лог</strong></td>
+<td data-label="">Модель</td>
+<td data-label="Classic">очередь</td>
+<td data-label="Quorum">очередь</td>
+<td data-label="Stream"><strong>лог</strong></td>
 </tr>
 <tr>
-<td>Хранение</td>
-<td>память + диск</td>
-<td>всегда на диске</td>
-<td>сегменты на диске</td>
+<td data-label="">Хранение</td>
+<td data-label="Classic">память + диск</td>
+<td data-label="Quorum">всегда на диске</td>
+<td data-label="Stream">сегменты на диске</td>
 </tr>
 <tr>
-<td>Чтение</td>
-<td>деструктивное</td>
-<td>деструктивное</td>
-<td><strong>недеструктивное, по offset</strong></td>
+<td data-label="">Чтение</td>
+<td data-label="Classic">деструктивное</td>
+<td data-label="Quorum">деструктивное</td>
+<td data-label="Stream"><strong>недеструктивное, по offset</strong></td>
 </tr>
 <tr>
-<td>TTL сообщений</td>
-<td>да</td>
-<td>да</td>
-<td>нет</td>
+<td data-label="">TTL сообщений</td>
+<td data-label="Classic">да</td>
+<td data-label="Quorum">да</td>
+<td data-label="Stream">нет</td>
 </tr>
 <tr>
-<td>DLX</td>
-<td>да</td>
-<td>да</td>
-<td>нет</td>
+<td data-label="">DLX</td>
+<td data-label="Classic">да</td>
+<td data-label="Quorum">да</td>
+<td data-label="Stream">нет</td>
 </tr>
 <tr>
-<td>Приоритеты</td>
-<td>да</td>
-<td>с 4.0 два уровня, с 4.3 строгие 32 уровня</td>
-<td>нет</td>
+<td data-label="">Приоритеты</td>
+<td data-label="Classic">да</td>
+<td data-label="Quorum">с 4.0 два уровня, с 4.3 строгие 32 уровня</td>
+<td data-label="Stream">нет</td>
 </tr>
 <tr>
-<td>Global QoS</td>
-<td>да</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="">Global QoS</td>
+<td data-label="Classic">да</td>
+<td data-label="Quorum">нет</td>
+<td data-label="Stream">нет</td>
 </tr>
 <tr>
-<td>Временные / exclusive</td>
-<td>да</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="">Временные / exclusive</td>
+<td data-label="Classic">да</td>
+<td data-label="Quorum">нет</td>
+<td data-label="Stream">нет</td>
 </tr>
 <tr>
-<td>Счётчик доставок</td>
-<td>нет</td>
-<td><code>x-delivery-count</code>, <code>delivery-limit</code> = 20 по умолчанию</td>
-<td>н/д</td>
+<td data-label="">Счётчик доставок</td>
+<td data-label="Classic">нет</td>
+<td data-label="Quorum"><code>x-delivery-count</code>, <code>delivery-limit</code> = 20 по умолчанию</td>
+<td data-label="Stream">н/д</td>
 </tr>
 <tr>
-<td>Когда брать</td>
-<td>временные, RPC-reply, некритичные</td>
-<td><strong>по умолчанию для всего важного</strong></td>
-<td>fanout на многих читателей, replay, большой бэклог</td>
+<td data-label="">Когда брать</td>
+<td data-label="Classic">временные, RPC-reply, некритичные</td>
+<td data-label="Quorum"><strong>по умолчанию для всего важного</strong></td>
+<td data-label="Stream">fanout на многих читателей, replay, большой бэклог</td>
 </tr>
 </tbody>
 </table>
@@ -726,7 +726,7 @@ work.queue ───────────────────────
 </ul>
 <p>Для банковских сценариев вывод отсюда такой: плагин годится, чтобы повторить некритичное действие через 30 секунд, и не годится там, где задержанное сообщение означает деньги. Для часовых задержек с требованием сохранности берите лестницу TTL и DLX или, что честнее, планировщик в базе данных (<code>run_after</code> в таблице, раздел 9.2).</p>
 <p>Ниже все три способа отложить сообщение сведены в одну таблицу. Смотреть стоит прежде всего на строки про репликацию и отмену: именно они обычно и решают выбор.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -737,52 +737,52 @@ work.queue ───────────────────────
 </thead>
 <tbody>
 <tr>
-<td>Реплицируется</td>
-<td>да (quorum-очереди)</td>
-<td><strong>нет</strong>, один узел</td>
-<td>да (реплика БД)</td>
+<td data-label="">Реплицируется</td>
+<td data-label="TTL + DLX-лестница">да (quorum-очереди)</td>
+<td data-label="x-delayed-message plugin"><strong>нет</strong>, один узел</td>
+<td data-label="run_after в БД + ретранслятор">да (реплика БД)</td>
 </tr>
 <tr>
-<td>Произвольная задержка на сообщение</td>
-<td>нет: ступени фиксированы очередями</td>
-<td>да, любой <code>x-delay</code></td>
-<td>да, любой <code>timestamptz</code></td>
+<td data-label="">Произвольная задержка на сообщение</td>
+<td data-label="TTL + DLX-лестница">нет: ступени фиксированы очередями</td>
+<td data-label="x-delayed-message plugin">да, любой <code>x-delay</code></td>
+<td data-label="run_after в БД + ретранслятор">да, любой <code>timestamptz</code></td>
 </tr>
 <tr>
-<td>Задержки больше суток</td>
-<td>да</td>
-<td>не поддерживается автором</td>
-<td>да</td>
+<td data-label="">Задержки больше суток</td>
+<td data-label="TTL + DLX-лестница">да</td>
+<td data-label="x-delayed-message plugin">не поддерживается автором</td>
+<td data-label="run_after в БД + ретранслятор">да</td>
 </tr>
 <tr>
-<td>Объём отложенных</td>
-<td>миллионы (обычные очереди)</td>
-<td>сотни тысяч ломают</td>
-<td>миллионы (индекс)</td>
+<td data-label="">Объём отложенных</td>
+<td data-label="TTL + DLX-лестница">миллионы (обычные очереди)</td>
+<td data-label="x-delayed-message plugin">сотни тысяч ломают</td>
+<td data-label="run_after в БД + ретранслятор">миллионы (индекс)</td>
 </tr>
 <tr>
-<td>Видимость «что и когда сработает»</td>
-<td>только <code>queue length</code></td>
-<td>практически нет</td>
-<td><code>SELECT ... ORDER BY run_after</code></td>
+<td data-label="">Видимость «что и когда сработает»</td>
+<td data-label="TTL + DLX-лестница">только <code>queue length</code></td>
+<td data-label="x-delayed-message plugin">практически нет</td>
+<td data-label="run_after в БД + ретранслятор"><code>SELECT ... ORDER BY run_after</code></td>
 </tr>
 <tr>
-<td>Отмена конкретного отложенного</td>
-<td>невозможна</td>
-<td>невозможна</td>
-<td><code>DELETE WHERE id = ?</code></td>
+<td data-label="">Отмена конкретного отложенного</td>
+<td data-label="TTL + DLX-лестница">невозможна</td>
+<td data-label="x-delayed-message plugin">невозможна</td>
+<td data-label="run_after в БД + ретранслятор"><code>DELETE WHERE id = ?</code></td>
 </tr>
 <tr>
-<td>Сложность топологии</td>
-<td>высокая (N очередей и привязок)</td>
-<td>одна строка</td>
-<td>таблица + воркер</td>
+<td data-label="">Сложность топологии</td>
+<td data-label="TTL + DLX-лестница">высокая (N очередей и привязок)</td>
+<td data-label="x-delayed-message plugin">одна строка</td>
+<td data-label="run_after в БД + ретранслятор">таблица + воркер</td>
 </tr>
 <tr>
-<td>Точность срабатывания</td>
-<td>±(TTL-гранулярность + head-of-line)</td>
-<td>~секунда</td>
-<td>интервал опроса</td>
+<td data-label="">Точность срабатывания</td>
+<td data-label="TTL + DLX-лестница">±(TTL-гранулярность + head-of-line)</td>
+<td data-label="x-delayed-message plugin">~секунда</td>
+<td data-label="run_after в БД + ретранслятор">интервал опроса</td>
 </tr>
 </tbody>
 </table>
@@ -859,7 +859,7 @@ rabbitmqctl set_policy critical-dlx <span class="s2">"^payments\."</span> <span 
 <h3 id="47-classic-очереди-и-миграция-на-quorum-без-простоя">4.7 Classic-очереди и миграция на quorum без простоя</h3>
 <p>Quorum-очереди стали выбором по умолчанию, но универсальным ответом они не стали, и есть задачи, где classic по-прежнему правильнее. С другой стороны, почти во всех старых кластерах лежат classic-очереди, которые давно пора перевести на quorum, а поменять тип существующей очереди нельзя. Ниже разберём, когда classic оправданы, как переехать на quorum без простоя, с дублями и без них, и чем опасно массовое пересоздание очередей.</p>
 <p>Документация прямо называет сценарии, в которых classic остаются правильным выбором: <strong>временные очереди, высокая «текучка» очередей</strong>, когда их создают и удаляют сотнями, а каждая quorum-очередь означает отдельную Raft-группу, создавать которую дорого, и <strong>сценарии, где важна минимальная латентность</strong> (<a href="https://www.rabbitmq.com/docs/quorum-queues">Quorum Queues</a>). К ним добавляется всё, чего quorum просто не умеет: <code>exclusive</code>, временные очереди, global QoS и в некоторых сочетаниях TTL самой очереди. Таблица ниже раскладывает это по признакам, и выбирать по ней удобно так: если хотя бы одна строка из первых четырёх про вас, смотрите в сторону classic.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Признак</th>
@@ -869,39 +869,39 @@ rabbitmqctl set_policy critical-dlx <span class="s2">"^payments\."</span> <span 
 </thead>
 <tbody>
 <tr>
-<td>Потеря очереди при падении узла допустима</td>
-<td>да</td>
-<td>нет</td>
+<td data-label="Признак">Потеря очереди при падении узла допустима</td>
+<td data-label="Classic">да</td>
+<td data-label="Quorum">нет</td>
 </tr>
 <tr>
-<td>Очередь живёт секунды (RPC reply, temp)</td>
-<td>да</td>
-<td>накладные расходы Raft не окупаются</td>
+<td data-label="Признак">Очередь живёт секунды (RPC reply, temp)</td>
+<td data-label="Classic">да</td>
+<td data-label="Quorum">накладные расходы Raft не окупаются</td>
 </tr>
 <tr>
-<td>Тысячи очередей, создаются/удаляются на лету</td>
-<td>да</td>
-<td>группы Raft не рассчитаны на такую текучку</td>
+<td data-label="Признак">Тысячи очередей, создаются/удаляются на лету</td>
+<td data-label="Classic">да</td>
+<td data-label="Quorum">группы Raft не рассчитаны на такую текучку</td>
 </tr>
 <tr>
-<td>Нужна минимальная латентность публикации</td>
-<td>да (одна запись)</td>
-<td>нет (кворум + fsync)</td>
+<td data-label="Признак">Нужна минимальная латентность публикации</td>
+<td data-label="Classic">да (одна запись)</td>
+<td data-label="Quorum">нет (кворум + fsync)</td>
 </tr>
 <tr>
-<td>Нужен счётчик доставок и защита от poison</td>
-<td>нет</td>
-<td><code>delivery-limit</code></td>
+<td data-label="Признак">Нужен счётчик доставок и защита от poison</td>
+<td data-label="Classic">нет</td>
+<td data-label="Quorum"><code>delivery-limit</code></td>
 </tr>
 <tr>
-<td>Нужен надёжный DLX</td>
-<td>нет (at-most-once)</td>
-<td><code>at-least-once</code></td>
+<td data-label="Признак">Нужен надёжный DLX</td>
+<td data-label="Classic">нет (at-most-once)</td>
+<td data-label="Quorum"><code>at-least-once</code></td>
 </tr>
 <tr>
-<td>Очередь очень длинная (миллионы)</td>
-<td>дешевле по памяти кластера</td>
-<td>дороже (индекс × реплики)</td>
+<td data-label="Признак">Очередь очень длинная (миллионы)</td>
+<td data-label="Classic">дешевле по памяти кластера</td>
+<td data-label="Quorum">дороже (индекс × реплики)</td>
 </tr>
 </tbody>
 </table>
@@ -933,7 +933,7 @@ rabbitmqctl set_policy critical-dlx <span class="s2">"^payments\."</span> <span 
 <p><strong>Производительность и ресурсы.</strong> Пропускная способность падает с ростом размера сообщения, потому что упирается в диск, и с ростом числа реплик: «чем больше реплик у потока, тем ниже, как правило, его пропускная способность». Зато потоки «потребляют меньше CPU и памяти, чем quorum-очереди», поскольку опираются на страничный кэш ядра, а не на индекс в памяти брокера.</p>
 <p><strong>Чего у потоков нет</strong>, если свести всё из документации: TTL сообщений, приоритетов, DLX, exclusive и non-durable режимов, global QoS. Кроме того, сложные заголовки AMQP 0-9-1 (массивы, таблицы) не конвертируются в AMQP 1.0.</p>
 <p>Сравнение с Kafka по пунктам собрано в таблице ниже; решающими обычно оказываются строки про compaction, транзакции и экосистему, где у Rabbit Streams ответ «нет».</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вопрос</th>
@@ -943,49 +943,49 @@ rabbitmqctl set_policy critical-dlx <span class="s2">"^payments\."</span> <span 
 </thead>
 <tbody>
 <tr>
-<td>Порядок и replay</td>
-<td>да</td>
-<td>да</td>
+<td data-label="Вопрос">Порядок и replay</td>
+<td data-label="RabbitMQ Streams">да</td>
+<td data-label="Kafka">да</td>
 </tr>
 <tr>
-<td>Партиционирование</td>
-<td>super streams (надстройка)</td>
-<td>нативное, единица масштабирования</td>
+<td data-label="Вопрос">Партиционирование</td>
+<td data-label="RabbitMQ Streams">super streams (надстройка)</td>
+<td data-label="Kafka">нативное, единица масштабирования</td>
 </tr>
 <tr>
-<td>Compaction по ключу</td>
-<td><strong>нет</strong></td>
-<td>есть (<code>cleanup.policy=compact</code>)</td>
+<td data-label="Вопрос">Compaction по ключу</td>
+<td data-label="RabbitMQ Streams"><strong>нет</strong></td>
+<td data-label="Kafka">есть (<code>cleanup.policy=compact</code>)</td>
 </tr>
 <tr>
-<td>Транзакции producer/consumer</td>
-<td>нет</td>
-<td>есть</td>
+<td data-label="Вопрос">Транзакции producer/consumer</td>
+<td data-label="RabbitMQ Streams">нет</td>
+<td data-label="Kafka">есть</td>
 </tr>
 <tr>
-<td>Экосистема (Connect, Debezium, Streams/Flink, registry)</td>
-<td>практически нет</td>
-<td>огромная</td>
+<td data-label="Вопрос">Экосистема (Connect, Debezium, Streams/Flink, registry)</td>
+<td data-label="RabbitMQ Streams">практически нет</td>
+<td data-label="Kafka">огромная</td>
 </tr>
 <tr>
-<td>Фильтрация на брокере</td>
-<td>фильтр Блума</td>
-<td>нет (фильтрует потребитель)</td>
+<td data-label="Вопрос">Фильтрация на брокере</td>
+<td data-label="RabbitMQ Streams">фильтр Блума</td>
+<td data-label="Kafka">нет (фильтрует потребитель)</td>
 </tr>
 <tr>
-<td>Tiered storage</td>
-<td>нет</td>
-<td>KIP-405, с 3.9</td>
+<td data-label="Вопрос">Tiered storage</td>
+<td data-label="RabbitMQ Streams">нет</td>
+<td data-label="Kafka">KIP-405, с 3.9</td>
 </tr>
 <tr>
-<td>Порядок величин msg/s</td>
-<td>10⁵</td>
-<td>10⁵–10⁶</td>
+<td data-label="Вопрос">Порядок величин msg/s</td>
+<td data-label="RabbitMQ Streams">10⁵</td>
+<td data-label="Kafka">10⁵–10⁶</td>
 </tr>
 <tr>
-<td>Сколько компонентов эксплуатировать</td>
-<td>тот же Rabbit, что уже стоит</td>
-<td>отдельный кластер</td>
+<td data-label="Вопрос">Сколько компонентов эксплуатировать</td>
+<td data-label="RabbitMQ Streams">тот же Rabbit, что уже стоит</td>
+<td data-label="Kafka">отдельный кластер</td>
 </tr>
 </tbody>
 </table>
@@ -1001,7 +1001,7 @@ rabbitmqctl enable_feature_flag khepri_db
 </code></pre></div>
 
 <p><strong>Разделение сети (network partition).</strong> Поведение кластера при разделении сети задаёт параметр <code>cluster_partition_handling</code>, и в таблице ниже для каждого из трёх режимов сказано, что он делает и когда уместен.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -1011,25 +1011,25 @@ rabbitmqctl enable_feature_flag khepri_db
 </thead>
 <tbody>
 <tr>
-<td><code>ignore</code></td>
-<td>обе половины продолжают работать</td>
-<td>только при полностью надёжной сети (то есть никогда) или при кластере из 2 узлов, где альтернативы нет</td>
+<td data-label="Режим"><code>ignore</code></td>
+<td data-label="Что делает">обе половины продолжают работать</td>
+<td data-label="Когда уместен">только при полностью надёжной сети (то есть никогда) или при кластере из 2 узлов, где альтернативы нет</td>
 </tr>
 <tr>
-<td><code>pause_minority</code></td>
-<td>узлы в меньшинстве приостанавливают работу, отключают клиентов и ждут восстановления</td>
-<td><strong>рекомендуемый</strong> для 3+ узлов с нечётным числом; согласуется с Raft</td>
+<td data-label="Режим"><code>pause_minority</code></td>
+<td data-label="Что делает">узлы в меньшинстве приостанавливают работу, отключают клиентов и ждут восстановления</td>
+<td data-label="Когда уместен"><strong>рекомендуемый</strong> для 3+ узлов с нечётным числом; согласуется с Raft</td>
 </tr>
 <tr>
-<td><code>autoheal</code></td>
-<td>после восстановления связи проигравшая сторона перезапускается, теряя свои несинхронизированные данные</td>
-<td>когда доступность важнее согласованности и вы согласны на потерю</td>
+<td data-label="Режим"><code>autoheal</code></td>
+<td data-label="Что делает">после восстановления связи проигравшая сторона перезапускается, теряя свои несинхронизированные данные</td>
+<td data-label="Когда уместен">когда доступность важнее согласованности и вы согласны на потерю</td>
 </tr>
 </tbody>
 </table>
 <p>С quorum-очередями и Khepri у <code>pause_minority</code> почти нет альтернатив: остальные режимы противоречат Raft, который и так не даст меньшинству принимать записи, а путаницы в поведении соединений добавляют. Отдельно стоит помнить, что <strong>у кластера из двух узлов нет большинства</strong>, поэтому при разделении он либо останавливается целиком (<code>pause_minority</code>), либо получает split brain (<code>ignore</code>). Два узла не дают высокой доступности, они дают два разных способа сломаться.</p>
 <p><strong>Federation, Shovel и кластер: что выбрать.</strong> Все три механизма связывают узлы или брокеры между собой, но решают разные задачи, и таблица ниже сравнивает их по тому, что они связывают, какую задержку терпят и что гарантируют при сбое.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1040,58 +1040,58 @@ rabbitmqctl enable_feature_flag khepri_db
 </thead>
 <tbody>
 <tr>
-<td>Что связывает</td>
-<td>узлы одного кластера</td>
-<td>обменники/очереди разных кластеров</td>
-<td>очередь → обменник любых брокеров</td>
+<td data-label="">Что связывает</td>
+<td data-label="Кластер">узлы одного кластера</td>
+<td data-label="Federation">обменники/очереди разных кластеров</td>
+<td data-label="Shovel">очередь → обменник любых брокеров</td>
 </tr>
 <tr>
-<td>Общие метаданные</td>
-<td>да</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="">Общие метаданные</td>
+<td data-label="Кластер">да</td>
+<td data-label="Federation">нет</td>
+<td data-label="Shovel">нет</td>
 </tr>
 <tr>
-<td>Задержка между узлами</td>
-<td>требуется низкая (единицы мс)</td>
-<td>терпит высокую</td>
-<td>терпит высокую</td>
+<td data-label="">Задержка между узлами</td>
+<td data-label="Кластер">требуется низкая (единицы мс)</td>
+<td data-label="Federation">терпит высокую</td>
+<td data-label="Shovel">терпит высокую</td>
 </tr>
 <tr>
-<td>Направление</td>
-<td>двустороннее по определению</td>
-<td>от upstream к downstream</td>
-<td>одностороннее, статически заданное</td>
+<td data-label="">Направление</td>
+<td data-label="Кластер">двустороннее по определению</td>
+<td data-label="Federation">от upstream к downstream</td>
+<td data-label="Shovel">одностороннее, статически заданное</td>
 </tr>
 <tr>
-<td>Когда передаёт</td>
-<td>всегда</td>
-<td><strong>по требованию</strong>: только когда на downstream есть потребители</td>
-<td>всегда, пока настроен</td>
+<td data-label="">Когда передаёт</td>
+<td data-label="Кластер">всегда</td>
+<td data-label="Federation"><strong>по требованию</strong>: только когда на downstream есть потребители</td>
+<td data-label="Shovel">всегда, пока настроен</td>
 </tr>
 <tr>
-<td>Дубли при сбое</td>
-<td>нет (в пределах очереди)</td>
-<td>возможны</td>
-<td>возможны</td>
+<td data-label="">Дубли при сбое</td>
+<td data-label="Кластер">нет (в пределах очереди)</td>
+<td data-label="Federation">возможны</td>
+<td data-label="Shovel">возможны</td>
 </tr>
 <tr>
-<td>Порядок</td>
-<td>сохраняется в очереди</td>
-<td>не гарантирован</td>
-<td>сохраняется при одном потоке</td>
+<td data-label="">Порядок</td>
+<td data-label="Кластер">сохраняется в очереди</td>
+<td data-label="Federation">не гарантирован</td>
+<td data-label="Shovel">сохраняется при одном потоке</td>
 </tr>
 <tr>
-<td>Типовое применение</td>
-<td>один ЦОД, HA</td>
-<td>«подписка филиала на события центра»</td>
-<td>миграция, интеграция с чужим брокером, AMQP 1.0 к Artemis</td>
+<td data-label="">Типовое применение</td>
+<td data-label="Кластер">один ЦОД, HA</td>
+<td data-label="Federation">«подписка филиала на события центра»</td>
+<td data-label="Shovel">миграция, интеграция с чужим брокером, AMQP 1.0 к Artemis</td>
 </tr>
 <tr>
-<td>Разные версии брокеров</td>
-<td>нет, нужна совместимость</td>
-<td>да</td>
-<td>да</td>
+<td data-label="">Разные версии брокеров</td>
+<td data-label="Кластер">нет, нужна совместимость</td>
+<td data-label="Federation">да</td>
+<td data-label="Shovel">да</td>
 </tr>
 </tbody>
 </table>
@@ -1208,7 +1208,7 @@ rabbitmqctl enable_feature_flag khepri_db
 </blockquote>
 <h3 id="54-smlc-и-dmlc">5.4 SMLC и DMLC</h3>
 <p>Контейнер слушателей определяет, на каком потоке вызывается ваш код и как добавляются новые потребители, и в Spring AMQP таких контейнеров два, с разной моделью потоков (<a href="https://docs.spring.io/spring-amqp/reference/amqp/receiving-messages/choose-container.html">choosing a container</a>). От выбора зависят автомасштабирование, поддержка пакетов, латентность и то, что будет, если слушатель надолго заблокируется. Таблица ниже сравнивает их по этим признакам, а после неё сказано, какой контейнер брать по умолчанию.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1218,34 +1218,34 @@ rabbitmqctl enable_feature_flag khepri_db
 </thead>
 <tbody>
 <tr>
-<td>Модель</td>
-<td>внутренняя очередь + выделенный поток на каждого потребителя</td>
-<td>слушатель вызывается прямо на потоке amqp-client</td>
+<td data-label="">Модель</td>
+<td data-label="SimpleMessageListenerContainer (SMLC)">внутренняя очередь + выделенный поток на каждого потребителя</td>
+<td data-label="DirectMessageListenerContainer (DMLC, с 2.0)">слушатель вызывается прямо на потоке amqp-client</td>
 </tr>
 <tr>
-<td>Concurrency</td>
-<td><code>concurrentConsumers</code> / <code>maxConcurrentConsumers</code></td>
-<td><code>consumersPerQueue</code> + пул клиента</td>
+<td data-label="">Concurrency</td>
+<td data-label="SimpleMessageListenerContainer (SMLC)"><code>concurrentConsumers</code> / <code>maxConcurrentConsumers</code></td>
+<td data-label="DirectMessageListenerContainer (DMLC, с 2.0)"><code>consumersPerQueue</code> + пул клиента</td>
 </tr>
 <tr>
-<td>Автомасштабирование</td>
-<td>есть</td>
-<td><strong>нет</strong> (можно менять <code>consumersPerQueue</code> программно)</td>
+<td data-label="">Автомасштабирование</td>
+<td data-label="SimpleMessageListenerContainer (SMLC)">есть</td>
+<td data-label="DirectMessageListenerContainer (DMLC, с 2.0)"><strong>нет</strong> (можно менять <code>consumersPerQueue</code> программно)</td>
 </tr>
 <tr>
-<td><code>batchSize</code>, <code>consumerBatchEnabled</code></td>
-<td>есть</td>
-<td>нет</td>
+<td data-label=""><code>batchSize</code>, <code>consumerBatchEnabled</code></td>
+<td data-label="SimpleMessageListenerContainer (SMLC)">есть</td>
+<td data-label="DirectMessageListenerContainer (DMLC, с 2.0)">нет</td>
 </tr>
 <tr>
-<td>Добавление/удаление очередей во время выполнения</td>
-<td>пересоздаёт всех потребителей</td>
-<td>не трогает остальных</td>
+<td data-label="">Добавление/удаление очередей во время выполнения</td>
+<td data-label="SimpleMessageListenerContainer (SMLC)">пересоздаёт всех потребителей</td>
+<td data-label="DirectMessageListenerContainer (DMLC, с 2.0)">не трогает остальных</td>
 </tr>
 <tr>
-<td>Переключений контекста</td>
-<td>больше</td>
-<td>меньше, латентность ниже</td>
+<td data-label="">Переключений контекста</td>
+<td data-label="SimpleMessageListenerContainer (SMLC)">больше</td>
+<td data-label="DirectMessageListenerContainer (DMLC, с 2.0)">меньше, латентность ниже</td>
 </tr>
 </tbody>
 </table>
@@ -1373,7 +1373,7 @@ rabbitmqctl enable_feature_flag khepri_db
 <p>Из практики стоит вынести два совета. Во-первых, <strong>не подменяйте <code>RabbitTemplate</code> моком в интеграционных тестах</strong>: так вы проверите лишь то, что метод вызвали, а не то, что сообщение дошло, и ошибка в routing key спокойно уедет в прод. Во-вторых, тесты топологии лучше писать <strong>декларативно, от контракта</strong>, в духе «сообщение с routing key X должно оказаться в очередях A и B и не должно оказаться в C». Именно такие тесты ловят случаи, когда кто-то поменял binding, а на ревью этого глазами не видно.</p>
 <h3 id="59-метрики-и-оповещения">5.9 Метрики и оповещения</h3>
 <p>Большинство инцидентов с RabbitMQ видно по метрикам задолго до того, как пользователи начнут жаловаться: очередь растёт, потребителей стало ноль, сработал оповещение. Беда в том, что эти метрики обычно смотрит только эксплуатация брокера, а команда сервиса узнаёт о проблеме последней. Spring AMQP отдаёт метрики через Micrometer, клиентская библиотека <code>amqp-client</code> отдаёт свои, и в таблице ниже собран минимальный набор, который должен быть на дашборде самого сервиса, вместе с условиями оповещений.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метрика</th>
@@ -1383,44 +1383,44 @@ rabbitmqctl enable_feature_flag khepri_db
 </thead>
 <tbody>
 <tr>
-<td><code>rabbitmq_queue_messages_ready</code></td>
-<td>Prometheus-плагин брокера</td>
-<td>выше порога N минут подряд</td>
+<td data-label="Метрика"><code>rabbitmq_queue_messages_ready</code></td>
+<td data-label="Где смотреть">Prometheus-плагин брокера</td>
+<td data-label="Оповещение">выше порога N минут подряд</td>
 </tr>
 <tr>
-<td><code>rabbitmq_queue_messages_unacked</code></td>
-<td>там же</td>
-<td>растёт и не убывает → зависшие потребители</td>
+<td data-label="Метрика"><code>rabbitmq_queue_messages_unacked</code></td>
+<td data-label="Где смотреть">там же</td>
+<td data-label="Оповещение">растёт и не убывает → зависшие потребители</td>
 </tr>
 <tr>
-<td><code>rabbitmq_queue_consumers</code></td>
-<td>там же</td>
-<td>= 0 на критичной очереди — самое важное оповещение вообще</td>
+<td data-label="Метрика"><code>rabbitmq_queue_consumers</code></td>
+<td data-label="Где смотреть">там же</td>
+<td data-label="Оповещение">= 0 на критичной очереди — самое важное оповещение вообще</td>
 </tr>
 <tr>
-<td>длина DLQ</td>
-<td>там же</td>
-<td><strong>&gt; 0</strong> (для денег), &gt; порога (для остального)</td>
+<td data-label="Метрика">длина DLQ</td>
+<td data-label="Где смотреть">там же</td>
+<td data-label="Оповещение"><strong>&gt; 0</strong> (для денег), &gt; порога (для остального)</td>
 </tr>
 <tr>
-<td><code>rabbitmq_alarms_*</code></td>
-<td>там же</td>
-<td>≠ 0 — немедленно</td>
+<td data-label="Метрика"><code>rabbitmq_alarms_*</code></td>
+<td data-label="Где смотреть">там же</td>
+<td data-label="Оповещение">≠ 0 — немедленно</td>
 </tr>
 <tr>
-<td><code>spring.rabbitmq.listener</code> (таймер)</td>
-<td>приложение</td>
-<td>p99 обработки растёт</td>
+<td data-label="Метрика"><code>spring.rabbitmq.listener</code> (таймер)</td>
+<td data-label="Где смотреть">приложение</td>
+<td data-label="Оповещение">p99 обработки растёт</td>
 </tr>
 <tr>
-<td>unconfirmed publish (свой счётчик)</td>
-<td>приложение</td>
-<td>таймауты <code>CorrelationData</code> ≠ 0</td>
+<td data-label="Метрика">unconfirmed publish (свой счётчик)</td>
+<td data-label="Где смотреть">приложение</td>
+<td data-label="Оповещение">таймауты <code>CorrelationData</code> ≠ 0</td>
 </tr>
 <tr>
-<td><code>connection.blocked</code> (свой счётчик)</td>
-<td>приложение</td>
-<td>любое событие — в лог и в оповещение</td>
+<td data-label="Метрика"><code>connection.blocked</code> (свой счётчик)</td>
+<td data-label="Где смотреть">приложение</td>
+<td data-label="Оповещение">любое событие — в лог и в оповещение</td>
 </tr>
 </tbody>
 </table>
@@ -1458,7 +1458,7 @@ rabbitmqctl enable_feature_flag khepri_db
 <li><strong>Consumer</strong> хранит на сервере <strong>состояние чтения</strong> стрима: курсор и политику подтверждений. Ack сдвигает курсор, а сообщение, которое не подтвердили в срок, сервер отправляет повторно.</li>
 </ul>
 <p>От параметров стрима зависит, будет он вести себя как лог или как очередь, сколько данных хранить и как защищаться от дублей; самые важные из них собраны в таблице (<a href="https://docs.nats.io/nats-concepts/jetstream/streams">streams</a>).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Параметр</th>
@@ -1468,34 +1468,34 @@ rabbitmqctl enable_feature_flag khepri_db
 </thead>
 <tbody>
 <tr>
-<td><code>retention</code></td>
-<td><code>Limits</code> / <code>Interest</code> / <code>WorkQueue</code></td>
-<td>лог по лимитам / удалять, когда все заинтересованные прочли / <strong>очередь</strong>: удалять после ack</td>
+<td data-label="Параметр"><code>retention</code></td>
+<td data-label="Значения"><code>Limits</code> / <code>Interest</code> / <code>WorkQueue</code></td>
+<td data-label="Смысл">лог по лимитам / удалять, когда все заинтересованные прочли / <strong>очередь</strong>: удалять после ack</td>
 </tr>
 <tr>
-<td><code>discard</code></td>
-<td><code>Old</code> / <code>New</code></td>
-<td>при достижении лимита выбрасывать старое или отвергать новое</td>
+<td data-label="Параметр"><code>discard</code></td>
+<td data-label="Значения"><code>Old</code> / <code>New</code></td>
+<td data-label="Смысл">при достижении лимита выбрасывать старое или отвергать новое</td>
 </tr>
 <tr>
-<td><code>storage</code></td>
-<td><code>File</code> / <code>Memory</code></td>
-<td>диск или память</td>
+<td data-label="Параметр"><code>storage</code></td>
+<td data-label="Значения"><code>File</code> / <code>Memory</code></td>
+<td data-label="Смысл">диск или память</td>
 </tr>
 <tr>
-<td><code>max_age</code>, <code>max_msgs</code>, <code>max_bytes</code></td>
-<td></td>
-<td>лимиты срока хранения</td>
+<td data-label="Параметр"><code>max_age</code>, <code>max_msgs</code>, <code>max_bytes</code></td>
+<td data-label="Значения"></td>
+<td data-label="Смысл">лимиты срока хранения</td>
 </tr>
 <tr>
-<td><code>replicas</code></td>
-<td>1–5</td>
-<td>репликация через Raft</td>
+<td data-label="Параметр"><code>replicas</code></td>
+<td data-label="Значения">1–5</td>
+<td data-label="Смысл">репликация через Raft</td>
 </tr>
 <tr>
-<td><code>duplicate_window</code></td>
-<td>по умолчанию <strong>2 минуты</strong></td>
-<td>окно дедупликации по <code>Nats-Msg-Id</code></td>
+<td data-label="Параметр"><code>duplicate_window</code></td>
+<td data-label="Значения">по умолчанию <strong>2 минуты</strong></td>
+<td data-label="Смысл">окно дедупликации по <code>Nats-Msg-Id</code></td>
 </tr>
 </tbody>
 </table>
@@ -1541,7 +1541,7 @@ rabbitmqctl enable_feature_flag khepri_db
 <hr>
 <h3 id="64-устройство-consumer-в-jetstream">6.4 Устройство consumer в JetStream</h3>
 <p>Consumer в JetStream — серверный объект, и его конфигурация важнее кода клиента: почти все проблемы первых внедрений, от дублей до необъяснимо медленной обработки, сидят в его параметрах. В таблице ниже собраны параметры, которые приходится настраивать осознанно, вместе с практическими рекомендациями, а после неё разобраны <code>max_ack_pending</code>, pull-запросы и две типичные ошибки первого внедрения.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Параметр</th>
@@ -1551,54 +1551,54 @@ rabbitmqctl enable_feature_flag khepri_db
 </thead>
 <tbody>
 <tr>
-<td><code>durable_name</code></td>
-<td>именованный потребитель, состояние переживает рестарты</td>
-<td>обязателен для рабочих нагрузок; ephemeral — только для отладки и «посмотреть хвост»</td>
+<td data-label="Параметр"><code>durable_name</code></td>
+<td data-label="Смысл">именованный потребитель, состояние переживает рестарты</td>
+<td data-label="Практика">обязателен для рабочих нагрузок; ephemeral — только для отладки и «посмотреть хвост»</td>
 </tr>
 <tr>
-<td><code>inactive_threshold</code></td>
-<td>через сколько удаляется неактивный ephemeral-потребитель</td>
-<td>по умолчанию небольшой; для durable не применяется</td>
+<td data-label="Параметр"><code>inactive_threshold</code></td>
+<td data-label="Смысл">через сколько удаляется неактивный ephemeral-потребитель</td>
+<td data-label="Практика">по умолчанию небольшой; для durable не применяется</td>
 </tr>
 <tr>
-<td><code>ack_policy</code></td>
-<td><code>explicit</code> / <code>all</code> / <code>none</code></td>
-<td>для <code>WorkQueue</code>-стрима допустим только <code>explicit</code></td>
+<td data-label="Параметр"><code>ack_policy</code></td>
+<td data-label="Смысл"><code>explicit</code> / <code>all</code> / <code>none</code></td>
+<td data-label="Практика">для <code>WorkQueue</code>-стрима допустим только <code>explicit</code></td>
 </tr>
 <tr>
-<td><code>ack_wait</code></td>
-<td>сколько сервер ждёт ack, прежде чем переотправить</td>
-<td>должен быть <strong>больше p99 времени обработки</strong>, иначе дубли на ровном месте</td>
+<td data-label="Параметр"><code>ack_wait</code></td>
+<td data-label="Смысл">сколько сервер ждёт ack, прежде чем переотправить</td>
+<td data-label="Практика">должен быть <strong>больше p99 времени обработки</strong>, иначе дубли на ровном месте</td>
 </tr>
 <tr>
-<td><code>max_deliver</code></td>
-<td>сколько раз переотправлять</td>
-<td>ставьте конечное значение, иначе poison-сообщение вечно</td>
+<td data-label="Параметр"><code>max_deliver</code></td>
+<td data-label="Смысл">сколько раз переотправлять</td>
+<td data-label="Практика">ставьте конечное значение, иначе poison-сообщение вечно</td>
 </tr>
 <tr>
-<td><code>max_ack_pending</code></td>
-<td>сколько неподтверждённых сообщений сервер отдаёт потребителю (аналог prefetch); по умолчанию <strong>1000</strong></td>
-<td>делится на <strong>всех</strong> воркеров этого durable-потребителя</td>
+<td data-label="Параметр"><code>max_ack_pending</code></td>
+<td data-label="Смысл">сколько неподтверждённых сообщений сервер отдаёт потребителю (аналог prefetch); по умолчанию <strong>1000</strong></td>
+<td data-label="Практика">делится на <strong>всех</strong> воркеров этого durable-потребителя</td>
 </tr>
 <tr>
-<td><code>backoff</code></td>
-<td>список интервалов переотправки вместо постоянного <code>ack_wait</code></td>
-<td>готовая экспонента без ручной лестницы</td>
+<td data-label="Параметр"><code>backoff</code></td>
+<td data-label="Смысл">список интервалов переотправки вместо постоянного <code>ack_wait</code></td>
+<td data-label="Практика">готовая экспонента без ручной лестницы</td>
 </tr>
 <tr>
-<td><code>filter_subject</code></td>
-<td>подмножество subject стрима</td>
-<td>несколько фильтров позволяют одному потребителю брать нужные ветки</td>
+<td data-label="Параметр"><code>filter_subject</code></td>
+<td data-label="Смысл">подмножество subject стрима</td>
+<td data-label="Практика">несколько фильтров позволяют одному потребителю брать нужные ветки</td>
 </tr>
 <tr>
-<td><code>deliver_policy</code></td>
-<td><code>all</code> / <code>last</code> / <code>new</code> / <code>by_start_sequence</code> / <code>by_start_time</code></td>
-<td>«читать только новое» — <code>new</code>, а не «пересоздать потребитель»</td>
+<td data-label="Параметр"><code>deliver_policy</code></td>
+<td data-label="Смысл"><code>all</code> / <code>last</code> / <code>new</code> / <code>by_start_sequence</code> / <code>by_start_time</code></td>
+<td data-label="Практика">«читать только новое» — <code>new</code>, а не «пересоздать потребитель»</td>
 </tr>
 <tr>
-<td><code>replay_policy</code></td>
-<td><code>instant</code> / <code>original</code></td>
-<td><code>original</code> воспроизводит исходные интервалы между сообщениями — для нагрузочных прогонов</td>
+<td data-label="Параметр"><code>replay_policy</code></td>
+<td data-label="Смысл"><code>instant</code> / <code>original</code></td>
+<td data-label="Практика"><code>original</code> воспроизводит исходные интервалы между сообщениями — для нагрузочных прогонов</td>
 </tr>
 </tbody>
 </table>
@@ -1608,7 +1608,7 @@ rabbitmqctl enable_feature_flag khepri_db
 <p><strong>Вторая ошибка</strong> — <code>WorkQueue</code>-стрим с несколькими потребителями на пересекающиеся subject. Политика <code>WorkQueue</code> требует, чтобы каждое сообщение мог забрать ровно один потребитель, поэтому сервер откажется создавать второй потребитель с пересекающимся фильтром. Это не ошибка конфигурации, а защита семантики, хотя выглядит так, будто NATS не даёт сделать fanout; для fanout нужен стрим с политикой <code>Limits</code> или <code>Interest</code>.</p>
 <h3 id="65-retention-политики-jetstream">6.5 Retention-политики JetStream</h3>
 <p>Политика хранения (retention) определяет, в какой момент JetStream удаляет сообщение из стрима, и тем самым решает, работает стрим как лог, как очередь или как рассылка текущим подписчикам. У каждой из трёх политик есть своя ловушка, и именно ими объясняется большинство «потерянных» сообщений в NATS. Таблица сводит, когда каждая политика удаляет сообщение и под какой сценарий она подходит, а ниже разобраны ловушки.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Политика</th>
@@ -1618,19 +1618,19 @@ rabbitmqctl enable_feature_flag khepri_db
 </thead>
 <tbody>
 <tr>
-<td><code>Limits</code> (по умолчанию)</td>
-<td>по достижении <code>max_msgs</code> / <code>max_bytes</code> / <code>max_age</code></td>
-<td>лог событий, аудит, replay; несколько независимых потребителей</td>
+<td data-label="Политика"><code>Limits</code> (по умолчанию)</td>
+<td data-label="Когда сообщение удаляется">по достижении <code>max_msgs</code> / <code>max_bytes</code> / <code>max_age</code></td>
+<td data-label="Типовой сценарий">лог событий, аудит, replay; несколько независимых потребителей</td>
 </tr>
 <tr>
-<td><code>Interest</code></td>
-<td>когда <strong>все существующие</strong> потребители подтвердили</td>
-<td>«доставить всем, кто подписан сейчас»; без подписчиков сообщение исчезает сразу</td>
+<td data-label="Политика"><code>Interest</code></td>
+<td data-label="Когда сообщение удаляется">когда <strong>все существующие</strong> потребители подтвердили</td>
+<td data-label="Типовой сценарий">«доставить всем, кто подписан сейчас»; без подписчиков сообщение исчезает сразу</td>
 </tr>
 <tr>
-<td><code>WorkQueue</code></td>
-<td>сразу после ack единственного потребителя</td>
-<td>очередь задач; поведение классического брокера</td>
+<td data-label="Политика"><code>WorkQueue</code></td>
+<td data-label="Когда сообщение удаляется">сразу после ack единственного потребителя</td>
+<td data-label="Типовой сценарий">очередь задач; поведение классического брокера</td>
 </tr>
 </tbody>
 </table>
@@ -1656,7 +1656,7 @@ rabbitmqctl enable_feature_flag khepri_db
 <p><strong>Object store</strong> хранит объекты, разбитые на фрагменты, поверх того же JetStream, вместе с метаданными и контрольной суммой, и позволяет реализовать Claim Check без отдельного S3, если объекты небольшие и живут недолго. Для терабайтов он объектное хранилище не заменит, потому что срок хранения и репликация у него те же, что у стримов, а значит, дорогие.</p>
 <h3 id="67-сравнение-nats-с-kafka-и-rabbitmq">6.7 Сравнение NATS с Kafka и RabbitMQ</h3>
 <p>Чтобы защитить выбор NATS на архитектурном ревью, полезно видеть его рядом с двумя привычными брокерами по тем критериям, которые реально решают выбор. Таблица ниже сравнивает все три по модели, латентности, эксплуатации, маршрутизации, повторам и экосистеме; заметьте, что NATS выигрывает в строках про латентность и эксплуатацию и проигрывает в строках про экосистему и рынок.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -1667,70 +1667,70 @@ rabbitmqctl enable_feature_flag khepri_db
 </thead>
 <tbody>
 <tr>
-<td>Модель</td>
-<td>лог или очередь (retention)</td>
-<td>лог</td>
-<td>очередь (+ streams)</td>
+<td data-label="Критерий">Модель</td>
+<td data-label="NATS + JetStream">лог или очередь (retention)</td>
+<td data-label="Kafka">лог</td>
+<td data-label="RabbitMQ">очередь (+ streams)</td>
 </tr>
 <tr>
-<td>Request-reply</td>
-<td><strong>примитив протокола</strong></td>
-<td>нет</td>
-<td>вручную через reply-to</td>
+<td data-label="Критерий">Request-reply</td>
+<td data-label="NATS + JetStream"><strong>примитив протокола</strong></td>
+<td data-label="Kafka">нет</td>
+<td data-label="RabbitMQ">вручную через reply-to</td>
 </tr>
 <tr>
-<td>Латентность round-trip</td>
-<td>десятки–сотни мкс (core)</td>
-<td>единицы мс</td>
-<td>единицы мс</td>
+<td data-label="Критерий">Латентность round-trip</td>
+<td data-label="NATS + JetStream">десятки–сотни мкс (core)</td>
+<td data-label="Kafka">единицы мс</td>
+<td data-label="RabbitMQ">единицы мс</td>
 </tr>
 <tr>
-<td>Компонентов в эксплуатации</td>
-<td>1 бинарник</td>
-<td>1 (KRaft)</td>
-<td>1</td>
+<td data-label="Критерий">Компонентов в эксплуатации</td>
+<td data-label="NATS + JetStream">1 бинарник</td>
+<td data-label="Kafka">1 (KRaft)</td>
+<td data-label="RabbitMQ">1</td>
 </tr>
 <tr>
-<td>Маршрутизация</td>
-<td>subject + wildcards</td>
-<td>нет</td>
-<td>exchange/binding</td>
+<td data-label="Критерий">Маршрутизация</td>
+<td data-label="NATS + JetStream">subject + wildcards</td>
+<td data-label="Kafka">нет</td>
+<td data-label="RabbitMQ">exchange/binding</td>
 </tr>
 <tr>
-<td>Дедупликация на брокере</td>
-<td><code>Nats-Msg-Id</code>, окно 2 мин</td>
-<td>идемпотентный producer</td>
-<td>нет</td>
+<td data-label="Критерий">Дедупликация на брокере</td>
+<td data-label="NATS + JetStream"><code>Nats-Msg-Id</code>, окно 2 мин</td>
+<td data-label="Kafka">идемпотентный producer</td>
+<td data-label="RabbitMQ">нет</td>
 </tr>
 <tr>
-<td>Per-message retry/задержка</td>
-<td><code>nak</code>, <code>nakWithDelay</code>, <code>backoff</code></td>
-<td>retry-топики руками</td>
-<td>DLX-лестница</td>
+<td data-label="Критерий">Per-message retry/задержка</td>
+<td data-label="NATS + JetStream"><code>nak</code>, <code>nakWithDelay</code>, <code>backoff</code></td>
+<td data-label="Kafka">retry-топики руками</td>
+<td data-label="RabbitMQ">DLX-лестница</td>
 </tr>
 <tr>
-<td>Замена Redis/etcd</td>
-<td>KV + Object store</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Критерий">Замена Redis/etcd</td>
+<td data-label="NATS + JetStream">KV + Object store</td>
+<td data-label="Kafka">нет</td>
+<td data-label="RabbitMQ">нет</td>
 </tr>
 <tr>
-<td>Экосистема интеграций</td>
-<td>небольшая</td>
-<td>огромная</td>
-<td>средняя</td>
+<td data-label="Критерий">Экосистема интеграций</td>
+<td data-label="NATS + JetStream">небольшая</td>
+<td data-label="Kafka">огромная</td>
+<td data-label="RabbitMQ">средняя</td>
 </tr>
 <tr>
-<td>Edge/IoT, тысячи клиентов</td>
-<td>leaf nodes, один порт</td>
-<td>плохо</td>
-<td>плохо</td>
+<td data-label="Критерий">Edge/IoT, тысячи клиентов</td>
+<td data-label="NATS + JetStream">leaf nodes, один порт</td>
+<td data-label="Kafka">плохо</td>
+<td data-label="RabbitMQ">плохо</td>
 </tr>
 <tr>
-<td>Кого искать на рынке</td>
-<td>редко</td>
-<td>часто</td>
-<td>часто</td>
+<td data-label="Критерий">Кого искать на рынке</td>
+<td data-label="NATS + JetStream">редко</td>
+<td data-label="Kafka">часто</td>
+<td data-label="RabbitMQ">часто</td>
 </tr>
 </tbody>
 </table>
@@ -1762,7 +1762,7 @@ consumer ◄──┘                │                        ledger 1 ─► 
 </ol>
 <h3 id="72-типы-подписок-pulsar">7.2 Типы подписок Pulsar</h3>
 <p>Подписка в Pulsar определяет, как сообщения одного топика раздаются потребителям, и именно тип подписки решает, работает топик как лог или как очередь. Это главная содержательная особенность Pulsar: четыре типа подписок над одним и тем же хранилищем (<a href="https://pulsar.apache.org/docs/next/concepts-messaging/">Pulsar messaging</a>). Таблица ниже сравнивает их по числу потребителей, порядку и видам ack, а после неё разобраны практические следствия и пример очереди с DLQ поверх лога.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Подписка</th>
@@ -1774,32 +1774,32 @@ consumer ◄──┘                │                        ledger 1 ─► 
 </thead>
 <tbody>
 <tr>
-<td><code>Exclusive</code> (по умолчанию)</td>
-<td>1</td>
-<td>полный</td>
-<td>индивидуальный и кумулятивный</td>
-<td>лог с одним читателем</td>
+<td data-label="Подписка"><code>Exclusive</code> (по умолчанию)</td>
+<td data-label="Потребителей">1</td>
+<td data-label="Порядок">полный</td>
+<td data-label="Ack">индивидуальный и кумулятивный</td>
+<td data-label="Семантика">лог с одним читателем</td>
 </tr>
 <tr>
-<td><code>Failover</code></td>
-<td>N, активен 1 на партицию</td>
-<td>по партиции</td>
-<td>индивидуальный и кумулятивный</td>
-<td>лог с горячим резервом</td>
+<td data-label="Подписка"><code>Failover</code></td>
+<td data-label="Потребителей">N, активен 1 на партицию</td>
+<td data-label="Порядок">по партиции</td>
+<td data-label="Ack">индивидуальный и кумулятивный</td>
+<td data-label="Семантика">лог с горячим резервом</td>
 </tr>
 <tr>
-<td><code>Shared</code></td>
-<td>N, все активны</td>
-<td><strong>нет</strong></td>
-<td>только индивидуальный</td>
-<td><strong>классическая очередь</strong> (round-robin)</td>
+<td data-label="Подписка"><code>Shared</code></td>
+<td data-label="Потребителей">N, все активны</td>
+<td data-label="Порядок"><strong>нет</strong></td>
+<td data-label="Ack">только индивидуальный</td>
+<td data-label="Семантика"><strong>классическая очередь</strong> (round-robin)</td>
 </tr>
 <tr>
-<td><code>Key_Shared</code></td>
-<td>N, все активны</td>
-<td><strong>по ключу</strong></td>
-<td>только индивидуальный</td>
-<td>лог с параллелизмом сверх числа партиций</td>
+<td data-label="Подписка"><code>Key_Shared</code></td>
+<td data-label="Потребителей">N, все активны</td>
+<td data-label="Порядок"><strong>по ключу</strong></td>
+<td data-label="Ack">только индивидуальный</td>
+<td data-label="Семантика">лог с параллелизмом сверх числа партиций</td>
 </tr>
 </tbody>
 </table>
@@ -1837,7 +1837,7 @@ consumer ◄──┘                │                        ledger 1 ─► 
 <p><strong>Geo-replication</strong> задаётся как свойство namespace: вы указываете список кластеров, и брокеры сами поднимают репликаторы, тогда как в Kafka для этого нужен отдельный продукт, MirrorMaker 2 или Cluster Linking. <strong>Schema Registry встроен в брокер</strong>: <code>Schema.AVRO(Payment.class)</code> в коде выше регистрирует схему с проверкой совместимости на стороне брокера, а не просто подключает библиотеку сериализации (в экосистеме Kafka registry работает отдельным сервисом Confluent, глава 29). <strong>Pulsar Functions</strong> дают лёгкие функции обработки прямо в кластере, которых хватает для фильтрации и обогащения без отдельного Flink, но для потоковой обработки с состоянием Flink всё равно нужен.</p>
 <h3 id="74-сравнение-pulsar-и-kafka">7.4 Сравнение Pulsar и Kafka</h3>
 <p>Сравнивать Pulsar с Kafka полезно по пунктам, потому что общий вывод «Pulsar технически сильнее» верен лишь наполовину: по одним строкам он действительно впереди, а по другим, которые обычно и решают выбор, отстаёт. Таблица ниже сводит оба брокера по архитектуре, возможностям и эксплуатации, а под ней справка по версиям и готовая формулировка для интервью.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -1847,59 +1847,59 @@ consumer ◄──┘                │                        ledger 1 ─► 
 </thead>
 <tbody>
 <tr>
-<td>Хранение</td>
-<td>на брокере (реплики партиций)</td>
-<td>отдельный слой BookKeeper (ledger-ы)</td>
+<td data-label="Критерий">Хранение</td>
+<td data-label="Kafka">на брокере (реплики партиций)</td>
+<td data-label="Pulsar">отдельный слой BookKeeper (ledger-ы)</td>
 </tr>
 <tr>
-<td>Перебалансировка топика/партиции</td>
-<td>копирование данных</td>
-<td>смена владельца в метаданных</td>
+<td data-label="Критерий">Перебалансировка топика/партиции</td>
+<td data-label="Kafka">копирование данных</td>
+<td data-label="Pulsar">смена владельца в метаданных</td>
 </tr>
 <tr>
-<td>Семантика очереди</td>
-<td>share groups (KIP-932, с 4.2)</td>
-<td><code>Shared</code>/<code>Key_Shared</code> с самого начала</td>
+<td data-label="Критерий">Семантика очереди</td>
+<td data-label="Kafka">share groups (KIP-932, с 4.2)</td>
+<td data-label="Pulsar"><code>Shared</code>/<code>Key_Shared</code> с самого начала</td>
 </tr>
 <tr>
-<td>Параллелизм сверх числа партиций</td>
-<td>нет</td>
-<td><code>Key_Shared</code></td>
+<td data-label="Критерий">Параллелизм сверх числа партиций</td>
+<td data-label="Kafka">нет</td>
+<td data-label="Pulsar"><code>Key_Shared</code></td>
 </tr>
 <tr>
-<td>Tiered storage</td>
-<td>KIP-405, с 3.9</td>
-<td>с самого начала</td>
+<td data-label="Критерий">Tiered storage</td>
+<td data-label="Kafka">KIP-405, с 3.9</td>
+<td data-label="Pulsar">с самого начала</td>
 </tr>
 <tr>
-<td>Мультитенантность</td>
-<td>ACL и квоты</td>
-<td>tenant/namespace в модели имён</td>
+<td data-label="Критерий">Мультитенантность</td>
+<td data-label="Kafka">ACL и квоты</td>
+<td data-label="Pulsar">tenant/namespace в модели имён</td>
 </tr>
 <tr>
-<td>Geo-replication</td>
-<td>отдельный инструмент</td>
-<td>свойство namespace</td>
+<td data-label="Критерий">Geo-replication</td>
+<td data-label="Kafka">отдельный инструмент</td>
+<td data-label="Pulsar">свойство namespace</td>
 </tr>
 <tr>
-<td>Schema registry</td>
-<td>внешний (Confluent)</td>
-<td>встроенный</td>
+<td data-label="Критерий">Schema registry</td>
+<td data-label="Kafka">внешний (Confluent)</td>
+<td data-label="Pulsar">встроенный</td>
 </tr>
 <tr>
-<td>Компоненты в эксплуатации</td>
-<td>брокеры (KRaft, без ZK с 4.0)</td>
-<td>брокеры + bookies + metadata store</td>
+<td data-label="Критерий">Компоненты в эксплуатации</td>
+<td data-label="Kafka">брокеры (KRaft, без ZK с 4.0)</td>
+<td data-label="Pulsar">брокеры + bookies + metadata store</td>
 </tr>
 <tr>
-<td>Экосистема</td>
-<td>огромная</td>
-<td>заметно меньше</td>
+<td data-label="Критерий">Экосистема</td>
+<td data-label="Kafka">огромная</td>
+<td data-label="Pulsar">заметно меньше</td>
 </tr>
 <tr>
-<td>Экспертиза на рынке</td>
-<td>массовая</td>
-<td>редкая</td>
+<td data-label="Критерий">Экспертиза на рынке</td>
+<td data-label="Kafka">массовая</td>
+<td data-label="Pulsar">редкая</td>
 </tr>
 </tbody>
 </table>
@@ -2105,7 +2105,7 @@ pulsar-admin topics offload --size-threshold 10G persistent://bank/payments/sett
 <p>На этот фрагмент стоит посмотреть внимательно: <strong><code>redelivery-delay</code> с множителем даёт встроенную экспоненциальную задержку</strong>, ради которой в RabbitMQ строят лестницу из TTL и DLX, а <code>max-delivery-attempts</code> и <code>dead-letter-address</code> работают из коробки. По части повторной доставки Artemis здесь попросту удобнее Rabbit, и это редкий случай, когда старый продукт выигрывает у современного.</p>
 <h3 id="87-миграция-с-jms-на-kafka-или-rabbitmq">8.7 Миграция с JMS на Kafka или RabbitMQ</h3>
 <p>Миграция с JMS встаёт в каждом банке, и набор проблем везде одинаковый: всё, что JMS давал из коробки, в Kafka и RabbitMQ приходится либо заменять паттернами, либо переносить в прикладной код. Таблица ниже сопоставляет возможности JMS с тем, что есть в Kafka и RabbitMQ, и показывает, как обычно решают каждую из проблем; после неё описан порядок миграции, который работает, и случай, когда мигрировать нельзя вовсе.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что было в JMS</th>
@@ -2116,58 +2116,58 @@ pulsar-admin topics offload --size-threshold 10G persistent://bank/payments/sett
 </thead>
 <tbody>
 <tr>
-<td>XA с БД</td>
-<td>нет</td>
-<td>нет</td>
-<td>Transactional Outbox (глава 31); переписывается прикладной код, а не конфигурация</td>
+<td data-label="Что было в JMS">XA с БД</td>
+<td data-label="Чего нет в Kafka">нет</td>
+<td data-label="Чего нет в RabbitMQ">нет</td>
+<td data-label="Как решают">Transactional Outbox (глава 31); переписывается прикладной код, а не конфигурация</td>
 </tr>
 <tr>
-<td>Selectors на брокере</td>
-<td>нет</td>
-<td>частично (headers exchange)</td>
-<td>фильтрация на потребителе или раскладка по разным топикам/очередям на публикаторе</td>
+<td data-label="Что было в JMS">Selectors на брокере</td>
+<td data-label="Чего нет в Kafka">нет</td>
+<td data-label="Чего нет в RabbitMQ">частично (headers exchange)</td>
+<td data-label="Как решают">фильтрация на потребителе или раскладка по разным топикам/очередям на публикаторе</td>
 </tr>
 <tr>
-<td>Durable subscription</td>
-<td>consumer group</td>
-<td>отдельная очередь на подписчика</td>
-<td>прямое соответствие, но в Rabbit — N копий сообщения</td>
+<td data-label="Что было в JMS">Durable subscription</td>
+<td data-label="Чего нет в Kafka">consumer group</td>
+<td data-label="Чего нет в RabbitMQ">отдельная очередь на подписчика</td>
+<td data-label="Как решают">прямое соответствие, но в Rabbit — N копий сообщения</td>
 </tr>
 <tr>
-<td>Локальная транзакция сессии (приём+отправка)</td>
-<td>транзакции Kafka (только внутри Kafka)</td>
-<td>нет</td>
-<td>Outbox либо идемпотентность</td>
+<td data-label="Что было в JMS">Локальная транзакция сессии (приём+отправка)</td>
+<td data-label="Чего нет в Kafka">транзакции Kafka (только внутри Kafka)</td>
+<td data-label="Чего нет в RabbitMQ">нет</td>
+<td data-label="Как решают">Outbox либо идемпотентность</td>
 </tr>
 <tr>
-<td><code>JMSPriority</code></td>
-<td>нет</td>
-<td>priority queues</td>
-<td>отдельная очередь/топик под срочное</td>
+<td data-label="Что было в JMS"><code>JMSPriority</code></td>
+<td data-label="Чего нет в Kafka">нет</td>
+<td data-label="Чего нет в RabbitMQ">priority queues</td>
+<td data-label="Как решают">отдельная очередь/топик под срочное</td>
 </tr>
 <tr>
-<td><code>ScheduledMessage</code> (отложенная доставка)</td>
-<td>нет</td>
-<td>TTL+DLX или плагин</td>
-<td>планировщик в БД</td>
+<td data-label="Что было в JMS"><code>ScheduledMessage</code> (отложенная доставка)</td>
+<td data-label="Чего нет в Kafka">нет</td>
+<td data-label="Чего нет в RabbitMQ">TTL+DLX или плагин</td>
+<td data-label="Как решают">планировщик в БД</td>
 </tr>
 <tr>
-<td>Синхронный <code>receive()</code> с таймаутом</td>
-<td><code>poll()</code></td>
-<td><code>basicGet</code> (антипаттерн)</td>
-<td>переписать на push-модель</td>
+<td data-label="Что было в JMS">Синхронный <code>receive()</code> с таймаутом</td>
+<td data-label="Чего нет в Kafka"><code>poll()</code></td>
+<td data-label="Чего нет в RabbitMQ"><code>basicGet</code> (антипаттерн)</td>
+<td data-label="Как решают">переписать на push-модель</td>
 </tr>
 <tr>
-<td><code>ObjectMessage</code> (Java-сериализация)</td>
-<td>—</td>
-<td>—</td>
-<td>JSON/Avro и явный контракт; заодно закрывается дыра десериализации</td>
+<td data-label="Что было в JMS"><code>ObjectMessage</code> (Java-сериализация)</td>
+<td data-label="Чего нет в Kafka">—</td>
+<td data-label="Чего нет в RabbitMQ">—</td>
+<td data-label="Как решают">JSON/Avro и явный контракт; заодно закрывается дыра десериализации</td>
 </tr>
 <tr>
-<td>Ответ в <code>JMSReplyTo</code></td>
-<td>нет</td>
-<td>reply-queue руками</td>
-<td>честный HTTP/gRPC (глава 28)</td>
+<td data-label="Что было в JMS">Ответ в <code>JMSReplyTo</code></td>
+<td data-label="Чего нет в Kafka">нет</td>
+<td data-label="Чего нет в RabbitMQ">reply-queue руками</td>
+<td data-label="Как решают">честный HTTP/gRPC (глава 28)</td>
 </tr>
 </tbody>
 </table>
@@ -2352,7 +2352,7 @@ pulsar-admin topics offload --size-threshold 10G persistent://bank/payments/sett
 <p>Таблицы очередей получают префикс <code>q_</code>, архивные префикс <code>a_</code>, и всё это лежит в схеме <code>pgmq</code>. Расширение даёт visibility timeout (<code>vt</code>), счётчик прочтений (<code>read_ct</code>, готовый счётчик попыток для логики DLQ), отложенную отправку (<code>delay</code>) и архив для replay, то есть весь набор, который иначе пишут вручную. Плюс в том, что это чужой оттестированный код, а минус в том, что это ещё одно расширение, которое надо согласовать с DBA и которого может не оказаться в managed-БД.</p>
 <h4>9.2.5 Границы применимости очереди на PostgreSQL</h4>
 <p>Очередь на Postgres хороша до тех пор, пока она остаётся внутренним делом одного сервиса с умеренной нагрузкой, и важно заранее знать признаки, по которым видно, что эта граница близко. Таблица ниже даёт ориентиры, которые можно назвать на защите архитектуры, в трёх градациях: когда в Postgres комфортно, когда пора задуматься и когда пора переезжать в брокер. После неё разобран качественный признак, который важнее всех чисел, и промежуточное решение, к которому в итоге приходит большинство систем.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Показатель</th>
@@ -2363,40 +2363,40 @@ pulsar-admin topics offload --size-threshold 10G persistent://bank/payments/sett
 </thead>
 <tbody>
 <tr>
-<td>Пропускная способность</td>
-<td>до ~1 000 задач/с</td>
-<td>1 000–5 000/с</td>
-<td>&gt; 5 000/с устойчиво</td>
+<td data-label="Показатель">Пропускная способность</td>
+<td data-label="Комфортно в Postgres">до ~1 000 задач/с</td>
+<td data-label="Сигнал задуматься">1 000–5 000/с</td>
+<td data-label="Пора в брокер">&gt; 5 000/с устойчиво</td>
 </tr>
 <tr>
-<td>Число воркеров</td>
-<td>до нескольких десятков</td>
-<td>сотни соединений → нужен pgbouncer</td>
-<td>тысячи</td>
+<td data-label="Показатель">Число воркеров</td>
+<td data-label="Комфортно в Postgres">до нескольких десятков</td>
+<td data-label="Сигнал задуматься">сотни соединений → нужен pgbouncer</td>
+<td data-label="Пора в брокер">тысячи</td>
 </tr>
 <tr>
-<td>Глубина очереди</td>
-<td>до миллионов строк</td>
-<td>десятки миллионов</td>
-<td>сотни миллионов</td>
+<td data-label="Показатель">Глубина очереди</td>
+<td data-label="Комфортно в Postgres">до миллионов строк</td>
+<td data-label="Сигнал задуматься">десятки миллионов</td>
+<td data-label="Пора в брокер">сотни миллионов</td>
 </tr>
 <tr>
-<td>Число независимых потребителей одних данных</td>
-<td>1–2</td>
-<td>3–5 (появляются «свои» колонки-курсоры)</td>
-<td>много и заранее неизвестно</td>
+<td data-label="Показатель">Число независимых потребителей одних данных</td>
+<td data-label="Комфортно в Postgres">1–2</td>
+<td data-label="Сигнал задуматься">3–5 (появляются «свои» колонки-курсоры)</td>
+<td data-label="Пора в брокер">много и заранее неизвестно</td>
 </tr>
 <tr>
-<td>Доля времени autovacuum на этой таблице</td>
-<td>незаметна</td>
-<td>заметна в <code>pg_stat_progress_vacuum</code></td>
-<td>не успевает, bloat растёт</td>
+<td data-label="Показатель">Доля времени autovacuum на этой таблице</td>
+<td data-label="Комфортно в Postgres">незаметна</td>
+<td data-label="Сигнал задуматься">заметна в <code>pg_stat_progress_vacuum</code></td>
+<td data-label="Пора в брокер">не успевает, bloat растёт</td>
 </tr>
 <tr>
-<td>Потребители</td>
-<td>ваши сервисы</td>
-<td>соседняя команда просит доступ к БД</td>
-<td>внешние системы</td>
+<td data-label="Показатель">Потребители</td>
+<td data-label="Комфортно в Postgres">ваши сервисы</td>
+<td data-label="Сигнал задуматься">соседняя команда просит доступ к БД</td>
+<td data-label="Пора в брокер">внешние системы</td>
 </tr>
 </tbody>
 </table>
@@ -2431,7 +2431,7 @@ pulsar-admin topics offload --size-threshold 10G persistent://bank/payments/sett
 <p>Для всех облаков верно одно: вы платите за операции и теряете контроль над латентностью хвоста, зато не эксплуатируете кластер, и по критерию стоимости эксплуатации это перевешивает почти всё.</p>
 <h4>9.3.1 SQS: цифры, FIFO и fan-out через SNS</h4>
 <p>Лимиты SQS определяют дизайн сильнее, чем его возможности, потому что из них напрямую следует, что в этом сервисе реализуемо, а что нет. В таблице ниже собраны точные значения (<a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html">SQS quotas</a>), а после неё разобрано, какие архитектурные решения из них вытекают, как делают fan-out и чем облачный сервис отличается от собственного кластера.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Параметр</th>
@@ -2440,47 +2440,47 @@ pulsar-admin topics offload --size-threshold 10G persistent://bank/payments/sett
 </thead>
 <tbody>
 <tr>
-<td>Размер сообщения</td>
-<td>до <strong>1 МиБ</strong> (больше — Extended Client Library со ссылкой на S3, до 2 ГБ)</td>
+<td data-label="Параметр">Размер сообщения</td>
+<td data-label="Значение">до <strong>1 МиБ</strong> (больше — Extended Client Library со ссылкой на S3, до 2 ГБ)</td>
 </tr>
 <tr>
-<td>Пакет</td>
-<td><strong>10 сообщений</strong> на вызов <code>SendMessage</code>/<code>ReceiveMessage</code>/<code>DeleteMessage</code></td>
+<td data-label="Параметр">Пакет</td>
+<td data-label="Значение"><strong>10 сообщений</strong> на вызов <code>SendMessage</code>/<code>ReceiveMessage</code>/<code>DeleteMessage</code></td>
 </tr>
 <tr>
-<td>Срок хранения</td>
-<td>по умолчанию <strong>4 дня</strong>, от 60 с до <strong>14 дней</strong></td>
+<td data-label="Параметр">Срок хранения</td>
+<td data-label="Значение">по умолчанию <strong>4 дня</strong>, от 60 с до <strong>14 дней</strong></td>
 </tr>
 <tr>
-<td>Отложенная доставка (<code>DelaySeconds</code>)</td>
-<td>0…<strong>15 минут</strong></td>
+<td data-label="Параметр">Отложенная доставка (<code>DelaySeconds</code>)</td>
+<td data-label="Значение">0…<strong>15 минут</strong></td>
 </tr>
 <tr>
-<td>Visibility timeout</td>
-<td>30 с по умолчанию, 0…<strong>12 часов</strong></td>
+<td data-label="Параметр">Visibility timeout</td>
+<td data-label="Значение">30 с по умолчанию, 0…<strong>12 часов</strong></td>
 </tr>
 <tr>
-<td>Атрибуты сообщения</td>
-<td>до 10</td>
+<td data-label="Параметр">Атрибуты сообщения</td>
+<td data-label="Значение">до 10</td>
 </tr>
 <tr>
-<td>FIFO без high-throughput</td>
-<td><strong>300 транзакций/с на API-действие</strong>, с пакетами — 3 000 сообщений/с</td>
+<td data-label="Параметр">FIFO без high-throughput</td>
+<td data-label="Значение"><strong>300 транзакций/с на API-действие</strong>, с пакетами — 3 000 сообщений/с</td>
 </tr>
 <tr>
-<td>FIFO high-throughput</td>
-<td>до 70 000 TPS в крупных регионах (до 700 000 сообщений/с с пакетами), в большинстве прочих — 2 400 TPS</td>
+<td data-label="Параметр">FIFO high-throughput</td>
+<td data-label="Значение">до 70 000 TPS в крупных регионах (до 700 000 сообщений/с с пакетами), в большинстве прочих — 2 400 TPS</td>
 </tr>
 <tr>
-<td>Дедупликация FIFO</td>
-<td>окно <strong>5 минут</strong> по <code>MessageDeduplicationId</code></td>
+<td data-label="Параметр">Дедупликация FIFO</td>
+<td data-label="Значение">окно <strong>5 минут</strong> по <code>MessageDeduplicationId</code></td>
 </tr>
 </tbody>
 </table>
 <p>Из этой таблицы вытекают почти все архитектурные решения. Раз задержка ограничена 15 минутами, «напомнить через час» делают цепочкой задержек или планировщиком, а не через <code>DelaySeconds</code>. Раз сообщения хранятся не дольше 14 дней, replay в SQS не существует даже как идея. Раз в пакете не больше 10 сообщений, высокую пропускную способность получают числом параллельных вызовов, а не размером пачки. Наконец, порядок в FIFO соблюдается только внутри <code>MessageGroupId</code>, и одно застрявшее сообщение блокирует всю свою группу, так что выбор гранулярности <code>MessageGroupId</code> ровно повторяет выбор числа партиций в Kafka со всеми теми же последствиями перекоса.</p>
 <p><strong>Fan-out.</strong> Маршрутизации в SQS нет вовсе, поэтому стандартная схема выглядит как <strong>SNS topic → N SQS-очередей</strong>, где фильтр-политики по атрибутам сообщения на подписке дают грубый аналог selectors, либо как <strong>EventBridge</strong> с правилами по содержимому события. Важно помнить, что связка SNS→SQS даёт at-least-once и <strong>не сохраняет порядок</strong>; если порядок нужен, используют SNS FIFO → SQS FIFO с сохранением <code>MessageGroupId</code>.</p>
 <p>Выбор между облачным сервисом и собственным кластером сводится к компромиссу между контролем и эксплуатацией, и таблица ниже раскладывает его по пунктам; в последней строке сказано, когда какой вариант правильный.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2490,44 +2490,44 @@ pulsar-admin topics offload --size-threshold 10G persistent://bank/payments/sett
 </thead>
 <tbody>
 <tr>
-<td>Кто дежурит</td>
-<td>вы</td>
-<td>провайдер</td>
+<td data-label="">Кто дежурит</td>
+<td data-label="Self-hosted (Rabbit/Kafka)">вы</td>
+<td data-label="Облачный сервис (SQS/Pub-Sub/Service Bus)">провайдер</td>
 </tr>
 <tr>
-<td>Латентность хвоста</td>
-<td>контролируется</td>
-<td>не контролируется, p99 «как повезёт»</td>
+<td data-label="">Латентность хвоста</td>
+<td data-label="Self-hosted (Rabbit/Kafka)">контролируется</td>
+<td data-label="Облачный сервис (SQS/Pub-Sub/Service Bus)">не контролируется, p99 «как повезёт»</td>
 </tr>
 <tr>
-<td>Стоимость</td>
-<td>железо + люди</td>
-<td>за операции: миллиарды сообщений считаются заранее</td>
+<td data-label="">Стоимость</td>
+<td data-label="Self-hosted (Rabbit/Kafka)">железо + люди</td>
+<td data-label="Облачный сервис (SQS/Pub-Sub/Service Bus)">за операции: миллиарды сообщений считаются заранее</td>
 </tr>
 <tr>
-<td>Лимиты</td>
-<td>ваши настройки</td>
-<td>жёсткие квоты, часть повышается по заявке</td>
+<td data-label="">Лимиты</td>
+<td data-label="Self-hosted (Rabbit/Kafka)">ваши настройки</td>
+<td data-label="Облачный сервис (SQS/Pub-Sub/Service Bus)">жёсткие квоты, часть повышается по заявке</td>
 </tr>
 <tr>
-<td>Маршрутизация</td>
-<td>богатая</td>
-<td>минимальная (SNS/EventBridge/фильтры подписок)</td>
+<td data-label="">Маршрутизация</td>
+<td data-label="Self-hosted (Rabbit/Kafka)">богатая</td>
+<td data-label="Облачный сервис (SQS/Pub-Sub/Service Bus)">минимальная (SNS/EventBridge/фильтры подписок)</td>
 </tr>
 <tr>
-<td>Replay</td>
-<td>зависит от продукта</td>
-<td>почти нет (Pub/Sub — до 7 дней и seek)</td>
+<td data-label="">Replay</td>
+<td data-label="Self-hosted (Rabbit/Kafka)">зависит от продукта</td>
+<td data-label="Облачный сервис (SQS/Pub-Sub/Service Bus)">почти нет (Pub/Sub — до 7 дней и seek)</td>
 </tr>
 <tr>
-<td>Vendor lock-in</td>
-<td>низкий</td>
-<td>высокий: семантика visibility timeout не переносится 1:1</td>
+<td data-label="">Vendor lock-in</td>
+<td data-label="Self-hosted (Rabbit/Kafka)">низкий</td>
+<td data-label="Облачный сервис (SQS/Pub-Sub/Service Bus)">высокий: семантика visibility timeout не переносится 1:1</td>
 </tr>
 <tr>
-<td>Когда правильный выбор</td>
-<td>контроль, объём, локальные требования</td>
-<td>всё уже в этом облаке, объём средний, команда маленькая</td>
+<td data-label="">Когда правильный выбор</td>
+<td data-label="Self-hosted (Rabbit/Kafka)">контроль, объём, локальные требования</td>
+<td data-label="Облачный сервис (SQS/Pub-Sub/Service Bus)">всё уже в этом облаке, объём средний, команда маленькая</td>
 </tr>
 </tbody>
 </table>
@@ -2570,7 +2570,7 @@ Kafka (одна партиция, acks=1):         запись  20 391 сооб
 </ol>
 <h3 id="102-сводная-таблица">10.2 Сводная таблица</h3>
 <p>Сводная таблица сводит все брокеры этой главы по тем свойствам, которые перечислены в критериях выше, и пользоваться ею удобно как проверочным списком после того, как модель данных уже выбрана. Читать её лучше по столбцам, отсекая брокеры, у которых в важной для вас строке стоит «нет»; обратите внимание на строки про эксплуатацию и экспертизу, которые в маркетинговых сравнениях обычно отсутствуют.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2586,136 +2586,136 @@ Kafka (одна партиция, acks=1):         запись  20 391 сооб
 </thead>
 <tbody>
 <tr>
-<td>Модель</td>
-<td>очередь</td>
-<td>лог</td>
-<td>лог</td>
-<td>лог или очередь (<code>WorkQueue</code>)</td>
-<td><strong>оба</strong> (подписки)</td>
-<td>очередь + topic</td>
-<td>очередь</td>
-<td>очередь</td>
+<td data-label="">Модель</td>
+<td data-label="RabbitMQ (quorum)">очередь</td>
+<td data-label="RabbitMQ Streams">лог</td>
+<td data-label="Kafka">лог</td>
+<td data-label="NATS JetStream">лог или очередь (<code>WorkQueue</code>)</td>
+<td data-label="Pulsar"><strong>оба</strong> (подписки)</td>
+<td data-label="Artemis/JMS">очередь + topic</td>
+<td data-label="Postgres SKIP LOCKED">очередь</td>
+<td data-label="SQS">очередь</td>
 </tr>
 <tr>
-<td>Replay</td>
-<td>нет</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>нет</td>
-<td>да (это же таблица)</td>
-<td>нет</td>
+<td data-label="">Replay</td>
+<td data-label="RabbitMQ (quorum)">нет</td>
+<td data-label="RabbitMQ Streams">да</td>
+<td data-label="Kafka">да</td>
+<td data-label="NATS JetStream">да</td>
+<td data-label="Pulsar">да</td>
+<td data-label="Artemis/JMS">нет</td>
+<td data-label="Postgres SKIP LOCKED">да (это же таблица)</td>
+<td data-label="SQS">нет</td>
 </tr>
 <tr>
-<td>Порядок</td>
-<td>при 1 потребителе</td>
-<td>по стриму</td>
-<td>по партиции</td>
-<td>по стриму</td>
-<td>по партиции / по ключу</td>
-<td>по очереди</td>
-<td>по <code>ORDER BY</code></td>
-<td>FIFO по группе</td>
+<td data-label="">Порядок</td>
+<td data-label="RabbitMQ (quorum)">при 1 потребителе</td>
+<td data-label="RabbitMQ Streams">по стриму</td>
+<td data-label="Kafka">по партиции</td>
+<td data-label="NATS JetStream">по стриму</td>
+<td data-label="Pulsar">по партиции / по ключу</td>
+<td data-label="Artemis/JMS">по очереди</td>
+<td data-label="Postgres SKIP LOCKED">по <code>ORDER BY</code></td>
+<td data-label="SQS">FIFO по группе</td>
 </tr>
 <tr>
-<td>Per-message retry/DLQ</td>
-<td>отличный</td>
-<td>нет</td>
-<td>через DLT</td>
-<td>да (<code>nak</code>, <code>maxDeliver</code>)</td>
-<td>да (Shared)</td>
-<td>да</td>
-<td>тривиально</td>
-<td>да (redrive)</td>
+<td data-label="">Per-message retry/DLQ</td>
+<td data-label="RabbitMQ (quorum)">отличный</td>
+<td data-label="RabbitMQ Streams">нет</td>
+<td data-label="Kafka">через DLT</td>
+<td data-label="NATS JetStream">да (<code>nak</code>, <code>maxDeliver</code>)</td>
+<td data-label="Pulsar">да (Shared)</td>
+<td data-label="Artemis/JMS">да</td>
+<td data-label="Postgres SKIP LOCKED">тривиально</td>
+<td data-label="SQS">да (redrive)</td>
 </tr>
 <tr>
-<td>Задержка доставки</td>
-<td>TTL+DLX / плагин</td>
-<td>нет</td>
-<td>нет (retry-топики)</td>
-<td><code>nakWithDelay</code></td>
-<td><code>deliverAfter</code></td>
-<td><code>ScheduledMessage</code></td>
-<td><code>run_after</code></td>
-<td><code>DelaySeconds</code> ≤ 15 мин</td>
+<td data-label="">Задержка доставки</td>
+<td data-label="RabbitMQ (quorum)">TTL+DLX / плагин</td>
+<td data-label="RabbitMQ Streams">нет</td>
+<td data-label="Kafka">нет (retry-топики)</td>
+<td data-label="NATS JetStream"><code>nakWithDelay</code></td>
+<td data-label="Pulsar"><code>deliverAfter</code></td>
+<td data-label="Artemis/JMS"><code>ScheduledMessage</code></td>
+<td data-label="Postgres SKIP LOCKED"><code>run_after</code></td>
+<td data-label="SQS"><code>DelaySeconds</code> ≤ 15 мин</td>
 </tr>
 <tr>
-<td>Приоритеты</td>
-<td>да (4.3 в quorum)</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>да</td>
-<td>да (<code>ORDER BY</code>)</td>
-<td>нет</td>
+<td data-label="">Приоритеты</td>
+<td data-label="RabbitMQ (quorum)">да (4.3 в quorum)</td>
+<td data-label="RabbitMQ Streams">нет</td>
+<td data-label="Kafka">нет</td>
+<td data-label="NATS JetStream">нет</td>
+<td data-label="Pulsar">нет</td>
+<td data-label="Artemis/JMS">да</td>
+<td data-label="Postgres SKIP LOCKED">да (<code>ORDER BY</code>)</td>
+<td data-label="SQS">нет</td>
 </tr>
 <tr>
-<td>Маршрутизация</td>
-<td>exchange/binding</td>
-<td>нет</td>
-<td>нет</td>
-<td>subject wildcards</td>
-<td>нет</td>
-<td>selectors</td>
-<td><code>WHERE</code></td>
-<td>нет (SNS сбоку)</td>
+<td data-label="">Маршрутизация</td>
+<td data-label="RabbitMQ (quorum)">exchange/binding</td>
+<td data-label="RabbitMQ Streams">нет</td>
+<td data-label="Kafka">нет</td>
+<td data-label="NATS JetStream">subject wildcards</td>
+<td data-label="Pulsar">нет</td>
+<td data-label="Artemis/JMS">selectors</td>
+<td data-label="Postgres SKIP LOCKED"><code>WHERE</code></td>
+<td data-label="SQS">нет (SNS сбоку)</td>
 </tr>
 <tr>
-<td>Fanout на N потребителей</td>
-<td>дорого (N копий)</td>
-<td>дёшево</td>
-<td>дёшево</td>
-<td>дёшево</td>
-<td>дёшево</td>
-<td>durable subs</td>
-<td>дорого</td>
-<td>SNS</td>
+<td data-label="">Fanout на N потребителей</td>
+<td data-label="RabbitMQ (quorum)">дорого (N копий)</td>
+<td data-label="RabbitMQ Streams">дёшево</td>
+<td data-label="Kafka">дёшево</td>
+<td data-label="NATS JetStream">дёшево</td>
+<td data-label="Pulsar">дёшево</td>
+<td data-label="Artemis/JMS">durable subs</td>
+<td data-label="Postgres SKIP LOCKED">дорого</td>
+<td data-label="SQS">SNS</td>
 </tr>
 <tr>
-<td>Порядок величин msg/s</td>
-<td>10³–10⁴</td>
-<td>10⁵</td>
-<td>10⁵–10⁶</td>
-<td>10⁵–10⁶</td>
-<td>10⁵–10⁶</td>
-<td>10⁴</td>
-<td>10²–10³</td>
-<td>сервис</td>
+<td data-label="">Порядок величин msg/s</td>
+<td data-label="RabbitMQ (quorum)">10³–10⁴</td>
+<td data-label="RabbitMQ Streams">10⁵</td>
+<td data-label="Kafka">10⁵–10⁶</td>
+<td data-label="NATS JetStream">10⁵–10⁶</td>
+<td data-label="Pulsar">10⁵–10⁶</td>
+<td data-label="Artemis/JMS">10⁴</td>
+<td data-label="Postgres SKIP LOCKED">10²–10³</td>
+<td data-label="SQS">сервис</td>
 </tr>
 <tr>
-<td>XA</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td><strong>да</strong></td>
-<td>локальная транзакция</td>
-<td>нет</td>
+<td data-label="">XA</td>
+<td data-label="RabbitMQ (quorum)">нет</td>
+<td data-label="RabbitMQ Streams">нет</td>
+<td data-label="Kafka">нет</td>
+<td data-label="NATS JetStream">нет</td>
+<td data-label="Pulsar">нет</td>
+<td data-label="Artemis/JMS"><strong>да</strong></td>
+<td data-label="Postgres SKIP LOCKED">локальная транзакция</td>
+<td data-label="SQS">нет</td>
 </tr>
 <tr>
-<td>Компонентов в эксплуатации</td>
-<td>1</td>
-<td>1</td>
-<td>1 (KRaft)</td>
-<td>1</td>
-<td>3</td>
-<td>1</td>
-<td><strong>0</strong></td>
-<td>0</td>
+<td data-label="">Компонентов в эксплуатации</td>
+<td data-label="RabbitMQ (quorum)">1</td>
+<td data-label="RabbitMQ Streams">1</td>
+<td data-label="Kafka">1 (KRaft)</td>
+<td data-label="NATS JetStream">1</td>
+<td data-label="Pulsar">3</td>
+<td data-label="Artemis/JMS">1</td>
+<td data-label="Postgres SKIP LOCKED"><strong>0</strong></td>
+<td data-label="SQS">0</td>
 </tr>
 <tr>
-<td>Экспертиза на рынке</td>
-<td>высокая</td>
-<td>средняя</td>
-<td>высокая</td>
-<td>средняя</td>
-<td>низкая</td>
-<td>средняя (старые системы)</td>
-<td>высокая</td>
-<td>высокая</td>
+<td data-label="">Экспертиза на рынке</td>
+<td data-label="RabbitMQ (quorum)">высокая</td>
+<td data-label="RabbitMQ Streams">средняя</td>
+<td data-label="Kafka">высокая</td>
+<td data-label="NATS JetStream">средняя</td>
+<td data-label="Pulsar">низкая</td>
+<td data-label="Artemis/JMS">средняя (старые системы)</td>
+<td data-label="Postgres SKIP LOCKED">высокая</td>
+<td data-label="SQS">высокая</td>
 </tr>
 </tbody>
 </table>
@@ -2750,7 +2750,7 @@ Kafka (одна партиция, acks=1):         запись  20 391 сооб
 <p>Брокеры редко меняют одним релизом: гораздо чаще два брокера годами живут в одной системе, а миграция идёт постепенно, сервис за сервисом. Поэтому важно уметь, во-первых, осознанно разделить зоны ответственности между брокерами, чтобы сосуществование было конфигурацией, а не бардаком, а во-вторых, переводить потребителей с одного брокера на другой, не теряя сообщений. В этом разделе разберём, как делить работу между Kafka и RabbitMQ, какие бывают мосты между брокерами и что обязательно учесть в любом из них, и порядок перевода потребителей, который работает на практике.</p>
 <h3 id="111-kafka-и-rabbitmq-в-одной-системе">11.1 Kafka и RabbitMQ в одной системе</h3>
 <p>Когда в системе стоят и Kafka, и RabbitMQ, это нормальная, а не переходная конфигурация, но только при условии, что зоны ответственности разделены <strong>по смыслу сообщения</strong>, а не по историческим причинам. Таблица ниже показывает, как делятся эти зоны: что везёт каждый брокер, кто владеет контрактом, сколько потребителей и что для сообщений важно.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2760,24 +2760,24 @@ Kafka (одна партиция, acks=1):         запись  20 391 сооб
 </thead>
 <tbody>
 <tr>
-<td>Что везёт</td>
-<td><strong>факты</strong>: «платёж проведён», «клиент изменён», CDC</td>
-<td><strong>команды и задачи</strong>: «отправь письмо», «сформируй выписку»</td>
+<td data-label="">Что везёт</td>
+<td data-label="Kafka"><strong>факты</strong>: «платёж проведён», «клиент изменён», CDC</td>
+<td data-label="RabbitMQ"><strong>команды и задачи</strong>: «отправь письмо», «сформируй выписку»</td>
 </tr>
 <tr>
-<td>Кто владеет контрактом</td>
-<td>издатель домена</td>
-<td>потребитель (он заказывает работу)</td>
+<td data-label="">Кто владеет контрактом</td>
+<td data-label="Kafka">издатель домена</td>
+<td data-label="RabbitMQ">потребитель (он заказывает работу)</td>
 </tr>
 <tr>
-<td>Потребителей</td>
-<td>много и заранее неизвестно</td>
-<td>обычно один пул воркеров</td>
+<td data-label="">Потребителей</td>
+<td data-label="Kafka">много и заранее неизвестно</td>
+<td data-label="RabbitMQ">обычно один пул воркеров</td>
 </tr>
 <tr>
-<td>Что важно</td>
-<td>порядок, история, дешёвый fanout</td>
-<td>per-message retry, задержки, приоритеты</td>
+<td data-label="">Что важно</td>
+<td data-label="Kafka">порядок, история, дешёвый fanout</td>
+<td data-label="RabbitMQ">per-message retry, задержки, приоритеты</td>
 </tr>
 </tbody>
 </table>
@@ -2898,7 +2898,7 @@ Kafka (одна партиция, acks=1):         запись  20 391 сооб
 </code></pre></div>
 
 <p>Умение читать эти колонки по сути и составляет весь навык диагностики Rabbit, поэтому в таблице ниже для типичных сочетаний значений сказано, что они означают и что делать дальше.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что видите</th>
@@ -2908,34 +2908,34 @@ Kafka (одна партиция, acks=1):         запись  20 391 сооб
 </thead>
 <tbody>
 <tr>
-<td><code>messages_ready</code> растёт, <code>unacked</code> ≈ 0, <code>consumers</code> = 0</td>
-<td>потребителей нет вообще</td>
-<td>поднять потребителей; проверить, не отвалились ли по heartbeat</td>
+<td data-label="Что видите"><code>messages_ready</code> растёт, <code>unacked</code> ≈ 0, <code>consumers</code> = 0</td>
+<td data-label="Что это значит">потребителей нет вообще</td>
+<td data-label="Что делать">поднять потребителей; проверить, не отвалились ли по heartbeat</td>
 </tr>
 <tr>
-<td><code>ready</code> растёт, <code>unacked</code> мал и стабилен, <code>consumers</code> &gt; 0</td>
-<td>потребители есть, но медленнее входящего потока</td>
-<td>масштабировать потребителей; проверить prefetch — он может быть слишком мал</td>
+<td data-label="Что видите"><code>ready</code> растёт, <code>unacked</code> мал и стабилен, <code>consumers</code> &gt; 0</td>
+<td data-label="Что это значит">потребители есть, но медленнее входящего потока</td>
+<td data-label="Что делать">масштабировать потребителей; проверить prefetch — он может быть слишком мал</td>
 </tr>
 <tr>
-<td><code>unacked</code> большой и не убывает</td>
-<td>потребители забрали и не подтверждают: зависли, потеряли поток или слишком большой prefetch</td>
-<td>thread dump потребителя (глава 08); снизить prefetch</td>
+<td data-label="Что видите"><code>unacked</code> большой и не убывает</td>
+<td data-label="Что это значит">потребители забрали и не подтверждают: зависли, потеряли поток или слишком большой prefetch</td>
+<td data-label="Что делать">thread dump потребителя (глава 08); снизить prefetch</td>
 </tr>
 <tr>
-<td><code>consumer_utilisation</code> низкая (&lt; 0.5)</td>
-<td>потребитель простаивает в ожидании сообщений от брокера — узкое место в доставке</td>
-<td><strong>поднять prefetch</strong>; проверить сеть и число каналов</td>
+<td data-label="Что видите"><code>consumer_utilisation</code> низкая (&lt; 0.5)</td>
+<td data-label="Что это значит">потребитель простаивает в ожидании сообщений от брокера — узкое место в доставке</td>
+<td data-label="Что делать"><strong>поднять prefetch</strong>; проверить сеть и число каналов</td>
 </tr>
 <tr>
-<td><code>consumer_utilisation</code> ≈ 1.0 и <code>ready</code> растёт</td>
-<td>потребитель загружен полностью, он и есть узкое место</td>
-<td>масштабировать потребителей, ускорить обработку</td>
+<td data-label="Что видите"><code>consumer_utilisation</code> ≈ 1.0 и <code>ready</code> растёт</td>
+<td data-label="Что это значит">потребитель загружен полностью, он и есть узкое место</td>
+<td data-label="Что делать">масштабировать потребителей, ускорить обработку</td>
 </tr>
 <tr>
-<td><code>state = flow</code> у соединения</td>
-<td>внутренний flow control: публикатор быстрее очереди</td>
-<td>нормально при всплеске; постоянно — проблема ёмкости</td>
+<td data-label="Что видите"><code>state = flow</code> у соединения</td>
+<td data-label="Что это значит">внутренний flow control: публикатор быстрее очереди</td>
+<td data-label="Что делать">нормально при всплеске; постоянно — проблема ёмкости</td>
 </tr>
 </tbody>
 </table>
@@ -3192,5 +3192,5 @@ bookkeeper shell bookiesanity
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-две-модели-очередь-и-лог">1. Две модели: очередь и лог</a></li><li><a href="#2-amqp-0-9-1-и-модель-rabbitmq">2. AMQP 0-9-1 и модель RabbitMQ</a></li><li><a href="#3-rabbitmq-подтверждения-prefetch-и-поток">3. RabbitMQ: подтверждения, prefetch и поток</a></li><li><a href="#4-rabbitmq-типы-очередей-retry-и-кластер">4. RabbitMQ: типы очередей, retry и кластер</a></li><li><a href="#5-spring-amqp-на-практике">5. Spring AMQP на практике</a></li><li><a href="#6-nats-и-jetstream">6. NATS и JetStream</a></li><li><a href="#7-apache-pulsar">7. Apache Pulsar</a></li><li><a href="#8-activemq-artemis-и-jms">8. ActiveMQ Artemis и JMS</a></li><li><a href="#9-другие-решения-redis-streams-postgres-облака-mqtt">9. Другие решения: Redis Streams, Postgres, облака, MQTT</a></li><li><a href="#10-выбор-брокера">10. Выбор брокера</a></li><li><a href="#11-миграция-и-сосуществование">11. Миграция и сосуществование</a></li><li><a href="#12-разобранные-инциденты">12. Разобранные инциденты</a></li><li><a href="#13-грабли-и-антипаттерны">13. Грабли и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

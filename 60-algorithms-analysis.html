@@ -3,7 +3,7 @@
 <title>60. Анализ алгоритмов и метод решения задач — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Анализ алгоритмов и метод решения задач">
 <a class="skip" href="#content">К тексту</a>
@@ -42,7 +42,7 @@
 <p>Модель RAM считает все обращения к памяти одинаковыми, а реальный процессор — нет. Между процессором и оперативной памятью стоит иерархия кэшей: обращение к данным в кэше первого уровня стоит единицы тактов, к оперативной памяти — порядка сотни наносекунд, то есть в десятки и сотни раз дороже. Процессор читает память строками кэша по 64 байта и умеет заранее подтягивать следующие строки, если видит последовательный обход. Поэтому алгоритм, который идёт по памяти подряд, и алгоритм, который прыгает по случайным адресам, в модели RAM стоят одинаково, а на практике различаются в разы. Подробно о кэше и иерархии памяти — в главе 15 (<code>15-storage-os-memory-filesystems.md</code>) и в работе Дреппера из списка источников.</p>
 <p>В Java к этому добавляется второй эффект — упаковка (<em>boxing</em>), то есть заворачивание примитива в объект-обёртку. Массив <code>int[]</code> хранит числа подряд, по четыре байта на элемент. <code>ArrayList&lt;Integer&gt;</code> хранит массив ссылок, а каждое число лежит в отдельном объекте <code>Integer</code> где-то в куче: заголовок объекта плюс поле, обычно 16 байт, и ещё 4 байта на сжатую ссылку в массиве. Чтобы прочитать число, процессор сначала читает ссылку, затем идёт по ней в другое место памяти. Связный список <code>LinkedList&lt;Integer&gt;</code> добавляет третий уровень: узел списка со ссылками на соседей и на значение. Устройство и расход памяти этих коллекций разобраны в главе 3 (<code>03-collections-and-streams.md</code>, разделы 2.1–2.2).</p>
 <p>Чтобы увидеть, сколько это стоит, я замерил сумму десяти миллионов чисел четырьмя способами. Замер грубый: <code>System.nanoTime()</code> вокруг вызова после нескольких прогревочных повторов, JDK 21, виртуальная машина с четырьмя ядрами Xeon 2,1 ГГц, без JMH. Абсолютные числа на вашей машине будут другими, а соотношения — того же порядка. Как мерить правильно, разобрано в главе 45 (<code>45-performance.md</code>, раздел 3).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Структура (10⁷ элементов)</th>
@@ -52,29 +52,29 @@
 </thead>
 <tbody>
 <tr>
-<td><code>int[]</code></td>
-<td>O(n)</td>
-<td>3–4</td>
+<td data-label="Структура (10⁷ элементов)"><code>int[]</code></td>
+<td data-label="Сложность обхода">O(n)</td>
+<td data-label="Время обхода, мс">3–4</td>
 </tr>
 <tr>
-<td><code>ArrayList&lt;Integer&gt;</code>, объекты созданы по порядку</td>
-<td>O(n)</td>
-<td>36–39</td>
+<td data-label="Структура (10⁷ элементов)"><code>ArrayList&lt;Integer&gt;</code>, объекты созданы по порядку</td>
+<td data-label="Сложность обхода">O(n)</td>
+<td data-label="Время обхода, мс">36–39</td>
 </tr>
 <tr>
-<td><code>LinkedList&lt;Integer&gt;</code>, узлы созданы по порядку</td>
-<td>O(n)</td>
-<td>79–96</td>
+<td data-label="Структура (10⁷ элементов)"><code>LinkedList&lt;Integer&gt;</code>, узлы созданы по порядку</td>
+<td data-label="Сложность обхода">O(n)</td>
+<td data-label="Время обхода, мс">79–96</td>
 </tr>
 <tr>
-<td><code>ArrayList&lt;Integer&gt;</code>, ссылки перемешаны</td>
-<td>O(n)</td>
-<td>170–217</td>
+<td data-label="Структура (10⁷ элементов)"><code>ArrayList&lt;Integer&gt;</code>, ссылки перемешаны</td>
+<td data-label="Сложность обхода">O(n)</td>
+<td data-label="Время обхода, мс">170–217</td>
 </tr>
 <tr>
-<td><code>LinkedList&lt;Integer&gt;</code>, значения перемешаны</td>
-<td>O(n)</td>
-<td>352–380</td>
+<td data-label="Структура (10⁷ элементов)"><code>LinkedList&lt;Integer&gt;</code>, значения перемешаны</td>
+<td data-label="Сложность обхода">O(n)</td>
+<td data-label="Время обхода, мс">352–380</td>
 </tr>
 </tbody>
 </table>
@@ -734,7 +734,7 @@
 </ol>
 <p>На практике <code>f(n)</code> почти всегда многочлен <code>Θ(n^d)</code>, и теорема упрощается до сравнения двух чисел: <code>d</code> и <code>log_b a</code>. Если <code>d &lt; log_b a</code>, ответ <code>Θ(n^(log_b a))</code>; если <code>d = log_b a</code>, ответ <code>Θ(n^d · log n)</code>; если <code>d &gt; log_b a</code>, ответ <code>Θ(n^d)</code>, и условие регулярности для многочлена выполняется автоматически. Эту упрощённую форму удобно держать в голове на собеседовании.</p>
 <p>Таблица ниже применяет теорему к рекуррентам, которые встречаются в части XII. Для каждой строки полезно один раз проверить, какой случай срабатывает, и после этого узнавать их с первого взгляда.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Алгоритм</th>
@@ -746,60 +746,60 @@
 </thead>
 <tbody>
 <tr>
-<td>Двоичный поиск</td>
-<td><code>T(n/2) + 1</code></td>
-<td>0 = 0</td>
-<td class="num">2</td>
-<td>Θ(log n)</td>
+<td data-label="Алгоритм">Двоичный поиск</td>
+<td data-label="Рекуррента"><code>T(n/2) + 1</code></td>
+<td data-label="log_b a против d">0 = 0</td>
+<td data-label="Случай" class="num">2</td>
+<td data-label="Ответ">Θ(log n)</td>
 </tr>
 <tr>
-<td>Обход сбалансированного дерева</td>
-<td><code>2T(n/2) + 1</code></td>
-<td>1 &gt; 0</td>
-<td class="num">1</td>
-<td>Θ(n)</td>
+<td data-label="Алгоритм">Обход сбалансированного дерева</td>
+<td data-label="Рекуррента"><code>2T(n/2) + 1</code></td>
+<td data-label="log_b a против d">1 &gt; 0</td>
+<td data-label="Случай" class="num">1</td>
+<td data-label="Ответ">Θ(n)</td>
 </tr>
 <tr>
-<td>Сортировка слиянием</td>
-<td><code>2T(n/2) + n</code></td>
-<td>1 = 1</td>
-<td class="num">2</td>
-<td>Θ(n log n)</td>
+<td data-label="Алгоритм">Сортировка слиянием</td>
+<td data-label="Рекуррента"><code>2T(n/2) + n</code></td>
+<td data-label="log_b a против d">1 = 1</td>
+<td data-label="Случай" class="num">2</td>
+<td data-label="Ответ">Θ(n log n)</td>
 </tr>
 <tr>
-<td>Наивное умножение «разделяй и властвуй»</td>
-<td><code>4T(n/2) + n</code></td>
-<td>2 &gt; 1</td>
-<td class="num">1</td>
-<td>Θ(n²)</td>
+<td data-label="Алгоритм">Наивное умножение «разделяй и властвуй»</td>
+<td data-label="Рекуррента"><code>4T(n/2) + n</code></td>
+<td data-label="log_b a против d">2 &gt; 1</td>
+<td data-label="Случай" class="num">1</td>
+<td data-label="Ответ">Θ(n²)</td>
 </tr>
 <tr>
-<td>Умножение Карацубы</td>
-<td><code>3T(n/2) + n</code></td>
-<td>log₂3 ≈ 1,585 &gt; 1</td>
-<td class="num">1</td>
-<td>Θ(n^1,585)</td>
+<td data-label="Алгоритм">Умножение Карацубы</td>
+<td data-label="Рекуррента"><code>3T(n/2) + n</code></td>
+<td data-label="log_b a против d">log₂3 ≈ 1,585 &gt; 1</td>
+<td data-label="Случай" class="num">1</td>
+<td data-label="Ответ">Θ(n^1,585)</td>
 </tr>
 <tr>
-<td>Умножение матриц Штрассена</td>
-<td><code>7T(n/2) + n²</code></td>
-<td>log₂7 ≈ 2,807 &gt; 2</td>
-<td class="num">1</td>
-<td>Θ(n^2,807)</td>
+<td data-label="Алгоритм">Умножение матриц Штрассена</td>
+<td data-label="Рекуррента"><code>7T(n/2) + n²</code></td>
+<td data-label="log_b a против d">log₂7 ≈ 2,807 &gt; 2</td>
+<td data-label="Случай" class="num">1</td>
+<td data-label="Ответ">Θ(n^2,807)</td>
 </tr>
 <tr>
-<td>Построение кучи снизу вверх</td>
-<td><code>2T(n/2) + log n</code></td>
-<td>1 &gt; 0 (с запасом)</td>
-<td class="num">1</td>
-<td>Θ(n)</td>
+<td data-label="Алгоритм">Построение кучи снизу вверх</td>
+<td data-label="Рекуррента"><code>2T(n/2) + log n</code></td>
+<td data-label="log_b a против d">1 &gt; 0 (с запасом)</td>
+<td data-label="Случай" class="num">1</td>
+<td data-label="Ответ">Θ(n)</td>
 </tr>
 <tr>
-<td>Quickselect при делении пополам</td>
-<td><code>T(n/2) + n</code></td>
-<td>0 &lt; 1</td>
-<td class="num">3</td>
-<td>Θ(n)</td>
+<td data-label="Алгоритм">Quickselect при делении пополам</td>
+<td data-label="Рекуррента"><code>T(n/2) + n</code></td>
+<td data-label="log_b a против d">0 &lt; 1</td>
+<td data-label="Случай" class="num">3</td>
+<td data-label="Ответ">Θ(n)</td>
 </tr>
 </tbody>
 </table>
@@ -1146,7 +1146,7 @@
 <p>С той же точки зрения стоит смотреть на сборку мусора: пауза сборщика — это «амортизированная» плата за дешёвые выделения памяти, и требования к задержке заставляют выбирать сборщики, которые размазывают работу по времени (глава 7, <code>07-memory-and-gc.md</code>). Общий вывод для интервью: на вопрос «какая сложность <code>add</code> у <code>ArrayList</code>?» правильный ответ — «амортизированно O(1), в худшем случае O(n) на одну операцию», и вторая половина ответа показывает, что вы понимаете, где это важно.</p>
 <h3 id="46-амортизация-средний-случай-и-ожидание">4.6 Амортизация, средний случай и ожидание</h3>
 <p>Три вида «нехудших» оценок легко перепутать, а интервьюеры любят спрашивать именно разницу, поэтому сведём их вместе. Отличаются они тем, по чему берётся среднее и есть ли в оценке случайность. В таблице к ним добавлен худший случай как точка отсчёта, и для каждой оценки указан пример из JDK.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Оценка</th>
@@ -1158,32 +1158,32 @@
 </thead>
 <tbody>
 <tr>
-<td>Худший случай</td>
-<td>ни по чему: максимум по входам</td>
-<td>нет</td>
-<td>на каждую операцию</td>
-<td><code>TreeMap.get</code> — O(log n)</td>
+<td data-label="Оценка">Худший случай</td>
+<td data-label="По чему усредняем">ни по чему: максимум по входам</td>
+<td data-label="Есть ли случайность">нет</td>
+<td data-label="Гарантия">на каждую операцию</td>
+<td data-label="Пример"><code>TreeMap.get</code> — O(log n)</td>
 </tr>
 <tr>
-<td>Амортизированная</td>
-<td>по последовательности операций</td>
-<td>нет</td>
-<td>на сумму любой последовательности</td>
-<td><code>ArrayList.add</code> — O(1)</td>
+<td data-label="Оценка">Амортизированная</td>
+<td data-label="По чему усредняем">по последовательности операций</td>
+<td data-label="Есть ли случайность">нет</td>
+<td data-label="Гарантия">на сумму любой последовательности</td>
+<td data-label="Пример"><code>ArrayList.add</code> — O(1)</td>
 </tr>
 <tr>
-<td>Средний случай</td>
-<td>по распределению входов</td>
-<td>во входе</td>
-<td>только если вход «типичный»</td>
-<td>быстрая сортировка с первым опорным — O(n log n) на случайной перестановке</td>
+<td data-label="Оценка">Средний случай</td>
+<td data-label="По чему усредняем">по распределению входов</td>
+<td data-label="Есть ли случайность">во входе</td>
+<td data-label="Гарантия">только если вход «типичный»</td>
+<td data-label="Пример">быстрая сортировка с первым опорным — O(n log n) на случайной перестановке</td>
 </tr>
 <tr>
-<td>Ожидаемая</td>
-<td>по случайным выборам алгоритма</td>
-<td>в алгоритме</td>
-<td>в ожидании на любом входе</td>
-<td>быстрая сортировка со случайным опорным — O(n log n)</td>
+<td data-label="Оценка">Ожидаемая</td>
+<td data-label="По чему усредняем">по случайным выборам алгоритма</td>
+<td data-label="Есть ли случайность">в алгоритме</td>
+<td data-label="Гарантия">в ожидании на любом входе</td>
+<td data-label="Пример">быстрая сортировка со случайным опорным — O(n log n)</td>
 </tr>
 </tbody>
 </table>
@@ -1506,7 +1506,7 @@
 <p>Почти любое решение на собеседовании собирается из стандартных коллекций, и его сложность складывается из стоимостей их операций. Ошибка в стоимости одной операции, например уверенность, что <code>PriorityQueue.remove(x)</code> работает за логарифм или что <code>LinkedList.get(i)</code> дешёвый, превращает правильную идею в неверный анализ, а иногда и в решение, которое не укладывается во время. Этот раздел — справочник: сначала таблица стоимостей для коллекций JDK, затем то, что добавляет Kotlin, затем замечания о упаковке и памяти. Устройство самих коллекций — массивы корзин, превращение корзины в дерево, коэффициент роста — разобрано в главе 3 (<code>03-collections-and-streams.md</code>), здесь только цена операций и то, где худший случай отличается от среднего.</p>
 <h3 id="51-таблица-стоимости-операций-jdk">5.1 Таблица стоимости операций JDK</h3>
 <p>Таблица ниже собрана по документации JDK 21 и исходникам <code>openjdk/jdk</code>. Колонка «В среднем» — то, что обычно имеют в виду, говоря о сложности операции; колонка «В худшем» заполнена там, где худший случай отличается, и это самое важное место таблицы. Через <code>n</code> обозначен размер коллекции, через <code>i</code> — индекс, с которым работает операция.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Структура</th>
@@ -1518,256 +1518,256 @@
 </thead>
 <tbody>
 <tr>
-<td><code>int[]</code>, <code>long[]</code></td>
-<td>чтение и запись по индексу</td>
-<td>O(1)</td>
-<td>O(1)</td>
-<td>без упаковки, данные подряд</td>
+<td data-label="Структура"><code>int[]</code>, <code>long[]</code></td>
+<td data-label="Операция">чтение и запись по индексу</td>
+<td data-label="В среднем">O(1)</td>
+<td data-label="В худшем">O(1)</td>
+<td data-label="Примечание">без упаковки, данные подряд</td>
 </tr>
 <tr>
-<td><code>int[]</code>, <code>long[]</code></td>
-<td>поиск значения</td>
-<td>O(n)</td>
-<td>O(n)</td>
-<td><code>Arrays.binarySearch</code> — O(log n) на отсортированном</td>
+<td data-label="Структура"><code>int[]</code>, <code>long[]</code></td>
+<td data-label="Операция">поиск значения</td>
+<td data-label="В среднем">O(n)</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание"><code>Arrays.binarySearch</code> — O(log n) на отсортированном</td>
 </tr>
 <tr>
-<td><code>ArrayList</code></td>
-<td><code>get(i)</code>, <code>set(i, x)</code></td>
-<td>O(1)</td>
-<td>O(1)</td>
-<td></td>
+<td data-label="Структура"><code>ArrayList</code></td>
+<td data-label="Операция"><code>get(i)</code>, <code>set(i, x)</code></td>
+<td data-label="В среднем">O(1)</td>
+<td data-label="В худшем">O(1)</td>
+<td data-label="Примечание"></td>
 </tr>
 <tr>
-<td><code>ArrayList</code></td>
-<td><code>add(x)</code> в конец</td>
-<td>O(1) амортизированно</td>
-<td>O(n)</td>
-<td>рост в 1,5 раза с копированием</td>
+<td data-label="Структура"><code>ArrayList</code></td>
+<td data-label="Операция"><code>add(x)</code> в конец</td>
+<td data-label="В среднем">O(1) амортизированно</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание">рост в 1,5 раза с копированием</td>
 </tr>
 <tr>
-<td><code>ArrayList</code></td>
-<td><code>add(i, x)</code>, <code>remove(i)</code></td>
-<td>O(n - i)</td>
-<td>O(n)</td>
-<td>сдвиг хвоста <code>System.arraycopy</code></td>
+<td data-label="Структура"><code>ArrayList</code></td>
+<td data-label="Операция"><code>add(i, x)</code>, <code>remove(i)</code></td>
+<td data-label="В среднем">O(n - i)</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание">сдвиг хвоста <code>System.arraycopy</code></td>
 </tr>
 <tr>
-<td><code>ArrayList</code></td>
-<td><code>contains</code>, <code>indexOf</code>, <code>remove(Object)</code></td>
-<td>O(n)</td>
-<td>O(n)</td>
-<td>линейный проход с <code>equals</code></td>
+<td data-label="Структура"><code>ArrayList</code></td>
+<td data-label="Операция"><code>contains</code>, <code>indexOf</code>, <code>remove(Object)</code></td>
+<td data-label="В среднем">O(n)</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание">линейный проход с <code>equals</code></td>
 </tr>
 <tr>
-<td><code>LinkedList</code></td>
-<td>добавление и удаление на концах</td>
-<td>O(1)</td>
-<td>O(1)</td>
-<td></td>
+<td data-label="Структура"><code>LinkedList</code></td>
+<td data-label="Операция">добавление и удаление на концах</td>
+<td data-label="В среднем">O(1)</td>
+<td data-label="В худшем">O(1)</td>
+<td data-label="Примечание"></td>
 </tr>
 <tr>
-<td><code>LinkedList</code></td>
-<td><code>get(i)</code>, <code>set(i, x)</code></td>
-<td>O(min(i, n - i))</td>
-<td>O(n)</td>
-<td>проход от ближайшего конца</td>
+<td data-label="Структура"><code>LinkedList</code></td>
+<td data-label="Операция"><code>get(i)</code>, <code>set(i, x)</code></td>
+<td data-label="В среднем">O(min(i, n - i))</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание">проход от ближайшего конца</td>
 </tr>
 <tr>
-<td><code>LinkedList</code></td>
-<td>удаление через итератор</td>
-<td>O(1)</td>
-<td>O(1)</td>
-<td>единственное честное преимущество</td>
+<td data-label="Структура"><code>LinkedList</code></td>
+<td data-label="Операция">удаление через итератор</td>
+<td data-label="В среднем">O(1)</td>
+<td data-label="В худшем">O(1)</td>
+<td data-label="Примечание">единственное честное преимущество</td>
 </tr>
 <tr>
-<td><code>ArrayDeque</code></td>
-<td><code>addFirst/Last</code>, <code>pollFirst/Last</code>, <code>peek</code></td>
-<td>O(1) амортизированно</td>
-<td>O(n) при росте</td>
-<td>кольцевой буфер; <code>null</code> запрещён</td>
+<td data-label="Структура"><code>ArrayDeque</code></td>
+<td data-label="Операция"><code>addFirst/Last</code>, <code>pollFirst/Last</code>, <code>peek</code></td>
+<td data-label="В среднем">O(1) амортизированно</td>
+<td data-label="В худшем">O(n) при росте</td>
+<td data-label="Примечание">кольцевой буфер; <code>null</code> запрещён</td>
 </tr>
 <tr>
-<td><code>ArrayDeque</code></td>
-<td><code>contains</code>, <code>remove(Object)</code></td>
-<td>O(n)</td>
-<td>O(n)</td>
-<td>доступа по индексу нет</td>
+<td data-label="Структура"><code>ArrayDeque</code></td>
+<td data-label="Операция"><code>contains</code>, <code>remove(Object)</code></td>
+<td data-label="В среднем">O(n)</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание">доступа по индексу нет</td>
 </tr>
 <tr>
-<td><code>PriorityQueue</code></td>
-<td><code>offer</code>, <code>poll</code></td>
-<td>O(log n)</td>
-<td>O(log n) (+ рост)</td>
-<td>двоичная куча</td>
+<td data-label="Структура"><code>PriorityQueue</code></td>
+<td data-label="Операция"><code>offer</code>, <code>poll</code></td>
+<td data-label="В среднем">O(log n)</td>
+<td data-label="В худшем">O(log n) (+ рост)</td>
+<td data-label="Примечание">двоичная куча</td>
 </tr>
 <tr>
-<td><code>PriorityQueue</code></td>
-<td><code>peek</code>, <code>size</code></td>
-<td>O(1)</td>
-<td>O(1)</td>
-<td></td>
+<td data-label="Структура"><code>PriorityQueue</code></td>
+<td data-label="Операция"><code>peek</code>, <code>size</code></td>
+<td data-label="В среднем">O(1)</td>
+<td data-label="В худшем">O(1)</td>
+<td data-label="Примечание"></td>
 </tr>
 <tr>
-<td><code>PriorityQueue</code></td>
-<td><code>remove(Object)</code>, <code>contains</code></td>
-<td>O(n)</td>
-<td>O(n)</td>
-<td>поиск по массиву кучи</td>
+<td data-label="Структура"><code>PriorityQueue</code></td>
+<td data-label="Операция"><code>remove(Object)</code>, <code>contains</code></td>
+<td data-label="В среднем">O(n)</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание">поиск по массиву кучи</td>
 </tr>
 <tr>
-<td><code>PriorityQueue</code></td>
-<td>конструктор из коллекции</td>
-<td>O(n)</td>
-<td>O(n)</td>
-<td>построение кучи снизу вверх</td>
+<td data-label="Структура"><code>PriorityQueue</code></td>
+<td data-label="Операция">конструктор из коллекции</td>
+<td data-label="В среднем">O(n)</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание">построение кучи снизу вверх</td>
 </tr>
 <tr>
-<td><code>PriorityQueue</code></td>
-<td>итерация</td>
-<td>O(n)</td>
-<td>O(n)</td>
-<td>порядок <strong>не</strong> отсортированный</td>
+<td data-label="Структура"><code>PriorityQueue</code></td>
+<td data-label="Операция">итерация</td>
+<td data-label="В среднем">O(n)</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание">порядок <strong>не</strong> отсортированный</td>
 </tr>
 <tr>
-<td><code>HashMap</code>, <code>HashSet</code></td>
-<td><code>get</code>, <code>put</code>, <code>remove</code>, <code>containsKey</code></td>
-<td>O(1)</td>
-<td>O(log n) или O(n)</td>
-<td>O(log n) для корзины-дерева с <code>Comparable</code> ключами, иначе O(n)</td>
+<td data-label="Структура"><code>HashMap</code>, <code>HashSet</code></td>
+<td data-label="Операция"><code>get</code>, <code>put</code>, <code>remove</code>, <code>containsKey</code></td>
+<td data-label="В среднем">O(1)</td>
+<td data-label="В худшем">O(log n) или O(n)</td>
+<td data-label="Примечание">O(log n) для корзины-дерева с <code>Comparable</code> ключами, иначе O(n)</td>
 </tr>
 <tr>
-<td><code>HashMap</code></td>
-<td><code>put</code> с ростом таблицы</td>
-<td>O(1) амортизированно</td>
-<td>O(n)</td>
-<td>перераспределение всех записей</td>
+<td data-label="Структура"><code>HashMap</code></td>
+<td data-label="Операция"><code>put</code> с ростом таблицы</td>
+<td data-label="В среднем">O(1) амортизированно</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание">перераспределение всех записей</td>
 </tr>
 <tr>
-<td><code>HashMap</code></td>
-<td><code>containsValue</code></td>
-<td>O(n)</td>
-<td>O(n)</td>
-<td></td>
+<td data-label="Структура"><code>HashMap</code></td>
+<td data-label="Операция"><code>containsValue</code></td>
+<td data-label="В среднем">O(n)</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание"></td>
 </tr>
 <tr>
-<td><code>HashMap</code></td>
-<td>итерация</td>
-<td>O(n + ёмкость)</td>
-<td></td>
-<td>пустые корзины тоже обходятся</td>
+<td data-label="Структура"><code>HashMap</code></td>
+<td data-label="Операция">итерация</td>
+<td data-label="В среднем">O(n + ёмкость)</td>
+<td data-label="В худшем"></td>
+<td data-label="Примечание">пустые корзины тоже обходятся</td>
 </tr>
 <tr>
-<td><code>LinkedHashMap</code></td>
-<td>как <code>HashMap</code></td>
-<td>O(1)</td>
-<td>как <code>HashMap</code></td>
-<td></td>
+<td data-label="Структура"><code>LinkedHashMap</code></td>
+<td data-label="Операция">как <code>HashMap</code></td>
+<td data-label="В среднем">O(1)</td>
+<td data-label="В худшем">как <code>HashMap</code></td>
+<td data-label="Примечание"></td>
 </tr>
 <tr>
-<td><code>LinkedHashMap</code></td>
-<td>итерация</td>
-<td>O(n)</td>
-<td>O(n)</td>
-<td>по списку записей, порядок вставки или доступа</td>
+<td data-label="Структура"><code>LinkedHashMap</code></td>
+<td data-label="Операция">итерация</td>
+<td data-label="В среднем">O(n)</td>
+<td data-label="В худшем">O(n)</td>
+<td data-label="Примечание">по списку записей, порядок вставки или доступа</td>
 </tr>
 <tr>
-<td><code>TreeMap</code>, <code>TreeSet</code></td>
-<td><code>get</code>, <code>put</code>, <code>remove</code>, <code>containsKey</code></td>
-<td>O(log n)</td>
-<td>O(log n)</td>
-<td>красно-чёрное дерево</td>
+<td data-label="Структура"><code>TreeMap</code>, <code>TreeSet</code></td>
+<td data-label="Операция"><code>get</code>, <code>put</code>, <code>remove</code>, <code>containsKey</code></td>
+<td data-label="В среднем">O(log n)</td>
+<td data-label="В худшем">O(log n)</td>
+<td data-label="Примечание">красно-чёрное дерево</td>
 </tr>
 <tr>
-<td><code>TreeMap</code></td>
-<td><code>floorKey</code>, <code>ceilingKey</code>, <code>higherKey</code>, <code>firstKey</code>, <code>pollFirstEntry</code></td>
-<td>O(log n)</td>
-<td>O(log n)</td>
-<td>навигация, ради которой берут дерево</td>
+<td data-label="Структура"><code>TreeMap</code></td>
+<td data-label="Операция"><code>floorKey</code>, <code>ceilingKey</code>, <code>higherKey</code>, <code>firstKey</code>, <code>pollFirstEntry</code></td>
+<td data-label="В среднем">O(log n)</td>
+<td data-label="В худшем">O(log n)</td>
+<td data-label="Примечание">навигация, ради которой берут дерево</td>
 </tr>
 <tr>
-<td><code>TreeMap</code></td>
-<td><code>subMap</code>, <code>headMap</code>, <code>tailMap</code></td>
-<td>O(1) на создание вида</td>
-<td></td>
-<td>обход вида — O(log n + k)</td>
+<td data-label="Структура"><code>TreeMap</code></td>
+<td data-label="Операция"><code>subMap</code>, <code>headMap</code>, <code>tailMap</code></td>
+<td data-label="В среднем">O(1) на создание вида</td>
+<td data-label="В худшем"></td>
+<td data-label="Примечание">обход вида — O(log n + k)</td>
 </tr>
 <tr>
-<td><code>BitSet</code></td>
-<td><code>get</code>, <code>set</code>, <code>clear</code> бита</td>
-<td>O(1)</td>
-<td>O(1) амортизированно</td>
-<td>растёт при записи за пределы</td>
+<td data-label="Структура"><code>BitSet</code></td>
+<td data-label="Операция"><code>get</code>, <code>set</code>, <code>clear</code> бита</td>
+<td data-label="В среднем">O(1)</td>
+<td data-label="В худшем">O(1) амортизированно</td>
+<td data-label="Примечание">растёт при записи за пределы</td>
 </tr>
 <tr>
-<td><code>BitSet</code></td>
-<td><code>cardinality</code>, <code>and</code>, <code>or</code></td>
-<td>O(n/64)</td>
-<td>O(n/64)</td>
-<td><code>n</code> — число бит, по слову за шаг</td>
+<td data-label="Структура"><code>BitSet</code></td>
+<td data-label="Операция"><code>cardinality</code>, <code>and</code>, <code>or</code></td>
+<td data-label="В среднем">O(n/64)</td>
+<td data-label="В худшем">O(n/64)</td>
+<td data-label="Примечание"><code>n</code> — число бит, по слову за шаг</td>
 </tr>
 <tr>
-<td><code>BitSet</code></td>
-<td><code>nextSetBit(from)</code></td>
-<td>O(расстояния/64)</td>
-<td>O(n/64)</td>
-<td></td>
+<td data-label="Структура"><code>BitSet</code></td>
+<td data-label="Операция"><code>nextSetBit(from)</code></td>
+<td data-label="В среднем">O(расстояния/64)</td>
+<td data-label="В худшем">O(n/64)</td>
+<td data-label="Примечание"></td>
 </tr>
 <tr>
-<td><code>String</code></td>
-<td><code>charAt</code>, <code>length</code></td>
-<td>O(1)</td>
-<td>O(1)</td>
-<td></td>
+<td data-label="Структура"><code>String</code></td>
+<td data-label="Операция"><code>charAt</code>, <code>length</code></td>
+<td data-label="В среднем">O(1)</td>
+<td data-label="В худшем">O(1)</td>
+<td data-label="Примечание"></td>
 </tr>
 <tr>
-<td><code>String</code></td>
-<td><code>substring</code>, <code>concat</code>, <code>+</code></td>
-<td>O(длины результата)</td>
-<td></td>
-<td>копирование</td>
+<td data-label="Структура"><code>String</code></td>
+<td data-label="Операция"><code>substring</code>, <code>concat</code>, <code>+</code></td>
+<td data-label="В среднем">O(длины результата)</td>
+<td data-label="В худшем"></td>
+<td data-label="Примечание">копирование</td>
 </tr>
 <tr>
-<td><code>String</code></td>
-<td><code>equals</code>, <code>compareTo</code></td>
-<td>O(длины)</td>
-<td>O(длины)</td>
-<td><code>hashCode</code> — O(длины) один раз, затем кэш</td>
+<td data-label="Структура"><code>String</code></td>
+<td data-label="Операция"><code>equals</code>, <code>compareTo</code></td>
+<td data-label="В среднем">O(длины)</td>
+<td data-label="В худшем">O(длины)</td>
+<td data-label="Примечание"><code>hashCode</code> — O(длины) один раз, затем кэш</td>
 </tr>
 <tr>
-<td><code>String</code></td>
-<td><code>indexOf(String)</code></td>
-<td>O(n + m) на типичных данных</td>
-<td>O(n·m)</td>
-<td>простой перебор, см. главу 71</td>
+<td data-label="Структура"><code>String</code></td>
+<td data-label="Операция"><code>indexOf(String)</code></td>
+<td data-label="В среднем">O(n + m) на типичных данных</td>
+<td data-label="В худшем">O(n·m)</td>
+<td data-label="Примечание">простой перебор, см. главу 71</td>
 </tr>
 <tr>
-<td><code>StringBuilder</code></td>
-<td><code>append</code></td>
-<td>O(длины добавляемого) амортизированно</td>
-<td>O(длины буфера) при росте</td>
-<td></td>
+<td data-label="Структура"><code>StringBuilder</code></td>
+<td data-label="Операция"><code>append</code></td>
+<td data-label="В среднем">O(длины добавляемого) амортизированно</td>
+<td data-label="В худшем">O(длины буфера) при росте</td>
+<td data-label="Примечание"></td>
 </tr>
 <tr>
-<td><code>StringBuilder</code></td>
-<td><code>insert(0, x)</code>, <code>deleteCharAt(0)</code></td>
-<td>O(длины буфера)</td>
-<td></td>
-<td>сдвиг всего содержимого</td>
+<td data-label="Структура"><code>StringBuilder</code></td>
+<td data-label="Операция"><code>insert(0, x)</code>, <code>deleteCharAt(0)</code></td>
+<td data-label="В среднем">O(длины буфера)</td>
+<td data-label="В худшем"></td>
+<td data-label="Примечание">сдвиг всего содержимого</td>
 </tr>
 <tr>
-<td><code>Arrays.sort(int[])</code></td>
-<td>сортировка</td>
-<td>O(n log n)</td>
-<td>O(n log n)</td>
-<td>Dual-Pivot Quicksort, неустойчивая</td>
+<td data-label="Структура"><code>Arrays.sort(int[])</code></td>
+<td data-label="Операция">сортировка</td>
+<td data-label="В среднем">O(n log n)</td>
+<td data-label="В худшем">O(n log n)</td>
+<td data-label="Примечание">Dual-Pivot Quicksort, неустойчивая</td>
 </tr>
 <tr>
-<td><code>Arrays.sort(Object[])</code>, <code>List.sort</code></td>
-<td>сортировка</td>
-<td>O(n log n)</td>
-<td>O(n log n)</td>
-<td>TimSort, устойчивая, O(n) на отсортированном</td>
+<td data-label="Структура"><code>Arrays.sort(Object[])</code>, <code>List.sort</code></td>
+<td data-label="Операция">сортировка</td>
+<td data-label="В среднем">O(n log n)</td>
+<td data-label="В худшем">O(n log n)</td>
+<td data-label="Примечание">TimSort, устойчивая, O(n) на отсортированном</td>
 </tr>
 </tbody>
 </table>
@@ -2403,7 +2403,7 @@
 <h3 id="71-сколько-операций-jvm-выполняет-за-секунду">7.1 Сколько операций JVM выполняет за секунду</h3>
 <p>Чтобы перейти от асимптотики к секундам, нужна грубая калибровка: сколько «простых операций» машина делает за секунду. Общепринятый ориентир — около 10⁸ простых операций в секунду на JVM после прогрева: сложений, сравнений, обращений к массиву по индексу. Это порядок величины, а не константа: процессор с частотой 3 ГГц может выполнять несколько простых инструкций за такт, а одно обращение к памяти мимо кэша стоит сотню тактов, так что реальная скорость колеблется на порядок в обе стороны в зависимости от того, как код ходит по памяти.</p>
 <p>Чтобы ориентир не был голословным, я замерил несколько типичных операций на той же виртуальной машине, что и в 1.4 (четыре ядра Xeon 2,1 ГГц, JDK 21, замер <code>System.nanoTime()</code> после прогрева, без JMH). Машина не быстрая, поэтому числа скорее нижняя граница для современного сервера.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Операция</th>
@@ -2414,41 +2414,41 @@
 </thead>
 <tbody>
 <tr>
-<td>Цикл с <code>^</code>, <code>&gt;&gt;&gt;</code>, <code>%</code> и зависимостью между итерациями</td>
-<td>10⁹ итераций</td>
-<td>3,2–3,5 с</td>
-<td>3·10⁸ итераций</td>
+<td data-label="Операция">Цикл с <code>^</code>, <code>&gt;&gt;&gt;</code>, <code>%</code> и зависимостью между итерациями</td>
+<td data-label="Объём">10⁹ итераций</td>
+<td data-label="Время">3,2–3,5 с</td>
+<td data-label="Операций в секунду, порядок">3·10⁸ итераций</td>
 </tr>
 <tr>
-<td><code>Arrays.sort(int[])</code></td>
-<td>10⁷ случайных чисел</td>
-<td>0,8–1,0 с</td>
-<td>n log n ≈ 2,3·10⁸ сравнений</td>
+<td data-label="Операция"><code>Arrays.sort(int[])</code></td>
+<td data-label="Объём">10⁷ случайных чисел</td>
+<td data-label="Время">0,8–1,0 с</td>
+<td data-label="Операций в секунду, порядок">n log n ≈ 2,3·10⁸ сравнений</td>
 </tr>
 <tr>
-<td><code>HashMap&lt;Integer, Integer&gt;.merge</code></td>
-<td>10⁷ вызовов, 10⁶ ключей</td>
-<td>1,5–1,9 с</td>
-<td>6·10⁶ вызовов</td>
+<td data-label="Операция"><code>HashMap&lt;Integer, Integer&gt;.merge</code></td>
+<td data-label="Объём">10⁷ вызовов, 10⁶ ключей</td>
+<td data-label="Время">1,5–1,9 с</td>
+<td data-label="Операций в секунду, порядок">6·10⁶ вызовов</td>
 </tr>
 <tr>
-<td><code>TreeMap&lt;Integer, Integer&gt;.put</code></td>
-<td>10⁶ случайных ключей</td>
-<td>1,05–1,1 с</td>
-<td>10⁶ вставок</td>
+<td data-label="Операция"><code>TreeMap&lt;Integer, Integer&gt;.put</code></td>
+<td data-label="Объём">10⁶ случайных ключей</td>
+<td data-label="Время">1,05–1,1 с</td>
+<td data-label="Операций в секунду, порядок">10⁶ вставок</td>
 </tr>
 <tr>
-<td><code>Collections.sort(ArrayList&lt;Integer&gt;)</code></td>
-<td>10⁷ чисел</td>
-<td>4,9–5,1 с</td>
-<td>в 5–6 раз медленнее <code>int[]</code></td>
+<td data-label="Операция"><code>Collections.sort(ArrayList&lt;Integer&gt;)</code></td>
+<td data-label="Объём">10⁷ чисел</td>
+<td data-label="Время">4,9–5,1 с</td>
+<td data-label="Операций в секунду, порядок">в 5–6 раз медленнее <code>int[]</code></td>
 </tr>
 </tbody>
 </table>
 <p>Из таблицы видны три вещи. Простой цикл по примитивам действительно делает порядка 10⁸–10⁹ итераций в секунду, и ориентир 10⁸ «операций алгоритма» в секунду консервативен, но разумен. Операции хеш-таблицы и дерева стоят в десятки и сотни раз дороже простой арифметики: вставка в <code>TreeMap</code> — это <code>log₂ 10⁶ ≈ 20</code> сравнений с переходами по ссылкам и промахами кэша, и миллион вставок занимает секунду. И упаковка стоит кратно: сортировка списка объектов <code>Integer</code> в пять раз медленнее сортировки массива <code>int</code>. Поэтому при оценке стоит считать не «шаги алгоритма», а шаги с учётом их цены: миллион операций с деревом — секунда, десять миллионов операций с хеш-таблицей — секунда-две, сто миллионов операций с массивом — доли секунды.</p>
 <h3 id="72-таблица-размер-входа-допустимая-сложность">7.2 Таблица «размер входа → допустимая сложность»</h3>
 <p>Если ограничение по времени — порядка секунды, а машина делает порядка 10⁸ простых операций в секунду, то из размера входа можно вывести, какая сложность допустима. Таблица ниже — ориентир, который используют на олимпиадах и собеседованиях; для каждой строки указаны техники, которые обычно дают такую сложность, и главы, где они разобраны.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Размер входа <code>n</code></th>
@@ -2458,49 +2458,49 @@
 </thead>
 <tbody>
 <tr>
-<td>≤ 10–11</td>
-<td>O(n!)</td>
-<td>перебор перестановок (гл. 69)</td>
+<td data-label="Размер входа n">≤ 10–11</td>
+<td data-label="Допустимая сложность">O(n!)</td>
+<td data-label="Типичные техники">перебор перестановок (гл. 69)</td>
 </tr>
 <tr>
-<td>≤ 20–25</td>
-<td>O(2ⁿ·n)</td>
-<td>перебор подмножеств, ДП по битовым маскам (гл. 69, 70)</td>
+<td data-label="Размер входа n">≤ 20–25</td>
+<td data-label="Допустимая сложность">O(2ⁿ·n)</td>
+<td data-label="Типичные техники">перебор подмножеств, ДП по битовым маскам (гл. 69, 70)</td>
 </tr>
 <tr>
-<td>≤ 40</td>
-<td>O(2^(n/2)·n)</td>
-<td>встреча посередине (гл. 69)</td>
+<td data-label="Размер входа n">≤ 40</td>
+<td data-label="Допустимая сложность">O(2^(n/2)·n)</td>
+<td data-label="Типичные техники">встреча посередине (гл. 69)</td>
 </tr>
 <tr>
-<td>≤ 100–500</td>
-<td>O(n³)</td>
-<td>Флойд–Уоршелл, интервальное ДП (гл. 68, 70)</td>
+<td data-label="Размер входа n">≤ 100–500</td>
+<td data-label="Допустимая сложность">O(n³)</td>
+<td data-label="Типичные техники">Флойд–Уоршелл, интервальное ДП (гл. 68, 70)</td>
 </tr>
 <tr>
-<td>≤ 2 000–5 000</td>
-<td>O(n²)</td>
-<td>ДП по двум индексам, перебор пар (гл. 70)</td>
+<td data-label="Размер входа n">≤ 2 000–5 000</td>
+<td data-label="Допустимая сложность">O(n²)</td>
+<td data-label="Типичные техники">ДП по двум индексам, перебор пар (гл. 70)</td>
 </tr>
 <tr>
-<td>≤ 10⁵</td>
-<td>O(n·√n), O(n log² n)</td>
-<td>sqrt-декомпозиция, «разделяй и властвуй» с сортировкой (гл. 66)</td>
+<td data-label="Размер входа n">≤ 10⁵</td>
+<td data-label="Допустимая сложность">O(n·√n), O(n log² n)</td>
+<td data-label="Типичные техники">sqrt-декомпозиция, «разделяй и властвуй» с сортировкой (гл. 66)</td>
 </tr>
 <tr>
-<td>≤ 10⁵–10⁶</td>
-<td>O(n log n)</td>
-<td>сортировка, кучи, деревья, двоичный поиск (гл. 62, 64, 65)</td>
+<td data-label="Размер входа n">≤ 10⁵–10⁶</td>
+<td data-label="Допустимая сложность">O(n log n)</td>
+<td data-label="Типичные техники">сортировка, кучи, деревья, двоичный поиск (гл. 62, 64, 65)</td>
 </tr>
 <tr>
-<td>≤ 10⁷–10⁸</td>
-<td>O(n), O(n log log n)</td>
-<td>два указателя, хеш-таблица, префиксные суммы, решето (гл. 61, 72)</td>
+<td data-label="Размер входа n">≤ 10⁷–10⁸</td>
+<td data-label="Допустимая сложность">O(n), O(n log log n)</td>
+<td data-label="Типичные техники">два указателя, хеш-таблица, префиксные суммы, решето (гл. 61, 72)</td>
 </tr>
 <tr>
-<td>≥ 10⁹</td>
-<td>O(√n), O(log n), O(1)</td>
-<td>формула, двоичный поиск по ответу, быстрое возведение в степень (гл. 62, 72)</td>
+<td data-label="Размер входа n">≥ 10⁹</td>
+<td data-label="Допустимая сложность">O(√n), O(log n), O(1)</td>
+<td data-label="Типичные техники">формула, двоичный поиск по ответу, быстрое возведение в степень (гл. 62, 72)</td>
 </tr>
 </tbody>
 </table>
@@ -2804,7 +2804,7 @@
 <p>Второе правило — техники сочетаются. Префиксные суммы с хеш-таблицей решают «число подотрезков с суммой <code>k</code>»; сортировка с жадным выбором решает задачи на интервалы; двоичный поиск по ответу почти всегда сочетается с жадной проверкой «можно ли уложиться в <code>x</code>». Если один признак ведёт в тупик, полезно спросить, не решает ли задачу пара техник: сначала одна приводит данные к удобному виду, затем вторая отвечает на вопрос.</p>
 <h3 id="92-таблица-признаков">9.2 Таблица признаков</h3>
 <p>Строки таблицы сгруппированы по главам в порядке части XII, чтобы рядом стояли признаки одной техники. В последнем столбце — глава, где техника и её задачи разобраны подробно. Формулировки признаков взяты такими, какими они звучат в условиях задач, чтобы их было легко узнать при чтении.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Признак в условии</th>
@@ -2814,249 +2814,249 @@
 </thead>
 <tbody>
 <tr>
-<td>«Встречался ли раньше», «найти дубликат», «пара с суммой», «сгруппировать по признаку»</td>
-<td>хеш-таблица, подсчёт частот</td>
-<td class="num">60</td>
+<td data-label="Признак в условии">«Встречался ли раньше», «найти дубликат», «пара с суммой», «сгруппировать по признаку»</td>
+<td data-label="Техника">хеш-таблица, подсчёт частот</td>
+<td data-label="Глава" class="num">60</td>
 </tr>
 <tr>
-<td>Отсортированный массив, «пара/тройка с суммой», «убрать дубликаты на месте»</td>
-<td>два встречных указателя</td>
-<td class="num">60</td>
+<td data-label="Признак в условии">Отсортированный массив, «пара/тройка с суммой», «убрать дубликаты на месте»</td>
+<td data-label="Техника">два встречных указателя</td>
+<td data-label="Глава" class="num">60</td>
 </tr>
 <tr>
-<td>«Самый длинный/короткий подотрезок, в котором…», условие монотонно по длине окна</td>
-<td>скользящее окно переменной длины</td>
-<td class="num">60</td>
+<td data-label="Признак в условии">«Самый длинный/короткий подотрезок, в котором…», условие монотонно по длине окна</td>
+<td data-label="Техника">скользящее окно переменной длины</td>
+<td data-label="Глава" class="num">60</td>
 </tr>
 <tr>
-<td>«Сумма/среднее/максимум в каждом окне длины <code>k</code>»</td>
-<td>скользящее окно фиксированной длины</td>
-<td class="num">60</td>
+<td data-label="Признак в условии">«Сумма/среднее/максимум в каждом окне длины <code>k</code>»</td>
+<td data-label="Техника">скользящее окно фиксированной длины</td>
+<td data-label="Глава" class="num">60</td>
 </tr>
 <tr>
-<td>«Сумма на отрезке», много запросов к неизменному массиву</td>
-<td>префиксные суммы</td>
-<td class="num">60</td>
+<td data-label="Признак в условии">«Сумма на отрезке», много запросов к неизменному массиву</td>
+<td data-label="Техника">префиксные суммы</td>
+<td data-label="Глава" class="num">60</td>
 </tr>
 <tr>
-<td>«Число подотрезков с суммой <code>k</code>», «подотрезок с суммой, кратной <code>m</code>»</td>
-<td>префиксные суммы + хеш-таблица</td>
-<td class="num">60</td>
+<td data-label="Признак в условии">«Число подотрезков с суммой <code>k</code>», «подотрезок с суммой, кратной <code>m</code>»</td>
+<td data-label="Техника">префиксные суммы + хеш-таблица</td>
+<td data-label="Глава" class="num">60</td>
 </tr>
 <tr>
-<td>«Прибавить <code>v</code> ко всем на отрезке», много обновлений, один итоговый запрос</td>
-<td>разностный массив</td>
-<td class="num">60</td>
+<td data-label="Признак в условии">«Прибавить <code>v</code> ко всем на отрезке», много обновлений, один итоговый запрос</td>
+<td data-label="Техника">разностный массив</td>
+<td data-label="Глава" class="num">60</td>
 </tr>
 <tr>
-<td>«Максимальная сумма подотрезка»</td>
-<td>алгоритм Кадане</td>
-<td class="num">60</td>
+<td data-label="Признак в условии">«Максимальная сумма подотрезка»</td>
+<td data-label="Техника">алгоритм Кадане</td>
+<td data-label="Глава" class="num">60</td>
 </tr>
 <tr>
-<td>«Элемент, встречающийся больше <code>n/2</code> раз», память O(1)</td>
-<td>голосование Бойера–Мура</td>
-<td class="num">60</td>
+<td data-label="Признак в условии">«Элемент, встречающийся больше <code>n/2</code> раз», память O(1)</td>
+<td data-label="Техника">голосование Бойера–Мура</td>
+<td data-label="Глава" class="num">60</td>
 </tr>
 <tr>
-<td>Значения от 1 до <code>n</code>, «найти пропущенный/повторный», память O(1)</td>
-<td>циклическая сортировка, индекс как метка</td>
-<td class="num">60</td>
+<td data-label="Признак в условии">Значения от 1 до <code>n</code>, «найти пропущенный/повторный», память O(1)</td>
+<td data-label="Техника">циклическая сортировка, индекс как метка</td>
+<td data-label="Глава" class="num">60</td>
 </tr>
 <tr>
-<td>«k-й по величине», «медиана»</td>
-<td>quickselect, куча на <code>k</code> элементов</td>
-<td class="num">61, 63</td>
+<td data-label="Признак в условии">«k-й по величине», «медиана»</td>
+<td data-label="Техника">quickselect, куча на <code>k</code> элементов</td>
+<td data-label="Глава" class="num">61, 63</td>
 </tr>
 <tr>
-<td>Отсортированный или «повёрнутый» массив, «найти позицию/границу»</td>
-<td>двоичный поиск</td>
-<td class="num">61</td>
+<td data-label="Признак в условии">Отсортированный или «повёрнутый» массив, «найти позицию/границу»</td>
+<td data-label="Техника">двоичный поиск</td>
+<td data-label="Глава" class="num">61</td>
 </tr>
 <tr>
-<td>«Минимальное <code>x</code>, при котором можно…», ответ монотонен по <code>x</code></td>
-<td>двоичный поиск по ответу</td>
-<td class="num">61</td>
+<td data-label="Признак в условии">«Минимальное <code>x</code>, при котором можно…», ответ монотонен по <code>x</code></td>
+<td data-label="Техника">двоичный поиск по ответу</td>
+<td data-label="Глава" class="num">61</td>
 </tr>
 <tr>
-<td>«Отсортировать по нескольким ключам», «устойчиво»</td>
-<td>компараторы, устойчивая сортировка</td>
-<td class="num">61</td>
+<td data-label="Признак в условии">«Отсортировать по нескольким ключам», «устойчиво»</td>
+<td data-label="Техника">компараторы, устойчивая сортировка</td>
+<td data-label="Глава" class="num">61</td>
 </tr>
 <tr>
-<td>Данные не помещаются в память, «отсортировать файл»</td>
-<td>внешняя сортировка, слияние k потоков</td>
-<td class="num">61</td>
+<td data-label="Признак в условии">Данные не помещаются в память, «отсортировать файл»</td>
+<td data-label="Техника">внешняя сортировка, слияние k потоков</td>
+<td data-label="Глава" class="num">61</td>
 </tr>
 <tr>
-<td>«Число инверсий», «сколько элементов справа меньше»</td>
-<td>сортировка слиянием с подсчётом</td>
-<td class="num">61</td>
+<td data-label="Признак в условии">«Число инверсий», «сколько элементов справа меньше»</td>
+<td data-label="Техника">сортировка слиянием с подсчётом</td>
+<td data-label="Глава" class="num">61</td>
 </tr>
 <tr>
-<td>«Развернуть», «найти середину», «найти цикл» в связном списке</td>
-<td>указатели на узлы, быстрый и медленный указатель</td>
-<td class="num">62</td>
+<td data-label="Признак в условии">«Развернуть», «найти середину», «найти цикл» в связном списке</td>
+<td data-label="Техника">указатели на узлы, быстрый и медленный указатель</td>
+<td data-label="Глава" class="num">62</td>
 </tr>
 <tr>
-<td>Скобки, вложенность, «вычислить выражение», «отменить последнее»</td>
-<td>стек</td>
-<td class="num">62</td>
+<td data-label="Признак в условии">Скобки, вложенность, «вычислить выражение», «отменить последнее»</td>
+<td data-label="Техника">стек</td>
+<td data-label="Глава" class="num">62</td>
 </tr>
 <tr>
-<td>«Следующий больший/меньший элемент», «сколько дней до роста курса», гистограмма</td>
-<td>монотонный стек</td>
-<td class="num">62</td>
+<td data-label="Признак в условии">«Следующий больший/меньший элемент», «сколько дней до роста курса», гистограмма</td>
+<td data-label="Техника">монотонный стек</td>
+<td data-label="Глава" class="num">62</td>
 </tr>
 <tr>
-<td>«Максимум/минимум в скользящем окне»</td>
-<td>монотонная очередь (дек)</td>
-<td class="num">62</td>
+<td data-label="Признак в условии">«Максимум/минимум в скользящем окне»</td>
+<td data-label="Техника">монотонная очередь (дек)</td>
+<td data-label="Глава" class="num">62</td>
 </tr>
 <tr>
-<td>«Кэш на <code>k</code> элементов с вытеснением давно не использованных»</td>
-<td>хеш-таблица + двусвязный список (LRU)</td>
-<td class="num">62</td>
+<td data-label="Признак в условии">«Кэш на <code>k</code> элементов с вытеснением давно не использованных»</td>
+<td data-label="Техника">хеш-таблица + двусвязный список (LRU)</td>
+<td data-label="Глава" class="num">62</td>
 </tr>
 <tr>
-<td>«k наибольших», «k ближайших», «слить k отсортированных»</td>
-<td>куча</td>
-<td class="num">63</td>
+<td data-label="Признак в условии">«k наибольших», «k ближайших», «слить k отсортированных»</td>
+<td data-label="Техника">куча</td>
+<td data-label="Глава" class="num">63</td>
 </tr>
 <tr>
-<td>«Медиана потока»</td>
-<td>две кучи</td>
-<td class="num">63</td>
+<td data-label="Признак в условии">«Медиана потока»</td>
+<td data-label="Техника">две кучи</td>
+<td data-label="Глава" class="num">63</td>
 </tr>
 <tr>
-<td>Интервалы: «слить», «пересекаются ли», «сколько комнат нужно»</td>
-<td>сортировка по началу, заметающая прямая</td>
-<td class="num">63</td>
+<td data-label="Признак в условии">Интервалы: «слить», «пересекаются ли», «сколько комнат нужно»</td>
+<td data-label="Техника">сортировка по началу, заметающая прямая</td>
+<td data-label="Глава" class="num">63</td>
 </tr>
 <tr>
-<td>«Максимум заявок без пересечений», «минимум точек, покрывающих отрезки»</td>
-<td>жадный выбор после сортировки</td>
-<td class="num">63</td>
+<td data-label="Признак в условии">«Максимум заявок без пересечений», «минимум точек, покрывающих отрезки»</td>
+<td data-label="Техника">жадный выбор после сортировки</td>
+<td data-label="Глава" class="num">63</td>
 </tr>
 <tr>
-<td>Дерево: высота, путь, «наименьший общий предок», сериализация</td>
-<td>обход в глубину, рекурсия по поддеревьям</td>
-<td class="num">64</td>
+<td data-label="Признак в условии">Дерево: высота, путь, «наименьший общий предок», сериализация</td>
+<td data-label="Техника">обход в глубину, рекурсия по поддеревьям</td>
+<td data-label="Глава" class="num">64</td>
 </tr>
 <tr>
-<td>«Ближайший ключ не больше <code>x</code>», упорядоченный набор с вставками</td>
-<td>сбалансированное дерево (<code>TreeMap</code>)</td>
-<td class="num">64</td>
+<td data-label="Признак в условии">«Ближайший ключ не больше <code>x</code>», упорядоченный набор с вставками</td>
+<td data-label="Техника">сбалансированное дерево (<code>TreeMap</code>)</td>
+<td data-label="Глава" class="num">64</td>
 </tr>
 <tr>
-<td>«Все слова с префиксом», автодополнение, словарь</td>
-<td>префиксное дерево (trie)</td>
-<td class="num">65</td>
+<td data-label="Признак в условии">«Все слова с префиксом», автодополнение, словарь</td>
+<td data-label="Техника">префиксное дерево (trie)</td>
+<td data-label="Глава" class="num">65</td>
 </tr>
 <tr>
-<td>«Объединить группы», «в одной ли компоненте», связанные счета</td>
-<td>система непересекающихся множеств (DSU)</td>
-<td class="num">65</td>
+<td data-label="Признак в условии">«Объединить группы», «в одной ли компоненте», связанные счета</td>
+<td data-label="Техника">система непересекающихся множеств (DSU)</td>
+<td data-label="Глава" class="num">65</td>
 </tr>
 <tr>
-<td>Сумма/минимум на отрезке <strong>с изменениями</strong> элементов</td>
-<td>дерево Фенвика, дерево отрезков</td>
-<td class="num">65</td>
+<td data-label="Признак в условии">Сумма/минимум на отрезке <strong>с изменениями</strong> элементов</td>
+<td data-label="Техника">дерево Фенвика, дерево отрезков</td>
+<td data-label="Глава" class="num">65</td>
 </tr>
 <tr>
-<td>Сетка, «острова», «связные области», зависимость «соседний»</td>
-<td>обход в глубину или ширину по сетке</td>
-<td class="num">66</td>
+<td data-label="Признак в условии">Сетка, «острова», «связные области», зависимость «соседний»</td>
+<td data-label="Техника">обход в глубину или ширину по сетке</td>
+<td data-label="Глава" class="num">66</td>
 </tr>
 <tr>
-<td>«Минимальное число шагов/пересадок», невзвешенный граф</td>
-<td>обход в ширину (BFS)</td>
-<td class="num">66</td>
+<td data-label="Признак в условии">«Минимальное число шагов/пересадок», невзвешенный граф</td>
+<td data-label="Техника">обход в ширину (BFS)</td>
+<td data-label="Глава" class="num">66</td>
 </tr>
 <tr>
-<td>«Порядок выполнения с зависимостями», «есть ли циклическая зависимость»</td>
-<td>топологическая сортировка</td>
-<td class="num">66</td>
+<td data-label="Признак в условии">«Порядок выполнения с зависимостями», «есть ли циклическая зависимость»</td>
+<td data-label="Техника">топологическая сортировка</td>
+<td data-label="Глава" class="num">66</td>
 </tr>
 <tr>
-<td>«Кратчайший путь», веса неотрицательны</td>
-<td>алгоритм Дейкстры</td>
-<td class="num">67</td>
+<td data-label="Признак в условии">«Кратчайший путь», веса неотрицательны</td>
+<td data-label="Техника">алгоритм Дейкстры</td>
+<td data-label="Глава" class="num">67</td>
 </tr>
 <tr>
-<td>Отрицательные веса, «выгодный цикл обмена валют»</td>
-<td>Беллман–Форд, поиск отрицательного цикла</td>
-<td class="num">67</td>
+<td data-label="Признак в условии">Отрицательные веса, «выгодный цикл обмена валют»</td>
+<td data-label="Техника">Беллман–Форд, поиск отрицательного цикла</td>
+<td data-label="Глава" class="num">67</td>
 </tr>
 <tr>
-<td>«Соединить всё с минимальной стоимостью»</td>
-<td>минимальное остовное дерево (Краскал, Прим)</td>
-<td class="num">67</td>
+<td data-label="Признак в условии">«Соединить всё с минимальной стоимостью»</td>
+<td data-label="Техника">минимальное остовное дерево (Краскал, Прим)</td>
+<td data-label="Глава" class="num">67</td>
 </tr>
 <tr>
-<td>«Все подмножества/перестановки/сочетания», <code>n ≤ 20</code></td>
-<td>поиск с возвратом, перебор битовых масок</td>
-<td class="num">68</td>
+<td data-label="Признак в условии">«Все подмножества/перестановки/сочетания», <code>n ≤ 20</code></td>
+<td data-label="Техника">поиск с возвратом, перебор битовых масок</td>
+<td data-label="Глава" class="num">68</td>
 </tr>
 <tr>
-<td><code>n ≤ 40</code>, «подмножество с суммой»</td>
-<td>встреча посередине</td>
-<td class="num">68</td>
+<td data-label="Признак в условии"><code>n ≤ 40</code>, «подмножество с суммой»</td>
+<td data-label="Техника">встреча посередине</td>
+<td data-label="Глава" class="num">68</td>
 </tr>
 <tr>
-<td>«Число способов», «минимальная стоимость», выбор с ограничением, подзадачи перекрываются</td>
-<td>динамическое программирование</td>
-<td class="num">69</td>
+<td data-label="Признак в условии">«Число способов», «минимальная стоимость», выбор с ограничением, подзадачи перекрываются</td>
+<td data-label="Техника">динамическое программирование</td>
+<td data-label="Глава" class="num">69</td>
 </tr>
 <tr>
-<td>«Набрать сумму монетами/купюрами», «рюкзак», вместимость небольшая</td>
-<td>ДП по сумме (рюкзак, размен)</td>
-<td class="num">69</td>
+<td data-label="Признак в условии">«Набрать сумму монетами/купюрами», «рюкзак», вместимость небольшая</td>
+<td data-label="Техника">ДП по сумме (рюкзак, размен)</td>
+<td data-label="Глава" class="num">69</td>
 </tr>
 <tr>
-<td>«Расстояние редактирования», «общая подпоследовательность» двух строк</td>
-<td>ДП по двум префиксам</td>
-<td class="num">69</td>
+<td data-label="Признак в условии">«Расстояние редактирования», «общая подпоследовательность» двух строк</td>
+<td data-label="Техника">ДП по двум префиксам</td>
+<td data-label="Глава" class="num">69</td>
 </tr>
 <tr>
-<td>«Найти подстроку», «все вхождения образца»</td>
-<td>префикс-функция (КМП), Z-функция, хеши</td>
-<td class="num">70</td>
+<td data-label="Признак в условии">«Найти подстроку», «все вхождения образца»</td>
+<td data-label="Техника">префикс-функция (КМП), Z-функция, хеши</td>
+<td data-label="Глава" class="num">70</td>
 </tr>
 <tr>
-<td>«Найти любое из множества слов в тексте» (стоп-слова, санкционные списки)</td>
-<td>автомат Ахо–Корасик</td>
-<td class="num">70</td>
+<td data-label="Признак в условии">«Найти любое из множества слов в тексте» (стоп-слова, санкционные списки)</td>
+<td data-label="Техника">автомат Ахо–Корасик</td>
+<td data-label="Глава" class="num">70</td>
 </tr>
 <tr>
-<td>«Палиндром», «самая длинная палиндромная подстрока»</td>
-<td>расширение от центра, Манакер</td>
-<td class="num">70</td>
+<td data-label="Признак в условии">«Палиндром», «самая длинная палиндромная подстрока»</td>
+<td data-label="Техника">расширение от центра, Манакер</td>
+<td data-label="Глава" class="num">70</td>
 </tr>
 <tr>
-<td>«Единственный непарный элемент», «степень двойки», маски флагов</td>
-<td>битовые операции, XOR</td>
-<td class="num">71</td>
+<td data-label="Признак в условии">«Единственный непарный элемент», «степень двойки», маски флагов</td>
+<td data-label="Техника">битовые операции, XOR</td>
+<td data-label="Глава" class="num">71</td>
 </tr>
 <tr>
-<td>«По модулю 10⁹ + 7», большие степени, сочетания</td>
-<td>модульная арифметика, быстрое возведение в степень</td>
-<td class="num">71</td>
+<td data-label="Признак в условии">«По модулю 10⁹ + 7», большие степени, сочетания</td>
+<td data-label="Техника">модульная арифметика, быстрое возведение в степень</td>
+<td data-label="Глава" class="num">71</td>
 </tr>
 <tr>
-<td>«Разделить сумму на части без потери копейки»</td>
-<td>метод наибольших остатков</td>
-<td class="num">71</td>
+<td data-label="Признак в условии">«Разделить сумму на части без потери копейки»</td>
+<td data-label="Техника">метод наибольших остатков</td>
+<td data-label="Глава" class="num">71</td>
 </tr>
 <tr>
-<td>«Случайно перемешать», «случайный элемент потока»</td>
-<td>Фишер–Йетс, выборка из резервуара</td>
-<td class="num">71</td>
+<td data-label="Признак в условии">«Случайно перемешать», «случайный элемент потока»</td>
+<td data-label="Техника">Фишер–Йетс, выборка из резервуара</td>
+<td data-label="Глава" class="num">71</td>
 </tr>
 <tr>
-<td>«Приблизительно», «вероятно», огромный поток, мало памяти</td>
-<td>вероятностные структуры (Блум, HyperLogLog)</td>
-<td class="num">72</td>
+<td data-label="Признак в условии">«Приблизительно», «вероятно», огромный поток, мало памяти</td>
+<td data-label="Техника">вероятностные структуры (Блум, HyperLogLog)</td>
+<td data-label="Глава" class="num">72</td>
 </tr>
 </tbody>
 </table>
@@ -3662,5 +3662,5 @@
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-алгоритм-и-модель-вычислений">1. Алгоритм и модель вычислений</a></li><li><a href="#2-асимптотические-обозначения">2. Асимптотические обозначения</a></li><li><a href="#3-рекуррентные-соотношения">3. Рекуррентные соотношения</a></li><li><a href="#4-амортизированный-анализ">4. Амортизированный анализ</a></li><li><a href="#5-стоимость-операций-коллекций-java-и-kotlin">5. Стоимость операций коллекций Java и Kotlin</a></li><li><a href="#6-проектирование-структур-данных-с-заданной-сложностью">6. Проектирование структур данных с заданной сложностью</a></li><li><a href="#7-ограничения-входа-и-выбор-сложности">7. Ограничения входа и выбор сложности</a></li><li><a href="#8-метод-решения-задачи-на-собеседовании">8. Метод решения задачи на собеседовании</a></li><li><a href="#9-каталог-техник-признак-в-условии-техника-глава">9. Каталог техник: признак в условии → техника → глава</a></li><li><a href="#10-ловушки-java-и-kotlin-в-алгоритмических-задачах">10. Ловушки Java и Kotlin в алгоритмических задачах</a></li><li><a href="#11-грабли-и-антипаттерны">11. Грабли и антипаттерны</a></li><li><a href="#12-диагностика-отладка-решения">12. Диагностика: отладка решения</a></li><li><a href="#13-вопросы-на-интервью">13. Вопросы на интервью</a></li><li><a href="#14-попробовать-руками">14. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

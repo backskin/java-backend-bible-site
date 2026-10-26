@@ -3,7 +3,7 @@
 <title>3. Коллекции и Stream API под капотом — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Коллекции и Stream API под капотом">
 <a class="skip" href="#content">К тексту</a>
@@ -48,7 +48,7 @@
 <h3 id="12-контракт-equalshashcode-и-последствия-его-нарушения">1.2 Контракт <code>equals</code>/<code>hashCode</code> и последствия его нарушения</h3>
 <p>Контракт <code>equals</code>/<code>hashCode</code> — это правила из javadoc класса <code>Object</code>, которые связывают сравнение объектов на равенство с их хеш-кодом, то есть с целым числом, по которому хеш-таблица выбирает место для объекта. Нужен контракт потому, что <code>HashMap</code> и <code>HashSet</code> сначала по <code>hashCode</code> находят бакет (<em>bucket</em>) — ячейку внутреннего массива, где лежат объекты с подходящим хешем, — и только внутри бакета вызывают <code>equals</code>. Практическое значение имеют три пункта: (1) если <code>a.equals(b)</code>, то обязано выполняться <code>a.hashCode() == b.hashCode()</code>; (2) <code>hashCode</code> не меняется, пока не меняются поля, участвующие в <code>equals</code>; (3) <code>equals</code> задаёт отношение эквивалентности, то есть рефлексивен, симметричен и транзитивен. Обратное к первому пункту не требуется: если у неравных объектов совпали хеши, это законная коллизия, с которой хеш-таблица умеет жить.</p>
 <p>Нарушение контракта не бросает исключения, а проявляется косвенно: объект перестаёт находиться или находится не тот. Таблица ниже перечисляет типичные нарушения и симптом, по которому каждое узнают в работающей системе.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Нарушение</th>
@@ -57,20 +57,20 @@
 </thead>
 <tbody>
 <tr>
-<td>Переопределён <code>equals</code>, но не <code>hashCode</code></td>
-<td><code>HashSet.contains(copy)</code> → <code>false</code>; <code>HashMap.get(copy)</code> → <code>null</code>. Объект попадает в другой бакет, и до <code>equals</code> дело не доходит.</td>
+<td data-label="Нарушение">Переопределён <code>equals</code>, но не <code>hashCode</code></td>
+<td data-label="Симптом"><code>HashSet.contains(copy)</code> → <code>false</code>; <code>HashMap.get(copy)</code> → <code>null</code>. Объект попадает в другой бакет, и до <code>equals</code> дело не доходит.</td>
 </tr>
 <tr>
-<td><code>hashCode</code> зависит от изменяемого поля, поле изменено после <code>put</code></td>
-<td>Запись «теряется»: лежит в старом бакете, ищется в новом. <code>map.size()</code> растёт, <code>get</code> возвращает <code>null</code>, <code>remove</code> не удаляет. Классическая утечка.</td>
+<td data-label="Нарушение"><code>hashCode</code> зависит от изменяемого поля, поле изменено после <code>put</code></td>
+<td data-label="Симптом">Запись «теряется»: лежит в старом бакете, ищется в новом. <code>map.size()</code> растёт, <code>get</code> возвращает <code>null</code>, <code>remove</code> не удаляет. Классическая утечка.</td>
 </tr>
 <tr>
-<td><code>equals</code> не симметричен (например, <code>instanceof</code> в одной ветке иерархии)</td>
-<td><code>list.contains(x)</code> зависит от того, кто слева. <code>Set</code> может содержать «дубликаты».</td>
+<td data-label="Нарушение"><code>equals</code> не симметричен (например, <code>instanceof</code> в одной ветке иерархии)</td>
+<td data-label="Симптом"><code>list.contains(x)</code> зависит от того, кто слева. <code>Set</code> может содержать «дубликаты».</td>
 </tr>
 <tr>
-<td><code>hashCode()</code> возвращает константу</td>
-<td>Все элементы в одном бакете. До Java 8 — O(n) на <code>get</code>; с Java 8 бакет treeify-ится (если ключи <code>Comparable</code>), O(log n), но с 48-байтными узлами вместо 32 (см. раздел 3.3).</td>
+<td data-label="Нарушение"><code>hashCode()</code> возвращает константу</td>
+<td data-label="Симптом">Все элементы в одном бакете. До Java 8 — O(n) на <code>get</code>; с Java 8 бакет treeify-ится (если ключи <code>Comparable</code>), O(log n), но с 48-байтными узлами вместо 32 (см. раздел 3.3).</td>
 </tr>
 </tbody>
 </table>
@@ -206,7 +206,7 @@
 <h3 id="22-расход-памяти-linkedlist">2.2 Расход памяти <code>LinkedList</code></h3>
 <p><code>LinkedList</code> — это двусвязный список: каждый элемент хранится в отдельном объекте-узле <code>Node</code>, который ссылается на сам элемент, на предыдущий и на следующий узел. Главный аргумент против него связан не с асимптотикой, а с памятью: узел стоит в несколько раз дороже ссылки в массиве. Чтобы увидеть разницу в байтах, посчитаем раскладку объектов на 64-битном HotSpot с compressed oops и compressed class pointers — двумя режимами сжатия, в которых ссылка на объект и указатель на класс в заголовке занимают по 4 байта. Оба режима включены по умолчанию при куче &lt; 32 ГБ. В такой конфигурации заголовок объекта занимает 12 байт, ссылка 4 байта, объекты выравниваются по 8 байт, а заголовок массива занимает 16 байт (<a href="https://shipilev.net/jvm/objects-inside-out/">Shipilёv, Java Objects Inside Out</a>).</p>
 <p>Таблица ниже показывает для каждой структуры, что именно хранится на один элемент и сколько это стоит в байтах; сравнивать стоит последний столбец. Slack в таблице — это пустые слоты массива, оставшиеся после роста.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Структура</th>
@@ -216,39 +216,39 @@
 </thead>
 <tbody>
 <tr>
-<td><code>ArrayList</code> (плотно упакованный, после <code>trimToSize</code>)</td>
-<td>1 ссылка в <code>Object[]</code></td>
-<td><strong>4</strong> (+ 16 байт заголовка массива на весь список + 24 байта сам объект <code>ArrayList</code>)</td>
+<td data-label="Структура"><code>ArrayList</code> (плотно упакованный, после <code>trimToSize</code>)</td>
+<td data-label="Что хранится на элемент">1 ссылка в <code>Object[]</code></td>
+<td data-label="Байт/элемент (compressed oops)"><strong>4</strong> (+ 16 байт заголовка массива на весь список + 24 байта сам объект <code>ArrayList</code>)</td>
 </tr>
 <tr>
-<td><code>ArrayList</code> после роста (в среднем ~25 % slack)</td>
-<td>ссылка + пустые слоты</td>
-<td><strong>≈ 5–6</strong></td>
+<td data-label="Структура"><code>ArrayList</code> после роста (в среднем ~25 % slack)</td>
+<td data-label="Что хранится на элемент">ссылка + пустые слоты</td>
+<td data-label="Байт/элемент (compressed oops)"><strong>≈ 5–6</strong></td>
 </tr>
 <tr>
-<td><code>LinkedList.Node</code></td>
-<td>заголовок 12 + <code>item</code> 4 + <code>next</code> 4 + <code>prev</code> 4 = 24</td>
-<td><strong>24</strong> (+ 32 байта сам <code>LinkedList</code>)</td>
+<td data-label="Структура"><code>LinkedList.Node</code></td>
+<td data-label="Что хранится на элемент">заголовок 12 + <code>item</code> 4 + <code>next</code> 4 + <code>prev</code> 4 = 24</td>
+<td data-label="Байт/элемент (compressed oops)"><strong>24</strong> (+ 32 байта сам <code>LinkedList</code>)</td>
 </tr>
 <tr>
-<td><code>HashMap.Node</code></td>
-<td>12 + <code>hash</code> 4 + <code>key</code> 4 + <code>value</code> 4 + <code>next</code> 4 = 28 → 32</td>
-<td><strong>32</strong> + слот в <code>table</code> (4 / load factor ≈ 5–8)</td>
+<td data-label="Структура"><code>HashMap.Node</code></td>
+<td data-label="Что хранится на элемент">12 + <code>hash</code> 4 + <code>key</code> 4 + <code>value</code> 4 + <code>next</code> 4 = 28 → 32</td>
+<td data-label="Байт/элемент (compressed oops)"><strong>32</strong> + слот в <code>table</code> (4 / load factor ≈ 5–8)</td>
 </tr>
 <tr>
-<td><code>HashMap.TreeNode</code></td>
-<td>Node + <code>parent, left, right, prev</code> 16 + <code>red</code> 1 = 45 → 48</td>
-<td><strong>48</strong></td>
+<td data-label="Структура"><code>HashMap.TreeNode</code></td>
+<td data-label="Что хранится на элемент">Node + <code>parent, left, right, prev</code> 16 + <code>red</code> 1 = 45 → 48</td>
+<td data-label="Байт/элемент (compressed oops)"><strong>48</strong></td>
 </tr>
 <tr>
-<td><code>LinkedHashMap.Entry</code></td>
-<td>Node + <code>before, after</code> 8 = 36 → 40</td>
-<td><strong>40</strong></td>
+<td data-label="Структура"><code>LinkedHashMap.Entry</code></td>
+<td data-label="Что хранится на элемент">Node + <code>before, after</code> 8 = 36 → 40</td>
+<td data-label="Байт/элемент (compressed oops)"><strong>40</strong></td>
 </tr>
 <tr>
-<td><code>TreeMap.Entry</code></td>
-<td>12 + <code>key, value, left, right, parent</code> 20 + <code>color</code> 1 = 33 → 40</td>
-<td><strong>40</strong></td>
+<td data-label="Структура"><code>TreeMap.Entry</code></td>
+<td data-label="Что хранится на элемент">12 + <code>key, value, left, right, parent</code> 20 + <code>color</code> 1 = 33 → 40</td>
+<td data-label="Байт/элемент (compressed oops)"><strong>40</strong></td>
 </tr>
 </tbody>
 </table>
@@ -785,7 +785,7 @@ merge:                {a=3, b=2, c=1}
 <p>Слабыми при этом становятся только ключи, а значения остаются сильными ссылками, и отсюда главная ловушка. Если значение ссылается на свой ключ, ключ не соберётся никогда, и утечка гарантирована. Типичный пример такой ошибки выглядит как <code>Map&lt;Listener, ListenerInfo&gt;</code>, где info держит ссылку на listener.</p>
 <p>Практическое применение у <code>WeakHashMap</code> узкое. Это кэш метаданных по <code>Class&lt;?&gt;</code>, где класс живёт, пока жив его загрузчик, и привязка вспомогательных данных к чужим объектам, временем жизни которых вы не управляете. Для кэшей «значение по ключу» <code>WeakHashMap</code> <strong>не подходит</strong> по двум причинам. Во-первых, слабой она делает ссылку на ключ, а не на значение. Во-вторых, <code>String</code>-ключи из пула или интернированные константы не соберутся никогда, а вычисленные на лету исчезнут при первом же minor GC — быстрой сборке молодого поколения. Кэш с выгрузкой лучше строить на Caffeine (<code>weakKeys()/softValues()/maximumSize()</code>), о котором рассказывает глава 23. Сама <code>WeakHashMap</code> не потокобезопасна, и <code>Collections.synchronizedMap(new WeakHashMap&lt;&gt;())</code> остаётся рабочим, но грубым вариантом.</p>
 <p>Таблица ниже сводит все реализации <code>Map</code> из этого раздела и из раздела 6 в одно место. Смотреть в ней стоит на три столбца: сложность <code>get/put</code>, порядок итерации и допустимость <code>null</code>-ключа, потому что именно по ним реализации чаще всего и путают. RB-дерево в таблице — красно-чёрное дерево, CAS — атомарная операция «сравнить и заменить» (раздел 6.1), skip list — список с пропусками (раздел 6.3).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Реализация</th>
@@ -798,68 +798,68 @@ merge:                {a=3, b=2, c=1}
 </thead>
 <tbody>
 <tr>
-<td><code>HashMap</code></td>
-<td>массив + списки/RB-деревья</td>
-<td>O(1) амортиз.</td>
-<td>непредсказуем</td>
-<td>да (1)</td>
-<td>32 (48 в дереве)</td>
+<td data-label="Реализация"><code>HashMap</code></td>
+<td data-label="Структура">массив + списки/RB-деревья</td>
+<td data-label="get/put">O(1) амортиз.</td>
+<td data-label="Порядок итерации">непредсказуем</td>
+<td data-label="null-ключ">да (1)</td>
+<td data-label="Байт/узел*">32 (48 в дереве)</td>
 </tr>
 <tr>
-<td><code>LinkedHashMap</code></td>
-<td><code>HashMap</code> + двусвязный список</td>
-<td>O(1)</td>
-<td>вставки / доступа</td>
-<td>да</td>
-<td>40</td>
+<td data-label="Реализация"><code>LinkedHashMap</code></td>
+<td data-label="Структура"><code>HashMap</code> + двусвязный список</td>
+<td data-label="get/put">O(1)</td>
+<td data-label="Порядок итерации">вставки / доступа</td>
+<td data-label="null-ключ">да</td>
+<td data-label="Байт/узел*">40</td>
 </tr>
 <tr>
-<td><code>TreeMap</code></td>
-<td>красно-чёрное дерево</td>
-<td>O(log n)</td>
-<td>по компаратору</td>
-<td>только с компаратором</td>
-<td>40</td>
+<td data-label="Реализация"><code>TreeMap</code></td>
+<td data-label="Структура">красно-чёрное дерево</td>
+<td data-label="get/put">O(log n)</td>
+<td data-label="Порядок итерации">по компаратору</td>
+<td data-label="null-ключ">только с компаратором</td>
+<td data-label="Байт/узел*">40</td>
 </tr>
 <tr>
-<td><code>EnumMap</code></td>
-<td>массив по <code>ordinal</code></td>
-<td>O(1), без хеша</td>
-<td>по объявлению enum</td>
-<td>нет</td>
-<td>0 (слот 4)</td>
+<td data-label="Реализация"><code>EnumMap</code></td>
+<td data-label="Структура">массив по <code>ordinal</code></td>
+<td data-label="get/put">O(1), без хеша</td>
+<td data-label="Порядок итерации">по объявлению enum</td>
+<td data-label="null-ключ">нет</td>
+<td data-label="Байт/узел*">0 (слот 4)</td>
 </tr>
 <tr>
-<td><code>IdentityHashMap</code></td>
-<td>открытая адресация, <code>==</code></td>
-<td>O(1)</td>
-<td>непредсказуем</td>
-<td>да</td>
-<td>0 (2 слота = 8)</td>
+<td data-label="Реализация"><code>IdentityHashMap</code></td>
+<td data-label="Структура">открытая адресация, <code>==</code></td>
+<td data-label="get/put">O(1)</td>
+<td data-label="Порядок итерации">непредсказуем</td>
+<td data-label="null-ключ">да</td>
+<td data-label="Байт/узел*">0 (2 слота = 8)</td>
 </tr>
 <tr>
-<td><code>WeakHashMap</code></td>
-<td>массив + списки, <code>WeakReference</code> ключи</td>
-<td>O(1)</td>
-<td>непредсказуем</td>
-<td>да</td>
-<td>~48 (<code>Entry extends WeakReference</code>)</td>
+<td data-label="Реализация"><code>WeakHashMap</code></td>
+<td data-label="Структура">массив + списки, <code>WeakReference</code> ключи</td>
+<td data-label="get/put">O(1)</td>
+<td data-label="Порядок итерации">непредсказуем</td>
+<td data-label="null-ключ">да</td>
+<td data-label="Байт/узел*">~48 (<code>Entry extends WeakReference</code>)</td>
 </tr>
 <tr>
-<td><code>ConcurrentHashMap</code></td>
-<td>массив + списки/деревья, CAS + <code>synchronized</code></td>
-<td>O(1)</td>
-<td>непредсказуем</td>
-<td><strong>нет</strong></td>
-<td>32</td>
+<td data-label="Реализация"><code>ConcurrentHashMap</code></td>
+<td data-label="Структура">массив + списки/деревья, CAS + <code>synchronized</code></td>
+<td data-label="get/put">O(1)</td>
+<td data-label="Порядок итерации">непредсказуем</td>
+<td data-label="null-ключ"><strong>нет</strong></td>
+<td data-label="Байт/узел*">32</td>
 </tr>
 <tr>
-<td><code>ConcurrentSkipListMap</code></td>
-<td>skip list</td>
-<td>O(log n)</td>
-<td>по компаратору</td>
-<td>нет</td>
-<td>~24 + индексные узлы</td>
+<td data-label="Реализация"><code>ConcurrentSkipListMap</code></td>
+<td data-label="Структура">skip list</td>
+<td data-label="get/put">O(log n)</td>
+<td data-label="Порядок итерации">по компаратору</td>
+<td data-label="null-ключ">нет</td>
+<td data-label="Байт/узел*">~24 + индексные узлы</td>
 </tr>
 </tbody>
 </table>
@@ -868,7 +868,7 @@ merge:                {a=3, b=2, c=1}
 <h3 id="46-коллекции-примитивов">4.6 Коллекции примитивов</h3>
 <p>Коллекции примитивов — это сторонние библиотеки, которые хранят <code>int</code>, <code>long</code> и другие примитивы прямо в массивах <code>int[]</code>/<code>long[]</code>, без упаковки в объекты и без <code>Node</code> на каждую запись. Нужны они потому, что стандартные коллекции хранят только ссылки, и <code>Map&lt;Long, X&gt;</code> или <code>Set&lt;Integer&gt;</code> на миллионы элементов платят за упаковку. Каждый <code>Long</code>/<code>Integer</code> вне кеша −128..127 стоит 16 байт, к ним добавляется 32 байта на <code>Node</code> и слот таблицы. В сумме выходит порядка 50 байт на запись там, где полезных данных всего 8–12 байт (раздел 2.2, грабля 14). На объёмах в десятки миллионов записей это разница между «влезло в кучу» и OOM (<code>OutOfMemoryError</code>), а короткоживущие боксы вдобавок дают заметное давление на GC (глава 07, <code>07-memory-and-gc.md</code>).</p>
 <p>Библиотек примитивных коллекций несколько, и различаются они прежде всего тем, что требуют взамен. Таблица ниже сравнивает основные; главное в ней содержится в последнем столбце.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Библиотека</th>
@@ -878,29 +878,29 @@ merge:                {a=3, b=2, c=1}
 </thead>
 <tbody>
 <tr>
-<td><strong>Eclipse Collections</strong></td>
-<td><code>IntObjectHashMap</code>, <code>LongLongHashMap</code>, <code>IntHashSet</code>, богатый API (примитивные стримоподобные операции)</td>
-<td>самый большой jar и API-поверхность; своя иерархия типов, не <code>java.util</code></td>
+<td data-label="Библиотека"><strong>Eclipse Collections</strong></td>
+<td data-label="Что даёт"><code>IntObjectHashMap</code>, <code>LongLongHashMap</code>, <code>IntHashSet</code>, богатый API (примитивные стримоподобные операции)</td>
+<td data-label="Trade-off">самый большой jar и API-поверхность; своя иерархия типов, не <code>java.util</code></td>
 </tr>
 <tr>
-<td><strong>fastutil</strong></td>
-<td>полный набор <code>Int2ObjectOpenHashMap</code>, <code>Long2LongOpenHashMap</code>, огромные массивы (<code>BigArrays</code>, &gt; 2³¹)</td>
-<td>гигантский jar (десятки МБ; берите нужные модули или shade); открытая адресация</td>
+<td data-label="Библиотека"><strong>fastutil</strong></td>
+<td data-label="Что даёт">полный набор <code>Int2ObjectOpenHashMap</code>, <code>Long2LongOpenHashMap</code>, огромные массивы (<code>BigArrays</code>, &gt; 2³¹)</td>
+<td data-label="Trade-off">гигантский jar (десятки МБ; берите нужные модули или shade); открытая адресация</td>
 </tr>
 <tr>
-<td><strong>HPPC</strong> (Carrot Search)</td>
-<td>минималистичные примитивные отображения/множества/списки</td>
-<td>скромный API, ставка на скорость и простоту</td>
+<td data-label="Библиотека"><strong>HPPC</strong> (Carrot Search)</td>
+<td data-label="Что даёт">минималистичные примитивные отображения/множества/списки</td>
+<td data-label="Trade-off">скромный API, ставка на скорость и простоту</td>
 </tr>
 <tr>
-<td><strong>Koloboke</strong></td>
-<td>генерируемые примитивные коллекции, реализуют <code>java.util</code>-интерфейсы</td>
-<td>проект давно без активных релизов</td>
+<td data-label="Библиотека"><strong>Koloboke</strong></td>
+<td data-label="Что даёт">генерируемые примитивные коллекции, реализуют <code>java.util</code>-интерфейсы</td>
+<td data-label="Trade-off">проект давно без активных релизов</td>
 </tr>
 <tr>
-<td><strong>Agrona</strong> (<code>Int2ObjectHashMap</code>)</td>
-<td>low-latency коллекции, off-heap буферы</td>
-<td>ниша HFT/messaging, специфичный API</td>
+<td data-label="Библиотека"><strong>Agrona</strong> (<code>Int2ObjectHashMap</code>)</td>
+<td data-label="Что даёт">low-latency коллекции, off-heap буферы</td>
+<td data-label="Trade-off">ниша HFT/messaging, специфичный API</td>
 </tr>
 </tbody>
 </table>
@@ -1157,7 +1157,7 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 <p>Применяют это отображение там, где в однопоточном коде взяли бы <code>TreeMap</code>: для concurrent-индексов по времени или сумме, для таймерных колёс (структур, которые раскладывают отложенные задачи по времени срабатывания), для дедупликации с сохранением порядка (ordered dedup).</p>
 <h3 id="64-семейство-blockingqueue">6.4 Семейство <code>BlockingQueue</code></h3>
 <p><code>BlockingQueue</code> — это очередь с операциями, которые умеют ждать: производитель блокируется, если очередь полна, а потребитель, если она пуста. Именно на таких очередях стоят пулы потоков и конвейеры «производитель — потребитель» (<em>producer-consumer</em>), и от выбора реализации зависят граница очереди, расход памяти и то, мешают ли друг другу производитель и потребитель. Таблица ниже сравнивает реализации по структуре, границам и схеме блокировок, а в последнем столбце указано, где каждая из них встречается на практике.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Класс</th>
@@ -1169,53 +1169,53 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 </thead>
 <tbody>
 <tr>
-<td><code>ArrayBlockingQueue</code></td>
-<td>кольцевой буфер</td>
-<td>обязательно ограничена</td>
-<td>один <code>ReentrantLock</code> + 2 <code>Condition</code> (<code>notEmpty/notFull</code>), опционально fair</td>
-<td>простые producer-consumer с backpressure, предсказуемая память</td>
+<td data-label="Класс"><code>ArrayBlockingQueue</code></td>
+<td data-label="Структура">кольцевой буфер</td>
+<td data-label="Границы">обязательно ограничена</td>
+<td data-label="Замки">один <code>ReentrantLock</code> + 2 <code>Condition</code> (<code>notEmpty/notFull</code>), опционально fair</td>
+<td data-label="Когда">простые producer-consumer с backpressure, предсказуемая память</td>
 </tr>
 <tr>
-<td><code>LinkedBlockingQueue</code></td>
-<td>связный список</td>
-<td>опционально (по умолчанию <code>Integer.MAX_VALUE</code>)</td>
-<td>два замка (<code>putLock</code>, <code>takeLock</code>) — producer и consumer не мешают друг другу</td>
-<td><code>Executors.newFixedThreadPool</code> (неограниченная — OOM при перегрузке)</td>
+<td data-label="Класс"><code>LinkedBlockingQueue</code></td>
+<td data-label="Структура">связный список</td>
+<td data-label="Границы">опционально (по умолчанию <code>Integer.MAX_VALUE</code>)</td>
+<td data-label="Замки">два замка (<code>putLock</code>, <code>takeLock</code>) — producer и consumer не мешают друг другу</td>
+<td data-label="Когда"><code>Executors.newFixedThreadPool</code> (неограниченная — OOM при перегрузке)</td>
 </tr>
 <tr>
-<td><code>SynchronousQueue</code></td>
-<td>без буфера</td>
-<td>0</td>
-<td>handoff, lock-free</td>
-<td><code>Executors.newCachedThreadPool</code>; каждая задача — либо сразу в поток, либо новый поток</td>
+<td data-label="Класс"><code>SynchronousQueue</code></td>
+<td data-label="Структура">без буфера</td>
+<td data-label="Границы">0</td>
+<td data-label="Замки">handoff, lock-free</td>
+<td data-label="Когда"><code>Executors.newCachedThreadPool</code>; каждая задача — либо сразу в поток, либо новый поток</td>
 </tr>
 <tr>
-<td><code>PriorityBlockingQueue</code></td>
-<td>куча</td>
-<td>неограниченная</td>
-<td>один замок</td>
-<td>задачи с приоритетом; <code>put</code> никогда не блокирует</td>
+<td data-label="Класс"><code>PriorityBlockingQueue</code></td>
+<td data-label="Структура">куча</td>
+<td data-label="Границы">неограниченная</td>
+<td data-label="Замки">один замок</td>
+<td data-label="Когда">задачи с приоритетом; <code>put</code> никогда не блокирует</td>
 </tr>
 <tr>
-<td><code>DelayQueue</code></td>
-<td><code>PriorityQueue&lt;Delayed&gt;</code></td>
-<td>неограниченная</td>
-<td>один замок</td>
-<td>отложенные задачи, TTL-очистка, повторы с задержкой</td>
+<td data-label="Класс"><code>DelayQueue</code></td>
+<td data-label="Структура"><code>PriorityQueue&lt;Delayed&gt;</code></td>
+<td data-label="Границы">неограниченная</td>
+<td data-label="Замки">один замок</td>
+<td data-label="Когда">отложенные задачи, TTL-очистка, повторы с задержкой</td>
 </tr>
 <tr>
-<td><code>LinkedTransferQueue</code></td>
-<td>dual queue</td>
-<td>неограниченная</td>
-<td>lock-free</td>
-<td><code>transfer()</code> — ждать, пока потребитель заберёт</td>
+<td data-label="Класс"><code>LinkedTransferQueue</code></td>
+<td data-label="Структура">dual queue</td>
+<td data-label="Границы">неограниченная</td>
+<td data-label="Замки">lock-free</td>
+<td data-label="Когда"><code>transfer()</code> — ждать, пока потребитель заберёт</td>
 </tr>
 <tr>
-<td><code>ConcurrentLinkedQueue</code> (не Blocking)</td>
-<td>Michael–Scott lock-free</td>
-<td>неограниченная</td>
-<td>CAS</td>
-<td>когда блокировать нельзя, а <code>size()</code> — O(n)</td>
+<td data-label="Класс"><code>ConcurrentLinkedQueue</code> (не Blocking)</td>
+<td data-label="Структура">Michael–Scott lock-free</td>
+<td data-label="Границы">неограниченная</td>
+<td data-label="Замки">CAS</td>
+<td data-label="Когда">когда блокировать нельзя, а <code>size()</code> — O(n)</td>
 </tr>
 </tbody>
 </table>
@@ -1246,7 +1246,7 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 <p>Одна оговорка относится ко всему, что идёт дальше: <strong>асимптотика в JDK-коллекциях почти никогда не бывает решающим аргументом на размерах до десятков тысяч элементов</strong>. На таких объёмах побеждает локальность данных, то есть то, насколько близко в памяти лежит то, что читается подряд. Линейный проход по <code>Object[]</code> из 10 000 ссылок, для которого процессор заранее подгружает следующие адреса, обгоняет «правильный» O(log n) обход дерева, который промахивается мимо кэша на каждом уровне. Поэтому в каждой таблице ниже колонка «оговорка про константу» служит не украшением, а главной колонкой.</p>
 <h4>6.6.1 Выбор структуры по операциям</h4>
 <p>Выбор по операциям — это подбор структуры по тому, какая операция в задаче главная: вставка в конец, поиск по ключу, диапазонный запрос, изъятие минимума. Первая таблица отвечает на вопрос «мне нужна такая-то операция, что брать». Для каждой операции в ней указаны подходящая структура и её сложность, но читать стоит прежде всего последний столбец: там объяснено, при каких размерах и почему асимптотика расходится с реальной скоростью. Несколько обозначений из таблицы: p99 — 99-й перцентиль задержки, то есть время, в которое укладываются 99 % запросов; latency — задержка ответа; swap-remove — удаление, при котором на место удаляемого элемента ставится последний.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Операция</th>
@@ -1257,130 +1257,130 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 </thead>
 <tbody>
 <tr>
-<td>Вставка в конец</td>
-<td><code>ArrayList</code>, <code>ArrayDeque</code></td>
-<td>O(1) амортиз.</td>
-<td>Амортизация скрывает <code>Arrays.copyOf</code> при росте: одна вставка из ~n может стоить O(n) и выделять массив на 1.5× текущей ёмкости. В latency-чувствительном коде (p99) это видимый выброс — пре-сайзинг или <code>ensureCapacity</code> убирают его совсем (2.1)</td>
+<td data-label="Операция">Вставка в конец</td>
+<td data-label="Структура"><code>ArrayList</code>, <code>ArrayDeque</code></td>
+<td data-label="Сложность">O(1) амортиз.</td>
+<td data-label="Оговорка про константу">Амортизация скрывает <code>Arrays.copyOf</code> при росте: одна вставка из ~n может стоить O(n) и выделять массив на 1.5× текущей ёмкости. В latency-чувствительном коде (p99) это видимый выброс — пре-сайзинг или <code>ensureCapacity</code> убирают его совсем (2.1)</td>
 </tr>
 <tr>
-<td>Вставка в начало</td>
-<td><code>ArrayDeque.addFirst</code>, <code>LinkedList.addFirst</code></td>
-<td>O(1)</td>
-<td><code>ArrayList.add(0, x)</code> — O(n) <code>arraycopy</code>, но <code>arraycopy</code> векторизован: для списка на 1000 элементов сдвиг обходится в десятки наносекунд и часто быстрее выделения памяти <code>LinkedList.Node</code>. «O(n) хуже O(1)» тут начинает работать где-то от десятков тысяч элементов</td>
+<td data-label="Операция">Вставка в начало</td>
+<td data-label="Структура"><code>ArrayDeque.addFirst</code>, <code>LinkedList.addFirst</code></td>
+<td data-label="Сложность">O(1)</td>
+<td data-label="Оговорка про константу"><code>ArrayList.add(0, x)</code> — O(n) <code>arraycopy</code>, но <code>arraycopy</code> векторизован: для списка на 1000 элементов сдвиг обходится в десятки наносекунд и часто быстрее выделения памяти <code>LinkedList.Node</code>. «O(n) хуже O(1)» тут начинает работать где-то от десятков тысяч элементов</td>
 </tr>
 <tr>
-<td>Вставка в середину</td>
-<td><code>ArrayList</code> (по индексу), <code>LinkedList</code> (по <code>ListIterator</code>)</td>
-<td>O(n) / O(1)</td>
-<td>Единственный сценарий, где <code>LinkedList</code> объективно выигрывает, — когда итератор <strong>уже стоит</strong> в нужной позиции (2.7). Если позицию надо найти — поиск O(n) съедает выигрыш, и <code>ArrayList</code> впереди по константе</td>
+<td data-label="Операция">Вставка в середину</td>
+<td data-label="Структура"><code>ArrayList</code> (по индексу), <code>LinkedList</code> (по <code>ListIterator</code>)</td>
+<td data-label="Сложность">O(n) / O(1)</td>
+<td data-label="Оговорка про константу">Единственный сценарий, где <code>LinkedList</code> объективно выигрывает, — когда итератор <strong>уже стоит</strong> в нужной позиции (2.7). Если позицию надо найти — поиск O(n) съедает выигрыш, и <code>ArrayList</code> впереди по константе</td>
 </tr>
 <tr>
-<td>Удаление по индексу</td>
-<td><code>ArrayList</code></td>
-<td>O(n)</td>
-<td>Тот же <code>arraycopy</code> хвоста. Если порядок не важен — «swap-remove» (<code>set(i, get(size-1)); remove(size-1)</code>) даёт честный O(1)</td>
+<td data-label="Операция">Удаление по индексу</td>
+<td data-label="Структура"><code>ArrayList</code></td>
+<td data-label="Сложность">O(n)</td>
+<td data-label="Оговорка про константу">Тот же <code>arraycopy</code> хвоста. Если порядок не важен — «swap-remove» (<code>set(i, get(size-1)); remove(size-1)</code>) даёт честный O(1)</td>
 </tr>
 <tr>
-<td>Удаление по значению</td>
-<td><code>HashSet</code>/<code>LinkedHashSet</code></td>
-<td>O(1)</td>
-<td>В <code>ArrayList</code> это <code>indexOf</code> + сдвиг = O(n) с <code>equals</code> на каждом элементе; <code>equals</code> у <code>String</code>/<code>BigDecimal</code> — не бесплатная операция, и именно она, а не сдвиг, обычно доминирует</td>
+<td data-label="Операция">Удаление по значению</td>
+<td data-label="Структура"><code>HashSet</code>/<code>LinkedHashSet</code></td>
+<td data-label="Сложность">O(1)</td>
+<td data-label="Оговорка про константу">В <code>ArrayList</code> это <code>indexOf</code> + сдвиг = O(n) с <code>equals</code> на каждом элементе; <code>equals</code> у <code>String</code>/<code>BigDecimal</code> — не бесплатная операция, и именно она, а не сдвиг, обычно доминирует</td>
 </tr>
 <tr>
-<td>Массовое удаление по предикату</td>
-<td><code>ArrayList.removeIf</code></td>
-<td>O(n)</td>
-<td>Переопределён в <code>ArrayList</code>: два прохода с <code>long[]</code>-битмаской вместо n сдвигов. Наивный цикл с <code>iterator.remove()</code> даёт O(n²) — типичная причина «задание чистки списка идёт час»</td>
+<td data-label="Операция">Массовое удаление по предикату</td>
+<td data-label="Структура"><code>ArrayList.removeIf</code></td>
+<td data-label="Сложность">O(n)</td>
+<td data-label="Оговорка про константу">Переопределён в <code>ArrayList</code>: два прохода с <code>long[]</code>-битмаской вместо n сдвигов. Наивный цикл с <code>iterator.remove()</code> даёт O(n²) — типичная причина «задание чистки списка идёт час»</td>
 </tr>
 <tr>
-<td>Доступ по индексу</td>
-<td><code>ArrayList</code>, массив</td>
-<td>O(1)</td>
-<td>В <code>LinkedList</code> — O(n) от ближайшего конца; <code>for (int i = 0; i &lt; list.size(); i++) list.get(i)</code> на <code>LinkedList</code> — O(n²) (2.2). Если метод принимает <code>List</code>, проверяйте <code>instanceof RandomAccess</code> или обходите <code>for-each</code></td>
+<td data-label="Операция">Доступ по индексу</td>
+<td data-label="Структура"><code>ArrayList</code>, массив</td>
+<td data-label="Сложность">O(1)</td>
+<td data-label="Оговорка про константу">В <code>LinkedList</code> — O(n) от ближайшего конца; <code>for (int i = 0; i &lt; list.size(); i++) list.get(i)</code> на <code>LinkedList</code> — O(n²) (2.2). Если метод принимает <code>List</code>, проверяйте <code>instanceof RandomAccess</code> или обходите <code>for-each</code></td>
 </tr>
 <tr>
-<td>Поиск по ключу</td>
-<td><code>HashMap</code></td>
-<td>O(1) амортиз.</td>
-<td>Константа — это вычисление <code>hashCode</code> плюс один-два промаха кэша (таблица + узел + сам ключ лежат в разных местах). Для <code>Map&lt;String, X&gt;</code> с длинными ключами <code>hashCode</code> кэшируется в <code>String</code>, для составных record-ключей — нет, и он считается на каждом <code>get</code></td>
+<td data-label="Операция">Поиск по ключу</td>
+<td data-label="Структура"><code>HashMap</code></td>
+<td data-label="Сложность">O(1) амортиз.</td>
+<td data-label="Оговорка про константу">Константа — это вычисление <code>hashCode</code> плюс один-два промаха кэша (таблица + узел + сам ключ лежат в разных местах). Для <code>Map&lt;String, X&gt;</code> с длинными ключами <code>hashCode</code> кэшируется в <code>String</code>, для составных record-ключей — нет, и он считается на каждом <code>get</code></td>
 </tr>
 <tr>
-<td>Поиск по ключу с диапазоном / ближайшим</td>
-<td><code>TreeMap</code> (<code>floorKey</code>, <code>ceilingKey</code>, <code>subMap</code>)</td>
-<td>O(log n)</td>
-<td>log₂(10⁶) ≈ 20 переходов по указателям = до 20 промахов кэша. Для статического отсортированного набора <code>Arrays.binarySearch</code> по массиву быстрее в разы: те же 20 шагов, но по непрерывной памяти</td>
+<td data-label="Операция">Поиск по ключу с диапазоном / ближайшим</td>
+<td data-label="Структура"><code>TreeMap</code> (<code>floorKey</code>, <code>ceilingKey</code>, <code>subMap</code>)</td>
+<td data-label="Сложность">O(log n)</td>
+<td data-label="Оговорка про константу">log₂(10⁶) ≈ 20 переходов по указателям = до 20 промахов кэша. Для статического отсортированного набора <code>Arrays.binarySearch</code> по массиву быстрее в разы: те же 20 шагов, но по непрерывной памяти</td>
 </tr>
 <tr>
-<td>Поиск по значению</td>
-<td>нет структуры</td>
-<td>O(n)</td>
-<td><code>containsValue</code> — всегда полный обход, в <code>HashMap</code> тоже. Нужен обратный поиск — держите второе отображение (<code>Map&lt;V, K&gt;</code>) и обновляйте оба в одном месте; Guava <code>BiMap</code> делает это за вас</td>
+<td data-label="Операция">Поиск по значению</td>
+<td data-label="Структура">нет структуры</td>
+<td data-label="Сложность">O(n)</td>
+<td data-label="Оговорка про константу"><code>containsValue</code> — всегда полный обход, в <code>HashMap</code> тоже. Нужен обратный поиск — держите второе отображение (<code>Map&lt;V, K&gt;</code>) и обновляйте оба в одном месте; Guava <code>BiMap</code> делает это за вас</td>
 </tr>
 <tr>
-<td>Обход в порядке вставки</td>
-<td><code>ArrayList</code>, <code>LinkedHashMap</code>/<code>LinkedHashSet</code></td>
-<td>O(n)</td>
-<td><code>LinkedHashMap</code> обходит двусвязный список узлов, а не таблицу: порядок предсказуем, но обход — pointer chasing. <code>ArrayList</code> обходится последовательно и быстрее при равном n</td>
+<td data-label="Операция">Обход в порядке вставки</td>
+<td data-label="Структура"><code>ArrayList</code>, <code>LinkedHashMap</code>/<code>LinkedHashSet</code></td>
+<td data-label="Сложность">O(n)</td>
+<td data-label="Оговорка про константу"><code>LinkedHashMap</code> обходит двусвязный список узлов, а не таблицу: порядок предсказуем, но обход — pointer chasing. <code>ArrayList</code> обходится последовательно и быстрее при равном n</td>
 </tr>
 <tr>
-<td>Обход в сортированном порядке</td>
-<td><code>TreeMap</code>/<code>TreeSet</code></td>
-<td>O(n)</td>
-<td>Держать <code>TreeMap</code> ради одного отчёта в конце дня дороже, чем сложить в <code>ArrayList</code> и один раз отсортировать: TimSort по массиву — O(n log n), но с отличной локальностью, и на 10⁶ элементов он обычно быстрее, чем накопление того же объёма в дереве</td>
+<td data-label="Операция">Обход в сортированном порядке</td>
+<td data-label="Структура"><code>TreeMap</code>/<code>TreeSet</code></td>
+<td data-label="Сложность">O(n)</td>
+<td data-label="Оговорка про константу">Держать <code>TreeMap</code> ради одного отчёта в конце дня дороже, чем сложить в <code>ArrayList</code> и один раз отсортировать: TimSort по массиву — O(n log n), но с отличной локальностью, и на 10⁶ элементов он обычно быстрее, чем накопление того же объёма в дереве</td>
 </tr>
 <tr>
-<td>Минимум / максимум с изъятием</td>
-<td><code>PriorityQueue</code></td>
-<td>O(log n) на <code>poll</code></td>
-<td><code>peek</code> — O(1). Если минимум нужен один раз и без изъятия — <code>Collections.min</code> за O(n) без построения кучи. Куча окупается, когда <code>poll</code> вызывается многократно на меняющемся наборе</td>
+<td data-label="Операция">Минимум / максимум с изъятием</td>
+<td data-label="Структура"><code>PriorityQueue</code></td>
+<td data-label="Сложность">O(log n) на <code>poll</code></td>
+<td data-label="Оговорка про константу"><code>peek</code> — O(1). Если минимум нужен один раз и без изъятия — <code>Collections.min</code> за O(n) без построения кучи. Куча окупается, когда <code>poll</code> вызывается многократно на меняющемся наборе</td>
 </tr>
 <tr>
-<td>Top-N из большого потока</td>
-<td><code>PriorityQueue</code> размера N</td>
-<td>O(n log N)</td>
-<td>Обратный компаратор, <code>offer</code> + <code>poll</code> при превышении N. Именно так, а не <code>stream().sorted().limit(N)</code>, который сортирует всё</td>
+<td data-label="Операция">Top-N из большого потока</td>
+<td data-label="Структура"><code>PriorityQueue</code> размера N</td>
+<td data-label="Сложность">O(n log N)</td>
+<td data-label="Оговорка про константу">Обратный компаратор, <code>offer</code> + <code>poll</code> при превышении N. Именно так, а не <code>stream().sorted().limit(N)</code>, который сортирует всё</td>
 </tr>
 <tr>
-<td>Проверка на вхождение</td>
-<td><code>HashSet</code></td>
-<td>O(1)</td>
-<td>На наборах до ~10 элементов <code>ArrayList.contains</code> быстрее: нет хеша, нет промаха, три-четыре <code>equals</code> подряд по непрерывной памяти. <code>Set.of(...)</code> на 2–3 элемента в горячем цикле — пример преждевременной «оптимизации», которая медленнее</td>
+<td data-label="Операция">Проверка на вхождение</td>
+<td data-label="Структура"><code>HashSet</code></td>
+<td data-label="Сложность">O(1)</td>
+<td data-label="Оговорка про константу">На наборах до ~10 элементов <code>ArrayList.contains</code> быстрее: нет хеша, нет промаха, три-четыре <code>equals</code> подряд по непрерывной памяти. <code>Set.of(...)</code> на 2–3 элемента в горячем цикле — пример преждевременной «оптимизации», которая медленнее</td>
 </tr>
 <tr>
-<td>Вхождение для <code>enum</code></td>
-<td><code>EnumSet</code></td>
-<td>O(1)</td>
-<td>Одна битовая операция <code>(elements &amp; (1L &lt;&lt; ordinal)) != 0</code>. На два порядка дешевле <code>HashSet</code>, и это не фигура речи: там нет ни хеша, ни объекта-узла</td>
+<td data-label="Операция">Вхождение для <code>enum</code></td>
+<td data-label="Структура"><code>EnumSet</code></td>
+<td data-label="Сложность">O(1)</td>
+<td data-label="Оговорка про константу">Одна битовая операция <code>(elements &amp; (1L &lt;&lt; ordinal)) != 0</code>. На два порядка дешевле <code>HashSet</code>, и это не фигура речи: там нет ни хеша, ни объекта-узла</td>
 </tr>
 <tr>
-<td>Вхождение для плотных <code>int</code>-идентификаторов</td>
-<td><code>BitSet</code></td>
-<td>O(1)</td>
-<td>Один бит на значение. Для id в диапазоне 0..10⁷ — 1.25 МБ против ~500 МБ у <code>HashSet&lt;Integer&gt;</code>. Работает только если диапазон плотный: <code>BitSet</code> на разреженных id с максимумом 2³¹ выделит 256 МБ</td>
+<td data-label="Операция">Вхождение для плотных <code>int</code>-идентификаторов</td>
+<td data-label="Структура"><code>BitSet</code></td>
+<td data-label="Сложность">O(1)</td>
+<td data-label="Оговорка про константу">Один бит на значение. Для id в диапазоне 0..10⁷ — 1.25 МБ против ~500 МБ у <code>HashSet&lt;Integer&gt;</code>. Работает только если диапазон плотный: <code>BitSet</code> на разреженных id с максимумом 2³¹ выделит 256 МБ</td>
 </tr>
 <tr>
-<td>Дедупликация с сохранением порядка</td>
-<td><code>LinkedHashSet</code></td>
-<td>O(n)</td>
-<td><code>new ArrayList&lt;&gt;(new LinkedHashSet&lt;&gt;(list))</code> — идиома в одну строку. Через <code>stream().distinct()</code> — то же самое плюс построение pipeline; в цикле по пакетам дешевле явный <code>LinkedHashSet</code> с пре-сайзингом</td>
+<td data-label="Операция">Дедупликация с сохранением порядка</td>
+<td data-label="Структура"><code>LinkedHashSet</code></td>
+<td data-label="Сложность">O(n)</td>
+<td data-label="Оговорка про константу"><code>new ArrayList&lt;&gt;(new LinkedHashSet&lt;&gt;(list))</code> — идиома в одну строку. Через <code>stream().distinct()</code> — то же самое плюс построение pipeline; в цикле по пакетам дешевле явный <code>LinkedHashSet</code> с пре-сайзингом</td>
 </tr>
 <tr>
-<td>Дедупликация без порядка</td>
-<td><code>HashSet</code></td>
-<td>O(n)</td>
-<td>На больших объёмах узкое место — не алгоритм, а упаковка и resize: <code>new HashSet&lt;&gt;(HashMap.newHashMap(expected))</code> и примитивный <code>LongHashSet</code> дают разницу в разы (6.6.3)</td>
+<td data-label="Операция">Дедупликация без порядка</td>
+<td data-label="Структура"><code>HashSet</code></td>
+<td data-label="Сложность">O(n)</td>
+<td data-label="Оговорка про константу">На больших объёмах узкое место — не алгоритм, а упаковка и resize: <code>new HashSet&lt;&gt;(HashMap.newHashMap(expected))</code> и примитивный <code>LongHashSet</code> дают разницу в разы (6.6.3)</td>
 </tr>
 <tr>
-<td>Очередь FIFO в одном потоке</td>
-<td><code>ArrayDeque</code></td>
-<td>O(1)</td>
-<td>Кольцевой буфер, без выделения памяти узлов. <code>LinkedList</code> как <code>Queue</code> — 24 байта мусора на каждое сообщение; при 100 тыс. сообщений/с это 2.4 МБ/с в молодое поколение</td>
+<td data-label="Операция">Очередь FIFO в одном потоке</td>
+<td data-label="Структура"><code>ArrayDeque</code></td>
+<td data-label="Сложность">O(1)</td>
+<td data-label="Оговорка про константу">Кольцевой буфер, без выделения памяти узлов. <code>LinkedList</code> как <code>Queue</code> — 24 байта мусора на каждое сообщение; при 100 тыс. сообщений/с это 2.4 МБ/с в молодое поколение</td>
 </tr>
 <tr>
-<td>Стек</td>
-<td><code>ArrayDeque</code></td>
-<td>O(1)</td>
-<td>Не <code>java.util.Stack</code> (синхронизирован, наследует <code>Vector</code>, итерируется снизу вверх — то есть в порядке, обратном ожидаемому)</td>
+<td data-label="Операция">Стек</td>
+<td data-label="Структура"><code>ArrayDeque</code></td>
+<td data-label="Сложность">O(1)</td>
+<td data-label="Оговорка про константу">Не <code>java.util.Stack</code> (синхронизирован, наследует <code>Vector</code>, итерируется снизу вверх — то есть в порядке, обратном ожидаемому)</td>
 </tr>
 </tbody>
 </table>
@@ -1391,7 +1391,7 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 <h4>6.6.2 Расход памяти на элемент</h4>
 <p>Расход памяти на элемент — это число байт, которое структура тратит на хранение одного элемента сверх самих данных: заголовки объектов-узлов, ссылки, пустые слоты. Вторая таблица переводит выбор структуры в байты, потому что на больших объёмах именно память, а не скорость операций, решает, влезут ли данные в кучу. Все цифры в ней посчитаны для 64-битного HotSpot с <strong>compressed oops и compressed class pointers</strong>, которые включены по умолчанию при куче &lt; 32 ГБ. В такой конфигурации заголовок объекта занимает 12 байт, ссылка 4 байта, объект выравнивается до 8 байт, а заголовок массива занимает 16 байт (<a href="https://shipilev.net/jvm/objects-inside-out/">Shipilёv, Java Objects Inside Out</a>).</p>
 <p>Воспринимать эти числа надо как <strong>порядки, а не контракт</strong>. Раскладка зависит от версии JDK, от <code>-XX:ObjectAlignmentInBytes</code>, от <code>-XX:+UseCompactObjectHeaders</code> (JEP 450, заголовок 8 байт) и от того, включены ли compressed oops вообще. Точное число на вашей JVM даёт только JOL (Java Object Layout, утилита OpenJDK для измерения раскладки объектов: <code>ClassLayout.parseClass(...)</code>, <code>GraphLayout.parseInstance(...)</code>). В таблице сравнивать стоит два последних столбца: сколько стоит сама структура и сколько добавляет к ней упаковка элементов.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Структура</th>
@@ -1402,100 +1402,100 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 </thead>
 <tbody>
 <tr>
-<td><code>int[]</code></td>
-<td>4 байта данных</td>
-<td><strong>4</strong></td>
-<td>— (упаковки нет)</td>
+<td data-label="Структура"><code>int[]</code></td>
+<td data-label="Из чего складывается на элемент">4 байта данных</td>
+<td data-label="Байт/элемент"><strong>4</strong></td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)">— (упаковки нет)</td>
 </tr>
 <tr>
-<td><code>long[]</code></td>
-<td>8 байт данных</td>
-<td><strong>8</strong></td>
-<td>—</td>
+<td data-label="Структура"><code>long[]</code></td>
+<td data-label="Из чего складывается на элемент">8 байт данных</td>
+<td data-label="Байт/элемент"><strong>8</strong></td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)">—</td>
 </tr>
 <tr>
-<td><code>ArrayList&lt;Integer&gt;</code> (после <code>trimToSize</code>)</td>
-<td>ссылка 4</td>
-<td>4</td>
-<td><strong>20</strong> (4 + <code>Integer</code> 16)</td>
+<td data-label="Структура"><code>ArrayList&lt;Integer&gt;</code> (после <code>trimToSize</code>)</td>
+<td data-label="Из чего складывается на элемент">ссылка 4</td>
+<td data-label="Байт/элемент">4</td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)"><strong>20</strong> (4 + <code>Integer</code> 16)</td>
 </tr>
 <tr>
-<td><code>ArrayList&lt;Integer&gt;</code> (после роста, ~25 % slack)</td>
-<td>ссылка + пустые слоты ≈ 5–6</td>
-<td>5–6</td>
-<td><strong>21–22</strong></td>
+<td data-label="Структура"><code>ArrayList&lt;Integer&gt;</code> (после роста, ~25 % slack)</td>
+<td data-label="Из чего складывается на элемент">ссылка + пустые слоты ≈ 5–6</td>
+<td data-label="Байт/элемент">5–6</td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)"><strong>21–22</strong></td>
 </tr>
 <tr>
-<td><code>ArrayDeque&lt;E&gt;</code></td>
-<td>ссылка 4; ёмкость до 64 растёт почти вдвое, дальше в 1,5 раза (раздел 2.4), значит до 2× slack на малых размерах и до 1,5× на больших</td>
-<td>4–8</td>
-<td>20–24</td>
+<td data-label="Структура"><code>ArrayDeque&lt;E&gt;</code></td>
+<td data-label="Из чего складывается на элемент">ссылка 4; ёмкость до 64 растёт почти вдвое, дальше в 1,5 раза (раздел 2.4), значит до 2× slack на малых размерах и до 1,5× на больших</td>
+<td data-label="Байт/элемент">4–8</td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)">20–24</td>
 </tr>
 <tr>
-<td><code>LinkedList&lt;Integer&gt;</code></td>
-<td><code>Node</code>: 12 + item 4 + next 4 + prev 4 = 24</td>
-<td><strong>24</strong></td>
-<td><strong>40</strong></td>
+<td data-label="Структура"><code>LinkedList&lt;Integer&gt;</code></td>
+<td data-label="Из чего складывается на элемент"><code>Node</code>: 12 + item 4 + next 4 + prev 4 = 24</td>
+<td data-label="Байт/элемент"><strong>24</strong></td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)"><strong>40</strong></td>
 </tr>
 <tr>
-<td><code>HashMap.Node</code> + слот таблицы</td>
-<td>узел 32 (12 + hash 4 + key 4 + value 4 + next 4 → выравнивание) + слот 4/0.75 ≈ 5.3</td>
-<td><strong>≈ 37</strong></td>
-<td><strong>≈ 70</strong> (+ бокс ключа 16 + бокс значения 16)</td>
+<td data-label="Структура"><code>HashMap.Node</code> + слот таблицы</td>
+<td data-label="Из чего складывается на элемент">узел 32 (12 + hash 4 + key 4 + value 4 + next 4 → выравнивание) + слот 4/0.75 ≈ 5.3</td>
+<td data-label="Байт/элемент"><strong>≈ 37</strong></td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)"><strong>≈ 70</strong> (+ бокс ключа 16 + бокс значения 16)</td>
 </tr>
 <tr>
-<td><code>HashMap.TreeNode</code> (бакет в дереве)</td>
-<td>48 + слот</td>
-<td>≈ 53</td>
-<td>≈ 85</td>
+<td data-label="Структура"><code>HashMap.TreeNode</code> (бакет в дереве)</td>
+<td data-label="Из чего складывается на элемент">48 + слот</td>
+<td data-label="Байт/элемент">≈ 53</td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)">≈ 85</td>
 </tr>
 <tr>
-<td><code>LinkedHashMap.Entry</code></td>
-<td><code>Node</code> + before/after 8 = 40 + слот</td>
-<td>≈ 45</td>
-<td>≈ 78</td>
+<td data-label="Структура"><code>LinkedHashMap.Entry</code></td>
+<td data-label="Из чего складывается на элемент"><code>Node</code> + before/after 8 = 40 + слот</td>
+<td data-label="Байт/элемент">≈ 45</td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)">≈ 78</td>
 </tr>
 <tr>
-<td><code>HashSet&lt;E&gt;</code></td>
-<td>это <code>HashMap</code> с фиктивным значением <code>PRESENT</code> (один статический объект на JVM, не на элемент)</td>
-<td><strong>≈ 37</strong></td>
-<td><strong>≈ 53</strong></td>
+<td data-label="Структура"><code>HashSet&lt;E&gt;</code></td>
+<td data-label="Из чего складывается на элемент">это <code>HashMap</code> с фиктивным значением <code>PRESENT</code> (один статический объект на JVM, не на элемент)</td>
+<td data-label="Байт/элемент"><strong>≈ 37</strong></td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)"><strong>≈ 53</strong></td>
 </tr>
 <tr>
-<td><code>TreeMap.Entry</code></td>
-<td>12 + key/value/left/right/parent 20 + color 1 → 40, slack нет</td>
-<td><strong>40</strong></td>
-<td><strong>72</strong></td>
+<td data-label="Структура"><code>TreeMap.Entry</code></td>
+<td data-label="Из чего складывается на элемент">12 + key/value/left/right/parent 20 + color 1 → 40, slack нет</td>
+<td data-label="Байт/элемент"><strong>40</strong></td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)"><strong>72</strong></td>
 </tr>
 <tr>
-<td><code>ConcurrentHashMap.Node</code></td>
-<td>те же 32 + слот таблицы (плюс <code>CounterCell[]</code> на пул — константа)</td>
-<td><strong>≈ 37</strong></td>
-<td><strong>≈ 70</strong></td>
+<td data-label="Структура"><code>ConcurrentHashMap.Node</code></td>
+<td data-label="Из чего складывается на элемент">те же 32 + слот таблицы (плюс <code>CounterCell[]</code> на пул — константа)</td>
+<td data-label="Байт/элемент"><strong>≈ 37</strong></td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)"><strong>≈ 70</strong></td>
 </tr>
 <tr>
-<td><code>ConcurrentSkipListMap</code></td>
-<td>базовый узел ~24 + индексные узлы (в среднем ещё ~1 уровень на узел)</td>
-<td>≈ 40–56</td>
-<td>≈ 72–88</td>
+<td data-label="Структура"><code>ConcurrentSkipListMap</code></td>
+<td data-label="Из чего складывается на элемент">базовый узел ~24 + индексные узлы (в среднем ещё ~1 уровень на узел)</td>
+<td data-label="Байт/элемент">≈ 40–56</td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)">≈ 72–88</td>
 </tr>
 <tr>
-<td><code>EnumMap&lt;K, V&gt;</code></td>
-<td>один слот <code>Object[]</code> на <strong>константу enum</strong>, а не на запись</td>
-<td><strong>4 на константу</strong></td>
-<td>— (значения — ссылки, ключи не хранятся вовсе)</td>
+<td data-label="Структура"><code>EnumMap&lt;K, V&gt;</code></td>
+<td data-label="Из чего складывается на элемент">один слот <code>Object[]</code> на <strong>константу enum</strong>, а не на запись</td>
+<td data-label="Байт/элемент"><strong>4 на константу</strong></td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)">— (значения — ссылки, ключи не хранятся вовсе)</td>
 </tr>
 <tr>
-<td><code>EnumSet</code> (≤ 64 констант)</td>
-<td>один <code>long</code> на <strong>весь сет</strong></td>
-<td><strong>~0</strong></td>
-<td>—</td>
+<td data-label="Структура"><code>EnumSet</code> (≤ 64 констант)</td>
+<td data-label="Из чего складывается на элемент">один <code>long</code> на <strong>весь сет</strong></td>
+<td data-label="Байт/элемент"><strong>~0</strong></td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)">—</td>
 </tr>
 <tr>
-<td><code>BitSet</code></td>
-<td>1 бит на значение диапазона</td>
-<td><strong>0.125</strong></td>
-<td>—</td>
+<td data-label="Структура"><code>BitSet</code></td>
+<td data-label="Из чего складывается на элемент">1 бит на значение диапазона</td>
+<td data-label="Байт/элемент"><strong>0.125</strong></td>
+<td data-label="С учётом упаковки (Integer/Long-элементы вне кеша)">—</td>
 </tr>
 </tbody>
 </table>
@@ -1561,7 +1561,7 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 </blockquote>
 <h4>6.6.4 Структуры для многопоточного доступа</h4>
 <p>Структура для многопоточного доступа — это коллекция, которую безопасно читать и менять из нескольких потоков одновременно. Когда потоков несколько, выбор определяется уже не только операциями, но и тем, что должно быть атомарным и кто кому мешает при записи. Механика разобрана в разделах 6.1–6.4 этой главы и в главе 08 (<code>08-concurrency.md</code>), а здесь собран только выбор. Таблица ниже для каждого сценария называет коллекцию, объясняет, чем плоха очевидная альтернатива, и указывает, при каком условии стоит переключиться на другой вариант.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сценарий</th>
@@ -1572,76 +1572,76 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 </thead>
 <tbody>
 <tr>
-<td>Отображение, читают и пишут много потоков</td>
-<td><code>ConcurrentHashMap</code></td>
-<td><code>synchronizedMap</code> — один монитор на всё отображение: каждый <code>get</code> сериализуется; на 16 потоках это пропускная способность одного</td>
-<td>Всегда, если отображение разделяемое и горячее</td>
+<td data-label="Сценарий">Отображение, читают и пишут много потоков</td>
+<td data-label="Что брать"><code>ConcurrentHashMap</code></td>
+<td data-label="Почему не альтернатива"><code>synchronizedMap</code> — один монитор на всё отображение: каждый <code>get</code> сериализуется; на 16 потоках это пропускная способность одного</td>
+<td data-label="Критерий переключения">Всегда, если отображение разделяемое и горячее</td>
 </tr>
 <tr>
-<td>Отображение, доступ редкий, важно простота</td>
-<td><code>Collections.synchronizedMap</code></td>
-<td>CHM тоже подойдёт, но <code>synchronizedMap</code> даёт атомарность нескольких операций через <code>synchronized (map) { ... }</code>, чего CHM не умеет</td>
-<td>Если нужна атомарность <strong>композиции</strong> операций, а отображение холодное</td>
+<td data-label="Сценарий">Отображение, доступ редкий, важно простота</td>
+<td data-label="Что брать"><code>Collections.synchronizedMap</code></td>
+<td data-label="Почему не альтернатива">CHM тоже подойдёт, но <code>synchronizedMap</code> даёт атомарность нескольких операций через <code>synchronized (map) { ... }</code>, чего CHM не умеет</td>
+<td data-label="Критерий переключения">Если нужна атомарность <strong>композиции</strong> операций, а отображение холодное</td>
 </tr>
 <tr>
-<td>Отображение под своей блокировкой (<code>HashMap</code> + <code>ReentrantLock</code>)</td>
-<td>когда транзакция охватывает несколько ключей или несколько структур</td>
-<td>CHM атомарен только по одному ключу; <code>putAll</code>, <code>clear</code>, «проверить размер и вставить» — не атомарны</td>
-<td>Когда инвариант связывает больше одного ключа</td>
+<td data-label="Сценарий">Отображение под своей блокировкой (<code>HashMap</code> + <code>ReentrantLock</code>)</td>
+<td data-label="Что брать">когда транзакция охватывает несколько ключей или несколько структур</td>
+<td data-label="Почему не альтернатива">CHM атомарен только по одному ключу; <code>putAll</code>, <code>clear</code>, «проверить размер и вставить» — не атомарны</td>
+<td data-label="Критерий переключения">Когда инвариант связывает больше одного ключа</td>
 </tr>
 <tr>
-<td>Отображение с порядком ключей, многопоточное</td>
-<td><code>ConcurrentSkipListMap</code></td>
-<td><code>Collections.synchronizedSortedMap(new TreeMap&lt;&gt;())</code> — один монитор; CHM порядка не даёт</td>
-<td>Нужны <code>floorKey</code>/<code>subMap</code>/<code>firstEntry</code> под конкуренцией. Помните: <code>size()</code> — O(n), обход всей структуры</td>
+<td data-label="Сценарий">Отображение с порядком ключей, многопоточное</td>
+<td data-label="Что брать"><code>ConcurrentSkipListMap</code></td>
+<td data-label="Почему не альтернатива"><code>Collections.synchronizedSortedMap(new TreeMap&lt;&gt;())</code> — один монитор; CHM порядка не даёт</td>
+<td data-label="Критерий переключения">Нужны <code>floorKey</code>/<code>subMap</code>/<code>firstEntry</code> под конкуренцией. Помните: <code>size()</code> — O(n), обход всей структуры</td>
 </tr>
 <tr>
-<td>Список слушателей / обработчиков / конфигурация</td>
-<td><code>CopyOnWriteArrayList</code></td>
-<td>CHM-<code>newKeySet</code> даст порядок случайный; <code>synchronizedList</code> заставит блокироваться на чтении</td>
-<td><strong>Критерий применимости точный:</strong> запись копирует весь массив за O(n), значит амортизированная стоимость приемлема, только когда чтений на <strong>два-три порядка</strong> больше записей и размер списка — десятки-сотни. Ориентир: сотни тысяч чтений на одну запись, запись реже раза в секунду</td>
+<td data-label="Сценарий">Список слушателей / обработчиков / конфигурация</td>
+<td data-label="Что брать"><code>CopyOnWriteArrayList</code></td>
+<td data-label="Почему не альтернатива">CHM-<code>newKeySet</code> даст порядок случайный; <code>synchronizedList</code> заставит блокироваться на чтении</td>
+<td data-label="Критерий переключения"><strong>Критерий применимости точный:</strong> запись копирует весь массив за O(n), значит амортизированная стоимость приемлема, только когда чтений на <strong>два-три порядка</strong> больше записей и размер списка — десятки-сотни. Ориентир: сотни тысяч чтений на одну запись, запись реже раза в секунду</td>
 </tr>
 <tr>
-<td>Множество, многопоточное, с частыми записями</td>
-<td><code>ConcurrentHashMap.newKeySet()</code></td>
-<td><code>CopyOnWriteArraySet</code> — O(n) <code>contains</code> при каждом <code>add</code> плюс копирование: на тысячах элементов это квадрат</td>
-<td>Всегда, кроме read-mostly-реестров</td>
+<td data-label="Сценарий">Множество, многопоточное, с частыми записями</td>
+<td data-label="Что брать"><code>ConcurrentHashMap.newKeySet()</code></td>
+<td data-label="Почему не альтернатива"><code>CopyOnWriteArraySet</code> — O(n) <code>contains</code> при каждом <code>add</code> плюс копирование: на тысячах элементов это квадрат</td>
+<td data-label="Критерий переключения">Всегда, кроме read-mostly-реестров</td>
 </tr>
 <tr>
-<td>Очередь producer–consumer с backpressure</td>
-<td><code>ArrayBlockingQueue(n)</code></td>
-<td><code>LinkedBlockingQueue()</code> без границы — отложенный OOM: очередь растёт, пока не кончится куча</td>
-<td>Когда важна предсказуемая память: кольцевой буфер, ноль выделений памяти на элемент</td>
+<td data-label="Сценарий">Очередь producer–consumer с backpressure</td>
+<td data-label="Что брать"><code>ArrayBlockingQueue(n)</code></td>
+<td data-label="Почему не альтернатива"><code>LinkedBlockingQueue()</code> без границы — отложенный OOM: очередь растёт, пока не кончится куча</td>
+<td data-label="Критерий переключения">Когда важна предсказуемая память: кольцевой буфер, ноль выделений памяти на элемент</td>
 </tr>
 <tr>
-<td>То же, но producer и consumer оба горячие</td>
-<td><code>LinkedBlockingQueue(n)</code></td>
-<td><code>ArrayBlockingQueue</code> использует <strong>один</strong> <code>ReentrantLock</code> на голову и хвост — producer и consumer конкурируют между собой</td>
-<td>Два раздельных замка (<code>putLock</code>/<code>takeLock</code>) снимают эту конкуренцию; цена — <code>Node</code> (24 байта мусора) на каждый элемент</td>
+<td data-label="Сценарий">То же, но producer и consumer оба горячие</td>
+<td data-label="Что брать"><code>LinkedBlockingQueue(n)</code></td>
+<td data-label="Почему не альтернатива"><code>ArrayBlockingQueue</code> использует <strong>один</strong> <code>ReentrantLock</code> на голову и хвост — producer и consumer конкурируют между собой</td>
+<td data-label="Критерий переключения">Два раздельных замка (<code>putLock</code>/<code>takeLock</code>) снимают эту конкуренцию; цена — <code>Node</code> (24 байта мусора) на каждый элемент</td>
 </tr>
 <tr>
-<td>Прямая передача «задача — свободному потоку»</td>
-<td><code>SynchronousQueue</code></td>
-<td>Буфера нет вообще: <code>offer</code> возвращает <code>false</code>, если никто не ждёт</td>
-<td>Основа <code>newCachedThreadPool</code>. Даёт мгновенный отказ вместо накопления очереди — то, что нужно, когда очередь в принципе вредна</td>
+<td data-label="Сценарий">Прямая передача «задача — свободному потоку»</td>
+<td data-label="Что брать"><code>SynchronousQueue</code></td>
+<td data-label="Почему не альтернатива">Буфера нет вообще: <code>offer</code> возвращает <code>false</code>, если никто не ждёт</td>
+<td data-label="Критерий переключения">Основа <code>newCachedThreadPool</code>. Даёт мгновенный отказ вместо накопления очереди — то, что нужно, когда очередь в принципе вредна</td>
 </tr>
 <tr>
-<td>Передача с подтверждением «взяли»</td>
-<td><code>LinkedTransferQueue</code></td>
-<td><code>transfer(e)</code> блокирует, пока потребитель не заберёт элемент; <code>BlockingQueue.put</code> возвращается сразу после постановки в очередь</td>
-<td>Когда producer должен знать, что элемент обработан, а не только принят</td>
+<td data-label="Сценарий">Передача с подтверждением «взяли»</td>
+<td data-label="Что брать"><code>LinkedTransferQueue</code></td>
+<td data-label="Почему не альтернатива"><code>transfer(e)</code> блокирует, пока потребитель не заберёт элемент; <code>BlockingQueue.put</code> возвращается сразу после постановки в очередь</td>
+<td data-label="Критерий переключения">Когда producer должен знать, что элемент обработан, а не только принят</td>
 </tr>
 <tr>
-<td>Очередь без блокировок, размер не нужен</td>
-<td><code>ConcurrentLinkedQueue</code></td>
-<td>Не <code>BlockingQueue</code>: <code>take()</code> нет, потребителю придётся крутиться или парковаться самому</td>
-<td>Когда блокировать нельзя вообще (например, внутри обработчика в реактивной цепочке операторов, глава 11, <code>11-reactive.md</code>). <code>size()</code> — O(n), не использовать для метрик</td>
+<td data-label="Сценарий">Очередь без блокировок, размер не нужен</td>
+<td data-label="Что брать"><code>ConcurrentLinkedQueue</code></td>
+<td data-label="Почему не альтернатива">Не <code>BlockingQueue</code>: <code>take()</code> нет, потребителю придётся крутиться или парковаться самому</td>
+<td data-label="Критерий переключения">Когда блокировать нельзя вообще (например, внутри обработчика в реактивной цепочке операторов, глава 11, <code>11-reactive.md</code>). <code>size()</code> — O(n), не использовать для метрик</td>
 </tr>
 <tr>
-<td>Счётчик под высокой конкуренцией</td>
-<td><code>LongAdder</code></td>
-<td><code>AtomicLong</code> на 16 потоках — все CAS'ы бьются в одну кэш-линию</td>
-<td>Глава 08, раздел 3.4</td>
+<td data-label="Сценарий">Счётчик под высокой конкуренцией</td>
+<td data-label="Что брать"><code>LongAdder</code></td>
+<td data-label="Почему не альтернатива"><code>AtomicLong</code> на 16 потоках — все CAS'ы бьются в одну кэш-линию</td>
+<td data-label="Критерий переключения">Глава 08, раздел 3.4</td>
 </tr>
 </tbody>
 </table>
@@ -1696,7 +1696,7 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 <li><code>estimateSize()</code> возвращает оценку числа оставшихся элементов или <code>Long.MAX_VALUE</code>, если это число неизвестно или бесконечно.</li>
 </ul>
 <p>Кроме методов, у сплитератора есть <code>characteristics()</code> — битовая маска свойств источника, по которой конвейер решает, какие оптимизации ему доступны. Таблица ниже показывает для каждой характеристики, что она означает, какие источники её выставляют и что именно она позволяет оптимизировать. Encounter order в таблице — порядок, в котором источник отдаёт элементы (подробно — в 7.5), а non-interference — требование не менять источник во время работы стрима (7.7).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Характеристика</th>
@@ -1707,52 +1707,52 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 </thead>
 <tbody>
 <tr>
-<td><code>SIZED</code></td>
-<td><code>estimateSize()</code> — точное число</td>
-<td><code>ArrayList</code>, массивы, <code>HashMap</code>, <code>IntStream.range</code></td>
-<td><code>toArray</code>/<code>toList</code> выделяют массив нужного размера сразу; <code>count()</code> не обходит элементы</td>
+<td data-label="Характеристика"><code>SIZED</code></td>
+<td data-label="Смысл"><code>estimateSize()</code> — точное число</td>
+<td data-label="Кто выставляет"><code>ArrayList</code>, массивы, <code>HashMap</code>, <code>IntStream.range</code></td>
+<td data-label="Что оптимизирует"><code>toArray</code>/<code>toList</code> выделяют массив нужного размера сразу; <code>count()</code> не обходит элементы</td>
 </tr>
 <tr>
-<td><code>SUBSIZED</code></td>
-<td>все потомки <code>trySplit</code> тоже <code>SIZED</code></td>
-<td><code>ArrayList</code>, массивы, <code>range</code></td>
-<td>параллельный <code>toArray</code> пишет в один массив по смещениям без merge</td>
+<td data-label="Характеристика"><code>SUBSIZED</code></td>
+<td data-label="Смысл">все потомки <code>trySplit</code> тоже <code>SIZED</code></td>
+<td data-label="Кто выставляет"><code>ArrayList</code>, массивы, <code>range</code></td>
+<td data-label="Что оптимизирует">параллельный <code>toArray</code> пишет в один массив по смещениям без merge</td>
 </tr>
 <tr>
-<td><code>ORDERED</code></td>
-<td>есть encounter order</td>
-<td><code>List</code>, <code>LinkedHashSet</code>, <code>SortedSet</code>, массивы</td>
-<td>сохранение порядка в <code>forEachOrdered</code>, <code>limit</code>, <code>findFirst</code>; <strong>отсутствие</strong> — свобода для <code>distinct</code>/<code>limit</code> в параллели</td>
+<td data-label="Характеристика"><code>ORDERED</code></td>
+<td data-label="Смысл">есть encounter order</td>
+<td data-label="Кто выставляет"><code>List</code>, <code>LinkedHashSet</code>, <code>SortedSet</code>, массивы</td>
+<td data-label="Что оптимизирует">сохранение порядка в <code>forEachOrdered</code>, <code>limit</code>, <code>findFirst</code>; <strong>отсутствие</strong> — свобода для <code>distinct</code>/<code>limit</code> в параллели</td>
 </tr>
 <tr>
-<td><code>SORTED</code></td>
-<td>элементы отсортированы (<code>getComparator()</code>)</td>
-<td><code>TreeSet</code>, <code>SortedSet</code>, после <code>sorted()</code></td>
-<td>повторный <code>sorted()</code> с тем же порядком пропускается</td>
+<td data-label="Характеристика"><code>SORTED</code></td>
+<td data-label="Смысл">элементы отсортированы (<code>getComparator()</code>)</td>
+<td data-label="Кто выставляет"><code>TreeSet</code>, <code>SortedSet</code>, после <code>sorted()</code></td>
+<td data-label="Что оптимизирует">повторный <code>sorted()</code> с тем же порядком пропускается</td>
 </tr>
 <tr>
-<td><code>DISTINCT</code></td>
-<td>нет <code>equals</code>-дубликатов</td>
-<td><code>Set</code></td>
-<td><code>distinct()</code> становится no-op</td>
+<td data-label="Характеристика"><code>DISTINCT</code></td>
+<td data-label="Смысл">нет <code>equals</code>-дубликатов</td>
+<td data-label="Кто выставляет"><code>Set</code></td>
+<td data-label="Что оптимизирует"><code>distinct()</code> становится no-op</td>
 </tr>
 <tr>
-<td><code>NONNULL</code></td>
-<td>нет <code>null</code></td>
-<td><code>ConcurrentHashMap</code>, <code>ArrayDeque</code>, <code>List.of</code></td>
-<td>пропуск null-проверок</td>
+<td data-label="Характеристика"><code>NONNULL</code></td>
+<td data-label="Смысл">нет <code>null</code></td>
+<td data-label="Кто выставляет"><code>ConcurrentHashMap</code>, <code>ArrayDeque</code>, <code>List.of</code></td>
+<td data-label="Что оптимизирует">пропуск null-проверок</td>
 </tr>
 <tr>
-<td><code>IMMUTABLE</code></td>
-<td>источник не меняется структурно</td>
-<td><code>List.of</code>, <code>Arrays.asList</code> (?), <code>IntStream.range</code></td>
-<td>не нужна проверка на CME</td>
+<td data-label="Характеристика"><code>IMMUTABLE</code></td>
+<td data-label="Смысл">источник не меняется структурно</td>
+<td data-label="Кто выставляет"><code>List.of</code>, <code>Arrays.asList</code> (?), <code>IntStream.range</code></td>
+<td data-label="Что оптимизирует">не нужна проверка на CME</td>
 </tr>
 <tr>
-<td><code>CONCURRENT</code></td>
-<td>источник можно менять из нескольких потоков</td>
-<td><code>ConcurrentHashMap</code>, <code>ConcurrentLinkedQueue</code></td>
-<td>non-interference не требуется</td>
+<td data-label="Характеристика"><code>CONCURRENT</code></td>
+<td data-label="Смысл">источник можно менять из нескольких потоков</td>
+<td data-label="Кто выставляет"><code>ConcurrentHashMap</code>, <code>ConcurrentLinkedQueue</code></td>
+<td data-label="Что оптимизирует">non-interference не требуется</td>
 </tr>
 </tbody>
 </table>
@@ -1952,7 +1952,7 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 <p><code>teeing</code> остаётся единственным стандартным способом «разветвить» одноразовый стрим на два агрегата, а для трёх и более агрегатов используют вложенный <code>teeing</code> или собственный коллектор.</p>
 <h3 id="85-streamtolist-и-collectorstolist">8.5 <code>Stream.toList()</code> и <code>Collectors.toList()</code></h3>
 <p><code>Stream.toList()</code> и <code>Collectors.toList()</code> — это два способа собрать стрим в список: терминальный метод самого стрима, появившийся в Java 16, и коллектор из Java 8. Вместе с третьим способом, <code>Collectors.toUnmodifiableList()</code>, они выглядят почти одинаково, но результаты у них различаются по изменяемости, по отношению к <code>null</code> и по расходу памяти. Из-за этих различий переход с одного способа на другой может сломать код во время выполнения, поэтому таблица ниже сравнивает все три по этим признакам и в последней строке подсказывает, когда какой брать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1963,34 +1963,34 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 </thead>
 <tbody>
 <tr>
-<td>Тип результата</td>
-<td>«no guarantees on the type, mutability» — фактически <code>ArrayList</code></td>
-<td><strong>unmodifiable</strong> (<code>UnsupportedOperationException</code> на мутаторах)</td>
-<td>unmodifiable</td>
+<td data-label="">Тип результата</td>
+<td data-label="Collectors.toList() (Java 8)">«no guarantees on the type, mutability» — фактически <code>ArrayList</code></td>
+<td data-label="Stream.toList() (Java 16)"><strong>unmodifiable</strong> (<code>UnsupportedOperationException</code> на мутаторах)</td>
+<td data-label="Collectors.toUnmodifiableList() (Java 10)">unmodifiable</td>
 </tr>
 <tr>
-<td><code>null</code>-элементы</td>
-<td>допустимы</td>
-<td><strong>допустимы</strong></td>
-<td><code>NullPointerException</code></td>
+<td data-label=""><code>null</code>-элементы</td>
+<td data-label="Collectors.toList() (Java 8)">допустимы</td>
+<td data-label="Stream.toList() (Java 16)"><strong>допустимы</strong></td>
+<td data-label="Collectors.toUnmodifiableList() (Java 10)"><code>NullPointerException</code></td>
 </tr>
 <tr>
-<td>Реализация</td>
-<td><code>ArrayList::new</code> + <code>add</code>, рост ×1.5 при неизвестном размере</td>
-<td><code>toArray()</code> → <code>Arrays.asList</code> → <code>unmodifiableList</code> (javadoc); для <code>SIZED</code> — массив ровно нужного размера без промежуточных копий</td>
-<td>как <code>toList</code> + <code>List.copyOf</code></td>
+<td data-label="">Реализация</td>
+<td data-label="Collectors.toList() (Java 8)"><code>ArrayList::new</code> + <code>add</code>, рост ×1.5 при неизвестном размере</td>
+<td data-label="Stream.toList() (Java 16)"><code>toArray()</code> → <code>Arrays.asList</code> → <code>unmodifiableList</code> (javadoc); для <code>SIZED</code> — массив ровно нужного размера без промежуточных копий</td>
+<td data-label="Collectors.toUnmodifiableList() (Java 10)">как <code>toList</code> + <code>List.copyOf</code></td>
 </tr>
 <tr>
-<td>Память</td>
-<td>slack до 33 %</td>
-<td>плотно</td>
-<td>плотно</td>
+<td data-label="">Память</td>
+<td data-label="Collectors.toList() (Java 8)">slack до 33 %</td>
+<td data-label="Stream.toList() (Java 16)">плотно</td>
+<td data-label="Collectors.toUnmodifiableList() (Java 10)">плотно</td>
 </tr>
 <tr>
-<td>Когда</td>
-<td>нужен изменяемый список (редко)</td>
-<td><strong>по умолчанию</strong> для возврата из метода</td>
-<td>когда <code>null</code> недопустим и нужна <code>List.of</code>-семантика</td>
+<td data-label="">Когда</td>
+<td data-label="Collectors.toList() (Java 8)">нужен изменяемый список (редко)</td>
+<td data-label="Stream.toList() (Java 16)"><strong>по умолчанию</strong> для возврата из метода</td>
+<td data-label="Collectors.toUnmodifiableList() (Java 10)">когда <code>null</code> недопустим и нужна <code>List.of</code>-семантика</td>
 </tr>
 </tbody>
 </table>
@@ -2066,7 +2066,7 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 <p>По эвристике параллельность имеет шанс окупиться при <strong>N × Q ≳ 10 000</strong>. ⚠️ Первичный источник (статья Goetz «When to use parallel streams» / серия на IBM Developer) при подготовке главы открыть не удалось, поэтому правило приводится по вторичным пересказам и докладам Goetz («From Concurrent to Parallel», QCon 2017), а порог 10 000 надо понимать как порядок величины, а не как константу.</p>
 <p>Логика эвристики держится на фиксированной цене параллельности. Разбиение, планирование <code>ForkJoinTask</code>, слияние результатов и потеря локальности кэша складываются в накладные расходы порядка десятков микросекунд, к которым добавляется по несколько сотен наносекунд на каждую задачу. Сумма <code>filter(x -&gt; x &gt; 0)</code> над <code>int[]</code> на 1000 элементов (Q ≈ 1) последовательно занимает 1–2 мкс, и параллельность только добавит к этому времени. Обработка 200 изображений по 50 мс (Q ≈ 10⁷), наоборот, служит идеальным кандидатом. Всё, что лежит между этими крайностями, надо измерять (JMH, глава 45).</p>
 <p>Даже при большом N×Q выигрыш могут срезать факторы, перечисленные в таблице ниже. Для каждого указано, почему он мешает и как понять, что он присутствует в вашем конвейере. Ложное разделение (<em>false sharing</em>) в таблице — ситуация, когда переменные разных потоков лежат в одной строке кэша процессора (cache line) и потоки постоянно отбирают её друг у друга. Закон Амдала (Amdahl) говорит, что последовательная часть программы ограничивает ускорение при любом числе ядер.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Фактор</th>
@@ -2076,39 +2076,39 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 </thead>
 <tbody>
 <tr>
-<td>Плохой <code>trySplit</code> источника</td>
-<td><code>LinkedList</code>, <code>iterate</code>, <code>lines()</code> делятся пакетами через буферизацию на вызывающем потоке (7.2)</td>
-<td><code>spliterator().hasCharacteristics(SUBSIZED)</code> → <code>false</code></td>
+<td data-label="Фактор">Плохой <code>trySplit</code> источника</td>
+<td data-label="Почему"><code>LinkedList</code>, <code>iterate</code>, <code>lines()</code> делятся пакетами через буферизацию на вызывающем потоке (7.2)</td>
+<td data-label="Как понять"><code>spliterator().hasCharacteristics(SUBSIZED)</code> → <code>false</code></td>
 </tr>
 <tr>
-<td>Stateful-операции на ORDERED</td>
-<td><code>sorted</code>, <code>distinct</code>, <code>limit</code>, <code>skip</code> — барьеры с буферизацией и синхронизацией</td>
-<td>есть ли <code>sorted</code>/<code>limit</code> в pipeline</td>
+<td data-label="Фактор">Stateful-операции на ORDERED</td>
+<td data-label="Почему"><code>sorted</code>, <code>distinct</code>, <code>limit</code>, <code>skip</code> — барьеры с буферизацией и синхронизацией</td>
+<td data-label="Как понять">есть ли <code>sorted</code>/<code>limit</code> в pipeline</td>
 </tr>
 <tr>
-<td>Дорогой <code>combiner</code></td>
-<td><code>groupingBy</code>/<code>toMap</code>/<code>toSet</code> сливают отображения, <code>joining</code> — StringBuilder'ы; <code>toList</code> дёшев (SIZED → один массив)</td>
-<td>коллектор без <code>CONCURRENT</code> + большее отображение</td>
+<td data-label="Фактор">Дорогой <code>combiner</code></td>
+<td data-label="Почему"><code>groupingBy</code>/<code>toMap</code>/<code>toSet</code> сливают отображения, <code>joining</code> — StringBuilder'ы; <code>toList</code> дёшев (SIZED → один массив)</td>
+<td data-label="Как понять">коллектор без <code>CONCURRENT</code> + большее отображение</td>
 </tr>
 <tr>
-<td>Упаковка</td>
-<td><code>Stream&lt;Integer&gt;</code> вместо <code>IntStream</code> — выделения памяти на каждый элемент, GC-давление растёт с потоками</td>
-<td>профиль выделений памяти</td>
+<td data-label="Фактор">Упаковка</td>
+<td data-label="Почему"><code>Stream&lt;Integer&gt;</code> вместо <code>IntStream</code> — выделения памяти на каждый элемент, GC-давление растёт с потоками</td>
+<td data-label="Как понять">профиль выделений памяти</td>
 </tr>
 <tr>
-<td>Ложное разделение (false sharing)</td>
-<td>счётчики/аккумуляторы разных потоков в одной cache line</td>
-<td><code>@Contended</code>, <code>LongAdder</code> вместо <code>AtomicLong</code></td>
+<td data-label="Фактор">Ложное разделение (false sharing)</td>
+<td data-label="Почему">счётчики/аккумуляторы разных потоков в одной cache line</td>
+<td data-label="Как понять"><code>@Contended</code>, <code>LongAdder</code> вместо <code>AtomicLong</code></td>
 </tr>
 <tr>
-<td>Amdahl</td>
-<td>последовательная часть (источник, merge, финальная обработка) ограничивает ускорение: при 10 % последовательного кода максимум ×10 на бесконечном числе ядер</td>
-<td>профиль: сколько времени в <code>forEachRemaining</code> листьев vs в merge</td>
+<td data-label="Фактор">Amdahl</td>
+<td data-label="Почему">последовательная часть (источник, merge, финальная обработка) ограничивает ускорение: при 10 % последовательного кода максимум ×10 на бесконечном числе ядер</td>
+<td data-label="Как понять">профиль: сколько времени в <code>forEachRemaining</code> листьев vs в merge</td>
 </tr>
 <tr>
-<td>Загруженность машины</td>
-<td>common pool делит ядра с HTTP-потоками, GC, другими стримами; на нагруженном сервере параллельных ядер нет</td>
-<td>utilization &gt; 70 % → параллель в запросах вредна</td>
+<td data-label="Фактор">Загруженность машины</td>
+<td data-label="Почему">common pool делит ядра с HTTP-потоками, GC, другими стримами; на нагруженном сервере параллельных ядер нет</td>
+<td data-label="Как понять">utilization &gt; 70 % → параллель в запросах вредна</td>
 </tr>
 </tbody>
 </table>
@@ -2252,7 +2252,7 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 <li><code>finisher(): BiConsumer&lt;A, Downstream&gt;</code> необязателен, вызывается, когда вход исчерпан, и может дотолкнуть вниз оставшийся хвост.</li>
 </ul>
 <p>В <code>java.util.stream.Gatherers</code> уже есть пять готовых реализаций, и таблица ниже показывает семантику каждой и то, какой ручной код она заменяет. Префиксная сумма в таблице — последовательность накопленных сумм, где i-й элемент равен сумме первых i входов; running balance — остаток счёта после каждой операции.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Gatherer</th>
@@ -2262,29 +2262,29 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 </thead>
 <tbody>
 <tr>
-<td><code>windowFixed(n)</code></td>
-<td>непересекающиеся окна по n элементов → <code>List&lt;T&gt;</code></td>
-<td>ручная нарезка на пакеты для bulk-insert и пакетов Kafka</td>
+<td data-label="Gatherer"><code>windowFixed(n)</code></td>
+<td data-label="Семантика">непересекающиеся окна по n элементов → <code>List&lt;T&gt;</code></td>
+<td data-label="Замена чему">ручная нарезка на пакеты для bulk-insert и пакетов Kafka</td>
 </tr>
 <tr>
-<td><code>windowSliding(n)</code></td>
-<td>скользящие окна размера n</td>
-<td>скользящие средние, сравнение соседей</td>
+<td data-label="Gatherer"><code>windowSliding(n)</code></td>
+<td data-label="Семантика">скользящие окна размера n</td>
+<td data-label="Замена чему">скользящие средние, сравнение соседей</td>
 </tr>
 <tr>
-<td><code>fold(init, folder)</code></td>
-<td>many-to-one с упорядоченным состоянием, результат — один элемент</td>
-<td><code>reduce</code>, когда операция не ассоциативна (нельзя параллелить)</td>
+<td data-label="Gatherer"><code>fold(init, folder)</code></td>
+<td data-label="Семантика">many-to-one с упорядоченным состоянием, результат — один элемент</td>
+<td data-label="Замена чему"><code>reduce</code>, когда операция не ассоциативна (нельзя параллелить)</td>
 </tr>
 <tr>
-<td><code>scan(init, scanner)</code></td>
-<td>префиксные суммы: эмитит промежуточное состояние на каждый элемент</td>
-<td>running balance по выписке</td>
+<td data-label="Gatherer"><code>scan(init, scanner)</code></td>
+<td data-label="Семантика">префиксные суммы: эмитит промежуточное состояние на каждый элемент</td>
+<td data-label="Замена чему">running balance по выписке</td>
 </tr>
 <tr>
-<td><code>mapConcurrent(maxConcurrency, fn)</code></td>
-<td><code>map</code> с параллельным выполнением <code>fn</code> в <strong>виртуальных потоках</strong>, не более <code>maxConcurrency</code> одновременно, порядок сохраняется</td>
-<td>I/O-параллелизм без <code>parallelStream()</code> и без блокировки common pool</td>
+<td data-label="Gatherer"><code>mapConcurrent(maxConcurrency, fn)</code></td>
+<td data-label="Семантика"><code>map</code> с параллельным выполнением <code>fn</code> в <strong>виртуальных потоках</strong>, не более <code>maxConcurrency</code> одновременно, порядок сохраняется</td>
+<td data-label="Замена чему">I/O-параллелизм без <code>parallelStream()</code> и без блокировки common pool</td>
 </tr>
 </tbody>
 </table>
@@ -2318,7 +2318,7 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 <p>Gatherer'ы <strong>компонуются</strong> через <code>andThen</code>, и <code>gather</code> может встречаться в конвейере несколько раз. Каждый из них работает через push, то есть сам проталкивает элементы вниз по цепочке, и не материализует промежуточные коллекции.</p>
 <h3 id="104-производительность-цикла-и-стрима">10.4 Производительность цикла и стрима</h3>
 <p>Производительность стрима по сравнению с циклом определяется фиксированной ценой конвейера: объектами стадий, лямбдами и вызовами через интерфейс, которых у цикла нет. Стрим почти всегда читается лучше цикла, но эта цена заметна на маленьких коллекциях и в горячих путях, и чтобы принимать решение осознанно, надо представлять её порядок. Таблица ниже даёт честное сравнение на Java 21, но это порядок величин, а не бенчмарк: точные цифры зависят от JIT и от данных, а методология измерения описана в главе 45. Смотреть в ней стоит прежде всего на столбец «Почему», потому что именно он объясняет, откуда берётся разница. Мономорфное место вызова в таблице — строка кода, через которую всегда проходит одна и та же реализация, так что JIT может её встроить.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сценарий</th>
@@ -2328,39 +2328,39 @@ new ConcurrentHashMap&lt;&gt;(64): после первой записи табл
 </thead>
 <tbody>
 <tr>
-<td><code>int[]</code>/<code>List&lt;Integer&gt;</code> 10–1000 элементов, простая арифметика</td>
-<td>цикл в 2–10× быстрее</td>
-<td>стрим: ~5–10 объектов на построение pipeline, мегаморфные вызовы <code>Sink.accept</code>, упаковка в <code>Stream&lt;Integer&gt;</code>; цикл — регистр и инкремент</td>
+<td data-label="Сценарий"><code>int[]</code>/<code>List&lt;Integer&gt;</code> 10–1000 элементов, простая арифметика</td>
+<td data-label="Цикл vs стрим">цикл в 2–10× быстрее</td>
+<td data-label="Почему">стрим: ~5–10 объектов на построение pipeline, мегаморфные вызовы <code>Sink.accept</code>, упаковка в <code>Stream&lt;Integer&gt;</code>; цикл — регистр и инкремент</td>
 </tr>
 <tr>
-<td>Те же данные, <code>IntStream</code></td>
-<td>разница 1–2×, часто в пределах шума</td>
-<td>C2 встраивает цепочку, если call-site мономорфный (один и тот же стрим в одном месте); <code>IntStream.range().sum()</code> → почти цикл</td>
+<td data-label="Сценарий">Те же данные, <code>IntStream</code></td>
+<td data-label="Цикл vs стрим">разница 1–2×, часто в пределах шума</td>
+<td data-label="Почему">C2 встраивает цепочку, если call-site мономорфный (один и тот же стрим в одном месте); <code>IntStream.range().sum()</code> → почти цикл</td>
 </tr>
 <tr>
-<td>Миллионы элементов, дорогой <code>map</code> (парсинг, вызов метода)</td>
-<td>одинаково</td>
-<td>стоимость в лямбде, overhead pipeline амортизирован</td>
+<td data-label="Сценарий">Миллионы элементов, дорогой <code>map</code> (парсинг, вызов метода)</td>
+<td data-label="Цикл vs стрим">одинаково</td>
+<td data-label="Почему">стоимость в лямбде, overhead pipeline амортизирован</td>
 </tr>
 <tr>
-<td><code>filter → map → collect(toList)</code> над объектами</td>
-<td>стрим 1.2–2× медленнее на маленьких, равен на больших</td>
-<td><code>ArrayList</code> рост в <code>toList()</code> vs пре-сайзинг в цикле; <code>Stream.toList()</code> на <code>SIZED</code> без фильтра — без роста</td>
+<td data-label="Сценарий"><code>filter → map → collect(toList)</code> над объектами</td>
+<td data-label="Цикл vs стрим">стрим 1.2–2× медленнее на маленьких, равен на больших</td>
+<td data-label="Почему"><code>ArrayList</code> рост в <code>toList()</code> vs пре-сайзинг в цикле; <code>Stream.toList()</code> на <code>SIZED</code> без фильтра — без роста</td>
 </tr>
 <tr>
-<td><code>sorted().limit(k)</code></td>
-<td>цикл с <code>PriorityQueue</code> в разы быстрее и O(k) памяти</td>
-<td>стрим сортирует всё (7.4)</td>
+<td data-label="Сценарий"><code>sorted().limit(k)</code></td>
+<td data-label="Цикл vs стрим">цикл с <code>PriorityQueue</code> в разы быстрее и O(k) памяти</td>
+<td data-label="Почему">стрим сортирует всё (7.4)</td>
 </tr>
 <tr>
-<td><code>flatMap</code></td>
-<td>до Java 10 — не ленивый, буферизовал (JDK-8075939); с Java 10 — ленивый, но всё равно стрим-на-элемент</td>
-<td><code>mapMulti</code> (Java 16) для 0–2 результатов на элемент дешевле: без вложенного стрима</td>
+<td data-label="Сценарий"><code>flatMap</code></td>
+<td data-label="Цикл vs стрим">до Java 10 — не ленивый, буферизовал (JDK-8075939); с Java 10 — ленивый, но всё равно стрим-на-элемент</td>
+<td data-label="Почему"><code>mapMulti</code> (Java 16) для 0–2 результатов на элемент дешевле: без вложенного стрима</td>
 </tr>
 <tr>
-<td>Горячий цикл в latency-critical коде (торговый движок, сериализация)</td>
-<td>цикл</td>
-<td>выделения памяти pipeline = GC-давление, непредсказуемое встраивание</td>
+<td data-label="Сценарий">Горячий цикл в latency-critical коде (торговый движок, сериализация)</td>
+<td data-label="Цикл vs стрим">цикл</td>
+<td data-label="Почему">выделения памяти pipeline = GC-давление, непредсказуемое встраивание</td>
 </tr>
 </tbody>
 </table>
@@ -2875,5 +2875,5 @@ jfr print --events jdk.ObjectAllocationSample /tmp/rec.jfr <span class="p">|</sp
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-иерархия-и-контракты">1. Иерархия и контракты</a></li><li><a href="#2-списки-и-очереди">2. Списки и очереди</a></li><li><a href="#3-устройство-hashmap">3. Устройство HashMap</a></li><li><a href="#4-специализированные-map-и-set">4. Специализированные Map и Set</a></li><li><a href="#5-неизменяемость-view-и-fail-fast-итераторы">5. Неизменяемость, view и fail-fast итераторы</a></li><li><a href="#6-concurrent-коллекции-обзор">6. Concurrent-коллекции (обзор)</a></li><li><a href="#7-spliterator-и-устройство-stream-pipeline">7. Spliterator и устройство stream pipeline</a></li><li><a href="#8-collectors-и-reduce">8. Collectors и reduce</a></li><li><a href="#9-параллельные-стримы">9. Параллельные стримы</a></li><li><a href="#10-примитивные-стримы-optional-gatherers-производительность">10. Примитивные стримы, Optional, Gatherers, производительность</a></li><li><a href="#11-разобранные-инциденты">11. Разобранные инциденты</a></li><li><a href="#12-грабли-и-антипаттерны">12. Грабли и антипаттерны</a></li><li><a href="#13-диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

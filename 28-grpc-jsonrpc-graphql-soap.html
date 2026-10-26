@@ -3,7 +3,7 @@
 <title>28. gRPC, JSON-RPC, WebSocket, GraphQL, XML и SOAP — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="gRPC, JSON-RPC, WebSocket, GraphQL, XML и SOAP">
 <a class="skip" href="#content">К тексту</a>
@@ -103,7 +103,7 @@
 
 <p>Несколько строк в этой схеме заслуживают отдельного пояснения, потому что от них зависит и маршрутизация, и сгенерированный код. <code>package</code> определяет полное имя типа в wire-протоколе gRPC (<code>/ru.bank.payments.v1.PaymentService/Create</code>) и разводит пространства имён при коллизиях, тогда как <code>java_package</code> влияет только на Java-код. Опция <code>java_multiple_files = true</code> кладёт каждый message в отдельный файл, а без неё всё окажется вложенным в один outer-класс. Это важнее, чем кажется: один сгенерированный файл на 300 сообщений долго компилируется и при статической инициализации упирается в лимит 64 КБ на метод.</p>
 <p>Следующая таблица показывает, во что превращается каждый скалярный тип proto3 в Java и как он кодируется на проводе. Смотреть стоит прежде всего на колонку «Примечание»: в ней собраны случаи, где выбор типа заметно влияет на размер сообщения или на корректность чтения.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>proto3</th>
@@ -114,58 +114,58 @@
 </thead>
 <tbody>
 <tr>
-<td><code>double</code> / <code>float</code></td>
-<td><code>double</code> / <code>float</code></td>
-<td>I64 / I32</td>
-<td>фиксированный размер</td>
+<td data-label="proto3"><code>double</code> / <code>float</code></td>
+<td data-label="Java"><code>double</code> / <code>float</code></td>
+<td data-label="Кодирование">I64 / I32</td>
+<td data-label="Примечание">фиксированный размер</td>
 </tr>
 <tr>
-<td><code>int32</code> / <code>int64</code></td>
-<td><code>int</code> / <code>long</code></td>
-<td>varint</td>
-<td><strong>отрицательные — всегда 10 байт</strong></td>
+<td data-label="proto3"><code>int32</code> / <code>int64</code></td>
+<td data-label="Java"><code>int</code> / <code>long</code></td>
+<td data-label="Кодирование">varint</td>
+<td data-label="Примечание"><strong>отрицательные — всегда 10 байт</strong></td>
 </tr>
 <tr>
-<td><code>uint32</code> / <code>uint64</code></td>
-<td><code>int</code> / <code>long</code></td>
-<td>varint</td>
-<td>в Java нет unsigned, читать через <code>Integer.toUnsignedLong</code></td>
+<td data-label="proto3"><code>uint32</code> / <code>uint64</code></td>
+<td data-label="Java"><code>int</code> / <code>long</code></td>
+<td data-label="Кодирование">varint</td>
+<td data-label="Примечание">в Java нет unsigned, читать через <code>Integer.toUnsignedLong</code></td>
 </tr>
 <tr>
-<td><code>sint32</code> / <code>sint64</code></td>
-<td><code>int</code> / <code>long</code></td>
-<td>varint + zigzag</td>
-<td>для полей, которые бывают отрицательными</td>
+<td data-label="proto3"><code>sint32</code> / <code>sint64</code></td>
+<td data-label="Java"><code>int</code> / <code>long</code></td>
+<td data-label="Кодирование">varint + zigzag</td>
+<td data-label="Примечание">для полей, которые бывают отрицательными</td>
 </tr>
 <tr>
-<td><code>fixed32</code> / <code>fixed64</code></td>
-<td><code>int</code> / <code>long</code></td>
-<td>I32 / I64</td>
-<td>выгоднее varint, если значения обычно &gt; 2^28 / 2^56</td>
+<td data-label="proto3"><code>fixed32</code> / <code>fixed64</code></td>
+<td data-label="Java"><code>int</code> / <code>long</code></td>
+<td data-label="Кодирование">I32 / I64</td>
+<td data-label="Примечание">выгоднее varint, если значения обычно &gt; 2^28 / 2^56</td>
 </tr>
 <tr>
-<td><code>sfixed32</code> / <code>sfixed64</code></td>
-<td><code>int</code> / <code>long</code></td>
-<td>I32 / I64</td>
-<td></td>
+<td data-label="proto3"><code>sfixed32</code> / <code>sfixed64</code></td>
+<td data-label="Java"><code>int</code> / <code>long</code></td>
+<td data-label="Кодирование">I32 / I64</td>
+<td data-label="Примечание"></td>
 </tr>
 <tr>
-<td><code>bool</code></td>
-<td><code>boolean</code></td>
-<td>varint</td>
-<td>1 байт</td>
+<td data-label="proto3"><code>bool</code></td>
+<td data-label="Java"><code>boolean</code></td>
+<td data-label="Кодирование">varint</td>
+<td data-label="Примечание">1 байт</td>
 </tr>
 <tr>
-<td><code>string</code></td>
-<td><code>String</code></td>
-<td>LEN</td>
-<td>обязан быть корректным UTF-8</td>
+<td data-label="proto3"><code>string</code></td>
+<td data-label="Java"><code>String</code></td>
+<td data-label="Кодирование">LEN</td>
+<td data-label="Примечание">обязан быть корректным UTF-8</td>
 </tr>
 <tr>
-<td><code>bytes</code></td>
-<td><code>ByteString</code></td>
-<td>LEN</td>
-<td>произвольные байты</td>
+<td data-label="proto3"><code>bytes</code></td>
+<td data-label="Java"><code>ByteString</code></td>
+<td data-label="Кодирование">LEN</td>
+<td data-label="Примечание">произвольные байты</td>
 </tr>
 </tbody>
 </table>
@@ -173,7 +173,7 @@
 <h3 id="22-wire-format">2.2 Wire format</h3>
 <p>Wire format — это правила, по которым сообщение protobuf превращается в байты на проводе. Разбираться в нём приходится не ради академического интереса: из формата напрямую следуют все правила эволюции схемы и добрая половина навыков отладки. Ниже разберём, как устроен тег, как кодируются целые числа и строки и какие практические следствия из этого вытекают.</p>
 <p>Сообщение protobuf состоит из последовательности пар «тег, значение». Тег кодируется как varint, и в нём зашиты номер поля и тип на проводе: <code>tag = (field_number &lt;&lt; 3) | wire_type</code> (<a href="https://protobuf.dev/programming-guides/encoding/">protobuf encoding</a>). Три младших бита отведены под wire type, а какие типы полей соответствуют каждому его значению, показывает таблица.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">wire type</th>
@@ -183,29 +183,29 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">0</td>
-<td>VARINT</td>
-<td><code>int32</code>, <code>int64</code>, <code>uint32</code>, <code>uint64</code>, <code>sint32</code>, <code>sint64</code>, <code>bool</code>, <code>enum</code></td>
+<td data-label="wire type" class="num">0</td>
+<td data-label="Имя">VARINT</td>
+<td data-label="Типы"><code>int32</code>, <code>int64</code>, <code>uint32</code>, <code>uint64</code>, <code>sint32</code>, <code>sint64</code>, <code>bool</code>, <code>enum</code></td>
 </tr>
 <tr>
-<td class="num">1</td>
-<td>I64</td>
-<td><code>fixed64</code>, <code>sfixed64</code>, <code>double</code></td>
+<td data-label="wire type" class="num">1</td>
+<td data-label="Имя">I64</td>
+<td data-label="Типы"><code>fixed64</code>, <code>sfixed64</code>, <code>double</code></td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td>LEN</td>
-<td><code>string</code>, <code>bytes</code>, вложенные сообщения, packed repeated</td>
+<td data-label="wire type" class="num">2</td>
+<td data-label="Имя">LEN</td>
+<td data-label="Типы"><code>string</code>, <code>bytes</code>, вложенные сообщения, packed repeated</td>
 </tr>
 <tr>
-<td class="num">3 / 4</td>
-<td>SGROUP / EGROUP</td>
-<td>группы, deprecated</td>
+<td data-label="wire type" class="num">3 / 4</td>
+<td data-label="Имя">SGROUP / EGROUP</td>
+<td data-label="Типы">группы, deprecated</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td>I32</td>
-<td><code>fixed32</code>, <code>sfixed32</code>, <code>float</code></td>
+<td data-label="wire type" class="num">5</td>
+<td data-label="Имя">I32</td>
+<td data-label="Типы"><code>fixed32</code>, <code>sfixed32</code>, <code>float</code></td>
 </tr>
 </tbody>
 </table>
@@ -354,7 +354,7 @@ proto3 без optional: amount = 0 и отсутствие поля дают 0 �
 <p>Цель <code>compile</code> генерирует классы сообщений, а <code>compile-custom</code> — gRPC-стабы, поэтому нужны обе. Плагин скачивает нативный <code>protoc</code> под вашу платформу, и чтобы определить нужный classifier, ему нужен <code>os-maven-plugin</code>.</p>
 <p>Документация Spring Boot 4.1 рекомендует более свежий <code>io.github.ascopes:protobuf-maven-plugin</code> (<a href="https://docs.spring.io/spring-boot/reference/io/grpc.html">Spring Boot gRPC</a>): он лучше поддерживает новые версии Maven и обходится без <code>os-maven-plugin</code>.</p>
 <p>Организационный вопрос, <strong>где живут <code>.proto</code></strong>, важнее технического, и вариантов у него три. Таблица сравнивает их по тому, насколько просто вносить изменения и чем за это расплачиваются потребители.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вариант</th>
@@ -364,19 +364,19 @@ proto3 без optional: amount = 0 и отсутствие поля дают 0 �
 </thead>
 <tbody>
 <tr>
-<td>В репозитории сервиса-владельца</td>
-<td>простота, атомарность изменений</td>
-<td>потребителям надо ссылаться на чужой репо; git submodule</td>
+<td data-label="Вариант">В репозитории сервиса-владельца</td>
+<td data-label="Плюсы">простота, атомарность изменений</td>
+<td data-label="Минусы">потребителям надо ссылаться на чужой репо; git submodule</td>
 </tr>
 <tr>
-<td>Отдельный репозиторий контрактов (schema registry)</td>
-<td>одно место правды, CI с breaking-check, версионирование</td>
-<td>ещё один репо и релизный цикл</td>
+<td data-label="Вариант">Отдельный репозиторий контрактов (schema registry)</td>
+<td data-label="Плюсы">одно место правды, CI с breaking-check, версионирование</td>
+<td data-label="Минусы">ещё один репо и релизный цикл</td>
 </tr>
 <tr>
-<td>Публикация сгенерированных артефактов в Nexus</td>
-<td>потребителю нужна только зависимость <code>payments-api:1.4.0</code></td>
-<td>генерация под одну версию grpc-java; версионный ад при разных версиях у потребителей</td>
+<td data-label="Вариант">Публикация сгенерированных артефактов в Nexus</td>
+<td data-label="Плюсы">потребителю нужна только зависимость <code>payments-api:1.4.0</code></td>
+<td data-label="Минусы">генерация под одну версию grpc-java; версионный ад при разных версиях у потребителей</td>
 </tr>
 </tbody>
 </table>
@@ -384,7 +384,7 @@ proto3 без optional: amount = 0 и отсутствие поля дают 0 �
 <h3 id="27-protobuf-без-grpc">2.7 Protobuf без gRPC</h3>
 <p>Protobuf — это формат данных, и транспортом для gRPC его роль не исчерпывается: его кладут в Kafka, в кэш и в любые другие места, где нужна компактная сериализация со схемой. Везде, куда он попадает, действуют те же правила совместимости, но меняется, кто оказывается «старым клиентом». Ниже разберём три случая: Kafka, где protobuf соперничает с Avro, кэш и обратную ситуацию — gRPC без protobuf.</p>
 <p><strong>В Kafka.</strong> Confluent Schema Registry поддерживает Protobuf наравне с Avro (<code>KafkaProtobufSerializer</code>), и проверки совместимости настраиваются так же; подробности разобраны в главе 29 (<code>29-kafka-internals.md</code>). Практическую разницу с Avro показывает таблица, и смотреть в ней стоит на строки про эволюцию и разрешение схем, потому что именно там форматы расходятся по существу.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -395,46 +395,46 @@ proto3 без optional: amount = 0 и отсутствие поля дают 0 �
 </thead>
 <tbody>
 <tr>
-<td>Схема на проводе</td>
-<td>нет (только schema id)</td>
-<td>нет (только schema id)</td>
-<td>нет схемы вообще</td>
+<td data-label="">Схема на проводе</td>
+<td data-label="Protobuf">нет (только schema id)</td>
+<td data-label="Avro">нет (только schema id)</td>
+<td data-label="JSON">нет схемы вообще</td>
 </tr>
 <tr>
-<td>Эволюция</td>
-<td>по номерам полей</td>
-<td>по именам + <code>default</code>/aliases</td>
-<td>никак</td>
+<td data-label="">Эволюция</td>
+<td data-label="Protobuf">по номерам полей</td>
+<td data-label="Avro">по именам + <code>default</code>/aliases</td>
+<td data-label="JSON">никак</td>
 </tr>
 <tr>
-<td>Удаление обязательного поля</td>
-<td>нет понятия обязательного</td>
-<td>требует <code>default</code> у читателя</td>
-<td>—</td>
+<td data-label="">Удаление обязательного поля</td>
+<td data-label="Protobuf">нет понятия обязательного</td>
+<td data-label="Avro">требует <code>default</code> у читателя</td>
+<td data-label="JSON">—</td>
 </tr>
 <tr>
-<td>Reader/writer schema resolution</td>
-<td>нет (парсер один)</td>
-<td>да, полноценная</td>
-<td>—</td>
+<td data-label="">Reader/writer schema resolution</td>
+<td data-label="Protobuf">нет (парсер один)</td>
+<td data-label="Avro">да, полноценная</td>
+<td data-label="JSON">—</td>
 </tr>
 <tr>
-<td>Размер</td>
-<td>~ равно Avro, чуть больше</td>
-<td>чуть компактнее (нет тегов)</td>
-<td>2.5–8× больше (см. 2.8)</td>
+<td data-label="">Размер</td>
+<td data-label="Protobuf">~ равно Avro, чуть больше</td>
+<td data-label="Avro">чуть компактнее (нет тегов)</td>
+<td data-label="JSON">2.5–8× больше (см. 2.8)</td>
 </tr>
 <tr>
-<td>Кодогенерация в Java</td>
-<td>отличная</td>
-<td>хорошая (SpecificRecord)</td>
-<td>не нужна</td>
+<td data-label="">Кодогенерация в Java</td>
+<td data-label="Protobuf">отличная</td>
+<td data-label="Avro">хорошая (SpecificRecord)</td>
+<td data-label="JSON">не нужна</td>
 </tr>
 <tr>
-<td>Экосистема вне JVM</td>
-<td>шире</td>
-<td>уже</td>
-<td>универсальна</td>
+<td data-label="">Экосистема вне JVM</td>
+<td data-label="Protobuf">шире</td>
+<td data-label="Avro">уже</td>
+<td data-label="JSON">универсальна</td>
 </tr>
 </tbody>
 </table>
@@ -453,7 +453,7 @@ proto3 без optional: amount = 0 и отсутствие поля дают 0 �
 </code></pre></div>
 
 <p>Теперь разложим его по байтам, считая тег по формуле <code>(field_number &lt;&lt; 3) | wire_type</code> (<a href="https://protobuf.dev/programming-guides/encoding/">protobuf encoding</a>). В таблице по каждому полю видно, сколько байтов уходит на тег, на длину и на само значение, и последняя колонка показывает, что служебные байты здесь почти ничего не стоят.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Поле</th>
@@ -467,67 +467,67 @@ proto3 без optional: amount = 0 и отсутствие поля дают 0 �
 </thead>
 <tbody>
 <tr>
-<td><code>id</code></td>
-<td class="num">1</td>
-<td>2 (LEN)</td>
-<td><code>0x0A</code> (1 б)</td>
-<td><code>0x0C</code> = 12 (1 б)</td>
-<td>12 б ASCII</td>
-<td class="num"><strong>14</strong></td>
+<td data-label="Поле"><code>id</code></td>
+<td data-label="№" class="num">1</td>
+<td data-label="wire type">2 (LEN)</td>
+<td data-label="Тег"><code>0x0A</code> (1 б)</td>
+<td data-label="Длина"><code>0x0C</code> = 12 (1 б)</td>
+<td data-label="Значение">12 б ASCII</td>
+<td data-label="Итого" class="num"><strong>14</strong></td>
 </tr>
 <tr>
-<td><code>debit_account</code></td>
-<td class="num">2</td>
-<td>2</td>
-<td><code>0x12</code> (1 б)</td>
-<td><code>0x14</code> = 20 (1 б)</td>
-<td>20 б</td>
-<td class="num"><strong>22</strong></td>
+<td data-label="Поле"><code>debit_account</code></td>
+<td data-label="№" class="num">2</td>
+<td data-label="wire type">2</td>
+<td data-label="Тег"><code>0x12</code> (1 б)</td>
+<td data-label="Длина"><code>0x14</code> = 20 (1 б)</td>
+<td data-label="Значение">20 б</td>
+<td data-label="Итого" class="num"><strong>22</strong></td>
 </tr>
 <tr>
-<td><code>credit_account</code></td>
-<td class="num">3</td>
-<td>2</td>
-<td><code>0x1A</code> (1 б)</td>
-<td><code>0x14</code> = 20 (1 б)</td>
-<td>20 б</td>
-<td class="num"><strong>22</strong></td>
+<td data-label="Поле"><code>credit_account</code></td>
+<td data-label="№" class="num">3</td>
+<td data-label="wire type">2</td>
+<td data-label="Тег"><code>0x1A</code> (1 б)</td>
+<td data-label="Длина"><code>0x14</code> = 20 (1 б)</td>
+<td data-label="Значение">20 б</td>
+<td data-label="Итого" class="num"><strong>22</strong></td>
 </tr>
 <tr>
-<td><code>amount</code></td>
-<td class="num">4</td>
-<td>2</td>
-<td><code>0x22</code> (1 б)</td>
-<td><code>0x08</code> = 8 (1 б)</td>
-<td>вложенное, 8 б</td>
-<td class="num"><strong>10</strong></td>
+<td data-label="Поле"><code>amount</code></td>
+<td data-label="№" class="num">4</td>
+<td data-label="wire type">2</td>
+<td data-label="Тег"><code>0x22</code> (1 б)</td>
+<td data-label="Длина"><code>0x08</code> = 8 (1 б)</td>
+<td data-label="Значение">вложенное, 8 б</td>
+<td data-label="Итого" class="num"><strong>10</strong></td>
 </tr>
 <tr>
-<td><code>status</code></td>
-<td class="num">5</td>
-<td>0 (VARINT)</td>
-<td><code>0x28</code> (1 б)</td>
-<td>—</td>
-<td><code>0x02</code> (1 б)</td>
-<td class="num"><strong>2</strong></td>
+<td data-label="Поле"><code>status</code></td>
+<td data-label="№" class="num">5</td>
+<td data-label="wire type">0 (VARINT)</td>
+<td data-label="Тег"><code>0x28</code> (1 б)</td>
+<td data-label="Длина">—</td>
+<td data-label="Значение"><code>0x02</code> (1 б)</td>
+<td data-label="Итого" class="num"><strong>2</strong></td>
 </tr>
 <tr>
-<td><code>created_at</code></td>
-<td class="num">6</td>
-<td>2</td>
-<td><code>0x32</code> (1 б)</td>
-<td><code>0x06</code> = 6 (1 б)</td>
-<td>вложенное, 6 б</td>
-<td class="num"><strong>8</strong></td>
+<td data-label="Поле"><code>created_at</code></td>
+<td data-label="№" class="num">6</td>
+<td data-label="wire type">2</td>
+<td data-label="Тег"><code>0x32</code> (1 б)</td>
+<td data-label="Длина"><code>0x06</code> = 6 (1 б)</td>
+<td data-label="Значение">вложенное, 6 б</td>
+<td data-label="Итого" class="num"><strong>8</strong></td>
 </tr>
 <tr>
-<td></td>
-<td class="num"></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td class="num"><strong>78</strong></td>
+<td data-label="Поле"></td>
+<td data-label="№" class="num"></td>
+<td data-label="wire type"></td>
+<td data-label="Тег"></td>
+<td data-label="Длина"></td>
+<td data-label="Значение"></td>
+<td data-label="Итого" class="num"><strong>78</strong></td>
 </tr>
 </tbody>
 </table>
@@ -566,7 +566,7 @@ proto3 без optional: amount = 0 и отсутствие поля дают 0 �
 <h3 id="29-эволюция-схемы-таблица-решений">2.9 Эволюция схемы: таблица решений</h3>
 <p>В разделе 2.3 правила эволюции изложены по порядку, а здесь та же информация собрана в таблицу, которую можно приложить к pull request-у. Главное в ней — разделение изменений на те, что <strong>ломаются громко</strong>, и те, что <strong>портят данные молча</strong>: вторые в разы опаснее, потому что не дают никакого сигнала. После таблицы разберём три нюанса, которые в правилах обычно теряются, и минимальную конфигурацию buf.</p>
 <p>Колонки таблицы показывают совместимость в обе стороны, а последняя колонка присваивает изменению класс опасности; строки с пометкой «молча портит» заслуживают самого пристального внимания.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Изменение</th>
@@ -577,124 +577,124 @@ proto3 без optional: amount = 0 и отсутствие поля дают 0 �
 </thead>
 <tbody>
 <tr>
-<td>Добавить поле с новым номером</td>
-<td>старый пропустит в unknown</td>
-<td>новый увидит default</td>
-<td>✅ безопасно</td>
+<td data-label="Изменение">Добавить поле с новым номером</td>
+<td data-label="Совместимость чтения нового старым">старый пропустит в unknown</td>
+<td data-label="Совместимость чтения старого новым">новый увидит default</td>
+<td data-label="Класс">✅ безопасно</td>
 </tr>
 <tr>
-<td>Удалить поле + <code>reserved</code></td>
-<td>—</td>
-<td>новый увидит default</td>
-<td>✅ безопасно</td>
+<td data-label="Изменение">Удалить поле + <code>reserved</code></td>
+<td data-label="Совместимость чтения нового старым">—</td>
+<td data-label="Совместимость чтения старого новым">новый увидит default</td>
+<td data-label="Класс">✅ безопасно</td>
 </tr>
 <tr>
-<td>Переименовать поле, номер тот же</td>
-<td>ок (имени нет на проводе)</td>
-<td>ок</td>
-<td>✅ wire-safe, ❌ source-breaking + ломает ProtoJSON</td>
+<td data-label="Изменение">Переименовать поле, номер тот же</td>
+<td data-label="Совместимость чтения нового старым">ок (имени нет на проводе)</td>
+<td data-label="Совместимость чтения старого новым">ок</td>
+<td data-label="Класс">✅ wire-safe, ❌ source-breaking + ломает ProtoJSON</td>
 </tr>
 <tr>
-<td>Добавить значение в enum</td>
-<td>старый получит <code>UNRECOGNIZED</code></td>
-<td>ок</td>
-<td>✅ безопасно (если есть <code>_UNSPECIFIED = 0</code>)</td>
+<td data-label="Изменение">Добавить значение в enum</td>
+<td data-label="Совместимость чтения нового старым">старый получит <code>UNRECOGNIZED</code></td>
+<td data-label="Совместимость чтения старого новым">ок</td>
+<td data-label="Класс">✅ безопасно (если есть <code>_UNSPECIFIED = 0</code>)</td>
 </tr>
 <tr>
-<td><code>int32</code> ↔ <code>int64</code> ↔ <code>uint64</code> ↔ <code>bool</code></td>
-<td>ок с усечением старших бит</td>
-<td>то же</td>
-<td>⚠️ <strong>молча портит</strong>: 300 в <code>int32</code> прочитанное как <code>bool</code> = <code>true</code>, а <code>int64</code> со значением 2^32 + 5, прочитанное как <code>int32</code>, даёт 5: число усекается до 32 бит, как при приведении типа в C++ (<a href="https://protobuf.dev/programming-guides/proto3/">proto3 guide</a>)</td>
+<td data-label="Изменение"><code>int32</code> ↔ <code>int64</code> ↔ <code>uint64</code> ↔ <code>bool</code></td>
+<td data-label="Совместимость чтения нового старым">ок с усечением старших бит</td>
+<td data-label="Совместимость чтения старого новым">то же</td>
+<td data-label="Класс">⚠️ <strong>молча портит</strong>: 300 в <code>int32</code> прочитанное как <code>bool</code> = <code>true</code>, а <code>int64</code> со значением 2^32 + 5, прочитанное как <code>int32</code>, даёт 5: число усекается до 32 бит, как при приведении типа в C++ (<a href="https://protobuf.dev/programming-guides/proto3/">proto3 guide</a>)</td>
 </tr>
 <tr>
-<td><code>sint32</code> ↔ <code>int32</code></td>
-<td>wire type тот же</td>
-<td>тот же</td>
-<td>🔴 <strong>молча портит</strong>: zigzag против дополнительного кода, −1 читается как 1</td>
+<td data-label="Изменение"><code>sint32</code> ↔ <code>int32</code></td>
+<td data-label="Совместимость чтения нового старым">wire type тот же</td>
+<td data-label="Совместимость чтения старого новым">тот же</td>
+<td data-label="Класс">🔴 <strong>молча портит</strong>: zigzag против дополнительного кода, −1 читается как 1</td>
 </tr>
 <tr>
-<td><code>string</code> ↔ <code>bytes</code></td>
-<td>ок, если корректный UTF-8</td>
-<td>ок</td>
-<td>⚠️ порвётся на некорректном UTF-8</td>
+<td data-label="Изменение"><code>string</code> ↔ <code>bytes</code></td>
+<td data-label="Совместимость чтения нового старым">ок, если корректный UTF-8</td>
+<td data-label="Совместимость чтения старого новым">ок</td>
+<td data-label="Класс">⚠️ порвётся на некорректном UTF-8</td>
 </tr>
 <tr>
-<td><code>string</code> → <code>int64</code></td>
-<td>ошибка парсинга</td>
-<td>ошибка</td>
-<td>🔴 ломает громко (wire type 2 → 0)</td>
+<td data-label="Изменение"><code>string</code> → <code>int64</code></td>
+<td data-label="Совместимость чтения нового старым">ошибка парсинга</td>
+<td data-label="Совместимость чтения старого новым">ошибка</td>
+<td data-label="Класс">🔴 ломает громко (wire type 2 → 0)</td>
 </tr>
 <tr>
-<td>Повторно использовать номер, wire type совпал</td>
-<td>ошибки нет</td>
-<td>ошибки нет</td>
-<td>🔴🔴 <strong>молча портит, худший случай в главе</strong></td>
+<td data-label="Изменение">Повторно использовать номер, wire type совпал</td>
+<td data-label="Совместимость чтения нового старым">ошибки нет</td>
+<td data-label="Совместимость чтения старого новым">ошибки нет</td>
+<td data-label="Класс">🔴🔴 <strong>молча портит, худший случай в главе</strong></td>
 </tr>
 <tr>
-<td>Повторно использовать номер, wire type другой</td>
-<td><code>InvalidProtocolBufferException</code></td>
-<td>то же</td>
-<td>🔴 ломает громко</td>
+<td data-label="Изменение">Повторно использовать номер, wire type другой</td>
+<td data-label="Совместимость чтения нового старым"><code>InvalidProtocolBufferException</code></td>
+<td data-label="Совместимость чтения старого новым">то же</td>
+<td data-label="Класс">🔴 ломает громко</td>
 </tr>
 <tr>
-<td>Изменить номер поля</td>
-<td>поле «исчезает»</td>
-<td>«исчезает»</td>
-<td>🔴 потеря данных без ошибки</td>
+<td data-label="Изменение">Изменить номер поля</td>
+<td data-label="Совместимость чтения нового старым">поле «исчезает»</td>
+<td data-label="Совместимость чтения старого новым">«исчезает»</td>
+<td data-label="Класс">🔴 потеря данных без ошибки</td>
 </tr>
 <tr>
-<td><code>singular</code> → <code>repeated</code> (скаляр)</td>
-<td>новый прочитает список из одного</td>
-<td>старый прочитает последнее</td>
-<td>⚠️ работает, но полагаться нельзя</td>
+<td data-label="Изменение"><code>singular</code> → <code>repeated</code> (скаляр)</td>
+<td data-label="Совместимость чтения нового старым">новый прочитает список из одного</td>
+<td data-label="Совместимость чтения старого новым">старый прочитает последнее</td>
+<td data-label="Класс">⚠️ работает, но полагаться нельзя</td>
 </tr>
 <tr>
-<td><code>singular</code> → <code>repeated</code> (message)</td>
-<td>—</td>
-<td>старый возьмёт <strong>склейку</strong> всех вхождений (merge!)</td>
-<td>⚠️ неожиданно: protobuf сливает повторные вхождения message-полей</td>
+<td data-label="Изменение"><code>singular</code> → <code>repeated</code> (message)</td>
+<td data-label="Совместимость чтения нового старым">—</td>
+<td data-label="Совместимость чтения старого новым">старый возьмёт <strong>склейку</strong> всех вхождений (merge!)</td>
+<td data-label="Класс">⚠️ неожиданно: protobuf сливает повторные вхождения message-полей</td>
 </tr>
 <tr>
-<td>Одиночное поле → <strong>новый</strong> <code>oneof</code> из одного члена</td>
-<td>ок</td>
-<td>ок</td>
-<td>✅ безопасно (<a href="https://protobuf.dev/programming-guides/proto3/">proto3 guide</a>)</td>
+<td data-label="Изменение">Одиночное поле → <strong>новый</strong> <code>oneof</code> из одного члена</td>
+<td data-label="Совместимость чтения нового старым">ок</td>
+<td data-label="Совместимость чтения старого новым">ок</td>
+<td data-label="Класс">✅ безопасно (<a href="https://protobuf.dev/programming-guides/proto3/">proto3 guide</a>)</td>
 </tr>
 <tr>
-<td>Одиночное поле → <strong>существующий</strong> <code>oneof</code></td>
-<td>ок на проводе</td>
-<td>🔴 на сериализации новый <strong>очистит</strong> другие члены oneof</td>
-<td>🔴 теряет данные</td>
+<td data-label="Изменение">Одиночное поле → <strong>существующий</strong> <code>oneof</code></td>
+<td data-label="Совместимость чтения нового старым">ок на проводе</td>
+<td data-label="Совместимость чтения старого новым">🔴 на сериализации новый <strong>очистит</strong> другие члены oneof</td>
+<td data-label="Класс">🔴 теряет данные</td>
 </tr>
 <tr>
-<td>Вынести поле из <code>oneof</code></td>
-<td>ок</td>
-<td>ок только если в oneof был один член</td>
-<td>⚠️</td>
+<td data-label="Изменение">Вынести поле из <code>oneof</code></td>
+<td data-label="Совместимость чтения нового старым">ок</td>
+<td data-label="Совместимость чтения старого новым">ок только если в oneof был один член</td>
+<td data-label="Класс">⚠️</td>
 </tr>
 <tr>
-<td>Добавить <strong>новое</strong> поле в существующий <code>oneof</code></td>
-<td>старый пропустит</td>
-<td>новый увидит «ничего не задано»</td>
-<td>✅ безопасно</td>
+<td data-label="Изменение">Добавить <strong>новое</strong> поле в существующий <code>oneof</code></td>
+<td data-label="Совместимость чтения нового старым">старый пропустит</td>
+<td data-label="Совместимость чтения старого новым">новый увидит «ничего не задано»</td>
+<td data-label="Класс">✅ безопасно</td>
 </tr>
 <tr>
-<td><code>optional</code> ↔ без модификатора (proto3)</td>
-<td>ок</td>
-<td>ок</td>
-<td>✅ wire-safe, меняет только <code>hasX()</code></td>
+<td data-label="Изменение"><code>optional</code> ↔ без модификатора (proto3)</td>
+<td data-label="Совместимость чтения нового старым">ок</td>
+<td data-label="Совместимость чтения старого новым">ок</td>
+<td data-label="Класс">✅ wire-safe, меняет только <code>hasX()</code></td>
 </tr>
 <tr>
-<td>Сменить <code>package</code> или имя <code>service</code></td>
-<td>—</td>
-<td>—</td>
-<td>🔴 меняется <code>:path</code>, все вызовы → <code>UNIMPLEMENTED</code></td>
+<td data-label="Изменение">Сменить <code>package</code> или имя <code>service</code></td>
+<td data-label="Совместимость чтения нового старым">—</td>
+<td data-label="Совместимость чтения старого новым">—</td>
+<td data-label="Класс">🔴 меняется <code>:path</code>, все вызовы → <code>UNIMPLEMENTED</code></td>
 </tr>
 <tr>
-<td>Переименовать <code>message</code></td>
-<td>ок</td>
-<td>ок</td>
-<td>✅ кроме <code>Any</code> (там имя в <code>type_url</code>)</td>
+<td data-label="Изменение">Переименовать <code>message</code></td>
+<td data-label="Совместимость чтения нового старым">ок</td>
+<td data-label="Совместимость чтения старого новым">ок</td>
+<td data-label="Класс">✅ кроме <code>Any</code> (там имя в <code>type_url</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -1099,7 +1099,7 @@ HTTP/1.1 (200 параллельных запросов):       различны
 <h3 id="43-основные-статус-коды">4.3 Основные статус-коды</h3>
 <p>Статус-код — это единственное, по чему клиент решает, что делать с неудачным вызовом: показать ошибку, повторить запрос или перечитать состояние. Статусов всего 17 (<a href="https://grpc.io/docs/guides/status-codes/">gRPC status codes</a>), и половина из них в реальной жизни не встречается, зато несколько пар легко спутать, а различать их — обязательный навык. Сначала приведём полную таблицу, а затем разберём пары, о которых спрашивают на интервью и на которых ошибаются в коде.</p>
 <p>В таблице для каждого кода указан номер и типичная ситуация; обратите внимание на пометки у <code>UNKNOWN</code>, <code>INVALID_ARGUMENT</code> и <code>OUT_OF_RANGE</code>, к ним мы вернёмся ниже.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Код</th>
@@ -1109,89 +1109,89 @@ HTTP/1.1 (200 параллельных запросов):       различны
 </thead>
 <tbody>
 <tr>
-<td><code>OK</code></td>
-<td class="num">0</td>
-<td>успех</td>
+<td data-label="Код"><code>OK</code></td>
+<td data-label="№" class="num">0</td>
+<td data-label="Когда">успех</td>
 </tr>
 <tr>
-<td><code>CANCELLED</code></td>
-<td class="num">1</td>
-<td>операция отменена (обычно клиентом)</td>
+<td data-label="Код"><code>CANCELLED</code></td>
+<td data-label="№" class="num">1</td>
+<td data-label="Когда">операция отменена (обычно клиентом)</td>
 </tr>
 <tr>
-<td><code>UNKNOWN</code></td>
-<td class="num">2</td>
-<td>необработанное исключение на сервере — <strong>сигнал бага</strong>, не норма</td>
+<td data-label="Код"><code>UNKNOWN</code></td>
+<td data-label="№" class="num">2</td>
+<td data-label="Когда">необработанное исключение на сервере — <strong>сигнал бага</strong>, не норма</td>
 </tr>
 <tr>
-<td><code>INVALID_ARGUMENT</code></td>
-<td class="num">3</td>
-<td>аргумент плох <strong>независимо от состояния системы</strong></td>
+<td data-label="Код"><code>INVALID_ARGUMENT</code></td>
+<td data-label="№" class="num">3</td>
+<td data-label="Когда">аргумент плох <strong>независимо от состояния системы</strong></td>
 </tr>
 <tr>
-<td><code>DEADLINE_EXCEEDED</code></td>
-<td class="num">4</td>
-<td>дедлайн истёк</td>
+<td data-label="Код"><code>DEADLINE_EXCEEDED</code></td>
+<td data-label="№" class="num">4</td>
+<td data-label="Когда">дедлайн истёк</td>
 </tr>
 <tr>
-<td><code>NOT_FOUND</code></td>
-<td class="num">5</td>
-<td>сущность не найдена</td>
+<td data-label="Код"><code>NOT_FOUND</code></td>
+<td data-label="№" class="num">5</td>
+<td data-label="Когда">сущность не найдена</td>
 </tr>
 <tr>
-<td><code>ALREADY_EXISTS</code></td>
-<td class="num">6</td>
-<td>конфликт создания</td>
+<td data-label="Код"><code>ALREADY_EXISTS</code></td>
+<td data-label="№" class="num">6</td>
+<td data-label="Когда">конфликт создания</td>
 </tr>
 <tr>
-<td><code>PERMISSION_DENIED</code></td>
-<td class="num">7</td>
-<td>аутентифицирован, но не авторизован</td>
+<td data-label="Код"><code>PERMISSION_DENIED</code></td>
+<td data-label="№" class="num">7</td>
+<td data-label="Когда">аутентифицирован, но не авторизован</td>
 </tr>
 <tr>
-<td><code>RESOURCE_EXHAUSTED</code></td>
-<td class="num">8</td>
-<td>квота, rate limit, слишком большое сообщение</td>
+<td data-label="Код"><code>RESOURCE_EXHAUSTED</code></td>
+<td data-label="№" class="num">8</td>
+<td data-label="Когда">квота, rate limit, слишком большое сообщение</td>
 </tr>
 <tr>
-<td><code>FAILED_PRECONDITION</code></td>
-<td class="num">9</td>
-<td>система не в том состоянии; повтор без изменения состояния бесполезен</td>
+<td data-label="Код"><code>FAILED_PRECONDITION</code></td>
+<td data-label="№" class="num">9</td>
+<td data-label="Когда">система не в том состоянии; повтор без изменения состояния бесполезен</td>
 </tr>
 <tr>
-<td><code>ABORTED</code></td>
-<td class="num">10</td>
-<td>конфликт concurrent-доступа (оптимистичная блокировка, transaction abort)</td>
+<td data-label="Код"><code>ABORTED</code></td>
+<td data-label="№" class="num">10</td>
+<td data-label="Когда">конфликт concurrent-доступа (оптимистичная блокировка, transaction abort)</td>
 </tr>
 <tr>
-<td><code>OUT_OF_RANGE</code></td>
-<td class="num">11</td>
-<td>вышли за корректный диапазон; <strong>состояние может измениться</strong></td>
+<td data-label="Код"><code>OUT_OF_RANGE</code></td>
+<td data-label="№" class="num">11</td>
+<td data-label="Когда">вышли за корректный диапазон; <strong>состояние может измениться</strong></td>
 </tr>
 <tr>
-<td><code>UNIMPLEMENTED</code></td>
-<td class="num">12</td>
-<td>метод не реализован/не существует</td>
+<td data-label="Код"><code>UNIMPLEMENTED</code></td>
+<td data-label="№" class="num">12</td>
+<td data-label="Когда">метод не реализован/не существует</td>
 </tr>
 <tr>
-<td><code>INTERNAL</code></td>
-<td class="num">13</td>
-<td>сломан инвариант, ошибка самого фреймворка/сериализации</td>
+<td data-label="Код"><code>INTERNAL</code></td>
+<td data-label="№" class="num">13</td>
+<td data-label="Когда">сломан инвариант, ошибка самого фреймворка/сериализации</td>
 </tr>
 <tr>
-<td><code>UNAVAILABLE</code></td>
-<td class="num">14</td>
-<td>сервис недоступен, временно</td>
+<td data-label="Код"><code>UNAVAILABLE</code></td>
+<td data-label="№" class="num">14</td>
+<td data-label="Когда">сервис недоступен, временно</td>
 </tr>
 <tr>
-<td><code>DATA_LOSS</code></td>
-<td class="num">15</td>
-<td>невосстановимая потеря данных</td>
+<td data-label="Код"><code>DATA_LOSS</code></td>
+<td data-label="№" class="num">15</td>
+<td data-label="Когда">невосстановимая потеря данных</td>
 </tr>
 <tr>
-<td><code>UNAUTHENTICATED</code></td>
-<td class="num">16</td>
-<td>нет или некорректны учётные данные</td>
+<td data-label="Код"><code>UNAUTHENTICATED</code></td>
+<td data-label="№" class="num">16</td>
+<td data-label="Когда">нет или некорректны учётные данные</td>
 </tr>
 </tbody>
 </table>
@@ -1243,7 +1243,7 @@ HTTP/1.1 (200 параллельных запросов):       различны
 <h3 id="45-статусы-допускающие-повтор">4.5 Статусы, допускающие повтор</h3>
 <p>Вопрос «какой статус возвращать» и вопрос «при каком статусе повторять запрос» — две стороны одного контракта между сервером и клиентом. Если сервер возвращает <code>UNKNOWN</code> там, где должен быть <code>UNAVAILABLE</code>, клиент не повторяет запрос, и пользователь видит ошибку. Если же сервер, наоборот, возвращает <code>UNAVAILABLE</code> вместо <code>FAILED_PRECONDITION</code>, клиент устраивает шторм повторов на заведомо безнадёжной операции. Ниже для каждого статуса сказано, когда его возвращать и можно ли его повторять, а после таблицы сформулированы три правила для код-ревью.</p>
 <p>Таблицу стоит читать по строкам: вторая колонка адресована автору сервера, третья и четвёртая — автору клиента.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Статус</th>
@@ -1254,100 +1254,100 @@ HTTP/1.1 (200 параллельных запросов):       различны
 </thead>
 <tbody>
 <tr>
-<td><code>CANCELLED</code></td>
-<td>не возвращать вручную; приходит сам</td>
-<td>❌</td>
-<td>клиент уже ушёл</td>
+<td data-label="Статус"><code>CANCELLED</code></td>
+<td data-label="Когда возвращать (сервер)">не возвращать вручную; приходит сам</td>
+<td data-label="Повтор">❌</td>
+<td data-label="Условие">клиент уже ушёл</td>
 </tr>
 <tr>
-<td><code>UNKNOWN</code></td>
-<td>никогда сознательно</td>
-<td>❌</td>
-<td>это ваш баг, повтор его не вылечит</td>
+<td data-label="Статус"><code>UNKNOWN</code></td>
+<td data-label="Когда возвращать (сервер)">никогда сознательно</td>
+<td data-label="Повтор">❌</td>
+<td data-label="Условие">это ваш баг, повтор его не вылечит</td>
 </tr>
 <tr>
-<td><code>INVALID_ARGUMENT</code></td>
-<td>валидация формата, пустой обязательный аргумент</td>
-<td>❌</td>
-<td>те же аргументы дадут то же</td>
+<td data-label="Статус"><code>INVALID_ARGUMENT</code></td>
+<td data-label="Когда возвращать (сервер)">валидация формата, пустой обязательный аргумент</td>
+<td data-label="Повтор">❌</td>
+<td data-label="Условие">те же аргументы дадут то же</td>
 </tr>
 <tr>
-<td><code>DEADLINE_EXCEEDED</code></td>
-<td>не возвращать вручную</td>
-<td>⚠️</td>
-<td><strong>только идемпотентные</strong>: операция могла выполниться</td>
+<td data-label="Статус"><code>DEADLINE_EXCEEDED</code></td>
+<td data-label="Когда возвращать (сервер)">не возвращать вручную</td>
+<td data-label="Повтор">⚠️</td>
+<td data-label="Условие"><strong>только идемпотентные</strong>: операция могла выполниться</td>
 </tr>
 <tr>
-<td><code>NOT_FOUND</code></td>
-<td>сущности нет</td>
-<td>⚠️</td>
-<td>обычно нет; да — если это read-after-write через реплику с лагом</td>
+<td data-label="Статус"><code>NOT_FOUND</code></td>
+<td data-label="Когда возвращать (сервер)">сущности нет</td>
+<td data-label="Повтор">⚠️</td>
+<td data-label="Условие">обычно нет; да — если это read-after-write через реплику с лагом</td>
 </tr>
 <tr>
-<td><code>ALREADY_EXISTS</code></td>
-<td>повторное создание с тем же ключом</td>
-<td>❌</td>
-<td>но это <strong>успех</strong> для идемпотентного клиента: обработать как «уже создано»</td>
+<td data-label="Статус"><code>ALREADY_EXISTS</code></td>
+<td data-label="Когда возвращать (сервер)">повторное создание с тем же ключом</td>
+<td data-label="Повтор">❌</td>
+<td data-label="Условие">но это <strong>успех</strong> для идемпотентного клиента: обработать как «уже создано»</td>
 </tr>
 <tr>
-<td><code>PERMISSION_DENIED</code></td>
-<td>авторизация не прошла</td>
-<td>❌</td>
-<td></td>
+<td data-label="Статус"><code>PERMISSION_DENIED</code></td>
+<td data-label="Когда возвращать (сервер)">авторизация не прошла</td>
+<td data-label="Повтор">❌</td>
+<td data-label="Условие"></td>
 </tr>
 <tr>
-<td><code>RESOURCE_EXHAUSTED</code></td>
-<td>rate limit, квота, превышен размер сообщения</td>
-<td>⚠️</td>
-<td><strong>с backoff и уважением <code>RetryInfo</code></strong>; при превышении размера — никогда</td>
+<td data-label="Статус"><code>RESOURCE_EXHAUSTED</code></td>
+<td data-label="Когда возвращать (сервер)">rate limit, квота, превышен размер сообщения</td>
+<td data-label="Повтор">⚠️</td>
+<td data-label="Условие"><strong>с backoff и уважением <code>RetryInfo</code></strong>; при превышении размера — никогда</td>
 </tr>
 <tr>
-<td><code>FAILED_PRECONDITION</code></td>
-<td>состояние системы не позволяет</td>
-<td>❌</td>
-<td>до изменения состояния</td>
+<td data-label="Статус"><code>FAILED_PRECONDITION</code></td>
+<td data-label="Когда возвращать (сервер)">состояние системы не позволяет</td>
+<td data-label="Повтор">❌</td>
+<td data-label="Условие">до изменения состояния</td>
 </tr>
 <tr>
-<td><code>ABORTED</code></td>
-<td>конфликт оптимистичной блокировки, serialization failure</td>
-<td>✅</td>
-<td>на уровне бизнес-транзакции: перечитать, повторить</td>
+<td data-label="Статус"><code>ABORTED</code></td>
+<td data-label="Когда возвращать (сервер)">конфликт оптимистичной блокировки, serialization failure</td>
+<td data-label="Повтор">✅</td>
+<td data-label="Условие">на уровне бизнес-транзакции: перечитать, повторить</td>
 </tr>
 <tr>
-<td><code>OUT_OF_RANGE</code></td>
-<td>вышли за границу, которая может сдвинуться</td>
-<td>⚠️</td>
-<td>позже — может сработать</td>
+<td data-label="Статус"><code>OUT_OF_RANGE</code></td>
+<td data-label="Когда возвращать (сервер)">вышли за границу, которая может сдвинуться</td>
+<td data-label="Повтор">⚠️</td>
+<td data-label="Условие">позже — может сработать</td>
 </tr>
 <tr>
-<td><code>UNIMPLEMENTED</code></td>
-<td>метода нет, кодек не поддержан</td>
-<td>❌</td>
-<td>сигнал рассинхрона версий или сжатия (см. 3.6)</td>
+<td data-label="Статус"><code>UNIMPLEMENTED</code></td>
+<td data-label="Когда возвращать (сервер)">метода нет, кодек не поддержан</td>
+<td data-label="Повтор">❌</td>
+<td data-label="Условие">сигнал рассинхрона версий или сжатия (см. 3.6)</td>
 </tr>
 <tr>
-<td><code>INTERNAL</code></td>
-<td>сломан инвариант, ошибка сериализации</td>
-<td>❌</td>
-<td></td>
+<td data-label="Статус"><code>INTERNAL</code></td>
+<td data-label="Когда возвращать (сервер)">сломан инвариант, ошибка сериализации</td>
+<td data-label="Повтор">❌</td>
+<td data-label="Условие"></td>
 </tr>
 <tr>
-<td><code>UNAVAILABLE</code></td>
-<td>сервис не готов, дренаж, нет соединения</td>
-<td>✅</td>
-<td>канонический статус для повтора</td>
+<td data-label="Статус"><code>UNAVAILABLE</code></td>
+<td data-label="Когда возвращать (сервер)">сервис не готов, дренаж, нет соединения</td>
+<td data-label="Повтор">✅</td>
+<td data-label="Условие">канонический статус для повтора</td>
 </tr>
 <tr>
-<td><code>DATA_LOSS</code></td>
-<td>невосстановимая потеря</td>
-<td>❌</td>
-<td>эскалация человеку</td>
+<td data-label="Статус"><code>DATA_LOSS</code></td>
+<td data-label="Когда возвращать (сервер)">невосстановимая потеря</td>
+<td data-label="Повтор">❌</td>
+<td data-label="Условие">эскалация человеку</td>
 </tr>
 <tr>
-<td><code>UNAUTHENTICATED</code></td>
-<td>нет/некорректный токен</td>
-<td>⚠️</td>
-<td>один раз после обновления токена, не в цикле</td>
+<td data-label="Статус"><code>UNAUTHENTICATED</code></td>
+<td data-label="Когда возвращать (сервер)">нет/некорректный токен</td>
+<td data-label="Повтор">⚠️</td>
+<td data-label="Условие">один раз после обновления токена, не в цикле</td>
 </tr>
 </tbody>
 </table>
@@ -1722,7 +1722,7 @@ java -Djava.util.logging.config.file<span class="o">=</span>logging.properties -
 <h3 id="61-grpc-java">6.1 grpc-java</h3>
 <p>grpc-java — эталонная реализация gRPC для JVM, на которой построены и Spring-стартеры, и любые самописные обёртки. Выбирать при подключении приходится две вещи: набор модулей, прежде всего транспорт, и executor, на котором выполняются обработчики, и ниже разобрано и то и другое.</p>
 <p>Текущая версия — <strong>1.84.0</strong>, она требует Java 8+ (<a href="https://github.com/grpc/grpc-java">grpc-java</a>). В таблице перечислены модули, которые реально нужны, и главное в ней — выбор между тремя транспортами:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Артефакт</th>
@@ -1731,36 +1731,36 @@ java -Djava.util.logging.config.file<span class="o">=</span>logging.properties -
 </thead>
 <tbody>
 <tr>
-<td><code>grpc-protobuf</code></td>
-<td>маршаллинг protobuf</td>
+<td data-label="Артефакт"><code>grpc-protobuf</code></td>
+<td data-label="Назначение">маршаллинг protobuf</td>
 </tr>
 <tr>
-<td><code>grpc-stub</code></td>
-<td>базовые классы стабов</td>
+<td data-label="Артефакт"><code>grpc-stub</code></td>
+<td data-label="Назначение">базовые классы стабов</td>
 </tr>
 <tr>
-<td><code>grpc-netty-shaded</code></td>
-<td>транспорт с зашейденным Netty — <strong>выбор по умолчанию для чистого grpc-java</strong>: README проекта рекомендует его вместо <code>grpc-netty</code> (стартеры Spring Boot 4.1, наоборот, тянут <code>grpc-netty</code>, см. 6.5)</td>
+<td data-label="Артефакт"><code>grpc-netty-shaded</code></td>
+<td data-label="Назначение">транспорт с зашейденным Netty — <strong>выбор по умолчанию для чистого grpc-java</strong>: README проекта рекомендует его вместо <code>grpc-netty</code> (стартеры Spring Boot 4.1, наоборот, тянут <code>grpc-netty</code>, см. 6.5)</td>
 </tr>
 <tr>
-<td><code>grpc-netty</code></td>
-<td>вариант без shading, если вы и так управляете версией Netty</td>
+<td data-label="Артефакт"><code>grpc-netty</code></td>
+<td data-label="Назначение">вариант без shading, если вы и так управляете версией Netty</td>
 </tr>
 <tr>
-<td><code>grpc-okhttp</code></td>
-<td>лёгкий клиентский транспорт (Android, маленькие клиенты)</td>
+<td data-label="Артефакт"><code>grpc-okhttp</code></td>
+<td data-label="Назначение">лёгкий клиентский транспорт (Android, маленькие клиенты)</td>
 </tr>
 <tr>
-<td><code>grpc-services</code></td>
-<td>health, reflection, channelz</td>
+<td data-label="Артефакт"><code>grpc-services</code></td>
+<td data-label="Назначение">health, reflection, channelz</td>
 </tr>
 <tr>
-<td><code>grpc-inprocess</code></td>
-<td>in-process транспорт для тестов</td>
+<td data-label="Артефакт"><code>grpc-inprocess</code></td>
+<td data-label="Назначение">in-process транспорт для тестов</td>
 </tr>
 <tr>
-<td><code>grpc-testing</code></td>
-<td><code>GrpcCleanupRule</code> (правило JUnit 4) и утилиты</td>
+<td data-label="Артефакт"><code>grpc-testing</code></td>
+<td data-label="Назначение"><code>GrpcCleanupRule</code> (правило JUnit 4) и утилиты</td>
 </tr>
 </tbody>
 </table>
@@ -1776,7 +1776,7 @@ java -Djava.util.logging.config.file<span class="o">=</span>logging.properties -
 <h3 id="62-spring-boot-официальная-поддержка-с-41">6.2 Spring Boot: официальная поддержка с 4.1</h3>
 <p>До недавнего времени gRPC в Spring-проектах подключали через community-стартер <code>net.devh:grpc-spring-boot-starter</code>, а своей поддержки у Boot не было. Начиная со <strong>Spring Boot 4.1</strong> автоконфигурация проекта Spring gRPC переехала в сам Boot, и gRPC стал штатной технологией фреймворка (<a href="https://docs.spring.io/spring-boot/reference/io/grpc.html">Spring Boot reference, gRPC</a> — документация версии 4.1.1). Ниже перечислены стартеры, показаны сервер и клиент и сказано, что делать тем, кто пока на Boot 3.x.</p>
 <p>Стартеры теперь входят в сам Boot:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Артефакт</th>
@@ -1785,20 +1785,20 @@ java -Djava.util.logging.config.file<span class="o">=</span>logging.properties -
 </thead>
 <tbody>
 <tr>
-<td><code>org.springframework.boot:spring-boot-starter-grpc-server</code></td>
-<td>сервер</td>
+<td data-label="Артефакт"><code>org.springframework.boot:spring-boot-starter-grpc-server</code></td>
+<td data-label="Назначение">сервер</td>
 </tr>
 <tr>
-<td><code>org.springframework.boot:spring-boot-starter-grpc-client</code></td>
-<td>клиент</td>
+<td data-label="Артефакт"><code>org.springframework.boot:spring-boot-starter-grpc-client</code></td>
+<td data-label="Назначение">клиент</td>
 </tr>
 <tr>
-<td><code>org.springframework.boot:spring-boot-starter-grpc-server-test</code></td>
-<td>тесты сервера</td>
+<td data-label="Артефакт"><code>org.springframework.boot:spring-boot-starter-grpc-server-test</code></td>
+<td data-label="Назначение">тесты сервера</td>
 </tr>
 <tr>
-<td><code>org.springframework.boot:spring-boot-starter-grpc-client-test</code></td>
-<td>тесты клиента</td>
+<td data-label="Артефакт"><code>org.springframework.boot:spring-boot-starter-grpc-client-test</code></td>
+<td data-label="Назначение">тесты клиента</td>
 </tr>
 </tbody>
 </table>
@@ -2011,7 +2011,7 @@ grpcurl -plaintext localhost:9090 grpc.health.v1.Health/Check
 <h3 id="66-миграция-с-netdevh-на-стартеры-boot-41">6.6 Миграция с <code>net.devh</code> на стартеры Boot 4.1</h3>
 <p>Community-стартер <code>net.devh:grpc-spring-boot-starter</code> много лет был стандартом де-факто, и в большинстве живых проектов сейчас стоит именно он. Переход на стартеры Boot 4.1 не сводится к замене зависимости, потому что меняются имена аннотаций и свойств и модель обработки ошибок, а часть аннотаций сохраняет имя, но меняет пакет. Ниже приведена таблица соответствий, порядок миграции, который не ломает прод, и грабли с двумя серверами.</p>
 <p>Самую коварную строку таблицы легко пропустить: это <code>@GrpcService</code>, у которого совпадает имя, но различается пакет.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Было (<code>net.devh</code>)</th>
@@ -2021,54 +2021,54 @@ grpcurl -plaintext localhost:9090 grpc.health.v1.Health/Check
 </thead>
 <tbody>
 <tr>
-<td><code>net.devh:grpc-server-spring-boot-starter</code></td>
-<td><code>org.springframework.boot:spring-boot-starter-grpc-server</code></td>
-<td>версия управляется Boot BOM</td>
+<td data-label="Было (net.devh)"><code>net.devh:grpc-server-spring-boot-starter</code></td>
+<td data-label="Стало (Spring Boot 4.1)"><code>org.springframework.boot:spring-boot-starter-grpc-server</code></td>
+<td data-label="Замечание">версия управляется Boot BOM</td>
 </tr>
 <tr>
-<td><code>net.devh:grpc-client-spring-boot-starter</code></td>
-<td><code>org.springframework.boot:spring-boot-starter-grpc-client</code></td>
-<td></td>
+<td data-label="Было (net.devh)"><code>net.devh:grpc-client-spring-boot-starter</code></td>
+<td data-label="Стало (Spring Boot 4.1)"><code>org.springframework.boot:spring-boot-starter-grpc-client</code></td>
+<td data-label="Замечание"></td>
 </tr>
 <tr>
-<td><code>@GrpcService</code> (<code>net.devh.boot.grpc.server.service</code>)</td>
-<td><code>@GrpcService</code> (Spring)</td>
-<td><strong>имя совпадает, пакет другой</strong> — самая коварная часть: IDE подставит не тот импорт, и бин просто не зарегистрируется</td>
+<td data-label="Было (net.devh)"><code>@GrpcService</code> (<code>net.devh.boot.grpc.server.service</code>)</td>
+<td data-label="Стало (Spring Boot 4.1)"><code>@GrpcService</code> (Spring)</td>
+<td data-label="Замечание"><strong>имя совпадает, пакет другой</strong> — самая коварная часть: IDE подставит не тот импорт, и бин просто не зарегистрируется</td>
 </tr>
 <tr>
-<td><code>@GrpcClient("payments")</code> на поле</td>
-<td><code>@ImportGrpcClients(target = "payments", types = ...)</code> на конфигурации</td>
-<td>модель изменилась: не инъекция по аннотации на поле, а импорт бинов-стабов</td>
+<td data-label="Было (net.devh)"><code>@GrpcClient("payments")</code> на поле</td>
+<td data-label="Стало (Spring Boot 4.1)"><code>@ImportGrpcClients(target = "payments", types = ...)</code> на конфигурации</td>
+<td data-label="Замечание">модель изменилась: не инъекция по аннотации на поле, а импорт бинов-стабов</td>
 </tr>
 <tr>
-<td><code>grpc.server.port</code></td>
-<td><code>spring.grpc.server.port</code></td>
-<td>префикс <code>spring.</code></td>
+<td data-label="Было (net.devh)"><code>grpc.server.port</code></td>
+<td data-label="Стало (Spring Boot 4.1)"><code>spring.grpc.server.port</code></td>
+<td data-label="Замечание">префикс <code>spring.</code></td>
 </tr>
 <tr>
-<td><code>grpc.client.payments.address=static://...</code></td>
-<td><code>spring.grpc.client.channel.payments.target=static://...</code></td>
-<td><code>address</code> → <code>target</code></td>
+<td data-label="Было (net.devh)"><code>grpc.client.payments.address=static://...</code></td>
+<td data-label="Стало (Spring Boot 4.1)"><code>spring.grpc.client.channel.payments.target=static://...</code></td>
+<td data-label="Замечание"><code>address</code> → <code>target</code></td>
 </tr>
 <tr>
-<td><code>grpc.client.payments.negotiationType</code></td>
-<td><code>spring.grpc.client.channel.payments.ssl.enabled</code> / <code>ssl.bundle</code></td>
-<td>отдельного <code>negotiation-type</code> нет</td>
+<td data-label="Было (net.devh)"><code>grpc.client.payments.negotiationType</code></td>
+<td data-label="Стало (Spring Boot 4.1)"><code>spring.grpc.client.channel.payments.ssl.enabled</code> / <code>ssl.bundle</code></td>
+<td data-label="Замечание">отдельного <code>negotiation-type</code> нет</td>
 </tr>
 <tr>
-<td><code>@GrpcGlobalServerInterceptor</code></td>
-<td><code>@Bean</code> типа <code>ServerInterceptor</code> с <code>@GlobalServerInterceptor</code> + <code>@Order</code></td>
-<td>порядок теперь через <code>Ordered</code></td>
+<td data-label="Было (net.devh)"><code>@GrpcGlobalServerInterceptor</code></td>
+<td data-label="Стало (Spring Boot 4.1)"><code>@Bean</code> типа <code>ServerInterceptor</code> с <code>@GlobalServerInterceptor</code> + <code>@Order</code></td>
+<td data-label="Замечание">порядок теперь через <code>Ordered</code></td>
 </tr>
 <tr>
-<td><code>@GrpcAdvice</code> + <code>@GrpcExceptionHandler</code> (<code>net.devh</code>)</td>
-<td><code>@GrpcAdvice</code> + <code>@GrpcExceptionHandler</code> из <code>org.springframework.grpc.server.advice</code> либо бины <code>GrpcExceptionHandler</code></td>
-<td>имена снова совпадают, пакет другой, как у <code>@GrpcService</code></td>
+<td data-label="Было (net.devh)"><code>@GrpcAdvice</code> + <code>@GrpcExceptionHandler</code> (<code>net.devh</code>)</td>
+<td data-label="Стало (Spring Boot 4.1)"><code>@GrpcAdvice</code> + <code>@GrpcExceptionHandler</code> из <code>org.springframework.grpc.server.advice</code> либо бины <code>GrpcExceptionHandler</code></td>
+<td data-label="Замечание">имена снова совпадают, пакет другой, как у <code>@GrpcService</code></td>
 </tr>
 <tr>
-<td><code>grpc.server.security.*</code></td>
-<td>Spring Security с <code>GrpcRequest</code>-матчером</td>
-<td>унифицировано с остальным Boot</td>
+<td data-label="Было (net.devh)"><code>grpc.server.security.*</code></td>
+<td data-label="Стало (Spring Boot 4.1)">Spring Security с <code>GrpcRequest</code>-матчером</td>
+<td data-label="Замечание">унифицировано с остальным Boot</td>
 </tr>
 </tbody>
 </table>
@@ -2194,7 +2194,7 @@ id — объект                    -&gt; 200 | {"jsonrpc":"2.0","error":{"co
 <p>Длинный опрос (<em>long polling</em>) исправляет пустые ответы: сервер держит запрос открытым, пока не появится новость или не истечёт тайм-аут, и только тогда отвечает, после чего клиент сразу шлёт следующий запрос. Задержка становится почти нулевой, но у приёма остаются свои слабости. Сервер должен помнить, кто ждёт, хотя HTTP-серверы обычно не хранят состояние, и при балансировке по кругу новость может прийти на узел, у которого нет открытого запроса нужного клиента. Кроме того, сервер плохо видит, что клиент отключился, а у неактивного пользователя соединения истекают и переоткрываются впустую.<sup id="fnref2:s28-ws-1"><a class="footnote-ref" href="#fn:s28-ws-1">12</a></sup></p>
 <p>Server-Sent Events (SSE) — стандартный для браузеров способ получать поток событий от сервера по одному долгому ответу HTTP с типом <code>text/event-stream</code>. Каждое событие несёт текст, имя и необязательный идентификатор, и при обрыве браузер сам переподключается, передавая в заголовке <code>Last-Event-ID</code> номер последнего полученного события. SSE хорош тем, что остаётся обычным HTTP, но поток в нём однонаправленный: всё, что клиент хочет сказать серверу, идёт отдельными запросами.<sup id="fnref:s28-ws-2"><a class="footnote-ref" href="#fn:s28-ws-2">13</a></sup></p>
 <p>WebSocket снимает это ограничение. Соединение открывает клиент, затем оно становится двунаправленным и постоянным, и сервер может отправлять сообщения когда угодно, а клиент — отвечать по тому же соединению. На каждое сообщение уходит несколько байт заголовка кадра вместо заголовков HTTP, поэтому протокол выдерживает и частые мелкие сообщения.<sup id="fnref3:s28-ws-1"><a class="footnote-ref" href="#fn:s28-ws-1">12</a></sup><sup id="fnref:s28-ws-3"><a class="footnote-ref" href="#fn:s28-ws-3">14</a></sup> Сравнение четырёх способов удобно держать в одной таблице:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -2206,32 +2206,32 @@ id — объект                    -&gt; 200 | {"jsonrpc":"2.0","error":{"co
 </thead>
 <tbody>
 <tr>
-<td>Опрос</td>
-<td>клиент → сервер</td>
-<td>до периода опроса</td>
-<td>ничего</td>
-<td>пустые ответы, нагрузка растёт с частотой</td>
+<td data-label="Способ">Опрос</td>
+<td data-label="Направление">клиент → сервер</td>
+<td data-label="Задержка доставки">до периода опроса</td>
+<td data-label="Что держит сервер">ничего</td>
+<td data-label="Подводные камни">пустые ответы, нагрузка растёт с частотой</td>
 </tr>
 <tr>
-<td>Длинный опрос</td>
-<td>сервер → клиент через ответ</td>
-<td>почти нулевая</td>
-<td>ждущие запросы</td>
-<td>переоткрытие по тайм-ауту, узел без нужного запроса</td>
+<td data-label="Способ">Длинный опрос</td>
+<td data-label="Направление">сервер → клиент через ответ</td>
+<td data-label="Задержка доставки">почти нулевая</td>
+<td data-label="Что держит сервер">ждущие запросы</td>
+<td data-label="Подводные камни">переоткрытие по тайм-ауту, узел без нужного запроса</td>
 </tr>
 <tr>
-<td>SSE</td>
-<td>сервер → клиент</td>
-<td>почти нулевая</td>
-<td>открытые ответы</td>
-<td>только текст, только от сервера, лимит соединений HTTP/1.1 в браузере</td>
+<td data-label="Способ">SSE</td>
+<td data-label="Направление">сервер → клиент</td>
+<td data-label="Задержка доставки">почти нулевая</td>
+<td data-label="Что держит сервер">открытые ответы</td>
+<td data-label="Подводные камни">только текст, только от сервера, лимит соединений HTTP/1.1 в браузере</td>
 </tr>
 <tr>
-<td>WebSocket</td>
-<td>обе стороны</td>
-<td>почти нулевая</td>
-<td>открытые сессии</td>
-<td>своё состояние на сервере, прокси и тайм-ауты простоя, переподключение</td>
+<td data-label="Способ">WebSocket</td>
+<td data-label="Направление">обе стороны</td>
+<td data-label="Задержка доставки">почти нулевая</td>
+<td data-label="Что держит сервер">открытые сессии</td>
+<td data-label="Подводные камни">своё состояние на сервере, прокси и тайм-ауты простоя, переподключение</td>
 </tr>
 </tbody>
 </table>
@@ -2271,7 +2271,7 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
 </code></pre></div>
 
 <p>Коды операций определяют вид кадра: 1 — текст в UTF-8, 2 — двоичные данные, 0 — продолжение фрагментированного сообщения, 8 — закрытие, 9 — ping, 10 — pong. Последние три называются управляющими кадрами: их данные не длиннее 125 байт, они не фрагментируются и могут вклиниться между кусками большого сообщения. Закрытие несёт двухбайтный код и необязательную причину текстом. Коды, которые встречаются на практике, собраны в таблице:<sup id="fnref4:s28-ws-4"><a class="footnote-ref" href="#fn:s28-ws-4">15</a></sup><sup id="fnref:s28-ws-5"><a class="footnote-ref" href="#fn:s28-ws-5">16</a></sup></p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Код</th>
@@ -2281,44 +2281,44 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
 </thead>
 <tbody>
 <tr>
-<td class="num">1000</td>
-<td>нормальное закрытие</td>
-<td>клиент или сервер закончил работу</td>
+<td data-label="Код" class="num">1000</td>
+<td data-label="Значение">нормальное закрытие</td>
+<td data-label="Когда встречается">клиент или сервер закончил работу</td>
 </tr>
 <tr>
-<td class="num">1001</td>
-<td>уход</td>
-<td>сервер останавливается, вкладка закрывается, истёк тайм-аут простоя</td>
+<td data-label="Код" class="num">1001</td>
+<td data-label="Значение">уход</td>
+<td data-label="Когда встречается">сервер останавливается, вкладка закрывается, истёк тайм-аут простоя</td>
 </tr>
 <tr>
-<td class="num">1002</td>
-<td>ошибка протокола</td>
-<td>кадр без маски, неверный формат</td>
+<td data-label="Код" class="num">1002</td>
+<td data-label="Значение">ошибка протокола</td>
+<td data-label="Когда встречается">кадр без маски, неверный формат</td>
 </tr>
 <tr>
-<td class="num">1006</td>
-<td>ненормальное закрытие</td>
-<td>соединение оборвалось без кадра закрытия; <strong>по сети никогда не передаётся</strong></td>
+<td data-label="Код" class="num">1006</td>
+<td data-label="Значение">ненормальное закрытие</td>
+<td data-label="Когда встречается">соединение оборвалось без кадра закрытия; <strong>по сети никогда не передаётся</strong></td>
 </tr>
 <tr>
-<td class="num">1008</td>
-<td>нарушение политики</td>
-<td>не прошёл проверку прав, неверный источник</td>
+<td data-label="Код" class="num">1008</td>
+<td data-label="Значение">нарушение политики</td>
+<td data-label="Когда встречается">не прошёл проверку прав, неверный источник</td>
 </tr>
 <tr>
-<td class="num">1009</td>
-<td>слишком большое сообщение</td>
-<td>превышен лимит размера</td>
+<td data-label="Код" class="num">1009</td>
+<td data-label="Значение">слишком большое сообщение</td>
+<td data-label="Когда встречается">превышен лимит размера</td>
 </tr>
 <tr>
-<td class="num">1011</td>
-<td>внутренняя ошибка сервера</td>
-<td>исключение в обработчике</td>
+<td data-label="Код" class="num">1011</td>
+<td data-label="Значение">внутренняя ошибка сервера</td>
+<td data-label="Когда встречается">исключение в обработчике</td>
 </tr>
 <tr>
-<td class="num">1013</td>
-<td>попробуйте позже</td>
-<td>сервер перегружен или отключает отстающего клиента</td>
+<td data-label="Код" class="num">1013</td>
+<td data-label="Значение">попробуйте позже</td>
+<td data-label="Когда встречается">сервер перегружен или отключает отстающего клиента</td>
 </tr>
 </tbody>
 </table>
@@ -2805,7 +2805,7 @@ StAX: 1000000 вагонов, 64625000.000 т, 810 мс, занято кучи 1
 <h3 id="112-wsdl-как-контракт">11.2 WSDL как контракт</h3>
 <p>WSDL описывает SOAP-сервис целиком, от схемы сообщений до адреса эндпоинта, и из него генерируется код обеих сторон. Сила этого контракта в XSD-схемах, которые позволяют проверить формат счёта или точность суммы ещё до того, как сообщение дойдёт до вашего кода. Ниже разобраны пять уровней WSDL 1.1, стиль, который встречается на практике, и то, что XSD умеет выразить лучше конкурентов.</p>
 <p>WSDL 1.1 описывает сервис пятью уровнями абстракции, которые идут от данных к сети, и таблица показывает, за что отвечает каждый из них:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Элемент</th>
@@ -2814,24 +2814,24 @@ StAX: 1000000 вагонов, 64625000.000 т, 810 мс, занято кучи 1
 </thead>
 <tbody>
 <tr>
-<td><code>types</code></td>
-<td>XSD-схемы всех сообщений — строгая типизация с ограничениями (<code>pattern</code>, <code>minInclusive</code>, <code>maxLength</code>, <code>enumeration</code>)</td>
+<td data-label="Элемент"><code>types</code></td>
+<td data-label="Что описывает">XSD-схемы всех сообщений — строгая типизация с ограничениями (<code>pattern</code>, <code>minInclusive</code>, <code>maxLength</code>, <code>enumeration</code>)</td>
 </tr>
 <tr>
-<td><code>message</code></td>
-<td>логическое сообщение как набор частей</td>
+<td data-label="Элемент"><code>message</code></td>
+<td data-label="Что описывает">логическое сообщение как набор частей</td>
 </tr>
 <tr>
-<td><code>portType</code></td>
-<td>абстрактный интерфейс: набор <code>operation</code> с input/output/fault</td>
+<td data-label="Элемент"><code>portType</code></td>
+<td data-label="Что описывает">абстрактный интерфейс: набор <code>operation</code> с input/output/fault</td>
 </tr>
 <tr>
-<td><code>binding</code></td>
-<td>как <code>portType</code> кладётся на протокол: SOAP 1.1/1.2, style <code>document</code>/<code>rpc</code>, use <code>literal</code>/<code>encoded</code></td>
+<td data-label="Элемент"><code>binding</code></td>
+<td data-label="Что описывает">как <code>portType</code> кладётся на протокол: SOAP 1.1/1.2, style <code>document</code>/<code>rpc</code>, use <code>literal</code>/<code>encoded</code></td>
 </tr>
 <tr>
-<td><code>service</code> / <code>port</code></td>
-<td>конкретный endpoint URL</td>
+<td data-label="Элемент"><code>service</code> / <code>port</code></td>
+<td data-label="Что описывает">конкретный endpoint URL</td>
 </tr>
 </tbody>
 </table>
@@ -2989,7 +2989,7 @@ StAX: 1000000 вагонов, 64625000.000 т, 810 мс, занято кучи 1
 <p>Этот раздел сводит всё сказанное выше в инструмент для принятия решения: по каким критериям сравниваются протоколы, какой из них брать в типовых ситуациях и во что обходится система, где их несколько. Проблема, которую он решает, в том, что протокол обычно выбирают по привычке или по одному признаку, а потом годами платят за неподходящий выбор или за зоопарк из четырёх технологий. Дальше идут сводная таблица, карта решений и разбор смешанных архитектур с их ценой.</p>
 <h3 id="121-сводная-таблица">12.1 Сводная таблица</h3>
 <p>Сводная таблица сравнивает пять протоколов по тем осям, которые разбирались в разделах 1–9, от модели взаимодействия и контракта до кэширования и балансировки. Читать её стоит не по столбцам, выбирая «победителя», а по строкам, отмечая критерии, важные именно для вашей задачи: у каждого протокола есть строка, где он проигрывает.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -3002,113 +3002,113 @@ StAX: 1000000 вагонов, 64625000.000 т, 810 мс, занято кучи 1
 </thead>
 <tbody>
 <tr>
-<td>Модель</td>
-<td>ресурсы</td>
-<td>вызов процедуры</td>
-<td>вызов процедуры</td>
-<td>запрос графа данных</td>
-<td>вызов операции</td>
+<td data-label="Критерий">Модель</td>
+<td data-label="REST/JSON">ресурсы</td>
+<td data-label="gRPC">вызов процедуры</td>
+<td data-label="JSON-RPC">вызов процедуры</td>
+<td data-label="GraphQL">запрос графа данных</td>
+<td data-label="SOAP">вызов операции</td>
 </tr>
 <tr>
-<td>Контракт</td>
-<td>OpenAPI (опционален)</td>
-<td><code>.proto</code> (обязателен)</td>
-<td><strong>нет</strong>, OpenRPC по желанию (7.6)</td>
-<td>SDL (обязателен)</td>
-<td>WSDL+XSD (обязателен)</td>
+<td data-label="Критерий">Контракт</td>
+<td data-label="REST/JSON">OpenAPI (опционален)</td>
+<td data-label="gRPC"><code>.proto</code> (обязателен)</td>
+<td data-label="JSON-RPC"><strong>нет</strong>, OpenRPC по желанию (7.6)</td>
+<td data-label="GraphQL">SDL (обязателен)</td>
+<td data-label="SOAP">WSDL+XSD (обязателен)</td>
 </tr>
 <tr>
-<td>Типобезопасность</td>
-<td>слабая</td>
-<td>сильная, кодогенерация</td>
-<td>никакой</td>
-<td>сильная в схеме, кодогенерация опциональна</td>
-<td>самая строгая (XSD-ограничения)</td>
+<td data-label="Критерий">Типобезопасность</td>
+<td data-label="REST/JSON">слабая</td>
+<td data-label="gRPC">сильная, кодогенерация</td>
+<td data-label="JSON-RPC">никакой</td>
+<td data-label="GraphQL">сильная в схеме, кодогенерация опциональна</td>
+<td data-label="SOAP">самая строгая (XSD-ограничения)</td>
 </tr>
 <tr>
-<td>Размер payload</td>
-<td>базовый</td>
-<td>2.5–8× меньше (см. 2.8)</td>
-<td>≈ REST</td>
-<td>≈ REST (чуть меньше — только нужные поля)</td>
-<td>1.5–3× больше REST</td>
+<td data-label="Критерий">Размер payload</td>
+<td data-label="REST/JSON">базовый</td>
+<td data-label="gRPC">2.5–8× меньше (см. 2.8)</td>
+<td data-label="JSON-RPC">≈ REST</td>
+<td data-label="GraphQL">≈ REST (чуть меньше — только нужные поля)</td>
+<td data-label="SOAP">1.5–3× больше REST</td>
 </tr>
 <tr>
-<td>Скорость (де)сериализации</td>
-<td>базовая</td>
-<td>2–5× быстрее (⚠️ оценка, не измерялась)</td>
-<td>≈ REST</td>
-<td>≈ REST + планировщик</td>
-<td>медленнее всех</td>
+<td data-label="Критерий">Скорость (де)сериализации</td>
+<td data-label="REST/JSON">базовая</td>
+<td data-label="gRPC">2–5× быстрее (⚠️ оценка, не измерялась)</td>
+<td data-label="JSON-RPC">≈ REST</td>
+<td data-label="GraphQL">≈ REST + планировщик</td>
+<td data-label="SOAP">медленнее всех</td>
 </tr>
 <tr>
-<td>Стриминг</td>
-<td>SSE/WebSocket сбоку (раздел 8)</td>
-<td>4 режима нативно</td>
-<td>поверх WebSocket, вызовы в обе стороны (7.5)</td>
-<td>subscriptions</td>
-<td>нет</td>
+<td data-label="Критерий">Стриминг</td>
+<td data-label="REST/JSON">SSE/WebSocket сбоку (раздел 8)</td>
+<td data-label="gRPC">4 режима нативно</td>
+<td data-label="JSON-RPC">поверх WebSocket, вызовы в обе стороны (7.5)</td>
+<td data-label="GraphQL">subscriptions</td>
+<td data-label="SOAP">нет</td>
 </tr>
 <tr>
-<td>Браузер</td>
-<td>да</td>
-<td>нет (нужен gRPC-Web + прокси)</td>
-<td>да</td>
-<td>да</td>
-<td>технически да, практически нет</td>
+<td data-label="Критерий">Браузер</td>
+<td data-label="REST/JSON">да</td>
+<td data-label="gRPC">нет (нужен gRPC-Web + прокси)</td>
+<td data-label="JSON-RPC">да</td>
+<td data-label="GraphQL">да</td>
+<td data-label="SOAP">технически да, практически нет</td>
 </tr>
 <tr>
-<td>Отладка <code>curl</code>-ом</td>
-<td>да</td>
-<td>нет (<code>grpcurl</code>)</td>
-<td>да</td>
-<td>да</td>
-<td>да (но конверт)</td>
+<td data-label="Критерий">Отладка <code>curl</code>-ом</td>
+<td data-label="REST/JSON">да</td>
+<td data-label="gRPC">нет (<code>grpcurl</code>)</td>
+<td data-label="JSON-RPC">да</td>
+<td data-label="GraphQL">да</td>
+<td data-label="SOAP">да (но конверт)</td>
 </tr>
 <tr>
-<td>HTTP-кэширование</td>
-<td>да, полноценно</td>
-<td>практически нет</td>
-<td>нет</td>
-<td>нет (без persisted+GET)</td>
-<td>нет</td>
+<td data-label="Критерий">HTTP-кэширование</td>
+<td data-label="REST/JSON">да, полноценно</td>
+<td data-label="gRPC">практически нет</td>
+<td data-label="JSON-RPC">нет</td>
+<td data-label="GraphQL">нет (без persisted+GET)</td>
+<td data-label="SOAP">нет</td>
 </tr>
 <tr>
-<td>Версионирование</td>
-<td>URL/заголовок, ручное</td>
-<td>номера полей, автоматически проверяемо</td>
-<td>никак</td>
-<td>эволюция схемы + <code>@deprecated</code></td>
-<td>версия namespace</td>
+<td data-label="Критерий">Версионирование</td>
+<td data-label="REST/JSON">URL/заголовок, ручное</td>
+<td data-label="gRPC">номера полей, автоматически проверяемо</td>
+<td data-label="JSON-RPC">никак</td>
+<td data-label="GraphQL">эволюция схемы + <code>@deprecated</code></td>
+<td data-label="SOAP">версия namespace</td>
 </tr>
 <tr>
-<td>Порог входа команды</td>
-<td>низкий</td>
-<td>средний</td>
-<td>очень низкий</td>
-<td>высокий</td>
-<td>высокий</td>
+<td data-label="Критерий">Порог входа команды</td>
+<td data-label="REST/JSON">низкий</td>
+<td data-label="gRPC">средний</td>
+<td data-label="JSON-RPC">очень низкий</td>
+<td data-label="GraphQL">высокий</td>
+<td data-label="SOAP">высокий</td>
 </tr>
 <tr>
-<td>Инструменты</td>
-<td>огромная экосистема</td>
-<td>grpcurl, buf, Envoy</td>
-<td>почти нет</td>
-<td>GraphiQL, Apollo</td>
-<td>SoapUI, WSS4J</td>
+<td data-label="Критерий">Инструменты</td>
+<td data-label="REST/JSON">огромная экосистема</td>
+<td data-label="gRPC">grpcurl, buf, Envoy</td>
+<td data-label="JSON-RPC">почти нет</td>
+<td data-label="GraphQL">GraphiQL, Apollo</td>
+<td data-label="SOAP">SoapUI, WSS4J</td>
 </tr>
 <tr>
-<td>Балансировка</td>
-<td>тривиальна (L4/L7)</td>
-<td><strong>требует L7 или client-side</strong></td>
-<td>тривиальна</td>
-<td>тривиальна</td>
-<td>тривиальна</td>
+<td data-label="Критерий">Балансировка</td>
+<td data-label="REST/JSON">тривиальна (L4/L7)</td>
+<td data-label="gRPC"><strong>требует L7 или client-side</strong></td>
+<td data-label="JSON-RPC">тривиальна</td>
+<td data-label="GraphQL">тривиальна</td>
+<td data-label="SOAP">тривиальна</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Запуск.</strong> Сводные измерения, которыми можно дополнить таблицу выбора (локальная машина, один процесс):</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Показатель</th>
@@ -3119,40 +3119,40 @@ StAX: 1000000 вагонов, 64625000.000 т, 810 мс, занято кучи 1
 </thead>
 <tbody>
 <tr>
-<td>соединений на 200 параллельных вызовов</td>
-<td>200 (HTTP/1.1)</td>
-<td>1</td>
-<td>200 (поверх HTTP/1.1)</td>
+<td data-label="Показатель">соединений на 200 параллельных вызовов</td>
+<td data-label="REST/HTTP">200 (HTTP/1.1)</td>
+<td data-label="gRPC">1</td>
+<td data-label="JSON-RPC">200 (поверх HTTP/1.1)</td>
 </tr>
 <tr>
-<td>размер списка из 100 платежей</td>
-<td>6 601 байт (JSON); после gzip 591</td>
-<td>2 090 байт; после gzip 395</td>
-<td>как JSON</td>
+<td data-label="Показатель">размер списка из 100 платежей</td>
+<td data-label="REST/HTTP">6 601 байт (JSON); после gzip 591</td>
+<td data-label="gRPC">2 090 байт; после gzip 395</td>
+<td data-label="JSON-RPC">как JSON</td>
 </tr>
 <tr>
-<td>ошибка видна по статусу HTTP</td>
-<td>да</td>
-<td>через статус gRPC</td>
-<td>нет, всегда 200</td>
+<td data-label="Показатель">ошибка видна по статусу HTTP</td>
+<td data-label="REST/HTTP">да</td>
+<td data-label="gRPC">через статус gRPC</td>
+<td data-label="JSON-RPC">нет, всегда 200</td>
 </tr>
 <tr>
-<td>схема и кодогенерация</td>
-<td>OpenAPI (по желанию)</td>
-<td>обязательна <code>.proto</code></td>
-<td>нет</td>
+<td data-label="Показатель">схема и кодогенерация</td>
+<td data-label="REST/HTTP">OpenAPI (по желанию)</td>
+<td data-label="gRPC">обязательна <code>.proto</code></td>
+<td data-label="JSON-RPC">нет</td>
 </tr>
 <tr>
-<td>повторы клиента из коробки</td>
-<td>нет</td>
-<td>да, по политике</td>
-<td>нет</td>
+<td data-label="Показатель">повторы клиента из коробки</td>
+<td data-label="REST/HTTP">нет</td>
+<td data-label="gRPC">да, по политике</td>
+<td data-label="JSON-RPC">нет</td>
 </tr>
 <tr>
-<td>несовместимое изменение схемы</td>
-<td>не обнаруживается</td>
-<td>молча теряет поле (смена типа)</td>
-<td>не обнаруживается</td>
+<td data-label="Показатель">несовместимое изменение схемы</td>
+<td data-label="REST/HTTP">не обнаруживается</td>
+<td data-label="gRPC">молча теряет поле (смена типа)</td>
+<td data-label="JSON-RPC">не обнаруживается</td>
 </tr>
 </tbody>
 </table>
@@ -3492,5 +3492,5 @@ curl --http2-prior-knowledge -v http://localhost:9090/  <span class="c1"># пр�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-пространство-решений">1. Пространство решений</a></li><li><a href="#2-protocol-buffers">2. Protocol Buffers</a></li><li><a href="#3-grpc-транспорт-и-виды-вызовов">3. gRPC: транспорт и виды вызовов</a></li><li><a href="#4-дедлайны-отмена-статусы-ошибки">4. Дедлайны, отмена, статусы, ошибки</a></li><li><a href="#5-grpc-в-эксплуатации">5. gRPC в эксплуатации</a></li><li><a href="#6-grpc-в-java-и-spring-boot">6. gRPC в Java и Spring Boot</a></li><li><a href="#7-json-rpc-20">7. JSON-RPC 2.0</a></li><li><a href="#8-websocket">8. WebSocket</a></li><li><a href="#9-graphql">9. GraphQL</a></li><li><a href="#10-xml-и-xsd">10. XML и XSD</a></li><li><a href="#11-soap-и-wsdl">11. SOAP и WSDL</a></li><li><a href="#12-выбор-протокола">12. Выбор протокола</a></li><li><a href="#13-грабли-и-антипаттерны">13. Грабли и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

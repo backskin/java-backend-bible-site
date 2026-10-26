@@ -3,7 +3,7 @@
 <title>11. Реактивное программирование — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Реактивное программирование">
 <a class="skip" href="#content">К тексту</a>
@@ -100,7 +100,7 @@
 <p>Операторов в интерфейсах нет намеренно: спецификация решает задачу совместимости библиотек; об удобстве прикладного кода она не заботится. Благодаря ей <code>Flux</code> из Reactor можно подписать на <code>Publisher</code> из Akka Streams, RxJava 3, Vert.x, MongoDB Reactive Streams Driver или R2DBC, и для этого не нужны ни адаптеры, ни буферы неограниченного размера. Пользовательский API, то есть операторы, каждая библиотека даёт свой.</p>
 <h3 id="22-основные-правила-спецификации">2.2 Основные правила спецификации</h3>
 <p>Чтобы увидеть, что значит «правило спецификации», возьмём самописный источник, который вызвал <code>onNext</code> пять раз, хотя подписчик запросил три элемента: он нарушил правило Publisher 1, и подписчик, рассчитывавший на три, получит лишнее. Таких пронумерованных правил в спецификации 11 для <code>Publisher</code>, 13 для <code>Subscriber</code>, 17 для <code>Subscription</code> и 2 для <code>Processor</code>. Практическое значение имеют перечисленные в таблице; смотреть в ней стоит на правую колонку, где объяснено, что именно ломается при нарушении:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Правило</th>
@@ -110,44 +110,44 @@
 </thead>
 <tbody>
 <tr>
-<td>Publisher 1</td>
-<td>Число <code>onNext</code> ≤ суммарно запрошенного через <code>request(n)</code></td>
-<td>Это и есть backpressure: publisher не имеет права «протолкнуть» лишнее</td>
+<td data-label="Правило">Publisher 1</td>
+<td data-label="Содержание">Число <code>onNext</code> ≤ суммарно запрошенного через <code>request(n)</code></td>
+<td data-label="Почему важно">Это и есть backpressure: publisher не имеет права «протолкнуть» лишнее</td>
 </tr>
 <tr>
-<td>Publisher 3</td>
-<td>Все сигналы одному подписчику — <strong>сериализованы</strong></td>
-<td>Внутри оператора не нужна синхронизация: <code>onNext</code> не вызовется одновременно из двух потоков</td>
+<td data-label="Правило">Publisher 3</td>
+<td data-label="Содержание">Все сигналы одному подписчику — <strong>сериализованы</strong></td>
+<td data-label="Почему важно">Внутри оператора не нужна синхронизация: <code>onNext</code> не вызовется одновременно из двух потоков</td>
 </tr>
 <tr>
-<td>Publisher 9</td>
-<td><code>onSubscribe</code> вызывается до любых других сигналов</td>
-<td>Подписчик всегда успевает получить <code>Subscription</code> и запросить спрос</td>
+<td data-label="Правило">Publisher 9</td>
+<td data-label="Содержание"><code>onSubscribe</code> вызывается до любых других сигналов</td>
+<td data-label="Почему важно">Подписчик всегда успевает получить <code>Subscription</code> и запросить спрос</td>
 </tr>
 <tr>
-<td>Subscriber 1</td>
-<td>Спрос сигнализируется через <code>Subscription.request(long n)</code></td>
-<td>Без <code>request</code> не придёт ни одного элемента</td>
+<td data-label="Правило">Subscriber 1</td>
+<td data-label="Содержание">Спрос сигнализируется через <code>Subscription.request(long n)</code></td>
+<td data-label="Почему важно">Без <code>request</code> не придёт ни одного элемента</td>
 </tr>
 <tr>
-<td>Subscriber 3</td>
-<td>Из <code>onComplete</code>/<code>onError</code> нельзя трогать <code>Subscription</code></td>
-<td>Иначе — гонки при завершении</td>
+<td data-label="Правило">Subscriber 3</td>
+<td data-label="Содержание">Из <code>onComplete</code>/<code>onError</code> нельзя трогать <code>Subscription</code></td>
+<td data-label="Почему важно">Иначе — гонки при завершении</td>
 </tr>
 <tr>
-<td>Subscription 5</td>
-<td><code>cancel</code> идемпотентен и потокобезопасен</td>
-<td>Отмену можно звать из любого потока сколько угодно раз</td>
+<td data-label="Правило">Subscription 5</td>
+<td data-label="Содержание"><code>cancel</code> идемпотентен и потокобезопасен</td>
+<td data-label="Почему важно">Отмену можно звать из любого потока сколько угодно раз</td>
 </tr>
 <tr>
-<td>Subscription 9</td>
-<td><code>request(n)</code> при <code>n &lt;= 0</code> обязан выдать <code>IllegalArgumentException</code> через <code>onError</code></td>
-<td>Типовая ошибка самописных источников</td>
+<td data-label="Правило">Subscription 9</td>
+<td data-label="Содержание"><code>request(n)</code> при <code>n &lt;= 0</code> обязан выдать <code>IllegalArgumentException</code> через <code>onError</code></td>
+<td data-label="Почему важно">Типовая ошибка самописных источников</td>
 </tr>
 <tr>
-<td>Subscription 17</td>
-<td>Поддержка спроса до <code>Long.MAX_VALUE</code> (2^63−1)</td>
-<td><code>Long.MAX_VALUE</code> = «неограниченный спрос», backpressure фактически отключён</td>
+<td data-label="Правило">Subscription 17</td>
+<td data-label="Содержание">Поддержка спроса до <code>Long.MAX_VALUE</code> (2^63−1)</td>
+<td data-label="Почему важно"><code>Long.MAX_VALUE</code> = «неограниченный спрос», backpressure фактически отключён</td>
 </tr>
 </tbody>
 </table>
@@ -261,7 +261,7 @@
 
 <p>Каждый тест в TCK назван по номеру правила — <code>required_spec303_mustNotAllowUnboundedRecursion</code>, <code>required_spec309_requestZeroMustSignalIllegalArgumentException</code>, <code>optional_spec104_mustSignalOnErrorWhenFails</code>, — поэтому, когда тест падает, вы сразу видите, какое правило нарушено, и не гадаете по симптому.</p>
 <p>В таблице ниже собрано то, что ловит TCK и что ваши собственные тесты, скорее всего, пропустят; самая полезная колонка последняя, где описано, как нарушение выглядит в проде:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Категория</th>
@@ -271,34 +271,34 @@
 </thead>
 <tbody>
 <tr>
-<td>Рекурсия</td>
-<td><code>spec303</code> — <code>request</code> внутри <code>onNext</code> не даёт роста стека</td>
-<td><code>StackOverflowError</code> на длинных синхронных источниках</td>
+<td data-label="Категория">Рекурсия</td>
+<td data-label="Пример проверки"><code>spec303</code> — <code>request</code> внутри <code>onNext</code> не даёт роста стека</td>
+<td data-label="Симптом в проде, если не проверить"><code>StackOverflowError</code> на длинных синхронных источниках</td>
 </tr>
 <tr>
-<td>Учёт спроса</td>
-<td><code>spec101</code> — не эмитить больше запрошенного</td>
-<td><code>OverflowException</code> у даунстрима, «съеденные» элементы</td>
+<td data-label="Категория">Учёт спроса</td>
+<td data-label="Пример проверки"><code>spec101</code> — не эмитить больше запрошенного</td>
+<td data-label="Симптом в проде, если не проверить"><code>OverflowException</code> у даунстрима, «съеденные» элементы</td>
 </tr>
 <tr>
-<td>Терминальность</td>
-<td><code>spec107</code> — после <code>onComplete</code> тишина</td>
-<td>двойной коммит, повторная запись в БД</td>
+<td data-label="Категория">Терминальность</td>
+<td data-label="Пример проверки"><code>spec107</code> — после <code>onComplete</code> тишина</td>
+<td data-label="Симптом в проде, если не проверить">двойной коммит, повторная запись в БД</td>
 </tr>
 <tr>
-<td>Отмена</td>
-<td><code>spec306</code>/<code>spec307</code> — <code>cancel</code> идемпотентен, останавливает эмиссию</td>
-<td>утечка соединений и слушателей</td>
+<td data-label="Категория">Отмена</td>
+<td data-label="Пример проверки"><code>spec306</code>/<code>spec307</code> — <code>cancel</code> идемпотентен, останавливает эмиссию</td>
+<td data-label="Симптом в проде, если не проверить">утечка соединений и слушателей</td>
 </tr>
 <tr>
-<td>Аргументы</td>
-<td><code>spec309</code> — <code>request(0)</code> → <code>onError</code></td>
-<td>зависание вместо диагностируемой ошибки</td>
+<td data-label="Категория">Аргументы</td>
+<td data-label="Пример проверки"><code>spec309</code> — <code>request(0)</code> → <code>onError</code></td>
+<td data-label="Симптом в проде, если не проверить">зависание вместо диагностируемой ошибки</td>
 </tr>
 <tr>
-<td>Гонки</td>
-<td><code>spec317</code> — спрос до <code>Long.MAX_VALUE</code> без переполнения</td>
-<td>отрицательный спрос, «поток встал навсегда»</td>
+<td data-label="Категория">Гонки</td>
+<td data-label="Пример проверки"><code>spec317</code> — спрос до <code>Long.MAX_VALUE</code> без переполнения</td>
+<td data-label="Симптом в проде, если не проверить">отрицательный спрос, «поток встал навсегда»</td>
 </tr>
 </tbody>
 </table>
@@ -342,7 +342,7 @@ Reactor Kafka                           ─┘
 <p><strong>Subscription time</strong> наступает в момент <code>subscribe()</code>. Цепочка обходится снизу вверх, от последнего оператора к источнику: каждый оператор создаёт собственный <code>Subscriber</code> и подписывается на оператор выше. На этом проходе срабатывает <code>subscribeOn</code>, снизу вверх собирается <code>Context</code> и <code>defer</code> вычисляет свой <code>Supplier</code>.</p>
 <p><strong>Runtime</strong> начинается, когда по цепочке побежали сигналы <code>onNext</code>/<code>onError</code>/<code>onComplete</code>; лямбды <code>map</code>, <code>filter</code> и <code>flatMap</code> выполняются только в это время.</p>
 <p><code>Mono.just(x)</code> захватывает значение, <strong>уже вычисленное</strong> на assembly time. Если справа стоит вызов метода, он выполнится немедленно, даже если на этот <code>Mono</code> никто никогда не подпишется. Это ошибка №1 у новичков и частый вопрос на интервью. Выбор фабричного метода поэтому сводится к вопросу, когда должно быть вычислено значение, и таблица ниже отвечает на него для типовых случаев:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Что нужно</th>
@@ -351,24 +351,24 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td>Готовое значение, уже в руках</td>
-<td><code>Mono.just(value)</code></td>
+<td data-label="Что нужно">Готовое значение, уже в руках</td>
+<td data-label="Как"><code>Mono.just(value)</code></td>
 </tr>
 <tr>
-<td>Блокирующий/дорогой синхронный вызов</td>
-<td><code>Mono.fromCallable(() -&gt; ...)</code> (+ <code>subscribeOn(boundedElastic())</code>)</td>
+<td data-label="Что нужно">Блокирующий/дорогой синхронный вызов</td>
+<td data-label="Как"><code>Mono.fromCallable(() -&gt; ...)</code> (+ <code>subscribeOn(boundedElastic())</code>)</td>
 </tr>
 <tr>
-<td>Отложить построение <strong>всей цепочки</strong> до подписки</td>
-<td><code>Mono.defer(() -&gt; buildChain())</code></td>
+<td data-label="Что нужно">Отложить построение <strong>всей цепочки</strong> до подписки</td>
+<td data-label="Как"><code>Mono.defer(() -&gt; buildChain())</code></td>
 </tr>
 <tr>
-<td>Побочный эффект без результата</td>
-<td><code>Mono.fromRunnable(() -&gt; ...)</code> → <code>Mono&lt;Void&gt;</code></td>
+<td data-label="Что нужно">Побочный эффект без результата</td>
+<td data-label="Как"><code>Mono.fromRunnable(() -&gt; ...)</code> → <code>Mono&lt;Void&gt;</code></td>
 </tr>
 <tr>
-<td>Обернуть <code>CompletableFuture</code></td>
-<td><code>Mono.fromFuture(() -&gt; cf)</code> — обязательно в лямбде, иначе future стартует на assembly</td>
+<td data-label="Что нужно">Обернуть <code>CompletableFuture</code></td>
+<td data-label="Как"><code>Mono.fromFuture(() -&gt; cf)</code> — обязательно в лямбде, иначе future стартует на assembly</td>
 </tr>
 </tbody>
 </table>
@@ -498,7 +498,7 @@ Reactor Kafka                           ─┘
 
 <p>Первый случай, с <code>cache</code>, обычно работает как задумано: это нормальный паттерн «общий кэш курсов». Второй случай — классика: токен подписан временем старта приложения и через сутки просрочен, а сервис продолжает его отдавать, потому что <code>Mono.just</code> вечно держит одно вычисленное значение. В проде это выглядит так: «через N часов после деплоя интеграция перестаёт работать, а рестарт её чинит».</p>
 <p>Чтобы ловить такие поля на ревью, достаточно сверить каждое с таблицей ниже; правая колонка объясняет, почему конструкция безопасна или нет:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Конструкция в поле бина</th>
@@ -508,39 +508,39 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>Mono.just(constant)</code></td>
-<td>да</td>
-<td>значение действительно константа</td>
+<td data-label="Конструкция в поле бина"><code>Mono.just(constant)</code></td>
+<td data-label="Безопасно?">да</td>
+<td data-label="Почему">значение действительно константа</td>
 </tr>
 <tr>
-<td><code>Mono.just(compute())</code></td>
-<td><strong>нет</strong></td>
-<td>вычислено на старте, зафиксировано навсегда</td>
+<td data-label="Конструкция в поле бина"><code>Mono.just(compute())</code></td>
+<td data-label="Безопасно?"><strong>нет</strong></td>
+<td data-label="Почему">вычислено на старте, зафиксировано навсегда</td>
 </tr>
 <tr>
-<td><code>Mono.fromCallable(this::compute)</code></td>
-<td>да</td>
-<td>вычисляется на каждую подписку</td>
+<td data-label="Конструкция в поле бина"><code>Mono.fromCallable(this::compute)</code></td>
+<td data-label="Безопасно?">да</td>
+<td data-label="Почему">вычисляется на каждую подписку</td>
 </tr>
 <tr>
-<td><code>Mono.defer(() -&gt; buildChain())</code></td>
-<td>да</td>
-<td>цепочка строится на каждую подписку</td>
+<td data-label="Конструкция в поле бина"><code>Mono.defer(() -&gt; buildChain())</code></td>
+<td data-label="Безопасно?">да</td>
+<td data-label="Почему">цепочка строится на каждую подписку</td>
 </tr>
 <tr>
-<td><code>webClient...bodyToMono(X).cache(Duration)</code></td>
-<td>да, осознанно</td>
-<td>это кэш с TTL, так и задумано</td>
+<td data-label="Конструкция в поле бина"><code>webClient...bodyToMono(X).cache(Duration)</code></td>
+<td data-label="Безопасно?">да, осознанно</td>
+<td data-label="Почему">это кэш с TTL, так и задумано</td>
 </tr>
 <tr>
-<td><code>webClient...bodyToMono(X)</code> без <code>cache</code></td>
-<td>да</td>
-<td><code>WebClient</code> холодный: каждая подписка — новый запрос</td>
+<td data-label="Конструкция в поле бина"><code>webClient...bodyToMono(X)</code> без <code>cache</code></td>
+<td data-label="Безопасно?">да</td>
+<td data-label="Почему"><code>WebClient</code> холодный: каждая подписка — новый запрос</td>
 </tr>
 <tr>
-<td><code>flux.share()</code> в поле</td>
-<td>зависит</td>
-<td>источник отменится при уходе последнего подписчика и перезапустится при следующем — проверьте, что это допустимо</td>
+<td data-label="Конструкция в поле бина"><code>flux.share()</code> в поле</td>
+<td data-label="Безопасно?">зависит</td>
+<td data-label="Почему">источник отменится при уходе последнего подписчика и перезапустится при следующем — проверьте, что это допустимо</td>
 </tr>
 </tbody>
 </table>
@@ -560,7 +560,7 @@ Reactor Kafka                           ─┘
 
 <p>В этом стеке нет ни контроллера, ни сервиса, ни идентификатора запроса, и даже нельзя понять, платёжная это цепочка или выгрузка отчёта. Виновата в этом физика стека, а претензий к Reactor тут нет: стек хранит историю вызовов <strong>текущего потока</strong>, а цепочку собирал другой поток несколько миллисекунд назад, и его стек давно размотан. Более того, при <code>publishOn</code> фрейм даже не принадлежит тому потоку, на котором случилась подписка.</p>
 <p>Assembly trace — это информация о том, в каком месте исходников был собран каждый оператор цепочки. Он запоминает это место и приклеивает информацию к исключению как <strong>suppressed exception</strong> (<code>reactor.core.publisher.FluxOnAssembly$OnAssemblyException</code>). Инструменты отладки подробно разобраны в разделе 9, а здесь соберём их механику. Способов включить assembly trace четыре, и в таблице стоит смотреть на две последние колонки — когда снимается стек и во что это обходится:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -571,28 +571,28 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>checkpoint("описание")</code></td>
-<td>только строка-описание</td>
-<td>никогда</td>
-<td>ноль (одна выделение памяти на assembly)</td>
+<td data-label="Способ"><code>checkpoint("описание")</code></td>
+<td data-label="Что сохраняется">только строка-описание</td>
+<td data-label="Когда снимается стек">никогда</td>
+<td data-label="Стоимость">ноль (одна выделение памяти на assembly)</td>
 </tr>
 <tr>
-<td><code>checkpoint("описание", true)</code></td>
-<td>описание + стек сборки в этой точке</td>
-<td>на assembly, один раз на цепочку</td>
-<td>один <code>new Throwable()</code> на каждую сборку цепочки</td>
+<td data-label="Способ"><code>checkpoint("описание", true)</code></td>
+<td data-label="Что сохраняется">описание + стек сборки в этой точке</td>
+<td data-label="Когда снимается стек">на assembly, один раз на цепочку</td>
+<td data-label="Стоимость">один <code>new Throwable()</code> на каждую сборку цепочки</td>
 </tr>
 <tr>
-<td><code>Hooks.onOperatorDebug()</code></td>
-<td>стек сборки для <strong>каждого</strong> оператора</td>
-<td>на assembly, на каждый оператор</td>
-<td><code>new Throwable()</code> × число операторов × число сборок</td>
+<td data-label="Способ"><code>Hooks.onOperatorDebug()</code></td>
+<td data-label="Что сохраняется">стек сборки для <strong>каждого</strong> оператора</td>
+<td data-label="Когда снимается стек">на assembly, на каждый оператор</td>
+<td data-label="Стоимость"><code>new Throwable()</code> × число операторов × число сборок</td>
 </tr>
 <tr>
-<td><code>ReactorDebugAgent</code></td>
-<td>класс/метод/строка, вшитые в байткод</td>
-<td>не снимается вовсе</td>
-<td>ноль во время выполнения, +секунды к старту</td>
+<td data-label="Способ"><code>ReactorDebugAgent</code></td>
+<td data-label="Что сохраняется">класс/метод/строка, вшитые в байткод</td>
+<td data-label="Когда снимается стек">не снимается вовсе</td>
+<td data-label="Стоимость">ноль во время выполнения, +секунды к старту</td>
 </tr>
 </tbody>
 </table>
@@ -613,7 +613,7 @@ Reactor Kafka                           ─┘
 <p>До Reactor 3.4 мост «императивный код → реактивный поток» строили на <code>Processor</code>, и от него отказались из-за изъяна в самом контракте, который разобран ниже. Пример того, как этот изъян проявлялся. Шина событий построена на <code>EmitterProcessor</code>, и два потока одновременно вызывают <code>processor.onNext(...)</code>. Ничто не мешает этому, и ничего при этом не сообщается: раз в неделю в подписчиков приходят перемешанные или потерянные события. Классы <code>Processor</code> были такими: <code>UnicastProcessor</code>, <code>EmitterProcessor</code>, <code>ReplayProcessor</code>, <code>MonoProcessor</code>, <code>DirectProcessor</code>. Изъян был в самом контракте: <code>Processor</code> реализует <code>Subscriber</code>, а значит, у него есть публичные <code>onNext</code>/<code>onError</code>/<code>onComplete</code>, которые по спецификации <strong>обязаны вызываться сериализованно</strong>. Два потока, вызвавшие <code>onNext</code> одновременно, молча нарушали правило 1.3, и результатом были перемешанные сигналы, потерянные элементы и «невозможные» состояния внутри операторов ниже по цепочке. Диагностировать это было почти невозможно, потому что никакого сообщения об ошибке не появлялось.</p>
 <p><code>Sinks</code> решают проблему тем, что <strong>вовсе не реализуют <code>Subscriber</code></strong>. Вместо <code>onNext</code> у них есть <code>tryEmitNext</code>: он возвращает <code>EmitResult</code> и может честно ответить «сейчас нельзя, внутри уже другой поток», то есть вернуть <code>FAIL_NON_SERIALIZED</code>.</p>
 <p>Хронология такая: <code>Processor</code>-типы помечены <code>@Deprecated</code> в 3.4.0 (релиз 27 октября 2020 года) с пометкой «to be removed in 3.5», но на деле до сих пор не удалены и лежат в reactor-core 3.8.7 по-прежнему устаревшими. Для старого сервиса пользуйтесь таблицей миграции ниже, особенно её правой колонкой с отличиями в поведении:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Было (<code>Processor</code>)</th>
@@ -623,34 +623,34 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>UnicastProcessor.create()</code></td>
-<td><code>Sinks.many().unicast().onBackpressureBuffer()</code></td>
-<td>тот же один подписчик, тот же буфер; эмиссия теперь через <code>tryEmitNext</code></td>
+<td data-label="Было (Processor)"><code>UnicastProcessor.create()</code></td>
+<td data-label="Стало (Sinks)"><code>Sinks.many().unicast().onBackpressureBuffer()</code></td>
+<td data-label="Отличия в поведении">тот же один подписчик, тот же буфер; эмиссия теперь через <code>tryEmitNext</code></td>
 </tr>
 <tr>
-<td><code>EmitterProcessor.create()</code></td>
-<td><code>Sinks.many().multicast().onBackpressureBuffer()</code></td>
-<td>как и <code>EmitterProcessor</code>, до первого подписчика копит до <code>bufferSize</code> элементов (warmup) и отдаёт их первому пришедшему; <code>FAIL_ZERO_SUBSCRIBER</code> без подписчиков возвращают только варианты <code>direct*</code>; <code>autoCancel</code> по умолчанию <code>true</code></td>
+<td data-label="Было (Processor)"><code>EmitterProcessor.create()</code></td>
+<td data-label="Стало (Sinks)"><code>Sinks.many().multicast().onBackpressureBuffer()</code></td>
+<td data-label="Отличия в поведении">как и <code>EmitterProcessor</code>, до первого подписчика копит до <code>bufferSize</code> элементов (warmup) и отдаёт их первому пришедшему; <code>FAIL_ZERO_SUBSCRIBER</code> без подписчиков возвращают только варианты <code>direct*</code>; <code>autoCancel</code> по умолчанию <code>true</code></td>
 </tr>
 <tr>
-<td><code>ReplayProcessor.create(n)</code></td>
-<td><code>Sinks.many().replay().limit(n)</code></td>
-<td>эквивалент; есть также <code>.all()</code>, <code>.latest()</code>, <code>.latestOrDefault(v)</code>, <code>.limit(Duration)</code></td>
+<td data-label="Было (Processor)"><code>ReplayProcessor.create(n)</code></td>
+<td data-label="Стало (Sinks)"><code>Sinks.many().replay().limit(n)</code></td>
+<td data-label="Отличия в поведении">эквивалент; есть также <code>.all()</code>, <code>.latest()</code>, <code>.latestOrDefault(v)</code>, <code>.limit(Duration)</code></td>
 </tr>
 <tr>
-<td><code>DirectProcessor.create()</code></td>
-<td><code>Sinks.many().multicast().directBestEffort()</code></td>
-<td>ближайший аналог; по javadoc разница в том, что <code>directBestEffort</code> не завершает переполненных подписчиков, а только отбрасывает для них элемент</td>
+<td data-label="Было (Processor)"><code>DirectProcessor.create()</code></td>
+<td data-label="Стало (Sinks)"><code>Sinks.many().multicast().directBestEffort()</code></td>
+<td data-label="Отличия в поведении">ближайший аналог; по javadoc разница в том, что <code>directBestEffort</code> не завершает переполненных подписчиков, а только отбрасывает для них элемент</td>
 </tr>
 <tr>
-<td><code>MonoProcessor.create()</code></td>
-<td><code>Sinks.one()</code></td>
-<td><code>Sinks.one()</code> строго однократен; <code>tryEmitValue</code> второй раз вернёт <code>FAIL_TERMINATED</code></td>
+<td data-label="Было (Processor)"><code>MonoProcessor.create()</code></td>
+<td data-label="Стало (Sinks)"><code>Sinks.one()</code></td>
+<td data-label="Отличия в поведении"><code>Sinks.one()</code> строго однократен; <code>tryEmitValue</code> второй раз вернёт <code>FAIL_TERMINATED</code></td>
 </tr>
 <tr>
-<td><code>Processor</code> как «и то и другое»</td>
-<td><code>Sinks.Many</code> + <code>sink.asFlux()</code></td>
-<td>чтение и запись разделены типами — в этом и смысл изменения</td>
+<td data-label="Было (Processor)"><code>Processor</code> как «и то и другое»</td>
+<td data-label="Стало (Sinks)"><code>Sinks.Many</code> + <code>sink.asFlux()</code></td>
+<td data-label="Отличия в поведении">чтение и запись разделены типами — в этом и смысл изменения</td>
 </tr>
 </tbody>
 </table>
@@ -716,7 +716,7 @@ Reactor Kafka                           ─┘
 </code></pre></div>
 
 <p>Чтобы написать обработчик правильно, нужно знать, что значит каждое значение <code>EmitResult</code>. Таблица ниже даёт полный список и подсказывает реакцию на каждое:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Значение</th>
@@ -726,34 +726,34 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>OK</code></td>
-<td>принято</td>
-<td>—</td>
+<td data-label="Значение"><code>OK</code></td>
+<td data-label="Когда">принято</td>
+<td data-label="Что делать">—</td>
 </tr>
 <tr>
-<td><code>FAIL_NON_SERIALIZED</code></td>
-<td>другой поток внутри <code>tryEmit*</code> прямо сейчас</td>
-<td>повторить (спин) или сериализовать эмиссию самому</td>
+<td data-label="Значение"><code>FAIL_NON_SERIALIZED</code></td>
+<td data-label="Когда">другой поток внутри <code>tryEmit*</code> прямо сейчас</td>
+<td data-label="Что делать">повторить (спин) или сериализовать эмиссию самому</td>
 </tr>
 <tr>
-<td><code>FAIL_OVERFLOW</code></td>
-<td>буфер полон, спроса нет</td>
-<td>считать потерю метрикой; увеличить буфер или притормозить производителя</td>
+<td data-label="Значение"><code>FAIL_OVERFLOW</code></td>
+<td data-label="Когда">буфер полон, спроса нет</td>
+<td data-label="Что делать">считать потерю метрикой; увеличить буфер или притормозить производителя</td>
 </tr>
 <tr>
-<td><code>FAIL_ZERO_SUBSCRIBER</code></td>
-<td>у <code>directAllOrNothing</code>/<code>directBestEffort</code> нет ни одного подписчика (буферизующий <code>multicast</code> до первого подписчика не отказывает, а копит элементы)</td>
-<td>либо это нормально (события до старта не нужны), либо нужен <code>replay</code>/буферизация</td>
+<td data-label="Значение"><code>FAIL_ZERO_SUBSCRIBER</code></td>
+<td data-label="Когда">у <code>directAllOrNothing</code>/<code>directBestEffort</code> нет ни одного подписчика (буферизующий <code>multicast</code> до первого подписчика не отказывает, а копит элементы)</td>
+<td data-label="Что делать">либо это нормально (события до старта не нужны), либо нужен <code>replay</code>/буферизация</td>
 </tr>
 <tr>
-<td><code>FAIL_TERMINATED</code></td>
-<td>sink уже завершён</td>
-<td>обычно баг: кто-то вызвал <code>tryEmitComplete</code> раньше времени</td>
+<td data-label="Значение"><code>FAIL_TERMINATED</code></td>
+<td data-label="Когда">sink уже завершён</td>
+<td data-label="Что делать">обычно баг: кто-то вызвал <code>tryEmitComplete</code> раньше времени</td>
 </tr>
 <tr>
-<td><code>FAIL_CANCELLED</code></td>
-<td>единственный подписчик <code>unicast</code>-sink отменил подписку или от <code>multicast</code> с <code>autoCancel=true</code> ушёл последний подписчик</td>
-<td>переоткрыть sink или прекратить производство</td>
+<td data-label="Значение"><code>FAIL_CANCELLED</code></td>
+<td data-label="Когда">единственный подписчик <code>unicast</code>-sink отменил подписку или от <code>multicast</code> с <code>autoCancel=true</code> ушёл последний подписчик</td>
+<td data-label="Что делать">переоткрыть sink или прекратить производство</td>
 </tr>
 </tbody>
 </table>
@@ -762,7 +762,7 @@ Reactor Kafka                           ─┘
 </blockquote>
 <h4>Мост от callback-API</h4>
 <p>Когда источник событий работает через обратные вызовы — слушатель SDK, WebSocket-сессия, подписка на тикер, — его нужно превратить в <code>Flux</code>. Для этого в Reactor есть два инструмента с разной моделью владения: <code>Sinks.Many</code> из семейства <code>Sinks</code> и <code>Flux.create</code>. Ошибка в выборе приводит либо к утечке слушателей, либо к тому, что события перестают приходить после ухода подписчика. Ниже сравнение <code>Sinks.Many</code> и <code>Flux.create</code>, а затем пример шины событий, в котором принципиален флаг <code>autoCancel=false</code>. В таблице видно, что главное различие между ними — кто владеет жизненным циклом источника:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -772,29 +772,29 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td>Кто владеет жизненным циклом</td>
-<td>вы (поле в бине)</td>
-<td>подписка (лямбда вызывается на каждый <code>subscribe</code>)</td>
+<td data-label="">Кто владеет жизненным циклом</td>
+<td data-label="Sinks.Many">вы (поле в бине)</td>
+<td data-label="Flux.create">подписка (лямбда вызывается на каждый <code>subscribe</code>)</td>
 </tr>
 <tr>
-<td>Отписка слушателя</td>
-<td>вручную</td>
-<td><code>sink.onDispose(...)</code> — автоматически</td>
+<td data-label="">Отписка слушателя</td>
+<td data-label="Sinks.Many">вручную</td>
+<td data-label="Flux.create"><code>sink.onDispose(...)</code> — автоматически</td>
 </tr>
 <tr>
-<td>Несколько подписчиков</td>
-<td><code>multicast</code>/<code>replay</code></td>
-<td>каждая подписка = новая регистрация слушателя</td>
+<td data-label="">Несколько подписчиков</td>
+<td data-label="Sinks.Many"><code>multicast</code>/<code>replay</code></td>
+<td data-label="Flux.create">каждая подписка = новая регистрация слушателя</td>
 </tr>
 <tr>
-<td>Учёт спроса</td>
-<td>буфер/дроп по варианту sink</td>
-<td><code>OverflowStrategy</code></td>
+<td data-label="">Учёт спроса</td>
+<td data-label="Sinks.Many">буфер/дроп по варианту sink</td>
+<td data-label="Flux.create"><code>OverflowStrategy</code></td>
 </tr>
 <tr>
-<td>Когда брать</td>
-<td>источник один и живёт дольше подписок (шина событий приложения)</td>
-<td>источник создаётся под подписчика (WebSocket-сессия, подписка на тикер)</td>
+<td data-label="">Когда брать</td>
+<td data-label="Sinks.Many">источник один и живёт дольше подписок (шина событий приложения)</td>
+<td data-label="Flux.create">источник создаётся под подписчика (WebSocket-сессия, подписка на тикер)</td>
 </tr>
 </tbody>
 </table>
@@ -832,7 +832,7 @@ Reactor Kafka                           ─┘
 <p><code>flatMap</code> работает по схеме 1:N: каждый элемент превращается в <code>Publisher</code>, на все эти внутренние издатели оператор <strong>подписывается одновременно</strong>, а их результаты <strong>перемешиваются</strong>, то есть порядок не сохраняется. Второй аргумент называется <code>concurrency</code> и по умолчанию равен <code>Queues.SMALL_BUFFER_SIZE</code> = <strong>256</strong>. Значит, <code>flatMap</code> без параметра может открыть 256 одновременных HTTP-соединений или отправить 256 запросов к БД. Третий аргумент задаёт <code>prefetch</code> внутренних издателей (сколько элементов оператор запрашивает у каждого из них вперёд), и по умолчанию он равен 32.</p>
 <p>Два других оператора устроены проще: <code>map</code> синхронно преобразует элемент 1:1 в рамках текущего сигнала, а <code>filter</code> работает по схеме 1:0..1. Обе лямбды выполняются на том потоке, который принёс <code>onNext</code>, и исключения в них бросать можно: Reactor поймает исключение и превратит его в <code>onError</code>, потому что <code>throw</code> внутри оператора означает <code>onError</code>, а потоку падать не даёт.</p>
 <p>У <code>flatMap</code> три родственника, и все четыре оператора различаются двумя свойствами: сколько внутренних подписок живёт одновременно и в каком порядке выходят результаты. Таблица сводит эти свойства с типовыми ситуациями:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Оператор</th>
@@ -843,28 +843,28 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>flatMap(f, n)</code></td>
-<td>до <code>n</code> одновременно</td>
-<td>не сохраняется (кто первый)</td>
-<td>максимальная пропускная способность, порядок не важен</td>
+<td data-label="Оператор"><code>flatMap(f, n)</code></td>
+<td data-label="Параллелизм">до <code>n</code> одновременно</td>
+<td data-label="Порядок результатов">не сохраняется (кто первый)</td>
+<td data-label="Когда">максимальная пропускная способность, порядок не важен</td>
 </tr>
 <tr>
-<td><code>concatMap(f)</code></td>
-<td>строго 1</td>
-<td>сохраняется</td>
-<td>порядок критичен (применение событий к состоянию), нельзя перегружать внешнюю систему</td>
+<td data-label="Оператор"><code>concatMap(f)</code></td>
+<td data-label="Параллелизм">строго 1</td>
+<td data-label="Порядок результатов">сохраняется</td>
+<td data-label="Когда">порядок критичен (применение событий к состоянию), нельзя перегружать внешнюю систему</td>
 </tr>
 <tr>
-<td><code>flatMapSequential(f, n)</code></td>
-<td>до <code>n</code> одновременно</td>
-<td>сохраняется (буферизует ранние результаты)</td>
-<td>нужен и параллелизм, и порядок; ценой памяти</td>
+<td data-label="Оператор"><code>flatMapSequential(f, n)</code></td>
+<td data-label="Параллелизм">до <code>n</code> одновременно</td>
+<td data-label="Порядок результатов">сохраняется (буферизует ранние результаты)</td>
+<td data-label="Когда">нужен и параллелизм, и порядок; ценой памяти</td>
 </tr>
 <tr>
-<td><code>switchMap(f)</code></td>
-<td>1, предыдущий <strong>отменяется</strong></td>
-<td>последний выигрывает</td>
-<td>автодополнение, поиск по вводу, «нужен только свежий результат»</td>
+<td data-label="Оператор"><code>switchMap(f)</code></td>
+<td data-label="Параллелизм">1, предыдущий <strong>отменяется</strong></td>
+<td data-label="Порядок результатов">последний выигрывает</td>
+<td data-label="Когда">автодополнение, поиск по вводу, «нужен только свежий результат»</td>
 </tr>
 </tbody>
 </table>
@@ -1042,7 +1042,7 @@ Reactor Kafka                           ─┘
 <h3 id="48-zip-и-combinelatest-merge-и-concat">4.8 <code>zip</code> и <code>combineLatest</code>, <code>merge</code> и <code>concat</code></h3>
 <p>Пара операторов, которые на коротком тесте дают одинаковый результат, расходятся на потоках разной скорости или на бесконечном источнике, и поэтому их путают чаще всего. Цена такой путаницы — неограниченный буфер или события, потерянные на стыке истории и онлайна. Для каждой пары ниже даны сравнительная таблица, пример и ловушка, на которой обычно попадаются.</p>
 <p>Первая пара — <code>zip</code> и <code>combineLatest</code>. Оба оператора собирают значение из нескольких источников, но различаются тем, когда эмитят результат и сколько раз используют каждый элемент; в таблице это главные строки:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1052,29 +1052,29 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td>Когда эмитит</td>
-<td>когда у <strong>каждого</strong> источника есть неиспользованный элемент</td>
-<td>когда у <strong>любого</strong> источника пришёл новый элемент (при условии, что все уже эмитили хотя бы раз)</td>
+<td data-label="">Когда эмитит</td>
+<td data-label="zip">когда у <strong>каждого</strong> источника есть неиспользованный элемент</td>
+<td data-label="combineLatest">когда у <strong>любого</strong> источника пришёл новый элемент (при условии, что все уже эмитили хотя бы раз)</td>
 </tr>
 <tr>
-<td>Использование элементов</td>
-<td>каждый элемент используется ровно один раз</td>
-<td>элементы повторно используются как «последнее известное значение»</td>
+<td data-label="">Использование элементов</td>
+<td data-label="zip">каждый элемент используется ровно один раз</td>
+<td data-label="combineLatest">элементы повторно используются как «последнее известное значение»</td>
 </tr>
 <tr>
-<td>Завершение</td>
-<td>как только завершился <strong>самый короткий</strong> источник</td>
-<td>когда завершились <strong>все</strong></td>
+<td data-label="">Завершение</td>
+<td data-label="zip">как только завершился <strong>самый короткий</strong> источник</td>
+<td data-label="combineLatest">когда завершились <strong>все</strong></td>
 </tr>
 <tr>
-<td>Пустой источник</td>
-<td>результат пустой</td>
-<td>результат пустой (комбинация так и не соберётся)</td>
+<td data-label="">Пустой источник</td>
+<td data-label="zip">результат пустой</td>
+<td data-label="combineLatest">результат пустой (комбинация так и не соберётся)</td>
 </tr>
 <tr>
-<td>Типовое применение</td>
-<td>fan-out нескольких <code>Mono</code> и сборка DTO</td>
-<td>«текущее состояние» из нескольких потоков: курс + лимит + флаг</td>
+<td data-label="">Типовое применение</td>
+<td data-label="zip">fan-out нескольких <code>Mono</code> и сборка DTO</td>
+<td data-label="combineLatest">«текущее состояние» из нескольких потоков: курс + лимит + флаг</td>
 </tr>
 </tbody>
 </table>
@@ -1090,7 +1090,7 @@ Reactor Kafka                           ─┘
 
 <p>Ловушка <code>zip</code> проявляется, когда источники идут с разной скоростью: быстрый источник <strong>буферизуется</strong>, пока от медленного не придёт пара. Поэтому <code>Flux.zip(fastTicker, slowDbStream)</code> будет неограниченно копить тики в памяти, пока не ответит БД. Лечение — оставлять <code>zip</code> только для <code>Mono</code>, а для потоков разной скорости брать <code>combineLatest</code> или <code>sample</code>.</p>
 <p>Вторая пара — <code>merge</code> и <code>concat</code>; к ней стоит добавить <code>mergeSequential</code>. Все три сводят несколько потоков в один, но различаются моментом подписки и порядком на выходе:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1101,35 +1101,35 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td>Подписка на источники</td>
-<td>на все сразу</td>
-<td>на следующий после завершения предыдущего</td>
-<td>на все сразу</td>
+<td data-label="">Подписка на источники</td>
+<td data-label="merge">на все сразу</td>
+<td data-label="concat">на следующий после завершения предыдущего</td>
+<td data-label="mergeSequential">на все сразу</td>
 </tr>
 <tr>
-<td>Порядок на выходе</td>
-<td>по мере готовности</td>
-<td>строго по источникам</td>
-<td>по источникам (с буферизацией)</td>
+<td data-label="">Порядок на выходе</td>
+<td data-label="merge">по мере готовности</td>
+<td data-label="concat">строго по источникам</td>
+<td data-label="mergeSequential">по источникам (с буферизацией)</td>
 </tr>
 <tr>
-<td>Бесконечный первый источник</td>
-<td>нормально</td>
-<td><strong>второй никогда не подпишется</strong></td>
-<td>нормально</td>
+<td data-label="">Бесконечный первый источник</td>
+<td data-label="merge">нормально</td>
+<td data-label="concat"><strong>второй никогда не подпишется</strong></td>
+<td data-label="mergeSequential">нормально</td>
 </tr>
 <tr>
-<td>Ошибка в одном</td>
-<td>терминирует всё (<code>mergeDelayError</code> — нет)</td>
-<td>терминирует всё</td>
-<td>терминирует всё</td>
+<td data-label="">Ошибка в одном</td>
+<td data-label="merge">терминирует всё (<code>mergeDelayError</code> — нет)</td>
+<td data-label="concat">терминирует всё</td>
+<td data-label="mergeSequential">терминирует всё</td>
 </tr>
 </tbody>
 </table>
 <p>Здесь скрыта практическая ловушка. <code>Flux.concat(historicalPrices, liveTicker)</code> — корректный паттерн «сначала история, потом онлайн», но между завершением истории и подпиской на тикер остаётся <strong>разрыв</strong>, и события в нём теряются. Чтобы этого не случилось, на живой поток подписываются заранее (<code>liveTicker.share()</code> или <code>replay(0).autoConnect()</code> до вызова <code>concat</code>) либо используют <code>Flux.mergeSequential</code> с уже подписанным hot-источником.</p>
 <h3 id="49-операторы-порядок-параллелизм-и-backpressure">4.9 Операторы: порядок, параллелизм и backpressure</h3>
 <p>На ревью реактивного кода быстро выясняется, что помнить свойства десятков операторов невозможно, и удобнее сверяться с одной таблицей. В ней для каждого оператора указано, сохраняет ли он порядок, сколько работы выполняет одновременно, как пропускает спрос вверх и где держит буфер. Смотреть в ней стоит прежде всего на колонку спроса, потому что строки со словом «разрывает» выключают backpressure для всего, что стоит выше. После таблицы разобраны три вывода, которые из неё сразу не видны.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Группа / оператор</th>
@@ -1141,158 +1141,158 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>map</code>, <code>filter</code>, <code>cast</code>, <code>mapNotNull</code>, <code>handle</code></td>
-<td>сохраняется</td>
-<td>1</td>
-<td>1:1 прозрачно</td>
-<td>нет (fuseable)</td>
+<td data-label="Группа / оператор"><code>map</code>, <code>filter</code>, <code>cast</code>, <code>mapNotNull</code>, <code>handle</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1</td>
+<td data-label="Спрос вверх (backpressure)">1:1 прозрачно</td>
+<td data-label="Внутренний буфер">нет (fuseable)</td>
 </tr>
 <tr>
-<td><code>flatMap(f, n, p)</code></td>
-<td><strong>не сохраняется</strong></td>
-<td>до <code>n</code> (по умолч. 256)</td>
-<td><code>n</code> у источника, <code>p</code> (по умолч. 32) у внутренних</td>
-<td>до <code>n × p</code></td>
+<td data-label="Группа / оператор"><code>flatMap(f, n, p)</code></td>
+<td data-label="Порядок"><strong>не сохраняется</strong></td>
+<td data-label="Параллелизм">до <code>n</code> (по умолч. 256)</td>
+<td data-label="Спрос вверх (backpressure)"><code>n</code> у источника, <code>p</code> (по умолч. 32) у внутренних</td>
+<td data-label="Внутренний буфер">до <code>n × p</code></td>
 </tr>
 <tr>
-<td><code>concatMap(f, p)</code></td>
-<td>сохраняется</td>
-<td>1</td>
-<td><code>concatMap(f)</code> без prefetch (так с 3.4): источник запрашивается только при спросе снизу; <code>concatMap(f, p)</code> запрашивает <code>p</code></td>
-<td>1 внутренний</td>
+<td data-label="Группа / оператор"><code>concatMap(f, p)</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1</td>
+<td data-label="Спрос вверх (backpressure)"><code>concatMap(f)</code> без prefetch (так с 3.4): источник запрашивается только при спросе снизу; <code>concatMap(f, p)</code> запрашивает <code>p</code></td>
+<td data-label="Внутренний буфер">1 внутренний</td>
 </tr>
 <tr>
-<td><code>flatMapSequential(f, n, p)</code></td>
-<td>сохраняется</td>
-<td>до <code>n</code></td>
-<td>как <code>flatMap</code></td>
-<td>до <code>n × p</code> + очередь переупорядочивания</td>
+<td data-label="Группа / оператор"><code>flatMapSequential(f, n, p)</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">до <code>n</code></td>
+<td data-label="Спрос вверх (backpressure)">как <code>flatMap</code></td>
+<td data-label="Внутренний буфер">до <code>n × p</code> + очередь переупорядочивания</td>
 </tr>
 <tr>
-<td><code>switchMap(f)</code></td>
-<td>«последний выигрывает»</td>
-<td>1 (предыдущий отменяется)</td>
-<td>prefetch внутреннего</td>
-<td>1 внутренний</td>
+<td data-label="Группа / оператор"><code>switchMap(f)</code></td>
+<td data-label="Порядок">«последний выигрывает»</td>
+<td data-label="Параллелизм">1 (предыдущий отменяется)</td>
+<td data-label="Спрос вверх (backpressure)">prefetch внутреннего</td>
+<td data-label="Внутренний буфер">1 внутренний</td>
 </tr>
 <tr>
-<td><code>expand(f)</code></td>
-<td>обход в ширину</td>
-<td>зависит от <code>capacityHint</code></td>
-<td>да</td>
-<td>очередь фронта обхода</td>
+<td data-label="Группа / оператор"><code>expand(f)</code></td>
+<td data-label="Порядок">обход в ширину</td>
+<td data-label="Параллелизм">зависит от <code>capacityHint</code></td>
+<td data-label="Спрос вверх (backpressure)">да</td>
+<td data-label="Внутренний буфер">очередь фронта обхода</td>
 </tr>
 <tr>
-<td><code>publishOn(s, p)</code></td>
-<td>сохраняется</td>
-<td>1 (дренаж однопоточный)</td>
-<td><code>p</code> (по умолч. 256), добор на 75%</td>
-<td>очередь на <code>p</code></td>
+<td data-label="Группа / оператор"><code>publishOn(s, p)</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1 (дренаж однопоточный)</td>
+<td data-label="Спрос вверх (backpressure)"><code>p</code> (по умолч. 256), добор на 75%</td>
+<td data-label="Внутренний буфер">очередь на <code>p</code></td>
 </tr>
 <tr>
-<td><code>subscribeOn(s)</code></td>
-<td>сохраняется</td>
-<td>1</td>
-<td>прозрачно</td>
-<td>нет</td>
+<td data-label="Группа / оператор"><code>subscribeOn(s)</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1</td>
+<td data-label="Спрос вверх (backpressure)">прозрачно</td>
+<td data-label="Внутренний буфер">нет</td>
 </tr>
 <tr>
-<td><code>parallel(n).runOn(s)</code></td>
-<td><strong>не сохраняется</strong></td>
-<td><code>n</code> рельсов</td>
-<td><code>prefetch</code> на рельс (по умолч. 256)</td>
-<td>очередь на рельс</td>
+<td data-label="Группа / оператор"><code>parallel(n).runOn(s)</code></td>
+<td data-label="Порядок"><strong>не сохраняется</strong></td>
+<td data-label="Параллелизм"><code>n</code> рельсов</td>
+<td data-label="Спрос вверх (backpressure)"><code>prefetch</code> на рельс (по умолч. 256)</td>
+<td data-label="Внутренний буфер">очередь на рельс</td>
 </tr>
 <tr>
-<td><code>buffer(n)</code> / <code>bufferTimeout</code></td>
-<td>сохраняется</td>
-<td>1</td>
-<td><code>request(1)</code> вниз = <code>request(n)</code> вверх</td>
-<td>список на <code>n</code></td>
+<td data-label="Группа / оператор"><code>buffer(n)</code> / <code>bufferTimeout</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1</td>
+<td data-label="Спрос вверх (backpressure)"><code>request(1)</code> вниз = <code>request(n)</code> вверх</td>
+<td data-label="Внутренний буфер">список на <code>n</code></td>
 </tr>
 <tr>
-<td><code>window(...)</code></td>
-<td>сохраняется</td>
-<td>1</td>
-<td>зависит от подписчика окна</td>
-<td>очередь окна</td>
+<td data-label="Группа / оператор"><code>window(...)</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1</td>
+<td data-label="Спрос вверх (backpressure)">зависит от подписчика окна</td>
+<td data-label="Внутренний буфер">очередь окна</td>
 </tr>
 <tr>
-<td><code>groupBy(k, p)</code></td>
-<td>внутри группы сохраняется</td>
-<td>1</td>
-<td><code>p</code> (по умолч. 256)</td>
-<td>очередь на группу</td>
+<td data-label="Группа / оператор"><code>groupBy(k, p)</code></td>
+<td data-label="Порядок">внутри группы сохраняется</td>
+<td data-label="Параллелизм">1</td>
+<td data-label="Спрос вверх (backpressure)"><code>p</code> (по умолч. 256)</td>
+<td data-label="Внутренний буфер">очередь на группу</td>
 </tr>
 <tr>
-<td><code>zip</code></td>
-<td>по парам</td>
-<td>все источники параллельно</td>
-<td><code>request(1)</code> вниз = <code>request(1)</code> каждому</td>
-<td>по 1 элементу на источник (+ prefetch)</td>
+<td data-label="Группа / оператор"><code>zip</code></td>
+<td data-label="Порядок">по парам</td>
+<td data-label="Параллелизм">все источники параллельно</td>
+<td data-label="Спрос вверх (backpressure)"><code>request(1)</code> вниз = <code>request(1)</code> каждому</td>
+<td data-label="Внутренний буфер">по 1 элементу на источник (+ prefetch)</td>
 </tr>
 <tr>
-<td><code>combineLatest</code></td>
-<td>по времени</td>
-<td>все параллельно</td>
-<td>да, но отбрасывает промежуточные</td>
-<td>по последнему значению</td>
+<td data-label="Группа / оператор"><code>combineLatest</code></td>
+<td data-label="Порядок">по времени</td>
+<td data-label="Параллелизм">все параллельно</td>
+<td data-label="Спрос вверх (backpressure)">да, но отбрасывает промежуточные</td>
+<td data-label="Внутренний буфер">по последнему значению</td>
 </tr>
 <tr>
-<td><code>merge(n)</code></td>
-<td>не сохраняется</td>
-<td>до <code>n</code> (по умолч. 256)</td>
-<td>да</td>
-<td>prefetch на источник</td>
+<td data-label="Группа / оператор"><code>merge(n)</code></td>
+<td data-label="Порядок">не сохраняется</td>
+<td data-label="Параллелизм">до <code>n</code> (по умолч. 256)</td>
+<td data-label="Спрос вверх (backpressure)">да</td>
+<td data-label="Внутренний буфер">prefetch на источник</td>
 </tr>
 <tr>
-<td><code>concat</code></td>
-<td>сохраняется</td>
-<td>1</td>
-<td>да</td>
-<td>prefetch текущего</td>
+<td data-label="Группа / оператор"><code>concat</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1</td>
+<td data-label="Спрос вверх (backpressure)">да</td>
+<td data-label="Внутренний буфер">prefetch текущего</td>
 </tr>
 <tr>
-<td><code>cache(n)</code> / <code>replay(n)</code></td>
-<td>сохраняется</td>
-<td>1 источник, N подписчиков</td>
-<td>источник запрашивает неограниченно</td>
-<td>буфер на <code>n</code> (или <strong>всё</strong>)</td>
+<td data-label="Группа / оператор"><code>cache(n)</code> / <code>replay(n)</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1 источник, N подписчиков</td>
+<td data-label="Спрос вверх (backpressure)">источник запрашивает неограниченно</td>
+<td data-label="Внутренний буфер">буфер на <code>n</code> (или <strong>всё</strong>)</td>
 </tr>
 <tr>
-<td><code>share()</code> / <code>publish().refCount()</code></td>
-<td>сохраняется</td>
-<td>1 источник, N подписчиков</td>
-<td>спрос = минимум по подписчикам</td>
-<td>prefetch</td>
+<td data-label="Группа / оператор"><code>share()</code> / <code>publish().refCount()</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1 источник, N подписчиков</td>
+<td data-label="Спрос вверх (backpressure)">спрос = минимум по подписчикам</td>
+<td data-label="Внутренний буфер">prefetch</td>
 </tr>
 <tr>
-<td><code>onBackpressureBuffer(n)</code></td>
-<td>сохраняется</td>
-<td>1</td>
-<td><strong>разрывает</strong> backpressure: вверх <code>unbounded</code></td>
-<td>очередь на <code>n</code></td>
+<td data-label="Группа / оператор"><code>onBackpressureBuffer(n)</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1</td>
+<td data-label="Спрос вверх (backpressure)"><strong>разрывает</strong> backpressure: вверх <code>unbounded</code></td>
+<td data-label="Внутренний буфер">очередь на <code>n</code></td>
 </tr>
 <tr>
-<td><code>limitRate(hi, lo)</code></td>
-<td>сохраняется</td>
-<td>1</td>
-<td>ограничивает окно спроса до <code>hi</code></td>
-<td>нет</td>
+<td data-label="Группа / оператор"><code>limitRate(hi, lo)</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1</td>
+<td data-label="Спрос вверх (backpressure)">ограничивает окно спроса до <code>hi</code></td>
+<td data-label="Внутренний буфер">нет</td>
 </tr>
 <tr>
-<td><code>sample(d)</code> / <code>sampleFirst(d)</code></td>
-<td>сохраняется</td>
-<td>1</td>
-<td><strong>разрывает</strong>: запрашивает неограниченно, отбрасывает</td>
-<td>1 элемент</td>
+<td data-label="Группа / оператор"><code>sample(d)</code> / <code>sampleFirst(d)</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1</td>
+<td data-label="Спрос вверх (backpressure)"><strong>разрывает</strong>: запрашивает неограниченно, отбрасывает</td>
+<td data-label="Внутренний буфер">1 элемент</td>
 </tr>
 <tr>
-<td><code>delayElements(d)</code></td>
-<td>сохраняется</td>
-<td>1</td>
-<td><code>request(1)</code> за раз</td>
-<td>1 элемент</td>
+<td data-label="Группа / оператор"><code>delayElements(d)</code></td>
+<td data-label="Порядок">сохраняется</td>
+<td data-label="Параллелизм">1</td>
+<td data-label="Спрос вверх (backpressure)"><code>request(1)</code> за раз</td>
+<td data-label="Внутренний буфер">1 элемент</td>
 </tr>
 </tbody>
 </table>
@@ -1310,7 +1310,7 @@ Reactor Kafka                           ─┘
 <p>Поток меняется только там, где вы об этом попросили (<code>subscribeOn</code>, <code>publishOn</code>, <code>parallel().runOn()</code>), или там, где оператор асинхронен по природе: <code>delayElements</code>, <code>interval</code> и <code>timeout</code> по умолчанию используют <code>Schedulers.parallel()</code>.</p>
 <h3 id="52-каталог-планировщиков">5.2 Каталог планировщиков</h3>
 <p>В Reactor есть несколько стандартных планировщиков, и каждый рассчитан на свой вид работы: короткую работу процессора, блокирующие вызовы или сериализацию доступа к ресурсу. Если перепутать их назначение, получится либо заблокированный CPU-пул, либо очередь из тысяч задач без единой ошибки. В таблице для каждого планировщика указаны размер и назначение; смотреть стоит прежде всего на строку <code>boundedElastic</code>, потому что её лимиты чаще всего становятся причиной «тихих» инцидентов:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Планировщик</th>
@@ -1321,40 +1321,40 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>Schedulers.immediate()</code></td>
-<td>«no-op»: выполняет задачу прямо в вызывающем потоке</td>
-<td>—</td>
-<td>заглушка там, где API требует <code>Scheduler</code></td>
+<td data-label="Планировщик"><code>Schedulers.immediate()</code></td>
+<td data-label="Что это">«no-op»: выполняет задачу прямо в вызывающем потоке</td>
+<td data-label="Размер">—</td>
+<td data-label="Для чего">заглушка там, где API требует <code>Scheduler</code></td>
 </tr>
 <tr>
-<td><code>Schedulers.single()</code></td>
-<td>один повторно используемый поток на всё приложение</td>
-<td>1</td>
-<td>сериализация доступа к не-потокобезопасному ресурсу</td>
+<td data-label="Планировщик"><code>Schedulers.single()</code></td>
+<td data-label="Что это">один повторно используемый поток на всё приложение</td>
+<td data-label="Размер">1</td>
+<td data-label="Для чего">сериализация доступа к не-потокобезопасному ресурсу</td>
 </tr>
 <tr>
-<td><code>Schedulers.parallel()</code></td>
-<td>пул фиксированного размера, без блокировок</td>
-<td>= числу CPU-ядер</td>
-<td>короткая CPU-работа, таймеры, <code>delay</code>, <code>interval</code></td>
+<td data-label="Планировщик"><code>Schedulers.parallel()</code></td>
+<td data-label="Что это">пул фиксированного размера, без блокировок</td>
+<td data-label="Размер">= числу CPU-ядер</td>
+<td data-label="Для чего">короткая CPU-работа, таймеры, <code>delay</code>, <code>interval</code></td>
 </tr>
 <tr>
-<td><code>Schedulers.boundedElastic()</code></td>
-<td>эластичный пул с ограничением</td>
-<td>до <strong>CPU × 10</strong> потоков, очередь до <strong>100 000</strong> задач на каждый поток, idle TTL <strong>60 с</strong></td>
-<td>обёртка блокирующих вызовов</td>
+<td data-label="Планировщик"><code>Schedulers.boundedElastic()</code></td>
+<td data-label="Что это">эластичный пул с ограничением</td>
+<td data-label="Размер">до <strong>CPU × 10</strong> потоков, очередь до <strong>100 000</strong> задач на каждый поток, idle TTL <strong>60 с</strong></td>
+<td data-label="Для чего">обёртка блокирующих вызовов</td>
 </tr>
 <tr>
-<td><code>Schedulers.fromExecutorService(es)</code></td>
-<td>адаптер к вашему пулу</td>
-<td>ваш</td>
-<td>интеграция с существующими пулами</td>
+<td data-label="Планировщик"><code>Schedulers.fromExecutorService(es)</code></td>
+<td data-label="Что это">адаптер к вашему пулу</td>
+<td data-label="Размер">ваш</td>
+<td data-label="Для чего">интеграция с существующими пулами</td>
 </tr>
 <tr>
-<td><code>Schedulers.newSingle/newParallel/newBoundedElastic</code></td>
-<td>собственные именованные экземпляры</td>
-<td>ваш</td>
-<td>изоляция bulkhead'ов</td>
+<td data-label="Планировщик"><code>Schedulers.newSingle/newParallel/newBoundedElastic</code></td>
+<td data-label="Что это">собственные именованные экземпляры</td>
+<td data-label="Размер">ваш</td>
+<td data-label="Для чего">изоляция bulkhead'ов</td>
 </tr>
 </tbody>
 </table>
@@ -1434,7 +1434,7 @@ Reactor Kafka                           ─┘
 <p><strong><code>Schedulers.immediate()</code></strong> — заглушка, которая планировщиком по сути не служит: <code>schedule(task)</code> просто немедленно выполняет <code>task.run()</code> в вызывающем потоке. Используют его там, где API требует <code>Scheduler</code>, а переключение не нужно. При этом <code>publishOn(Schedulers.immediate())</code> поток не меняет, но <strong>всё равно создаёт очередь и границу prefetch</strong>, и этим иногда пользуются намеренно, чтобы «нарезать» цепочку на сегменты по спросу.</p>
 <p><strong><code>Schedulers.fromExecutor</code> и <code>fromExecutorService</code>.</strong> Первый принимает <code>Executor</code> и не умеет ни отменять задачи, ни планировать их с задержкой, так что <code>delay</code>/<code>interval</code> на нём не работают. Второй принимает <code>ExecutorService</code> и отменять умеет, но для задержек ему нужен <code>ScheduledExecutorService</code>. Есть ещё нюанс: у <code>fromExecutor(executor)</code> нет семантики <code>dispose()</code> для чужого пула, и закрывать его вам придётся самому.</p>
 <p>Все эти свойства сведены в таблицу; при выборе планировщика смотрите на строки <code>NonBlocking</code> и «Очередь»: именно они определяют поведение при ошибке:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сравнение</th>
@@ -1446,46 +1446,46 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td>Число потоков</td>
-<td>= CPU</td>
-<td>до CPU × 10</td>
-<td>1</td>
-<td>0</td>
+<td data-label="Сравнение">Число потоков</td>
+<td data-label="parallel">= CPU</td>
+<td data-label="boundedElastic">до CPU × 10</td>
+<td data-label="single">1</td>
+<td data-label="immediate">0</td>
 </tr>
 <tr>
-<td><code>NonBlocking</code> (запрет <code>block()</code>)</td>
-<td>да</td>
-<td><strong>нет</strong></td>
-<td>да</td>
-<td>нет</td>
+<td data-label="Сравнение"><code>NonBlocking</code> (запрет <code>block()</code>)</td>
+<td data-label="parallel">да</td>
+<td data-label="boundedElastic"><strong>нет</strong></td>
+<td data-label="single">да</td>
+<td data-label="immediate">нет</td>
 </tr>
 <tr>
-<td>BlockHound помечает как неблокирующий</td>
-<td>да</td>
-<td>нет</td>
-<td>да</td>
-<td>нет</td>
+<td data-label="Сравнение">BlockHound помечает как неблокирующий</td>
+<td data-label="parallel">да</td>
+<td data-label="boundedElastic">нет</td>
+<td data-label="single">да</td>
+<td data-label="immediate">нет</td>
 </tr>
 <tr>
-<td>Очередь</td>
-<td>безлимитная на воркер</td>
-<td>100 000 на поток</td>
-<td>безлимитная</td>
-<td>нет</td>
+<td data-label="Сравнение">Очередь</td>
+<td data-label="parallel">безлимитная на воркер</td>
+<td data-label="boundedElastic">100 000 на поток</td>
+<td data-label="single">безлимитная</td>
+<td data-label="immediate">нет</td>
 </tr>
 <tr>
-<td>Задержки/таймеры</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>нет</td>
+<td data-label="Сравнение">Задержки/таймеры</td>
+<td data-label="parallel">да</td>
+<td data-label="boundedElastic">да</td>
+<td data-label="single">да</td>
+<td data-label="immediate">нет</td>
 </tr>
 <tr>
-<td>Для чего</td>
-<td>CPU-работа, таймеры</td>
-<td>блокирующие вызовы</td>
-<td>сериализация</td>
-<td>заглушка</td>
+<td data-label="Сравнение">Для чего</td>
+<td data-label="parallel">CPU-работа, таймеры</td>
+<td data-label="boundedElastic">блокирующие вызовы</td>
+<td data-label="single">сериализация</td>
+<td data-label="immediate">заглушка</td>
 </tr>
 </tbody>
 </table>
@@ -1510,7 +1510,7 @@ Reactor Kafka                           ─┘
 </code></pre></div>
 
 <p>Что такая замена даёт и чего не даёт, показано в таблице; главная строка в ней — «Естественное ограничение нагрузки»:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1520,34 +1520,34 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td>Потолок числа одновременных блокирующих вызовов</td>
-<td>CPU × 10 (например, 40)</td>
-<td>у встроенного VT-варианта <code>boundedElastic</code> тот же CPU × 10; у своего планировщика поверх <code>newVirtualThreadPerTaskExecutor()</code> практически нет</td>
+<td data-label="">Потолок числа одновременных блокирующих вызовов</td>
+<td data-label="boundedElastic (платформенные)">CPU × 10 (например, 40)</td>
+<td data-label="Виртуальные потоки">у встроенного VT-варианта <code>boundedElastic</code> тот же CPU × 10; у своего планировщика поверх <code>newVirtualThreadPerTaskExecutor()</code> практически нет</td>
 </tr>
 <tr>
-<td>Цена одной «единицы ожидания»</td>
-<td>~1 МБ виртуального адресного пространства + структуры ядра</td>
-<td>сотни байт — единицы КБ в куче</td>
+<td data-label="">Цена одной «единицы ожидания»</td>
+<td data-label="boundedElastic (платформенные)">~1 МБ виртуального адресного пространства + структуры ядра</td>
+<td data-label="Виртуальные потоки">сотни байт — единицы КБ в куче</td>
 </tr>
 <tr>
-<td>Естественное ограничение нагрузки</td>
-<td>есть (очередь + отказ)</td>
-<td><strong>нет, если потолок снят, и это опасно</strong></td>
+<td data-label="">Естественное ограничение нагрузки</td>
+<td data-label="boundedElastic (платформенные)">есть (очередь + отказ)</td>
+<td data-label="Виртуальные потоки"><strong>нет, если потолок снят, и это опасно</strong></td>
 </tr>
 <tr>
-<td>Пиннинг на <code>synchronized</code></td>
-<td>неактуально</td>
-<td>до JDK 24 (JEP 491) — да, теперь нет</td>
+<td data-label="">Пиннинг на <code>synchronized</code></td>
+<td data-label="boundedElastic (платформенные)">неактуально</td>
+<td data-label="Виртуальные потоки">до JDK 24 (JEP 491) — да, теперь нет</td>
 </tr>
 <tr>
-<td>Видно в thread dump</td>
-<td>да, платформенные потоки</td>
-<td>нужен <code>jcmd Thread.dump_to_file -format=json</code></td>
+<td data-label="">Видно в thread dump</td>
+<td data-label="boundedElastic (платформенные)">да, платформенные потоки</td>
+<td data-label="Виртуальные потоки">нужен <code>jcmd Thread.dump_to_file -format=json</code></td>
 </tr>
 <tr>
-<td>BlockHound</td>
-<td>не мешает (пул не <code>NonBlocking</code>)</td>
-<td>не мешает</td>
+<td data-label="">BlockHound</td>
+<td data-label="boundedElastic (платформенные)">не мешает (пул не <code>NonBlocking</code>)</td>
+<td data-label="Виртуальные потоки">не мешает</td>
 </tr>
 </tbody>
 </table>
@@ -1649,7 +1649,7 @@ Reactor Kafka                           ─┘
 <p><code>limitRate(n)</code> ограничивает <strong>размер окна спроса</strong>, который видит источник, и скорость потока при этом напрямую не меняет. Для WebClient это объём, который читается из сокета. Для R2DBC окно спроса сдерживает чтение ответа, но размер порции выборки у PostgreSQL-драйвера задаёт отдельная настройка <code>fetchSize</code> (по умолчанию 0, то есть весь результат одним <code>Execute</code>), подробнее в разделе 11.7.</p>
 <h3 id="62-prefetch-и-буферы-операторов">6.2 Prefetch и буферы операторов</h3>
 <p>Prefetch — это объём, который оператор с внутренним буфером запрашивает у источника заранее, не дожидаясь спроса снизу, и именно в этих буферах лежит основная память реактивного приложения. Оценить её можно заранее, если знать несколько констант и понимать, почему у <code>flatMap</code> лимит стоит указывать явно. Значения по умолчанию для Reactor 3.8 приведены в таблице и настраиваются системными свойствами:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Константа</th>
@@ -1659,14 +1659,14 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>Queues.SMALL_BUFFER_SIZE</code></td>
-<td>256 (<code>reactor.bufferSize.small</code>)</td>
-<td><code>flatMap</code> concurrency, <code>publishOn</code> prefetch, <code>Sinks</code> буферы</td>
+<td data-label="Константа"><code>Queues.SMALL_BUFFER_SIZE</code></td>
+<td data-label="Значение">256 (<code>reactor.bufferSize.small</code>)</td>
+<td data-label="Где используется"><code>flatMap</code> concurrency, <code>publishOn</code> prefetch, <code>Sinks</code> буферы</td>
 </tr>
 <tr>
-<td><code>Queues.XS_BUFFER_SIZE</code></td>
-<td>32 (<code>reactor.bufferSize.x</code>)</td>
-<td>prefetch внутренних публишеров <code>flatMap</code>; <code>concatMap(f)</code> с 3.4 по умолчанию работает без prefetch</td>
+<td data-label="Константа"><code>Queues.XS_BUFFER_SIZE</code></td>
+<td data-label="Значение">32 (<code>reactor.bufferSize.x</code>)</td>
+<td data-label="Где используется">prefetch внутренних публишеров <code>flatMap</code>; <code>concatMap(f)</code> с 3.4 по умолчанию работает без prefetch</td>
 </tr>
 </tbody>
 </table>
@@ -1683,7 +1683,7 @@ Reactor Kafka                           ─┘
 </code></pre></div>
 
 <p>Стратегию выбирают по смыслу данных; таблица ниже показывает, какая подходит для каких данных и почему:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Данные</th>
@@ -1693,24 +1693,24 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td>Котировки, телеметрия, «текущее состояние»</td>
-<td><code>onBackpressureLatest()</code></td>
-<td>устаревшее значение бесполезно</td>
+<td data-label="Данные">Котировки, телеметрия, «текущее состояние»</td>
+<td data-label="Стратегия"><code>onBackpressureLatest()</code></td>
+<td data-label="Почему">устаревшее значение бесполезно</td>
 </tr>
 <tr>
-<td>Метрики, необязательные аудит-события</td>
-<td><code>onBackpressureDrop()</code></td>
-<td>потеря допустима, деградация плавная</td>
+<td data-label="Данные">Метрики, необязательные аудит-события</td>
+<td data-label="Стратегия"><code>onBackpressureDrop()</code></td>
+<td data-label="Почему">потеря допустима, деградация плавная</td>
 </tr>
 <tr>
-<td>Платежи, команды</td>
-<td><code>onBackpressureBuffer(N)</code> + оповещение, либо <code>Error</code></td>
-<td>терять нельзя; лучше явный отказ, чем тихая потеря</td>
+<td data-label="Данные">Платежи, команды</td>
+<td data-label="Стратегия"><code>onBackpressureBuffer(N)</code> + оповещение, либо <code>Error</code></td>
+<td data-label="Почему">терять нельзя; лучше явный отказ, чем тихая потеря</td>
 </tr>
 <tr>
-<td>Всплески при ровном среднем</td>
-<td><code>onBackpressureBuffer(N, DROP_OLDEST)</code></td>
-<td>сглаживает пики, ограничивает память</td>
+<td data-label="Данные">Всплески при ровном среднем</td>
+<td data-label="Стратегия"><code>onBackpressureBuffer(N, DROP_OLDEST)</code></td>
+<td data-label="Почему">сглаживает пики, ограничивает память</td>
 </tr>
 </tbody>
 </table>
@@ -1829,7 +1829,7 @@ Reactor Kafka                           ─┘
 
 <p>Отставание этот приём не лечит, но делает его <strong>наблюдаемым</strong>, а значит, диагностируемым. Метрика «сколько раз мы эмитировали при нулевом спросе» отвечает на вопрос, теряем ли мы данные, без чтения heap dump.</p>
 <p>Сводка по <code>FluxSink.OverflowStrategy</code> ниже показывает последствия каждой стратегии; в первой строке напоминание, что значение по умолчанию память не ограничивает:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -1840,34 +1840,34 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>BUFFER</code> (<strong>по умолчанию</strong>)</td>
-<td>копит в неограниченной очереди</td>
-<td><strong>не ограничена</strong></td>
-<td>только если источник гарантированно конечен и мал</td>
+<td data-label="Стратегия"><code>BUFFER</code> (<strong>по умолчанию</strong>)</td>
+<td data-label="Что делает при requested == 0">копит в неограниченной очереди</td>
+<td data-label="Память"><strong>не ограничена</strong></td>
+<td data-label="Когда брать">только если источник гарантированно конечен и мал</td>
 </tr>
 <tr>
-<td><code>ERROR</code></td>
-<td><code>onError(OverflowException)</code> немедленно</td>
-<td>нет</td>
-<td>предохранитель в коде, который обязан уважать спрос</td>
+<td data-label="Стратегия"><code>ERROR</code></td>
+<td data-label="Что делает при requested == 0"><code>onError(OverflowException)</code> немедленно</td>
+<td data-label="Память">нет</td>
+<td data-label="Когда брать">предохранитель в коде, который обязан уважать спрос</td>
 </tr>
 <tr>
-<td><code>DROP</code></td>
-<td>выбрасывает новый элемент</td>
-<td>нет</td>
-<td>метрики, необязательная телеметрия</td>
+<td data-label="Стратегия"><code>DROP</code></td>
+<td data-label="Что делает при requested == 0">выбрасывает новый элемент</td>
+<td data-label="Память">нет</td>
+<td data-label="Когда брать">метрики, необязательная телеметрия</td>
 </tr>
 <tr>
-<td><code>LATEST</code></td>
-<td>хранит только последний</td>
-<td>1 элемент</td>
-<td>«текущее состояние»: котировка, позиция, статус</td>
+<td data-label="Стратегия"><code>LATEST</code></td>
+<td data-label="Что делает при requested == 0">хранит только последний</td>
+<td data-label="Память">1 элемент</td>
+<td data-label="Когда брать">«текущее состояние»: котировка, позиция, статус</td>
 </tr>
 <tr>
-<td><code>IGNORE</code></td>
-<td>эмитит, не считая спрос</td>
-<td>нет у sink, но даунстрим упадёт <code>OverflowException</code></td>
-<td>почти никогда; только если ниже стоит свой буфер</td>
+<td data-label="Стратегия"><code>IGNORE</code></td>
+<td data-label="Что делает при requested == 0">эмитит, не считая спрос</td>
+<td data-label="Память">нет у sink, но даунстрим упадёт <code>OverflowException</code></td>
+<td data-label="Когда брать">почти никогда; только если ниже стоит свой буфер</td>
 </tr>
 </tbody>
 </table>
@@ -1877,7 +1877,7 @@ Reactor Kafka                           ─┘
 <h3 id="68-backpressure-и-горячие-источники">6.8 Backpressure и горячие источники</h3>
 <p>Горячий источник — это источник, <strong>темп которого задаёте не вы</strong>: таймер тикает по часам, Kafka-потребитель в push-режиме получает пакеты от контейнера, WebSocket-фрейм приходит, когда его прислал сервер, а датчик присылает значение, когда измерил. Ни один из них не умеет «подождать» в ответ на ваш <code>request(n)</code>, и поэтому для них backpressure в чистом виде невозможен. Формально backpressure по спецификации — это <strong>обязательство <code>Publisher</code> не эмитить больше, чем запрошено</strong>. Источник, который физически не способен его выполнить, может стать корректным <code>Publisher</code> только за счёт буфера или потерь, и третьего не дано. Поэтому любая обёртка горячего источника в <code>Flux</code> неизбежно выбирает одно из трёх: буферизовать и платить памятью, терять и платить данными или блокировать производителя, что для таймера невозможно, а для сокета означает заполнение TCP-окна.</p>
 <p>Что делать, зависит от типа источника; таблица показывает для каждого, почему он не тормозится и какое решение работает:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Источник</th>
@@ -1887,29 +1887,29 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>Flux.interval</code> / таймер</td>
-<td>тикает по часам</td>
-<td><code>onBackpressureDrop</code>/<code>Latest</code>, либо не использовать таймер, а <code>repeatWhen</code> с задержкой — тогда следующий цикл начнётся после завершения предыдущего</td>
+<td data-label="Источник"><code>Flux.interval</code> / таймер</td>
+<td data-label="Почему не тормозится">тикает по часам</td>
+<td data-label="Рабочее решение"><code>onBackpressureDrop</code>/<code>Latest</code>, либо не использовать таймер, а <code>repeatWhen</code> с задержкой — тогда следующий цикл начнётся после завершения предыдущего</td>
 </tr>
 <tr>
-<td>Kafka через <code>@KafkaListener</code></td>
-<td>контейнер слушателя Spring Kafka сам вызывает <code>poll()</code></td>
-<td>перейти на <code>KafkaReceiver</code> (pull-модель), либо регулировать <code>max.poll.records</code> + <code>Consumer.pause()</code>/<code>resume()</code> вручную</td>
+<td data-label="Источник">Kafka через <code>@KafkaListener</code></td>
+<td data-label="Почему не тормозится">контейнер слушателя Spring Kafka сам вызывает <code>poll()</code></td>
+<td data-label="Рабочее решение">перейти на <code>KafkaReceiver</code> (pull-модель), либо регулировать <code>max.poll.records</code> + <code>Consumer.pause()</code>/<code>resume()</code> вручную</td>
 </tr>
 <tr>
-<td>WebSocket / SSE входящий</td>
-<td>сервер шлёт, когда хочет</td>
-<td><strong>TCP-окно — это и есть backpressure</strong>: не читать из сокета. Reactor Netty это умеет, если вы не буферизуете; проверяется тем, что <code>channel.isWritable()</code> уходит в <code>false</code> у отправителя</td>
+<td data-label="Источник">WebSocket / SSE входящий</td>
+<td data-label="Почему не тормозится">сервер шлёт, когда хочет</td>
+<td data-label="Рабочее решение"><strong>TCP-окно — это и есть backpressure</strong>: не читать из сокета. Reactor Netty это умеет, если вы не буферизуете; проверяется тем, что <code>channel.isWritable()</code> уходит в <code>false</code> у отправителя</td>
 </tr>
 <tr>
-<td>Callback SDK (биржевой фид, датчик)</td>
-<td>обратный вызов синхронный</td>
-<td><code>Flux.create</code> с <code>LATEST</code>/<code>DROP</code> + метрика потерь; если терять нельзя — писать в durable-буфер (Kafka, диск), а потом читать pull-моделью</td>
+<td data-label="Источник">Callback SDK (биржевой фид, датчик)</td>
+<td data-label="Почему не тормозится">обратный вызов синхронный</td>
+<td data-label="Рабочее решение"><code>Flux.create</code> с <code>LATEST</code>/<code>DROP</code> + метрика потерь; если терять нельзя — писать в durable-буфер (Kafka, диск), а потом читать pull-моделью</td>
 </tr>
 <tr>
-<td>БД-курсор, файл, HTTP-ответ</td>
-<td>умеет тормозить</td>
-<td>ничего не делать, backpressure работает</td>
+<td data-label="Источник">БД-курсор, файл, HTTP-ответ</td>
+<td data-label="Почему не тормозится">умеет тормозить</td>
+<td data-label="Рабочее решение">ничего не делать, backpressure работает</td>
 </tr>
 </tbody>
 </table>
@@ -1945,7 +1945,7 @@ Reactor Kafka                           ─┘
 <p>Это правильный паттерн для задачи «обработать N элементов, не падая на одном»; он же служит заменой <code>onErrorContinue</code>.</p>
 <h3 id="72-операторы-обработки-ошибок">7.2 Операторы обработки ошибок</h3>
 <p>Операторов обработки ошибок в Reactor около десятка, и различаются они тем, что делают с сигналом <code>onError</code>: заменяют его значением, другой последовательностью или завершением, переводят в другое исключение или только подсматривают за ним. За таблицей разобраны два различия, о которых спрашивают на интервью: <code>doOnError</code> против <code>onErrorResume</code> и роль <code>doFinally</code> при отмене. В таблице важнее всего правая колонка, где указано, когда каждый оператор уместен:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Оператор</th>
@@ -1955,44 +1955,44 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>onErrorReturn(v)</code></td>
-<td>заменить ошибку статическим значением</td>
-<td>значение по умолчанию: пустой список, <code>false</code></td>
+<td data-label="Оператор"><code>onErrorReturn(v)</code></td>
+<td data-label="Что делает">заменить ошибку статическим значением</td>
+<td data-label="Когда">значение по умолчанию: пустой список, <code>false</code></td>
 </tr>
 <tr>
-<td><code>onErrorReturn(Class, v)</code></td>
-<td>то же, но только для типа ошибки</td>
-<td>точечный fallback</td>
+<td data-label="Оператор"><code>onErrorReturn(Class, v)</code></td>
+<td data-label="Что делает">то же, но только для типа ошибки</td>
+<td data-label="Когда">точечный fallback</td>
 </tr>
 <tr>
-<td><code>onErrorResume(e -&gt; pub)</code></td>
-<td>переключиться на другую последовательность</td>
-<td>fallback в кэш, во второй ЦОД, в заглушку</td>
+<td data-label="Оператор"><code>onErrorResume(e -&gt; pub)</code></td>
+<td data-label="Что делает">переключиться на другую последовательность</td>
+<td data-label="Когда">fallback в кэш, во второй ЦОД, в заглушку</td>
 </tr>
 <tr>
-<td><code>onErrorMap(e -&gt; e2)</code></td>
-<td>обернуть/перевести ошибку</td>
-<td>доменные исключения вместо <code>R2dbcException</code></td>
+<td data-label="Оператор"><code>onErrorMap(e -&gt; e2)</code></td>
+<td data-label="Что делает">обернуть/перевести ошибку</td>
+<td data-label="Когда">доменные исключения вместо <code>R2dbcException</code></td>
 </tr>
 <tr>
-<td><code>onErrorComplete()</code></td>
-<td>превратить <code>onError</code> в <code>onComplete</code></td>
-<td>«ошибка — это просто конец», осторожно</td>
+<td data-label="Оператор"><code>onErrorComplete()</code></td>
+<td data-label="Что делает">превратить <code>onError</code> в <code>onComplete</code></td>
+<td data-label="Когда">«ошибка — это просто конец», осторожно</td>
 </tr>
 <tr>
-<td><code>doOnError(e -&gt; ...)</code></td>
-<td>побочный эффект, ошибка идёт дальше</td>
-<td>логирование, метрики</td>
+<td data-label="Оператор"><code>doOnError(e -&gt; ...)</code></td>
+<td data-label="Что делает">побочный эффект, ошибка идёт дальше</td>
+<td data-label="Когда">логирование, метрики</td>
 </tr>
 <tr>
-<td><code>doFinally(sig -&gt; ...)</code></td>
-<td>побочный эффект на любом терминале, включая <code>CANCEL</code></td>
-<td>освобождение ресурсов</td>
+<td data-label="Оператор"><code>doFinally(sig -&gt; ...)</code></td>
+<td data-label="Что делает">побочный эффект на любом терминале, включая <code>CANCEL</code></td>
+<td data-label="Когда">освобождение ресурсов</td>
 </tr>
 <tr>
-<td><code>onErrorContinue</code></td>
-<td>«пропустить сбойный элемент»</td>
-<td><strong>избегать</strong> (7.4)</td>
+<td data-label="Оператор"><code>onErrorContinue</code></td>
+<td data-label="Что делает">«пропустить сбойный элемент»</td>
+<td data-label="Когда"><strong>избегать</strong> (7.4)</td>
 </tr>
 </tbody>
 </table>
@@ -2123,7 +2123,7 @@ Reactor Kafka                           ─┘
 
 <p>Вариант 4 — рабочий стандарт для пакетной обработки. Из <code>flatMap</code> выходит <code>Flux&lt;Outcome&gt;</code> (а после <code>collectList()</code> — <code>Mono&lt;List&lt;Outcome&gt;&gt;</code> на всю пачку), где каждый элемент — либо успех, либо типизированный отказ. Поток при этом не падает никогда, и по пачке легко посчитать статистику.</p>
 <p><strong>Где элементы действительно теряются.</strong> Помимо отмены при ошибке соседа, есть несколько мест, где элемент исчезает; в таблице для каждого указано, как это заметить:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Место</th>
@@ -2133,34 +2133,34 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td>Отмена при ошибке соседа</td>
-<td>внутренние подписки <code>flatMap</code> отменяются, запросы в полёте обрываются</td>
-<td>метрика <code>reactor.flow.duration{status=cancelled}</code> скачет</td>
+<td data-label="Место">Отмена при ошибке соседа</td>
+<td data-label="Что происходит">внутренние подписки <code>flatMap</code> отменяются, запросы в полёте обрываются</td>
+<td data-label="Как заметить">метрика <code>reactor.flow.duration{status=cancelled}</code> скачет</td>
 </tr>
 <tr>
-<td><code>onErrorContinue</code></td>
-<td>элемент проглочен без следа, если обратный вызов не логирует</td>
-<td>ничего, кроме расхождения счётчиков вход/выход</td>
+<td data-label="Место"><code>onErrorContinue</code></td>
+<td data-label="Что происходит">элемент проглочен без следа, если обратный вызов не логирует</td>
+<td data-label="Как заметить">ничего, кроме расхождения счётчиков вход/выход</td>
 </tr>
 <tr>
-<td><code>onBackpressureDrop</code> без обратного вызова</td>
-<td>элемент выброшен молча</td>
-<td><code>onBackpressureDrop(x -&gt; counter.increment())</code> — всегда с обратным вызовом</td>
+<td data-label="Место"><code>onBackpressureDrop</code> без обратного вызова</td>
+<td data-label="Что происходит">элемент выброшен молча</td>
+<td data-label="Как заметить"><code>onBackpressureDrop(x -&gt; counter.increment())</code> — всегда с обратным вызовом</td>
 </tr>
 <tr>
-<td><code>sample</code>/<code>throttle</code></td>
-<td>промежуточные элементы отброшены by design</td>
-<td>это ожидаемо, но должно быть в документации кода</td>
+<td data-label="Место"><code>sample</code>/<code>throttle</code></td>
+<td data-label="Что происходит">промежуточные элементы отброшены by design</td>
+<td data-label="Как заметить">это ожидаемо, но должно быть в документации кода</td>
 </tr>
 <tr>
-<td>Sink без проверки <code>EmitResult</code></td>
-<td>элемент не принят</td>
-<td>счётчик по <code>EmitResult</code></td>
+<td data-label="Место">Sink без проверки <code>EmitResult</code></td>
+<td data-label="Что происходит">элемент не принят</td>
+<td data-label="Как заметить">счётчик по <code>EmitResult</code></td>
 </tr>
 <tr>
-<td><code>switchMap</code></td>
-<td>результат предыдущего элемента отменён</td>
-<td>by design; опасно, если работа неидемпотентна</td>
+<td data-label="Место"><code>switchMap</code></td>
+<td data-label="Что происходит">результат предыдущего элемента отменён</td>
+<td data-label="Как заметить">by design; опасно, если работа неидемпотентна</td>
 </tr>
 </tbody>
 </table>
@@ -2246,7 +2246,7 @@ Reactor Kafka                           ─┘
 <p><code>Hooks.enableAutomaticContextPropagation()</code> появился в Reactor 3.5.3 как opt-in (включается по желанию, сам не включается), и Spring Boot сам его не вызывает даже при подключённом Micrometer Tracing: для этого нужно свойство, о котором ниже. Когда хук включён, код внутри <code>map</code>/<code>flatMap</code>/<code>doOnNext</code> видит MDC и <code>SecurityContextHolder</code> так, будто работает в обычном потоке: Reactor устанавливает <code>ThreadLocal</code> перед вызовом лямбды и снимает его после.</p>
 <p>Платой за автоматический режим служат операции «установить/снять», которые выполняются на каждый сигнал и для каждого зарегистрированного метода доступа. На горячем стриминговом пути это измеримо: десятки-сотни наносекунд на сигнал, умноженные на число методов доступов, поэтому регистрировать подряд все <code>ThreadLocal</code> не стоит.</p>
 <p>Автоматический режим по умолчанию <strong>не включён</strong>. Начиная с 3.2 Spring Boot управляет им через свойство <code>spring.reactor.context-propagation</code>, у которого два значения перечисления <code>ReactorProperties.ContextPropagationMode</code> (<a href="https://docs.spring.io/spring-boot/docs/3.2.5/api/org/springframework/boot/autoconfigure/reactor/ReactorProperties.ContextPropagationMode.html">Spring Boot API: ReactorProperties.ContextPropagationMode</a>); таблица показывает, что по умолчанию стоит ограниченный режим:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Значение</th>
@@ -2256,14 +2256,14 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td><code>limited</code> (<strong>по умолчанию</strong>)</td>
-<td>ничего не вызывает; context-propagation работает только в операторах <code>handle</code> и <code>tap</code></td>
-<td>«ограниченный» режим самого Reactor</td>
+<td data-label="Значение"><code>limited</code> (<strong>по умолчанию</strong>)</td>
+<td data-label="Что делает">ничего не вызывает; context-propagation работает только в операторах <code>handle</code> и <code>tap</code></td>
+<td data-label="Область действия">«ограниченный» режим самого Reactor</td>
 </tr>
 <tr>
-<td><code>auto</code></td>
-<td>автоконфигурация вызывает <code>Hooks.enableAutomaticContextPropagation()</code> на старте</td>
-<td>все операторы Reactor</td>
+<td data-label="Значение"><code>auto</code></td>
+<td data-label="Что делает">автоконфигурация вызывает <code>Hooks.enableAutomaticContextPropagation()</code> на старте</td>
+<td data-label="Область действия">все операторы Reactor</td>
 </tr>
 </tbody>
 </table>
@@ -2342,7 +2342,7 @@ Reactor Kafka                           ─┘
 <p><code>SecurityContext</code> передаётся тем же механизмом: Spring Security кладёт его в Reactor <code>Context</code> в <code>ReactorContextWebFilter</code>, а <code>ReactiveSecurityContextHolder.getContext()</code> читает его через <code>deferContextual</code>; подробности — в главе 13 (<code>13-spring-security.md</code>). Trace context (<code>traceId</code>/<code>spanId</code>) кладёт туда Micrometer Tracing, он же регистрирует свои <code>ThreadLocalAccessor</code>; подробно об этом в главе 51 (<code>51-observability.md</code>).</p>
 <h3 id="86-стоимость-и-границы-автоматического-режима">8.6 Стоимость и границы автоматического режима</h3>
 <p>Совет «включите <code>auto</code>, и всё заработает» — только половина правды, потому что автоматический режим работает на каждом сигнале и у него есть границы, за которыми контекст всё равно теряется. На каждый сигнал в режиме <code>auto</code> Reactor для каждого зарегистрированного метода доступа читает значение из <code>Context</code>, вызывает <code>setValue</code>/<code>setValue()</code> до лямбды и восстанавливает предыдущее значение после неё. Выходит по два вызова <code>ThreadLocal.set</code> на метод доступ на каждый сигнал, плюс работа самого метода доступа, а для MDC это ещё и копирование <code>Map</code>. В таблице показано, как эти расходы растут с числом методов доступов:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Число методов доступов</th>
@@ -2352,19 +2352,19 @@ Reactor Kafka                           ─┘
 </thead>
 <tbody>
 <tr>
-<td>1 (только tracing)</td>
-<td>десятки наносекунд</td>
-<td>практически незаметно</td>
+<td data-label="Число методов доступов">1 (только tracing)</td>
+<td data-label="Оценка накладных расходов на сигнал">десятки наносекунд</td>
+<td data-label="Комментарий">практически незаметно</td>
 </tr>
 <tr>
-<td>3–4 (tracing + MDC + security + tenant)</td>
-<td>сотни наносекунд</td>
-<td>заметно на стриминге от 100 тыс. сигналов/с</td>
+<td data-label="Число методов доступов">3–4 (tracing + MDC + security + tenant)</td>
+<td data-label="Оценка накладных расходов на сигнал">сотни наносекунд</td>
+<td data-label="Комментарий">заметно на стриминге от 100 тыс. сигналов/с</td>
 </tr>
 <tr>
-<td>MDC с большим отображением</td>
-<td>микросекунды</td>
-<td><code>getCopyOfContextMap</code> выделяет на каждый сигнал</td>
+<td data-label="Число методов доступов">MDC с большим отображением</td>
+<td data-label="Оценка накладных расходов на сигнал">микросекунды</td>
+<td data-label="Комментарий"><code>getCopyOfContextMap</code> выделяет на каждый сигнал</td>
 </tr>
 </tbody>
 </table>
@@ -2538,7 +2538,7 @@ Original Stack Trace: ...
 <p><code>expectNoEvent(Duration)</code> считает нарушением <strong>любой</strong> сигнал, включая <code>onSubscribe</code>, поэтому перед ним почти всегда нужен <code>expectSubscription()</code>.</p>
 <h3 id="103-testpublisher-и-publisherprobe">10.3 <code>TestPublisher</code> и <code>PublisherProbe</code></h3>
 <p>Как проверить, что цепочка переживёт поставщика, который эмитирует больше, чем у него просили, и что fallback не сработал там, где не должен? Для этого служат два вспомогательных издателя: <code>TestPublisher</code> и <code>PublisherProbe</code>. <code>TestPublisher</code> — источник, которым управляет тест через <code>next()</code>, <code>emit()</code>, <code>complete()</code> и <code>error()</code>. Отдельная ценность — режим <code>createNonCompliant(...)</code>, в котором он может нарушать спецификацию, и так проверяют, как ваш код переживёт кривого поставщика. Нарушения, которые можно разрешить, перечислены в таблице:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th><code>TestPublisher.Violation</code></th>
@@ -2547,20 +2547,20 @@ Original Stack Trace: ...
 </thead>
 <tbody>
 <tr>
-<td><code>REQUEST_OVERFLOW</code></td>
-<td>эмитить больше, чем запрошено (проверка стратегий backpressure)</td>
+<td data-label="TestPublisher.Violation"><code>REQUEST_OVERFLOW</code></td>
+<td data-label="Что разрешает">эмитить больше, чем запрошено (проверка стратегий backpressure)</td>
 </tr>
 <tr>
-<td><code>ALLOW_NULL</code></td>
-<td>отдать <code>null</code> в <code>onNext</code></td>
+<td data-label="TestPublisher.Violation"><code>ALLOW_NULL</code></td>
+<td data-label="Что разрешает">отдать <code>null</code> в <code>onNext</code></td>
 </tr>
 <tr>
-<td><code>CLEANUP_ON_TERMINATE</code></td>
-<td>несколько терминальных сигналов подряд</td>
+<td data-label="TestPublisher.Violation"><code>CLEANUP_ON_TERMINATE</code></td>
+<td data-label="Что разрешает">несколько терминальных сигналов подряд</td>
 </tr>
 <tr>
-<td><code>DEFER_CANCELLATION</code></td>
-<td>игнорировать <code>cancel</code> и продолжать эмиссию</td>
+<td data-label="TestPublisher.Violation"><code>DEFER_CANCELLATION</code></td>
+<td data-label="Что разрешает">игнорировать <code>cancel</code> и продолжать эмиссию</td>
 </tr>
 </tbody>
 </table>
@@ -2620,7 +2620,7 @@ Original Stack Trace: ...
 </code></pre></div>
 
 <p>Чаще всего путают три пары шагов; таблица показывает для каждого, когда его брать:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2630,34 +2630,34 @@ Original Stack Trace: ...
 </thead>
 <tbody>
 <tr>
-<td><code>expectNextMatches(p)</code></td>
-<td>предикат; при провале сообщение «predicate failed on value: …» — видно значение, но не то, какое условие нарушено</td>
-<td>быстрая проверка одного поля</td>
+<td data-label=""><code>expectNextMatches(p)</code></td>
+<td data-label="Что делает">предикат; при провале сообщение «predicate failed on value: …» — видно значение, но не то, какое условие нарушено</td>
+<td data-label="Когда брать">быстрая проверка одного поля</td>
 </tr>
 <tr>
-<td><code>assertNext(c)</code></td>
-<td>consumer; внутри обычный AssertJ/JUnit, сообщение о провале полноценное</td>
-<td>всё остальное — по умолчанию берите этот</td>
+<td data-label=""><code>assertNext(c)</code></td>
+<td data-label="Что делает">consumer; внутри обычный AssertJ/JUnit, сообщение о провале полноценное</td>
+<td data-label="Когда брать">всё остальное — по умолчанию берите этот</td>
 </tr>
 <tr>
-<td><code>expectNoEvent(d)</code></td>
-<td>падает на <strong>любом</strong> сигнале в окне, включая <code>onSubscribe</code></td>
-<td>«в течение d ничего не должно произойти» — всегда после <code>expectSubscription()</code></td>
+<td data-label=""><code>expectNoEvent(d)</code></td>
+<td data-label="Что делает">падает на <strong>любом</strong> сигнале в окне, включая <code>onSubscribe</code></td>
+<td data-label="Когда брать">«в течение d ничего не должно произойти» — всегда после <code>expectSubscription()</code></td>
 </tr>
 <tr>
-<td><code>thenAwait(d)</code></td>
-<td>просто двигает время/ждёт, сигналы в это время допустимы</td>
-<td>пропустить задержку</td>
+<td data-label=""><code>thenAwait(d)</code></td>
+<td data-label="Что делает">просто двигает время/ждёт, сигналы в это время допустимы</td>
+<td data-label="Когда брать">пропустить задержку</td>
 </tr>
 <tr>
-<td><code>verify()</code></td>
-<td>подписывается и блокирует до терминала <strong>без ограничения</strong></td>
-<td>никогда: зависший тест вешает CI</td>
+<td data-label=""><code>verify()</code></td>
+<td data-label="Что делает">подписывается и блокирует до терминала <strong>без ограничения</strong></td>
+<td data-label="Когда брать">никогда: зависший тест вешает CI</td>
 </tr>
 <tr>
-<td><code>verify(Duration)</code></td>
-<td>то же, с реальным таймаутом</td>
-<td>всегда предпочтительно</td>
+<td data-label=""><code>verify(Duration)</code></td>
+<td data-label="Что делает">то же, с реальным таймаутом</td>
+<td data-label="Когда брать">всегда предпочтительно</td>
 </tr>
 </tbody>
 </table>
@@ -2735,7 +2735,7 @@ Original Stack Trace: ...
 <h3 id="111-чем-r2dbc-отличается-от-jdbc">11.1 Чем R2DBC отличается от JDBC</h3>
 <p>В JDBC метод <code>ResultSet.next()</code> не умеет ответить «данных пока нет, зайди позже»: он либо возвращает строку, либо блокирует поток до её прихода. Причина в самом контракте, и ни одна реализация тут не виновата, поэтому «неблокирующего JDBC-драйвера» не бывает в принципе: вызов можно лишь увести на другой поток. R2DBC (<em>Reactive Relational Database Connectivity</em>) — отдельная спецификация доступа к реляционным базам, в которой результаты запроса приходят как <code>Publisher</code>, а блокирующий <code>ResultSet</code> в ней отсутствует.</p>
 <p>R2DBC существует как независимая спецификация и SPI версии <strong>1.0.0.RELEASE</strong>, задача которой — «move from the classic one thread per connection model to a more powerful, more scalable approach» (<a href="https://r2dbc.io/">r2dbc.io</a>). Ключевые отличия от JDBC сведены в таблицу, и главные строки в ней — модель потоков и backpressure:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2745,39 +2745,39 @@ Original Stack Trace: ...
 </thead>
 <tbody>
 <tr>
-<td>Возврат данных</td>
-<td><code>ResultSet</code>, блокирующая итерация</td>
-<td><code>Publisher&lt;Result&gt;</code>, <code>Flux&lt;Row&gt;</code></td>
+<td data-label="">Возврат данных</td>
+<td data-label="JDBC"><code>ResultSet</code>, блокирующая итерация</td>
+<td data-label="R2DBC"><code>Publisher&lt;Result&gt;</code>, <code>Flux&lt;Row&gt;</code></td>
 </tr>
 <tr>
-<td>Модель потоков</td>
-<td>поток занят на время запроса</td>
-<td>поток свободен между пакетами протокола</td>
+<td data-label="">Модель потоков</td>
+<td data-label="JDBC">поток занят на время запроса</td>
+<td data-label="R2DBC">поток свободен между пакетами протокола</td>
 </tr>
 <tr>
-<td>Backpressure</td>
-<td>нет (есть <code>setFetchSize</code> как намёк)</td>
-<td>есть: спрос сдерживает чтение, а размер порции выборки задаёт <code>fetchSize</code> драйвера</td>
+<td data-label="">Backpressure</td>
+<td data-label="JDBC">нет (есть <code>setFetchSize</code> как намёк)</td>
+<td data-label="R2DBC">есть: спрос сдерживает чтение, а размер порции выборки задаёт <code>fetchSize</code> драйвера</td>
 </tr>
 <tr>
-<td>Транзакции</td>
-<td><code>Connection.setAutoCommit</code>, <code>commit()</code></td>
-<td><code>Publisher&lt;Void&gt;</code> на <code>beginTransaction</code>/<code>commit</code></td>
+<td data-label="">Транзакции</td>
+<td data-label="JDBC"><code>Connection.setAutoCommit</code>, <code>commit()</code></td>
+<td data-label="R2DBC"><code>Publisher&lt;Void&gt;</code> на <code>beginTransaction</code>/<code>commit</code></td>
 </tr>
 <tr>
-<td>Спецификация</td>
-<td>JSR-221, часть Java SE</td>
-<td>независимая, 1.0.0</td>
+<td data-label="">Спецификация</td>
+<td data-label="JDBC">JSR-221, часть Java SE</td>
+<td data-label="R2DBC">независимая, 1.0.0</td>
 </tr>
 <tr>
-<td>Драйверы</td>
-<td>практически все СУБД</td>
-<td>PostgreSQL, MySQL, MariaDB, Oracle, MSSQL, H2, ClickHouse, Spanner</td>
+<td data-label="">Драйверы</td>
+<td data-label="JDBC">практически все СУБД</td>
+<td data-label="R2DBC">PostgreSQL, MySQL, MariaDB, Oracle, MSSQL, H2, ClickHouse, Spanner</td>
 </tr>
 <tr>
-<td>Экосистема</td>
-<td>Hibernate, MyBatis, jOOQ, Flyway, Liquibase</td>
-<td>Spring Data R2DBC, jOOQ, Querydsl, r2dbc-migrate, Testcontainers</td>
+<td data-label="">Экосистема</td>
+<td data-label="JDBC">Hibernate, MyBatis, jOOQ, Flyway, Liquibase</td>
+<td data-label="R2DBC">Spring Data R2DBC, jOOQ, Querydsl, r2dbc-migrate, Testcontainers</td>
 </tr>
 </tbody>
 </table>
@@ -2943,7 +2943,7 @@ Original Stack Trace: ...
 <h3 id="118-зрелость-драйверов-миграции-и-эксплуатация">11.8 Зрелость драйверов, миграции и эксплуатация</h3>
 <p>Выбирая R2DBC, вы берёте на себя не только другой API, но и другую эксплуатацию: драйверы разной зрелости, второй драйвер ради миграций и отдельный инструмент для наблюдаемости запросов. Всё это легко упустить на этапе прототипа и дорого обнаружить через год. Ниже состояние драйверов, организация миграций и наблюдаемость SQL через <code>r2dbc-proxy</code>.</p>
 <p><strong>Драйверы.</strong> Состояние на 2026 год неоднородно, и это нужно учитывать при выборе; таблица показывает для каждого драйвера, кто его ведёт и какие у него оговорки:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Драйвер</th>
@@ -2954,40 +2954,40 @@ Original Stack Trace: ...
 </thead>
 <tbody>
 <tr>
-<td><code>r2dbc-postgresql</code></td>
-<td>pgjdbc-сообщество</td>
-<td>высокая, эталонный</td>
-<td>поддержка <code>COPY</code>, <code>LISTEN/NOTIFY</code>, кодеки для <code>jsonb</code>, enum, массивов</td>
+<td data-label="Драйвер"><code>r2dbc-postgresql</code></td>
+<td data-label="Кто ведёт">pgjdbc-сообщество</td>
+<td data-label="Зрелость">высокая, эталонный</td>
+<td data-label="Оговорки">поддержка <code>COPY</code>, <code>LISTEN/NOTIFY</code>, кодеки для <code>jsonb</code>, enum, массивов</td>
 </tr>
 <tr>
-<td><code>r2dbc-mssql</code></td>
-<td>R2DBC-команда</td>
-<td>средняя</td>
-<td>часть типов и фич TDS не покрыта</td>
+<td data-label="Драйвер"><code>r2dbc-mssql</code></td>
+<td data-label="Кто ведёт">R2DBC-команда</td>
+<td data-label="Зрелость">средняя</td>
+<td data-label="Оговорки">часть типов и фич TDS не покрыта</td>
 </tr>
 <tr>
-<td><code>r2dbc-mariadb</code> / <code>r2dbc-mysql</code></td>
-<td>MariaDB / asyncer</td>
-<td>средняя</td>
-<td>исторически было несколько форков, следите, какой артефакт тянете</td>
+<td data-label="Драйвер"><code>r2dbc-mariadb</code> / <code>r2dbc-mysql</code></td>
+<td data-label="Кто ведёт">MariaDB / asyncer</td>
+<td data-label="Зрелость">средняя</td>
+<td data-label="Оговорки">исторически было несколько форков, следите, какой артефакт тянете</td>
 </tr>
 <tr>
-<td>Oracle R2DBC</td>
-<td>Oracle</td>
-<td>средняя</td>
-<td>требует конкретных версий БД; часть возможностей только в 21c+</td>
+<td data-label="Драйвер">Oracle R2DBC</td>
+<td data-label="Кто ведёт">Oracle</td>
+<td data-label="Зрелость">средняя</td>
+<td data-label="Оговорки">требует конкретных версий БД; часть возможностей только в 21c+</td>
 </tr>
 <tr>
-<td><code>r2dbc-h2</code></td>
-<td>R2DBC-команда</td>
-<td>только для тестов</td>
-<td>не «настоящий» неблокирующий, обёртка над H2</td>
+<td data-label="Драйвер"><code>r2dbc-h2</code></td>
+<td data-label="Кто ведёт">R2DBC-команда</td>
+<td data-label="Зрелость">только для тестов</td>
+<td data-label="Оговорки">не «настоящий» неблокирующий, обёртка над H2</td>
 </tr>
 <tr>
-<td>ClickHouse, Spanner</td>
-<td>вендоры</td>
-<td>зависит</td>
-<td>проверяйте активность репозитория перед выбором</td>
+<td data-label="Драйвер">ClickHouse, Spanner</td>
+<td data-label="Кто ведёт">вендоры</td>
+<td data-label="Зрелость">зависит</td>
+<td data-label="Оговорки">проверяйте активность репозитория перед выбором</td>
 </tr>
 </tbody>
 </table>
@@ -3029,7 +3029,7 @@ Original Stack Trace: ...
 <p>Без этого «медленный запрос» в реактивном стеке диагностируется плохо: в логах нет ни SQL, ни времени, а профилировщик показывает только <code>FluxMap</code> и Netty.</p>
 <h3 id="119-сравнение-r2dbc-и-jdbc-на-виртуальных-потоках">11.9 Сравнение R2DBC и JDBC на виртуальных потоках</h3>
 <p>Это главный практический вопрос раздела: брать ли R2DBC или обойтись JDBC на виртуальных потоках, и на 2026 год ответ уже не в пользу R2DBC «по умолчанию». Ниже сравнение по двенадцати критериям, а за ним два списка — где R2DBC всё ещё честно выигрывает и где честнее JDBC. В таблице стоит обратить внимание на строки, где значения совпадают: пул соединений и пропускная способность БД одинаковы в обоих вариантах, и именно это чаще всего упускают:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -3039,64 +3039,64 @@ Original Stack Trace: ...
 </thead>
 <tbody>
 <tr>
-<td>Потоки на 1000 одновременных запросов</td>
-<td>~число ядер</td>
-<td>1000 виртуальных (≈ десятки МБ кучи)</td>
+<td data-label="Критерий">Потоки на 1000 одновременных запросов</td>
+<td data-label="R2DBC + WebFlux">~число ядер</td>
+<td data-label="JDBC + MVC на виртуальных потоках">1000 виртуальных (≈ десятки МБ кучи)</td>
 </tr>
 <tr>
-<td>Пул соединений</td>
-<td>ограничивает так же</td>
-<td>ограничивает так же</td>
+<td data-label="Критерий">Пул соединений</td>
+<td data-label="R2DBC + WebFlux">ограничивает так же</td>
+<td data-label="JDBC + MVC на виртуальных потоках">ограничивает так же</td>
 </tr>
 <tr>
-<td>Пропускная способность БД</td>
-<td><strong>одинаковая</strong></td>
-<td><strong>одинаковая</strong></td>
+<td data-label="Критерий">Пропускная способность БД</td>
+<td data-label="R2DBC + WebFlux"><strong>одинаковая</strong></td>
+<td data-label="JDBC + MVC на виртуальных потоках"><strong>одинаковая</strong></td>
 </tr>
 <tr>
-<td>ORM (связи, кэш, dirty checking, оптимистичная блокировка)</td>
-<td>нет</td>
-<td>Hibernate/JPA полностью</td>
+<td data-label="Критерий">ORM (связи, кэш, dirty checking, оптимистичная блокировка)</td>
+<td data-label="R2DBC + WebFlux">нет</td>
+<td data-label="JDBC + MVC на виртуальных потоках">Hibernate/JPA полностью</td>
 </tr>
 <tr>
-<td>Транзакции с несколькими агрегатами</td>
-<td>вручную, <code>TransactionalOperator</code></td>
-<td><code>@Transactional</code>, привычно</td>
+<td data-label="Критерий">Транзакции с несколькими агрегатами</td>
+<td data-label="R2DBC + WebFlux">вручную, <code>TransactionalOperator</code></td>
+<td data-label="JDBC + MVC на виртуальных потоках"><code>@Transactional</code>, привычно</td>
 </tr>
 <tr>
-<td>Стриминг миллионов строк с backpressure</td>
-<td>естественно (<code>Flux</code> + <code>max_rows</code> при заданном <code>fetchSize</code>)</td>
-<td>вручную (<code>setFetchSize</code> + курсор + <code>Stream</code>), работает, но неудобно</td>
+<td data-label="Критерий">Стриминг миллионов строк с backpressure</td>
+<td data-label="R2DBC + WebFlux">естественно (<code>Flux</code> + <code>max_rows</code> при заданном <code>fetchSize</code>)</td>
+<td data-label="JDBC + MVC на виртуальных потоках">вручную (<code>setFetchSize</code> + курсор + <code>Stream</code>), работает, но неудобно</td>
 </tr>
 <tr>
-<td>Отмена запроса при отвале клиента</td>
-<td>автоматически (сигнал <code>cancel</code>)</td>
-<td>вручную (<code>Statement.cancel</code>, проверка <code>Thread.interrupted</code>)</td>
+<td data-label="Критерий">Отмена запроса при отвале клиента</td>
+<td data-label="R2DBC + WebFlux">автоматически (сигнал <code>cancel</code>)</td>
+<td data-label="JDBC + MVC на виртуальных потоках">вручную (<code>Statement.cancel</code>, проверка <code>Thread.interrupted</code>)</td>
 </tr>
 <tr>
-<td>Трассировки стека при инциденте</td>
-<td>нужны <code>checkpoint</code>/агент</td>
-<td>полные</td>
+<td data-label="Критерий">Трассировки стека при инциденте</td>
+<td data-label="R2DBC + WebFlux">нужны <code>checkpoint</code>/агент</td>
+<td data-label="JDBC + MVC на виртуальных потоках">полные</td>
 </tr>
 <tr>
-<td>Миграции</td>
-<td>второй драйвер</td>
-<td>штатно</td>
+<td data-label="Критерий">Миграции</td>
+<td data-label="R2DBC + WebFlux">второй драйвер</td>
+<td data-label="JDBC + MVC на виртуальных потоках">штатно</td>
 </tr>
 <tr>
-<td>Pinning виртуального потока</td>
-<td>н/д</td>
-<td>решено с JEP 491 (JDK 24+); на JDK 21–23 проверяйте <code>synchronized</code> в драйвере</td>
+<td data-label="Критерий">Pinning виртуального потока</td>
+<td data-label="R2DBC + WebFlux">н/д</td>
+<td data-label="JDBC + MVC на виртуальных потоках">решено с JEP 491 (JDK 24+); на JDK 21–23 проверяйте <code>synchronized</code> в драйвере</td>
 </tr>
 <tr>
-<td>Доступность специалистов</td>
-<td>низкая</td>
-<td>высокая</td>
+<td data-label="Критерий">Доступность специалистов</td>
+<td data-label="R2DBC + WebFlux">низкая</td>
+<td data-label="JDBC + MVC на виртуальных потоках">высокая</td>
 </tr>
 <tr>
-<td>Зрелость драйвера для вашей СУБД</td>
-<td>как повезёт</td>
-<td>максимальная</td>
+<td data-label="Критерий">Зрелость драйвера для вашей СУБД</td>
+<td data-label="R2DBC + WebFlux">как повезёт</td>
+<td data-label="JDBC + MVC на виртуальных потоках">максимальная</td>
 </tr>
 </tbody>
 </table>
@@ -3140,7 +3140,7 @@ Original Stack Trace: ...
 </ol>
 <h3 id="122-reactor-корутины-и-virtual-threads">12.2 Reactor, корутины и virtual threads</h3>
 <p>В 2026 году у JVM-разработчика три способа не держать поток в ожидании — Reactor, корутины Kotlin и виртуальные потоки, — и выбирать между ними нужно по конкретным свойствам: по стилю кода, модели backpressure, отмене, трассировкам стека и экосистеме данных. Сравнивать удобнее всего по строкам таблицы; самые важные из них — «Backpressure», «Трассировки стека» и «Блокирующий код»:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -3151,82 +3151,82 @@ Original Stack Trace: ...
 </thead>
 <tbody>
 <tr>
-<td>Язык</td>
-<td>любой JVM</td>
-<td>только Kotlin</td>
-<td>Java 21+</td>
+<td data-label="Критерий">Язык</td>
+<td data-label="Reactor">любой JVM</td>
+<td data-label="Kotlin-корутины">только Kotlin</td>
+<td data-label="Virtual threads (Java 21+)">Java 21+</td>
 </tr>
 <tr>
-<td>Стиль кода</td>
-<td>цепочки операторов</td>
-<td>последовательный, <code>suspend</code></td>
-<td>обычный блокирующий</td>
+<td data-label="Критерий">Стиль кода</td>
+<td data-label="Reactor">цепочки операторов</td>
+<td data-label="Kotlin-корутины">последовательный, <code>suspend</code></td>
+<td data-label="Virtual threads (Java 21+)">обычный блокирующий</td>
 </tr>
 <tr>
-<td>Модель</td>
-<td>push-pull, <code>Publisher</code></td>
-<td>suspend-функции + <code>Flow</code></td>
-<td>поток</td>
+<td data-label="Критерий">Модель</td>
+<td data-label="Reactor">push-pull, <code>Publisher</code></td>
+<td data-label="Kotlin-корутины">suspend-функции + <code>Flow</code></td>
+<td data-label="Virtual threads (Java 21+)">поток</td>
 </tr>
 <tr>
-<td>Backpressure</td>
-<td>явный <code>request(n)</code>, богатые стратегии</td>
-<td>неявный (<code>suspend emit</code>), <code>conflate</code>/<code>buffer</code></td>
-<td>нет как концепции; блокировка = backpressure</td>
+<td data-label="Критерий">Backpressure</td>
+<td data-label="Reactor">явный <code>request(n)</code>, богатые стратегии</td>
+<td data-label="Kotlin-корутины">неявный (<code>suspend emit</code>), <code>conflate</code>/<code>buffer</code></td>
+<td data-label="Virtual threads (Java 21+)">нет как концепции; блокировка = backpressure</td>
 </tr>
 <tr>
-<td>Стриминг N элементов</td>
-<td><code>Flux</code> — сильная сторона</td>
-<td><code>Flow</code></td>
-<td>вручную (<code>Iterator</code>, <code>BlockingQueue</code>)</td>
+<td data-label="Критерий">Стриминг N элементов</td>
+<td data-label="Reactor"><code>Flux</code> — сильная сторона</td>
+<td data-label="Kotlin-корутины"><code>Flow</code></td>
+<td data-label="Virtual threads (Java 21+)">вручную (<code>Iterator</code>, <code>BlockingQueue</code>)</td>
 </tr>
 <tr>
-<td>Операторы</td>
-<td>~300, включая <code>window</code>/<code>groupBy</code>/<code>expand</code></td>
-<td>меньше, часть в <code>@FlowPreview</code></td>
-<td>нет</td>
+<td data-label="Критерий">Операторы</td>
+<td data-label="Reactor">~300, включая <code>window</code>/<code>groupBy</code>/<code>expand</code></td>
+<td data-label="Kotlin-корутины">меньше, часть в <code>@FlowPreview</code></td>
+<td data-label="Virtual threads (Java 21+)">нет</td>
 </tr>
 <tr>
-<td>Отмена</td>
-<td><code>cancel</code> вверх по цепочке, кооперативная</td>
-<td>structured, через <code>Job</code></td>
-<td><code>interrupt</code> + <code>StructuredTaskScope</code></td>
+<td data-label="Критерий">Отмена</td>
+<td data-label="Reactor"><code>cancel</code> вверх по цепочке, кооперативная</td>
+<td data-label="Kotlin-корутины">structured, через <code>Job</code></td>
+<td data-label="Virtual threads (Java 21+)"><code>interrupt</code> + <code>StructuredTaskScope</code></td>
 </tr>
 <tr>
-<td>Ошибки</td>
-<td>сигнал <code>onError</code>, <code>onError*</code>-операторы</td>
-<td><code>try/catch</code></td>
-<td><code>try/catch</code></td>
+<td data-label="Критерий">Ошибки</td>
+<td data-label="Reactor">сигнал <code>onError</code>, <code>onError*</code>-операторы</td>
+<td data-label="Kotlin-корутины"><code>try/catch</code></td>
+<td data-label="Virtual threads (Java 21+)"><code>try/catch</code></td>
 </tr>
 <tr>
-<td>Трассировки стека</td>
-<td>плохие без агента</td>
-<td>приемлемые</td>
-<td>полные</td>
+<td data-label="Критерий">Трассировки стека</td>
+<td data-label="Reactor">плохие без агента</td>
+<td data-label="Kotlin-корутины">приемлемые</td>
+<td data-label="Virtual threads (Java 21+)">полные</td>
 </tr>
 <tr>
-<td>Контекст</td>
-<td><code>Context</code>, снизу вверх</td>
-<td><code>CoroutineContext</code></td>
-<td><code>ThreadLocal</code> работает, <code>ScopedValue</code> лучше</td>
+<td data-label="Критерий">Контекст</td>
+<td data-label="Reactor"><code>Context</code>, снизу вверх</td>
+<td data-label="Kotlin-корутины"><code>CoroutineContext</code></td>
+<td data-label="Virtual threads (Java 21+)"><code>ThreadLocal</code> работает, <code>ScopedValue</code> лучше</td>
 </tr>
 <tr>
-<td>Блокирующий код</td>
-<td>катастрофа на event loop</td>
-<td>плохо, но лечится диспетчером</td>
-<td>норма</td>
+<td data-label="Критерий">Блокирующий код</td>
+<td data-label="Reactor">катастрофа на event loop</td>
+<td data-label="Kotlin-корутины">плохо, но лечится диспетчером</td>
+<td data-label="Virtual threads (Java 21+)">норма</td>
 </tr>
 <tr>
-<td>Экосистема данных</td>
-<td>R2DBC, реактивные драйверы</td>
-<td>то же + всё Java</td>
-<td>весь JDBC/JPA</td>
+<td data-label="Критерий">Экосистема данных</td>
+<td data-label="Reactor">R2DBC, реактивные драйверы</td>
+<td data-label="Kotlin-корутины">то же + всё Java</td>
+<td data-label="Virtual threads (Java 21+)">весь JDBC/JPA</td>
 </tr>
 <tr>
-<td>Порог входа</td>
-<td>высокий</td>
-<td>средний</td>
-<td>низкий</td>
+<td data-label="Критерий">Порог входа</td>
+<td data-label="Reactor">высокий</td>
+<td data-label="Kotlin-корутины">средний</td>
+<td data-label="Virtual threads (Java 21+)">низкий</td>
 </tr>
 </tbody>
 </table>
@@ -3277,7 +3277,7 @@ Original Stack Trace: ...
 
 <p>После этого обязательно проверьте три вещи. Во-первых, нет ли <code>synchronized</code> вокруг блокирующего I/O ни в своём коде, ни в драйверах: на JDK 21–23 это pinning, а на JDK 24+ уже нет (JEP 491, глава 02). Во-вторых, не выросли ли пулы соединений: виртуальные потоки убирают потолок на число одновременных операций, и без пула вы утопите БД. В-третьих, есть ли на входе rate limiting, ведь раньше его неявно заменял размер пула потоков.</p>
 <p><strong>Чего это будет стоить, кроме времени.</strong> Помимо трудозатрат миграция меняет несколько характеристик сервиса; таблица показывает, какие из них улучшаются, а за какими придётся следить:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Статья</th>
@@ -3286,28 +3286,28 @@ Original Stack Trace: ...
 </thead>
 <tbody>
 <tr>
-<td>Латентность p50</td>
-<td>обычно <strong>улучшается</strong> на 10–30%: нет цепочек, нет переключений планировщика</td>
+<td data-label="Статья">Латентность p50</td>
+<td data-label="Эффект">обычно <strong>улучшается</strong> на 10–30%: нет цепочек, нет переключений планировщика</td>
 </tr>
 <tr>
-<td>Куча</td>
-<td>сравнимо или чуть больше: стеки виртуальных потоков в куче против буферов операторов</td>
+<td data-label="Статья">Куча</td>
+<td data-label="Эффект">сравнимо или чуть больше: стеки виртуальных потоков в куче против буферов операторов</td>
 </tr>
 <tr>
-<td>Потолок одновременных операций</td>
-<td>исчезает — надо вернуть явно (пул, семафор, bulkhead), иначе всплеск уйдёт в БД</td>
+<td data-label="Статья">Потолок одновременных операций</td>
+<td data-label="Эффект">исчезает — надо вернуть явно (пул, семафор, bulkhead), иначе всплеск уйдёт в БД</td>
 </tr>
 <tr>
-<td>Стриминговые эндпоинты</td>
-<td>придётся оставить реактивными или переписать на <code>SseEmitter</code>/<code>StreamingResponseBody</code></td>
+<td data-label="Статья">Стриминговые эндпоинты</td>
+<td data-label="Эффект">придётся оставить реактивными или переписать на <code>SseEmitter</code>/<code>StreamingResponseBody</code></td>
 </tr>
 <tr>
-<td>Тесты</td>
-<td>переписываются почти полностью; заложите столько же, сколько на код</td>
+<td data-label="Статья">Тесты</td>
+<td data-label="Эффект">переписываются почти полностью; заложите столько же, сколько на код</td>
 </tr>
 <tr>
-<td>Знания команды</td>
-<td>Reactor всё равно останется в <code>WebClient</code> и точечных местах — совсем забыть не выйдет</td>
+<td data-label="Статья">Знания команды</td>
+<td data-label="Эффект">Reactor всё равно останется в <code>WebClient</code> и точечных местах — совсем забыть не выйдет</td>
 </tr>
 </tbody>
 </table>
@@ -3748,7 +3748,7 @@ curl -s localhost:8080/actuator/metrics/r2dbc.pool.pending
 </code></pre></div>
 
 <p>Результаты шагов интерпретируются по таблице; её правая колонка подсказывает, куда идти дальше:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что видно</th>
@@ -3758,39 +3758,39 @@ curl -s localhost:8080/actuator/metrics/r2dbc.pool.pending
 </thead>
 <tbody>
 <tr>
-<td>Потоки <code>reactor-http-nio-*</code> в <code>socketRead</code>/<code>park</code>/<code>lock</code></td>
-<td>блокирующий вызов на event loop</td>
-<td>раздел 13.1, BlockHound</td>
+<td data-label="Что видно">Потоки <code>reactor-http-nio-*</code> в <code>socketRead</code>/<code>park</code>/<code>lock</code></td>
+<td data-label="Диагноз">блокирующий вызов на event loop</td>
+<td data-label="Куда идти">раздел 13.1, BlockHound</td>
 </tr>
 <tr>
-<td><code>pending.tasks</code> &gt; 0 устойчиво, потоки в <code>epollWait</code></td>
-<td>обработчик долгий, но неблокирующий (CPU-работа в цепочке)</td>
-<td>вынести на <code>parallel()</code>, профилировать CPU</td>
+<td data-label="Что видно"><code>pending.tasks</code> &gt; 0 устойчиво, потоки в <code>epollWait</code></td>
+<td data-label="Диагноз">обработчик долгий, но неблокирующий (CPU-работа в цепочке)</td>
+<td data-label="Куда идти">вынести на <code>parallel()</code>, профилировать CPU</td>
 </tr>
 <tr>
-<td><code>active.connections</code> растёт линейно и не падает</td>
-<td>утечка соединений</td>
-<td>раздел 13.3</td>
+<td data-label="Что видно"><code>active.connections</code> растёт линейно и не падает</td>
+<td data-label="Диагноз">утечка соединений</td>
+<td data-label="Куда идти">раздел 13.3</td>
 </tr>
 <tr>
-<td><code>active</code> у потолка, <code>pending</code> растёт</td>
-<td>перегрузка или слишком маленький пул</td>
-<td>увеличить пул или ограничить число одновременных подписок у <code>flatMap</code></td>
+<td data-label="Что видно"><code>active</code> у потолка, <code>pending</code> растёт</td>
+<td data-label="Диагноз">перегрузка или слишком маленький пул</td>
+<td data-label="Куда идти">увеличить пул или ограничить число одновременных подписок у <code>flatMap</code></td>
 </tr>
 <tr>
-<td><code>boundedElastic</code> потоков ровно CPU×10, все в I/O</td>
-<td>пул-свалка исчерпан</td>
-<td>bulkhead'ы, раздел 5.6</td>
+<td data-label="Что видно"><code>boundedElastic</code> потоков ровно CPU×10, все в I/O</td>
+<td data-label="Диагноз">пул-свалка исчерпан</td>
+<td data-label="Куда идти">bulkhead'ы, раздел 5.6</td>
 </tr>
 <tr>
-<td><code>r2dbc.pool.pending</code> растёт при живой БД</td>
-<td>пул мал / запросы медленные</td>
-<td><code>pg_stat_activity</code>, глава 17</td>
+<td data-label="Что видно"><code>r2dbc.pool.pending</code> растёт при живой БД</td>
+<td data-label="Диагноз">пул мал / запросы медленные</td>
+<td data-label="Куда идти"><code>pg_stat_activity</code>, глава 17</td>
 </tr>
 <tr>
-<td>Ничего из перечисленного, но <code>parallel-*</code> заняты</td>
-<td>заблокирован планировщик таймеров — таймауты не сработают</td>
-<td>грабли 20</td>
+<td data-label="Что видно">Ничего из перечисленного, но <code>parallel-*</code> заняты</td>
+<td data-label="Диагноз">заблокирован планировщик таймеров — таймауты не сработают</td>
+<td data-label="Куда идти">грабли 20</td>
 </tr>
 </tbody>
 </table>
@@ -4019,5 +4019,5 @@ jq <span class="s1">'[.threadDump.threadContainers[].threads[] | .name] | group_
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-предпосылки-реактивного-подхода">1. Предпосылки реактивного подхода</a></li><li><a href="#2-спецификация-reactive-streams">2. Спецификация Reactive Streams</a></li><li><a href="#3-reactor-модель-выполнения">3. Reactor: модель выполнения</a></li><li><a href="#4-операторы-reactor">4. Операторы Reactor</a></li><li><a href="#5-schedulers-и-потоки-исполнения">5. Schedulers и потоки исполнения</a></li><li><a href="#6-backpressure-на-практике">6. Backpressure на практике</a></li><li><a href="#7-сигнал-ошибки">7. Сигнал ошибки</a></li><li><a href="#8-context-как-замена-threadlocal">8. Context как замена ThreadLocal</a></li><li><a href="#9-отладка">9. Отладка</a></li><li><a href="#10-тестирование-реактивного-кода">10. Тестирование реактивного кода</a></li><li><a href="#11-r2dbc-и-реактивные-интеграции">11. R2DBC и реактивные интеграции</a></li><li><a href="#12-производительность-и-выбор-в-2026">12. Производительность и выбор в 2026</a></li><li><a href="#13-разобранные-инциденты">13. Разобранные инциденты</a></li><li><a href="#14-грабли-и-антипаттерны">14. Грабли и антипаттерны</a></li><li><a href="#15-диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками">17. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

@@ -3,7 +3,7 @@
 <title>22. NoSQL и in-memory хранилища — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="NoSQL и in-memory хранилища">
 <a class="skip" href="#content">К тексту</a>
@@ -23,7 +23,7 @@
 <p>Слово «NoSQL» ничего не описывает, кроме отрицания, поэтому для разговора о хранилищах нужны две другие оси, ортогональные друг другу: <strong>какую модель данных видит приложение</strong> и <strong>как байты лежат на диске</strong>. Эти оси действительно независимы, и одно и то же сочетание встречается в самых разных продуктах: MongoDB хранит документы в B-tree, Cassandra держит wide-column поверх LSM, а Tarantool умеет и то и другое, потому что memtx держит данные в B+*-дереве в оперативной памяти, а vinyl пишет их в LSM. Ниже мы пройдём по каждой оси отдельно, а затем честно перечислим причины уходить от реляционной базы и причины этого не делать.</p>
 <h3 id="11-классификация-по-модели-данных">1.1 Классификация по модели данных</h3>
 <p>Модель данных определяет, с какой единицей работает приложение и какие запросы к ней вообще можно задать; от неё зависит, что хранилище даёт даром и чего в нём не будет никогда. В таблице ниже для каждой модели указаны типичные продукты и единица доступа, а в двух последних колонках стоит главное: что модель даёт и от чего она ради этого отказывается.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Модель</th>
@@ -35,53 +35,53 @@
 </thead>
 <tbody>
 <tr>
-<td>Key-value</td>
-<td>Redis, Valkey, Memcached, DynamoDB</td>
-<td>ключ → непрозрачное значение</td>
-<td>O(1) доступ, минимум накладных расходов</td>
-<td>запросов по значению, join</td>
+<td data-label="Модель">Key-value</td>
+<td data-label="Примеры">Redis, Valkey, Memcached, DynamoDB</td>
+<td data-label="Единица доступа">ключ → непрозрачное значение</td>
+<td data-label="Что даёт">O(1) доступ, минимум накладных расходов</td>
+<td data-label="Чего нет">запросов по значению, join</td>
 </tr>
 <tr>
-<td>Документная</td>
-<td>MongoDB, Couchbase, DocumentDB</td>
-<td>документ (BSON/JSON) по <code>_id</code> или индексу</td>
-<td>гибкая схема, вложенность, частичные обновления</td>
-<td>настоящих join, схемных гарантий</td>
+<td data-label="Модель">Документная</td>
+<td data-label="Примеры">MongoDB, Couchbase, DocumentDB</td>
+<td data-label="Единица доступа">документ (BSON/JSON) по <code>_id</code> или индексу</td>
+<td data-label="Что даёт">гибкая схема, вложенность, частичные обновления</td>
+<td data-label="Чего нет">настоящих join, схемных гарантий</td>
 </tr>
 <tr>
-<td>Wide-column</td>
-<td>Cassandra, ScyllaDB, HBase, Bigtable</td>
-<td>партиция → строки с clustering-порядком</td>
-<td>линейная запись, гео-распределение</td>
-<td>ad-hoc запросов, агрегатов, join</td>
+<td data-label="Модель">Wide-column</td>
+<td data-label="Примеры">Cassandra, ScyllaDB, HBase, Bigtable</td>
+<td data-label="Единица доступа">партиция → строки с clustering-порядком</td>
+<td data-label="Что даёт">линейная запись, гео-распределение</td>
+<td data-label="Чего нет">ad-hoc запросов, агрегатов, join</td>
 </tr>
 <tr>
-<td>Графовая</td>
-<td>Neo4j, JanusGraph, ArangoDB</td>
-<td>вершина/ребро, обход</td>
-<td>обходы переменной глубины за константу на шаг</td>
-<td>масштабирования обхода между шардами</td>
+<td data-label="Модель">Графовая</td>
+<td data-label="Примеры">Neo4j, JanusGraph, ArangoDB</td>
+<td data-label="Единица доступа">вершина/ребро, обход</td>
+<td data-label="Что даёт">обходы переменной глубины за константу на шаг</td>
+<td data-label="Чего нет">масштабирования обхода между шардами</td>
 </tr>
 <tr>
-<td>Поисковая</td>
-<td>Elasticsearch, OpenSearch, Solr</td>
-<td>документ + инвертированный индекс</td>
-<td>полнотекст, релевантность, агрегации по фасетам</td>
-<td>транзакций, роли источника истины</td>
+<td data-label="Модель">Поисковая</td>
+<td data-label="Примеры">Elasticsearch, OpenSearch, Solr</td>
+<td data-label="Единица доступа">документ + инвертированный индекс</td>
+<td data-label="Что даёт">полнотекст, релевантность, агрегации по фасетам</td>
+<td data-label="Чего нет">транзакций, роли источника истины</td>
 </tr>
 <tr>
-<td>Time-series</td>
-<td>TimescaleDB, Prometheus TSDB, InfluxDB, VictoriaMetrics</td>
-<td>(метрика, метки, время) → значение</td>
-<td>сжатие рядов, downsampling, оконные функции по времени</td>
-<td>произвольной реляционной модели</td>
+<td data-label="Модель">Time-series</td>
+<td data-label="Примеры">TimescaleDB, Prometheus TSDB, InfluxDB, VictoriaMetrics</td>
+<td data-label="Единица доступа">(метрика, метки, время) → значение</td>
+<td data-label="Что даёт">сжатие рядов, downsampling, оконные функции по времени</td>
+<td data-label="Чего нет">произвольной реляционной модели</td>
 </tr>
 <tr>
-<td>In-memory с логикой</td>
-<td>Tarantool, Hazelcast, Ignite</td>
-<td>спейс/кеш + код рядом с данными</td>
-<td>латентность в десятки микросекунд</td>
-<td>привычной экосистемы и простого найма</td>
+<td data-label="Модель">In-memory с логикой</td>
+<td data-label="Примеры">Tarantool, Hazelcast, Ignite</td>
+<td data-label="Единица доступа">спейс/кеш + код рядом с данными</td>
+<td data-label="Что даёт">латентность в десятки микросекунд</td>
+<td data-label="Чего нет">привычной экосистемы и простого найма</td>
 </tr>
 </tbody>
 </table>
@@ -131,7 +131,7 @@
 <p>Каждый элемент этой схемы делает свою работу. <strong>memtable</strong> — сортированная структура в памяти (skiplist в RocksDB и Cassandra, B+<em>-дерево в Tarantool vinyl), поэтому запись сводится к вставке в память и дописыванию в WAL, и обе операции последовательны. </em><em>SSTable</em><em>, или </em><em>run</em><em>, хранит данные в неизменяемом отсортированном файле с блочным индексом и </em><em>Bloom-фильтром</em><em>; фильтр отвечает «точно нет» или «возможно, есть» и тем самым позволяет вовсе не читать файл, если ключа в нём нет (в vinyl по умолчанию фильтр допускает 5% ложных срабатываний, <a href="https://www.tarantool.io/en/doc/latest/concepts/engines/vinyl/">Tarantool docs: vinyl</a>). </em><em>Compaction</em><em> в фоне сливает файлы и выбрасывает перезаписанные версии и удалённые ключи; vinyl при этом дампит L0 кусками по 50–100 МБ последовательной записью со сжатием, так что фрагментации внутри run не бывает по построению. </em><em>Удаление</em>* в такой схеме тоже оказывается записью: движок пишет маркер-«надгробие» (tombstone), и этот маркер живёт до следующей compaction, всё это время участвуя в каждом чтении.</p>
 <h3 id="23-амплификация-записи-чтения-и-места">2.3 Амплификация записи, чтения и места</h3>
 <p>Разницу между двумя подходами удобно измерять тремя амплификациями (amplification): сколько байтов уходит на диск на каждый байт от приложения, сколько чтений требует один запрос и сколько места занято сверх полезных данных. В таблице каждая строка описывает одну из них, и видно, что выигрыш по одной почти всегда оплачивается проигрышем по другой.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Амплификация</th>
@@ -141,19 +141,19 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Write</strong> (байт на диск / байт от приложения)</td>
-<td>~2–3× (WAL + страница, при FPW — больше)</td>
-<td>высокая на leveled compaction (10–30×), ниже на size-tiered</td>
+<td data-label="Амплификация"><strong>Write</strong> (байт на диск / байт от приложения)</td>
+<td data-label="B-tree">~2–3× (WAL + страница, при FPW — больше)</td>
+<td data-label="LSM">высокая на leveled compaction (10–30×), ниже на size-tiered</td>
 </tr>
 <tr>
-<td><strong>Read</strong> (чтений на запрос)</td>
-<td>1 путь по дереву</td>
-<td>до числа уровней; спасают Bloom-фильтры и кеш</td>
+<td data-label="Амплификация"><strong>Read</strong> (чтений на запрос)</td>
+<td data-label="B-tree">1 путь по дереву</td>
+<td data-label="LSM">до числа уровней; спасают Bloom-фильтры и кеш</td>
 </tr>
 <tr>
-<td><strong>Space</strong> (занято / полезно)</td>
-<td>фрагментация страниц, bloat</td>
-<td>дубли версий до compaction; size-tiered может требовать 2× места</td>
+<td data-label="Амплификация"><strong>Space</strong> (занято / полезно)</td>
+<td data-label="B-tree">фрагментация страниц, bloat</td>
+<td data-label="LSM">дубли версий до compaction; size-tiered может требовать 2× места</td>
 </tr>
 </tbody>
 </table>
@@ -178,7 +178,7 @@
 <p>Отдельно от I/O-потоков у Redis есть фоновые потоки для «ленивого» освобождения памяти, которыми управляют <code>lazyfree-lazy-eviction</code>, <code>lazyfree-lazy-expire</code>, <code>lazyfree-lazy-server-del</code>, <code>replica-lazy-flush</code> и <code>lazyfree-lazy-user-del</code>; по умолчанию все они выставлены в <code>no</code> (<a href="https://raw.githubusercontent.com/redis/redis/unstable/redis.conf">redis.conf</a>). Нужны они потому, что удаление ключа с миллионом элементов в главном потоке означает миллион вызовов <code>free()</code> подряд, то есть заметную паузу для всех клиентов. <code>UNLINK</code> вместо <code>DEL</code> передаёт освобождение памяти фоновому потоку, а включённый lazyfree делает то же самое при вытеснении и экспирации. <strong>Если на проде есть крупные коллекции, lazyfree стоит включить.</strong></p>
 <h3 id="33-сложность-команд-и-опасные-команды">3.3 Сложность команд и опасные команды</h3>
 <p>Раз все команды исполняются в одном потоке, время каждой из них становится временем ожидания для всех остальных клиентов, поэтому сложность, которую Redis документирует для каждой команды, надо читать как контракт на латентность. В таблице ниже собраны самые ходовые команды; смотреть в ней стоит прежде всего на строки с O(N), потому что именно они на больших коллекциях останавливают сервер.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Команда</th>
@@ -188,59 +188,59 @@
 </thead>
 <tbody>
 <tr>
-<td><code>GET</code>/<code>SET</code>/<code>INCR</code></td>
-<td>O(1)</td>
-<td>базовый случай</td>
+<td data-label="Команда"><code>GET</code>/<code>SET</code>/<code>INCR</code></td>
+<td data-label="Сложность">O(1)</td>
+<td data-label="Комментарий">базовый случай</td>
 </tr>
 <tr>
-<td><code>HGET</code>/<code>HSET</code></td>
-<td>O(1)</td>
-<td>по одному полю</td>
+<td data-label="Команда"><code>HGET</code>/<code>HSET</code></td>
+<td data-label="Сложность">O(1)</td>
+<td data-label="Комментарий">по одному полю</td>
 </tr>
 <tr>
-<td><code>LPUSH</code>/<code>RPOP</code></td>
-<td>O(1)</td>
-<td>с концов</td>
+<td data-label="Команда"><code>LPUSH</code>/<code>RPOP</code></td>
+<td data-label="Сложность">O(1)</td>
+<td data-label="Комментарий">с концов</td>
 </tr>
 <tr>
-<td><code>LRANGE key 0 -1</code></td>
-<td>O(N)</td>
-<td>весь список — опасно на больших</td>
+<td data-label="Команда"><code>LRANGE key 0 -1</code></td>
+<td data-label="Сложность">O(N)</td>
+<td data-label="Комментарий">весь список — опасно на больших</td>
 </tr>
 <tr>
-<td><code>ZADD</code>/<code>ZSCORE</code></td>
-<td>O(log N)</td>
-<td>skiplist</td>
+<td data-label="Команда"><code>ZADD</code>/<code>ZSCORE</code></td>
+<td data-label="Сложность">O(log N)</td>
+<td data-label="Комментарий">skiplist</td>
 </tr>
 <tr>
-<td><code>ZRANGE ... WITHSCORES</code></td>
-<td>O(log N + M)</td>
-<td>M — размер выборки</td>
+<td data-label="Команда"><code>ZRANGE ... WITHSCORES</code></td>
+<td data-label="Сложность">O(log N + M)</td>
+<td data-label="Комментарий">M — размер выборки</td>
 </tr>
 <tr>
-<td><code>SMEMBERS</code>, <code>HGETALL</code></td>
-<td>O(N)</td>
-<td>на больших коллекциях блокирует</td>
+<td data-label="Команда"><code>SMEMBERS</code>, <code>HGETALL</code></td>
+<td data-label="Сложность">O(N)</td>
+<td data-label="Комментарий">на больших коллекциях блокирует</td>
 </tr>
 <tr>
-<td><code>KEYS pattern</code></td>
-<td>O(N) по всей базе</td>
-<td><strong>никогда на проде</strong></td>
+<td data-label="Команда"><code>KEYS pattern</code></td>
+<td data-label="Сложность">O(N) по всей базе</td>
+<td data-label="Комментарий"><strong>никогда на проде</strong></td>
 </tr>
 <tr>
-<td><code>FLUSHALL</code>/<code>FLUSHDB</code></td>
-<td>O(N)</td>
-<td>синхронно по умолчанию; есть <code>ASYNC</code></td>
+<td data-label="Команда"><code>FLUSHALL</code>/<code>FLUSHDB</code></td>
+<td data-label="Сложность">O(N)</td>
+<td data-label="Комментарий">синхронно по умолчанию; есть <code>ASYNC</code></td>
 </tr>
 <tr>
-<td><code>DEL big_key</code></td>
-<td>O(N) элементов</td>
-<td>используй <code>UNLINK</code></td>
+<td data-label="Команда"><code>DEL big_key</code></td>
+<td data-label="Сложность">O(N) элементов</td>
+<td data-label="Комментарий">используй <code>UNLINK</code></td>
 </tr>
 <tr>
-<td><code>SCAN cursor</code></td>
-<td>O(1) за вызов</td>
-<td>правильный обход</td>
+<td data-label="Команда"><code>SCAN cursor</code></td>
+<td data-label="Сложность">O(1) за вызов</td>
+<td data-label="Комментарий">правильный обход</td>
 </tr>
 </tbody>
 </table>
@@ -316,7 +316,7 @@ XAUTOCLAIM payments:events grp worker-2 <span class="m">60000</span> <span class
 
 <h3 id="48-pubsub-и-streams">4.8 Pub/Sub и Streams</h3>
 <p>Pub/Sub и Streams часто путают, потому что оба механизма доставляют сообщения подписчикам, но гарантии у них принципиально разные: Pub/Sub ничего не хранит и отдаёт сообщение только тем, кто подключён прямо сейчас, а Streams ведёт лог с подтверждениями. Таблица сравнивает их по тем свойствам, которые решают, можно ли доверить механизму бизнес-события.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -326,29 +326,29 @@ XAUTOCLAIM payments:events grp worker-2 <span class="m">60000</span> <span class
 </thead>
 <tbody>
 <tr>
-<td>Хранение</td>
-<td>нет, fire-and-forget</td>
-<td>лог в памяти (+ persistence)</td>
+<td data-label="">Хранение</td>
+<td data-label="Pub/Sub">нет, fire-and-forget</td>
+<td data-label="Streams">лог в памяти (+ persistence)</td>
 </tr>
 <tr>
-<td>Отключился подписчик</td>
-<td>сообщения потеряны</td>
-<td>догонит по ID</td>
+<td data-label="">Отключился подписчик</td>
+<td data-label="Pub/Sub">сообщения потеряны</td>
+<td data-label="Streams">догонит по ID</td>
 </tr>
 <tr>
-<td>Подтверждения</td>
-<td>нет</td>
-<td><code>XACK</code> + PEL</td>
+<td data-label="">Подтверждения</td>
+<td data-label="Pub/Sub">нет</td>
+<td data-label="Streams"><code>XACK</code> + PEL</td>
 </tr>
 <tr>
-<td>Группы с балансировкой</td>
-<td>нет (все получают всё)</td>
-<td>есть</td>
+<td data-label="">Группы с балансировкой</td>
+<td data-label="Pub/Sub">нет (все получают всё)</td>
+<td data-label="Streams">есть</td>
 </tr>
 <tr>
-<td>Повторная обработка</td>
-<td>невозможна</td>
-<td><code>XRANGE</code> с любого ID</td>
+<td data-label="">Повторная обработка</td>
+<td data-label="Pub/Sub">невозможна</td>
+<td data-label="Streams"><code>XRANGE</code> с любого ID</td>
 </tr>
 </tbody>
 </table>
@@ -370,7 +370,7 @@ XAUTOCLAIM payments:events grp worker-2 <span class="m">60000</span> <span class
 </blockquote>
 <h3 id="410-кодировки-и-пороги-сводная-таблица">4.10 Кодировки и пороги: сводная таблица</h3>
 <p>У каждого типа значения в Redis есть компактное представление для маленьких коллекций и «настоящая» структура для больших, и переход между ними идёт <strong>только в одну сторону</strong>: уменьшившись, коллекция в компактную кодировку уже не вернётся, пока ключ не перезапишут целиком. Именно из-за этих порогов потребление памяти может вырасти в разы без роста данных. Таблица ниже сводит для каждого типа обе кодировки и параметры, которые управляют переходом.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип</th>
@@ -381,40 +381,40 @@ XAUTOCLAIM payments:events grp worker-2 <span class="m">60000</span> <span class
 </thead>
 <tbody>
 <tr>
-<td>String</td>
-<td><code>int</code> / <code>embstr</code></td>
-<td><code>embstr</code> до 44 байт</td>
-<td><code>raw</code> (SDS)</td>
+<td data-label="Тип">String</td>
+<td data-label="Компактная кодировка"><code>int</code> / <code>embstr</code></td>
+<td data-label="Порог перехода (по умолчанию)"><code>embstr</code> до 44 байт</td>
+<td data-label="«Большая» структура"><code>raw</code> (SDS)</td>
 </tr>
 <tr>
-<td>List</td>
-<td><code>listpack</code> внутри <code>quicklist</code></td>
-<td><code>list-max-listpack-size -2</code>, то есть 8 КБ на узел (положительное значение вместо этого ограничивает число элементов в узле)</td>
-<td><code>quicklist</code> из множества узлов</td>
+<td data-label="Тип">List</td>
+<td data-label="Компактная кодировка"><code>listpack</code> внутри <code>quicklist</code></td>
+<td data-label="Порог перехода (по умолчанию)"><code>list-max-listpack-size -2</code>, то есть 8 КБ на узел (положительное значение вместо этого ограничивает число элементов в узле)</td>
+<td data-label="«Большая» структура"><code>quicklist</code> из множества узлов</td>
 </tr>
 <tr>
-<td>Hash</td>
-<td><code>listpack</code></td>
-<td><code>hash-max-listpack-entries 512</code>, <code>hash-max-listpack-value 64</code></td>
-<td><code>hashtable</code></td>
+<td data-label="Тип">Hash</td>
+<td data-label="Компактная кодировка"><code>listpack</code></td>
+<td data-label="Порог перехода (по умолчанию)"><code>hash-max-listpack-entries 512</code>, <code>hash-max-listpack-value 64</code></td>
+<td data-label="«Большая» структура"><code>hashtable</code></td>
 </tr>
 <tr>
-<td>Set (числа)</td>
-<td><code>intset</code></td>
-<td><code>set-max-intset-entries 512</code></td>
-<td><code>listpack</code> → <code>hashtable</code></td>
+<td data-label="Тип">Set (числа)</td>
+<td data-label="Компактная кодировка"><code>intset</code></td>
+<td data-label="Порог перехода (по умолчанию)"><code>set-max-intset-entries 512</code></td>
+<td data-label="«Большая» структура"><code>listpack</code> → <code>hashtable</code></td>
 </tr>
 <tr>
-<td>Set (строки)</td>
-<td><code>listpack</code></td>
-<td><code>set-max-listpack-entries 128</code>, <code>set-max-listpack-value 64</code></td>
-<td><code>hashtable</code></td>
+<td data-label="Тип">Set (строки)</td>
+<td data-label="Компактная кодировка"><code>listpack</code></td>
+<td data-label="Порог перехода (по умолчанию)"><code>set-max-listpack-entries 128</code>, <code>set-max-listpack-value 64</code></td>
+<td data-label="«Большая» структура"><code>hashtable</code></td>
 </tr>
 <tr>
-<td>Sorted set</td>
-<td><code>listpack</code></td>
-<td><code>zset-max-listpack-entries 128</code>, <code>zset-max-listpack-value 64</code></td>
-<td><code>skiplist</code> + <code>dict</code></td>
+<td data-label="Тип">Sorted set</td>
+<td data-label="Компактная кодировка"><code>listpack</code></td>
+<td data-label="Порог перехода (по умолчанию)"><code>zset-max-listpack-entries 128</code>, <code>zset-max-listpack-value 64</code></td>
+<td data-label="«Большая» структура"><code>skiplist</code> + <code>dict</code></td>
 </tr>
 </tbody>
 </table>
@@ -448,7 +448,7 @@ HSET user:bucket:123 <span class="m">45</span> <span class="s1">'{"name":"...","
 </blockquote>
 <h3 id="52-maxmemory-и-политики-вытеснения">5.2 maxmemory и политики вытеснения</h3>
 <p><code>maxmemory</code> задаёт верхний предел памяти под данные, и без него Redis будет расти, пока его не убьёт OOM killer, поэтому на проде этот параметр <strong>обязателен</strong>. Когда лимит достигнут, дальнейшее поведение определяет <code>maxmemory-policy</code> (<a href="https://raw.githubusercontent.com/redis/redis/unstable/redis.conf">redis.conf</a>), и в таблице ниже перечислены все политики: первая ничего не вытесняет, остальные различаются тем, среди каких ключей и по какому признаку выбирают жертву.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Политика</th>
@@ -457,32 +457,32 @@ HSET user:bucket:123 <span class="m">45</span> <span class="s1">'{"name":"...","
 </thead>
 <tbody>
 <tr>
-<td><code>noeviction</code></td>
-<td>ничего не вытесняет, записи получают ошибку OOM (чтения работают)</td>
+<td data-label="Политика"><code>noeviction</code></td>
+<td data-label="Что делает">ничего не вытесняет, записи получают ошибку OOM (чтения работают)</td>
 </tr>
 <tr>
-<td><code>allkeys-lru</code></td>
-<td>вытесняет по приближённому LRU среди всех ключей</td>
+<td data-label="Политика"><code>allkeys-lru</code></td>
+<td data-label="Что делает">вытесняет по приближённому LRU среди всех ключей</td>
 </tr>
 <tr>
-<td><code>volatile-lru</code></td>
-<td>то же, но только среди ключей с TTL</td>
+<td data-label="Политика"><code>volatile-lru</code></td>
+<td data-label="Что делает">то же, но только среди ключей с TTL</td>
 </tr>
 <tr>
-<td><code>allkeys-lfu</code></td>
-<td>по приближённому LFU среди всех</td>
+<td data-label="Политика"><code>allkeys-lfu</code></td>
+<td data-label="Что делает">по приближённому LFU среди всех</td>
 </tr>
 <tr>
-<td><code>volatile-lfu</code></td>
-<td>по LFU среди ключей с TTL</td>
+<td data-label="Политика"><code>volatile-lfu</code></td>
+<td data-label="Что делает">по LFU среди ключей с TTL</td>
 </tr>
 <tr>
-<td><code>allkeys-random</code> / <code>volatile-random</code></td>
-<td>случайно</td>
+<td data-label="Политика"><code>allkeys-random</code> / <code>volatile-random</code></td>
+<td data-label="Что делает">случайно</td>
 </tr>
 <tr>
-<td><code>volatile-ttl</code></td>
-<td>ключ с ближайшим истечением</td>
+<td data-label="Политика"><code>volatile-ttl</code></td>
+<td data-label="Что делает">ключ с ближайшим истечением</td>
 </tr>
 </tbody>
 </table>
@@ -531,7 +531,7 @@ HSET user:bucket:123 <span class="m">45</span> <span class="s1">'{"name":"...","
 <p>По умолчанию точки сохранения такие: через 3600 с, если был хотя бы 1 ключевой апдейт, через 300 с, если их было не меньше 100, и через 60 с, если их было не меньше 10000 (<a href="https://raw.githubusercontent.com/redis/redis/unstable/redis.conf">redis.conf</a>). В переводе на практический язык это значит, что <strong>при падении между снимками пропадает до часа записей</strong>, поэтому RDB служит инструментом для бэкапа и быстрой загрузки, а durability он не обеспечивает.</p>
 <h3 id="62-aof-журнал-команд">6.2 AOF: журнал команд</h3>
 <p>AOF (append-only file) дописывает в журнал каждую команду, которая изменяет данные, и поэтому при падении теряет намного меньше, чем RDB. Сколько именно, зависит от того, как часто Redis вызывает fsync, а это задаёт параметр <code>appendfsync</code> (<a href="https://raw.githubusercontent.com/redis/redis/unstable/redis.conf">redis.conf</a>); в таблице для каждого режима указаны гарантия и цена, которую за неё платят.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -541,19 +541,19 @@ HSET user:bucket:123 <span class="m">45</span> <span class="s1">'{"name":"...","
 </thead>
 <tbody>
 <tr>
-<td><code>always</code></td>
-<td>fsync после каждой записи; теряется максимум одна команда</td>
-<td>пропускная способность падает в разы, латентность привязана к диску</td>
+<td data-label="Режим"><code>always</code></td>
+<td data-label="Гарантия">fsync после каждой записи; теряется максимум одна команда</td>
+<td data-label="Цена">пропускная способность падает в разы, латентность привязана к диску</td>
 </tr>
 <tr>
-<td><code>everysec</code> (по умолчанию)</td>
-<td>fsync раз в секунду; <strong>теряется до 1 секунды данных</strong></td>
-<td>почти без потерь производительности</td>
+<td data-label="Режим"><code>everysec</code> (по умолчанию)</td>
+<td data-label="Гарантия">fsync раз в секунду; <strong>теряется до 1 секунды данных</strong></td>
+<td data-label="Цена">почти без потерь производительности</td>
 </tr>
 <tr>
-<td><code>no</code></td>
-<td>fsync отдаёт ОС</td>
-<td>до 30 секунд потерь (зависит от настроек ядра)</td>
+<td data-label="Режим"><code>no</code></td>
+<td data-label="Гарантия">fsync отдаёт ОС</td>
+<td data-label="Цена">до 30 секунд потерь (зависит от настроек ядра)</td>
 </tr>
 </tbody>
 </table>
@@ -573,7 +573,7 @@ HSET user:bucket:123 <span class="m">45</span> <span class="s1">'{"name":"...","
 <h3 id="64-sentinel-и-cluster">6.4 Sentinel и Cluster</h3>
 <p>Когда одного экземпляра Redis перестаёт хватать по надёжности или по объёму, выбирать приходится между двумя топологиями, и решают они разные задачи. <strong>Sentinel</strong> обеспечивает мониторинг и автоматический failover для топологии «один мастер плюс реплики». Sentinel-узлы (их нечётное число, не меньше 3) следят за мастером, договариваются между собой о его недоступности по кворуму, выбирают реплику и промотируют её, а клиент спрашивает у Sentinel адрес текущего мастера. Данные при этом <strong>не шардируются</strong>, и весь набор данных должен помещаться в один экземпляр.</p>
 <p><strong>Cluster</strong> объединяет шардирование и failover. Keyspace в нём разделён на <strong>16 384 hash slots</strong>, слот ключа вычисляется как <code>CRC16(key) mod 16384</code>, каждый мастер владеет своим подмножеством слотов, и у каждого мастера есть собственные реплики (<a href="https://valkey.io/topics/cluster-spec/">Valkey: cluster spec</a>). Таблица ниже сравнивает обе топологии по тому, что они дают и какие ограничения накладывают на код приложения.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -583,34 +583,34 @@ HSET user:bucket:123 <span class="m">45</span> <span class="s1">'{"name":"...","
 </thead>
 <tbody>
 <tr>
-<td>Шардирование</td>
-<td>нет</td>
-<td>да, 16384 слота</td>
+<td data-label="">Шардирование</td>
+<td data-label="Sentinel">нет</td>
+<td data-label="Cluster">да, 16384 слота</td>
 </tr>
 <tr>
-<td>Объём</td>
-<td>ограничен одним узлом</td>
-<td>сумма узлов</td>
+<td data-label="">Объём</td>
+<td data-label="Sentinel">ограничен одним узлом</td>
+<td data-label="Cluster">сумма узлов</td>
 </tr>
 <tr>
-<td>Multi-key</td>
-<td>без ограничений</td>
-<td>только в пределах одного слота</td>
+<td data-label="">Multi-key</td>
+<td data-label="Sentinel">без ограничений</td>
+<td data-label="Cluster">только в пределах одного слота</td>
 </tr>
 <tr>
-<td>Транзакции/Lua</td>
-<td>без ограничений</td>
-<td>все ключи в одном слоте</td>
+<td data-label="">Транзакции/Lua</td>
+<td data-label="Sentinel">без ограничений</td>
+<td data-label="Cluster">все ключи в одном слоте</td>
 </tr>
 <tr>
-<td>Клиент</td>
-<td>обычный + discovery через Sentinel</td>
-<td>cluster-aware, держит карту слотов</td>
+<td data-label="">Клиент</td>
+<td data-label="Sentinel">обычный + discovery через Sentinel</td>
+<td data-label="Cluster">cluster-aware, держит карту слотов</td>
 </tr>
 <tr>
-<td>Сложность эксплуатации</td>
-<td>ниже</td>
-<td>заметно выше</td>
+<td data-label="">Сложность эксплуатации</td>
+<td data-label="Sentinel">ниже</td>
+<td data-label="Cluster">заметно выше</td>
 </tr>
 </tbody>
 </table>
@@ -815,7 +815,7 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 <p>Со стороны Java работа с Redis упирается в выбор клиента, настройку сериализации и таймаутов, и на каждом из этих шагов значения по умолчанию подходят проду плохо. Клиентов три, и различаются они моделью соединений: Jedis держит пул блокирующих сокетов, Lettuce мультиплексирует одно соединение между потоками, а Redisson строит поверх Redis высокоуровневые распределённые объекты. Ниже разобраны сами клиенты, конфигурация Spring Data Redis с её сериализаторами, пулы, таймауты и метрики, а в конце история с лицензиями и появлением Valkey.</p>
 <h3 id="81-jedis-lettuce-redisson">8.1 Jedis, Lettuce, Redisson</h3>
 <p>Выбор клиента определяет, сколько соединений держит сервис, как он ведёт себя с виртуальными потоками и насколько прозрачно то, что происходит на проводе. Таблица сравнивает три клиента по транспорту, потокобезопасности, API, уровню абстракции и поддерживаемым топологиям, а после неё каждый разобран отдельно.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -826,34 +826,34 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 </thead>
 <tbody>
 <tr>
-<td>Транспорт</td>
-<td>блокирующие сокеты</td>
-<td>Netty, неблокирующий</td>
-<td>Netty</td>
+<td data-label="">Транспорт</td>
+<td data-label="Jedis">блокирующие сокеты</td>
+<td data-label="Lettuce">Netty, неблокирующий</td>
+<td data-label="Redisson">Netty</td>
 </tr>
 <tr>
-<td>Потокобезопасность</td>
-<td>объект <code>Jedis</code> <strong>не</strong> потокобезопасен → пул</td>
-<td>одно соединение разделяется потоками</td>
-<td>разделяемое соединение</td>
+<td data-label="">Потокобезопасность</td>
+<td data-label="Jedis">объект <code>Jedis</code> <strong>не</strong> потокобезопасен → пул</td>
+<td data-label="Lettuce">одно соединение разделяется потоками</td>
+<td data-label="Redisson">разделяемое соединение</td>
 </tr>
 <tr>
-<td>API</td>
-<td>синхронный</td>
-<td>sync / async (<code>RedisFuture</code>) / reactive (Reactor)</td>
-<td>высокоуровневые распределённые объекты</td>
+<td data-label="">API</td>
+<td data-label="Jedis">синхронный</td>
+<td data-label="Lettuce">sync / async (<code>RedisFuture</code>) / reactive (Reactor)</td>
+<td data-label="Redisson">высокоуровневые распределённые объекты</td>
 </tr>
 <tr>
-<td>Уровень</td>
-<td>«команды Redis 1:1»</td>
-<td>«команды Redis 1:1»</td>
-<td>«java.util.concurrent поверх Redis»</td>
+<td data-label="">Уровень</td>
+<td data-label="Jedis">«команды Redis 1:1»</td>
+<td data-label="Lettuce">«команды Redis 1:1»</td>
+<td data-label="Redisson">«java.util.concurrent поверх Redis»</td>
 </tr>
 <tr>
-<td>Топологии</td>
-<td>standalone, sentinel, cluster</td>
-<td>standalone, sentinel, cluster, master-replica</td>
-<td>+ replicated, proxy, multi-cluster</td>
+<td data-label="">Топологии</td>
+<td data-label="Jedis">standalone, sentinel, cluster</td>
+<td data-label="Lettuce">standalone, sentinel, cluster, master-replica</td>
+<td data-label="Redisson">+ replicated, proxy, multi-cluster</td>
 </tr>
 </tbody>
 </table>
@@ -911,7 +911,7 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 <h3 id="91-документная-модель-и-проектирование-схемы">9.1 Документная модель и проектирование схемы</h3>
 <p>Проектирование схемы в MongoDB начинается не с сущностей, а с того, какие данные читаются и меняются вместе, потому что атомарность, стоимость чтения и пределы роста здесь определяются границами документа. Документ хранится в формате BSON, то есть бинарном JSON с дополнительными типами (<code>ObjectId</code>, <code>Date</code>, <code>Decimal128</code>, <code>BinData</code>). Единой схемы коллекция не требует, хотя с 3.6 появилась валидация <code>$jsonSchema</code>, и <strong>включать её нужно обязательно</strong>, потому что «schemaless» на практике означает, что схема живёт в коде, причём в каждом сервисе своя.</p>
 <p>Главное решение при проектировании — выбрать между <strong>embedding и referencing</strong>, то есть вложить связанные данные в документ или сослаться на них. Таблица ниже сравнивает оба варианта по чтению, записи, росту и дублированию, а последняя строка подсказывает, когда какой из них брать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -921,29 +921,29 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 </thead>
 <tbody>
 <tr>
-<td>Чтение</td>
-<td>одно обращение, всё вместе</td>
-<td>нужен <code>$lookup</code> или второй запрос</td>
+<td data-label="">Чтение</td>
+<td data-label="Embedding (вложить)">одно обращение, всё вместе</td>
+<td data-label="Referencing (ссылка)">нужен <code>$lookup</code> или второй запрос</td>
 </tr>
 <tr>
-<td>Запись</td>
-<td>атомарна в пределах документа</td>
-<td>нужны транзакции или согласованность «потом»</td>
+<td data-label="">Запись</td>
+<td data-label="Embedding (вложить)">атомарна в пределах документа</td>
+<td data-label="Referencing (ссылка)">нужны транзакции или согласованность «потом»</td>
 </tr>
 <tr>
-<td>Рост</td>
-<td>ограничен 16 МБ на документ</td>
-<td>не ограничен</td>
+<td data-label="">Рост</td>
+<td data-label="Embedding (вложить)">ограничен 16 МБ на документ</td>
+<td data-label="Referencing (ссылка)">не ограничен</td>
 </tr>
 <tr>
-<td>Дубли</td>
-<td>данные копируются, обновление в N мест</td>
-<td>одна копия</td>
+<td data-label="">Дубли</td>
+<td data-label="Embedding (вложить)">данные копируются, обновление в N мест</td>
+<td data-label="Referencing (ссылка)">одна копия</td>
 </tr>
 <tr>
-<td>Когда</td>
-<td>отношение «один-к-немногим», читается вместе, меняется вместе</td>
-<td>«один-ко-многим/многим-ко-многим», независимая жизнь, безграничный рост</td>
+<td data-label="">Когда</td>
+<td data-label="Embedding (вложить)">отношение «один-к-немногим», читается вместе, меняется вместе</td>
+<td data-label="Referencing (ссылка)">«один-ко-многим/многим-ко-многим», независимая жизнь, безграничный рост</td>
 </tr>
 </tbody>
 </table>
@@ -1026,7 +1026,7 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 <p><code>explain</code> показывает, какой план MongoDB выбрала для запроса и сколько работы на него ушло, и это главный инструмент, когда запрос неожиданно тормозит. У него три режима: <code>queryPlanner</code> показывает только выбранный план и сам запрос не выполняет, <code>executionStats</code> добавляет к плану фактические счётчики, а <code>allPlansExecution</code> вдобавок даёт статистику планов, отвергнутых при выборе. Ниже разобрано, как MongoDB выбирает план, какие поля <code>executionStats</code> читать и в каком порядке, и что такое covered query.</p>
 <p>MongoDB выбирает план так: для нового «shape» запроса планировщик параллельно выполняет <strong>все</strong> кандидатные планы на небольшом объёме работы, и побеждает тот, кто быстрее наберёт нужное число документов. Победитель попадает в <strong>plan cache</strong> и повторно используется, пока его не вытеснят, пока не изменятся индексы или пока его производительность не деградирует (это механизм «replanning»). Отсюда классический сюрприз: один и тот же запрос ведёт себя по-разному на двух узлах реплика-сета, потому что содержимое план-кеша у них разное. Посмотреть план-кеш можно через <code>db.coll.getPlanCache().list()</code>, а сбросить через <code>db.coll.getPlanCache().clear()</code>.</p>
 <p>Поля <code>executionStats</code> удобно читать по порядку, как в таблице ниже: для каждого указана норма и симптом, который говорит о проблеме.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Поле</th>
@@ -1036,39 +1036,39 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 </thead>
 <tbody>
 <tr>
-<td><code>winningPlan.stage</code></td>
-<td><code>IXSCAN</code> → <code>FETCH</code></td>
-<td><code>COLLSCAN</code> — индекса нет или он не применим</td>
+<td data-label="Поле"><code>winningPlan.stage</code></td>
+<td data-label="Норма"><code>IXSCAN</code> → <code>FETCH</code></td>
+<td data-label="Симптом проблемы"><code>COLLSCAN</code> — индекса нет или он не применим</td>
 </tr>
 <tr>
-<td><code>totalKeysExamined</code></td>
-<td>близко к <code>nReturned</code></td>
-<td>много больше — индекс слабо селективен</td>
+<td data-label="Поле"><code>totalKeysExamined</code></td>
+<td data-label="Норма">близко к <code>nReturned</code></td>
+<td data-label="Симптом проблемы">много больше — индекс слабо селективен</td>
 </tr>
 <tr>
-<td><code>totalDocsExamined</code></td>
-<td>0 при covered query, иначе ≈ <code>nReturned</code></td>
-<td>много больше <code>nReturned</code> — фильтрация после выборки</td>
+<td data-label="Поле"><code>totalDocsExamined</code></td>
+<td data-label="Норма">0 при covered query, иначе ≈ <code>nReturned</code></td>
+<td data-label="Симптом проблемы">много больше <code>nReturned</code> — фильтрация после выборки</td>
 </tr>
 <tr>
-<td>наличие <code>SORT</code></td>
-<td>отсутствует</td>
-<td>есть — сортировка в памяти, лимит 100 МБ, потом ошибка</td>
+<td data-label="Поле">наличие <code>SORT</code></td>
+<td data-label="Норма">отсутствует</td>
+<td data-label="Симптом проблемы">есть — сортировка в памяти, лимит 100 МБ, потом ошибка</td>
 </tr>
 <tr>
-<td><code>SORT_MERGE</code></td>
-<td>нормален при <code>$or</code> по индексам</td>
-<td>—</td>
+<td data-label="Поле"><code>SORT_MERGE</code></td>
+<td data-label="Норма">нормален при <code>$or</code> по индексам</td>
+<td data-label="Симптом проблемы">—</td>
 </tr>
 <tr>
-<td><code>executionTimeMillis</code></td>
-<td>—</td>
-<td>сравнивать с <code>totalKeysExamined</code>: большое время при малом examined = ожидание ресурсов</td>
+<td data-label="Поле"><code>executionTimeMillis</code></td>
+<td data-label="Норма">—</td>
+<td data-label="Симптом проблемы">сравнивать с <code>totalKeysExamined</code>: большое время при малом examined = ожидание ресурсов</td>
 </tr>
 <tr>
-<td><code>rejectedPlans</code></td>
-<td>—</td>
-<td>если отвергнут «очевидно правильный» план — проверить статистику и план-кеш</td>
+<td data-label="Поле"><code>rejectedPlans</code></td>
+<td data-label="Норма">—</td>
+<td data-label="Симптом проблемы">если отвергнут «очевидно правильный» план — проверить статистику и план-кеш</td>
 </tr>
 </tbody>
 </table>
@@ -1247,7 +1247,7 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 <h3 id="109-спейсы-индексы-и-расход-памяти">10.9 Спейсы, индексы и расход памяти</h3>
 <p>Кортеж memtx хранится как MsgPack-массив с заголовком, в котором лежат указатель на формат, счётчик ссылок и длина. Накладные расходы составляют порядка десятков байт на кортеж плюс сами данные в MsgPack-кодировке, где числа до 127 занимают один байт, а строки — свою длину плюс 1–5 байт заголовка. Это заметно компактнее строки в PostgreSQL с её 23-байтным заголовком и выравниванием и несопоставимо компактнее Java-объекта.</p>
 <p>Главная статья расходов — <strong>индексы</strong>, и её систематически недооценивают. Таблица ниже перечисляет типы индексов memtx: как каждый устроен, что умеет и сколько примерно стоит по памяти.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип индекса</th>
@@ -1258,28 +1258,28 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 </thead>
 <tbody>
 <tr>
-<td><code>TREE</code></td>
-<td>B+*-дерево</td>
-<td>равенство, диапазоны, сортировка, итерация <code>GT/GE/LT/LE</code>, частичный ключ</td>
-<td>~ десятки байт на кортеж на индекс</td>
+<td data-label="Тип индекса"><code>TREE</code></td>
+<td data-label="Структура">B+*-дерево</td>
+<td data-label="Что умеет">равенство, диапазоны, сортировка, итерация <code>GT/GE/LT/LE</code>, частичный ключ</td>
+<td data-label="Порядок расхода памяти">~ десятки байт на кортеж на индекс</td>
 </tr>
 <tr>
-<td><code>HASH</code></td>
-<td>открытая хеш-таблица</td>
-<td><strong>только</strong> полное равенство по всем частям ключа; всегда уникален</td>
-<td>меньше TREE, быстрее на точечном доступе</td>
+<td data-label="Тип индекса"><code>HASH</code></td>
+<td data-label="Структура">открытая хеш-таблица</td>
+<td data-label="Что умеет"><strong>только</strong> полное равенство по всем частям ключа; всегда уникален</td>
+<td data-label="Порядок расхода памяти">меньше TREE, быстрее на точечном доступе</td>
 </tr>
 <tr>
-<td><code>BITSET</code></td>
-<td>битовые маски</td>
-<td>поиск по подмножеству битов (<code>ANY_SET</code>, <code>ALL_SET</code>)</td>
-<td>зависит от плотности масок</td>
+<td data-label="Тип индекса"><code>BITSET</code></td>
+<td data-label="Структура">битовые маски</td>
+<td data-label="Что умеет">поиск по подмножеству битов (<code>ANY_SET</code>, <code>ALL_SET</code>)</td>
+<td data-label="Порядок расхода памяти">зависит от плотности масок</td>
 </tr>
 <tr>
-<td><code>RTREE</code></td>
-<td>R-дерево</td>
-<td>пространственные запросы (<code>NEIGHBOR</code>, <code>OVERLAPS</code>)</td>
-<td>дороже TREE</td>
+<td data-label="Тип индекса"><code>RTREE</code></td>
+<td data-label="Структура">R-дерево</td>
+<td data-label="Что умеет">пространственные запросы (<code>NEIGHBOR</code>, <code>OVERLAPS</code>)</td>
+<td data-label="Порядок расхода памяти">дороже TREE</td>
 </tr>
 </tbody>
 </table>
@@ -1318,7 +1318,7 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 <h3 id="1011-снимки-wal-и-восстановление">10.11 Снимки, WAL и восстановление</h3>
 <p>Durability в memtx держится на двух артефактах: <strong><code>.snap</code></strong> хранит полный образ данных на момент определённого LSN, а <strong><code>.xlog</code></strong> хранит журнал транзакций после этого LSN. При старте экземпляр читает последний снимок, накатывает поверх него WAL и строит индексы в памяти. Индексы в снимке <strong>не хранятся</strong> и строятся заново, поэтому время старта пропорционально числу кортежей и числу индексов: экземпляр на 50 млн кортежей с тремя индексами поднимается несколько минут, и это нужно закладывать в регламент рестартов и в таймауты Kubernetes-проб (<code>startupProbe</code> с большим <code>failureThreshold</code>, глава 47, <code>47-kubernetes-openshift.md</code>).</p>
 <p>Основные параметры, которые управляют журналом и снимками, собраны в таблице ниже; в последней колонке указано, как их обычно выставляют на практике.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Параметр</th>
@@ -1328,29 +1328,29 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 </thead>
 <tbody>
 <tr>
-<td><code>wal_mode</code></td>
-<td><code>write</code> (писать без fsync на транзакцию), <code>fsync</code> (fsync каждую), <code>none</code> (не писать)</td>
-<td><code>write</code> стоит по умолчанию и служит разумным выбором; <code>fsync</code> нужен, когда потеря последних транзакций недопустима и вы готовы за это платить; <code>none</code> годится только для чистого кеша</td>
+<td data-label="Параметр"><code>wal_mode</code></td>
+<td data-label="Смысл"><code>write</code> (писать без fsync на транзакцию), <code>fsync</code> (fsync каждую), <code>none</code> (не писать)</td>
+<td data-label="Практика"><code>write</code> стоит по умолчанию и служит разумным выбором; <code>fsync</code> нужен, когда потеря последних транзакций недопустима и вы готовы за это платить; <code>none</code> годится только для чистого кеша</td>
 </tr>
 <tr>
-<td><code>checkpoint_interval</code></td>
-<td>период автоснапшота (секунды)</td>
-<td>по умолчанию 1 час; на большой арене снимок означает fork и всплеск памяти, поэтому без нужды делать его частым не стоит</td>
+<td data-label="Параметр"><code>checkpoint_interval</code></td>
+<td data-label="Смысл">период автоснапшота (секунды)</td>
+<td data-label="Практика">по умолчанию 1 час; на большой арене снимок означает fork и всплеск памяти, поэтому без нужды делать его частым не стоит</td>
 </tr>
 <tr>
-<td><code>checkpoint_count</code></td>
-<td>сколько снимков и связанных WAL хранить</td>
-<td>влияет на диск и на то, насколько глубоко можно откатиться</td>
+<td data-label="Параметр"><code>checkpoint_count</code></td>
+<td data-label="Смысл">сколько снимков и связанных WAL хранить</td>
+<td data-label="Практика">влияет на диск и на то, насколько глубоко можно откатиться</td>
 </tr>
 <tr>
-<td><code>wal_max_size</code></td>
-<td>размер сегмента журнала</td>
-<td>ротация; сегменты нужны relay-потокам и репликам</td>
+<td data-label="Параметр"><code>wal_max_size</code></td>
+<td data-label="Смысл">размер сегмента журнала</td>
+<td data-label="Практика">ротация; сегменты нужны relay-потокам и репликам</td>
 </tr>
 <tr>
-<td><code>force_recovery</code></td>
-<td>продолжать старт при повреждённом WAL</td>
-<td>только в аварии и осознанно: часть транзакций будет отброшена</td>
+<td data-label="Параметр"><code>force_recovery</code></td>
+<td data-label="Смысл">продолжать старт при повреждённом WAL</td>
+<td data-label="Практика">только в аварии и осознанно: часть транзакций будет отброшена</td>
 </tr>
 </tbody>
 </table>
@@ -1440,7 +1440,7 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 <p><strong>Соединения, а не пул в привычном смысле.</strong> Драйвер держит фиксированное число TCP-соединений на адрес и мультиплексирует запросы по ним так же, как Lettuce (§8.1): каждому запросу присваивается sync-идентификатор, а ответы приходят в произвольном порядке. Поэтому «увеличить пул» здесь означает <code>withConnections(n)</code>, и смысл это имеет только до тех пор, пока узким местом остаётся сокет, а не поток <code>tx</code>.</p>
 <p><strong>Асинхронность.</strong> API возвращает <code>CompletableFuture</code>, и типовая ошибка — вызвать синхронный <code>.get()</code> без таймаута, тогда как правильно всегда использовать <code>get(timeout, unit)</code> или <code>orTimeout</code>. Таймаут запроса на клиенте обязан быть меньше таймаута вышестоящего HTTP-запроса, иначе поток повиснет (глава 35, <code>35-resilience.md</code>).</p>
 <p><strong>Типы — главный источник граблей.</strong> Естественного соответствия между MsgPack, Lua и Java нет, и расхождения проявляются в проде странными ошибками. Таблица ниже перечисляет самые частые случаи: как ведёт себя каждый тип и что с этим делать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -1450,34 +1450,34 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 </thead>
 <tbody>
 <tr>
-<td>Целые числа</td>
-<td>Lua-число — double; целые за пределами 2^53 теряют точность при неаккуратной обработке</td>
-<td>явно использовать <code>unsigned</code>/<code>integer</code> в формате спейса, в Java — <code>Long</code>, не <code>Double</code></td>
+<td data-label="Что">Целые числа</td>
+<td data-label="Как ведёт себя">Lua-число — double; целые за пределами 2^53 теряют точность при неаккуратной обработке</td>
+<td data-label="Что делать">явно использовать <code>unsigned</code>/<code>integer</code> в формате спейса, в Java — <code>Long</code>, не <code>Double</code></td>
 </tr>
 <tr>
-<td><code>nil</code> в середине списка</td>
-<td>в Lua таблица с <code>nil</code> обрывается — аргументы после <code>nil</code> «исчезают»</td>
-<td>вместо <code>nil</code> передавать <code>box.NULL</code> (в Java — <code>null</code> внутри <code>List</code>, драйвер маппит его в <code>msgpack nil</code>)</td>
+<td data-label="Что"><code>nil</code> в середине списка</td>
+<td data-label="Как ведёт себя">в Lua таблица с <code>nil</code> обрывается — аргументы после <code>nil</code> «исчезают»</td>
+<td data-label="Что делать">вместо <code>nil</code> передавать <code>box.NULL</code> (в Java — <code>null</code> внутри <code>List</code>, драйвер маппит его в <code>msgpack nil</code>)</td>
 </tr>
 <tr>
-<td>Отсутствующее поле vs NULL</td>
-<td><code>nil</code> (нет поля) и <code>box.NULL</code> (поле есть, значение пустое) — разные вещи</td>
-<td>договориться на уровне контракта хранимки и проверять <code>== box.NULL</code></td>
+<td data-label="Что">Отсутствующее поле vs NULL</td>
+<td data-label="Как ведёт себя"><code>nil</code> (нет поля) и <code>box.NULL</code> (поле есть, значение пустое) — разные вещи</td>
+<td data-label="Что делать">договориться на уровне контракта хранимки и проверять <code>== box.NULL</code></td>
 </tr>
 <tr>
-<td>Дробные деньги</td>
-<td><code>double</code> в MsgPack — потеря точности</td>
-<td>хранить копейки как целое; либо <code>decimal</code> (Tarantool 2.3+) и <code>BigDecimal</code> на стороне Java (глава 04, <code>04-time-money-text.md</code>)</td>
+<td data-label="Что">Дробные деньги</td>
+<td data-label="Как ведёт себя"><code>double</code> в MsgPack — потеря точности</td>
+<td data-label="Что делать">хранить копейки как целое; либо <code>decimal</code> (Tarantool 2.3+) и <code>BigDecimal</code> на стороне Java (глава 04, <code>04-time-money-text.md</code>)</td>
 </tr>
 <tr>
-<td>Дата/время</td>
-<td>нет типа «дата» в старых версиях; <code>datetime</code> появился в 2.10</td>
-<td>хранить epoch-миллисекунды как <code>unsigned</code>, либо использовать <code>datetime</code> и проверить поддержку в версии драйвера</td>
+<td data-label="Что">Дата/время</td>
+<td data-label="Как ведёт себя">нет типа «дата» в старых версиях; <code>datetime</code> появился в 2.10</td>
+<td data-label="Что делать">хранить epoch-миллисекунды как <code>unsigned</code>, либо использовать <code>datetime</code> и проверить поддержку в версии драйвера</td>
 </tr>
 <tr>
-<td>UUID</td>
-<td>есть тип <code>uuid</code> (2.4+), но не все версии драйвера мапят его прозрачно</td>
-<td>проверить round-trip тестом, иначе получишь строку вместо UUID</td>
+<td data-label="Что">UUID</td>
+<td data-label="Как ведёт себя">есть тип <code>uuid</code> (2.4+), но не все версии драйвера мапят его прозрачно</td>
+<td data-label="Что делать">проверить round-trip тестом, иначе получишь строку вместо UUID</td>
 </tr>
 </tbody>
 </table>
@@ -1546,7 +1546,7 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 </blockquote>
 <h3 id="1017-сравнение-tarantool-redis-и-postgresql">10.17 Сравнение Tarantool, Redis и PostgreSQL</h3>
 <p>Tarantool конкурирует сразу с двумя соседями: с Redis за роль быстрого хранилища в памяти и с PostgreSQL за роль основной базы, и выбор между ними почти всегда упирается в латентность, гарантии и цену эксплуатации. Таблица ниже сравнивает все три системы по модели данных, логике рядом с данными, индексам, durability, репликации, шардированию, транзакциям, цене в эксплуатации и латентности, а после неё сформулированы правила выбора.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -1557,64 +1557,64 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 </thead>
 <tbody>
 <tr>
-<td>Модель</td>
-<td>структуры данных по ключу</td>
-<td>спейсы, кортежи, вторичные индексы, SQL-подмножество</td>
-<td>реляционная, полный SQL</td>
+<td data-label="Критерий">Модель</td>
+<td data-label="Redis/Valkey">структуры данных по ключу</td>
+<td data-label="Tarantool">спейсы, кортежи, вторичные индексы, SQL-подмножество</td>
+<td data-label="PostgreSQL">реляционная, полный SQL</td>
 </tr>
 <tr>
-<td>Логика рядом с данными</td>
-<td>Lua-скрипты и Functions, без состояния и модулей</td>
-<td>полноценное приложение на Lua: модули, роли, HTTP, коннекторы к внешним системам</td>
-<td>PL/pgSQL, но это не сервер приложений</td>
+<td data-label="Критерий">Логика рядом с данными</td>
+<td data-label="Redis/Valkey">Lua-скрипты и Functions, без состояния и модулей</td>
+<td data-label="Tarantool">полноценное приложение на Lua: модули, роли, HTTP, коннекторы к внешним системам</td>
+<td data-label="PostgreSQL">PL/pgSQL, но это не сервер приложений</td>
 </tr>
 <tr>
-<td>Вторичные индексы</td>
-<td>нет (эмулируются вручную zset/hash)</td>
-<td>есть, нескольких типов, составные</td>
-<td>есть, богатый набор</td>
+<td data-label="Критерий">Вторичные индексы</td>
+<td data-label="Redis/Valkey">нет (эмулируются вручную zset/hash)</td>
+<td data-label="Tarantool">есть, нескольких типов, составные</td>
+<td data-label="PostgreSQL">есть, богатый набор</td>
 </tr>
 <tr>
-<td>Диапазонные запросы</td>
-<td>по zset, вручную</td>
-<td><code>TREE</code>-индекс, итераторы <code>GT/GE/LT/LE</code></td>
-<td>полноценно</td>
+<td data-label="Критерий">Диапазонные запросы</td>
+<td data-label="Redis/Valkey">по zset, вручную</td>
+<td data-label="Tarantool"><code>TREE</code>-индекс, итераторы <code>GT/GE/LT/LE</code></td>
+<td data-label="PostgreSQL">полноценно</td>
 </tr>
 <tr>
-<td>Durability</td>
-<td>RDB (до часа) / AOF (до секунды)</td>
-<td>WAL на транзакцию + снимки; <code>wal_mode = fsync</code> при необходимости</td>
-<td>WAL, <code>synchronous_commit</code></td>
+<td data-label="Критерий">Durability</td>
+<td data-label="Redis/Valkey">RDB (до часа) / AOF (до секунды)</td>
+<td data-label="Tarantool">WAL на транзакцию + снимки; <code>wal_mode = fsync</code> при необходимости</td>
+<td data-label="PostgreSQL">WAL, <code>synchronous_commit</code></td>
 </tr>
 <tr>
-<td>Репликация</td>
-<td>асинхронная всегда</td>
-<td>асинхронная или <strong>синхронная кворумная</strong> + выборы на Raft</td>
-<td>асинхронная или синхронная</td>
+<td data-label="Критерий">Репликация</td>
+<td data-label="Redis/Valkey">асинхронная всегда</td>
+<td data-label="Tarantool">асинхронная или <strong>синхронная кворумная</strong> + выборы на Raft</td>
+<td data-label="PostgreSQL">асинхронная или синхронная</td>
 </tr>
 <tr>
-<td>Шардирование</td>
-<td>Cluster, 16384 слота</td>
-<td>vshard, бакеты</td>
-<td>вручную/расширениями (Citus)</td>
+<td data-label="Критерий">Шардирование</td>
+<td data-label="Redis/Valkey">Cluster, 16384 слота</td>
+<td data-label="Tarantool">vshard, бакеты</td>
+<td data-label="PostgreSQL">вручную/расширениями (Citus)</td>
 </tr>
 <tr>
-<td>Транзакции</td>
-<td><code>MULTI</code> без отката; Lua-скрипт атомарен</td>
-<td>честные транзакции, опциональный MVCC</td>
-<td>полный ACID</td>
+<td data-label="Критерий">Транзакции</td>
+<td data-label="Redis/Valkey"><code>MULTI</code> без отката; Lua-скрипт атомарен</td>
+<td data-label="Tarantool">честные транзакции, опциональный MVCC</td>
+<td data-label="PostgreSQL">полный ACID</td>
 </tr>
 <tr>
-<td>Цена в эксплуатации</td>
-<td>низкая, все умеют</td>
-<td><strong>высокая</strong>: Lua, редкая экспертиза, свой мониторинг</td>
-<td>средняя, все умеют</td>
+<td data-label="Критерий">Цена в эксплуатации</td>
+<td data-label="Redis/Valkey">низкая, все умеют</td>
+<td data-label="Tarantool"><strong>высокая</strong>: Lua, редкая экспертиза, свой мониторинг</td>
+<td data-label="PostgreSQL">средняя, все умеют</td>
 </tr>
 <tr>
-<td>Латентность типовой операции</td>
-<td>десятки–сотни мкс на команду</td>
-<td>десятки–сотни мкс на <strong>вызов хранимки</strong>, внутри которого 5–10 операций</td>
-<td>единицы мс</td>
+<td data-label="Критерий">Латентность типовой операции</td>
+<td data-label="Redis/Valkey">десятки–сотни мкс на команду</td>
+<td data-label="Tarantool">десятки–сотни мкс на <strong>вызов хранимки</strong>, внутри которого 5–10 операций</td>
+<td data-label="PostgreSQL">единицы мс</td>
 </tr>
 </tbody>
 </table>
@@ -1644,7 +1644,7 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 <p>Практических следствий несколько. При массовой загрузке стоит выставить <code>index.refresh_interval: -1</code> (или 30s), а потом вернуть прежнее значение, и выигрыш по скорости получается кратным. <code>?refresh=wait_for</code> ждёт ближайшего refresh, и это правильный способ, а <code>?refresh=true</code> форсирует refresh и плодит мелкие сегменты, поэтому годится только для тестов. Удаление документа — всего лишь пометка в сегменте, и место освобождается только при merge. Наконец, частый refresh означает много мелких сегментов, дорогой поиск и постоянное слияние.</p>
 <h3 id="113-mapping-типы-text-и-keyword">11.3 Mapping: типы text и keyword</h3>
 <p>Mapping описывает, как Elasticsearch индексирует каждое поле документа, и самая частая ошибка в нём — перепутать <code>text</code> и <code>keyword</code>: одно и то же строковое значение можно либо разбить на термы для полнотекстового поиска, либо хранить целиком для точного совпадения, сортировки и агрегаций, и совместить это в одном типе нельзя. Таблица ниже показывает, что умеет каждый из двух типов и где его применять.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1654,29 +1654,29 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 </thead>
 <tbody>
 <tr>
-<td>Анализируется</td>
-<td>да, разбивается на термы</td>
-<td>нет, целиком одно значение</td>
+<td data-label="">Анализируется</td>
+<td data-label="text">да, разбивается на термы</td>
+<td data-label="keyword">нет, целиком одно значение</td>
 </tr>
 <tr>
-<td>Полнотекст (<code>match</code>)</td>
-<td>да</td>
-<td>по сути нет</td>
+<td data-label="">Полнотекст (<code>match</code>)</td>
+<td data-label="text">да</td>
+<td data-label="keyword">по сути нет</td>
 </tr>
 <tr>
-<td>Точное совпадение (<code>term</code>)</td>
-<td>почти никогда не работает как ожидаешь</td>
-<td>да</td>
+<td data-label="">Точное совпадение (<code>term</code>)</td>
+<td data-label="text">почти никогда не работает как ожидаешь</td>
+<td data-label="keyword">да</td>
 </tr>
 <tr>
-<td>Сортировка, агрегации</td>
-<td>нет (нужен fielddata — опасно)</td>
-<td>да</td>
+<td data-label="">Сортировка, агрегации</td>
+<td data-label="text">нет (нужен fielddata — опасно)</td>
+<td data-label="keyword">да</td>
 </tr>
 <tr>
-<td>Применение</td>
-<td>описания, комментарии, тела писем</td>
-<td>id, email, hostname, статусы, теги</td>
+<td data-label="">Применение</td>
+<td data-label="text">описания, комментарии, тела писем</td>
+<td data-label="keyword">id, email, hostname, статусы, теги</td>
 </tr>
 </tbody>
 </table>
@@ -1795,7 +1795,7 @@ memtable переполнилась / по таймеру → flush → SSTable 
 <p><strong>Hinted handoff</strong> работает так: если реплика недоступна, координатор может сохранить «подсказку» и доставить её позже, причём по умолчанию окно для этого составляет 3 часа. Вдобавок есть плановый <code>nodetool repair</code>, который сверяет реплики по деревьям Меркла, и если repair не проходит регулярно в пределах <code>gc_grace_seconds</code>, это прямой путь к воскрешению удалённых данных (см. 12.1.3).</p>
 <h3 id="1212-стратегии-уплотнения-stcs-lcs-twcs-ucs">12.1.2 Стратегии уплотнения: STCS, LCS, TWCS, UCS</h3>
 <p>Стратегия уплотнения решает, как и когда LSM-хранилище сливает SSTable, и это главная эксплуатационная ручка Cassandra: выбор стратегии меняет соотношение трёх амплификаций (§2.3), и «правильного» варианта здесь нет, есть только подходящий под профиль нагрузки. Таблица ниже сравнивает четыре стратегии по тому, как они сливают файлы, во что обходятся чтение, запись и место и когда каждую брать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -1808,36 +1808,36 @@ memtable переполнилась / по таймеру → flush → SSTable 
 </thead>
 <tbody>
 <tr>
-<td><strong>STCS</strong> (size-tiered)</td>
-<td>копит SSTable похожего размера (по умолчанию 4 штуки) и сливает в один большой</td>
-<td>высокая: строка может лежать во многих SSTable</td>
-<td>низкая</td>
-<td>высокая: во время слияния нужно место под результат, до ~2×</td>
-<td>запись доминирует, чтения по свежим данным</td>
+<td data-label="Стратегия"><strong>STCS</strong> (size-tiered)</td>
+<td data-label="Как сливает">копит SSTable похожего размера (по умолчанию 4 штуки) и сливает в один большой</td>
+<td data-label="Read amp">высокая: строка может лежать во многих SSTable</td>
+<td data-label="Write amp">низкая</td>
+<td data-label="Space amp">высокая: во время слияния нужно место под результат, до ~2×</td>
+<td data-label="Когда брать">запись доминирует, чтения по свежим данным</td>
 </tr>
 <tr>
-<td><strong>LCS</strong> (leveled)</td>
-<td>уровни, каждый в 10× больше предыдущего (<code>fanout_size 10</code>), SSTable по 160 МБ, внутри уровня диапазоны не пересекаются</td>
-<td>низкая: <strong>не более одного SSTable на уровень</strong></td>
-<td>высокая: строка переписывается при каждом подъёме уровня</td>
-<td>низкая, порядка 10% диска</td>
-<td>чтения доминируют, много перезаписей одних и тех же строк</td>
+<td data-label="Стратегия"><strong>LCS</strong> (leveled)</td>
+<td data-label="Как сливает">уровни, каждый в 10× больше предыдущего (<code>fanout_size 10</code>), SSTable по 160 МБ, внутри уровня диапазоны не пересекаются</td>
+<td data-label="Read amp">низкая: <strong>не более одного SSTable на уровень</strong></td>
+<td data-label="Write amp">высокая: строка переписывается при каждом подъёме уровня</td>
+<td data-label="Space amp">низкая, порядка 10% диска</td>
+<td data-label="Когда брать">чтения доминируют, много перезаписей одних и тех же строк</td>
 </tr>
 <tr>
-<td><strong>TWCS</strong> (time window)</td>
-<td>группирует SSTable по временным окнам, внутри окна STCS, между окнами не сливает</td>
-<td>зависит от числа окон в запросе</td>
-<td>низкая</td>
-<td>низкая</td>
-<td>ряды с TTL: целое окно удаляется файлом целиком</td>
+<td data-label="Стратегия"><strong>TWCS</strong> (time window)</td>
+<td data-label="Как сливает">группирует SSTable по временным окнам, внутри окна STCS, между окнами не сливает</td>
+<td data-label="Read amp">зависит от числа окон в запросе</td>
+<td data-label="Write amp">низкая</td>
+<td data-label="Space amp">низкая</td>
+<td data-label="Когда брать">ряды с TTL: целое окно удаляется файлом целиком</td>
 </tr>
 <tr>
-<td><strong>UCS</strong> (unified)</td>
-<td>параметризованная схема, покрывающая поведение STCS и LCS одним семейством настроек</td>
-<td>настраивается</td>
-<td>настраивается</td>
-<td>настраивается</td>
-<td>рекомендуется как стратегия по умолчанию для большинства нагрузок в актуальных версиях</td>
+<td data-label="Стратегия"><strong>UCS</strong> (unified)</td>
+<td data-label="Как сливает">параметризованная схема, покрывающая поведение STCS и LCS одним семейством настроек</td>
+<td data-label="Read amp">настраивается</td>
+<td data-label="Write amp">настраивается</td>
+<td data-label="Space amp">настраивается</td>
+<td data-label="Когда брать">рекомендуется как стратегия по умолчанию для большинства нагрузок в актуальных версиях</td>
 </tr>
 </tbody>
 </table>
@@ -1883,7 +1883,7 @@ memtable переполнилась / по таймеру → flush → SSTable 
 <p>Диагностируют такие проблемы тремя командами: <code>nodetool tablestats</code> показывает максимальный и средний размер партиции и число SSTable на чтение, <code>nodetool toppartitions</code> — какие партиции горячие прямо сейчас, а <code>nodetool tablehistograms</code> — распределение по числу ячеек и SSTable на чтение.</p>
 <h3 id="1215-consistency-levels-и-lightweight-transactions">12.1.5 Consistency levels и lightweight transactions</h3>
 <p>Уровень согласованности (consistency level, CL) в Cassandra задаётся для каждого запроса отдельно, и для чтения и записи он может быть разным, поэтому гарантии определяет не конфигурация кластера, а сочетание уровней в конкретной паре запросов. Таблица ниже перечисляет уровни и показывает, когда запись считается подтверждённой и сколько реплик отвечает на чтение.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>CL</th>
@@ -1893,34 +1893,34 @@ memtable переполнилась / по таймеру → flush → SSTable 
 </thead>
 <tbody>
 <tr>
-<td><code>ANY</code></td>
-<td>принял хоть кто-то, допускается hint</td>
-<td>—</td>
+<td data-label="CL"><code>ANY</code></td>
+<td data-label="Запись подтверждена, когда">принял хоть кто-то, допускается hint</td>
+<td data-label="Чтение отдаёт">—</td>
 </tr>
 <tr>
-<td><code>ONE</code> / <code>TWO</code> / <code>THREE</code></td>
-<td>N реплик</td>
-<td>ответ N реплик</td>
+<td data-label="CL"><code>ONE</code> / <code>TWO</code> / <code>THREE</code></td>
+<td data-label="Запись подтверждена, когда">N реплик</td>
+<td data-label="Чтение отдаёт">ответ N реплик</td>
 </tr>
 <tr>
-<td><code>QUORUM</code></td>
-<td><code>RF/2 + 1</code> реплик по всем ЦОДам</td>
-<td>то же</td>
+<td data-label="CL"><code>QUORUM</code></td>
+<td data-label="Запись подтверждена, когда"><code>RF/2 + 1</code> реплик по всем ЦОДам</td>
+<td data-label="Чтение отдаёт">то же</td>
 </tr>
 <tr>
-<td><code>LOCAL_QUORUM</code></td>
-<td>кворум внутри локального ЦОДа</td>
-<td>то же</td>
+<td data-label="CL"><code>LOCAL_QUORUM</code></td>
+<td data-label="Запись подтверждена, когда">кворум внутри локального ЦОДа</td>
+<td data-label="Чтение отдаёт">то же</td>
 </tr>
 <tr>
-<td><code>EACH_QUORUM</code></td>
-<td>кворум в каждом ЦОДе (только запись)</td>
-<td>—</td>
+<td data-label="CL"><code>EACH_QUORUM</code></td>
+<td data-label="Запись подтверждена, когда">кворум в каждом ЦОДе (только запись)</td>
+<td data-label="Чтение отдаёт">—</td>
 </tr>
 <tr>
-<td><code>ALL</code></td>
-<td>все RF</td>
-<td>все RF</td>
+<td data-label="CL"><code>ALL</code></td>
+<td data-label="Запись подтверждена, когда">все RF</td>
+<td data-label="Чтение отдаёт">все RF</td>
 </tr>
 </tbody>
 </table>
@@ -1955,7 +1955,7 @@ memtable переполнилась / по таймеру → flush → SSTable 
 </ol>
 <h3 id="132-сводная-таблица-задача-хранилище">13.2 Сводная таблица «задача → хранилище»</h3>
 <p>Когда требования сформулированы, большую часть типовых задач можно сопоставить с хранилищем почти механически. В таблице ниже для каждой задачи указан первый выбор, разумная альтернатива и то, чего делать не стоит; последняя колонка особенно полезна на ревью, потому что собирает ошибки, которые встречаются чаще всего.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Задача</th>
@@ -1966,94 +1966,94 @@ memtable переполнилась / по таймеру → flush → SSTable 
 </thead>
 <tbody>
 <tr>
-<td>Транзакционные данные, деньги, справочники</td>
-<td>PostgreSQL</td>
-<td>—</td>
-<td>Mongo, Redis, ES</td>
+<td data-label="Задача">Транзакционные данные, деньги, справочники</td>
+<td data-label="Первый выбор">PostgreSQL</td>
+<td data-label="Альтернатива">—</td>
+<td data-label="Чего не делать">Mongo, Redis, ES</td>
 </tr>
 <tr>
-<td>Кеш горячих данных</td>
-<td>Redis/Valkey (<code>allkeys-lru</code>)</td>
-<td>Caffeine локально (гл. 23)</td>
-<td>ставить <code>noeviction</code> и ждать OOM</td>
+<td data-label="Задача">Кеш горячих данных</td>
+<td data-label="Первый выбор">Redis/Valkey (<code>allkeys-lru</code>)</td>
+<td data-label="Альтернатива">Caffeine локально (гл. 23)</td>
+<td data-label="Чего не делать">ставить <code>noeviction</code> и ждать OOM</td>
 </tr>
 <tr>
-<td>Сессии</td>
-<td>Redis (<code>noeviction</code>, AOF)</td>
-<td>PostgreSQL при малом объёме</td>
-<td>Redis без persistence и без плана «что если упал»</td>
+<td data-label="Задача">Сессии</td>
+<td data-label="Первый выбор">Redis (<code>noeviction</code>, AOF)</td>
+<td data-label="Альтернатива">PostgreSQL при малом объёме</td>
+<td data-label="Чего не делать">Redis без persistence и без плана «что если упал»</td>
 </tr>
 <tr>
-<td>Распределённая блокировка «для эффективности»</td>
-<td>Redis <code>SET NX PX</code> + токен</td>
-<td>advisory lock в PostgreSQL</td>
-<td>считать это гарантией корректности</td>
+<td data-label="Задача">Распределённая блокировка «для эффективности»</td>
+<td data-label="Первый выбор">Redis <code>SET NX PX</code> + токен</td>
+<td data-label="Альтернатива">advisory lock в PostgreSQL</td>
+<td data-label="Чего не делать">считать это гарантией корректности</td>
 </tr>
 <tr>
-<td>Блокировка «для корректности»</td>
-<td>транзакция и уникальный индекс в БД</td>
-<td>etcd/ZooKeeper + fencing</td>
-<td>Redlock</td>
+<td data-label="Задача">Блокировка «для корректности»</td>
+<td data-label="Первый выбор">транзакция и уникальный индекс в БД</td>
+<td data-label="Альтернатива">etcd/ZooKeeper + fencing</td>
+<td data-label="Чего не делать">Redlock</td>
 </tr>
 <tr>
-<td>Rate limiting</td>
-<td>Redis + Lua (token bucket)</td>
-<td>локальный лимитер (гл. 35)</td>
-<td>считать без атомарности</td>
+<td data-label="Задача">Rate limiting</td>
+<td data-label="Первый выбор">Redis + Lua (token bucket)</td>
+<td data-label="Альтернатива">локальный лимитер (гл. 35)</td>
+<td data-label="Чего не делать">считать без атомарности</td>
 </tr>
 <tr>
-<td>Очередь задач</td>
-<td>PostgreSQL <code>SKIP LOCKED</code> (до тысяч/с)</td>
-<td>Redis Streams, RabbitMQ, Kafka</td>
-<td><code>LPUSH</code>+<code>BRPOP</code> там, где нельзя терять</td>
+<td data-label="Задача">Очередь задач</td>
+<td data-label="Первый выбор">PostgreSQL <code>SKIP LOCKED</code> (до тысяч/с)</td>
+<td data-label="Альтернатива">Redis Streams, RabbitMQ, Kafka</td>
+<td data-label="Чего не делать"><code>LPUSH</code>+<code>BRPOP</code> там, где нельзя терять</td>
 </tr>
 <tr>
-<td>Событийный лог, интеграция сервисов</td>
-<td>Kafka (гл. 29)</td>
-<td>Redis Streams при малом объёме</td>
-<td>pub/sub Redis</td>
+<td data-label="Задача">Событийный лог, интеграция сервисов</td>
+<td data-label="Первый выбор">Kafka (гл. 29)</td>
+<td data-label="Альтернатива">Redis Streams при малом объёме</td>
+<td data-label="Чего не делать">pub/sub Redis</td>
 </tr>
 <tr>
-<td>Полнотекстовый поиск, фасеты</td>
-<td>Elasticsearch/OpenSearch</td>
-<td>PostgreSQL FTS при простых требованиях</td>
-<td>делать ES источником истины</td>
+<td data-label="Задача">Полнотекстовый поиск, фасеты</td>
+<td data-label="Первый выбор">Elasticsearch/OpenSearch</td>
+<td data-label="Альтернатива">PostgreSQL FTS при простых требованиях</td>
+<td data-label="Чего не делать">делать ES источником истины</td>
 </tr>
 <tr>
-<td>Каталог с разнородными атрибутами</td>
-<td>PostgreSQL <code>jsonb</code> + GIN</td>
-<td>MongoDB</td>
-<td>Mongo «потому что JSON»</td>
+<td data-label="Задача">Каталог с разнородными атрибутами</td>
+<td data-label="Первый выбор">PostgreSQL <code>jsonb</code> + GIN</td>
+<td data-label="Альтернатива">MongoDB</td>
+<td data-label="Чего не делать">Mongo «потому что JSON»</td>
 </tr>
 <tr>
-<td>Огромный поток записи, гео-распределение</td>
-<td>Cassandra/ScyllaDB</td>
-<td>—</td>
-<td>Cassandra на 100 ГБ данных</td>
+<td data-label="Задача">Огромный поток записи, гео-распределение</td>
+<td data-label="Первый выбор">Cassandra/ScyllaDB</td>
+<td data-label="Альтернатива">—</td>
+<td data-label="Чего не делать">Cassandra на 100 ГБ данных</td>
 </tr>
 <tr>
-<td>Аналитика и отчёты</td>
-<td>ClickHouse</td>
-<td>PostgreSQL + партиционирование</td>
-<td>OLAP-запросы на OLTP-базе</td>
+<td data-label="Задача">Аналитика и отчёты</td>
+<td data-label="Первый выбор">ClickHouse</td>
+<td data-label="Альтернатива">PostgreSQL + партиционирование</td>
+<td data-label="Чего не делать">OLAP-запросы на OLTP-базе</td>
 </tr>
 <tr>
-<td>Метрики и ряды</td>
-<td>Prometheus/VictoriaMetrics (гл. 51)</td>
-<td>TimescaleDB</td>
-<td>хранить метрики в основной БД</td>
+<td data-label="Задача">Метрики и ряды</td>
+<td data-label="Первый выбор">Prometheus/VictoriaMetrics (гл. 51)</td>
+<td data-label="Альтернатива">TimescaleDB</td>
+<td data-label="Чего не делать">хранить метрики в основной БД</td>
 </tr>
 <tr>
-<td>Витрина с латентностью в мс и логикой</td>
-<td>Tarantool</td>
-<td>Redis + сервис</td>
-<td>Tarantool без команды, которая его знает</td>
+<td data-label="Задача">Витрина с латентностью в мс и логикой</td>
+<td data-label="Первый выбор">Tarantool</td>
+<td data-label="Альтернатива">Redis + сервис</td>
+<td data-label="Чего не делать">Tarantool без команды, которая его знает</td>
 </tr>
 <tr>
-<td>Граф связей, обходы 3+ уровней</td>
-<td>Neo4j</td>
-<td>рекурсивный CTE в PostgreSQL (гл. 20)</td>
-<td>эмулировать обход N+1 запросами</td>
+<td data-label="Задача">Граф связей, обходы 3+ уровней</td>
+<td data-label="Первый выбор">Neo4j</td>
+<td data-label="Альтернатива">рекурсивный CTE в PostgreSQL (гл. 20)</td>
+<td data-label="Чего не делать">эмулировать обход N+1 запросами</td>
 </tr>
 </tbody>
 </table>
@@ -2066,7 +2066,7 @@ memtable переполнилась / по таймеру → flush → SSTable 
 <hr>
 <h3 id="135-соответствие-моделей-данных-задачам">13.5 Соответствие моделей данных задачам</h3>
 <p>На архитектурном ревью обычно нужна одна таблица, которая сопоставляет форму задачи с моделью данных и сразу показывает, где эта модель ломается. Она собрана ниже: для каждой формы задачи указано, на какую модель она ложится, почему и в каком месте модель перестаёт работать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Форма задачи</th>
@@ -2077,57 +2077,57 @@ memtable переполнилась / по таймеру → flush → SSTable 
 </thead>
 <tbody>
 <tr>
-<td>Доступ строго по известному ключу, значение непрозрачно</td>
-<td>key-value</td>
-<td>нет индексов, нет накладных расходов, O(1)</td>
-<td>любой запрос «найди по полю»</td>
+<td data-label="Форма задачи">Доступ строго по известному ключу, значение непрозрачно</td>
+<td data-label="Ложится на">key-value</td>
+<td data-label="Почему">нет индексов, нет накладных расходов, O(1)</td>
+<td data-label="Где ломается">любой запрос «найди по полю»</td>
 </tr>
 <tr>
-<td>Агрегат, читаемый и пишущийся целиком, гибкие атрибуты</td>
-<td>документная</td>
-<td>один round-trip, частичные обновления, индексы по вложенным полям</td>
-<td>связи между агрегатами, транзакции поперёк документов</td>
+<td data-label="Форма задачи">Агрегат, читаемый и пишущийся целиком, гибкие атрибуты</td>
+<td data-label="Ложится на">документная</td>
+<td data-label="Почему">один round-trip, частичные обновления, индексы по вложенным полям</td>
+<td data-label="Где ломается">связи между агрегатами, транзакции поперёк документов</td>
 </tr>
 <tr>
-<td>Известный набор запросов, гигантский поток записи, гео</td>
-<td>wide-column</td>
-<td>линейная запись, тюнингуемая согласованность</td>
-<td>ad-hoc запросы, удаления, агрегаты</td>
+<td data-label="Форма задачи">Известный набор запросов, гигантский поток записи, гео</td>
+<td data-label="Ложится на">wide-column</td>
+<td data-label="Почему">линейная запись, тюнингуемая согласованность</td>
+<td data-label="Где ломается">ad-hoc запросы, удаления, агрегаты</td>
 </tr>
 <tr>
-<td>Обходы связей переменной глубины</td>
-<td>графовая</td>
-<td>обход — константа на шаг вместо join на каждый уровень</td>
-<td>шардирование графа, объём</td>
+<td data-label="Форма задачи">Обходы связей переменной глубины</td>
+<td data-label="Ложится на">графовая</td>
+<td data-label="Почему">обход — константа на шаг вместо join на каждый уровень</td>
+<td data-label="Где ломается">шардирование графа, объём</td>
 </tr>
 <tr>
-<td>Полнотекст, фасеты, релевантность</td>
-<td>поисковая</td>
-<td>инвертированный индекс, скоринг, агрегации</td>
-<td>роль источника истины, транзакции</td>
+<td data-label="Форма задачи">Полнотекст, фасеты, релевантность</td>
+<td data-label="Ложится на">поисковая</td>
+<td data-label="Почему">инвертированный индекс, скоринг, агрегации</td>
+<td data-label="Где ломается">роль источника истины, транзакции</td>
 </tr>
 <tr>
-<td>Ряды «время → значение», агрегаты по окнам</td>
-<td>time-series</td>
-<td>сжатие рядов, downsampling, retention</td>
-<td>произвольные связи</td>
+<td data-label="Форма задачи">Ряды «время → значение», агрегаты по окнам</td>
+<td data-label="Ложится на">time-series</td>
+<td data-label="Почему">сжатие рядов, downsampling, retention</td>
+<td data-label="Где ломается">произвольные связи</td>
 </tr>
 <tr>
-<td>Сложные аналитические агрегаты по миллиардам строк</td>
-<td>колоночная</td>
-<td>читаются только нужные колонки, векторизация</td>
-<td>точечные обновления, OLTP</td>
+<td data-label="Форма задачи">Сложные аналитические агрегаты по миллиардам строк</td>
+<td data-label="Ложится на">колоночная</td>
+<td data-label="Почему">читаются только нужные колонки, векторизация</td>
+<td data-label="Где ломается">точечные обновления, OLTP</td>
 </tr>
 <tr>
-<td>Всё остальное, особенно с инвариантами между сущностями</td>
-<td>реляционная</td>
-<td>транзакции, целостность, планировщик, ad-hoc</td>
-<td>экстремальные латентность и объём</td>
+<td data-label="Форма задачи">Всё остальное, особенно с инвариантами между сущностями</td>
+<td data-label="Ложится на">реляционная</td>
+<td data-label="Почему">транзакции, целостность, планировщик, ad-hoc</td>
+<td data-label="Где ломается">экстремальные латентность и объём</td>
 </tr>
 </tbody>
 </table>
 <p>Не менее полезна и обратная таблица, где перечислены признаки в требованиях, из-за которых от кандидата нужно <strong>отказаться</strong>.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Признак в требованиях</th>
@@ -2136,32 +2136,32 @@ memtable переполнилась / по таймеру → flush → SSTable 
 </thead>
 <tbody>
 <tr>
-<td>«Деньги/проводки/остатки»</td>
-<td>всё, где нет честных транзакций: Redis, ES, ClickHouse, Cassandra без LWT</td>
+<td data-label="Признак в требованиях">«Деньги/проводки/остатки»</td>
+<td data-label="Что отпадает">всё, где нет честных транзакций: Redis, ES, ClickHouse, Cassandra без LWT</td>
 </tr>
 <tr>
-<td>«Отчёты по произвольным срезам»</td>
-<td>Cassandra, Redis, Tarantool</td>
+<td data-label="Признак в требованиях">«Отчёты по произвольным срезам»</td>
+<td data-label="Что отпадает">Cassandra, Redis, Tarantool</td>
 </tr>
 <tr>
-<td>«Данные должны пережить падение узла без потерь»</td>
-<td>Redis с настройками по умолчанию, любой кеш</td>
+<td data-label="Признак в требованиях">«Данные должны пережить падение узла без потерь»</td>
+<td data-label="Что отпадает">Redis с настройками по умолчанию, любой кеш</td>
 </tr>
 <tr>
-<td>«Схема меняется каждую неделю»</td>
-<td>Cassandra (query-first дизайн — это фиксированные запросы), ES (смена типа = reindex)</td>
+<td data-label="Признак в требованиях">«Схема меняется каждую неделю»</td>
+<td data-label="Что отпадает">Cassandra (query-first дизайн — это фиксированные запросы), ES (смена типа = reindex)</td>
 </tr>
 <tr>
-<td>«Нужен поиск по подстроке в середине»</td>
-<td>всё, кроме поисковых движков и trigram-индексов PostgreSQL</td>
+<td data-label="Признак в требованиях">«Нужен поиск по подстроке в середине»</td>
+<td data-label="Что отпадает">всё, кроме поисковых движков и trigram-индексов PostgreSQL</td>
 </tr>
 <tr>
-<td>«Объём 50 ТБ с ростом»</td>
-<td>одиночный PostgreSQL, memtx Tarantool</td>
+<td data-label="Признак в требованиях">«Объём 50 ТБ с ростом»</td>
+<td data-label="Что отпадает">одиночный PostgreSQL, memtx Tarantool</td>
 </tr>
 <tr>
-<td>«Команда из четырёх человек, дежурства нет»</td>
-<td>всё, кроме managed-сервисов и того, что уже эксплуатируется</td>
+<td data-label="Признак в требованиях">«Команда из четырёх человек, дежурства нет»</td>
+<td data-label="Что отпадает">всё, кроме managed-сервисов и того, что уже эксплуатируется</td>
 </tr>
 </tbody>
 </table>
@@ -2569,5 +2569,5 @@ curl <span class="s1">'localhost:9200/_nodes/stats/indices,jvm,thread_pool?prett
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-классификация-по-модели-данных-и-по-способу-хранения">1. Классификация: по модели данных и по способу хранения</a></li><li><a href="#2-b-tree-и-lsm-tree">2. B-tree и LSM-tree</a></li><li><a href="#3-redis-модель-исполнения">3. Redis: модель исполнения</a></li><li><a href="#4-redis-внутреннее-устройство-структур-данных">4. Redis: внутреннее устройство структур данных</a></li><li><a href="#5-redis-память-ttl-и-вытеснение">5. Redis: память, TTL и вытеснение</a></li><li><a href="#6-redis-durability-репликация-и-топологии">6. Redis: durability, репликация и топологии</a></li><li><a href="#7-redis-атомарность-и-типовые-паттерны">7. Redis: атомарность и типовые паттерны</a></li><li><a href="#8-redis-из-java-клиенты-сериализация-эксплуатация">8. Redis из Java: клиенты, сериализация, эксплуатация</a></li><li><a href="#9-mongodb">9. MongoDB</a></li><li><a href="#10-tarantool">10. Tarantool</a></li><li><a href="#11-elasticsearch-и-opensearch">11. Elasticsearch и OpenSearch</a></li><li><a href="#12-cassandrascylladb-и-clickhouse">12. Cassandra/ScyllaDB и ClickHouse</a></li><li><a href="#13-как-выбирать-хранилище">13. Как выбирать хранилище</a></li><li><a href="#14-разобранные-инциденты">14. Разобранные инциденты</a></li><li><a href="#15-грабли-и-антипаттерны">15. Грабли и антипаттерны</a></li><li><a href="#16-диагностика">16. Диагностика</a></li><li><a href="#17-вопросы-на-интервью">17. Вопросы на интервью</a></li><li><a href="#18-попробовать-руками">18. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

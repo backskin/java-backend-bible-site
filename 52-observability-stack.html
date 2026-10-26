@@ -3,7 +3,7 @@
 <title>52. Эксплуатация observability-стека — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Эксплуатация observability-стека">
 <a class="skip" href="#content">К тексту</a>
@@ -29,7 +29,7 @@
 </code></pre></div>
 
 <p>Для трёх сигналов эти звенья заполнены разными компонентами. В таблице ниже по строкам идут звенья, по столбцам сигналы; обратите внимание, что оповещение почти целиком держится на метриках.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Звено</th>
@@ -40,46 +40,46 @@
 </thead>
 <tbody>
 <tr>
-<td>Излучение</td>
-<td>Micrometer → <code>/actuator/prometheus</code></td>
-<td>Logback JSON → stdout</td>
-<td>OTel SDK/агент</td>
+<td data-label="Звено">Излучение</td>
+<td data-label="Метрики">Micrometer → <code>/actuator/prometheus</code></td>
+<td data-label="Логи">Logback JSON → stdout</td>
+<td data-label="Трассы">OTel SDK/агент</td>
 </tr>
 <tr>
-<td>Сбор</td>
-<td>Prometheus scrape (pull)</td>
-<td>Fluent Bit / Vector DaemonSet</td>
-<td>OTel Collector agent</td>
+<td data-label="Звено">Сбор</td>
+<td data-label="Метрики">Prometheus scrape (pull)</td>
+<td data-label="Логи">Fluent Bit / Vector DaemonSet</td>
+<td data-label="Трассы">OTel Collector agent</td>
 </tr>
 <tr>
-<td>Транспорт/буфер</td>
-<td>WAL локально + remote write</td>
-<td>буфер агента (память/диск)</td>
-<td>Collector gateway, очередь</td>
+<td data-label="Звено">Транспорт/буфер</td>
+<td data-label="Метрики">WAL локально + remote write</td>
+<td data-label="Логи">буфер агента (память/диск)</td>
+<td data-label="Трассы">Collector gateway, очередь</td>
 </tr>
 <tr>
-<td>Хранение</td>
-<td>TSDB / Thanos / VictoriaMetrics</td>
-<td>Elasticsearch / Loki / S3</td>
-<td>Tempo / Jaeger + объектное</td>
+<td data-label="Звено">Хранение</td>
+<td data-label="Метрики">TSDB / Thanos / VictoriaMetrics</td>
+<td data-label="Логи">Elasticsearch / Loki / S3</td>
+<td data-label="Трассы">Tempo / Jaeger + объектное</td>
 </tr>
 <tr>
-<td>Запрос</td>
-<td>PromQL</td>
-<td>Lucene / LogQL</td>
-<td>TraceQL / Jaeger API</td>
+<td data-label="Звено">Запрос</td>
+<td data-label="Метрики">PromQL</td>
+<td data-label="Логи">Lucene / LogQL</td>
+<td data-label="Трассы">TraceQL / Jaeger API</td>
 </tr>
 <tr>
-<td>Визуализация</td>
-<td>Grafana</td>
-<td>Kibana / Grafana</td>
-<td>Grafana / Jaeger UI</td>
+<td data-label="Звено">Визуализация</td>
+<td data-label="Метрики">Grafana</td>
+<td data-label="Логи">Kibana / Grafana</td>
+<td data-label="Трассы">Grafana / Jaeger UI</td>
 </tr>
 <tr>
-<td>Оповещение</td>
-<td>Prometheus rules → Alertmanager</td>
-<td>реже — на логах</td>
-<td>почти никогда</td>
+<td data-label="Звено">Оповещение</td>
+<td data-label="Метрики">Prometheus rules → Alertmanager</td>
+<td data-label="Логи">реже — на логах</td>
+<td data-label="Трассы">почти никогда</td>
 </tr>
 </tbody>
 </table>
@@ -94,7 +94,7 @@
 <p>Главное, что видно из этого списка: <strong>четыре случая из пяти означают не отказ хранилища, а тихую деградацию</strong>. Ничего не «упало», графики рисуются, просто данных в них нет или они устарели, и заметить это по самим графикам почти невозможно. Отсюда вытекает центральное правило эксплуатации: <strong>контур должен мониторить сам себя</strong>, причём мониторинг мониторинга должен жить отдельно от основного мониторинга, иначе они откажут вместе (раздел 10).</p>
 <h3 id="12-владельцы-частей-контура">1.2 Владельцы частей контура</h3>
 <p>Когда контур общий на всю компанию, у каждого его куска должен быть понятный владелец, и граница между платформенной и продуктовой командой проводится не ради бюрократии: без неё получается наблюдаемость, которой никто не занимается. Таблица ниже показывает, как эта граница проходит по основным зонам; читать её стоит по строкам, сверяя, что каждая сторона в данной зоне делает.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Зона</th>
@@ -104,39 +104,39 @@
 </thead>
 <tbody>
 <tr>
-<td>Prometheus/Thanos, Loki/ES, Grafana, Alertmanager</td>
-<td>владеет полностью</td>
-<td>не трогает</td>
+<td data-label="Зона">Prometheus/Thanos, Loki/ES, Grafana, Alertmanager</td>
+<td data-label="Платформа">владеет полностью</td>
+<td data-label="Продуктовая команда">не трогает</td>
 </tr>
 <tr>
-<td><code>ServiceMonitor</code>/<code>PodMonitor</code> для своего сервиса</td>
-<td>даёт шаблон</td>
-<td>пишет и версионирует в своём репозитории</td>
+<td data-label="Зона"><code>ServiceMonitor</code>/<code>PodMonitor</code> для своего сервиса</td>
+<td data-label="Платформа">даёт шаблон</td>
+<td data-label="Продуктовая команда">пишет и версионирует в своём репозитории</td>
 </tr>
 <tr>
-<td>Правила оповещений на инфраструктуру (узел, диск, под)</td>
-<td>владеет</td>
-<td>—</td>
+<td data-label="Зона">Правила оповещений на инфраструктуру (узел, диск, под)</td>
+<td data-label="Платформа">владеет</td>
+<td data-label="Продуктовая команда">—</td>
 </tr>
 <tr>
-<td>Правила оповещений на SLO сервиса</td>
-<td>даёт библиотеку/генератор</td>
-<td>пишет и владеет</td>
+<td data-label="Зона">Правила оповещений на SLO сервиса</td>
+<td data-label="Платформа">даёт библиотеку/генератор</td>
+<td data-label="Продуктовая команда">пишет и владеет</td>
 </tr>
 <tr>
-<td>Дашборд сервиса</td>
-<td>даёт базовый шаблон (RED)</td>
-<td>владеет, держит в git</td>
+<td data-label="Зона">Дашборд сервиса</td>
+<td data-label="Платформа">даёт базовый шаблон (RED)</td>
+<td data-label="Продуктовая команда">владеет, держит в git</td>
 </tr>
 <tr>
-<td>Retention, квоты, лимиты кардинальности</td>
-<td>устанавливает и принуждает</td>
-<td>укладывается</td>
+<td data-label="Зона">Retention, квоты, лимиты кардинальности</td>
+<td data-label="Платформа">устанавливает и принуждает</td>
+<td data-label="Продуктовая команда">укладывается</td>
 </tr>
 <tr>
-<td>Runbook по оповещению</td>
-<td>—</td>
-<td>обязана написать</td>
+<td data-label="Зона">Runbook по оповещению</td>
+<td data-label="Платформа">—</td>
+<td data-label="Продуктовая команда">обязана написать</td>
 </tr>
 </tbody>
 </table>
@@ -237,7 +237,7 @@
 <p>Драйвер логов определяет, куда container runtime складывает то, что контейнер пишет в stdout и stderr, и от него зависит, переживут ли логи недоступность агента и не забьют ли диск хоста. В Kubernetes выбирать почти нечего, а в чистом Docker выбор есть, и неудачный драйвер способен остановить сервис; ниже разобраны оба случая.</p>
 <p>В Kubernetes с containerd/CRI-O формат фиксирован (CRI logging format: одна строка состоит из timestamp, stream, флага и содержимого), и настроить его нельзя. Флаг <code>F</code> означает full line, а <code>P</code> означает partial: <strong>runtime разрезает строку длиннее 16 КБ на куски с флагом <code>P</code></strong>, и агент обязан склеить их обратно. Fluent Bit делает это через <code>multiline.parser cri</code>, и если вы его не включили, длинные JSON-логи (например, с телом ответа) приедут разорванными и не распарсятся.</p>
 <p>В чистом Docker (вне k8s, что актуально для docker-compose в dev и для старых стендов) драйвер выбирают сами. Таблица сравнивает пять вариантов; главное в ней стоит в столбце минусов, выделенное жирным.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Драйвер</th>
@@ -248,34 +248,34 @@
 </thead>
 <tbody>
 <tr>
-<td><code>json-file</code> (по умолчанию)</td>
-<td>файл на хосте</td>
-<td><code>docker logs</code> работает, простой</td>
-<td><strong>без <code>max-size</code> растёт бесконечно</strong> и забивает диск</td>
+<td data-label="Драйвер"><code>json-file</code> (по умолчанию)</td>
+<td data-label="Где хранит">файл на хосте</td>
+<td data-label="Плюсы"><code>docker logs</code> работает, простой</td>
+<td data-label="Минусы"><strong>без <code>max-size</code> растёт бесконечно</strong> и забивает диск</td>
 </tr>
 <tr>
-<td><code>local</code></td>
-<td>бинарный файл</td>
-<td>компактнее, ротация по умолчанию</td>
-<td><code>docker logs</code> работает, внешние агенты — хуже</td>
+<td data-label="Драйвер"><code>local</code></td>
+<td data-label="Где хранит">бинарный файл</td>
+<td data-label="Плюсы">компактнее, ротация по умолчанию</td>
+<td data-label="Минусы"><code>docker logs</code> работает, внешние агенты — хуже</td>
 </tr>
 <tr>
-<td><code>journald</code></td>
-<td>systemd journal</td>
-<td>централизовано, ротация из коробки</td>
-<td>journal — узкое место по throughput</td>
+<td data-label="Драйвер"><code>journald</code></td>
+<td data-label="Где хранит">systemd journal</td>
+<td data-label="Плюсы">централизовано, ротация из коробки</td>
+<td data-label="Минусы">journal — узкое место по throughput</td>
 </tr>
 <tr>
-<td><code>fluentd</code></td>
-<td>по сети на агент</td>
-<td>без диска на хосте</td>
-<td><strong>при недоступности агента контейнер блокируется</strong> (в <code>mode: blocking</code>)</td>
+<td data-label="Драйвер"><code>fluentd</code></td>
+<td data-label="Где хранит">по сети на агент</td>
+<td data-label="Плюсы">без диска на хосте</td>
+<td data-label="Минусы"><strong>при недоступности агента контейнер блокируется</strong> (в <code>mode: blocking</code>)</td>
 </tr>
 <tr>
-<td><code>none</code></td>
-<td>никуда</td>
-<td>—</td>
-<td><code>docker logs</code> пустой</td>
+<td data-label="Драйвер"><code>none</code></td>
+<td data-label="Где хранит">никуда</td>
+<td data-label="Плюсы">—</td>
+<td data-label="Минусы"><code>docker logs</code> пустой</td>
 </tr>
 </tbody>
 </table>
@@ -292,7 +292,7 @@
 </blockquote>
 <h3 id="24-сравнение-агентов-сбора-логов">2.4 Сравнение агентов сбора логов</h3>
 <p>Агент сбора читает файлы логов на узле, обогащает записи метаданными, буферизует их и отправляет в хранилище, и именно от его буферизации и поведения под backpressure зависит, сколько строк вы потеряете, когда приёмник прилёг. В таблице ниже пять агентов сравниваются по языку, памяти, буферизации, backpressure и нише; самые важные строки здесь «Буферизация» и «Backpressure», а после таблицы идут практические выводы.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -305,68 +305,68 @@
 </thead>
 <tbody>
 <tr>
-<td>Язык</td>
-<td>C</td>
-<td>Ruby + C</td>
-<td>Go</td>
-<td>Rust</td>
-<td>Go</td>
+<td data-label="">Язык</td>
+<td data-label="Fluent Bit">C</td>
+<td data-label="Fluentd">Ruby + C</td>
+<td data-label="Filebeat">Go</td>
+<td data-label="Vector">Rust</td>
+<td data-label="Promtail / Alloy">Go</td>
 </tr>
 <tr>
-<td>Память (типично, DaemonSet)</td>
-<td>20–60 МБ</td>
-<td>150–400 МБ</td>
-<td>80–150 МБ</td>
-<td>50–150 МБ</td>
-<td>40–100 МБ</td>
+<td data-label="">Память (типично, DaemonSet)</td>
+<td data-label="Fluent Bit">20–60 МБ</td>
+<td data-label="Fluentd">150–400 МБ</td>
+<td data-label="Filebeat">80–150 МБ</td>
+<td data-label="Vector">50–150 МБ</td>
+<td data-label="Promtail / Alloy">40–100 МБ</td>
 </tr>
 <tr>
-<td>Плагинов</td>
-<td>~100 (встроены)</td>
-<td>1000+ (гемы)</td>
-<td>средне</td>
-<td>~100</td>
-<td>мало (заточен на Loki)</td>
+<td data-label="">Плагинов</td>
+<td data-label="Fluent Bit">~100 (встроены)</td>
+<td data-label="Fluentd">1000+ (гемы)</td>
+<td data-label="Filebeat">средне</td>
+<td data-label="Vector">~100</td>
+<td data-label="Promtail / Alloy">мало (заточен на Loki)</td>
 </tr>
 <tr>
-<td>Буферизация</td>
-<td>память / файл (<code>storage.type filesystem</code>)</td>
-<td>память / файл, зрелая</td>
-<td>spool-файл (registry)</td>
-<td>память / диск (ack-based)</td>
-<td>WAL на диске</td>
+<td data-label="">Буферизация</td>
+<td data-label="Fluent Bit">память / файл (<code>storage.type filesystem</code>)</td>
+<td data-label="Fluentd">память / файл, зрелая</td>
+<td data-label="Filebeat">spool-файл (registry)</td>
+<td data-label="Vector">память / диск (ack-based)</td>
+<td data-label="Promtail / Alloy">WAL на диске</td>
 </tr>
 <tr>
-<td>Backpressure</td>
-<td><code>Mem_Buf_Limit</code>, пауза чтения</td>
-<td><code>overflow_action</code></td>
-<td>по умолчанию блокирует чтение</td>
-<td>end-to-end acknowledgement</td>
-<td>останавливает чтение</td>
+<td data-label="">Backpressure</td>
+<td data-label="Fluent Bit"><code>Mem_Buf_Limit</code>, пауза чтения</td>
+<td data-label="Fluentd"><code>overflow_action</code></td>
+<td data-label="Filebeat">по умолчанию блокирует чтение</td>
+<td data-label="Vector">end-to-end acknowledgement</td>
+<td data-label="Promtail / Alloy">останавливает чтение</td>
 </tr>
 <tr>
-<td>Парсинг</td>
-<td>regex, JSON, LTSV, multiline</td>
-<td>regex, plugin</td>
-<td>JS-процессоры, ingest pipeline</td>
-<td><strong>VRL</strong> — полноценный язык трансформаций</td>
-<td>почти нет (метки + pipeline_stages)</td>
+<td data-label="">Парсинг</td>
+<td data-label="Fluent Bit">regex, JSON, LTSV, multiline</td>
+<td data-label="Fluentd">regex, plugin</td>
+<td data-label="Filebeat">JS-процессоры, ingest pipeline</td>
+<td data-label="Vector"><strong>VRL</strong> — полноценный язык трансформаций</td>
+<td data-label="Promtail / Alloy">почти нет (метки + pipeline_stages)</td>
 </tr>
 <tr>
-<td>Гарантия</td>
-<td>at-least-once при filesystem buffer</td>
-<td>at-least-once</td>
-<td>at-least-once</td>
-<td>at-least-once (с disk buffer)</td>
-<td>at-least-once</td>
+<td data-label="">Гарантия</td>
+<td data-label="Fluent Bit">at-least-once при filesystem buffer</td>
+<td data-label="Fluentd">at-least-once</td>
+<td data-label="Filebeat">at-least-once</td>
+<td data-label="Vector">at-least-once (с disk buffer)</td>
+<td data-label="Promtail / Alloy">at-least-once</td>
 </tr>
 <tr>
-<td>Ниша</td>
-<td><strong>де-факто стандарт DaemonSet в k8s</strong></td>
-<td>агрегатор/шлюз, сложные маршруты</td>
-<td>экосистема Elastic, модули</td>
-<td>универсальный ETL для логов/метрик</td>
-<td>только Loki-стек</td>
+<td data-label="">Ниша</td>
+<td data-label="Fluent Bit"><strong>де-факто стандарт DaemonSet в k8s</strong></td>
+<td data-label="Fluentd">агрегатор/шлюз, сложные маршруты</td>
+<td data-label="Filebeat">экосистема Elastic, модули</td>
+<td data-label="Vector">универсальный ETL для логов/метрик</td>
+<td data-label="Promtail / Alloy">только Loki-стек</td>
 </tr>
 </tbody>
 </table>
@@ -469,7 +469,7 @@
 </blockquote>
 <h3 id="26-точки-потери-логов">2.6 Точки потери логов</h3>
 <p>Точки потери логов уже встречались по отдельности в предыдущих подразделах, а здесь они сведены вместе, потому что на интервью этот вопрос задают почти всегда и ждут от кандидата систематического ответа. Таблица идёт от узла к хранилищу; в каждой строке стоит механизм потери, способ её обнаружить и лечение, а после таблицы сформулирован вывод, ради которого её стоит запомнить.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Место</th>
@@ -480,52 +480,52 @@
 </thead>
 <tbody>
 <tr>
-<td>Ротация обогнала чтение</td>
-<td>kubelet удалил файл, агент не дочитал</td>
-<td>отставание агента; дыры в графике <code>sum(rate(...))</code> по логам</td>
-<td>↑ <code>containerLogMaxSize</code>, ↑ <code>Rotate_Wait</code>, ↑ throughput агента</td>
+<td data-label="Место">Ротация обогнала чтение</td>
+<td data-label="Механизм потери">kubelet удалил файл, агент не дочитал</td>
+<td data-label="Как обнаружить">отставание агента; дыры в графике <code>sum(rate(...))</code> по логам</td>
+<td data-label="Лечение">↑ <code>containerLogMaxSize</code>, ↑ <code>Rotate_Wait</code>, ↑ throughput агента</td>
 </tr>
 <tr>
-<td>Буфер памяти переполнен</td>
-<td><code>Mem_Buf_Limit</code> достигнут, чтение приостановлено → см. выше</td>
-<td><code>fluentbit_input_storage_overlimit</code> = 1</td>
-<td><code>storage.type filesystem</code> + лимит диска</td>
+<td data-label="Место">Буфер памяти переполнен</td>
+<td data-label="Механизм потери"><code>Mem_Buf_Limit</code> достигнут, чтение приостановлено → см. выше</td>
+<td data-label="Как обнаружить"><code>fluentbit_input_storage_overlimit</code> = 1</td>
+<td data-label="Лечение"><code>storage.type filesystem</code> + лимит диска</td>
 </tr>
 <tr>
-<td>Приёмник недоступен</td>
-<td>повторы исчерпаны, порция отброшена</td>
-<td><code>fluentbit_output_retries_failed_total</code> растёт</td>
-<td><code>Retry_Limit False</code>, дисковый буфер, Kafka как промежуточное звено</td>
+<td data-label="Место">Приёмник недоступен</td>
+<td data-label="Механизм потери">повторы исчерпаны, порция отброшена</td>
+<td data-label="Как обнаружить"><code>fluentbit_output_retries_failed_total</code> растёт</td>
+<td data-label="Лечение"><code>Retry_Limit False</code>, дисковый буфер, Kafka как промежуточное звено</td>
 </tr>
 <tr>
-<td>Под удалён</td>
-<td><code>/var/log/pods/&lt;uid&gt;</code> вычищается kubelet'ом сразу после удаления пода</td>
-<td>логи упавшего пода отсутствуют при живом соседе</td>
-<td><code>Rotate_Wait</code>, быстрый flush; для OOMKill — критично</td>
+<td data-label="Место">Под удалён</td>
+<td data-label="Механизм потери"><code>/var/log/pods/&lt;uid&gt;</code> вычищается kubelet'ом сразу после удаления пода</td>
+<td data-label="Как обнаружить">логи упавшего пода отсутствуют при живом соседе</td>
+<td data-label="Лечение"><code>Rotate_Wait</code>, быстрый flush; для OOMKill — критично</td>
 </tr>
 <tr>
-<td><code>copytruncate</code> внутри контейнера</td>
-<td>гонка копирования и усечения</td>
-<td>«дыры» только у конкретного сервиса</td>
-<td>запретить файловые аппендеры</td>
+<td data-label="Место"><code>copytruncate</code> внутри контейнера</td>
+<td data-label="Механизм потери">гонка копирования и усечения</td>
+<td data-label="Как обнаружить">«дыры» только у конкретного сервиса</td>
+<td data-label="Лечение">запретить файловые аппендеры</td>
 </tr>
 <tr>
-<td>Приложение не долило буфер при SIGTERM</td>
-<td>async-аппендер Logback с очередью не успел</td>
-<td>последние секунды перед завершением отсутствуют</td>
-<td><code>AsyncAppender</code> с <code>neverBlock=false</code> + <code>shutdownHook</code>, или синхронный ConsoleAppender</td>
+<td data-label="Место">Приложение не долило буфер при SIGTERM</td>
+<td data-label="Механизм потери">async-аппендер Logback с очередью не успел</td>
+<td data-label="Как обнаружить">последние секунды перед завершением отсутствуют</td>
+<td data-label="Лечение"><code>AsyncAppender</code> с <code>neverBlock=false</code> + <code>shutdownHook</code>, или синхронный ConsoleAppender</td>
 </tr>
 <tr>
-<td>Elasticsearch отверг документ</td>
-<td>mapping conflict (<code>field X is of type keyword but got object</code>)</td>
-<td><code>fluentbit_output_errors_total</code>, <code>es_rejected_execution</code></td>
-<td><code>dynamic: false</code> в шаблоне, DLQ-индекс</td>
+<td data-label="Место">Elasticsearch отверг документ</td>
+<td data-label="Механизм потери">mapping conflict (<code>field X is of type keyword but got object</code>)</td>
+<td data-label="Как обнаружить"><code>fluentbit_output_errors_total</code>, <code>es_rejected_execution</code></td>
+<td data-label="Лечение"><code>dynamic: false</code> в шаблоне, DLQ-индекс</td>
 </tr>
 <tr>
-<td>Bulk queue переполнена</td>
-<td>пул <code>write</code> ES забит, 429</td>
-<td><code>rejected</code> в <code>_cat/thread_pool</code></td>
-<td>backpressure до агента, больше write-узлов, меньше шардов</td>
+<td data-label="Место">Bulk queue переполнена</td>
+<td data-label="Механизм потери">пул <code>write</code> ES забит, 429</td>
+<td data-label="Как обнаружить"><code>rejected</code> в <code>_cat/thread_pool</code></td>
+<td data-label="Лечение">backpressure до агента, больше write-узлов, меньше шардов</td>
 </tr>
 </tbody>
 </table>
@@ -627,7 +627,7 @@
 <p>Политика жизненного цикла индекса описывает, как индекс стареет: когда он перестаёт принимать запись, когда переезжает на дешёвые диски и когда удаляется. Elasticsearch называет этот механизм ILM (Index Lifecycle Management), а OpenSearch — ISM (Index State Management), но модель у них одна: индекс проходит фазы, и в каждой фазе над ним выполняются действия. Без такой политики индексы копятся, пока не забьют диск, а кластер не уйдёт в read-only, поэтому ниже разобраны фазы и действия, приведены рабочие политика и шаблон для Elasticsearch, объяснены ключевые решения в них и дан эквивалент для OpenSearch.</p>
 <p>Фазы ILM идут в таком порядке: <strong>hot</strong> (пишем и активно читаем) → <strong>warm</strong> (не пишем, читаем редко) → <strong>cold</strong> (читаем очень редко, можно держать на медленных дисках или в snapshot) → <strong>frozen</strong> (searchable snapshot, данные в S3) → <strong>delete</strong>.</p>
 <p>В каждой фазе выполняются действия из таблицы ниже. Её стоит читать по третьему столбцу: он объясняет, зачем действие нужно именно для логов.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Действие</th>
@@ -637,44 +637,44 @@
 </thead>
 <tbody>
 <tr>
-<td><code>rollover</code></td>
-<td>закрывает текущий пишущий индекс, создаёт следующий</td>
-<td>держит размер шарда в диапазоне</td>
+<td data-label="Действие"><code>rollover</code></td>
+<td data-label="Что делает">закрывает текущий пишущий индекс, создаёт следующий</td>
+<td data-label="Зачем в логах">держит размер шарда в диапазоне</td>
 </tr>
 <tr>
-<td><code>set_priority</code></td>
-<td>приоритет восстановления после рестарта</td>
-<td>сначала поднимаем hot, потом остальное</td>
+<td data-label="Действие"><code>set_priority</code></td>
+<td data-label="Что делает">приоритет восстановления после рестарта</td>
+<td data-label="Зачем в логах">сначала поднимаем hot, потом остальное</td>
 </tr>
 <tr>
-<td><code>shrink</code></td>
-<td>пересобирает индекс с меньшим числом первичных шардов</td>
-<td>4 шарда по 10 ГБ → 1 шард на 40 ГБ; меньше шардов на кластере</td>
+<td data-label="Действие"><code>shrink</code></td>
+<td data-label="Что делает">пересобирает индекс с меньшим числом первичных шардов</td>
+<td data-label="Зачем в логах">4 шарда по 10 ГБ → 1 шард на 40 ГБ; меньше шардов на кластере</td>
 </tr>
 <tr>
-<td><code>forcemerge</code></td>
-<td>сливает сегменты в N штук</td>
-<td>убирает удалённые документы, ускоряет поиск, <strong>сильно нагружает I/O</strong></td>
+<td data-label="Действие"><code>forcemerge</code></td>
+<td data-label="Что делает">сливает сегменты в N штук</td>
+<td data-label="Зачем в логах">убирает удалённые документы, ускоряет поиск, <strong>сильно нагружает I/O</strong></td>
 </tr>
 <tr>
-<td><code>allocate</code></td>
-<td>меняет число реплик и/или узлы размещения</td>
-<td>в warm — 1 реплика вместо 2, переезд на HDD-узлы</td>
+<td data-label="Действие"><code>allocate</code></td>
+<td data-label="Что делает">меняет число реплик и/или узлы размещения</td>
+<td data-label="Зачем в логах">в warm — 1 реплика вместо 2, переезд на HDD-узлы</td>
 </tr>
 <tr>
-<td><code>readonly</code></td>
-<td>запрещает запись</td>
-<td>обязательно перед shrink/forcemerge</td>
+<td data-label="Действие"><code>readonly</code></td>
+<td data-label="Что делает">запрещает запись</td>
+<td data-label="Зачем в логах">обязательно перед shrink/forcemerge</td>
 </tr>
 <tr>
-<td><code>searchable_snapshot</code></td>
-<td>подменяет локальные данные снимком в S3</td>
-<td>хранение в 10× дешевле, поиск медленнее</td>
+<td data-label="Действие"><code>searchable_snapshot</code></td>
+<td data-label="Что делает">подменяет локальные данные снимком в S3</td>
+<td data-label="Зачем в логах">хранение в 10× дешевле, поиск медленнее</td>
 </tr>
 <tr>
-<td><code>delete</code></td>
-<td>удаляет индекс</td>
-<td>конец жизни</td>
+<td data-label="Действие"><code>delete</code></td>
+<td data-label="Что делает">удаляет индекс</td>
+<td data-label="Зачем в логах">конец жизни</td>
 </tr>
 </tbody>
 </table>
@@ -883,7 +883,7 @@
 <h3 id="37-хранилище-логов-loki">3.7 Хранилище логов Loki</h3>
 <p>Loki — хранилище логов от Grafana, построенное на одном принципиальном решении: <strong>индексируются только метки, а содержимое лога не индексируется вообще</strong>. Строки складываются в порции, порции сжимаются и уезжают в объектное хранилище (S3/GCS/MinIO), а поиск по содержимому сводится к последовательному чтению и грепанью тех порций, которые попали под фильтр по меткам и времени. Такое решение переворачивает экономику хранения, но переносит всю тяжесть на выбор меток, поэтому ниже Loki сравнивается с Elasticsearch, разбирается, чем метки отличаются от полей, как устроены компоненты Loki и когда он дешевле, а когда неудобен.</p>
 <p>Таблица ниже показывает, что это решение меняет по сравнению с Elasticsearch; главное в ней — строки о стоимости хранения и о взрыве кардинальности, которая в Loki никуда не делась, а лишь сменила механизм.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -893,49 +893,49 @@
 </thead>
 <tbody>
 <tr>
-<td>Что индексируется</td>
-<td>все поля (по отображению)</td>
-<td>только метки потока</td>
+<td data-label="">Что индексируется</td>
+<td data-label="Elasticsearch/OpenSearch">все поля (по отображению)</td>
+<td data-label="Loki">только метки потока</td>
 </tr>
 <tr>
-<td>Хранение</td>
-<td>локальные SSD + реплики</td>
-<td>объектное хранилище (дёшево)</td>
+<td data-label="">Хранение</td>
+<td data-label="Elasticsearch/OpenSearch">локальные SSD + реплики</td>
+<td data-label="Loki">объектное хранилище (дёшево)</td>
 </tr>
 <tr>
-<td>Стоимость хранения</td>
-<td>1×</td>
-<td><strong>0,1–0,3×</strong></td>
+<td data-label="">Стоимость хранения</td>
+<td data-label="Elasticsearch/OpenSearch">1×</td>
+<td data-label="Loki"><strong>0,1–0,3×</strong></td>
 </tr>
 <tr>
-<td>Произвольный поиск по подстроке</td>
-<td>быстрый (инвертированный индекс)</td>
-<td>линейное сканирование порций</td>
+<td data-label="">Произвольный поиск по подстроке</td>
+<td data-label="Elasticsearch/OpenSearch">быстрый (инвертированный индекс)</td>
+<td data-label="Loki">линейное сканирование порций</td>
 </tr>
 <tr>
-<td>Поиск «ошибки этого пода за час»</td>
-<td>быстрый</td>
-<td><strong>очень быстрый</strong> (метки сужают до одного потока)</td>
+<td data-label="">Поиск «ошибки этого пода за час»</td>
+<td data-label="Elasticsearch/OpenSearch">быстрый</td>
+<td data-label="Loki"><strong>очень быстрый</strong> (метки сужают до одного потока)</td>
 </tr>
 <tr>
-<td>Поиск «где угодно встречалось <code>order_id=42</code> за неделю»</td>
-<td>быстрый</td>
-<td>медленный и дорогой по CPU</td>
+<td data-label="">Поиск «где угодно встречалось <code>order_id=42</code> за неделю»</td>
+<td data-label="Elasticsearch/OpenSearch">быстрый</td>
+<td data-label="Loki">медленный и дорогой по CPU</td>
 </tr>
 <tr>
-<td>Агрегации по полям</td>
-<td>нативные</td>
-<td>через парсинг на лету (<code>json</code>, <code>logfmt</code>) в LogQL</td>
+<td data-label="">Агрегации по полям</td>
+<td data-label="Elasticsearch/OpenSearch">нативные</td>
+<td data-label="Loki">через парсинг на лету (<code>json</code>, <code>logfmt</code>) в LogQL</td>
 </tr>
 <tr>
-<td>Взрыв кардинальности</td>
-<td>mapping explosion</td>
-<td><strong>взрыв числа потоков</strong> — та же беда, другой механизм</td>
+<td data-label="">Взрыв кардинальности</td>
+<td data-label="Elasticsearch/OpenSearch">mapping explosion</td>
+<td data-label="Loki"><strong>взрыв числа потоков</strong> — та же беда, другой механизм</td>
 </tr>
 <tr>
-<td>Эксплуатация</td>
-<td>тяжёлая (шарды, ILM, heap)</td>
-<td>легче, но микросервисная (7+ компонентов)</td>
+<td data-label="">Эксплуатация</td>
+<td data-label="Elasticsearch/OpenSearch">тяжёлая (шарды, ILM, heap)</td>
+<td data-label="Loki">легче, но микросервисная (7+ компонентов)</td>
 </tr>
 </tbody>
 </table>
@@ -977,7 +977,7 @@ sum by (level) (
 <h3 id="39-срок-хранения-логов-и-его-стоимость">3.9 Срок хранения логов и его стоимость</h3>
 <p>Retention — срок, в течение которого логи хранятся, и вместе с числом реплик и фазами хранения он определяет итоговый счёт. Ниже сведены вместе все рычаги из предыдущих подразделов на примере среднего банковского контура: сначала таблица, как каждая мера уменьшает объём диска, потом порядок цен, к которым стоит привыкнуть, и практическая политика retention по классам логов.</p>
 <p>Возьмём средний банковский контур из 120 сервисов, который суммарно производит 1,5 ТБ логов в сутки, что реалистично для 50–100k RPS в сумме. В таблице меры применяются накопительно, каждая следующая строка добавляется к предыдущей:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Схема</th>
@@ -987,29 +987,29 @@ sum by (level) (
 </thead>
 <tbody>
 <tr>
-<td>ES, 30 дней, 1 реплика, всё hot NVMe</td>
-<td>1,5 × 30 × 2 = <strong>90 ТБ</strong></td>
-<td>очень дорого</td>
+<td data-label="Схема">ES, 30 дней, 1 реплика, всё hot NVMe</td>
+<td data-label="Диск">1,5 × 30 × 2 = <strong>90 ТБ</strong></td>
+<td data-label="Примерная стоимость/мес">очень дорого</td>
 </tr>
 <tr>
-<td>ES, hot 3 дня + warm до 14-го дня (ещё 11 дней, 0 реплик) + удаление</td>
-<td>1,5×3×2 + 1,5×11×1 = <strong>25,5 ТБ</strong></td>
-<td>−72 %</td>
+<td data-label="Схема">ES, hot 3 дня + warm до 14-го дня (ещё 11 дней, 0 реплик) + удаление</td>
+<td data-label="Диск">1,5×3×2 + 1,5×11×1 = <strong>25,5 ТБ</strong></td>
+<td data-label="Примерная стоимость/мес">−72 %</td>
 </tr>
 <tr>
-<td>+ <code>best_compression</code> + <code>stack_trace: index:false</code></td>
-<td><strong>~17 ТБ</strong></td>
-<td>−81 %</td>
+<td data-label="Схема">+ <code>best_compression</code> + <code>stack_trace: index:false</code></td>
+<td data-label="Диск"><strong>~17 ТБ</strong></td>
+<td data-label="Примерная стоимость/мес">−81 %</td>
 </tr>
 <tr>
-<td>+ sampling access-логов 1 % и 100 % ошибок</td>
-<td><strong>~7 ТБ</strong></td>
-<td>−92 %</td>
+<td data-label="Схема">+ sampling access-логов 1 % и 100 % ошибок</td>
+<td data-label="Диск"><strong>~7 ТБ</strong></td>
+<td data-label="Примерная стоимость/мес">−92 %</td>
 </tr>
 <tr>
-<td>Loki, 30 дней, S3</td>
-<td>сжатые порции ≈ <strong>6–9 ТБ в S3</strong></td>
-<td>−95 % по цене хранения</td>
+<td data-label="Схема">Loki, 30 дней, S3</td>
+<td data-label="Диск">сжатые порции ≈ <strong>6–9 ТБ в S3</strong></td>
+<td data-label="Примерная стоимость/мес">−95 % по цене хранения</td>
 </tr>
 </tbody>
 </table>
@@ -1020,7 +1020,7 @@ sum by (level) (
 <li>В managed-SaaS (Datadog, Splunk) платят за гигабайт проиндексированного объёма, и цифры там на порядок выше, откуда и пошла индустриальная привычка «логировать поменьше».</li>
 </ul>
 <p><strong>Практическая политика retention по классам</strong> раскладывает логи по сроку хранения в зависимости от того, для чего они нужны; обратите внимание на предпоследнюю строку, где аудит и денежные операции выведены из логов вовсе:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Класс</th>
@@ -1030,29 +1030,29 @@ sum by (level) (
 </thead>
 <tbody>
 <tr>
-<td>Access-логи (sampled 1 % + 100 % ошибок)</td>
-<td>7 дней</td>
-<td>нужны на время расследования инцидента</td>
+<td data-label="Класс">Access-логи (sampled 1 % + 100 % ошибок)</td>
+<td data-label="Retention">7 дней</td>
+<td data-label="Обоснование">нужны на время расследования инцидента</td>
 </tr>
 <tr>
-<td>Логи приложения INFO/WARN</td>
-<td>14–30 дней</td>
-<td>покрывают «когда это началось» для медленных регрессий</td>
+<td data-label="Класс">Логи приложения INFO/WARN</td>
+<td data-label="Retention">14–30 дней</td>
+<td data-label="Обоснование">покрывают «когда это началось» для медленных регрессий</td>
 </tr>
 <tr>
-<td>ERROR/FATAL</td>
-<td>90 дней</td>
-<td>тренды по ошибкам, разбор редких багов</td>
+<td data-label="Класс">ERROR/FATAL</td>
+<td data-label="Retention">90 дней</td>
+<td data-label="Обоснование">тренды по ошибкам, разбор редких багов</td>
 </tr>
 <tr>
-<td>Аудит доступа, операции с деньгами</td>
-<td>1–7 лет</td>
-<td>комплаенс — <strong>и это не логи</strong>, это записи в БД/архиве</td>
+<td data-label="Класс">Аудит доступа, операции с деньгами</td>
+<td data-label="Retention">1–7 лет</td>
+<td data-label="Обоснование">комплаенс — <strong>и это не логи</strong>, это записи в БД/архиве</td>
 </tr>
 <tr>
-<td>Debug-логи</td>
-<td>не хранить вообще</td>
-<td>включаются точечно через Actuator на время (гл. 51, раздел 2.8)</td>
+<td data-label="Класс">Debug-логи</td>
+<td data-label="Retention">не хранить вообще</td>
+<td data-label="Обоснование">включаются точечно через Actuator на время (гл. 51, раздел 2.8)</td>
 </tr>
 </tbody>
 </table>
@@ -1092,7 +1092,7 @@ sum by (level) (
 <p><strong>Память.</strong> Эмпирически на одну активную серию уходит <strong>примерно 3–8 КБ RAM</strong> (head chunks, индекс серий и метки), и 1 млн серий занимает 3–8 ГБ. Это без учёта памяти на исполнение запросов, которая при неудачном PromQL может оказаться кратно больше. Отсюда практическое правило: <code>resources.limits.memory</code> у Prometheus ставят с запасом ×2 от расчётного и обязательно ограничивают <code>--query.max-samples</code>.</p>
 <h3 id="42-обнаружение-таргетов-service-discovery">4.2 Обнаружение таргетов (service discovery)</h3>
 <p>Service discovery — это механизм, через который Prometheus узнаёт актуальный список таргетов, и нужен он потому, что в Kubernetes поды постоянно появляются и исчезают, а статический список устарел бы через минуту. <code>kubernetes_sd_configs</code> подписывается на API-сервер и получает свежий список объектов, а роль определяет, какие именно объекты станут таргетами. Таблица ниже перечисляет роли; главное в ней отличие роли <code>service</code> от <code>endpoints</code>, о котором сразу после таблицы.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Роль</th>
@@ -1102,34 +1102,34 @@ sum by (level) (
 </thead>
 <tbody>
 <tr>
-<td><code>pod</code></td>
-<td>все поды, по контейнеру и порту на каждый</td>
-<td>скрейп приложений напрямую; работает и для подов без Service</td>
+<td data-label="Роль"><code>pod</code></td>
+<td data-label="Что даёт">все поды, по контейнеру и порту на каждый</td>
+<td data-label="Когда использовать">скрейп приложений напрямую; работает и для подов без Service</td>
 </tr>
 <tr>
-<td><code>service</code></td>
-<td>сами Service (адрес — VIP)</td>
-<td>почти никогда для метрик: попадёте на случайный под через kube-proxy</td>
+<td data-label="Роль"><code>service</code></td>
+<td data-label="Что даёт">сами Service (адрес — VIP)</td>
+<td data-label="Когда использовать">почти никогда для метрик: попадёте на случайный под через kube-proxy</td>
 </tr>
 <tr>
-<td><code>endpoints</code></td>
-<td>конкретные поды за Service, с метками и Service, и пода</td>
-<td><strong>основной вариант</strong> для приложений с Service</td>
+<td data-label="Роль"><code>endpoints</code></td>
+<td data-label="Что даёт">конкретные поды за Service, с метками и Service, и пода</td>
+<td data-label="Когда использовать"><strong>основной вариант</strong> для приложений с Service</td>
 </tr>
 <tr>
-<td><code>endpointslice</code></td>
-<td>то же, но через EndpointSlice API</td>
-<td>замена <code>endpoints</code> на больших кластерах</td>
+<td data-label="Роль"><code>endpointslice</code></td>
+<td data-label="Что даёт">то же, но через EndpointSlice API</td>
+<td data-label="Когда использовать">замена <code>endpoints</code> на больших кластерах</td>
 </tr>
 <tr>
-<td><code>node</code></td>
-<td>узлы кластера</td>
-<td>node-exporter, cAdvisor через kubelet</td>
+<td data-label="Роль"><code>node</code></td>
+<td data-label="Что даёт">узлы кластера</td>
+<td data-label="Когда использовать">node-exporter, cAdvisor через kubelet</td>
 </tr>
 <tr>
-<td><code>ingress</code></td>
-<td>Ingress-объекты</td>
-<td>blackbox-пробы внешних URL</td>
+<td data-label="Роль"><code>ingress</code></td>
+<td data-label="Что даёт">Ingress-объекты</td>
+<td data-label="Когда использовать">blackbox-пробы внешних URL</td>
 </tr>
 </tbody>
 </table>
@@ -1150,7 +1150,7 @@ sum by (level) (
 
 <p>Все значения по умолчанию взяты из <a href="https://prometheus.io/docs/prometheus/latest/configuration/configuration/">документации конфигурации</a>.</p>
 <p>Что именно правило сделает, определяет поле <code>action</code>, и таблица ниже перечисляет все действия. Обратите внимание на разницу между действиями над таргетом целиком (<code>keep</code>, <code>drop</code>) и над именами меток (<code>labelmap</code>, <code>labeldrop</code>, <code>labelkeep</code>).</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Action</th>
@@ -1159,36 +1159,36 @@ sum by (level) (
 </thead>
 <tbody>
 <tr>
-<td><code>replace</code> (по умолчанию)</td>
-<td>если <code>regex</code> совпал — пишет в <code>target_label</code> результат подстановки <code>replacement</code> (с <code>$1</code>, <code>$2</code>, или именованными группами <code>${name}</code>). Если не совпал — правило ничего не делает</td>
+<td data-label="Action"><code>replace</code> (по умолчанию)</td>
+<td data-label="Что делает">если <code>regex</code> совпал — пишет в <code>target_label</code> результат подстановки <code>replacement</code> (с <code>$1</code>, <code>$2</code>, или именованными группами <code>${name}</code>). Если не совпал — правило ничего не делает</td>
 </tr>
 <tr>
-<td><code>keep</code></td>
-<td><strong>оставить таргет</strong>, только если <code>regex</code> совпал; иначе таргет выбрасывается целиком</td>
+<td data-label="Action"><code>keep</code></td>
+<td data-label="Что делает"><strong>оставить таргет</strong>, только если <code>regex</code> совпал; иначе таргет выбрасывается целиком</td>
 </tr>
 <tr>
-<td><code>drop</code></td>
-<td>выбросить таргет, если <code>regex</code> совпал</td>
+<td data-label="Action"><code>drop</code></td>
+<td data-label="Что делает">выбросить таргет, если <code>regex</code> совпал</td>
 </tr>
 <tr>
-<td><code>keepequal</code> / <code>dropequal</code></td>
-<td>оставить/выбросить, если конкатенация <code>source_labels</code> <strong>равна</strong> значению <code>target_label</code> (без regex; удобно для сравнения <code>__meta_..._port</code> с <code>__meta_..._portnumber</code>)</td>
+<td data-label="Action"><code>keepequal</code> / <code>dropequal</code></td>
+<td data-label="Что делает">оставить/выбросить, если конкатенация <code>source_labels</code> <strong>равна</strong> значению <code>target_label</code> (без regex; удобно для сравнения <code>__meta_..._port</code> с <code>__meta_..._portnumber</code>)</td>
 </tr>
 <tr>
-<td><code>labelmap</code></td>
-<td>по каждому <strong>имени</strong> метки, подошедшему под <code>regex</code>, создать новую метку с именем из <code>replacement</code>. Так метки пода превращаются в метки метрик</td>
+<td data-label="Action"><code>labelmap</code></td>
+<td data-label="Что делает">по каждому <strong>имени</strong> метки, подошедшему под <code>regex</code>, создать новую метку с именем из <code>replacement</code>. Так метки пода превращаются в метки метрик</td>
 </tr>
 <tr>
-<td><code>labeldrop</code> / <code>labelkeep</code></td>
-<td>удалить/оставить метки, чьи <strong>имена</strong> подошли под <code>regex</code></td>
+<td data-label="Action"><code>labeldrop</code> / <code>labelkeep</code></td>
+<td data-label="Что делает">удалить/оставить метки, чьи <strong>имена</strong> подошли под <code>regex</code></td>
 </tr>
 <tr>
-<td><code>hashmod</code></td>
-<td>записать в <code>target_label</code> результат <code>hash(source_labels) % modulus</code> — основа шардирования скрейпов</td>
+<td data-label="Action"><code>hashmod</code></td>
+<td data-label="Что делает">записать в <code>target_label</code> результат <code>hash(source_labels) % modulus</code> — основа шардирования скрейпов</td>
 </tr>
 <tr>
-<td><code>lowercase</code> / <code>uppercase</code></td>
-<td>привести значение к регистру</td>
+<td data-label="Action"><code>lowercase</code> / <code>uppercase</code></td>
+<td data-label="Что делает">привести значение к регистру</td>
 </tr>
 </tbody>
 </table>
@@ -1316,7 +1316,7 @@ sum by (level) (
 <h3 id="45-servicemonitor-podmonitor-и-prometheus-operator">4.5 ServiceMonitor, PodMonitor и Prometheus Operator</h3>
 <p>Prometheus Operator превращает конфигурацию скрейпа из одного гигантского YAML в набор Kubernetes-объектов, которыми владеют сами команды, и именно так становится возможной модель из раздела 1.2, где платформа владеет контуром, а команда своими мониторами. Взамен появляется новый класс поломок: монитор создан, а таргета нет, потому что не совпал селектор. Ниже перечислены CRD оператора, показаны рабочие <code>ServiceMonitor</code> и Service для Spring Boot и разобраны три самые частые причины пропавшего таргета.</p>
 <p>Оператор вводит десять CRD, и таблица показывает, за что отвечает каждый; команде продуктового сервиса обычно нужны только <code>ServiceMonitor</code>, <code>PodMonitor</code>, <code>PrometheusRule</code> и <code>AlertmanagerConfig</code>.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>CRD</th>
@@ -1325,44 +1325,44 @@ sum by (level) (
 </thead>
 <tbody>
 <tr>
-<td><code>Prometheus</code></td>
-<td>сам экземпляр: реплики, retention, ресурсы, какие селекторы мониторов подхватывать</td>
+<td data-label="CRD"><code>Prometheus</code></td>
+<td data-label="Зачем">сам экземпляр: реплики, retention, ресурсы, какие селекторы мониторов подхватывать</td>
 </tr>
 <tr>
-<td><code>PrometheusAgent</code></td>
-<td>режим агента: только скрейп + remote write, без локального TSDB и запросов</td>
+<td data-label="CRD"><code>PrometheusAgent</code></td>
+<td data-label="Зачем">режим агента: только скрейп + remote write, без локального TSDB и запросов</td>
 </tr>
 <tr>
-<td><code>ServiceMonitor</code></td>
-<td>как скрейпить поды за Service (роль <code>endpoints</code>)</td>
+<td data-label="CRD"><code>ServiceMonitor</code></td>
+<td data-label="Зачем">как скрейпить поды за Service (роль <code>endpoints</code>)</td>
 </tr>
 <tr>
-<td><code>PodMonitor</code></td>
-<td>как скрейпить поды напрямую (роль <code>pod</code>), без Service</td>
+<td data-label="CRD"><code>PodMonitor</code></td>
+<td data-label="Зачем">как скрейпить поды напрямую (роль <code>pod</code>), без Service</td>
 </tr>
 <tr>
-<td><code>Probe</code></td>
-<td>blackbox-пробы через blackbox-exporter</td>
+<td data-label="CRD"><code>Probe</code></td>
+<td data-label="Зачем">blackbox-пробы через blackbox-exporter</td>
 </tr>
 <tr>
-<td><code>ScrapeConfig</code></td>
-<td>«сырой» scrape_config для того, что не покрыто остальными (внешние таргеты, EC2, Consul)</td>
+<td data-label="CRD"><code>ScrapeConfig</code></td>
+<td data-label="Зачем">«сырой» scrape_config для того, что не покрыто остальными (внешние таргеты, EC2, Consul)</td>
 </tr>
 <tr>
-<td><code>PrometheusRule</code></td>
-<td>правила recording и alerting</td>
+<td data-label="CRD"><code>PrometheusRule</code></td>
+<td data-label="Зачем">правила recording и alerting</td>
 </tr>
 <tr>
-<td><code>Alertmanager</code></td>
-<td>экземпляр Alertmanager</td>
+<td data-label="CRD"><code>Alertmanager</code></td>
+<td data-label="Зачем">экземпляр Alertmanager</td>
 </tr>
 <tr>
-<td><code>AlertmanagerConfig</code></td>
-<td>маршрутизация и приёмники на уровне namespace — то есть команда настраивает свои оповещения сама</td>
+<td data-label="CRD"><code>AlertmanagerConfig</code></td>
+<td data-label="Зачем">маршрутизация и приёмники на уровне namespace — то есть команда настраивает свои оповещения сама</td>
 </tr>
 <tr>
-<td><code>ThanosRuler</code></td>
-<td>правила поверх Thanos Query</td>
+<td data-label="CRD"><code>ThanosRuler</code></td>
+<td data-label="Зачем">правила поверх Thanos Query</td>
 </tr>
 </tbody>
 </table>
@@ -1582,7 +1582,7 @@ sum by (level) (
 <h3 id="53-thanos">5.3 Thanos</h3>
 <p>Thanos построен на идее не менять сам Prometheus, а достроить вокруг него слой, который выносит блоки в объектное хранилище и позволяет запрашивать их глобально. Такой подход удобен тем, что переход на него начинается с одного sidecar-контейнера, но за удобство приходится платить синглтоном-компактором и задержкой в два часа. Ниже перечислены компоненты Thanos, разобраны три его принципиальных свойства, приведена минимальная конфигурация sidecar и описаны грабли с потерей последних двух часов и с локальным retention.</p>
 <p>Thanos состоит из шести компонентов (<a href="https://thanos.io/tip/thanos/design.md/">Thanos design</a>), и таблица ниже показывает роль каждого; главное в ней — Sidecar, который загружает блоки в бакет, и Compactor, который существует в единственном экземпляре.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Компонент</th>
@@ -1591,28 +1591,28 @@ sum by (level) (
 </thead>
 <tbody>
 <tr>
-<td><strong>Sidecar</strong></td>
-<td>контейнер рядом с Prometheus. Поднимает gRPC Store API поверх HTTP/remote-read API Prometheus (свежие данные) и <strong>загружает готовые 2-часовые блоки в объектное хранилище</strong></td>
+<td data-label="Компонент"><strong>Sidecar</strong></td>
+<td data-label="Что делает">контейнер рядом с Prometheus. Поднимает gRPC Store API поверх HTTP/remote-read API Prometheus (свежие данные) и <strong>загружает готовые 2-часовые блоки в объектное хранилище</strong></td>
 </tr>
 <tr>
-<td><strong>Store Gateway</strong></td>
-<td>«gateway to block data that is stored in an object storage bucket»: синхронизирует список блоков, переводит запросы метрик в чтение из бакета, кеширует индекс</td>
+<td data-label="Компонент"><strong>Store Gateway</strong></td>
+<td data-label="Что делает">«gateway to block data that is stored in an object storage bucket»: синхронизирует список блоков, переводит запросы метрик в чтение из бакета, кеширует индекс</td>
 </tr>
 <tr>
-<td><strong>Query (Querier)</strong></td>
-<td>stateless, горизонтально масштабируется; исполняет PromQL, обращаясь к Store API всех компонентов, и <strong>минимизирует fan-out по метаданным</strong> (спрашивает только тех, у кого есть нужный диапазон)</td>
+<td data-label="Компонент"><strong>Query (Querier)</strong></td>
+<td data-label="Что делает">stateless, горизонтально масштабируется; исполняет PromQL, обращаясь к Store API всех компонентов, и <strong>минимизирует fan-out по метаданным</strong> (спрашивает только тех, у кого есть нужный диапазон)</td>
 </tr>
 <tr>
-<td><strong>Compactor</strong></td>
-<td>синглтон; сливает мелкие блоки в крупные, применяет retention, делает <strong>downsampling</strong></td>
+<td data-label="Компонент"><strong>Compactor</strong></td>
+<td data-label="Что делает">синглтон; сливает мелкие блоки в крупные, применяет retention, делает <strong>downsampling</strong></td>
 </tr>
 <tr>
-<td><strong>Ruler</strong></td>
-<td>считает recording и alerting rules поверх глобального Query</td>
+<td data-label="Компонент"><strong>Ruler</strong></td>
+<td data-label="Что делает">считает recording и alerting rules поверх глобального Query</td>
 </tr>
 <tr>
-<td><strong>Receive</strong></td>
-<td>принимает remote write — альтернатива sidecar-модели для случаев, когда Prometheus не ваш или сидит за NAT</td>
+<td data-label="Компонент"><strong>Receive</strong></td>
+<td data-label="Что делает">принимает remote write — альтернатива sidecar-модели для случаев, когда Prometheus не ваш или сидит за NAT</td>
 </tr>
 </tbody>
 </table>
@@ -1655,7 +1655,7 @@ sum by (level) (
 <h3 id="54-victoriametrics">5.4 VictoriaMetrics</h3>
 <p>VictoriaMetrics исходит из другой философии: это не надстройка над Prometheus, а самостоятельное хранилище временных рядов, совместимое с ним по протоколам. Выбирают его ради простоты эксплуатации и экономии ресурсов, и ниже разобраны компоненты кластерной версии, её архитектура shared nothing и репликация, язык запросов MetricsQL, главное отличие от Thanos и то, что известно о её экономии.</p>
 <p>Кластерная версия состоит из пяти компонентов (<a href="https://docs.victoriametrics.com/victoriametrics/cluster-victoriametrics/">cluster VictoriaMetrics</a>), и в таблице для каждого указан порт по умолчанию, который пригодится при настройке сетевых политик:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Компонент</th>
@@ -1665,29 +1665,29 @@ sum by (level) (
 </thead>
 <tbody>
 <tr>
-<td><strong>vminsert</strong></td>
-<td>принимает данные, распределяет по vmstorage <strong>согласованным хешированием</strong> по имени метрики и меткам</td>
-<td class="num">8480</td>
+<td data-label="Компонент"><strong>vminsert</strong></td>
+<td data-label="Что делает">принимает данные, распределяет по vmstorage <strong>согласованным хешированием</strong> по имени метрики и меткам</td>
+<td data-label="Порт по умолчанию" class="num">8480</td>
 </tr>
 <tr>
-<td><strong>vmstorage</strong></td>
-<td>хранит сырьё и отвечает на запросы по диапазону и фильтрам</td>
-<td class="num">8400 (от vminsert), 8401 (от vmselect)</td>
+<td data-label="Компонент"><strong>vmstorage</strong></td>
+<td data-label="Что делает">хранит сырьё и отвечает на запросы по диапазону и фильтрам</td>
+<td data-label="Порт по умолчанию" class="num">8400 (от vminsert), 8401 (от vmselect)</td>
 </tr>
 <tr>
-<td><strong>vmselect</strong></td>
-<td>исполняет запросы, забирая данные <strong>со всех</strong> vmstorage</td>
-<td class="num">8481</td>
+<td data-label="Компонент"><strong>vmselect</strong></td>
+<td data-label="Что делает">исполняет запросы, забирая данные <strong>со всех</strong> vmstorage</td>
+<td data-label="Порт по умолчанию" class="num">8481</td>
 </tr>
 <tr>
-<td><strong>vmagent</strong></td>
-<td>лёгкий агент: скрейп (полностью совместим с scrape_config Prometheus) + remote write с дисковой буферизацией</td>
-<td class="num">8429</td>
+<td data-label="Компонент"><strong>vmagent</strong></td>
+<td data-label="Что делает">лёгкий агент: скрейп (полностью совместим с scrape_config Prometheus) + remote write с дисковой буферизацией</td>
+<td data-label="Порт по умолчанию" class="num">8429</td>
 </tr>
 <tr>
-<td><strong>vmalert</strong></td>
-<td>считает правила, шлёт в Alertmanager</td>
-<td class="num">8880</td>
+<td data-label="Компонент"><strong>vmalert</strong></td>
+<td data-label="Что делает">считает правила, шлёт в Alertmanager</td>
+<td data-label="Порт по умолчанию" class="num">8880</td>
 </tr>
 </tbody>
 </table>
@@ -1697,7 +1697,7 @@ sum by (level) (
 <p>Главное заявляемое преимущество VictoriaMetrics — существенно меньшее потребление RAM и диска на ту же нагрузку по сравнению с Prometheus+Thanos; независимые тесты его в целом подтверждают, но первичным источником оно не подкреплено (⚠️). В сообществе говорят об экономии в разы, однако относиться к этому стоит как к «заметно меньше», а не как к конкретному множителю.</p>
 <h3 id="55-mimir-и-сравнение-хранилищ-метрик">5.5 Mimir и сравнение хранилищ метрик</h3>
 <p>Grafana Mimir вырос из Cortex и представляет горизонтально масштабируемый Prometheus-совместимый бэкенд с объектным хранилищем и встроенной мультитенантностью. Поскольку это последний из четырёх вариантов, здесь же они сравниваются между собой: таблица ниже ставит федерацию, Thanos, VictoriaMetrics и Mimir рядом по модели, хранению, мультитенантности и сложности, а её последняя строка и список после неё отвечают на вопрос, когда что брать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1709,74 +1709,74 @@ sum by (level) (
 </thead>
 <tbody>
 <tr>
-<td>Модель</td>
-<td>скрейп агрегатов</td>
-<td>sidecar + объектное хранилище</td>
-<td>shared-nothing кластер</td>
-<td>микросервисы + объектное хранилище</td>
+<td data-label="">Модель</td>
+<td data-label="Федерация">скрейп агрегатов</td>
+<td data-label="Thanos">sidecar + объектное хранилище</td>
+<td data-label="VictoriaMetrics">shared-nothing кластер</td>
+<td data-label="Mimir">микросервисы + объектное хранилище</td>
 </tr>
 <tr>
-<td>Приём данных</td>
-<td>pull с <code>/federate</code></td>
-<td>sidecar-upload или Receive (push)</td>
-<td>remote write (push)</td>
-<td>remote write (push)</td>
+<td data-label="">Приём данных</td>
+<td data-label="Федерация">pull с <code>/federate</code></td>
+<td data-label="Thanos">sidecar-upload или Receive (push)</td>
+<td data-label="VictoriaMetrics">remote write (push)</td>
+<td data-label="Mimir">remote write (push)</td>
 </tr>
 <tr>
-<td>Долгое хранение</td>
-<td>нет</td>
-<td>S3/GCS, downsampling 5m/1h</td>
-<td>локальные диски</td>
-<td>S3/GCS</td>
+<td data-label="">Долгое хранение</td>
+<td data-label="Федерация">нет</td>
+<td data-label="Thanos">S3/GCS, downsampling 5m/1h</td>
+<td data-label="VictoriaMetrics">локальные диски</td>
+<td data-label="Mimir">S3/GCS</td>
 </tr>
 <tr>
-<td>Глобальный запрос</td>
-<td>ограниченно</td>
-<td>да (Querier fan-out)</td>
-<td>да (vmselect)</td>
-<td>да (query-frontend)</td>
+<td data-label="">Глобальный запрос</td>
+<td data-label="Федерация">ограниченно</td>
+<td data-label="Thanos">да (Querier fan-out)</td>
+<td data-label="VictoriaMetrics">да (vmselect)</td>
+<td data-label="Mimir">да (query-frontend)</td>
 </tr>
 <tr>
-<td>Мультитенантность</td>
-<td>нет</td>
-<td>слабая (через метки/бакеты)</td>
-<td>есть (<code>accountID</code>)</td>
-<td><strong>сильная, встроенная</strong></td>
+<td data-label="">Мультитенантность</td>
+<td data-label="Федерация">нет</td>
+<td data-label="Thanos">слабая (через метки/бакеты)</td>
+<td data-label="VictoriaMetrics">есть (<code>accountID</code>)</td>
+<td data-label="Mimir"><strong>сильная, встроенная</strong></td>
 </tr>
 <tr>
-<td>Дедупликация HA</td>
-<td>нет</td>
-<td>да (<code>replica</code> label)</td>
-<td>да (<code>-dedup.minScrapeInterval</code>)</td>
-<td>да</td>
+<td data-label="">Дедупликация HA</td>
+<td data-label="Федерация">нет</td>
+<td data-label="Thanos">да (<code>replica</code> label)</td>
+<td data-label="VictoriaMetrics">да (<code>-dedup.minScrapeInterval</code>)</td>
+<td data-label="Mimir">да</td>
 </tr>
 <tr>
-<td>Компонентов поднять</td>
-<td>0</td>
-<td>4–6</td>
-<td>3–4</td>
-<td>8+</td>
+<td data-label="">Компонентов поднять</td>
+<td data-label="Федерация">0</td>
+<td data-label="Thanos">4–6</td>
+<td data-label="VictoriaMetrics">3–4</td>
+<td data-label="Mimir">8+</td>
 </tr>
 <tr>
-<td>Операционная сложность</td>
-<td>минимум</td>
-<td>средняя, есть синглтон-компактор</td>
-<td>низкая</td>
-<td><strong>высокая</strong></td>
+<td data-label="">Операционная сложность</td>
+<td data-label="Федерация">минимум</td>
+<td data-label="Thanos">средняя, есть синглтон-компактор</td>
+<td data-label="VictoriaMetrics">низкая</td>
+<td data-label="Mimir"><strong>высокая</strong></td>
 </tr>
 <tr>
-<td>Язык</td>
-<td>PromQL</td>
-<td>PromQL</td>
-<td>MetricsQL (надмн. PromQL)</td>
-<td>PromQL</td>
+<td data-label="">Язык</td>
+<td data-label="Федерация">PromQL</td>
+<td data-label="Thanos">PromQL</td>
+<td data-label="VictoriaMetrics">MetricsQL (надмн. PromQL)</td>
+<td data-label="Mimir">PromQL</td>
 </tr>
 <tr>
-<td>Когда брать</td>
-<td>1–5 кластеров, нужны только агрегаты глобально</td>
-<td>уже есть Prometheus, нужен долгий retention и S3</td>
-<td>нужна экономия ресурсов, простая эксплуатация, большой объём</td>
-<td>много команд/тенантов, вы уже в экосистеме Grafana</td>
+<td data-label="">Когда брать</td>
+<td data-label="Федерация">1–5 кластеров, нужны только агрегаты глобально</td>
+<td data-label="Thanos">уже есть Prometheus, нужен долгий retention и S3</td>
+<td data-label="VictoriaMetrics">нужна экономия ресурсов, простая эксплуатация, большой объём</td>
+<td data-label="Mimir">много команд/тенантов, вы уже в экосистеме Grafana</td>
 </tr>
 </tbody>
 </table>
@@ -1932,7 +1932,7 @@ RAM            ≈ активные_серии × 4 КБ × 2 (запас на �
 <p><strong><code>for</code> — самый важный параметр правила.</strong> Он требует, чтобы выражение было истинным <strong>непрерывно</strong> в течение указанного времени, и только после этого оповещение переходит из <code>pending</code> в <code>firing</code>. Если хотя бы на одном цикле вычисления выражение вернуло пустоту, таймер сбрасывается в ноль.</p>
 <p>Без <code>for</code> оповещение начинает флапать: метрика дёрнулась на один скрейп, и пришло оповещение, следующий скрейп оказался нормальным, и пришло уведомление resolved. Ночью это выглядит как десять сообщений подряд.</p>
 <p>Выбирать <code>for</code> стоит по типу условия, и таблица ниже даёт ориентиры: чем медленнее меняется условие и чем меньше вреда от задержки, тем длиннее <code>for</code>.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип условия</th>
@@ -1942,34 +1942,34 @@ RAM            ≈ активные_серии × 4 КБ × 2 (запас на �
 </thead>
 <tbody>
 <tr>
-<td>Доля ошибок, латентность (симптом)</td>
-<td>5–10 м</td>
-<td>фильтрует одиночные всплески, но не тянет с реакцией</td>
+<td data-label="Тип условия">Доля ошибок, латентность (симптом)</td>
+<td data-label="for">5–10 м</td>
+<td data-label="Почему">фильтрует одиночные всплески, но не тянет с реакцией</td>
 </tr>
 <tr>
-<td>Под в CrashLoopBackOff</td>
-<td>15 м</td>
-<td>даёт время нормальному деплою пройти</td>
+<td data-label="Тип условия">Под в CrashLoopBackOff</td>
+<td data-label="for">15 м</td>
+<td data-label="Почему">даёт время нормальному деплою пройти</td>
 </tr>
 <tr>
-<td>Диск заполнится через N часов (прогноз <code>predict_linear</code>)</td>
-<td>1 ч</td>
-<td>прогноз шумный на коротких окнах</td>
+<td data-label="Тип условия">Диск заполнится через N часов (прогноз <code>predict_linear</code>)</td>
+<td data-label="for">1 ч</td>
+<td data-label="Почему">прогноз шумный на коротких окнах</td>
 </tr>
 <tr>
-<td>Таргет недоступен (<code>up == 0</code>)</td>
-<td>5–10 м</td>
-<td>переживает рестарты и rolling update</td>
+<td data-label="Тип условия">Таргет недоступен (<code>up == 0</code>)</td>
+<td data-label="for">5–10 м</td>
+<td data-label="Почему">переживает рестарты и rolling update</td>
 </tr>
 <tr>
-<td>Certificate expires in 7 days</td>
-<td>1 ч</td>
-<td>условие меняется медленно, спешить некуда</td>
+<td data-label="Тип условия">Certificate expires in 7 days</td>
+<td data-label="for">1 ч</td>
+<td data-label="Почему">условие меняется медленно, спешить некуда</td>
 </tr>
 <tr>
-<td>Полный отказ (все экземпляры down)</td>
-<td>1–2 м</td>
-<td>тут спешить надо</td>
+<td data-label="Тип условия">Полный отказ (все экземпляры down)</td>
+<td data-label="for">1–2 м</td>
+<td data-label="Почему">тут спешить надо</td>
 </tr>
 </tbody>
 </table>
@@ -2084,7 +2084,7 @@ RAM            ≈ активные_серии × 4 КБ × 2 (запас на �
 <h3 id="64-группировка-оповещений-и-таймеры">6.4 Группировка оповещений и таймеры</h3>
 <p>Группировка объединяет несколько оповещений в одно уведомление, а четыре таймера решают, когда это уведомление отправить, когда отправить следующее и когда напомнить. На вопрос, который дежурные задают чаще всего, «почему оповещение пришло трижды?», отвечают именно эти таймеры, и разбирать их надо точно. Ниже таблица с их значениями по умолчанию, пошаговый разбор сценария с тремя уведомлениями и правило выбора <code>group_by</code>.</p>
 <p>В таблице для каждого таймера указано значение по умолчанию и то, от какого события он отсчитывается; последний столбец стоит прочитать внимательно, потому что <code>group_interval</code> и <code>repeat_interval</code> путают чаще всего.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Таймер</th>
@@ -2094,24 +2094,24 @@ RAM            ≈ активные_серии × 4 КБ × 2 (запас на �
 </thead>
 <tbody>
 <tr>
-<td><code>group_wait</code></td>
-<td><strong>30s</strong></td>
-<td>после появления <strong>первого</strong> оповещения в новой группе — сколько ждать, собирая другие оповещения той же группы, прежде чем отправить первое уведомление</td>
+<td data-label="Таймер"><code>group_wait</code></td>
+<td data-label="По умолчанию"><strong>30s</strong></td>
+<td data-label="Что означает">после появления <strong>первого</strong> оповещения в новой группе — сколько ждать, собирая другие оповещения той же группы, прежде чем отправить первое уведомление</td>
 </tr>
 <tr>
-<td><code>group_interval</code></td>
-<td><strong>5m</strong></td>
-<td>минимальный интервал между уведомлениями по <strong>уже существующей</strong> группе, если в неё <strong>добавились или изменились</strong> оповещения</td>
+<td data-label="Таймер"><code>group_interval</code></td>
+<td data-label="По умолчанию"><strong>5m</strong></td>
+<td data-label="Что означает">минимальный интервал между уведомлениями по <strong>уже существующей</strong> группе, если в неё <strong>добавились или изменились</strong> оповещения</td>
 </tr>
 <tr>
-<td><code>repeat_interval</code></td>
-<td><strong>4h</strong></td>
-<td>если в группе <strong>ничего не изменилось</strong>, но оповещения всё ещё активны — через сколько напомнить</td>
+<td data-label="Таймер"><code>repeat_interval</code></td>
+<td data-label="По умолчанию"><strong>4h</strong></td>
+<td data-label="Что означает">если в группе <strong>ничего не изменилось</strong>, но оповещения всё ещё активны — через сколько напомнить</td>
 </tr>
 <tr>
-<td><code>resolve_timeout</code> (global)</td>
-<td><strong>5m</strong></td>
-<td>если источник перестал присылать оповещение и не указал <code>EndsAt</code> — через сколько считать его разрешённым</td>
+<td data-label="Таймер"><code>resolve_timeout</code> (global)</td>
+<td data-label="По умолчанию"><strong>5m</strong></td>
+<td data-label="Что означает">если источник перестал присылать оповещение и не указал <code>EndsAt</code> — через сколько считать его разрешённым</td>
 </tr>
 </tbody>
 </table>
@@ -2680,7 +2680,7 @@ amtool check-config alertmanager.yml
 <h3 id="74-состав-дашборда-сервиса">7.4 Состав дашборда сервиса</h3>
 <p>Дашборд сервиса отвечает на два разных вопроса, и под каждый нужен свой дашборд: дежурному важно за десять секунд понять, всё ли в порядке, а при расследовании нужно разобраться, что именно сломалось. Смешивать эти задачи в одном дашборде плохо, потому что он получается либо слишком бедным для расследования, либо слишком перегруженным для дежурного. Ниже описан макет дашборда дежурного и объяснено, почему панелей не должно быть больше, затем состав дашборда расследования и аннотации деплоев.</p>
 <p><strong>Дашборд дежурного</strong> отвечает на вопрос «всё ли в порядке?»: в нём 8–12 панелей, он открывается за секунду и читается за 10 секунд. Таблица ниже раскладывает эти панели по пяти рядам сверху вниз, и важнее всего в ней последний ряд:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Ряд</th>
@@ -2689,24 +2689,24 @@ amtool check-config alertmanager.yml
 </thead>
 <tbody>
 <tr>
-<td>1. Состояние</td>
-<td>SLO за 30 дней (stat, зелёный/красный) • Остаток error budget (gauge) • Число оповещений firing (stat)</td>
+<td data-label="Ряд">1. Состояние</td>
+<td data-label="Панели">SLO за 30 дней (stat, зелёный/красный) • Остаток error budget (gauge) • Число оповещений firing (stat)</td>
 </tr>
 <tr>
-<td>2. RED</td>
-<td>RPS по статусам (timeseries, stacked) • Доля ошибок с линией порога SLO • Латентность p50/p95/p99 (три линии, одна панель)</td>
+<td data-label="Ряд">2. RED</td>
+<td data-label="Панели">RPS по статусам (timeseries, stacked) • Доля ошибок с линией порога SLO • Латентность p50/p95/p99 (три линии, одна панель)</td>
 </tr>
 <tr>
-<td>3. Saturation</td>
-<td>Число реплик готовых/желаемых • CPU throttling • Heap after GC • Пул соединений к БД (используется/максимум)</td>
+<td data-label="Ряд">3. Saturation</td>
+<td data-label="Панели">Число реплик готовых/желаемых • CPU throttling • Heap after GC • Пул соединений к БД (используется/максимум)</td>
 </tr>
 <tr>
-<td>4. Зависимости</td>
-<td>Латентность и ошибки исходящих HTTP по downstream-сервисам • Лаг потребителя Kafka</td>
+<td data-label="Ряд">4. Зависимости</td>
+<td data-label="Панели">Латентность и ошибки исходящих HTTP по downstream-сервисам • Лаг потребителя Kafka</td>
 </tr>
 <tr>
-<td>5. Бизнес</td>
-<td>Одна ключевая бизнес-метрика: платежей в минуту, успешных авторизаций, принятых платёжных поручений</td>
+<td data-label="Ряд">5. Бизнес</td>
+<td data-label="Панели">Одна ключевая бизнес-метрика: платежей в минуту, успешных авторизаций, принятых платёжных поручений</td>
 </tr>
 </tbody>
 </table>
@@ -2762,7 +2762,7 @@ amtool check-config alertmanager.yml
 <h3 id="76-оповещения-в-grafana-и-в-prometheus">7.6 Оповещения в Grafana и в Prometheus</h3>
 <p>В Grafana есть собственный unified alerting: правила хранятся в самой Grafana, вычисляются её движком и отправляются через её contact points или через внешний Alertmanager. Вопрос, где держать оповещения, возникает поэтому в любой команде, и ответ на него зависит от того, что должно работать, когда Grafana лежит. Таблица ниже сравнивает два подхода, а после неё сформулировано практическое правило и случаи, когда Grafana alerting оправдан.</p>
 <p>При чтении таблицы стоит обратить внимание на строки «Работает, если Grafana лежит» и «Тестирование»: именно они решают выбор для оповещений на метрики.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2772,39 +2772,39 @@ amtool check-config alertmanager.yml
 </thead>
 <tbody>
 <tr>
-<td>Где живёт правило</td>
-<td>рядом с Prometheus, в git как <code>PrometheusRule</code></td>
-<td>в БД Grafana (или provisioning YAML)</td>
+<td data-label="">Где живёт правило</td>
+<td data-label="Prometheus rules">рядом с Prometheus, в git как <code>PrometheusRule</code></td>
+<td data-label="Grafana alerting">в БД Grafana (или provisioning YAML)</td>
 </tr>
 <tr>
-<td>Что может опрашивать</td>
-<td>только свой Prometheus</td>
-<td><strong>любой источник</strong>: Loki, ES, SQL, CloudWatch</td>
+<td data-label="">Что может опрашивать</td>
+<td data-label="Prometheus rules">только свой Prometheus</td>
+<td data-label="Grafana alerting"><strong>любой источник</strong>: Loki, ES, SQL, CloudWatch</td>
 </tr>
 <tr>
-<td>Мультиисточниковые условия</td>
-<td>нет</td>
-<td>да (expression pipeline: query A + query B → math)</td>
+<td data-label="">Мультиисточниковые условия</td>
+<td data-label="Prometheus rules">нет</td>
+<td data-label="Grafana alerting">да (expression pipeline: query A + query B → math)</td>
 </tr>
 <tr>
-<td>Работает, если Grafana лежит</td>
-<td><strong>да</strong></td>
-<td>нет</td>
+<td data-label="">Работает, если Grafana лежит</td>
+<td data-label="Prometheus rules"><strong>да</strong></td>
+<td data-label="Grafana alerting">нет</td>
 </tr>
 <tr>
-<td>Тестирование</td>
-<td><code>promtool test rules</code></td>
-<td>нет эквивалента</td>
+<td data-label="">Тестирование</td>
+<td data-label="Prometheus rules"><code>promtool test rules</code></td>
+<td data-label="Grafana alerting">нет эквивалента</td>
 </tr>
 <tr>
-<td>Версионирование</td>
-<td>естественное (YAML в git)</td>
-<td>через provisioning, менее удобно</td>
+<td data-label="">Версионирование</td>
+<td data-label="Prometheus rules">естественное (YAML в git)</td>
+<td data-label="Grafana alerting">через provisioning, менее удобно</td>
 </tr>
 <tr>
-<td>Производительность на тысячах правил</td>
-<td>высокая</td>
-<td>ниже, Grafana становится узким местом</td>
+<td data-label="">Производительность на тысячах правил</td>
+<td data-label="Prometheus rules">высокая</td>
+<td data-label="Grafana alerting">ниже, Grafana становится узким местом</td>
 </tr>
 </tbody>
 </table>
@@ -3059,7 +3059,7 @@ amtool check-config alertmanager.yml
 <p>Третьи грабли в том, что <strong>tail sampling требует, чтобы вся трасса пришла в один экземпляр</strong>. Если вы масштабировали gateway до 3 реплик и забыли настроить на агентах <code>loadbalancing</code> с <code>routing_key: traceID</code>, каждая реплика видит кусок трассы и принимает решение по куску, а вы получаете «рваные» трассы, где часть спанов сохранена, а часть нет. Из всех ошибок конфигурации трассировки эта самая коварная: явно она ничего не ломает, просто трассы выглядят неполными.</p>
 <h3 id="85-бэкенды-трассировки-jaeger-tempo-zipkin">8.5 Бэкенды трассировки: Jaeger, Tempo, Zipkin</h3>
 <p>Бэкенд трассировки хранит трассы и отвечает на запросы по ним, и три распространённых варианта различаются прежде всего тем, индексируют ли они теги спанов. От этого зависит и стоимость хранения, и скорость поиска по произвольным атрибутам. Таблица ниже сравнивает Jaeger, Tempo и Zipkin по хранилищу, индексу, стоимости и связи с метриками, а после неё разобран выбор на практике и главная идея Tempo.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -3070,64 +3070,64 @@ amtool check-config alertmanager.yml
 </thead>
 <tbody>
 <tr>
-<td>Хранилище</td>
-<td>Cassandra, Elasticsearch/OpenSearch, ClickHouse (Badger и память для dev)</td>
-<td><strong>объектное</strong> (S3/GCS/Azure) + локальный WAL; для single-binary есть локальный диск</td>
-<td>MySQL, Cassandra, Elasticsearch, память</td>
+<td data-label="">Хранилище</td>
+<td data-label="Jaeger">Cassandra, Elasticsearch/OpenSearch, ClickHouse (Badger и память для dev)</td>
+<td data-label="Grafana Tempo"><strong>объектное</strong> (S3/GCS/Azure) + локальный WAL; для single-binary есть локальный диск</td>
+<td data-label="Zipkin">MySQL, Cassandra, Elasticsearch, память</td>
 </tr>
 <tr>
-<td>Индекс</td>
-<td>полный индекс по тегам в БД</td>
-<td><strong>индекса нет</strong>; поиск через TraceQL по блокам, плюс опциональный bloom-фильтр по trace_id</td>
-<td>индекс по service/operation/tags</td>
+<td data-label="">Индекс</td>
+<td data-label="Jaeger">полный индекс по тегам в БД</td>
+<td data-label="Grafana Tempo"><strong>индекса нет</strong>; поиск через TraceQL по блокам, плюс опциональный bloom-фильтр по trace_id</td>
+<td data-label="Zipkin">индекс по service/operation/tags</td>
 </tr>
 <tr>
-<td>Стоимость хранения</td>
-<td>высокая (ES/Cassandra)</td>
-<td><strong>низкая</strong> (объектное)</td>
-<td>средняя</td>
+<td data-label="">Стоимость хранения</td>
+<td data-label="Jaeger">высокая (ES/Cassandra)</td>
+<td data-label="Grafana Tempo"><strong>низкая</strong> (объектное)</td>
+<td data-label="Zipkin">средняя</td>
 </tr>
 <tr>
-<td>Поиск по тегам</td>
-<td>быстрый</td>
-<td>сканирование блоков, дороже</td>
-<td>быстрый</td>
+<td data-label="">Поиск по тегам</td>
+<td data-label="Jaeger">быстрый</td>
+<td data-label="Grafana Tempo">сканирование блоков, дороже</td>
+<td data-label="Zipkin">быстрый</td>
 </tr>
 <tr>
-<td>Поиск по trace_id</td>
-<td>мгновенный</td>
-<td>мгновенный</td>
-<td>мгновенный</td>
+<td data-label="">Поиск по trace_id</td>
+<td data-label="Jaeger">мгновенный</td>
+<td data-label="Grafana Tempo">мгновенный</td>
+<td data-label="Zipkin">мгновенный</td>
 </tr>
 <tr>
-<td>Язык запросов</td>
-<td>UI-фильтры + API</td>
-<td><strong>TraceQL</strong></td>
-<td>UI-фильтры</td>
+<td data-label="">Язык запросов</td>
+<td data-label="Jaeger">UI-фильтры + API</td>
+<td data-label="Grafana Tempo"><strong>TraceQL</strong></td>
+<td data-label="Zipkin">UI-фильтры</td>
 </tr>
 <tr>
-<td>Связь с метриками</td>
-<td>SPM (через Prometheus)</td>
-<td>нативная (span metrics, exemplars, tracesToMetrics)</td>
-<td>нет</td>
+<td data-label="">Связь с метриками</td>
+<td data-label="Jaeger">SPM (через Prometheus)</td>
+<td data-label="Grafana Tempo">нативная (span metrics, exemplars, tracesToMetrics)</td>
+<td data-label="Zipkin">нет</td>
 </tr>
 <tr>
-<td>UI</td>
-<td>свой (хороший waterfall)</td>
-<td>через Grafana</td>
-<td>свой (простой)</td>
+<td data-label="">UI</td>
+<td data-label="Jaeger">свой (хороший waterfall)</td>
+<td data-label="Grafana Tempo">через Grafana</td>
+<td data-label="Zipkin">свой (простой)</td>
 </tr>
 <tr>
-<td>Приём</td>
-<td>OTLP, Jaeger native, Zipkin</td>
-<td>OTLP, Jaeger, Zipkin</td>
-<td>Zipkin, OTLP</td>
+<td data-label="">Приём</td>
+<td data-label="Jaeger">OTLP, Jaeger native, Zipkin</td>
+<td data-label="Grafana Tempo">OTLP, Jaeger, Zipkin</td>
+<td data-label="Zipkin">Zipkin, OTLP</td>
 </tr>
 <tr>
-<td>Эксплуатация</td>
-<td>нужна БД (Cassandra/ES — тяжело)</td>
-<td>легче: S3 + stateless компоненты</td>
-<td>простая, но масштабируется хуже</td>
+<td data-label="">Эксплуатация</td>
+<td data-label="Jaeger">нужна БД (Cassandra/ES — тяжело)</td>
+<td data-label="Grafana Tempo">легче: S3 + stateless компоненты</td>
+<td data-label="Zipkin">простая, но масштабируется хуже</td>
 </tr>
 </tbody>
 </table>
@@ -3143,7 +3143,7 @@ amtool check-config alertmanager.yml
 <h3 id="86-стоимость-трасс-и-выборка">8.6 Стоимость трасс и выборка</h3>
 <p>Sampling решает, какую долю трасс сохранить, и поскольку без него трассы оказываются самым дорогим сигналом (расчёт в разделе 1.4), выбор режима сразу бьёт по счёту за хранилище. Режимы различаются тем, где принимается решение и что при этом теряется. Таблица ниже сравнивает пять режимов, а после неё даны практическая рекомендация и предупреждение про sampling в service mesh.</p>
 <p>Главное в таблице — последний столбец: в head-режимах теряются почти все ошибки, а tail их сохраняет ценой памяти и задержки.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -3154,34 +3154,34 @@ amtool check-config alertmanager.yml
 </thead>
 <tbody>
 <tr>
-<td><strong>Head, фиксированная доля</strong> (<code>traceidratio=0.01</code>)</td>
-<td>в SDK приложения, по trace_id</td>
-<td>дешевле всего: спаны даже не создаются</td>
-<td>99 % ошибок потеряно</td>
+<td data-label="Режим"><strong>Head, фиксированная доля</strong> (<code>traceidratio=0.01</code>)</td>
+<td data-label="Где решается">в SDK приложения, по trace_id</td>
+<td data-label="Плюсы">дешевле всего: спаны даже не создаются</td>
+<td data-label="Минусы">99 % ошибок потеряно</td>
 </tr>
 <tr>
-<td><strong>Head, parent-based</strong> (по умолчанию)</td>
-<td>первый сервис решает, остальные наследуют</td>
-<td>трасса целостна</td>
-<td>то же</td>
+<td data-label="Режим"><strong>Head, parent-based</strong> (по умолчанию)</td>
+<td data-label="Где решается">первый сервис решает, остальные наследуют</td>
+<td data-label="Плюсы">трасса целостна</td>
+<td data-label="Минусы">то же</td>
 </tr>
 <tr>
-<td><strong>Head, rate-limited</strong></td>
-<td>в SDK</td>
-<td>защита от всплесков</td>
-<td>то же</td>
+<td data-label="Режим"><strong>Head, rate-limited</strong></td>
+<td data-label="Где решается">в SDK</td>
+<td data-label="Плюсы">защита от всплесков</td>
+<td data-label="Минусы">то же</td>
 </tr>
 <tr>
-<td><strong>Tail</strong></td>
-<td>в Collector gateway</td>
-<td><strong>все ошибки и все медленные сохранены</strong></td>
-<td>нужна память, нужен loadbalancing, задержка <code>decision_wait</code></td>
+<td data-label="Режим"><strong>Tail</strong></td>
+<td data-label="Где решается">в Collector gateway</td>
+<td data-label="Плюсы"><strong>все ошибки и все медленные сохранены</strong></td>
+<td data-label="Минусы">нужна память, нужен loadbalancing, задержка <code>decision_wait</code></td>
 </tr>
 <tr>
-<td><strong>Гибрид</strong></td>
-<td>head 100 % в SDK + tail в Collector</td>
-<td>лучшее качество выборки</td>
-<td>максимальный трафик от приложений до Collector</td>
+<td data-label="Режим"><strong>Гибрид</strong></td>
+<td data-label="Где решается">head 100 % в SDK + tail в Collector</td>
+<td data-label="Плюсы">лучшее качество выборки</td>
+<td data-label="Минусы">максимальный трафик от приложений до Collector</td>
 </tr>
 </tbody>
 </table>
@@ -3197,7 +3197,7 @@ amtool check-config alertmanager.yml
 <p>Continuous profiling устроен так: агент на каждом экземпляре снимает короткие отсчёты (10 с каждые 15 с или постоянное снятие отсчётов с низкой частотой) и отправляет их в хранилище, которое агрегирует их по времени и меткам. После этого можно задавать вопросы вроде «покажи CPU-профиль сервиса X за 14:00–14:10 вчера» или «покажи diff профиля версии 1.42 против 1.41».</p>
 <h3 id="92-pyroscope-и-parca">9.2 Pyroscope и Parca</h3>
 <p>Pyroscope и Parca — два основных открытых хранилища для непрерывного профилирования, и различаются они прежде всего способом сбора: Pyroscope опирается на SDK-агент внутри приложения, а Parca на eBPF-агент снаружи. Для JVM это различие решающее, и таблица ниже сравнивает оба инструмента по происхождению, сбору, хранению и UI, а после неё объяснено, почему для Java выбирают Pyroscope.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -3207,44 +3207,44 @@ amtool check-config alertmanager.yml
 </thead>
 <tbody>
 <tr>
-<td>Происхождение</td>
-<td>Pyroscope + Phlare, теперь в Grafana</td>
-<td>Polar Signals, CNCF</td>
+<td data-label="">Происхождение</td>
+<td data-label="Grafana Pyroscope">Pyroscope + Phlare, теперь в Grafana</td>
+<td data-label="Parca">Polar Signals, CNCF</td>
 </tr>
 <tr>
-<td>Сбор с JVM</td>
-<td>SDK-агент (java-profiler на базе async-profiler)</td>
-<td>eBPF-агент (без изменения приложения)</td>
+<td data-label="">Сбор с JVM</td>
+<td data-label="Grafana Pyroscope">SDK-агент (java-profiler на базе async-profiler)</td>
+<td data-label="Parca">eBPF-агент (без изменения приложения)</td>
 </tr>
 <tr>
-<td>Сбор eBPF</td>
-<td>есть (для всего на узле)</td>
-<td>основной способ</td>
+<td data-label="">Сбор eBPF</td>
+<td data-label="Grafana Pyroscope">есть (для всего на узле)</td>
+<td data-label="Parca">основной способ</td>
 </tr>
 <tr>
-<td>Хранение</td>
-<td>собственный TSDB-подобный формат + объектное хранилище</td>
-<td>объектное / локальное</td>
+<td data-label="">Хранение</td>
+<td data-label="Grafana Pyroscope">собственный TSDB-подобный формат + объектное хранилище</td>
+<td data-label="Parca">объектное / локальное</td>
 </tr>
 <tr>
-<td>Метки</td>
-<td>как в Prometheus (<code>service</code>, <code>namespace</code>, <code>version</code>)</td>
-<td>как в Prometheus</td>
+<td data-label="">Метки</td>
+<td data-label="Grafana Pyroscope">как в Prometheus (<code>service</code>, <code>namespace</code>, <code>version</code>)</td>
+<td data-label="Parca">как в Prometheus</td>
 </tr>
 <tr>
-<td>UI</td>
-<td>нативно в Grafana (панель Flame Graph)</td>
-<td>свой UI + Grafana datasource</td>
+<td data-label="">UI</td>
+<td data-label="Grafana Pyroscope">нативно в Grafana (панель Flame Graph)</td>
+<td data-label="Parca">свой UI + Grafana datasource</td>
 </tr>
 <tr>
-<td>Diff между версиями</td>
-<td>да, встроенный comparison view</td>
-<td>да</td>
+<td data-label="">Diff между версиями</td>
+<td data-label="Grafana Pyroscope">да, встроенный comparison view</td>
+<td data-label="Parca">да</td>
 </tr>
 <tr>
-<td>Формат обмена</td>
-<td>pprof</td>
-<td>pprof</td>
+<td data-label="">Формат обмена</td>
+<td data-label="Grafana Pyroscope">pprof</td>
+<td data-label="Parca">pprof</td>
 </tr>
 </tbody>
 </table>
@@ -3427,7 +3427,7 @@ Comparison:{service="payment-gateway", version="1.42"}  за 2026-09-20 10:00-12
 </blockquote>
 <h3 id="103-мультиарендность-стека-наблюдаемости">10.3 Мультиарендность стека наблюдаемости</h3>
 <p>Мультитенантность стека означает, что на одной инсталляции живут данные многих команд, и каждая видит свои, укладывается в свою квоту и не может положить соседей. Когда на одном стеке работают 40 команд, нужны три вещи: изоляция данных, квоты и права. Таблица ниже показывает, какими механизмами изоляции и квот располагает каждый компонент, а после неё описана схема, которая работает в банке среднего размера.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Компонент</th>
@@ -3437,44 +3437,44 @@ Comparison:{service="payment-gateway", version="1.42"}  за 2026-09-20 10:00-12
 </thead>
 <tbody>
 <tr>
-<td>Prometheus (Operator)</td>
-<td>отдельный экземпляр на команду/домен либо общий с namespace-селекторами</td>
-<td><code>enforcedSampleLimit</code>, <code>enforcedTargetLimit</code>, <code>enforcedLabelLimit</code> в CR <code>Prometheus</code></td>
+<td data-label="Компонент">Prometheus (Operator)</td>
+<td data-label="Механизм изоляции">отдельный экземпляр на команду/домен либо общий с namespace-селекторами</td>
+<td data-label="Квоты"><code>enforcedSampleLimit</code>, <code>enforcedTargetLimit</code>, <code>enforcedLabelLimit</code> в CR <code>Prometheus</code></td>
 </tr>
 <tr>
-<td>Thanos</td>
-<td>префикс бакета или отдельный бакет на тенанта</td>
-<td>через Prometheus выше</td>
+<td data-label="Компонент">Thanos</td>
+<td data-label="Механизм изоляции">префикс бакета или отдельный бакет на тенанта</td>
+<td data-label="Квоты">через Prometheus выше</td>
 </tr>
 <tr>
-<td>Mimir</td>
-<td>нативно: заголовок <code>X-Scope-OrgID</code>, всё разделено</td>
-<td>per-tenant limits в runtime config</td>
+<td data-label="Компонент">Mimir</td>
+<td data-label="Механизм изоляции">нативно: заголовок <code>X-Scope-OrgID</code>, всё разделено</td>
+<td data-label="Квоты">per-tenant limits в runtime config</td>
 </tr>
 <tr>
-<td>VictoriaMetrics cluster</td>
-<td><code>accountID</code> в пути <code>/insert/{accountID}/...</code></td>
-<td><code>-maxLabelsPerTimeseries</code>, per-tenant лимиты</td>
+<td data-label="Компонент">VictoriaMetrics cluster</td>
+<td data-label="Механизм изоляции"><code>accountID</code> в пути <code>/insert/{accountID}/...</code></td>
+<td data-label="Квоты"><code>-maxLabelsPerTimeseries</code>, per-tenant лимиты</td>
 </tr>
 <tr>
-<td>Loki</td>
-<td><code>X-Scope-OrgID</code>, <code>auth_enabled: true</code></td>
-<td><code>ingestion_rate_mb</code>, <code>max_global_streams_per_user</code>, <code>max_query_length</code> на тенанта</td>
+<td data-label="Компонент">Loki</td>
+<td data-label="Механизм изоляции"><code>X-Scope-OrgID</code>, <code>auth_enabled: true</code></td>
+<td data-label="Квоты"><code>ingestion_rate_mb</code>, <code>max_global_streams_per_user</code>, <code>max_query_length</code> на тенанта</td>
 </tr>
 <tr>
-<td>Elasticsearch</td>
-<td>индексы по префиксу + document/index-level security (платно в ES, бесплатно в OpenSearch Security)</td>
-<td><code>index.mapping.total_fields.limit</code>, квоты по дискам через ILM</td>
+<td data-label="Компонент">Elasticsearch</td>
+<td data-label="Механизм изоляции">индексы по префиксу + document/index-level security (платно в ES, бесплатно в OpenSearch Security)</td>
+<td data-label="Квоты"><code>index.mapping.total_fields.limit</code>, квоты по дискам через ILM</td>
 </tr>
 <tr>
-<td>Grafana</td>
-<td>папки + team permissions</td>
-<td>—</td>
+<td data-label="Компонент">Grafana</td>
+<td data-label="Механизм изоляции">папки + team permissions</td>
+<td data-label="Квоты">—</td>
 </tr>
 <tr>
-<td>Alertmanager</td>
-<td><code>AlertmanagerConfig</code> CR на namespace</td>
-<td>—</td>
+<td data-label="Компонент">Alertmanager</td>
+<td data-label="Механизм изоляции"><code>AlertmanagerConfig</code> CR на namespace</td>
+<td data-label="Квоты">—</td>
 </tr>
 </tbody>
 </table>
@@ -4125,5 +4125,5 @@ curl -s <span class="s2">"</span><span class="nv">$ES</span><span class="s2">/lo
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-архитектура-контура-наблюдаемости">1. Архитектура контура наблюдаемости</a></li><li><a href="#2-логи-сбор-и-транспорт">2. Логи: сбор и транспорт</a></li><li><a href="#3-хранение-логов">3. Хранение логов</a></li><li><a href="#4-устройство-prometheus">4. Устройство Prometheus</a></li><li><a href="#5-масштабирование-метрик-федерация-thanos-victoriametrics-mimir">5. Масштабирование метрик: федерация, Thanos, VictoriaMetrics, Mimir</a></li><li><a href="#6-alertmanager">6. Alertmanager</a></li><li><a href="#7-grafana">7. Grafana</a></li><li><a href="#8-инфраструктура-трассировки">8. Инфраструктура трассировки</a></li><li><a href="#9-профили-и-непрерывное-профилирование">9. Профили и непрерывное профилирование</a></li><li><a href="#10-эксплуатация-контура-наблюдаемости">10. Эксплуатация контура наблюдаемости</a></li><li><a href="#11-грабли-и-антипаттерны">11. Грабли и антипаттерны</a></li><li><a href="#12-диагностика">12. Диагностика</a></li><li><a href="#13-вопросы-на-интервью">13. Вопросы на интервью</a></li><li><a href="#14-попробовать-руками">14. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

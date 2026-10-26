@@ -3,7 +3,7 @@
 <title>54. CI/CD на практике: GitLab, Bitbucket, Jenkins — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="CI/CD на практике: GitLab, Bitbucket, Jenkins">
 <a class="skip" href="#content">К тексту</a>
@@ -74,7 +74,7 @@
 </ol>
 <h3 id="13-способ-слияния-squash-merge-commit-или-rebase">1.3 Способ слияния: squash, merge commit или rebase</h3>
 <p>Правило слияния определяет, в каком виде изменения из MR попадают в основную ветку, и от него зависят читаемость истории, работоспособность <code>git bisect</code> и то, насколько сложно откатить изменение. Настраивается оно в трёх местах в зависимости от платформы: в GitLab это Settings → Merge requests → Merge method + Squash commits, в Bitbucket — Repository settings → Merge strategies, в GitHub — Settings → Pull Requests. Ниже сравниваются четыре стратегии по этим трём последствиям, и по последнему столбцу видно, в какой ситуации каждая из них уместна.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -86,32 +86,32 @@
 </thead>
 <tbody>
 <tr>
-<td>Merge commit (<code>--no-ff</code>)</td>
-<td>Нелинейная, видны все промежуточные коммиты</td>
-<td>Может попасть на сломанный промежуточный коммит</td>
-<td><code>git revert -m 1 &lt;merge&gt;</code></td>
-<td>Долгоживущие релизные ветки, нужна полная археология</td>
+<td data-label="Стратегия">Merge commit (<code>--no-ff</code>)</td>
+<td data-label="История">Нелинейная, видны все промежуточные коммиты</td>
+<td data-label="git bisect">Может попасть на сломанный промежуточный коммит</td>
+<td data-label="Откат MR"><code>git revert -m 1 &lt;merge&gt;</code></td>
+<td data-label="Когда выбирать">Долгоживущие релизные ветки, нужна полная археология</td>
 </tr>
 <tr>
-<td>Squash</td>
-<td>Линейная, один коммит на MR</td>
-<td>Каждая точка — законченная фича</td>
-<td><code>git revert &lt;sha&gt;</code> — тривиально</td>
-<td><strong>Выбор по умолчанию для сервисной разработки с короткими ветками</strong></td>
+<td data-label="Стратегия">Squash</td>
+<td data-label="История">Линейная, один коммит на MR</td>
+<td data-label="git bisect">Каждая точка — законченная фича</td>
+<td data-label="Откат MR"><code>git revert &lt;sha&gt;</code> — тривиально</td>
+<td data-label="Когда выбирать"><strong>Выбор по умолчанию для сервисной разработки с короткими ветками</strong></td>
 </tr>
 <tr>
-<td>Fast-forward / rebase</td>
-<td>Линейная, все коммиты сохранены</td>
-<td>Работает, если каждый коммит зелёный (обычно нет)</td>
-<td>Сложнее: нужно ревертить диапазон</td>
-<td>Команды с дисциплиной атомарных коммитов</td>
+<td data-label="Стратегия">Fast-forward / rebase</td>
+<td data-label="История">Линейная, все коммиты сохранены</td>
+<td data-label="git bisect">Работает, если каждый коммит зелёный (обычно нет)</td>
+<td data-label="Откат MR">Сложнее: нужно ревертить диапазон</td>
+<td data-label="Когда выбирать">Команды с дисциплиной атомарных коммитов</td>
 </tr>
 <tr>
-<td>Semi-linear (rebase + merge commit)</td>
-<td>Линейная, но merge commit виден</td>
-<td>Как у merge commit</td>
-<td>Как у merge commit</td>
-<td>Хочется и линейности, и явной границы MR</td>
+<td data-label="Стратегия">Semi-linear (rebase + merge commit)</td>
+<td data-label="История">Линейная, но merge commit виден</td>
+<td data-label="git bisect">Как у merge commit</td>
+<td data-label="Откат MR">Как у merge commit</td>
+<td data-label="Когда выбирать">Хочется и линейности, и явной границы MR</td>
 </tr>
 </tbody>
 </table>
@@ -188,7 +188,7 @@ mvn -B package
 <p>Исполнитель — это агент, который забирает задание у GitLab и выполняет его, и от того, как он устроен, зависит гораздо больше, чем принято думать: половина проблем с GitLab CI оказывается проблемами исполнителей, а не YAML. Разработчики обычно не настраивают исполнители сами, но понимать их устройство обязаны, потому что именно оно объясняет, почему не работает кеш, почему падает <code>docker build</code> и почему задание двадцать минут стоит в очереди. В этом разделе разберём уровни исполнителей, виды executors, регистрацию и токены, маршрутизацию по тегам, параметры параллелизма, устройство кеша и то, как собирать Docker-образы, не выдавая заданиям root на хосте.</p>
 <h3 id="21-три-уровня-исполнителей">2.1 Три уровня исполнителей</h3>
 <p>Исполнитель регистрируется на одном из трёх уровней, и от уровня зависит, какие проекты смогут на нём выполняться. Выбор уровня определяет, будут ли у вас снежинки и не увидит ли задание одного проекта данные другого, поэтому сначала посмотрите на таблицу, а затем на правило, которое из неё следует.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -199,22 +199,22 @@ mvn -B package
 </thead>
 <tbody>
 <tr>
-<td>Instance (shared)</td>
-<td>Админка экземпляра</td>
-<td>Все проекты</td>
-<td>GitLab.com; в self-managed — общий пул для мелких проектов</td>
+<td data-label="Уровень">Instance (shared)</td>
+<td data-label="Где регистрируется">Админка экземпляра</td>
+<td data-label="Кто использует">Все проекты</td>
+<td data-label="Типовое применение">GitLab.com; в self-managed — общий пул для мелких проектов</td>
 </tr>
 <tr>
-<td>Group</td>
-<td>Настройки группы</td>
-<td>Все проекты группы и подгрупп</td>
-<td>Основной рабочий вариант в компании: один пул на департамент</td>
+<td data-label="Уровень">Group</td>
+<td data-label="Где регистрируется">Настройки группы</td>
+<td data-label="Кто использует">Все проекты группы и подгрупп</td>
+<td data-label="Типовое применение">Основной рабочий вариант в компании: один пул на департамент</td>
 </tr>
 <tr>
-<td>Project</td>
-<td>Настройки проекта</td>
-<td>Один проект</td>
-<td>Особые требования: доступ в закрытый сегмент сети, специфичное железо, GPU</td>
+<td data-label="Уровень">Project</td>
+<td data-label="Где регистрируется">Настройки проекта</td>
+<td data-label="Кто использует">Один проект</td>
+<td data-label="Типовое применение">Особые требования: доступ в закрытый сегмент сети, специфичное железо, GPU</td>
 </tr>
 </tbody>
 </table>
@@ -419,7 +419,7 @@ Successfully extracted cache
 
 <p>Обратите внимание на <code>--export-cache</code>/<code>--import-cache</code> в registry: они решают проблему холодного кеша слоёв, от которой страдает DinD. Ограничение у rootless BuildKit тоже есть: ему нужен доступ к <code>/proc</code> с определёнными настройками, поэтому в жёстко залоченных кластерах (OpenShift с <code>restricted-v2</code>) для него может потребоваться отдельный SCC.</p>
 <p>Таблица ниже сводит все способы вместе, добавляя к ним Kaniko и Jib. Главное в ней — два столбца, «Privileged» и «Изоляция»: они показывают, чем за каждый способ платит безопасность.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -432,44 +432,44 @@ Successfully extracted cache
 </thead>
 <tbody>
 <tr>
-<td>DinD (service)</td>
-<td>Да</td>
-<td>Нет (или через registry cache)</td>
-<td>Средняя</td>
-<td>Медленно</td>
-<td>Только на выделенных исполнителях</td>
+<td data-label="Способ">DinD (service)</td>
+<td data-label="Privileged">Да</td>
+<td data-label="Кеш слоёв">Нет (или через registry cache)</td>
+<td data-label="Изоляция">Средняя</td>
+<td data-label="Скорость">Медленно</td>
+<td data-label="Вердикт">Только на выделенных исполнителях</td>
 </tr>
 <tr>
-<td>Сокет хоста</td>
-<td>Нет, но эквивалент root</td>
-<td>Да, общий</td>
-<td>Нет</td>
-<td>Быстро</td>
-<td>Только доверенные проекты</td>
+<td data-label="Способ">Сокет хоста</td>
+<td data-label="Privileged">Нет, но эквивалент root</td>
+<td data-label="Кеш слоёв">Да, общий</td>
+<td data-label="Изоляция">Нет</td>
+<td data-label="Скорость">Быстро</td>
+<td data-label="Вердикт">Только доверенные проекты</td>
 </tr>
 <tr>
-<td>BuildKit rootless</td>
-<td>Нет</td>
-<td>Да, через registry</td>
-<td>Хорошая</td>
-<td>Средне</td>
-<td><strong>Выбор по умолчанию для новых проектов</strong></td>
+<td data-label="Способ">BuildKit rootless</td>
+<td data-label="Privileged">Нет</td>
+<td data-label="Кеш слоёв">Да, через registry</td>
+<td data-label="Изоляция">Хорошая</td>
+<td data-label="Скорость">Средне</td>
+<td data-label="Вердикт"><strong>Выбор по умолчанию для новых проектов</strong></td>
 </tr>
 <tr>
-<td>Kaniko</td>
-<td>Нет</td>
-<td>Через registry (<code>--cache=true</code>)</td>
-<td>Хорошая</td>
-<td>Средне</td>
-<td>Хорош, но проект в режиме поддержки</td>
+<td data-label="Способ">Kaniko</td>
+<td data-label="Privileged">Нет</td>
+<td data-label="Кеш слоёв">Через registry (<code>--cache=true</code>)</td>
+<td data-label="Изоляция">Хорошая</td>
+<td data-label="Скорость">Средне</td>
+<td data-label="Вердикт">Хорош, но проект в режиме поддержки</td>
 </tr>
 <tr>
-<td>Jib (без Docker вообще)</td>
-<td>Нет</td>
-<td>Инкрементальные слои</td>
-<td>Полная</td>
-<td>Быстро</td>
-<td>Идеален для чистой Java (глава 46)</td>
+<td data-label="Способ">Jib (без Docker вообще)</td>
+<td data-label="Privileged">Нет</td>
+<td data-label="Кеш слоёв">Инкрементальные слои</td>
+<td data-label="Изоляция">Полная</td>
+<td data-label="Скорость">Быстро</td>
+<td data-label="Вердикт">Идеален для чистой Java (глава 46)</td>
 </tr>
 </tbody>
 </table>
@@ -638,7 +638,7 @@ Successfully extracted cache
 </blockquote>
 <h3 id="35-кеш-и-артефакты">3.5 Кеш и артефакты</h3>
 <p>Кеш и артефакты в GitLab CI выглядят похоже, потому что оба переносят файлы между заданиями, но устроены они по-разному и дают разные гарантии. Новички их путают, а платить за эту путаницу приходится дорого: конвейер либо падает, когда кеш не нашёлся, либо заливает гигабайты в платное хранилище. Сначала посмотрите на таблицу, в которой сравнение сведено по шести признакам, и прежде всего на строку «Гарантия наличия»: из неё вытекает всё остальное.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -648,34 +648,34 @@ Successfully extracted cache
 </thead>
 <tbody>
 <tr>
-<td>Назначение</td>
-<td>Ускорение: повторно используемые зависимости</td>
-<td>Передача результатов между заданиями и человеку</td>
+<td data-label="">Назначение</td>
+<td data-label="cache">Ускорение: повторно используемые зависимости</td>
+<td data-label="artifacts">Передача результатов между заданиями и человеку</td>
 </tr>
 <tr>
-<td>Гарантия наличия</td>
-<td><strong>Нет.</strong> Кеш — оптимизация, задание обязано работать без него</td>
-<td>Есть: если задание в <code>needs</code>/<code>dependencies</code> завершилось, артефакты будут</td>
+<td data-label="">Гарантия наличия</td>
+<td data-label="cache"><strong>Нет.</strong> Кеш — оптимизация, задание обязано работать без него</td>
+<td data-label="artifacts">Есть: если задание в <code>needs</code>/<code>dependencies</code> завершилось, артефакты будут</td>
 </tr>
 <tr>
-<td>Где хранится</td>
-<td>Локальный диск исполнителя или S3</td>
-<td>Object storage GitLab</td>
+<td data-label="">Где хранится</td>
+<td data-label="cache">Локальный диск исполнителя или S3</td>
+<td data-label="artifacts">Object storage GitLab</td>
 </tr>
 <tr>
-<td>Видимость в UI</td>
-<td>Нет</td>
-<td>Да, скачивается кнопкой</td>
+<td data-label="">Видимость в UI</td>
+<td data-label="cache">Нет</td>
+<td data-label="artifacts">Да, скачивается кнопкой</td>
 </tr>
 <tr>
-<td>Срок жизни</td>
-<td>До вытеснения/очистки исполнителя</td>
-<td><code>expire_in</code>, по умолчанию — значение из настроек экземпляра GitLab</td>
+<td data-label="">Срок жизни</td>
+<td data-label="cache">До вытеснения/очистки исполнителя</td>
+<td data-label="artifacts"><code>expire_in</code>, по умолчанию — значение из настроек экземпляра GitLab</td>
 </tr>
 <tr>
-<td>Разделяется между конвейерами</td>
-<td>Да, по ключу</td>
-<td>Нет</td>
+<td data-label="">Разделяется между конвейерами</td>
+<td data-label="cache">Да, по ключу</td>
+<td data-label="artifacts">Нет</td>
 </tr>
 </tbody>
 </table>
@@ -1388,7 +1388,7 @@ vault write auth/gitlab/role/payments-prod <span class="se">\</span>
 <p>Ключевая настройка безопасности лежит в Settings → CI/CD → <strong>Job token permissions</strong> и называется <strong>CI/CD job token allowlist</strong> (в GitLab 17.2 её переименовали из «Limit access to this project» в «Authorized groups and projects», а в GitLab 17.3 дали нынешнее имя), и она содержит явный список проектов-источников. По умолчанию в allowlist любого проекта входит только он сам, а безопасный режим в UI подписан «This project and any groups and projects in the allowlist» (<a href="https://docs.gitlab.com/ci/jobs/ci_job_token/">CI/CD job token</a>). Раньше по умолчанию любой проект экземпляра мог по своему job token дотянуться до вашего, а сейчас по умолчанию действует ограниченный список, но в старых проектах настройка так и осталась открытой. Проверьте её: если список пуст и включён режим «All groups and projects», ваш приватный репозиторий может прочитать любой конвейер любого проекта экземпляра.</p>
 <h3 id="57-deploy-tokens-deploy-keys-и-приватные-зависимости">5.7 Deploy tokens, deploy keys и приватные зависимости</h3>
 <p>Помимо job token, в GitLab есть ещё несколько способов выдать доступ машине, а не человеку, и выбирать между ними приходится каждый раз, когда внешней системе нужен образ, пакет или <code>git clone</code>. В таблице ниже они сравнены по тому, что дают, на что распространяются и когда их брать; обратите внимание на последнюю строку, потому что именно личный токен чаще всего и находят в унаследованных конвейерах.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Механизм</th>
@@ -1399,34 +1399,34 @@ vault write auth/gitlab/role/payments-prod <span class="se">\</span>
 </thead>
 <tbody>
 <tr>
-<td>Deploy token</td>
-<td>Логин/пароль с правами <code>read_repository</code>, <code>read_registry</code>, <code>write_registry</code>, <code>read_package_registry</code></td>
-<td>Проект или группа</td>
-<td>Внешняя система (не GitLab) тянет образ или пакет</td>
+<td data-label="Механизм">Deploy token</td>
+<td data-label="Что даёт">Логин/пароль с правами <code>read_repository</code>, <code>read_registry</code>, <code>write_registry</code>, <code>read_package_registry</code></td>
+<td data-label="Область">Проект или группа</td>
+<td data-label="Когда применять">Внешняя система (не GitLab) тянет образ или пакет</td>
 </tr>
 <tr>
-<td>Deploy key</td>
-<td>SSH-ключ, read или read/write на репозиторий</td>
-<td>Проект (с возможностью включить в других)</td>
-<td>Сервер, которому нужен <code>git clone</code> по SSH</td>
+<td data-label="Механизм">Deploy key</td>
+<td data-label="Что даёт">SSH-ключ, read или read/write на репозиторий</td>
+<td data-label="Область">Проект (с возможностью включить в других)</td>
+<td data-label="Когда применять">Сервер, которому нужен <code>git clone</code> по SSH</td>
 </tr>
 <tr>
-<td><code>CI_JOB_TOKEN</code></td>
-<td>Временные права пользователя конвейера</td>
-<td>Текущее задание</td>
-<td>Взаимодействие внутри GitLab</td>
+<td data-label="Механизм"><code>CI_JOB_TOKEN</code></td>
+<td data-label="Что даёт">Временные права пользователя конвейера</td>
+<td data-label="Область">Текущее задание</td>
+<td data-label="Когда применять">Взаимодействие внутри GitLab</td>
 </tr>
 <tr>
-<td>Project/Group access token</td>
-<td>Bot-пользователь с ролью и сроком</td>
-<td>Проект/группа</td>
-<td>Автоматизация, которой нужны права шире job token</td>
+<td data-label="Механизм">Project/Group access token</td>
+<td data-label="Что даёт">Bot-пользователь с ролью и сроком</td>
+<td data-label="Область">Проект/группа</td>
+<td data-label="Когда применять">Автоматизация, которой нужны права шире job token</td>
 </tr>
 <tr>
-<td>Personal access token</td>
-<td>Права человека</td>
-<td>Всё, к чему есть доступ у человека</td>
-<td><strong>Не использовать в CI</strong></td>
+<td data-label="Механизм">Personal access token</td>
+<td data-label="Что даёт">Права человека</td>
+<td data-label="Область">Всё, к чему есть доступ у человека</td>
+<td data-label="Когда применять"><strong>Не использовать в CI</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1464,7 +1464,7 @@ vault write auth/gitlab/role/payments-prod <span class="se">\</span>
 <h3 id="61-package-registry-как-maven-репозиторий">6.1 Package registry как Maven-репозиторий</h3>
 <p>Package registry позволяет публиковать библиотеки прямо в GitLab и подключать их из других проектов без отдельного Nexus. Ниже показаны уровни, на которых он доступен, способы аутентификации, настройка <code>pom.xml</code> и задание публикации, а в конце дана честная оценка того, когда его хватает.</p>
 <p>GitLab умеет работать Maven-репозиторием на трёх уровнях (<a href="https://docs.gitlab.com/user/packages/maven_repository/">Maven packages</a>), и у каждого уровня свой URL:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -1473,16 +1473,16 @@ vault write auth/gitlab/role/payments-prod <span class="se">\</span>
 </thead>
 <tbody>
 <tr>
-<td>Проект</td>
-<td><code>https://gitlab.example.com/api/v4/projects/&lt;project_id&gt;/packages/maven</code></td>
+<td data-label="Уровень">Проект</td>
+<td data-label="URL"><code>https://gitlab.example.com/api/v4/projects/&lt;project_id&gt;/packages/maven</code></td>
 </tr>
 <tr>
-<td>Группа</td>
-<td><code>https://gitlab.example.com/api/v4/groups/&lt;group_id&gt;/-/packages/maven</code></td>
+<td data-label="Уровень">Группа</td>
+<td data-label="URL"><code>https://gitlab.example.com/api/v4/groups/&lt;group_id&gt;/-/packages/maven</code></td>
 </tr>
 <tr>
-<td>Экземпляр</td>
-<td><code>https://gitlab.example.com/api/v4/packages/maven</code></td>
+<td data-label="Уровень">Экземпляр</td>
+<td data-label="URL"><code>https://gitlab.example.com/api/v4/packages/maven</code></td>
 </tr>
 </tbody>
 </table>
@@ -1600,7 +1600,7 @@ vault write auth/gitlab/role/payments-prod <span class="se">\</span>
 <h3 id="72-правила-одобрения-approval-rules">7.2 Правила одобрения (approval rules)</h3>
 <p>Approval rules задают, сколько и чьих одобрений нужно MR перед слиянием. Настроенные слишком жёстко, они не усиливают контроль, а приучают команду его обходить, поэтому ниже в таблице разобрана типовая конфигурация с риском каждой настройки, а затем признаки того, что правила пора ослабить.</p>
 <p>Настройки лежат в Settings → Merge requests → Merge request approvals, и в таблице собраны основные из них; в столбце «Риск» указано, что происходит, когда настройку выставляют без оглядки на размер команды.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Настройка</th>
@@ -1610,39 +1610,39 @@ vault write auth/gitlab/role/payments-prod <span class="se">\</span>
 </thead>
 <tbody>
 <tr>
-<td>Approvals required = 1</td>
-<td>Один проверяющий</td>
-<td>Рабочий минимум</td>
+<td data-label="Настройка">Approvals required = 1</td>
+<td data-label="Эффект">Один проверяющий</td>
+<td data-label="Риск">Рабочий минимум</td>
 </tr>
 <tr>
-<td>Approvals required = 3</td>
-<td>Три проверяющих</td>
-<td>В команде из четырёх человек это блокировка; люди начинают ставить апрув не читая</td>
+<td data-label="Настройка">Approvals required = 3</td>
+<td data-label="Эффект">Три проверяющих</td>
+<td data-label="Риск">В команде из четырёх человек это блокировка; люди начинают ставить апрув не читая</td>
 </tr>
 <tr>
-<td>«Prevent approval by author»</td>
-<td>Автор не одобряет себя</td>
-<td>Обязательно включить</td>
+<td data-label="Настройка">«Prevent approval by author»</td>
+<td data-label="Эффект">Автор не одобряет себя</td>
+<td data-label="Риск">Обязательно включить</td>
 </tr>
 <tr>
-<td>«Prevent approvals by users who add commits»</td>
-<td>Проверяющий, добавивший коммит, теряет право одобрения</td>
-<td>Включить</td>
+<td data-label="Настройка">«Prevent approvals by users who add commits»</td>
+<td data-label="Эффект">Проверяющий, добавивший коммит, теряет право одобрения</td>
+<td data-label="Риск">Включить</td>
 </tr>
 <tr>
-<td>«Remove all approvals when commits are added»</td>
-<td>Апрувы сбрасываются на новый push</td>
-<td>Спорно: превращает мелкую правку по ревью в новый круг</td>
+<td data-label="Настройка">«Remove all approvals when commits are added»</td>
+<td data-label="Эффект">Апрувы сбрасываются на новый push</td>
+<td data-label="Риск">Спорно: превращает мелкую правку по ревью в новый круг</td>
 </tr>
 <tr>
-<td>«Require new approvals when commits added to source branch» (частичный сброс)</td>
-<td>Сбрасываются только у тех, кто одобрил до изменений</td>
-<td>Разумный компромисс</td>
+<td data-label="Настройка">«Require new approvals when commits added to source branch» (частичный сброс)</td>
+<td data-label="Эффект">Сбрасываются только у тех, кто одобрил до изменений</td>
+<td data-label="Риск">Разумный компромисс</td>
 </tr>
 <tr>
-<td>CODEOWNERS approval required</td>
-<td>Владелец пути обязан одобрить</td>
-<td>Работает, если владелец реально существует и доступен</td>
+<td data-label="Настройка">CODEOWNERS approval required</td>
+<td data-label="Эффект">Владелец пути обязан одобрить</td>
+<td data-label="Риск">Работает, если владелец реально существует и доступен</td>
 </tr>
 </tbody>
 </table>
@@ -1977,7 +1977,7 @@ docker run -d --name bb-runner --restart always <span class="se">\</span>
 
 <h3 id="810-сравнение-bitbucket-pipelines-и-gitlab-ci">8.10 Сравнение Bitbucket Pipelines и GitLab CI</h3>
 <p>Когда приходится выбирать между Bitbucket Pipelines и GitLab CI или объяснять, почему команде стало тесно в Bitbucket, нужно сравнение по конкретным возможностям, а не по впечатлениям. Таблица ниже сводит всё разобранное выше в одно место, а после неё сформулировано, когда Bitbucket хватает и где в него упираются; смотреть в таблице стоит прежде всего на строки про модель выполнения, повторное использование конфига и защиту переменных.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Возможность</th>
@@ -1987,94 +1987,94 @@ docker run -d --name bb-runner --restart always <span class="se">\</span>
 </thead>
 <tbody>
 <tr>
-<td>Модель выполнения</td>
-<td>Задания с DAG (<code>needs</code>)</td>
-<td>Последовательные шаги + <code>parallel</code></td>
+<td data-label="Возможность">Модель выполнения</td>
+<td data-label="GitLab CI">Задания с DAG (<code>needs</code>)</td>
+<td data-label="Bitbucket Pipelines">Последовательные шаги + <code>parallel</code></td>
 </tr>
 <tr>
-<td>Повторное использование конфига</td>
-<td><code>include</code> из другого проекта, CI/CD Components, <code>extends</code></td>
-<td>Только YAML-якоря внутри файла</td>
+<td data-label="Возможность">Повторное использование конфига</td>
+<td data-label="GitLab CI"><code>include</code> из другого проекта, CI/CD Components, <code>extends</code></td>
+<td data-label="Bitbucket Pipelines">Только YAML-якоря внутри файла</td>
 </tr>
 <tr>
-<td>Условная логика</td>
-<td><code>rules</code> с <code>if</code>/<code>changes</code>/<code>exists</code>, <code>workflow:rules</code></td>
-<td><code>branches</code>/<code>tags</code>/<code>pull-requests</code> + <code>condition: changesets</code></td>
+<td data-label="Возможность">Условная логика</td>
+<td data-label="GitLab CI"><code>rules</code> с <code>if</code>/<code>changes</code>/<code>exists</code>, <code>workflow:rules</code></td>
+<td data-label="Bitbucket Pipelines"><code>branches</code>/<code>tags</code>/<code>pull-requests</code> + <code>condition: changesets</code></td>
 </tr>
 <tr>
-<td>Кеш</td>
-<td>Любые пути, ключ по 2 файлам, S3, <code>fallback_keys</code>, политики</td>
-<td>Встроенные + свои, ключ по файлам, <strong>лимит 1 ГБ</strong>, 7 дней</td>
+<td data-label="Возможность">Кеш</td>
+<td data-label="GitLab CI">Любые пути, ключ по 2 файлам, S3, <code>fallback_keys</code>, политики</td>
+<td data-label="Bitbucket Pipelines">Встроенные + свои, ключ по файлам, <strong>лимит 1 ГБ</strong>, 7 дней</td>
 </tr>
 <tr>
-<td>Артефакты</td>
-<td>Любые пути, <code>expire_in</code>, <code>reports:*</code></td>
-<td>Пути, между шагами одного конвейера</td>
+<td data-label="Возможность">Артефакты</td>
+<td data-label="GitLab CI">Любые пути, <code>expire_in</code>, <code>reports:*</code></td>
+<td data-label="Bitbucket Pipelines">Пути, между шагами одного конвейера</td>
 </tr>
 <tr>
-<td>Окружения</td>
-<td><code>environment</code> + protected environments + review apps</td>
-<td><code>deployment</code> + deployment variables, встроенная сериализация</td>
+<td data-label="Возможность">Окружения</td>
+<td data-label="GitLab CI"><code>environment</code> + protected environments + review apps</td>
+<td data-label="Bitbucket Pipelines"><code>deployment</code> + deployment variables, встроенная сериализация</td>
 </tr>
 <tr>
-<td>Динамические стенды на MR</td>
-<td>Полноценные review apps с <code>on_stop</code>/<code>auto_stop_in</code></td>
-<td>Руками через custom-конвейер; штатного <code>on_stop</code> нет</td>
+<td data-label="Возможность">Динамические стенды на MR</td>
+<td data-label="GitLab CI">Полноценные review apps с <code>on_stop</code>/<code>auto_stop_in</code></td>
+<td data-label="Bitbucket Pipelines">Руками через custom-конвейер; штатного <code>on_stop</code> нет</td>
 </tr>
 <tr>
-<td>Защита переменных</td>
-<td>Protected (только защищённые ветки) + masked + hidden</td>
-<td>Только secured + привязка к deployment (permissions в Premium)</td>
+<td data-label="Возможность">Защита переменных</td>
+<td data-label="GitLab CI">Protected (только защищённые ветки) + masked + hidden</td>
+<td data-label="Bitbucket Pipelines">Только secured + привязка к deployment (permissions в Premium)</td>
 </tr>
 <tr>
-<td>OIDC к облакам/Vault</td>
-<td><code>id_tokens</code>, полноценно</td>
-<td>Есть OIDC для deployments (<code>BITBUCKET_STEP_OIDC_TOKEN</code>), настроек меньше</td>
+<td data-label="Возможность">OIDC к облакам/Vault</td>
+<td data-label="GitLab CI"><code>id_tokens</code>, полноценно</td>
+<td data-label="Bitbucket Pipelines">Есть OIDC для deployments (<code>BITBUCKET_STEP_OIDC_TOKEN</code>), настроек меньше</td>
 </tr>
 <tr>
-<td>Сериализация деплоев</td>
-<td><code>resource_group</code> явно</td>
-<td>Встроенная по окружению</td>
+<td data-label="Возможность">Сериализация деплоев</td>
+<td data-label="GitLab CI"><code>resource_group</code> явно</td>
+<td data-label="Bitbucket Pipelines">Встроенная по окружению</td>
 </tr>
 <tr>
-<td>Повторы</td>
-<td><code>retry</code> с фильтром по причине</td>
-<td>Только перезапуск шага руками</td>
+<td data-label="Возможность">Повторы</td>
+<td data-label="GitLab CI"><code>retry</code> с фильтром по причине</td>
+<td data-label="Bitbucket Pipelines">Только перезапуск шага руками</td>
 </tr>
 <tr>
-<td>Матрицы</td>
-<td><code>parallel:matrix</code></td>
-<td>Нет; руками через <code>parallel</code></td>
+<td data-label="Возможность">Матрицы</td>
+<td data-label="GitLab CI"><code>parallel:matrix</code></td>
+<td data-label="Bitbucket Pipelines">Нет; руками через <code>parallel</code></td>
 </tr>
 <tr>
-<td>Дочерние конвейеры</td>
-<td>Да, с динамической генерацией</td>
-<td>Нет</td>
+<td data-label="Возможность">Дочерние конвейеры</td>
+<td data-label="GitLab CI">Да, с динамической генерацией</td>
+<td data-label="Bitbucket Pipelines">Нет</td>
 </tr>
 <tr>
-<td>Реестры</td>
-<td>Container + package registry встроены</td>
-<td>Нет (только внешние)</td>
+<td data-label="Возможность">Реестры</td>
+<td data-label="GitLab CI">Container + package registry встроены</td>
+<td data-label="Bitbucket Pipelines">Нет (только внешние)</td>
 </tr>
 <tr>
-<td>Исполнители</td>
-<td>Shared/group/project, 5+ executors</td>
-<td>Cloud + self-hosted (Docker/Linux/Windows/macOS/k8s)</td>
+<td data-label="Возможность">Исполнители</td>
+<td data-label="GitLab CI">Shared/group/project, 5+ executors</td>
+<td data-label="Bitbucket Pipelines">Cloud + self-hosted (Docker/Linux/Windows/macOS/k8s)</td>
 </tr>
 <tr>
-<td>Тарификация</td>
-<td>Минуты на .com, железо в self-managed</td>
-<td>Минуты, множитель по <code>size</code></td>
+<td data-label="Возможность">Тарификация</td>
+<td data-label="GitLab CI">Минуты на .com, железо в self-managed</td>
+<td data-label="Bitbucket Pipelines">Минуты, множитель по <code>size</code></td>
 </tr>
 <tr>
-<td>Интеграция с Jira</td>
-<td>Через приложение</td>
-<td>Нативная, из коробки</td>
+<td data-label="Возможность">Интеграция с Jira</td>
+<td data-label="GitLab CI">Через приложение</td>
+<td data-label="Bitbucket Pipelines">Нативная, из коробки</td>
 </tr>
 <tr>
-<td>Порог входа</td>
-<td>Высокий</td>
-<td>Низкий</td>
+<td data-label="Возможность">Порог входа</td>
+<td data-label="GitLab CI">Высокий</td>
+<td data-label="Bitbucket Pipelines">Низкий</td>
 </tr>
 </tbody>
 </table>
@@ -2145,7 +2145,7 @@ docker run -d --name bb-runner --restart always <span class="se">\</span>
 </code></pre></div>
 
 <p>По существу различия сводятся к следующему (<a href="https://www.jenkins.io/doc/book/pipeline/syntax/">Pipeline syntax</a>); главное в таблице — строка «Валидация», потому что именно она решает, узнаете ли вы об ошибке до старта сборки или посреди неё:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2155,44 +2155,44 @@ docker run -d --name bb-runner --restart always <span class="se">\</span>
 </thead>
 <tbody>
 <tr>
-<td>Структура</td>
-<td>Жёсткая: <code>pipeline</code> → <code>agent</code>/<code>stages</code> → <code>stage</code> → <code>steps</code></td>
-<td>Произвольный Groovy в <code>node {}</code></td>
+<td data-label="">Структура</td>
+<td data-label="Declarative">Жёсткая: <code>pipeline</code> → <code>agent</code>/<code>stages</code> → <code>stage</code> → <code>steps</code></td>
+<td data-label="Scripted">Произвольный Groovy в <code>node {}</code></td>
 </tr>
 <tr>
-<td>Валидация</td>
-<td>При загрузке <code>Jenkinsfile</code>, до старта</td>
-<td>Только во время выполнения</td>
+<td data-label="">Валидация</td>
+<td data-label="Declarative">При загрузке <code>Jenkinsfile</code>, до старта</td>
+<td data-label="Scripted">Только во время выполнения</td>
 </tr>
 <tr>
-<td>Восстановление после сбоя</td>
-<td><code>post { failure {} }</code>, <code>post { always {} }</code> декларативно</td>
-<td><code>try/catch/finally</code> руками</td>
+<td data-label="">Восстановление после сбоя</td>
+<td data-label="Declarative"><code>post { failure {} }</code>, <code>post { always {} }</code> декларативно</td>
+<td data-label="Scripted"><code>try/catch/finally</code> руками</td>
 </tr>
 <tr>
-<td>Визуализация в Blue Ocean / UI</td>
-<td>Полная</td>
-<td>Частичная</td>
+<td data-label="">Визуализация в Blue Ocean / UI</td>
+<td data-label="Declarative">Полная</td>
+<td data-label="Scripted">Частичная</td>
 </tr>
 <tr>
-<td>Условная логика</td>
-<td><code>when</code> с предикатами</td>
-<td><code>if/else</code></td>
+<td data-label="">Условная логика</td>
+<td data-label="Declarative"><code>when</code> с предикатами</td>
+<td data-label="Scripted"><code>if/else</code></td>
 </tr>
 <tr>
-<td>Произвольный Groovy</td>
-<td>Только внутри <code>script {}</code></td>
-<td>Везде</td>
+<td data-label="">Произвольный Groovy</td>
+<td data-label="Declarative">Только внутри <code>script {}</code></td>
+<td data-label="Scripted">Везде</td>
 </tr>
 <tr>
-<td>Переменная как имя стадии</td>
-<td>Нельзя</td>
-<td>Можно</td>
+<td data-label="">Переменная как имя стадии</td>
+<td data-label="Declarative">Нельзя</td>
+<td data-label="Scripted">Можно</td>
 </tr>
 <tr>
-<td>Генерация стадий в цикле</td>
-<td>Нельзя напрямую (только <code>matrix</code> или <code>parallel</code> из map внутри <code>script</code>)</td>
-<td>Можно</td>
+<td data-label="">Генерация стадий в цикле</td>
+<td data-label="Declarative">Нельзя напрямую (только <code>matrix</code> или <code>parallel</code> из map внутри <code>script</code>)</td>
+<td data-label="Scripted">Можно</td>
 </tr>
 </tbody>
 </table>
@@ -2951,7 +2951,7 @@ tar czf jenkins-backup-<span class="k">$(</span>date +%F<span class="k">)</span>
 <li><strong>CSRF protection</strong> и <strong>Agent protocols</strong> в современных версиях по умолчанию настроены корректно, но в унаследованных инсталляциях их часто отключают, «чтобы заработало».</li>
 </ul>
 <p><strong>Метрики и мониторинг.</strong> Плагин Prometheus (<code>prometheus</code> / <code>metrics</code>) отдаёт метрики на <code>/prometheus</code>, и в таблице ниже собран минимальный набор оповещений по ним; в последнем столбце указано, при каком значении реагировать и что это значение обычно означает.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метрика</th>
@@ -2961,39 +2961,39 @@ tar czf jenkins-backup-<span class="k">$(</span>date +%F<span class="k">)</span>
 </thead>
 <tbody>
 <tr>
-<td><code>jenkins_queue_size_value</code></td>
-<td>Длина очереди</td>
-<td>&gt; 20 в течение 10 минут — не хватает агентов</td>
+<td data-label="Метрика"><code>jenkins_queue_size_value</code></td>
+<td data-label="О чём">Длина очереди</td>
+<td data-label="Порог">&gt; 20 в течение 10 минут — не хватает агентов</td>
 </tr>
 <tr>
-<td><code>jenkins_queue_blocked_value</code></td>
-<td>Заблокированные (нет подходящего агента)</td>
-<td>&gt; 0 длительно — проблема с метками</td>
+<td data-label="Метрика"><code>jenkins_queue_blocked_value</code></td>
+<td data-label="О чём">Заблокированные (нет подходящего агента)</td>
+<td data-label="Порог">&gt; 0 длительно — проблема с метками</td>
 </tr>
 <tr>
-<td><code>jenkins_node_offline_value</code></td>
-<td>Агенты офлайн</td>
-<td>Любое ненулевое</td>
+<td data-label="Метрика"><code>jenkins_node_offline_value</code></td>
+<td data-label="О чём">Агенты офлайн</td>
+<td data-label="Порог">Любое ненулевое</td>
 </tr>
 <tr>
-<td><code>jenkins_executor_in_use_value</code> / <code>_count_value</code></td>
-<td>Утилизация исполнителей</td>
-<td>Постоянно 100 % — расширять пул</td>
+<td data-label="Метрика"><code>jenkins_executor_in_use_value</code> / <code>_count_value</code></td>
+<td data-label="О чём">Утилизация исполнителей</td>
+<td data-label="Порог">Постоянно 100 % — расширять пул</td>
 </tr>
 <tr>
-<td><code>vm_memory_heap_usage</code></td>
-<td>Куча контроллера</td>
-<td>&gt; 80 % — ищите утечку (обычно плагин или гигантские логи сборок)</td>
+<td data-label="Метрика"><code>vm_memory_heap_usage</code></td>
+<td data-label="О чём">Куча контроллера</td>
+<td data-label="Порог">&gt; 80 % — ищите утечку (обычно плагин или гигантские логи сборок)</td>
 </tr>
 <tr>
-<td><code>jenkins_job_last_build_result_ordinal</code></td>
-<td>Результат последней сборки</td>
-<td>Для критичных заданий</td>
+<td data-label="Метрика"><code>jenkins_job_last_build_result_ordinal</code></td>
+<td data-label="О чём">Результат последней сборки</td>
+<td data-label="Порог">Для критичных заданий</td>
 </tr>
 <tr>
-<td><code>default_jenkins_builds_duration_milliseconds_summary</code></td>
-<td>Длительность сборок</td>
-<td>Рост p95</td>
+<td data-label="Метрика"><code>default_jenkins_builds_duration_milliseconds_summary</code></td>
+<td data-label="О чём">Длительность сборок</td>
+<td data-label="Порог">Рост p95</td>
 </tr>
 </tbody>
 </table>
@@ -3001,7 +3001,7 @@ tar czf jenkins-backup-<span class="k">$(</span>date +%F<span class="k">)</span>
 <h3 id="99-миграция-с-jenkins-на-gitlab-ci">9.9 Миграция с Jenkins на GitLab CI</h3>
 <p>Миграцию с Jenkins на GitLab CI затевают, когда поддерживать отдельный сервер с плагинами становится дороже, чем переписать конвейеры. Трудности при этом возникают не на простых конструкциях, а там, где Jenkins опирался на Groovy, плагины и shared libraries, поэтому ниже сначала показано, что переносится один в один, затем то, что не переносится, а в конце описаны стратегия постепенного переезда и правила жизни в гибриде.</p>
 <p><strong>Что переносится один в один.</strong> Таблица ниже сопоставляет конструкции Jenkins и GitLab CI, и большая часть обычного <code>Jenkinsfile</code> переводится по ней почти механически:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Jenkins</th>
@@ -3010,60 +3010,60 @@ tar czf jenkins-backup-<span class="k">$(</span>date +%F<span class="k">)</span>
 </thead>
 <tbody>
 <tr>
-<td><code>stage</code></td>
-<td><code>stage</code> + задание</td>
+<td data-label="Jenkins"><code>stage</code></td>
+<td data-label="GitLab CI"><code>stage</code> + задание</td>
 </tr>
 <tr>
-<td><code>steps { sh '...' }</code></td>
-<td><code>script:</code></td>
+<td data-label="Jenkins"><code>steps { sh '...' }</code></td>
+<td data-label="GitLab CI"><code>script:</code></td>
 </tr>
 <tr>
-<td><code>agent { docker { image } }</code></td>
-<td><code>image:</code></td>
+<td data-label="Jenkins"><code>agent { docker { image } }</code></td>
+<td data-label="GitLab CI"><code>image:</code></td>
 </tr>
 <tr>
-<td><code>agent { label 'x' }</code></td>
-<td><code>tags: [x]</code></td>
+<td data-label="Jenkins"><code>agent { label 'x' }</code></td>
+<td data-label="GitLab CI"><code>tags: [x]</code></td>
 </tr>
 <tr>
-<td><code>when { branch 'main' }</code></td>
-<td><code>rules: - if: $CI_COMMIT_BRANCH == "main"</code></td>
+<td data-label="Jenkins"><code>when { branch 'main' }</code></td>
+<td data-label="GitLab CI"><code>rules: - if: $CI_COMMIT_BRANCH == "main"</code></td>
 </tr>
 <tr>
-<td><code>options { timeout }</code></td>
-<td><code>timeout:</code></td>
+<td data-label="Jenkins"><code>options { timeout }</code></td>
+<td data-label="GitLab CI"><code>timeout:</code></td>
 </tr>
 <tr>
-<td><code>post { always { junit } }</code></td>
-<td><code>artifacts: {when: always, reports: {junit: ...}}</code></td>
+<td data-label="Jenkins"><code>post { always { junit } }</code></td>
+<td data-label="GitLab CI"><code>artifacts: {when: always, reports: {junit: ...}}</code></td>
 </tr>
 <tr>
-<td><code>parallel { }</code></td>
-<td>задания одной стадии / <code>parallel:matrix</code></td>
+<td data-label="Jenkins"><code>parallel { }</code></td>
+<td data-label="GitLab CI">задания одной стадии / <code>parallel:matrix</code></td>
 </tr>
 <tr>
-<td><code>lock('production')</code></td>
-<td><code>resource_group: production</code></td>
+<td data-label="Jenkins"><code>lock('production')</code></td>
+<td data-label="GitLab CI"><code>resource_group: production</code></td>
 </tr>
 <tr>
-<td><code>input</code></td>
-<td><code>when: manual</code> + protected environment</td>
+<td data-label="Jenkins"><code>input</code></td>
+<td data-label="GitLab CI"><code>when: manual</code> + protected environment</td>
 </tr>
 <tr>
-<td><code>archiveArtifacts</code></td>
-<td><code>artifacts: paths:</code></td>
+<td data-label="Jenkins"><code>archiveArtifacts</code></td>
+<td data-label="GitLab CI"><code>artifacts: paths:</code></td>
 </tr>
 <tr>
-<td><code>credentials('id')</code></td>
-<td>CI/CD variable (protected)</td>
+<td data-label="Jenkins"><code>credentials('id')</code></td>
+<td data-label="GitLab CI">CI/CD variable (protected)</td>
 </tr>
 <tr>
-<td>Multibranch</td>
-<td>Встроенное поведение: конвейер на каждую ветку</td>
+<td data-label="Jenkins">Multibranch</td>
+<td data-label="GitLab CI">Встроенное поведение: конвейер на каждую ветку</td>
 </tr>
 <tr>
-<td><code>stash</code>/<code>unstash</code></td>
-<td><code>artifacts</code> + <code>needs</code></td>
+<td data-label="Jenkins"><code>stash</code>/<code>unstash</code></td>
+<td data-label="GitLab CI"><code>artifacts</code> + <code>needs</code></td>
 </tr>
 </tbody>
 </table>
@@ -3145,7 +3145,7 @@ tar czf jenkins-backup-<span class="k">$(</span>date +%F<span class="k">)</span>
 <p><code>@{argLine}</code> — частая ловушка: если написать просто <code>&lt;argLine&gt;-Xmx1g&lt;/argLine&gt;</code>, вы затрёте аргумент, который подставляет JaCoCo, и покрытие окажется нулевым при зелёных тестах.</p>
 <p><strong>Testcontainers в CI: три способа дать доступ к Docker.</strong></p>
 <p>Документация Testcontainers высказывается прямо: «Docker-in-Docker (DinD) в целом считается инструментом последней надежды», и рекомендуют его только там, где смонтировать сокет невозможно (<a href="https://java.testcontainers.org/supported_docker_environment/continuous_integration/dind_patterns/">Patterns for running tests inside a Docker container</a>). Таблица ниже сравнивает три способа по риску и по тому, будет ли кеш образов тёплым; от этих двух столбцов и зависит выбор.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -3157,25 +3157,25 @@ tar czf jenkins-backup-<span class="k">$(</span>date +%F<span class="k">)</span>
 </thead>
 <tbody>
 <tr>
-<td><strong>Сокет хоста (docker-wormhole, sibling containers)</strong></td>
-<td>Контейнер задания получает <code>/var/run/docker.sock</code>; тестовые контейнеры создаются <strong>рядом</strong> (siblings), а не внутри</td>
-<td>Эквивалент root на хосте исполнителя</td>
-<td>Общий с хостом — тёплый</td>
-<td>Выделенные доверенные исполнители</td>
+<td data-label="Способ"><strong>Сокет хоста (docker-wormhole, sibling containers)</strong></td>
+<td data-label="Как работает">Контейнер задания получает <code>/var/run/docker.sock</code>; тестовые контейнеры создаются <strong>рядом</strong> (siblings), а не внутри</td>
+<td data-label="Риск">Эквивалент root на хосте исполнителя</td>
+<td data-label="Кеш образов">Общий с хостом — тёплый</td>
+<td data-label="Когда применять">Выделенные доверенные исполнители</td>
 </tr>
 <tr>
-<td><strong>DinD (<code>docker:dind</code> как сервис или sidecar)</strong></td>
-<td>Внутри пода или задания поднимается отдельный демон</td>
-<td>Требует <code>privileged</code></td>
-<td>Холодный каждую сборку</td>
-<td>Когда сокет отдать нельзя</td>
+<td data-label="Способ"><strong>DinD (<code>docker:dind</code> как сервис или sidecar)</strong></td>
+<td data-label="Как работает">Внутри пода или задания поднимается отдельный демон</td>
+<td data-label="Риск">Требует <code>privileged</code></td>
+<td data-label="Кеш образов">Холодный каждую сборку</td>
+<td data-label="Когда применять">Когда сокет отдать нельзя</td>
 </tr>
 <tr>
-<td><strong>Удалённый Docker / Testcontainers Cloud</strong></td>
-<td><code>DOCKER_HOST</code> указывает на внешний демон</td>
-<td>Сетевая задержка; трафик наружу</td>
-<td>Тёплый на удалённом хосте</td>
-<td>Кластеры с запретом privileged</td>
+<td data-label="Способ"><strong>Удалённый Docker / Testcontainers Cloud</strong></td>
+<td data-label="Как работает"><code>DOCKER_HOST</code> указывает на внешний демон</td>
+<td data-label="Риск">Сетевая задержка; трафик наружу</td>
+<td data-label="Кеш образов">Тёплый на удалённом хосте</td>
+<td data-label="Когда применять">Кластеры с запретом privileged</td>
 </tr>
 </tbody>
 </table>
@@ -3224,7 +3224,7 @@ tar czf jenkins-backup-<span class="k">$(</span>date +%F<span class="k">)</span>
 <h3 id="102-кеш-зависимостей-maven-и-gradle">10.2 Кеш зависимостей: Maven и Gradle</h3>
 <p>Кеш зависимостей избавляет каждое задание от повторного скачивания одних и тех же библиотек, но при неправильном ключе он либо не попадает никогда, либо разрастается и замедляет сборку сильнее, чем помогает. Ниже разобрано, что кешировать, по какому ключу, как это выглядит для Maven и Gradle в GitLab, почему кеш иногда вредит и чем его можно заменить.</p>
 <p><strong>Что кешировать.</strong> В таблице ниже для Maven и Gradle указаны пути кеша и то, что с ними нужно сделать; отдельно обратите внимание на build cache Gradle, который хранит не зависимости, а результаты задач.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Инструмент</th>
@@ -3234,19 +3234,19 @@ tar czf jenkins-backup-<span class="k">$(</span>date +%F<span class="k">)</span>
 </thead>
 <tbody>
 <tr>
-<td>Maven</td>
-<td><code>~/.m2/repository</code> (перенаправьте в проект через <code>-Dmaven.repo.local</code>)</td>
-<td>Не кешируйте <code>~/.m2/settings.xml</code> — он приходит из конфигурации</td>
+<td data-label="Инструмент">Maven</td>
+<td data-label="Путь"><code>~/.m2/repository</code> (перенаправьте в проект через <code>-Dmaven.repo.local</code>)</td>
+<td data-label="Примечание">Не кешируйте <code>~/.m2/settings.xml</code> — он приходит из конфигурации</td>
 </tr>
 <tr>
-<td>Gradle</td>
-<td><code>~/.gradle/caches</code>, <code>~/.gradle/wrapper</code></td>
-<td><code>GRADLE_USER_HOME</code> перенаправляется в <code>$CI_PROJECT_DIR/.gradle</code></td>
+<td data-label="Инструмент">Gradle</td>
+<td data-label="Путь"><code>~/.gradle/caches</code>, <code>~/.gradle/wrapper</code></td>
+<td data-label="Примечание"><code>GRADLE_USER_HOME</code> перенаправляется в <code>$CI_PROJECT_DIR/.gradle</code></td>
 </tr>
 <tr>
-<td>Gradle build cache</td>
-<td><code>~/.gradle/caches/build-cache-1</code></td>
-<td>Кеш <strong>результатов задач</strong>, а не зависимостей; лучше вынести в remote build cache</td>
+<td data-label="Инструмент">Gradle build cache</td>
+<td data-label="Путь"><code>~/.gradle/caches/build-cache-1</code></td>
+<td data-label="Примечание">Кеш <strong>результатов задач</strong>, а не зависимостей; лучше вынести в remote build cache</td>
 </tr>
 </tbody>
 </table>
@@ -3296,7 +3296,7 @@ tar czf jenkins-backup-<span class="k">$(</span>date +%F<span class="k">)</span>
 <h3 id="103-число-стендов">10.3 Число стендов</h3>
 <p>Стенд — это постоянное или временное окружение, где сервис работает до прода, и чем больше стендов, тем труднее поддерживать их живыми и одинаковыми. На вопрос о стендах часто отвечают «у нас dev, test, uat, preprod, prod», и обычно это означает, что половина стендов сломана, а кто за них отвечает, никто не знает. Ниже разобраны минимально достаточная конфигурация, основания для третьего стенда, владение стендами, данные на них, дрейф конфигурации и стоимость.</p>
 <p><strong>Минимально достаточная конфигурация — два постоянных стенда плюс эфемерные.</strong> В таблице для каждого стенда указаны владелец, данные, то, что он проверяет, и срок его жизни:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стенд</th>
@@ -3308,25 +3308,25 @@ tar czf jenkins-backup-<span class="k">$(</span>date +%F<span class="k">)</span>
 </thead>
 <tbody>
 <tr>
-<td>Review app (на MR)</td>
-<td>Автор MR</td>
-<td>Синтетические, создаются миграциями</td>
-<td>Работает ли фича вообще</td>
-<td>Часы–дни</td>
+<td data-label="Стенд">Review app (на MR)</td>
+<td data-label="Владелец">Автор MR</td>
+<td data-label="Данные">Синтетические, создаются миграциями</td>
+<td data-label="Что проверяет">Работает ли фича вообще</td>
+<td data-label="Живёт">Часы–дни</td>
 </tr>
 <tr>
-<td>Staging</td>
-<td>Команда сервиса</td>
-<td>Обезличенный срез прода или синтетика</td>
-<td>Интеграция с реальными соседями, миграции, конфигурация</td>
-<td>Постоянно</td>
+<td data-label="Стенд">Staging</td>
+<td data-label="Владелец">Команда сервиса</td>
+<td data-label="Данные">Обезличенный срез прода или синтетика</td>
+<td data-label="Что проверяет">Интеграция с реальными соседями, миграции, конфигурация</td>
+<td data-label="Живёт">Постоянно</td>
 </tr>
 <tr>
-<td>Production</td>
-<td>Команда + SRE</td>
-<td>Боевые</td>
-<td>—</td>
-<td>Постоянно</td>
+<td data-label="Стенд">Production</td>
+<td data-label="Владелец">Команда + SRE</td>
+<td data-label="Данные">Боевые</td>
+<td data-label="Что проверяет">—</td>
+<td data-label="Живёт">Постоянно</td>
 </tr>
 </tbody>
 </table>
@@ -3674,7 +3674,7 @@ git clean -xdf <span class="o">&amp;&amp;</span> mvn -B -ntp -Dmaven.repo.local<
 
 <p>Пустой локальный репозиторий (<code>/tmp/fresh-repo</code>) отсекает причину №2 из списка в 10.5, то есть ситуацию, когда локально лежит артефакт, которого нет в реестре.</p>
 <p><strong>Шаг 3. Проверьте отличия, специфичные для CI.</strong> Для каждого из них в таблице ниже приведена команда, которой его проверяют:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Проверка</th>
@@ -3683,24 +3683,24 @@ git clean -xdf <span class="o">&amp;&amp;</span> mvn -B -ntp -Dmaven.repo.local<
 </thead>
 <tbody>
 <tr>
-<td>Регистр в путях</td>
-<td><code>git ls-files \| grep -i &lt;имя&gt;</code> и сравнить с тем, что в коде</td>
+<td data-label="Проверка">Регистр в путях</td>
+<td data-label="Команда"><code>git ls-files \| grep -i &lt;имя&gt;</code> и сравнить с тем, что в коде</td>
 </tr>
 <tr>
-<td>CRLF</td>
-<td><code>file src/main/resources/*.sh</code>; <code>git ls-files --eol \| grep crlf</code></td>
+<td data-label="Проверка">CRLF</td>
+<td data-label="Команда"><code>file src/main/resources/*.sh</code>; <code>git ls-files --eol \| grep crlf</code></td>
 </tr>
 <tr>
-<td>Глубина клона</td>
-<td>В логе GitLab: <code>Created fresh repository</code> / <code>git fetch --depth 20</code>; нужен тег? поставьте <code>GIT_DEPTH: 0</code></td>
+<td data-label="Проверка">Глубина клона</td>
+<td data-label="Команда">В логе GitLab: <code>Created fresh repository</code> / <code>git fetch --depth 20</code>; нужен тег? поставьте <code>GIT_DEPTH: 0</code></td>
 </tr>
 <tr>
-<td>Порядок тестов</td>
-<td><code>mvn test -Dsurefire.runOrder=random</code> локально</td>
+<td data-label="Проверка">Порядок тестов</td>
+<td data-label="Команда"><code>mvn test -Dsurefire.runOrder=random</code> локально</td>
 </tr>
 <tr>
-<td>Сеть</td>
-<td><code>curl -sS -o /dev/null -w '%{http_code}\n' https://repo.maven.apache.org/maven2/</code> из задания</td>
+<td data-label="Проверка">Сеть</td>
+<td data-label="Команда"><code>curl -sS -o /dev/null -w '%{http_code}\n' https://repo.maven.apache.org/maven2/</code> из задания</td>
 </tr>
 </tbody>
 </table>
@@ -3783,7 +3783,7 @@ kubectl -n payments-prod describe deploy payments <span class="p">|</span> sed -
 
 <p>Настройте <code>spring-boot-maven-plugin</code> с <code>build-info</code> и передавайте в него <code>$CI_COMMIT_SHORT_SHA</code>, и тогда на вопрос «что в проде» будет отвечать один curl.</p>
 <p><strong>Шаг 4. Знайте, где смотреть на каждой платформе.</strong> Таблица ниже показывает, где в GitLab, Bitbucket и Jenkins найти историю деплоев, параметры выката, автора запуска и кнопку отката:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -3794,28 +3794,28 @@ kubectl -n payments-prod describe deploy payments <span class="p">|</span> sed -
 </thead>
 <tbody>
 <tr>
-<td>История деплоев</td>
-<td>Operate → Environments → конкретное окружение</td>
-<td>Deployments</td>
-<td>История задания, <code>currentBuild.displayName</code></td>
+<td data-label="">История деплоев</td>
+<td data-label="GitLab">Operate → Environments → конкретное окружение</td>
+<td data-label="Bitbucket">Deployments</td>
+<td data-label="Jenkins">История задания, <code>currentBuild.displayName</code></td>
 </tr>
 <tr>
-<td>Что именно выкатывали</td>
-<td>Job log + переменные задания (вкладка на странице задания)</td>
-<td>Log шага + deployment variables</td>
-<td>Console output, Parameters</td>
+<td data-label="">Что именно выкатывали</td>
+<td data-label="GitLab">Job log + переменные задания (вкладка на странице задания)</td>
+<td data-label="Bitbucket">Log шага + deployment variables</td>
+<td data-label="Jenkins">Console output, Parameters</td>
 </tr>
 <tr>
-<td>Кто запустил</td>
-<td>Страница конвейера, поле «triggered by»</td>
-<td>Pipeline details</td>
-<td>Build → «Started by»</td>
+<td data-label="">Кто запустил</td>
+<td data-label="GitLab">Страница конвейера, поле «triggered by»</td>
+<td data-label="Bitbucket">Pipeline details</td>
+<td data-label="Jenkins">Build → «Started by»</td>
 </tr>
 <tr>
-<td>Откат</td>
-<td>Кнопка Rollback на окружении</td>
-<td>Перезапуск custom-конвейера с параметром</td>
-<td>Задание с <code>ROLLBACK_TO</code></td>
+<td data-label="">Откат</td>
+<td data-label="GitLab">Кнопка Rollback на окружении</td>
+<td data-label="Bitbucket">Перезапуск custom-конвейера с параметром</td>
+<td data-label="Jenkins">Задание с <code>ROLLBACK_TO</code></td>
 </tr>
 </tbody>
 </table>
@@ -3915,5 +3915,5 @@ kubectl -n payments-prod describe deploy payments <span class="p">|</span> sed -
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-настройка-ci-на-новом-и-унаследованном-проекте">1. Настройка CI на новом и унаследованном проекте</a></li><li><a href="#2-исполнители-gitlab">2. Исполнители GitLab</a></li><li><a href="#3-файл-gitlab-ciyml">3. Файл .gitlab-ci.yml</a></li><li><a href="#4-окружения-и-стенды-в-gitlab">4. Окружения и стенды в GitLab</a></li><li><a href="#5-секреты-и-доступы-в-gitlab">5. Секреты и доступы в GitLab</a></li><li><a href="#6-артефакты-registry-и-релизы-в-gitlab">6. Артефакты, registry и релизы в GitLab</a></li><li><a href="#7-настройки-проекта-gitlab">7. Настройки проекта GitLab</a></li><li><a href="#8-bitbucket-pipelines">8. Bitbucket Pipelines</a></li><li><a href="#9-jenkins">9. Jenkins</a></li><li><a href="#10-общие-задачи-для-всех-платформ">10. Общие задачи для всех платформ</a></li><li><a href="#11-грабли-и-антипаттерны">11. Грабли и антипаттерны</a></li><li><a href="#12-диагностика">12. Диагностика</a></li><li><a href="#13-вопросы-на-интервью">13. Вопросы на интервью</a></li><li><a href="#14-попробовать-руками">14. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

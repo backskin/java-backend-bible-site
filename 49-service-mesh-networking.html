@@ -3,7 +3,7 @@
 <title>49. Service mesh и сетевое взаимодействие — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Service mesh и сетевое взаимодействие">
 <a class="skip" href="#content">К тексту</a>
@@ -50,7 +50,7 @@
 <p>Принципиальная развилка — <strong>как пакет попадает с узла на узел</strong>.</p>
 <p><strong>Overlay (инкапсуляция).</strong> Пакет пода целиком заворачивается в UDP-датаграмму (VXLAN, порт 8472) или в IP-in-IP и отправляется на IP узла-получателя. Подсети подов физической сети неизвестны — ей видны только адреса узлов. Плюс: работает в любой сети, включая облачные VPC с anti-spoofing-фильтрами и сети, где вы не управляете маршрутизатором. Минус: <strong>накладные расходы</strong>. VXLAN добавляет 50 байт заголовка (14 внешний Ethernet + 20 IP + 8 UDP + 8 VXLAN), поэтому при физическом MTU 1500 внутренний MTU пода становится 1450. Если вы этого не учли (или учли, а облачный провайдер втихую поставил MTU 1450 на VPC — как AWS для некоторых сценариев), получаете классику: TCP-рукопожатие проходит, мелкие запросы летают, а большой POST зависает до таймаута, потому что пакеты полного размера молча дропаются и Path MTU Discovery не работает из-за фильтрации ICMP. Плюс к байтам — CPU на инкапсуляцию/декапсуляцию, хотя современные NIC умеют offload для VXLAN.</p>
 <p><strong>Routed (без инкапсуляции).</strong> Каждый узел анонсирует «подсеть 10.244.1.0/24 — за мной» по BGP, физическая сеть маршрутизирует нативные пакеты подов. Плюс: нет накладных расходов, полный MTU, пакет пода виден в сети как есть — легче отлаживать <code>tcpdump</code>-ом на аплинке. Минус: нужна кооперация с сетевой инфраструктурой (BGP-пиринг с ToR-коммутаторами) либо чтобы все узлы были в одном L2-домене.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Плагин</th>
@@ -62,39 +62,39 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Flannel</strong></td>
-<td>VXLAN overlay</td>
-<td>ядро (bridge + vxlan)</td>
-<td>нет (нужен отдельный контроллер)</td>
-<td>минимализм; только связность</td>
+<td data-label="Плагин"><strong>Flannel</strong></td>
+<td data-label="Режим по умолчанию">VXLAN overlay</td>
+<td data-label="Datapath">ядро (bridge + vxlan)</td>
+<td data-label="NetworkPolicy">нет (нужен отдельный контроллер)</td>
+<td data-label="Отличительное">минимализм; только связность</td>
 </tr>
 <tr>
-<td><strong>Calico</strong></td>
-<td>routed (BGP), опционально IPIP/VXLAN</td>
-<td>iptables/nftables или eBPF</td>
-<td>да, плюс расширенные <code>GlobalNetworkPolicy</code></td>
-<td>зрелый BGP, хорош в bare-metal</td>
+<td data-label="Плагин"><strong>Calico</strong></td>
+<td data-label="Режим по умолчанию">routed (BGP), опционально IPIP/VXLAN</td>
+<td data-label="Datapath">iptables/nftables или eBPF</td>
+<td data-label="NetworkPolicy">да, плюс расширенные <code>GlobalNetworkPolicy</code></td>
+<td data-label="Отличительное">зрелый BGP, хорош в bare-metal</td>
 </tr>
 <tr>
-<td><strong>Cilium</strong></td>
-<td>VXLAN/Geneve или native routing</td>
-<td><strong>eBPF</strong></td>
-<td>да, включая <strong>L7</strong> (HTTP-методы, пути, Kafka-топики)</td>
-<td>заменяет kube-proxy, Hubble, mesh без sidecar</td>
+<td data-label="Плагин"><strong>Cilium</strong></td>
+<td data-label="Режим по умолчанию">VXLAN/Geneve или native routing</td>
+<td data-label="Datapath"><strong>eBPF</strong></td>
+<td data-label="NetworkPolicy">да, включая <strong>L7</strong> (HTTP-методы, пути, Kafka-топики)</td>
+<td data-label="Отличительное">заменяет kube-proxy, Hubble, mesh без sidecar</td>
 </tr>
 <tr>
-<td><strong>AWS VPC CNI</strong></td>
-<td>routed, IP пода = IP из VPC</td>
-<td>ядро</td>
-<td>через Calico/аддон</td>
-<td>под получает адрес VPC; лимит IP на экземпляр</td>
+<td data-label="Плагин"><strong>AWS VPC CNI</strong></td>
+<td data-label="Режим по умолчанию">routed, IP пода = IP из VPC</td>
+<td data-label="Datapath">ядро</td>
+<td data-label="NetworkPolicy">через Calico/аддон</td>
+<td data-label="Отличительное">под получает адрес VPC; лимит IP на экземпляр</td>
 </tr>
 <tr>
-<td><strong>Antrea</strong></td>
-<td>Geneve overlay</td>
-<td>Open vSwitch</td>
-<td>да</td>
-<td>OVS-flow, удобен в VMware-средах</td>
+<td data-label="Плагин"><strong>Antrea</strong></td>
+<td data-label="Режим по умолчанию">Geneve overlay</td>
+<td data-label="Datapath">Open vSwitch</td>
+<td data-label="NetworkPolicy">да</td>
+<td data-label="Отличительное">OVS-flow, удобен в VMware-средах</td>
 </tr>
 </tbody>
 </table>
@@ -126,7 +126,7 @@
 <p><strong>IPVS-режим.</strong> Использует подсистему ядра для балансировки (тот же механизм, что в LVS): хеш-таблица вместо линейного списка, лукап O(1), обновление — точечное добавление/удаление real server. Плюс — настоящие алгоритмы балансировки: <code>rr</code>, <code>lc</code> (least connection), <code>dh</code>, <code>sh</code> (source hashing), <code>sed</code>, <code>nq</code>. Включается <code>--proxy-mode=ipvs --ipvs-scheduler=lc</code>. Минус: iptables всё равно нужен для части сценариев (маскарадинг, NodePort, фильтрация), поэтому «избавиться от iptables» не получается; и часть сетевых политик CNI всё равно живёт в iptables.</p>
 <p><strong>nftables-режим.</strong> Появился как альтернатива iptables-режиму: тот же подход, но на nftables с его словарями (<code>vmap</code>), что даёт лукап по хешу вместо линейного обхода и намного более дешёвые инкрементальные обновления. Это штатный путь миграции для больших кластеров, не требующий IPVS.</p>
 <p><strong>eBPF (Cilium без kube-proxy).</strong> Cilium умеет полностью заменить kube-proxy: «use Cilium to fully replace it» для сервисов типов ClusterIP, NodePort, LoadBalancer и с <code>externalIPs</code> (<a href="https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/">docs.cilium.io</a>). Ключевой приём — <strong>socket-level load balancing</strong>: вместо того чтобы транслировать адрес на каждом пакете, Cilium цепляется к системным вызовам и подменяет адрес назначения <strong>один раз, при <code>connect()</code></strong>: «upon <code>connect</code> (TCP, connected UDP), <code>sendmsg</code> (UDP), or <code>recvmsg</code> (UDP) system calls, the destination IP is checked for an existing service IP and one of the service backends is selected». Приложение в поде думает, что соединяется с ClusterIP, а сокет ядра уже открыт напрямую к IP пода — DNAT на пути пакетов не нужен вовсе, conntrack-запись для сервиса не создаётся. Документация подтверждает, что при этом «no <code>iptables</code> rule for the service is present». Для входящего трафика возможно ускорение на XDP — «directly in the networking driver instead of a higher layer».</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -138,32 +138,32 @@
 </thead>
 <tbody>
 <tr>
-<td>iptables</td>
-<td>линейный по цепочке</td>
-<td>полный <code>iptables-restore</code></td>
-<td>только random</td>
-<td>значение по умолчанию, &lt; ~1000 сервисов</td>
+<td data-label="Режим">iptables</td>
+<td data-label="Лукап">линейный по цепочке</td>
+<td data-label="Обновление правил">полный <code>iptables-restore</code></td>
+<td data-label="Алгоритмы LB">только random</td>
+<td data-label="Когда брать">значение по умолчанию, &lt; ~1000 сервисов</td>
 </tr>
 <tr>
-<td>IPVS</td>
-<td>O(1), хеш</td>
-<td>инкрементальное</td>
-<td>rr, lc, sh, dh, sed, nq</td>
-<td>много сервисов, нужен least-conn</td>
+<td data-label="Режим">IPVS</td>
+<td data-label="Лукап">O(1), хеш</td>
+<td data-label="Обновление правил">инкрементальное</td>
+<td data-label="Алгоритмы LB">rr, lc, sh, dh, sed, nq</td>
+<td data-label="Когда брать">много сервисов, нужен least-conn</td>
 </tr>
 <tr>
-<td>nftables</td>
-<td>vmap/хеш</td>
-<td>инкрементальное</td>
-<td>random</td>
-<td>современная замена iptables-режиму</td>
+<td data-label="Режим">nftables</td>
+<td data-label="Лукап">vmap/хеш</td>
+<td data-label="Обновление правил">инкрементальное</td>
+<td data-label="Алгоритмы LB">random</td>
+<td data-label="Когда брать">современная замена iptables-режиму</td>
 </tr>
 <tr>
-<td>Cilium eBPF</td>
-<td>хеш в eBPF map</td>
-<td>инкрементальное</td>
-<td>random, Maglev, кольцевой хеш</td>
-<td>крупные кластеры, нужна eBPF-наблюдаемость</td>
+<td data-label="Режим">Cilium eBPF</td>
+<td data-label="Лукап">хеш в eBPF map</td>
+<td data-label="Обновление правил">инкрементальное</td>
+<td data-label="Алгоритмы LB">random, Maglev, кольцевой хеш</td>
+<td data-label="Когда брать">крупные кластеры, нужна eBPF-наблюдаемость</td>
 </tr>
 </tbody>
 </table>
@@ -463,7 +463,7 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 <p>💡 <strong>На интервью.</strong> «Почему L4-балансировщик ломает gRPC?» — «Потому что gRPC — это HTTP/2: одно долгоживущее TCP-соединение, в котором мультиплексируются все запросы. L4 балансирует на уровне соединений, значит выбор бэкенда делается один раз и навсегда. После скейлинга новые поды не получат трафика. Лечится L7-прокси, который балансирует по стримам, клиентской балансировкой через headless-сервис, либо принудительным закрытием соединений по <code>maxConnectionAge</code>.»</p>
 </blockquote>
 <h3 id="53-клиентская-и-серверная-балансировка">5.3 Клиентская и серверная балансировка</h3>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -473,34 +473,34 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td>Лишний хоп</td>
-<td>нет (или localhost)</td>
-<td>есть</td>
+<td data-label="Критерий">Лишний хоп</td>
+<td data-label="Client-side (Ribbon/gRPC RR/Envoy-sidecar)">нет (или localhost)</td>
+<td data-label="Server-side (ClusterIP, ingress, внешний LB)">есть</td>
 </tr>
 <tr>
-<td>Знание о здоровье бэкенда</td>
-<td>у клиента, быстро</td>
-<td>централизовано</td>
+<td data-label="Критерий">Знание о здоровье бэкенда</td>
+<td data-label="Client-side (Ribbon/gRPC RR/Envoy-sidecar)">у клиента, быстро</td>
+<td data-label="Server-side (ClusterIP, ingress, внешний LB)">централизовано</td>
 </tr>
 <tr>
-<td>Число соединений</td>
-<td>N клиентов × M серверов</td>
-<td>N + M</td>
+<td data-label="Критерий">Число соединений</td>
+<td data-label="Client-side (Ribbon/gRPC RR/Envoy-sidecar)">N клиентов × M серверов</td>
+<td data-label="Server-side (ClusterIP, ingress, внешний LB)">N + M</td>
 </tr>
 <tr>
-<td>Изменение политики</td>
-<td>релиз клиента (или конфиг mesh)</td>
-<td>конфиг LB</td>
+<td data-label="Критерий">Изменение политики</td>
+<td data-label="Client-side (Ribbon/gRPC RR/Envoy-sidecar)">релиз клиента (или конфиг mesh)</td>
+<td data-label="Server-side (ClusterIP, ingress, внешний LB)">конфиг LB</td>
 </tr>
 <tr>
-<td>Языковая независимость</td>
-<td>нужна библиотека под каждый язык</td>
-<td>да</td>
+<td data-label="Критерий">Языковая независимость</td>
+<td data-label="Client-side (Ribbon/gRPC RR/Envoy-sidecar)">нужна библиотека под каждый язык</td>
+<td data-label="Server-side (ClusterIP, ingress, внешний LB)">да</td>
 </tr>
 <tr>
-<td>Отказ балансировщика</td>
-<td>не является SPOF</td>
-<td>SPOF (лечится HA)</td>
+<td data-label="Критерий">Отказ балансировщика</td>
+<td data-label="Client-side (Ribbon/gRPC RR/Envoy-sidecar)">не является SPOF</td>
+<td data-label="Server-side (ClusterIP, ingress, внешний LB)">SPOF (лечится HA)</td>
 </tr>
 </tbody>
 </table>
@@ -586,7 +586,7 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 </ul>
 <p>Ключевая деталь — <strong>исключение по UID</strong>: если бы его не было, трафик, который Envoy отправляет наружу, тут же снова попадал бы в Envoy, и получилась бы петля. Поэтому прокси работает под отдельным пользователем <code>1337</code>, и правило <code>-m owner --uid-owner 1337 -j RETURN</code> выпускает его напрямую.</p>
 <p>Порты, которые полезно помнить:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th class="num">Порт</th>
@@ -595,36 +595,36 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td class="num">15000</td>
-<td>admin-интерфейс Envoy (<code>/config_dump</code>, <code>/clusters</code>, <code>/stats</code>) — <strong>главный инструмент отладки</strong></td>
+<td data-label="Порт" class="num">15000</td>
+<td data-label="Назначение">admin-интерфейс Envoy (<code>/config_dump</code>, <code>/clusters</code>, <code>/stats</code>) — <strong>главный инструмент отладки</strong></td>
 </tr>
 <tr>
-<td class="num">15001</td>
-<td>outbound capture (куда <code>REDIRECT</code>-ится исходящий трафик)</td>
+<td data-label="Порт" class="num">15001</td>
+<td data-label="Назначение">outbound capture (куда <code>REDIRECT</code>-ится исходящий трафик)</td>
 </tr>
 <tr>
-<td class="num">15006</td>
-<td>inbound capture</td>
+<td data-label="Порт" class="num">15006</td>
+<td data-label="Назначение">inbound capture</td>
 </tr>
 <tr>
-<td class="num">15008</td>
-<td>HBONE (ambient, туннель между ztunnel)</td>
+<td data-label="Порт" class="num">15008</td>
+<td data-label="Назначение">HBONE (ambient, туннель между ztunnel)</td>
 </tr>
 <tr>
-<td class="num">15020</td>
-<td>istio-agent: агрегированные метрики, <code>/healthz/ready</code>, <code>/quitquitquit</code></td>
+<td data-label="Порт" class="num">15020</td>
+<td data-label="Назначение">istio-agent: агрегированные метрики, <code>/healthz/ready</code>, <code>/quitquitquit</code></td>
 </tr>
 <tr>
-<td class="num">15021</td>
-<td>health check для kubelet (<code>/healthz/ready</code>)</td>
+<td data-label="Порт" class="num">15021</td>
+<td data-label="Назначение">health check для kubelet (<code>/healthz/ready</code>)</td>
 </tr>
 <tr>
-<td class="num">15090</td>
-<td>Prometheus-эндпоинт Envoy</td>
+<td data-label="Порт" class="num">15090</td>
+<td data-label="Назначение">Prometheus-эндпоинт Envoy</td>
 </tr>
 <tr>
-<td class="num">15012</td>
-<td>istiod: xDS + CA (mTLS)</td>
+<td data-label="Порт" class="num">15012</td>
+<td data-label="Назначение">istiod: xDS + CA (mTLS)</td>
 </tr>
 </tbody>
 </table>
@@ -686,7 +686,7 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 <li><strong>waypoint proxy</strong> — обычный Envoy, развёрнутый как отдельный Deployment на namespace или на сервис, <strong>вне пода приложения</strong>. Включается только там, где нужны L7-функции: маршрутизация по заголовкам, веса, повторы, L7-авторизация.</li>
 </ul>
 <p>Что это даёт:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -696,44 +696,44 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td>Прокси на под</td>
-<td>1 (Envoy, 100–500 МБ)</td>
-<td>0</td>
+<td data-label="">Прокси на под</td>
+<td data-label="Sidecar">1 (Envoy, 100–500 МБ)</td>
+<td data-label="Ambient">0</td>
 </tr>
 <tr>
-<td>Прокси на узел</td>
-<td>—</td>
-<td>1 ztunnel (Rust, существенно легче)</td>
+<td data-label="">Прокси на узел</td>
+<td data-label="Sidecar">—</td>
+<td data-label="Ambient">1 ztunnel (Rust, существенно легче)</td>
 </tr>
 <tr>
-<td>L7-функции</td>
-<td>всегда есть, всегда платите</td>
-<td>опционально, через waypoint</td>
+<td data-label="">L7-функции</td>
+<td data-label="Sidecar">всегда есть, всегда платите</td>
+<td data-label="Ambient">опционально, через waypoint</td>
 </tr>
 <tr>
-<td>Включение mesh</td>
-<td>требует <strong>перезапуска пода</strong></td>
-<td>метка на namespace, без рестарта</td>
+<td data-label="">Включение mesh</td>
+<td data-label="Sidecar">требует <strong>перезапуска пода</strong></td>
+<td data-label="Ambient">метка на namespace, без рестарта</td>
 </tr>
 <tr>
-<td>Обновление прокси</td>
-<td>перезапуск всех подов</td>
-<td>обновление DaemonSet</td>
+<td data-label="">Обновление прокси</td>
+<td data-label="Sidecar">перезапуск всех подов</td>
+<td data-label="Ambient">обновление DaemonSet</td>
 </tr>
 <tr>
-<td>Изоляция сбоя</td>
-<td>прокси падает — падает один под</td>
-<td>ztunnel падает — страдает весь узел</td>
+<td data-label="">Изоляция сбоя</td>
+<td data-label="Sidecar">прокси падает — падает один под</td>
+<td data-label="Ambient">ztunnel падает — страдает весь узел</td>
 </tr>
 <tr>
-<td>Хопы L4-only</td>
-<td>2 Envoy</td>
-<td>2 ztunnel (легче)</td>
+<td data-label="">Хопы L4-only</td>
+<td data-label="Sidecar">2 Envoy</td>
+<td data-label="Ambient">2 ztunnel (легче)</td>
 </tr>
 <tr>
-<td>Хопы с L7</td>
-<td>2 Envoy</td>
-<td>2 ztunnel + 1–2 waypoint</td>
+<td data-label="">Хопы с L7</td>
+<td data-label="Sidecar">2 Envoy</td>
+<td data-label="Ambient">2 ztunnel + 1–2 waypoint</td>
 </tr>
 </tbody>
 </table>
@@ -748,7 +748,7 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 <p>Envoy — прокси от Lyft, ставший де-факто стандартом data plane. Причины: он написан под динамическую конфигурацию (не reload-конфига, а поток обновлений по gRPC), понимает HTTP/1.1, HTTP/2, HTTP/3 и gRPC нативно, имеет расширяемую цепочку фильтров и подробнейшую статистику. Istio, Consul Connect, Gloo, Contour, Ambassador, AWS App Mesh, Kuma — все используют Envoy как data plane; различаются они control plane.</p>
 <h3 id="82-протоколы-xds">8.2 Протоколы xDS</h3>
 <p>xDS — семейство API, по которым control plane отдаёт конфигурацию прокси. Основные:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>API</th>
@@ -758,34 +758,34 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td><strong>LDS</strong> (Listener Discovery)</td>
-<td>listeners — на каких адресах/портах слушать и какие цепочки фильтров применять</td>
-<td>«какие сокеты открыть»</td>
+<td data-label="API"><strong>LDS</strong> (Listener Discovery)</td>
+<td data-label="Что раздаёт">listeners — на каких адресах/портах слушать и какие цепочки фильтров применять</td>
+<td data-label="Аналогия">«какие сокеты открыть»</td>
 </tr>
 <tr>
-<td><strong>RDS</strong> (Route Discovery)</td>
-<td>таблицы маршрутов HTTP: какой путь/заголовок → в какой cluster</td>
-<td>«роутинг»</td>
+<td data-label="API"><strong>RDS</strong> (Route Discovery)</td>
+<td data-label="Что раздаёт">таблицы маршрутов HTTP: какой путь/заголовок → в какой cluster</td>
+<td data-label="Аналогия">«роутинг»</td>
 </tr>
 <tr>
-<td><strong>CDS</strong> (Cluster Discovery)</td>
-<td>clusters — логические группы вышестоящих сервисов (<em>upstream</em>), политики LB, connection pool, outlier detection</td>
-<td>«куда можно ходить»</td>
+<td data-label="API"><strong>CDS</strong> (Cluster Discovery)</td>
+<td data-label="Что раздаёт">clusters — логические группы вышестоящих сервисов (<em>upstream</em>), политики LB, connection pool, outlier detection</td>
+<td data-label="Аналогия">«куда можно ходить»</td>
 </tr>
 <tr>
-<td><strong>EDS</strong> (Endpoint Discovery)</td>
-<td>endpoints — конкретные IP:порт внутри cluster с весами и состоянием здоровья</td>
-<td>«живые адреса»</td>
+<td data-label="API"><strong>EDS</strong> (Endpoint Discovery)</td>
+<td data-label="Что раздаёт">endpoints — конкретные IP:порт внутри cluster с весами и состоянием здоровья</td>
+<td data-label="Аналогия">«живые адреса»</td>
 </tr>
 <tr>
-<td><strong>SDS</strong> (Secret Discovery)</td>
-<td>сертификаты и ключи</td>
-<td>«крипто»</td>
+<td data-label="API"><strong>SDS</strong> (Secret Discovery)</td>
+<td data-label="Что раздаёт">сертификаты и ключи</td>
+<td data-label="Аналогия">«крипто»</td>
 </tr>
 <tr>
-<td><strong>ADS</strong> (Aggregated)</td>
-<td>всё перечисленное одним gRPC-стримом с гарантией порядка</td>
-<td>—</td>
+<td data-label="API"><strong>ADS</strong> (Aggregated)</td>
+<td data-label="Что раздаёт">всё перечисленное одним gRPC-стримом с гарантией порядка</td>
+<td data-label="Аналогия">—</td>
 </tr>
 </tbody>
 </table>
@@ -839,7 +839,7 @@ kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy
 </code></pre></div>
 
 <p>Самые полезные счётчики в <code>/stats</code> для кластера <code>outbound|8080||payments.payments.svc.cluster.local</code>:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Счётчик</th>
@@ -848,36 +848,36 @@ kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy
 </thead>
 <tbody>
 <tr>
-<td><code>upstream_rq_retry</code></td>
-<td>сколько раз Envoy повторил запрос</td>
+<td data-label="Счётчик"><code>upstream_rq_retry</code></td>
+<td data-label="Что означает">сколько раз Envoy повторил запрос</td>
 </tr>
 <tr>
-<td><code>upstream_rq_retry_limit_exceeded</code></td>
-<td>исчерпан лимит попыток</td>
+<td data-label="Счётчик"><code>upstream_rq_retry_limit_exceeded</code></td>
+<td data-label="Что означает">исчерпан лимит попыток</td>
 </tr>
 <tr>
-<td><code>upstream_rq_retry_overflow</code></td>
-<td>повтор не сделан из-за retry budget / circuit breaker</td>
+<td data-label="Счётчик"><code>upstream_rq_retry_overflow</code></td>
+<td data-label="Что означает">повтор не сделан из-за retry budget / circuit breaker</td>
 </tr>
 <tr>
-<td><code>upstream_rq_pending_overflow</code></td>
-<td>сработал circuit breaker по <code>http1MaxPendingRequests</code></td>
+<td data-label="Счётчик"><code>upstream_rq_pending_overflow</code></td>
+<td data-label="Что означает">сработал circuit breaker по <code>http1MaxPendingRequests</code></td>
 </tr>
 <tr>
-<td><code>upstream_cx_overflow</code></td>
-<td>сработал circuit breaker по <code>maxConnections</code></td>
+<td data-label="Счётчик"><code>upstream_cx_overflow</code></td>
+<td data-label="Что означает">сработал circuit breaker по <code>maxConnections</code></td>
 </tr>
 <tr>
-<td><code>upstream_rq_timeout</code></td>
-<td>таймаут запроса</td>
+<td data-label="Счётчик"><code>upstream_rq_timeout</code></td>
+<td data-label="Что означает">таймаут запроса</td>
 </tr>
 <tr>
-<td><code>outlier_detection.ejections_active</code></td>
-<td>сколько эндпоинтов сейчас исключено</td>
+<td data-label="Счётчик"><code>outlier_detection.ejections_active</code></td>
+<td data-label="Что означает">сколько эндпоинтов сейчас исключено</td>
 </tr>
 <tr>
-<td><code>upstream_rq_5xx</code></td>
-<td>ответы 5xx от вышестоящего сервиса</td>
+<td data-label="Счётчик"><code>upstream_rq_5xx</code></td>
+<td data-label="Что означает">ответы 5xx от вышестоящего сервиса</td>
 </tr>
 </tbody>
 </table>
@@ -896,7 +896,7 @@ kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy
 <p>Значения по умолчанию в терминах Istio <code>DestinationRule</code> (<a href="https://istio.io/latest/docs/reference/config/networking/destination-rule/">istio.io, DestinationRule</a>): <code>consecutive5xxErrors: 5</code>, <code>interval: 10s</code>, <code>baseEjectionTime: 30s</code>, <code>maxEjectionPercent: 50%</code>, <code>minHealthPercent: 50%</code>.</p>
 <p><strong>Circuit breaker в Envoy — это другое.</strong> Это <strong>лимиты ресурсов на кластер</strong>: максимум соединений (<code>maxConnections</code>), максимум ожидающих запросов (<code>http1MaxPendingRequests</code>), максимум параллельных запросов (<code>http2MaxRequests</code>), максимум параллельных повторов. При превышении запрос немедленно отбивается с <code>503</code> и флагом <code>UO upstream_overflow</code> — <strong>без попытки соединиться</strong>. Это load shedding, а не «состояния OPEN/HALF_OPEN/CLOSED».</p>
 <p>Сравнение с Resilience4j (подробно — глава 35):</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -907,40 +907,40 @@ kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy
 </thead>
 <tbody>
 <tr>
-<td>Гранулярность</td>
-<td><strong>эндпоинт (под)</strong></td>
-<td>cluster (сервис)</td>
-<td>вызов метода / экземпляр клиента</td>
+<td data-label="">Гранулярность</td>
+<td data-label="Envoy outlier detection"><strong>эндпоинт (под)</strong></td>
+<td data-label="Envoy circuit breaker">cluster (сервис)</td>
+<td data-label="Resilience4j CircuitBreaker">вызов метода / экземпляр клиента</td>
 </tr>
 <tr>
-<td>Что измеряет</td>
-<td>коды ответов и локальные сбои по хосту</td>
-<td>занятость ресурсов сейчас</td>
-<td>скользящее окно вызовов</td>
+<td data-label="">Что измеряет</td>
+<td data-label="Envoy outlier detection">коды ответов и локальные сбои по хосту</td>
+<td data-label="Envoy circuit breaker">занятость ресурсов сейчас</td>
+<td data-label="Resilience4j CircuitBreaker">скользящее окно вызовов</td>
 </tr>
 <tr>
-<td>Реакция</td>
-<td>исключить под из LB на время</td>
-<td>отбить запрос сразу (<code>UO</code>)</td>
-<td>открыть цепь, вызвать fallback</td>
+<td data-label="">Реакция</td>
+<td data-label="Envoy outlier detection">исключить под из LB на время</td>
+<td data-label="Envoy circuit breaker">отбить запрос сразу (<code>UO</code>)</td>
+<td data-label="Resilience4j CircuitBreaker">открыть цепь, вызвать fallback</td>
 </tr>
 <tr>
-<td>Состояния</td>
-<td>ejected / not ejected, время растёт</td>
-<td>нет состояний, порог</td>
-<td>CLOSED / OPEN / HALF_OPEN</td>
+<td data-label="">Состояния</td>
+<td data-label="Envoy outlier detection">ejected / not ejected, время растёт</td>
+<td data-label="Envoy circuit breaker">нет состояний, порог</td>
+<td data-label="Resilience4j CircuitBreaker">CLOSED / OPEN / HALF_OPEN</td>
 </tr>
 <tr>
-<td>Знает про fallback</td>
-<td>нет</td>
-<td>нет</td>
-<td><strong>да</strong></td>
+<td data-label="">Знает про fallback</td>
+<td data-label="Envoy outlier detection">нет</td>
+<td data-label="Envoy circuit breaker">нет</td>
+<td data-label="Resilience4j CircuitBreaker"><strong>да</strong></td>
 </tr>
 <tr>
-<td>Знает про исключения Java</td>
-<td>нет</td>
-<td>нет</td>
-<td>да (<code>recordExceptions</code>)</td>
+<td data-label="">Знает про исключения Java</td>
+<td data-label="Envoy outlier detection">нет</td>
+<td data-label="Envoy circuit breaker">нет</td>
+<td data-label="Resilience4j CircuitBreaker">да (<code>recordExceptions</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -958,7 +958,7 @@ kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy
 <p><strong>Global rate limit</strong> — Envoy на каждый запрос дёргает внешний сервис (RLS) по gRPC, тот держит счётчики в Redis и отвечает OVER_LIMIT/OK. Точный общий лимит ценой сетевого вызова на каждый запрос и нового SPOF (обычно настраивается <code>failure_mode_deny: false</code>, чтобы недоступность RLS не роняла трафик).</p>
 <p>Отказ по локальному лимиту виден в логах как флаг <code>RL</code>, по глобальному при ошибке RLS — <code>RLSE</code>.</p>
 <h3 id="88-алгоритмы-балансировки-в-envoy">8.8 Алгоритмы балансировки в Envoy</h3>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Алгоритм</th>
@@ -968,34 +968,34 @@ kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy
 </thead>
 <tbody>
 <tr>
-<td><code>ROUND_ROBIN</code></td>
-<td>по кругу</td>
-<td>значение по умолчанию; документация Istio отмечает, что «generally unsafe» без health checking</td>
+<td data-label="Алгоритм"><code>ROUND_ROBIN</code></td>
+<td data-label="Механизм">по кругу</td>
+<td data-label="Когда брать">значение по умолчанию; документация Istio отмечает, что «generally unsafe» без health checking</td>
 </tr>
 <tr>
-<td><code>LEAST_REQUEST</code></td>
-<td>из <strong>двух случайных</strong> выбрать менее загруженный (power of two choices)</td>
-<td>разброс времени обработки; почти всегда лучше RR</td>
+<td data-label="Алгоритм"><code>LEAST_REQUEST</code></td>
+<td data-label="Механизм">из <strong>двух случайных</strong> выбрать менее загруженный (power of two choices)</td>
+<td data-label="Когда брать">разброс времени обработки; почти всегда лучше RR</td>
 </tr>
 <tr>
-<td><code>RANDOM</code></td>
-<td>случайный здоровый</td>
-<td>когда нет health checking и нужен простой равномерный разброс</td>
+<td data-label="Алгоритм"><code>RANDOM</code></td>
+<td data-label="Механизм">случайный здоровый</td>
+<td data-label="Когда брать">когда нет health checking и нужен простой равномерный разброс</td>
 </tr>
 <tr>
-<td><code>ringHash</code></td>
-<td>consistent hashing по ключу; minimumRingSize по умолчанию <strong>1024</strong></td>
-<td>липкость сессии/кеша к поду; при изменении пула переезжает минимум ключей</td>
+<td data-label="Алгоритм"><code>ringHash</code></td>
+<td data-label="Механизм">consistent hashing по ключу; minimumRingSize по умолчанию <strong>1024</strong></td>
+<td data-label="Когда брать">липкость сессии/кеша к поду; при изменении пула переезжает минимум ключей</td>
 </tr>
 <tr>
-<td><code>maglev</code></td>
-<td>таблица Google Maglev, размер по умолчанию <strong>65537</strong></td>
-<td>то же, что ringHash, но быстрее лукап и лучше равномерность</td>
+<td data-label="Алгоритм"><code>maglev</code></td>
+<td data-label="Механизм">таблица Google Maglev, размер по умолчанию <strong>65537</strong></td>
+<td data-label="Когда брать">то же, что ringHash, но быстрее лукап и лучше равномерность</td>
 </tr>
 <tr>
-<td><code>PASSTHROUGH</code></td>
-<td>без балансировки, на исходный IP</td>
-<td>headless/специальные случаи</td>
+<td data-label="Алгоритм"><code>PASSTHROUGH</code></td>
+<td data-label="Механизм">без балансировки, на исходный IP</td>
+<td data-label="Когда брать">headless/специальные случаи</td>
 </tr>
 </tbody>
 </table>
@@ -1009,7 +1009,7 @@ kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy
 </code></pre></div>
 
 <p>Профили — предустановленные наборы компонентов:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Профиль</th>
@@ -1019,34 +1019,34 @@ kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy
 </thead>
 <tbody>
 <tr>
-<td><code>default</code></td>
-<td>istiod + ingress gateway</td>
-<td>продуктив, точка старта</td>
+<td data-label="Профиль"><code>default</code></td>
+<td data-label="Что ставит">istiod + ingress gateway</td>
+<td data-label="Когда">продуктив, точка старта</td>
 </tr>
 <tr>
-<td><code>demo</code></td>
-<td>istiod + ingress + egress gateway, полная телеметрия, трассировка 100 %</td>
-<td>обучение, лаборатория; <strong>не для прода</strong></td>
+<td data-label="Профиль"><code>demo</code></td>
+<td data-label="Что ставит">istiod + ingress + egress gateway, полная телеметрия, трассировка 100 %</td>
+<td data-label="Когда">обучение, лаборатория; <strong>не для прода</strong></td>
 </tr>
 <tr>
-<td><code>minimal</code></td>
-<td>только istiod</td>
-<td>когда gateway свои</td>
+<td data-label="Профиль"><code>minimal</code></td>
+<td data-label="Что ставит">только istiod</td>
+<td data-label="Когда">когда gateway свои</td>
 </tr>
 <tr>
-<td><code>ambient</code></td>
-<td>istiod + ztunnel (DaemonSet) + CNI</td>
-<td>ambient-режим</td>
+<td data-label="Профиль"><code>ambient</code></td>
+<td data-label="Что ставит">istiod + ztunnel (DaemonSet) + CNI</td>
+<td data-label="Когда">ambient-режим</td>
 </tr>
 <tr>
-<td><code>empty</code></td>
-<td>ничего</td>
-<td>база для своего набора</td>
+<td data-label="Профиль"><code>empty</code></td>
+<td data-label="Что ставит">ничего</td>
+<td data-label="Когда">база для своего набора</td>
 </tr>
 <tr>
-<td><code>preview</code></td>
-<td>экспериментальные возможности</td>
-<td>эксперименты</td>
+<td data-label="Профиль"><code>preview</code></td>
+<td data-label="Что ставит">экспериментальные возможности</td>
+<td data-label="Когда">эксперименты</td>
 </tr>
 </tbody>
 </table>
@@ -1531,7 +1531,7 @@ istioctl uninstall --revision <span class="m">1</span>-30-2 -y
 <h2 id="11-istio-наблюдаемость-и-progressive-delivery">11. Istio: наблюдаемость и progressive delivery</h2>
 <h3 id="111-стандартные-метрики-envoy">11.1 Стандартные метрики Envoy</h3>
 <p>Как только под попал в mesh, Envoy начинает экспортировать стандартный набор метрик на <code>:15090/stats/prometheus</code> (агрегированно — на <code>:15020/stats/prometheus</code>). Основные:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метрика</th>
@@ -1541,29 +1541,29 @@ istioctl uninstall --revision <span class="m">1</span>-30-2 -y
 </thead>
 <tbody>
 <tr>
-<td><code>istio_requests_total</code></td>
-<td>counter</td>
-<td>RPS и коды ответов по паре «источник → назначение»</td>
+<td data-label="Метрика"><code>istio_requests_total</code></td>
+<td data-label="Тип">counter</td>
+<td data-label="Что даёт">RPS и коды ответов по паре «источник → назначение»</td>
 </tr>
 <tr>
-<td><code>istio_request_duration_milliseconds</code></td>
-<td>histogram</td>
-<td>латентность, бакеты для квантилей</td>
+<td data-label="Метрика"><code>istio_request_duration_milliseconds</code></td>
+<td data-label="Тип">histogram</td>
+<td data-label="Что даёт">латентность, бакеты для квантилей</td>
 </tr>
 <tr>
-<td><code>istio_request_bytes</code> / <code>istio_response_bytes</code></td>
-<td>histogram</td>
-<td>размеры</td>
+<td data-label="Метрика"><code>istio_request_bytes</code> / <code>istio_response_bytes</code></td>
+<td data-label="Тип">histogram</td>
+<td data-label="Что даёт">размеры</td>
 </tr>
 <tr>
-<td><code>istio_tcp_sent_bytes_total</code> / <code>received</code></td>
-<td>counter</td>
-<td>не-HTTP трафик</td>
+<td data-label="Метрика"><code>istio_tcp_sent_bytes_total</code> / <code>received</code></td>
+<td data-label="Тип">counter</td>
+<td data-label="Что даёт">не-HTTP трафик</td>
 </tr>
 <tr>
-<td><code>istio_tcp_connections_opened_total</code> / <code>closed</code></td>
-<td>counter</td>
-<td>соединения</td>
+<td data-label="Метрика"><code>istio_tcp_connections_opened_total</code> / <code>closed</code></td>
+<td data-label="Тип">counter</td>
+<td data-label="Что даёт">соединения</td>
 </tr>
 </tbody>
 </table>
@@ -1732,7 +1732,7 @@ kubectl patch virtualservice payments -n payments --type<span class="o">=</span>
 <hr>
 <h2 id="12-сравнение-библиотеки-и-mesh">12. Сравнение библиотеки и mesh</h2>
 <h3 id="121-сравнительная-таблица">12.1 Сравнительная таблица</h3>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -1742,69 +1742,69 @@ kubectl patch virtualservice payments -n payments --type<span class="o">=</span>
 </thead>
 <tbody>
 <tr>
-<td><strong>Языковая независимость</strong></td>
-<td>нет: своя реализация под каждый стек</td>
-<td>да: работает одинаково для Java, Go, Python</td>
+<td data-label="Критерий"><strong>Языковая независимость</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">нет: своя реализация под каждый стек</td>
+<td data-label="Service mesh (Istio)">да: работает одинаково для Java, Go, Python</td>
 </tr>
 <tr>
-<td><strong>Скорость изменения политики</strong></td>
-<td>релиз приложения (дни–недели)</td>
-<td><code>kubectl apply</code> (секунды), без рестарта</td>
+<td data-label="Критерий"><strong>Скорость изменения политики</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">релиз приложения (дни–недели)</td>
+<td data-label="Service mesh (Istio)"><code>kubectl apply</code> (секунды), без рестарта</td>
 </tr>
 <tr>
-<td><strong>Знание семантики запроса</strong></td>
-<td>полное: типы исключений, идемпотентность, доменные коды</td>
-<td>только HTTP-метаданные и статус</td>
+<td data-label="Критерий"><strong>Знание семантики запроса</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">полное: типы исключений, идемпотентность, доменные коды</td>
+<td data-label="Service mesh (Istio)">только HTTP-метаданные и статус</td>
 </tr>
 <tr>
-<td><strong>Fallback</strong></td>
-<td>да, произвольный Java-код</td>
-<td>нет, только статический ответ/ошибка</td>
+<td data-label="Критерий"><strong>Fallback</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">да, произвольный Java-код</td>
+<td data-label="Service mesh (Istio)">нет, только статический ответ/ошибка</td>
 </tr>
 <tr>
-<td><strong>Гранулярность отсечения</strong></td>
-<td>сервис целиком (обычно)</td>
-<td><strong>эндпоинт</strong> (outlier detection)</td>
+<td data-label="Критерий"><strong>Гранулярность отсечения</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">сервис целиком (обычно)</td>
+<td data-label="Service mesh (Istio)"><strong>эндпоинт</strong> (outlier detection)</td>
 </tr>
 <tr>
-<td><strong>Наблюдаемость</strong></td>
-<td>метрики нужно подключить и выставить; трассировка требует инструментации</td>
-<td>RED-метрики и access-логи «из коробки»; трассировка всё равно требует кода</td>
+<td data-label="Критерий"><strong>Наблюдаемость</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">метрики нужно подключить и выставить; трассировка требует инструментации</td>
+<td data-label="Service mesh (Istio)">RED-метрики и access-логи «из коробки»; трассировка всё равно требует кода</td>
 </tr>
 <tr>
-<td><strong>mTLS и identity</strong></td>
-<td>ручной keystore/truststore, ротация — ваша боль</td>
-<td>автоматически, ключ не покидает под</td>
+<td data-label="Критерий"><strong>mTLS и identity</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">ручной keystore/truststore, ротация — ваша боль</td>
+<td data-label="Service mesh (Istio)">автоматически, ключ не покидает под</td>
 </tr>
 <tr>
-<td><strong>Цена ресурсов</strong></td>
-<td>десятки МБ heap в том же процессе</td>
-<td>100–500 МБ и CPU <strong>на под</strong>, +2 хопа</td>
+<td data-label="Критерий"><strong>Цена ресурсов</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">десятки МБ heap в том же процессе</td>
+<td data-label="Service mesh (Istio)">100–500 МБ и CPU <strong>на под</strong>, +2 хопа</td>
 </tr>
 <tr>
-<td><strong>Порог входа</strong></td>
-<td>зависимость в pom.xml, знакомый язык</td>
-<td>новый control plane, CRD, команда эксплуатации</td>
+<td data-label="Критерий"><strong>Порог входа</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">зависимость в pom.xml, знакомый язык</td>
+<td data-label="Service mesh (Istio)">новый control plane, CRD, команда эксплуатации</td>
 </tr>
 <tr>
-<td><strong>Отладка</strong></td>
-<td>трассировка стека, дебаггер, юнит-тест</td>
-<td><code>istioctl proxy-config</code>, <code>config_dump</code>, response flags</td>
+<td data-label="Критерий"><strong>Отладка</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">трассировка стека, дебаггер, юнит-тест</td>
+<td data-label="Service mesh (Istio)"><code>istioctl proxy-config</code>, <code>config_dump</code>, response flags</td>
 </tr>
 <tr>
-<td><strong>Тестируемость</strong></td>
-<td>легко: юнит-тесты на политику</td>
-<td>только на живом кластере (или kind)</td>
+<td data-label="Критерий"><strong>Тестируемость</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">легко: юнит-тесты на политику</td>
+<td data-label="Service mesh (Istio)">только на живом кластере (или kind)</td>
 </tr>
 <tr>
-<td><strong>Работа вне k8s</strong></td>
-<td>да, где угодно</td>
-<td>практически нет</td>
+<td data-label="Критерий"><strong>Работа вне k8s</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">да, где угодно</td>
+<td data-label="Service mesh (Istio)">практически нет</td>
 </tr>
 <tr>
-<td><strong>Единая точка отказа</strong></td>
-<td>нет</td>
-<td>istiod (деградация, не мгновенная авария)</td>
+<td data-label="Критерий"><strong>Единая точка отказа</strong></td>
+<td data-label="Библиотека (Resilience4j, Spring Cloud)">нет</td>
+<td data-label="Service mesh (Istio)">istiod (деградация, не мгновенная авария)</td>
 </tr>
 </tbody>
 </table>
@@ -1879,7 +1879,7 @@ kubectl patch virtualservice payments -n payments --type<span class="o">=</span>
 <li><strong>Регуляторные ограничения на криптографию.</strong> Если требуется ГОСТ (глава 41), Envoy вам его не даст.</li>
 </ul>
 <p><strong>Чем заменить:</strong></p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Потребность</th>
@@ -1888,28 +1888,28 @@ kubectl patch virtualservice payments -n payments --type<span class="o">=</span>
 </thead>
 <tbody>
 <tr>
-<td>таймауты, повторы, circuit breaker</td>
-<td>Resilience4j / <code>org.springframework.resilience</code> (глава 35)</td>
+<td data-label="Потребность">таймауты, повторы, circuit breaker</td>
+<td data-label="Замена без mesh">Resilience4j / <code>org.springframework.resilience</code> (глава 35)</td>
 </tr>
 <tr>
-<td>mTLS между сервисами</td>
-<td>SSL Bundles в Spring Boot + сертификаты из cert-manager (главы 40, 41)</td>
+<td data-label="Потребность">mTLS между сервисами</td>
+<td data-label="Замена без mesh">SSL Bundles в Spring Boot + сертификаты из cert-manager (главы 40, 41)</td>
 </tr>
 <tr>
-<td>маршрутизация, canary, TLS на входе</td>
-<td>ingress-контроллер / Gateway API</td>
+<td data-label="Потребность">маршрутизация, canary, TLS на входе</td>
+<td data-label="Замена без mesh">ingress-контроллер / Gateway API</td>
 </tr>
 <tr>
-<td>метрики и трассировка</td>
-<td>Micrometer + OTel-агент (глава 51)</td>
+<td data-label="Потребность">метрики и трассировка</td>
+<td data-label="Замена без mesh">Micrometer + OTel-агент (глава 51)</td>
 </tr>
 <tr>
-<td>политики «кто с кем»</td>
-<td>NetworkPolicy (L3/L4) + проверка identity в приложении</td>
+<td data-label="Потребность">политики «кто с кем»</td>
+<td data-label="Замена без mesh">NetworkPolicy (L3/L4) + проверка identity в приложении</td>
 </tr>
 <tr>
-<td>балансировка gRPC</td>
-<td>client-side через headless + <code>round_robin</code></td>
+<td data-label="Потребность">балансировка gRPC</td>
+<td data-label="Замена без mesh">client-side через headless + <code>round_robin</code></td>
 </tr>
 </tbody>
 </table>
@@ -1928,7 +1928,7 @@ kubectl patch virtualservice payments -n payments --type<span class="o">=</span>
 <p>Развитие CNI в сторону mesh. L4 (идентичность, политики, балансировка, шифрование) делается eBPF-программами в ядре, L7 — Envoy <strong>на узел</strong>, а не на под. Управление — через Gateway API и собственные CRD (<code>CiliumNetworkPolicy</code> с L7-правилами для HTTP, gRPC, Kafka, DNS).</p>
 <p>Сильные стороны: нет sidecar вообще, один слой вместо двух (CNI и mesh — один продукт), Hubble даёт наблюдаемость сетевых потоков без инструментирования. Слабые: экосистема Istio (Kiali, готовые операторы, Flagger-интеграции, огромный корпус статей) не переносится, и набор traffic-management возможностей уже.</p>
 <h3 id="134-сравнительная-таблица">13.4 Сравнительная таблица</h3>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1941,66 +1941,66 @@ kubectl patch virtualservice payments -n payments --type<span class="o">=</span>
 </thead>
 <tbody>
 <tr>
-<td>Data plane</td>
-<td>Envoy на под</td>
-<td>ztunnel на узел + waypoint</td>
-<td>свой микропрокси на под</td>
-<td>Envoy на под</td>
-<td>eBPF + Envoy на узел</td>
+<td data-label="">Data plane</td>
+<td data-label="Istio (sidecar)">Envoy на под</td>
+<td data-label="Istio (ambient)">ztunnel на узел + waypoint</td>
+<td data-label="Linkerd">свой микропрокси на под</td>
+<td data-label="Consul Connect">Envoy на под</td>
+<td data-label="Cilium SM">eBPF + Envoy на узел</td>
 </tr>
 <tr>
-<td>Ресурсы на под</td>
-<td>высокие</td>
-<td>нулевые</td>
-<td>низкие</td>
-<td>высокие</td>
-<td>нулевые</td>
+<td data-label="">Ресурсы на под</td>
+<td data-label="Istio (sidecar)">высокие</td>
+<td data-label="Istio (ambient)">нулевые</td>
+<td data-label="Linkerd">низкие</td>
+<td data-label="Consul Connect">высокие</td>
+<td data-label="Cilium SM">нулевые</td>
 </tr>
 <tr>
-<td>Возможности L7</td>
-<td>максимум</td>
-<td>максимум (через waypoint)</td>
-<td>базовые</td>
-<td>высокие</td>
-<td>средние</td>
+<td data-label="">Возможности L7</td>
+<td data-label="Istio (sidecar)">максимум</td>
+<td data-label="Istio (ambient)">максимум (через waypoint)</td>
+<td data-label="Linkerd">базовые</td>
+<td data-label="Consul Connect">высокие</td>
+<td data-label="Cilium SM">средние</td>
 </tr>
 <tr>
-<td>Вне Kubernetes</td>
-<td>ограниченно</td>
-<td>нет</td>
-<td>нет</td>
-<td><strong>да</strong></td>
-<td>нет</td>
+<td data-label="">Вне Kubernetes</td>
+<td data-label="Istio (sidecar)">ограниченно</td>
+<td data-label="Istio (ambient)">нет</td>
+<td data-label="Linkerd">нет</td>
+<td data-label="Consul Connect"><strong>да</strong></td>
+<td data-label="Cilium SM">нет</td>
 </tr>
 <tr>
-<td>Порог входа</td>
-<td>высокий</td>
-<td>средний</td>
-<td>низкий</td>
-<td>средний</td>
-<td>средний</td>
+<td data-label="">Порог входа</td>
+<td data-label="Istio (sidecar)">высокий</td>
+<td data-label="Istio (ambient)">средний</td>
+<td data-label="Linkerd">низкий</td>
+<td data-label="Consul Connect">средний</td>
+<td data-label="Cilium SM">средний</td>
 </tr>
 <tr>
-<td>API конфигурации</td>
-<td>свои CRD + Gateway API</td>
-<td>то же</td>
-<td>свои CRD + Gateway API</td>
-<td>Consul + CRD</td>
-<td>Gateway API + Cilium CRD</td>
+<td data-label="">API конфигурации</td>
+<td data-label="Istio (sidecar)">свои CRD + Gateway API</td>
+<td data-label="Istio (ambient)">то же</td>
+<td data-label="Linkerd">свои CRD + Gateway API</td>
+<td data-label="Consul Connect">Consul + CRD</td>
+<td data-label="Cilium SM">Gateway API + Cilium CRD</td>
 </tr>
 <tr>
-<td>Экосистема</td>
-<td>максимальная</td>
-<td>максимальная</td>
-<td>средняя</td>
-<td>средняя</td>
-<td>растущая</td>
+<td data-label="">Экосистема</td>
+<td data-label="Istio (sidecar)">максимальная</td>
+<td data-label="Istio (ambient)">максимальная</td>
+<td data-label="Linkerd">средняя</td>
+<td data-label="Consul Connect">средняя</td>
+<td data-label="Cilium SM">растущая</td>
 </tr>
 </tbody>
 </table>
 <h3 id="135-api-gateway-и-service-mesh">13.5 API Gateway и service mesh</h3>
 <p>Путаница возникает потому, что технически это часто <strong>один и тот же Envoy</strong>. Разница в задаче.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2010,29 +2010,29 @@ kubectl patch virtualservice payments -n payments --type<span class="o">=</span>
 </thead>
 <tbody>
 <tr>
-<td>Трафик</td>
-<td>извне внутрь</td>
-<td>между сервисами внутри</td>
+<td data-label="">Трафик</td>
+<td data-label="API Gateway (north-south)">извне внутрь</td>
+<td data-label="Service mesh (east-west)">между сервисами внутри</td>
 </tr>
 <tr>
-<td>Клиент</td>
-<td>недоверенный (браузер, мобильное приложение, партнёр)</td>
-<td>доверенный сервис с идентичностью</td>
+<td data-label="">Клиент</td>
+<td data-label="API Gateway (north-south)">недоверенный (браузер, мобильное приложение, партнёр)</td>
+<td data-label="Service mesh (east-west)">доверенный сервис с идентичностью</td>
 </tr>
 <tr>
-<td>Задачи</td>
-<td>аутентификация конечного пользователя, rate limiting по клиенту, монетизация и квоты, версионирование публичного API, трансформация, WAF, кеширование, developer portal</td>
-<td>mTLS, политики между сервисами, балансировка, повторы, телеметрия</td>
+<td data-label="">Задачи</td>
+<td data-label="API Gateway (north-south)">аутентификация конечного пользователя, rate limiting по клиенту, монетизация и квоты, версионирование публичного API, трансформация, WAF, кеширование, developer portal</td>
+<td data-label="Service mesh (east-west)">mTLS, политики между сервисами, балансировка, повторы, телеметрия</td>
 </tr>
 <tr>
-<td>Число экземпляров</td>
-<td>единицы</td>
-<td>сотни (по одному на под)</td>
+<td data-label="">Число экземпляров</td>
+<td data-label="API Gateway (north-south)">единицы</td>
+<td data-label="Service mesh (east-west)">сотни (по одному на под)</td>
 </tr>
 <tr>
-<td>Владелец</td>
-<td>команда платформы / API-governance</td>
-<td>команда платформы + команды сервисов</td>
+<td data-label="">Владелец</td>
+<td data-label="API Gateway (north-south)">команда платформы / API-governance</td>
+<td data-label="Service mesh (east-west)">команда платформы + команды сервисов</td>
 </tr>
 </tbody>
 </table>
@@ -2196,7 +2196,7 @@ istioctl proxy-status <span class="p">|</span> awk <span class="s1">'{print $NF}
 <p><code>istioctl x describe pod</code> — лучшая первая команда при любой проблеме с конкретным подом: она за один экран показывает, есть ли sidecar, какой эффективный режим mTLS, какие <code>AuthorizationPolicy</code> применяются, какие <code>VirtualService</code>/<code>DestinationRule</code> затрагивают его трафик и какие порты опознаны как какие протоколы.</p>
 <h3 id="152-флаги-ответа-envoy-response-flags">15.2 Флаги ответа Envoy (response flags)</h3>
 <p>Флаг печатается в access-log вторым после кода ответа и доступен как метка <code>response_flags</code> в метриках Istio. Значения по <code>accesslog.proto</code> v3 (<a href="https://www.envoyproxy.io/docs/envoy/latest/api-v3/data/accesslog/v3/accesslog.proto">envoyproxy.io</a>):</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Флаг</th>
@@ -2207,124 +2207,124 @@ istioctl proxy-status <span class="p">|</span> awk <span class="s1">'{print $NF}
 </thead>
 <tbody>
 <tr>
-<td><code>UH</code></td>
-<td>no_healthy_upstream</td>
-<td>в кластере нет здоровых эндпоинтов</td>
-<td>readiness подов, outlier detection, селекторы Service</td>
+<td data-label="Флаг"><code>UH</code></td>
+<td data-label="Поле">no_healthy_upstream</td>
+<td data-label="Что произошло">в кластере нет здоровых эндпоинтов</td>
+<td data-label="Куда смотреть">readiness подов, outlier detection, селекторы Service</td>
 </tr>
 <tr>
-<td><code>UF</code></td>
-<td>upstream_connection_termination</td>
-<td>вышестоящий сервис разорвал соединение</td>
-<td><strong>mTLS mismatch</strong>, упавший под, сетевой обрыв</td>
+<td data-label="Флаг"><code>UF</code></td>
+<td data-label="Поле">upstream_connection_termination</td>
+<td data-label="Что произошло">вышестоящий сервис разорвал соединение</td>
+<td data-label="Куда смотреть"><strong>mTLS mismatch</strong>, упавший под, сетевой обрыв</td>
 </tr>
 <tr>
-<td><code>UC</code></td>
-<td>upstream_connection_failure</td>
-<td>не удалось установить соединение (сбой в пуле)</td>
-<td>под не слушает порт, NetworkPolicy, неверный порт</td>
+<td data-label="Флаг"><code>UC</code></td>
+<td data-label="Поле">upstream_connection_failure</td>
+<td data-label="Что произошло">не удалось установить соединение (сбой в пуле)</td>
+<td data-label="Куда смотреть">под не слушает порт, NetworkPolicy, неверный порт</td>
 </tr>
 <tr>
-<td><code>UO</code></td>
-<td>upstream_overflow</td>
-<td>сработал <strong>circuit breaker</strong> (лимит соединений/запросов)</td>
-<td><code>connectionPool</code> в DestinationRule</td>
+<td data-label="Флаг"><code>UO</code></td>
+<td data-label="Поле">upstream_overflow</td>
+<td data-label="Что произошло">сработал <strong>circuit breaker</strong> (лимит соединений/запросов)</td>
+<td data-label="Куда смотреть"><code>connectionPool</code> в DestinationRule</td>
 </tr>
 <tr>
-<td><code>UT</code></td>
-<td>upstream_request_timeout</td>
-<td>таймаут запроса к вышестоящему сервису</td>
-<td><code>timeout</code> в VirtualService, медленный бэкенд</td>
+<td data-label="Флаг"><code>UT</code></td>
+<td data-label="Поле">upstream_request_timeout</td>
+<td data-label="Что произошло">таймаут запроса к вышестоящему сервису</td>
+<td data-label="Куда смотреть"><code>timeout</code> в VirtualService, медленный бэкенд</td>
 </tr>
 <tr>
-<td><code>NR</code></td>
-<td>no_route_found</td>
-<td>нет маршрута для запроса</td>
-<td><code>hosts</code>/<code>match</code> в VirtualService, <code>:authority</code> запроса</td>
+<td data-label="Флаг"><code>NR</code></td>
+<td data-label="Поле">no_route_found</td>
+<td data-label="Что произошло">нет маршрута для запроса</td>
+<td data-label="Куда смотреть"><code>hosts</code>/<code>match</code> в VirtualService, <code>:authority</code> запроса</td>
 </tr>
 <tr>
-<td><code>NC</code></td>
-<td>no_cluster_found</td>
-<td>маршрут есть, кластера нет</td>
-<td>subset без DestinationRule, опечатка в <code>host</code></td>
+<td data-label="Флаг"><code>NC</code></td>
+<td data-label="Поле">no_cluster_found</td>
+<td data-label="Что произошло">маршрут есть, кластера нет</td>
+<td data-label="Куда смотреть">subset без DestinationRule, опечатка в <code>host</code></td>
 </tr>
 <tr>
-<td><code>URX</code></td>
-<td>—</td>
-<td>исчерпан лимит повторов (или maxConnectAttempts)</td>
-<td><code>retries.attempts</code></td>
+<td data-label="Флаг"><code>URX</code></td>
+<td data-label="Поле">—</td>
+<td data-label="Что произошло">исчерпан лимит повторов (или maxConnectAttempts)</td>
+<td data-label="Куда смотреть"><code>retries.attempts</code></td>
 </tr>
 <tr>
-<td><code>UR</code></td>
-<td>upstream_remote_reset</td>
-<td>вышестоящий сервис прислал reset на уровне кодека</td>
-<td>HTTP/2 GOAWAY/RST_STREAM, перегруз</td>
+<td data-label="Флаг"><code>UR</code></td>
+<td data-label="Поле">upstream_remote_reset</td>
+<td data-label="Что произошло">вышестоящий сервис прислал reset на уровне кодека</td>
+<td data-label="Куда смотреть">HTTP/2 GOAWAY/RST_STREAM, перегруз</td>
 </tr>
 <tr>
-<td><code>LR</code></td>
-<td>local_reset</td>
-<td>reset сгенерировал сам Envoy</td>
-<td>внутренние лимиты, разрыв downstream</td>
+<td data-label="Флаг"><code>LR</code></td>
+<td data-label="Поле">local_reset</td>
+<td data-label="Что произошло">reset сгенерировал сам Envoy</td>
+<td data-label="Куда смотреть">внутренние лимиты, разрыв downstream</td>
 </tr>
 <tr>
-<td><code>DC</code></td>
-<td>downstream_connection_termination</td>
-<td>клиент отвалился</td>
-<td>таймаут клиента, отмена запроса</td>
+<td data-label="Флаг"><code>DC</code></td>
+<td data-label="Поле">downstream_connection_termination</td>
+<td data-label="Что произошло">клиент отвалился</td>
+<td data-label="Куда смотреть">таймаут клиента, отмена запроса</td>
 </tr>
 <tr>
-<td><code>LH</code></td>
-<td>failed_local_healthcheck</td>
-<td>локальный health check не прошёл</td>
-<td>health checking Envoy</td>
+<td data-label="Флаг"><code>LH</code></td>
+<td data-label="Поле">failed_local_healthcheck</td>
+<td data-label="Что произошло">локальный health check не прошёл</td>
+<td data-label="Куда смотреть">health checking Envoy</td>
 </tr>
 <tr>
-<td><code>RL</code></td>
-<td>rate_limited</td>
-<td>локальный rate limit</td>
-<td>конфигурация local ratelimit</td>
+<td data-label="Флаг"><code>RL</code></td>
+<td data-label="Поле">rate_limited</td>
+<td data-label="Что произошло">локальный rate limit</td>
+<td data-label="Куда смотреть">конфигурация local ratelimit</td>
 </tr>
 <tr>
-<td><code>RLSE</code></td>
-<td>rate_limit_service_error</td>
-<td>ошибка при обращении к сервису глобальных лимитов</td>
-<td>доступность RLS</td>
+<td data-label="Флаг"><code>RLSE</code></td>
+<td data-label="Поле">rate_limit_service_error</td>
+<td data-label="Что произошло">ошибка при обращении к сервису глобальных лимитов</td>
+<td data-label="Куда смотреть">доступность RLS</td>
 </tr>
 <tr>
-<td><code>UAEX</code></td>
-<td>unauthorized_details</td>
-<td>внешняя авторизация отказала</td>
-<td>ext_authz, <strong><code>AuthorizationPolicy</code> DENY</strong></td>
+<td data-label="Флаг"><code>UAEX</code></td>
+<td data-label="Поле">unauthorized_details</td>
+<td data-label="Что произошло">внешняя авторизация отказала</td>
+<td data-label="Куда смотреть">ext_authz, <strong><code>AuthorizationPolicy</code> DENY</strong></td>
 </tr>
 <tr>
-<td><code>DI</code></td>
-<td>delay_injected</td>
-<td>запрос был задержан искусственно</td>
-<td><code>fault.delay</code> — забыли выключить?</td>
+<td data-label="Флаг"><code>DI</code></td>
+<td data-label="Поле">delay_injected</td>
+<td data-label="Что произошло">запрос был задержан искусственно</td>
+<td data-label="Куда смотреть"><code>fault.delay</code> — забыли выключить?</td>
 </tr>
 <tr>
-<td><code>FI</code></td>
-<td>fault_injected</td>
-<td>запрос прерван искусственно</td>
-<td><code>fault.abort</code></td>
+<td data-label="Флаг"><code>FI</code></td>
+<td data-label="Поле">fault_injected</td>
+<td data-label="Что произошло">запрос прерван искусственно</td>
+<td data-label="Куда смотреть"><code>fault.abort</code></td>
 </tr>
 <tr>
-<td><code>DT</code></td>
-<td>duration_timeout</td>
-<td>превышена максимальная длительность соединения/запроса</td>
-<td><code>maxStreamDuration</code></td>
+<td data-label="Флаг"><code>DT</code></td>
+<td data-label="Поле">duration_timeout</td>
+<td data-label="Что произошло">превышена максимальная длительность соединения/запроса</td>
+<td data-label="Куда смотреть"><code>maxStreamDuration</code></td>
 </tr>
 <tr>
-<td><code>DF</code></td>
-<td>dns_resolution_failure</td>
-<td>не разрешается имя вышестоящего сервиса</td>
-<td>ServiceEntry с <code>resolution: DNS</code>, CoreDNS</td>
+<td data-label="Флаг"><code>DF</code></td>
+<td data-label="Поле">dns_resolution_failure</td>
+<td data-label="Что произошло">не разрешается имя вышестоящего сервиса</td>
+<td data-label="Куда смотреть">ServiceEntry с <code>resolution: DNS</code>, CoreDNS</td>
 </tr>
 <tr>
-<td><code>OM</code></td>
-<td>overload_manager</td>
-<td>запрос отбит менеджером перегрузки Envoy</td>
-<td>память/соединения прокси</td>
+<td data-label="Флаг"><code>OM</code></td>
+<td data-label="Поле">overload_manager</td>
+<td data-label="Что произошло">запрос отбит менеджером перегрузки Envoy</td>
+<td data-label="Куда смотреть">память/соединения прокси</td>
 </tr>
 </tbody>
 </table>
@@ -2553,5 +2553,5 @@ kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-сетевая-модель-kubernetes">1. Сетевая модель Kubernetes</a></li><li><a href="#2-service-kube-proxy-и-endpointslice">2. Service, kube-proxy и EndpointSlice</a></li><li><a href="#3-dns-в-кластере-coredns-и-ndots5">3. DNS в кластере: CoreDNS и ndots:5</a></li><li><a href="#4-networkpolicy-ingress-и-egress">4. NetworkPolicy, ingress и egress</a></li><li><a href="#5-балансировка-на-уровнях-l4-и-l7">5. Балансировка на уровнях L4 и L7</a></li><li><a href="#6-назначение-service-mesh">6. Назначение service mesh</a></li><li><a href="#7-sidecar-и-его-альтернативы">7. Sidecar и его альтернативы</a></li><li><a href="#8-прокси-envoy">8. Прокси Envoy</a></li><li><a href="#9-istio-управление-трафиком">9. Istio: управление трафиком</a></li><li><a href="#10-istio-безопасность">10. Istio: безопасность</a></li><li><a href="#11-istio-наблюдаемость-и-progressive-delivery">11. Istio: наблюдаемость и progressive delivery</a></li><li><a href="#12-сравнение-библиотеки-и-mesh">12. Сравнение библиотеки и mesh</a></li><li><a href="#13-другие-mesh-и-смежные-технологии">13. Другие mesh и смежные технологии</a></li><li><a href="#14-грабли-и-антипаттерны">14. Грабли и антипаттерны</a></li><li><a href="#15-диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками">17. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

@@ -3,7 +3,7 @@
 <title>43. Тестирование — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Тестирование">
 <a class="skip" href="#content">К тексту</a>
@@ -55,7 +55,7 @@
 <p>Кент Ч. Доддс предложил <strong>testing trophy</strong>: снизу статический анализ и типы, над ними unit, затем самая широкая полоса — интеграционные тесты, и сверху тонкая шапка e2e. Его девиз — «Write tests. Not too many. Mostly integration», а обосновывает он его принципом «чем больше тест похож на то, как софт используется, тем больше уверенности он даёт» (<a href="https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications">Kent C. Dodds, The Testing Trophy</a>). Форма трофея описывает соотношение уверенности и цены: статика дешева, но ловит мало, e2e даёт максимум уверенности за максимум денег, а интеграционные тесты оказываются оптимумом между ними.</p>
 <p>Spotify предложил для микросервисов <strong>honeycomb</strong> (соты). В центре стоит крупная ячейка «integrated tests» — тесты сервиса целиком, у которого замоканы только внешние границы, — а рядом две небольшие: «implementation detail tests», то есть то, что все зовут unit, и «integration tests», которые проверяют реальное взаимодействие с внешними системами. Идея та же, что у трофея: центр тяжести смещается на тест сервиса как чёрного ящика через его собственный API, с реальной БД и брокером и с заглушёнными соседями.</p>
 <p>Для backend-микросервиса на Spring Boot из обеих моделей следует раскладка, собранная в таблице ниже. Смотреть в ней стоит на два столбца сразу: тесты сервиса составляют лишь четверть–треть по числу, но забирают основную часть времени сборки.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -66,40 +66,40 @@
 </thead>
 <tbody>
 <tr>
-<td>Статика</td>
-<td>компилятор, Error Prone, SpotBugs, ArchUnit (гл. 44)</td>
-<td>—</td>
-<td>секунды на модуль</td>
+<td data-label="Уровень">Статика</td>
+<td data-label="Что это конкретно">компилятор, Error Prone, SpotBugs, ArchUnit (гл. 44)</td>
+<td data-label="Доля">—</td>
+<td data-label="Время одного">секунды на модуль</td>
 </tr>
 <tr>
-<td>Доменные тесты</td>
-<td>чистые объекты домена без Spring и без заглушек</td>
-<td>50–60 % штук</td>
-<td>&lt; 1 мс</td>
+<td data-label="Уровень">Доменные тесты</td>
+<td data-label="Что это конкретно">чистые объекты домена без Spring и без заглушек</td>
+<td data-label="Доля">50–60 % штук</td>
+<td data-label="Время одного">&lt; 1 мс</td>
 </tr>
 <tr>
-<td>Тесты сервиса</td>
-<td><code>@SpringBootTest</code> + Testcontainers (PG/Kafka/Redis) + WireMock на соседей</td>
-<td>25–35 % штук, 80 % времени</td>
-<td>50–500 мс</td>
+<td data-label="Уровень">Тесты сервиса</td>
+<td data-label="Что это конкретно"><code>@SpringBootTest</code> + Testcontainers (PG/Kafka/Redis) + WireMock на соседей</td>
+<td data-label="Доля">25–35 % штук, 80 % времени</td>
+<td data-label="Время одного">50–500 мс</td>
 </tr>
 <tr>
-<td>Слайсы</td>
-<td><code>@WebMvcTest</code>, <code>@DataJpaTest</code> — точечно, где нужна изоляция слоя (гл. 10)</td>
-<td>5–10 %</td>
-<td>100–300 мс</td>
+<td data-label="Уровень">Слайсы</td>
+<td data-label="Что это конкретно"><code>@WebMvcTest</code>, <code>@DataJpaTest</code> — точечно, где нужна изоляция слоя (гл. 10)</td>
+<td data-label="Доля">5–10 %</td>
+<td data-label="Время одного">100–300 мс</td>
 </tr>
 <tr>
-<td>Контрактные</td>
-<td>Pact / Spring Cloud Contract на каждую межсервисную границу</td>
-<td>по числу границ</td>
-<td>секунды</td>
+<td data-label="Уровень">Контрактные</td>
+<td data-label="Что это конкретно">Pact / Spring Cloud Contract на каждую межсервисную границу</td>
+<td data-label="Доля">по числу границ</td>
+<td data-label="Время одного">секунды</td>
 </tr>
 <tr>
-<td>E2E</td>
-<td>5–15 сценариев «денежный путь» на стенде, вне сборки сервиса</td>
-<td>единицы</td>
-<td>минуты</td>
+<td data-label="Уровень">E2E</td>
+<td data-label="Что это конкретно">5–15 сценариев «денежный путь» на стенде, вне сборки сервиса</td>
+<td data-label="Доля">единицы</td>
+<td data-label="Время одного">минуты</td>
 </tr>
 </tbody>
 </table>
@@ -122,7 +122,7 @@
 <p><strong>Classicist (Chicago, Detroit, «классика»)</strong> использует настоящие объекты везде, где это удобно, а дубли ставит только вместо неудобных коллабораторов: сети, времени, платёжного шлюза. Проверяют здесь состояние (<strong>state verification</strong>): вызвали метод и посмотрели, в каком состоянии оказались SUT и его коллабораторы.</p>
 <p><strong>Mockist (London)</strong> заменяет заглушкой любой объект с интересным поведением, а дизайн выращивает outside-in, слой за слоем. Проверяют здесь поведение (<strong>behavior verification</strong>): убеждаются, что на коллабораторах сделаны правильные вызовы. Фаулер подчёркивает, что «только моки настаивают на behavior verification».</p>
 <p>Сравнение в таблице ниже опирается и на Фаулера, и на опыт эксплуатации. Главное в нём — две средние строки: classicist находит интеграционные ошибки и слабо связан с реализацией, mockist зато точно локализует падение.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -132,34 +132,34 @@
 </thead>
 <tbody>
 <tr>
-<td>Подготовка тестовой оснастки</td>
-<td>сложнее, но повторно используется (Object Mother, builder)</td>
-<td>минимальна, но своя в каждом тесте</td>
+<td data-label="Критерий">Подготовка тестовой оснастки</td>
+<td data-label="Classicist">сложнее, но повторно используется (Object Mother, builder)</td>
+<td data-label="Mockist">минимальна, но своя в каждом тесте</td>
 </tr>
 <tr>
-<td>Локализация падения</td>
-<td>каскад: один баг роняет десятки тестов</td>
-<td>точная: падает один тест</td>
+<td data-label="Критерий">Локализация падения</td>
+<td data-label="Classicist">каскад: один баг роняет десятки тестов</td>
+<td data-label="Mockist">точная: падает один тест</td>
 </tr>
 <tr>
-<td>Обнаружение интеграционных ошибок</td>
-<td>находит: объекты реально работают вместе</td>
-<td>пропускает: заглушка всегда согласна</td>
+<td data-label="Критерий">Обнаружение интеграционных ошибок</td>
+<td data-label="Classicist">находит: объекты реально работают вместе</td>
+<td data-label="Mockist">пропускает: заглушка всегда согласна</td>
 </tr>
 <tr>
-<td>Связанность с реализацией</td>
-<td>низкая: тест не знает про внутренние вызовы</td>
-<td>высокая: тест кодирует порядок и набор вызовов</td>
+<td data-label="Критерий">Связанность с реализацией</td>
+<td data-label="Classicist">низкая: тест не знает про внутренние вызовы</td>
+<td data-label="Mockist">высокая: тест кодирует порядок и набор вызовов</td>
 </tr>
 <tr>
-<td>Влияние на дизайн</td>
-<td>допускает разные стили</td>
-<td>подталкивает к role interfaces и Tell-Don't-Ask</td>
+<td data-label="Критерий">Влияние на дизайн</td>
+<td data-label="Classicist">допускает разные стили</td>
+<td data-label="Mockist">подталкивает к role interfaces и Tell-Don't-Ask</td>
 </tr>
 <tr>
-<td>Пригодность для legacy</td>
-<td>требует конструируемости графа объектов</td>
-<td>позволяет вклиниться в любом месте</td>
+<td data-label="Критерий">Пригодность для legacy</td>
+<td data-label="Classicist">требует конструируемости графа объектов</td>
+<td data-label="Mockist">позволяет вклиниться в любом месте</td>
 </tr>
 </tbody>
 </table>
@@ -344,7 +344,7 @@
 </code></pre></div>
 
 <p>Таблица ниже сводит все источники аргументов: что каждый даёт и в какой ситуации он уместен. Для повседневной работы хватает трёх — <code>@CsvSource</code>, <code>@EnumSource</code> и <code>@MethodSource</code>, остальные нужны в особых случаях.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Источник</th>
@@ -354,44 +354,44 @@
 </thead>
 <tbody>
 <tr>
-<td><code>@ValueSource</code></td>
-<td>один параметр примитива/строки/класса</td>
-<td>простые перечисления входов</td>
+<td data-label="Источник"><code>@ValueSource</code></td>
+<td data-label="Что даёт">один параметр примитива/строки/класса</td>
+<td data-label="Когда уместен">простые перечисления входов</td>
 </tr>
 <tr>
-<td><code>@NullSource</code>, <code>@EmptySource</code>, <code>@NullAndEmptySource</code></td>
-<td>вырожденные входы</td>
-<td>валидация</td>
+<td data-label="Источник"><code>@NullSource</code>, <code>@EmptySource</code>, <code>@NullAndEmptySource</code></td>
+<td data-label="Что даёт">вырожденные входы</td>
+<td data-label="Когда уместен">валидация</td>
 </tr>
 <tr>
-<td><code>@EnumSource</code></td>
-<td>все или отобранные (<code>names</code>, <code>mode = EXCLUDE/MATCH_ALL</code>) константы enum</td>
-<td>покрытие всех веток по типу</td>
+<td data-label="Источник"><code>@EnumSource</code></td>
+<td data-label="Что даёт">все или отобранные (<code>names</code>, <code>mode = EXCLUDE/MATCH_ALL</code>) константы enum</td>
+<td data-label="Когда уместен">покрытие всех веток по типу</td>
 </tr>
 <tr>
-<td><code>@CsvSource</code></td>
-<td>несколько параметров в строке, <code>textBlock</code> с комментариями</td>
-<td>таблица «вход → ожидание»</td>
+<td data-label="Источник"><code>@CsvSource</code></td>
+<td data-label="Что даёт">несколько параметров в строке, <code>textBlock</code> с комментариями</td>
+<td data-label="Когда уместен">таблица «вход → ожидание»</td>
 </tr>
 <tr>
-<td><code>@CsvFileSource</code></td>
-<td>та же таблица из ресурса</td>
-<td>когда строк десятки и их правит аналитик</td>
+<td data-label="Источник"><code>@CsvFileSource</code></td>
+<td data-label="Что даёт">та же таблица из ресурса</td>
+<td data-label="Когда уместен">когда строк десятки и их правит аналитик</td>
 </tr>
 <tr>
-<td><code>@MethodSource</code></td>
-<td><code>Stream&lt;Arguments&gt;</code> любой сложности</td>
-<td>объекты, а не примитивы</td>
+<td data-label="Источник"><code>@MethodSource</code></td>
+<td data-label="Что даёт"><code>Stream&lt;Arguments&gt;</code> любой сложности</td>
+<td data-label="Когда уместен">объекты, а не примитивы</td>
 </tr>
 <tr>
-<td><code>@FieldSource</code></td>
-<td>статическое поле с коллекцией/<code>Stream</code></td>
-<td>как <code>@MethodSource</code>, но без метода</td>
+<td data-label="Источник"><code>@FieldSource</code></td>
+<td data-label="Что даёт">статическое поле с коллекцией/<code>Stream</code></td>
+<td data-label="Когда уместен">как <code>@MethodSource</code>, но без метода</td>
 </tr>
 <tr>
-<td><code>@ArgumentsSource</code></td>
-<td>собственный <code>ArgumentsProvider</code></td>
-<td>генерация, чтение из БД, композиция</td>
+<td data-label="Источник"><code>@ArgumentsSource</code></td>
+<td data-label="Что даёт">собственный <code>ArgumentsProvider</code></td>
+<td data-label="Когда уместен">генерация, чтение из БД, композиция</td>
 </tr>
 </tbody>
 </table>
@@ -488,7 +488,7 @@
 <h3 id="37-extension-api-и-собственные-расширения">3.7 Extension API и собственные расширения</h3>
 <p>Extension API — механизм, через который JUnit Jupiter позволяет встроиться в жизненный цикл теста: подготовить ресурс, подставить параметр, обработать исключение. На нём построены и Spring, и Testcontainers, поэтому понимать его полезно, даже если своих расширений вы не пишете. Ниже ключевые интерфейсы, два рабочих расширения и устройство <code>ExtensionContext.Store</code>.</p>
 <p>Сам <code>Extension</code> — маркерный интерфейс, а настоящая работа делается через его подинтерфейсы. Ключевые из них сведены в таблицу: для каждого указано, когда JUnit его вызывает и для чего его обычно применяют.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Интерфейс</th>
@@ -498,44 +498,44 @@
 </thead>
 <tbody>
 <tr>
-<td><code>BeforeAllCallback</code> / <code>AfterAllCallback</code></td>
-<td>вокруг класса</td>
-<td>старт/остановка контейнера, общий ресурс</td>
+<td data-label="Интерфейс"><code>BeforeAllCallback</code> / <code>AfterAllCallback</code></td>
+<td data-label="Когда вызывается">вокруг класса</td>
+<td data-label="Типовое применение">старт/остановка контейнера, общий ресурс</td>
 </tr>
 <tr>
-<td><code>BeforeEachCallback</code> / <code>AfterEachCallback</code></td>
-<td>вокруг метода</td>
-<td>очистка БД, сброс WireMock, фиксация времени</td>
+<td data-label="Интерфейс"><code>BeforeEachCallback</code> / <code>AfterEachCallback</code></td>
+<td data-label="Когда вызывается">вокруг метода</td>
+<td data-label="Типовое применение">очистка БД, сброс WireMock, фиксация времени</td>
 </tr>
 <tr>
-<td><code>BeforeTestExecutionCallback</code> / <code>AfterTestExecutionCallback</code></td>
-<td>вплотную к телу теста (внутри <code>@BeforeEach</code>)</td>
-<td>замер длительности</td>
+<td data-label="Интерфейс"><code>BeforeTestExecutionCallback</code> / <code>AfterTestExecutionCallback</code></td>
+<td data-label="Когда вызывается">вплотную к телу теста (внутри <code>@BeforeEach</code>)</td>
+<td data-label="Типовое применение">замер длительности</td>
 </tr>
 <tr>
-<td><code>ParameterResolver</code></td>
-<td>при разрешении параметров метода</td>
-<td>внедрение тестовой оснастки и клиентов</td>
+<td data-label="Интерфейс"><code>ParameterResolver</code></td>
+<td data-label="Когда вызывается">при разрешении параметров метода</td>
+<td data-label="Типовое применение">внедрение тестовой оснастки и клиентов</td>
 </tr>
 <tr>
-<td><code>TestExecutionExceptionHandler</code></td>
-<td>при исключении из теста</td>
-<td>обогащение диагностикой (дамп БД, логи контейнера)</td>
+<td data-label="Интерфейс"><code>TestExecutionExceptionHandler</code></td>
+<td data-label="Когда вызывается">при исключении из теста</td>
+<td data-label="Типовое применение">обогащение диагностикой (дамп БД, логи контейнера)</td>
 </tr>
 <tr>
-<td><code>TestWatcher</code></td>
-<td>по итогу теста</td>
-<td>сбор статистики нестабильных тестов</td>
+<td data-label="Интерфейс"><code>TestWatcher</code></td>
+<td data-label="Когда вызывается">по итогу теста</td>
+<td data-label="Типовое применение">сбор статистики нестабильных тестов</td>
 </tr>
 <tr>
-<td><code>ExecutionCondition</code></td>
-<td>до запуска</td>
-<td>условное отключение</td>
+<td data-label="Интерфейс"><code>ExecutionCondition</code></td>
+<td data-label="Когда вызывается">до запуска</td>
+<td data-label="Типовое применение">условное отключение</td>
 </tr>
 <tr>
-<td><code>InvocationInterceptor</code></td>
-<td>вокруг любого вызова</td>
-<td>обёртка в транзакцию, повтор</td>
+<td data-label="Интерфейс"><code>InvocationInterceptor</code></td>
+<td data-label="Когда вызывается">вокруг любого вызова</td>
+<td data-label="Типовое применение">обёртка в транзакцию, повтор</td>
 </tr>
 </tbody>
 </table>
@@ -764,7 +764,7 @@
 <p>Джерард Мезарош в «xUnit Test Patterns» ввёл пять видов дублёров, а Фаулер их популяризовал (<a href="https://martinfowler.com/articles/mocksArentStubs.html">Mocks Aren't Stubs</a>). Различать их стоит не ради терминов: от роли дублёра зависит, уместен ли в тесте <code>verify</code>. Ниже — как эти виды разложены в самой книге, таблица с примерами из Java-бэкенда и объяснение, почему в Mockito всё называют заглушками.</p>
 <p>Почти всегда упускают одну полезную деталь: в самой книге эти пять видов лежат <strong>в разных главах</strong>. Test Double, Test Stub, Test Spy, Mock Object и Fake Object описаны в главе 23 «Test Double Patterns» (в русском издании — «Шаблоны тестовых двойников», с. 537–571), а <strong>Dummy Object отнесён к главе 27 «Value Patterns»</strong> («Шаблоны значений», с. 730). Логика у Мезароша такая: dummy не подменяет поведение и вообще не участвует в сценарии, это просто значение, которым заполняют параметр. Там же, в главе 23, описаны два ортогональных измерения, о которых на интервью почти не спрашивают, и зря: <strong>Configurable Test Double</strong> против <strong>Hard-Coded Test Double</strong> (настраиваемый в тесте против зашитого в отдельный класс) и <strong>Test-Specific Subclass</strong>, где подмена идёт через наследование, а не через интерфейс.</p>
 <p>Таблица ниже даёт определение каждого вида и пример из Java-бэкенда; смотреть в ней стоит на последние две строки, потому что именно spy и mock чаще всего путают.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Вид</th>
@@ -774,29 +774,29 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Dummy</strong></td>
-<td>передаётся, но не используется; нужен только чтобы заполнить список параметров</td>
-<td><code>new AuditLogger(null)</code> там, где аудит в сценарии не вызывается</td>
+<td data-label="Вид"><strong>Dummy</strong></td>
+<td data-label="Определение">передаётся, но не используется; нужен только чтобы заполнить список параметров</td>
+<td data-label="Пример в Java-бэкенде"><code>new AuditLogger(null)</code> там, где аудит в сценарии не вызывается</td>
 </tr>
 <tr>
-<td><strong>Fake</strong></td>
-<td>рабочая реализация, но со срезанными углами, непригодная для прода</td>
-<td><code>InMemoryAccountRepository</code> на <code>ConcurrentHashMap</code></td>
+<td data-label="Вид"><strong>Fake</strong></td>
+<td data-label="Определение">рабочая реализация, но со срезанными углами, непригодная для прода</td>
+<td data-label="Пример в Java-бэкенде"><code>InMemoryAccountRepository</code> на <code>ConcurrentHashMap</code></td>
 </tr>
 <tr>
-<td><strong>Stub</strong></td>
-<td>отдаёт заранее заданные ответы, на неожиданные вызовы не рассчитан</td>
-<td><code>when(rates.get("USD")).thenReturn(BigDecimal("92.5"))</code></td>
+<td data-label="Вид"><strong>Stub</strong></td>
+<td data-label="Определение">отдаёт заранее заданные ответы, на неожиданные вызовы не рассчитан</td>
+<td data-label="Пример в Java-бэкенде"><code>when(rates.get("USD")).thenReturn(BigDecimal("92.5"))</code></td>
 </tr>
 <tr>
-<td><strong>Spy</strong></td>
-<td>стаб, который дополнительно записывает, как его вызывали</td>
-<td>самописный <code>RecordingEventPublisher</code>, складывающий события в список</td>
+<td data-label="Вид"><strong>Spy</strong></td>
+<td data-label="Определение">стаб, который дополнительно записывает, как его вызывали</td>
+<td data-label="Пример в Java-бэкенде">самописный <code>RecordingEventPublisher</code>, складывающий события в список</td>
 </tr>
 <tr>
-<td><strong>Mock</strong></td>
-<td>объект с предзаданными <strong>ожиданиями</strong>, образующими спецификацию вызовов</td>
-<td><code>verify(gateway).charge(cardId, amount)</code></td>
+<td data-label="Вид"><strong>Mock</strong></td>
+<td data-label="Определение">объект с предзаданными <strong>ожиданиями</strong>, образующими спецификацию вызовов</td>
+<td data-label="Пример в Java-бэкенде"><code>verify(gateway).charge(cardId, amount)</code></td>
 </tr>
 </tbody>
 </table>
@@ -806,7 +806,7 @@
 <p>💡 <strong>На интервью.</strong> «Стаб отвечает на вопросы, а заглушка проверяет, какие вопросы задали. Стаб — это входные данные теста, замаскированные под объект: если его не настроить, тест просто не отработает. Заглушка — часть проверки: тест падает потому, что вызов не произошёл или произошёл не так. Технически в Mockito это один и тот же объект, но от его роли зависит, писать ли <code>verify</code>».</p>
 </blockquote>
 <p><strong>Запуск.</strong> Какие виды дублёров по Мезарошу встретились в учебном проекте:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Дублёр</th>
@@ -815,20 +815,20 @@
 </thead>
 <tbody>
 <tr>
-<td>заглушка (stub)</td>
-<td><code>Mockito.when(repo.find("a")).thenReturn(...)</code></td>
+<td data-label="Дублёр">заглушка (stub)</td>
+<td data-label="Что это в проекте"><code>Mockito.when(repo.find("a")).thenReturn(...)</code></td>
 </tr>
 <tr>
-<td>заглушка (mock)</td>
-<td>проверка вызовов <code>verify(...)</code> и строгий режим Mockito</td>
+<td data-label="Дублёр">заглушка (mock)</td>
+<td data-label="Что это в проекте">проверка вызовов <code>verify(...)</code> и строгий режим Mockito</td>
 </tr>
 <tr>
-<td>подделка (fake)</td>
-<td>H2 вместо PostgreSQL, WireMock вместо внешнего сервиса, прокси с внедрением сбоев</td>
+<td data-label="Дублёр">подделка (fake)</td>
+<td data-label="Что это в проекте">H2 вместо PostgreSQL, WireMock вместо внешнего сервиса, прокси с внедрением сбоев</td>
 </tr>
 <tr>
-<td>шпион (spy)</td>
-<td>не использовался</td>
+<td data-label="Дублёр">шпион (spy)</td>
+<td data-label="Что это в проекте">не использовался</td>
 </tr>
 </tbody>
 </table>
@@ -1002,7 +1002,7 @@
 </blockquote>
 <h3 id="57-argumentcaptor-и-verify-поведение-и-реализация">5.7 <code>ArgumentCaptor</code> и <code>verify</code>: поведение и реализация</h3>
 <p><code>verify</code> — тоже проверка, и, как любая проверка, он либо описывает контракт, либо фиксирует текущий код, так что от того, где его поставили, зависит, переживёт ли тест рефакторинг. Работающий критерий такой: <strong>если вызов наблюдаем снаружи системы, <code>verify</code> законен, а если это внутренняя механика — нет.</strong> Таблица ниже применяет этот критерий к типовым проверкам, а после неё разобраны <code>ArgumentCaptor</code> и три детали, на которых с ним теряют время.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Проверка</th>
@@ -1012,34 +1012,34 @@
 </thead>
 <tbody>
 <tr>
-<td><code>verifyNoInteractions(paymentGateway)</code> при отказе антифрода</td>
-<td>да</td>
-<td>«не списали деньги» — наблюдаемый эффект, состояния для него нет</td>
+<td data-label="Проверка"><code>verifyNoInteractions(paymentGateway)</code> при отказе антифрода</td>
+<td data-label="Легальность">да</td>
+<td data-label="Почему">«не списали деньги» — наблюдаемый эффект, состояния для него нет</td>
 </tr>
 <tr>
-<td><code>verify(outbox).publish(event)</code></td>
-<td>да, если outbox — граница процесса</td>
-<td>отправка наружу и есть результат операции</td>
+<td data-label="Проверка"><code>verify(outbox).publish(event)</code></td>
+<td data-label="Легальность">да, если outbox — граница процесса</td>
+<td data-label="Почему">отправка наружу и есть результат операции</td>
 </tr>
 <tr>
-<td><code>verify(repo).save(order)</code> + рядом проверка состояния</td>
-<td>нет</td>
-<td>дублирует проверку состояния и ломается при переходе на <code>saveAll</code></td>
+<td data-label="Проверка"><code>verify(repo).save(order)</code> + рядом проверка состояния</td>
+<td data-label="Легальность">нет</td>
+<td data-label="Почему">дублирует проверку состояния и ломается при переходе на <code>saveAll</code></td>
 </tr>
 <tr>
-<td><code>verify(feeCalculator).calculate(any())</code></td>
-<td>нет</td>
-<td>внутренний шаг алгоритма: комиссию проверяют по сумме, а не по факту вызова</td>
+<td data-label="Проверка"><code>verify(feeCalculator).calculate(any())</code></td>
+<td data-label="Легальность">нет</td>
+<td data-label="Почему">внутренний шаг алгоритма: комиссию проверяют по сумме, а не по факту вызова</td>
 </tr>
 <tr>
-<td><code>verify(repo, times(1)).findById(id)</code></td>
-<td>почти всегда нет</td>
-<td>число обращений к репозиторию — деталь реализации, а не контракт (кроме тестов кеша)</td>
+<td data-label="Проверка"><code>verify(repo, times(1)).findById(id)</code></td>
+<td data-label="Легальность">почти всегда нет</td>
+<td data-label="Почему">число обращений к репозиторию — деталь реализации, а не контракт (кроме тестов кеша)</td>
 </tr>
 <tr>
-<td><code>inOrder.verify(a).x(); inOrder.verify(b).y();</code></td>
-<td>только когда порядок — часть требования</td>
-<td>«сначала резерв, потом списание» — требование; «сначала валидация, потом отображение» — нет</td>
+<td data-label="Проверка"><code>inOrder.verify(a).x(); inOrder.verify(b).y();</code></td>
+<td data-label="Легальность">только когда порядок — часть требования</td>
+<td data-label="Почему">«сначала резерв, потом списание» — требование; «сначала валидация, потом отображение» — нет</td>
 </tr>
 </tbody>
 </table>
@@ -1061,7 +1061,7 @@
 <p>Вместо captor'а можно взять <code>assertArg</code> (Mockito 5.3+) или <code>argThat</code> с внятным сообщением: <code>verify(outbox).save(assertArg(m -&gt; assertThat(m.type()).isEqualTo("TransferPosted")))</code>. При падении <code>assertArg</code> показывает гораздо больше, чем <code>argThat</code>, который сообщает только «не найден подходящий вызов».</p>
 <h3 id="58-mockstatic-как-признак-проблемы-дизайна">5.8 <code>mockStatic</code> как признак проблемы дизайна</h3>
 <p>Когда в тесте появляется <code>mockStatic</code>, это почти всегда значит, что в коде спрятана необъявленная зависимость, и правильнее её вытащить наружу, чем подменять заглушкой. Таблица ниже перечисляет типовые случаи, настоящую проблему за каждым и решение без заглушки; после неё — техническая цена <code>mockStatic</code> и случаи, когда он всё же законен.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что подменяют моком статически</th>
@@ -1071,29 +1071,29 @@
 </thead>
 <tbody>
 <tr>
-<td><code>Instant.now()</code>, <code>LocalDate.now()</code></td>
-<td>время — скрытый источник данных</td>
-<td><code>Clock</code> в конструкторе (9.9)</td>
+<td data-label="Что подменяют моком статически"><code>Instant.now()</code>, <code>LocalDate.now()</code></td>
+<td data-label="Настоящая проблема">время — скрытый источник данных</td>
+<td data-label="Решение без заглушки"><code>Clock</code> в конструкторе (9.9)</td>
 </tr>
 <tr>
-<td><code>UUID.randomUUID()</code></td>
-<td>недетерминированная генерация идентификаторов</td>
-<td>интерфейс <code>IdGenerator</code></td>
+<td data-label="Что подменяют моком статически"><code>UUID.randomUUID()</code></td>
+<td data-label="Настоящая проблема">недетерминированная генерация идентификаторов</td>
+<td data-label="Решение без заглушки">интерфейс <code>IdGenerator</code></td>
 </tr>
 <tr>
-<td><code>Files.readAllBytes(...)</code></td>
-<td>файловая система в доменном коде</td>
-<td><code>InputStream</code>/порт хранилища, либо <code>@TempDir</code></td>
+<td data-label="Что подменяют моком статически"><code>Files.readAllBytes(...)</code></td>
+<td data-label="Настоящая проблема">файловая система в доменном коде</td>
+<td data-label="Решение без заглушки"><code>InputStream</code>/порт хранилища, либо <code>@TempDir</code></td>
 </tr>
 <tr>
-<td>статический <code>Holder.getInstance()</code></td>
-<td>синглтон вместо инъекции</td>
-<td>обычный бин</td>
+<td data-label="Что подменяют моком статически">статический <code>Holder.getInstance()</code></td>
+<td data-label="Настоящая проблема">синглтон вместо инъекции</td>
+<td data-label="Решение без заглушки">обычный бин</td>
 </tr>
 <tr>
-<td>статический утилитный метод собственной библиотеки</td>
-<td>утилита хранит состояние или ходит наружу</td>
-<td>сделать её объектом</td>
+<td data-label="Что подменяют моком статически">статический утилитный метод собственной библиотеки</td>
+<td data-label="Настоящая проблема">утилита хранит состояние или ходит наружу</td>
+<td data-label="Решение без заглушки">сделать её объектом</td>
 </tr>
 </tbody>
 </table>
@@ -1347,7 +1347,7 @@
 </ol>
 <p><strong>Когда <code>@Transactional</code> в тесте допустим.</strong> Он уместен, когда проверяют только работу JPA-отображения и запросов: что SQL корректен, что <code>@EntityGraph</code> убирает N+1, что <code>Specification</code> строит нужный WHERE. Это слайс <code>@DataJpaTest</code>, где проверяется именно это и где откат служит осознанной оптимизацией, а в тестах бизнес-сценариев его не используют.</p>
 <p><strong>Чем заменить.</strong> Замена состоит в реальных коммитах и явной очистке, и сделать её можно тремя способами, которые сравнивает таблица ниже; стоит смотреть на столбец минусов, потому что именно он определяет выбор.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -1358,22 +1358,22 @@
 </thead>
 <tbody>
 <tr>
-<td><code>TRUNCATE ... RESTART IDENTITY CASCADE</code></td>
-<td>расширение JUnit перед каждым тестом (см. 3.7)</td>
-<td>быстро (десятки мс), реальные коммиты, детерминированные id</td>
-<td>нужно вести список таблиц (лучше — читать из <code>information_schema</code>, исключая таблицу истории миграций)</td>
+<td data-label="Стратегия"><code>TRUNCATE ... RESTART IDENTITY CASCADE</code></td>
+<td data-label="Как">расширение JUnit перед каждым тестом (см. 3.7)</td>
+<td data-label="Плюсы">быстро (десятки мс), реальные коммиты, детерминированные id</td>
+<td data-label="Минусы">нужно вести список таблиц (лучше — читать из <code>information_schema</code>, исключая таблицу истории миграций)</td>
 </tr>
 <tr>
-<td>Rollback через <code>@Transactional</code></td>
-<td>встроено</td>
-<td>быстро, ничего не писать</td>
-<td>всё из списка выше</td>
+<td data-label="Стратегия">Rollback через <code>@Transactional</code></td>
+<td data-label="Как">встроено</td>
+<td data-label="Плюсы">быстро, ничего не писать</td>
+<td data-label="Минусы">всё из списка выше</td>
 </tr>
 <tr>
-<td>Пересоздание БД/схемы</td>
-<td>новый контейнер или <code>DROP SCHEMA ... CASCADE</code> + миграции</td>
-<td>абсолютная чистота</td>
-<td>секунды на тест — только для особых случаев</td>
+<td data-label="Стратегия">Пересоздание БД/схемы</td>
+<td data-label="Как">новый контейнер или <code>DROP SCHEMA ... CASCADE</code> + миграции</td>
+<td data-label="Плюсы">абсолютная чистота</td>
+<td data-label="Минусы">секунды на тест — только для особых случаев</td>
 </tr>
 </tbody>
 </table>
@@ -1417,7 +1417,7 @@
 </ol>
 <p><strong>Ryuk</strong> — отдельный контейнер (<code>testcontainers/ryuk</code>), который поднимается один раз на JVM-процесс перед первым пользовательским контейнером. Библиотека открывает к нему TCP-соединение и передаёт фильтры вида «удалить всё, помеченное <code>org.testcontainers.sessionId=&lt;этот uuid&gt;</code>», а Ryuk держит соединение открытым и ждёт. Как только соединение рвётся — неважно, завершилась ли JVM нормально, убили ли её <code>kill -9</code> или упал исполнитель, — Ryuk удаляет контейнеры, сети и тома с этой меткой. Главное свойство этой схемы в том, что <strong>уборка не зависит от того, отработали ли ваши <code>@AfterAll</code> и shutdown-хуки</strong>, поэтому singleton-контейнеру и не нужен <code>stop()</code>.</p>
 <p>Но бывают ситуации, когда Ryuk не срабатывает и мусор остаётся; таблица ниже перечисляет их вместе с тем, что при этом происходит и что делать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -1427,29 +1427,29 @@
 </thead>
 <tbody>
 <tr>
-<td><code>TESTCONTAINERS_RYUK_DISABLED=true</code></td>
-<td>убирает только сама JVM при штатном завершении, а после <code>kill -9</code> или падения исполнителя контейнеры живут после прогона (документация: уборка при shutdown идёт, «unless you <code>kill -9</code> your JVM process»)</td>
-<td>включать обратно; отключать только там, где политика безопасности запрещает лишний контейнер, и тогда чистить вручную</td>
+<td data-label="Ситуация"><code>TESTCONTAINERS_RYUK_DISABLED=true</code></td>
+<td data-label="Что происходит">убирает только сама JVM при штатном завершении, а после <code>kill -9</code> или падения исполнителя контейнеры живут после прогона (документация: уборка при shutdown идёт, «unless you <code>kill -9</code> your JVM process»)</td>
+<td data-label="Что делать">включать обратно; отключать только там, где политика безопасности запрещает лишний контейнер, и тогда чистить вручную</td>
 </tr>
 <tr>
-<td>Сам Ryuk убит (OOM-killer, <code>docker kill</code>, очистка контейнеров скриптом CI)</td>
-<td>соединение рвётся вместе с ним, удалять некому</td>
-<td>не подчищать контейнеры «всё подряд» в CI до окончания задания</td>
+<td data-label="Ситуация">Сам Ryuk убит (OOM-killer, <code>docker kill</code>, очистка контейнеров скриптом CI)</td>
+<td data-label="Что происходит">соединение рвётся вместе с ним, удалять некому</td>
+<td data-label="Что делать">не подчищать контейнеры «всё подряд» в CI до окончания задания</td>
 </tr>
 <tr>
-<td><code>withReuse(true)</code> при включённом в окружении reuse</td>
-<td>контейнер намеренно помечается как повторно используемая (метка <code>org.testcontainers.hash</code>) и <strong>не регистрируется</strong> в Ryuk</td>
-<td>чистить самому (<code>docker rm -f $(docker ps -aq --filter label=org.testcontainers.hash)</code>)</td>
+<td data-label="Ситуация"><code>withReuse(true)</code> при включённом в окружении reuse</td>
+<td data-label="Что происходит">контейнер намеренно помечается как повторно используемая (метка <code>org.testcontainers.hash</code>) и <strong>не регистрируется</strong> в Ryuk</td>
+<td data-label="Что делать">чистить самому (<code>docker rm -f $(docker ps -aq --filter label=org.testcontainers.hash)</code>)</td>
 </tr>
 <tr>
-<td>Исполнитель убит целиком вместе с демоном (узел вытеснен)</td>
-<td>Ryuk умер, не успев отработать</td>
-<td>периодическая уборка на узле по метке и возрасту</td>
+<td data-label="Ситуация">Исполнитель убит целиком вместе с демоном (узел вытеснен)</td>
+<td data-label="Что происходит">Ryuk умер, не успев отработать</td>
+<td data-label="Что делать">периодическая уборка на узле по метке и возрасту</td>
 </tr>
 <tr>
-<td>Окружение запрещает privileged-контейнеры, а Ryuk должен стартовать privileged (<code>ryuk.container.privileged</code>, по умолчанию <code>true</code>)</td>
-<td>библиотека падает или предупреждает при старте</td>
-<td>документация предлагает отключить Ryuk через <code>TESTCONTAINERS_RYUK_DISABLED=true</code>, но только там, где окружение само убирает контейнеры после выполнения (<a href="https://java.testcontainers.org/features/configuration/">Testcontainers, Configuration</a>)</td>
+<td data-label="Ситуация">Окружение запрещает privileged-контейнеры, а Ryuk должен стартовать privileged (<code>ryuk.container.privileged</code>, по умолчанию <code>true</code>)</td>
+<td data-label="Что происходит">библиотека падает или предупреждает при старте</td>
+<td data-label="Что делать">документация предлагает отключить Ryuk через <code>TESTCONTAINERS_RYUK_DISABLED=true</code>, но только там, где окружение само убирает контейнеры после выполнения (<a href="https://java.testcontainers.org/features/configuration/">Testcontainers, Configuration</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -1467,7 +1467,7 @@ docker image prune -af --filter <span class="s2">"until=168h"</span>   <span cla
 </blockquote>
 <h3 id="69-testcontainers-и-container-статические-и-экземплярные-поля">6.9 <code>@Testcontainers</code> и <code>@Container</code>: статические и экземплярные поля</h3>
 <p>Аннотационная интеграция устроена как JUnit-расширение <code>TestcontainersExtension</code>, которое находит поля, помеченные <code>@Container</code>, и стартует их в нужном обратном вызове. От того, какой это обратный вызов, зависит, сколько раз за сборку поднимется контейнер, а заодно и то, как он уживётся с кешем контекстов Spring. Таблица ниже сравнивает четыре способа объявить контейнер по цене на наборе из 100 классов по 10 методов, а после неё разобрана вторая ловушка аннотационного варианта.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Объявление</th>
@@ -1478,28 +1478,28 @@ docker image prune -af --filter <span class="s2">"until=168h"</span>   <span cla
 </thead>
 <tbody>
 <tr>
-<td><code>@Container static PostgreSQLContainer pg</code></td>
-<td><code>BeforeAllCallback</code>, один раз на класс</td>
-<td><code>AfterAllCallback</code></td>
-<td>100 стартов × ~2 с = ~3,5 минуты только на PostgreSQL</td>
+<td data-label="Объявление"><code>@Container static PostgreSQLContainer pg</code></td>
+<td data-label="Старт"><code>BeforeAllCallback</code>, один раз на класс</td>
+<td data-label="Стоп"><code>AfterAllCallback</code></td>
+<td data-label="Стоимость при 100 тестовых классах по 10 методов">100 стартов × ~2 с = ~3,5 минуты только на PostgreSQL</td>
 </tr>
 <tr>
-<td><code>@Container PostgreSQLContainer pg</code> (instance)</td>
-<td><code>BeforeEachCallback</code>, перед каждым методом</td>
-<td><code>AfterEachCallback</code></td>
-<td>1000 стартов × ~2 с = <strong>более 30 минут</strong></td>
+<td data-label="Объявление"><code>@Container PostgreSQLContainer pg</code> (instance)</td>
+<td data-label="Старт"><code>BeforeEachCallback</code>, перед каждым методом</td>
+<td data-label="Стоп"><code>AfterEachCallback</code></td>
+<td data-label="Стоимость при 100 тестовых классах по 10 методов">1000 стартов × ~2 с = <strong>более 30 минут</strong></td>
 </tr>
 <tr>
-<td>singleton в <code>static {}</code> базового класса</td>
-<td>один раз на JVM</td>
-<td>не останавливается, убирает Ryuk</td>
-<td>~2 с на весь прогон</td>
+<td data-label="Объявление">singleton в <code>static {}</code> базового класса</td>
+<td data-label="Старт">один раз на JVM</td>
+<td data-label="Стоп">не останавливается, убирает Ryuk</td>
+<td data-label="Стоимость при 100 тестовых классах по 10 методов">~2 с на весь прогон</td>
 </tr>
 <tr>
-<td>бин <code>@ServiceConnection</code> в <code>@TestConfiguration</code></td>
-<td>вместе с контекстом, кешируется вместе с ним</td>
-<td>при закрытии контекста</td>
-<td>~2 с на конфигурацию контекста</td>
+<td data-label="Объявление">бин <code>@ServiceConnection</code> в <code>@TestConfiguration</code></td>
+<td data-label="Старт">вместе с контекстом, кешируется вместе с ним</td>
+<td data-label="Стоп">при закрытии контекста</td>
+<td data-label="Стоимость при 100 тестовых классах по 10 методов">~2 с на конфигурацию контекста</td>
 </tr>
 </tbody>
 </table>
@@ -1547,7 +1547,7 @@ docker image prune -af --filter <span class="s2">"until=168h"</span>   <span cla
 <h3 id="611-стратегии-ожидания-готовности-контейнера">6.11 Стратегии ожидания готовности контейнера</h3>
 <p>Wait-стратегия определяет, в какой момент Testcontainers считает контейнер готовым, и ошибка в ней — один из самых частых источников нестабильности интеграционных тестов. Дело в том, что готовность контейнера и запущенный процесс — разные вещи: PostgreSQL публикует порт раньше, чем начинает принимать соединения, Kafka в KRaft-режиме отвечает на порту до того, как выбран контроллер, а Keycloak слушает 8080, пока импортирует realm и отдаёт 503. <code>Thread.sleep(5000)</code> после старта «решает» эту проблему ровно до тех пор, пока исполнитель не окажется загружен соседними заданиями. Ниже стратегии и их механика, полный пример для Keycloak и три детали, которые экономят часы.</p>
 <p>Таблица сводит стратегии: что каждая проверяет и где она уместна.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -1557,34 +1557,34 @@ docker image prune -af --filter <span class="s2">"until=168h"</span>   <span cla
 </thead>
 <tbody>
 <tr>
-<td><code>Wait.forListeningPort()</code> (по умолчанию у <code>GenericContainer</code>)</td>
-<td>внутри контейнера проверяет, что порт слушается (через мини-команду в контейнере), плюс проверяет отображение на хосте</td>
-<td>простые сервисы, где «порт открыт» = «готов»</td>
+<td data-label="Стратегия"><code>Wait.forListeningPort()</code> (по умолчанию у <code>GenericContainer</code>)</td>
+<td data-label="Что делает">внутри контейнера проверяет, что порт слушается (через мини-команду в контейнере), плюс проверяет отображение на хосте</td>
+<td data-label="Где уместна">простые сервисы, где «порт открыт» = «готов»</td>
 </tr>
 <tr>
-<td><code>Wait.forLogMessage(regex, times)</code></td>
-<td>читает поток логов и ждёт N совпадений регулярного выражения</td>
-<td>БД и брокеры с явным сообщением о готовности</td>
+<td data-label="Стратегия"><code>Wait.forLogMessage(regex, times)</code></td>
+<td data-label="Что делает">читает поток логов и ждёт N совпадений регулярного выражения</td>
+<td data-label="Где уместна">БД и брокеры с явным сообщением о готовности</td>
 </tr>
 <tr>
-<td><code>Wait.forHttp(path)</code></td>
-<td>HTTP-запрос с проверкой статуса/тела, с настраиваемым интервалом</td>
-<td>всё, что отдаёт health-эндпоинт</td>
+<td data-label="Стратегия"><code>Wait.forHttp(path)</code></td>
+<td data-label="Что делает">HTTP-запрос с проверкой статуса/тела, с настраиваемым интервалом</td>
+<td data-label="Где уместна">всё, что отдаёт health-эндпоинт</td>
 </tr>
 <tr>
-<td><code>Wait.forHealthcheck()</code></td>
-<td>ждёт, пока Docker-healthcheck образа перейдёт в <code>healthy</code></td>
-<td>образы со своим <code>HEALTHCHECK</code> в Dockerfile</td>
+<td data-label="Стратегия"><code>Wait.forHealthcheck()</code></td>
+<td data-label="Что делает">ждёт, пока Docker-healthcheck образа перейдёт в <code>healthy</code></td>
+<td data-label="Где уместна">образы со своим <code>HEALTHCHECK</code> в Dockerfile</td>
 </tr>
 <tr>
-<td><code>Wait.forSuccessfulCommand(cmd)</code></td>
-<td>выполняет команду внутри контейнера до нулевого кода возврата</td>
-<td><code>pg_isready</code>, <code>redis-cli ping</code>, <code>cub kafka-ready</code></td>
+<td data-label="Стратегия"><code>Wait.forSuccessfulCommand(cmd)</code></td>
+<td data-label="Что делает">выполняет команду внутри контейнера до нулевого кода возврата</td>
+<td data-label="Где уместна"><code>pg_isready</code>, <code>redis-cli ping</code>, <code>cub kafka-ready</code></td>
 </tr>
 <tr>
-<td><code>WaitAllStrategy</code></td>
-<td>комбинация нескольких</td>
-<td>сложные образы: порт + лог + HTTP</td>
+<td data-label="Стратегия"><code>WaitAllStrategy</code></td>
+<td data-label="Что делает">комбинация нескольких</td>
+<td data-label="Где уместна">сложные образы: порт + лог + HTTP</td>
 </tr>
 </tbody>
 </table>
@@ -1685,7 +1685,7 @@ env <span class="p">|</span> grep -i -E <span class="s1">'docker|testcontainers'
 <li><strong>Сами тесты</strong> обычно дают наименьшее слагаемое.</li>
 </ol>
 <p>Ключевое архитектурное решение — <strong>один PostgreSQL на весь прогон или по контейнеру на класс</strong>. Таблица сравнивает четыре варианта по изоляции и времени; для большинства проектов ответ даёт первая строка, а остальные нужны, когда тесты идут параллельно или миграции долгие.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Подход</th>
@@ -1696,28 +1696,28 @@ env <span class="p">|</span> grep -i -E <span class="s1">'docker|testcontainers'
 </thead>
 <tbody>
 <tr>
-<td>Один контейнер на JVM, <code>TRUNCATE</code> между тестами</td>
-<td>достаточная при дисциплине очистки</td>
-<td>лучшее</td>
-<td>вариант по умолчанию для 95 % проектов</td>
+<td data-label="Подход">Один контейнер на JVM, <code>TRUNCATE</code> между тестами</td>
+<td data-label="Изоляция">достаточная при дисциплине очистки</td>
+<td data-label="Время">лучшее</td>
+<td data-label="Когда выбирать">вариант по умолчанию для 95 % проектов</td>
 </tr>
 <tr>
-<td>Один контейнер, <strong>схема на класс</strong> (<code>CREATE SCHEMA test_&lt;n&gt;</code>, <code>search_path</code>)</td>
-<td>высокая, тесты не мешают друг другу при параллелизме</td>
-<td>+миграции на каждую схему</td>
-<td>параллельный прогон интеграционных тестов</td>
+<td data-label="Подход">Один контейнер, <strong>схема на класс</strong> (<code>CREATE SCHEMA test_&lt;n&gt;</code>, <code>search_path</code>)</td>
+<td data-label="Изоляция">высокая, тесты не мешают друг другу при параллелизме</td>
+<td data-label="Время">+миграции на каждую схему</td>
+<td data-label="Когда выбирать">параллельный прогон интеграционных тестов</td>
 </tr>
 <tr>
-<td>Один контейнер, <strong>база на класс</strong> (<code>CREATE DATABASE</code> из шаблона)</td>
-<td>высокая</td>
-<td><code>CREATE DATABASE ... TEMPLATE</code> — сотни мс, дешевле полных миграций</td>
-<td>много классов, нужна изоляция, миграции долгие</td>
+<td data-label="Подход">Один контейнер, <strong>база на класс</strong> (<code>CREATE DATABASE</code> из шаблона)</td>
+<td data-label="Изоляция">высокая</td>
+<td data-label="Время"><code>CREATE DATABASE ... TEMPLATE</code> — сотни мс, дешевле полных миграций</td>
+<td data-label="Когда выбирать">много классов, нужна изоляция, миграции долгие</td>
 </tr>
 <tr>
-<td>Контейнер на класс</td>
-<td>полная</td>
-<td>×N стартов</td>
-<td>почти никогда</td>
+<td data-label="Подход">Контейнер на класс</td>
+<td data-label="Изоляция">полная</td>
+<td data-label="Время">×N стартов</td>
+<td data-label="Когда выбирать">почти никогда</td>
 </tr>
 </tbody>
 </table>
@@ -1761,7 +1761,7 @@ env <span class="p">|</span> grep -i -E <span class="s1">'docker|testcontainers'
 </code></pre></div>
 
 <p><strong>Три стратегии наполнения и когда какая ломается</strong> сведены в таблицу; в последнем столбце — чем лечится каждая поломка.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стратегия</th>
@@ -1771,19 +1771,19 @@ env <span class="p">|</span> grep -i -E <span class="s1">'docker|testcontainers'
 </thead>
 <tbody>
 <tr>
-<td>Один большой <code>dump.sql</code> на весь проект</td>
-<td>схема меняется, дамп правит один человек, тесты начинают зависеть от чужих строк</td>
-<td>разбить на маленькие наборы тестовых данных по сценариям</td>
+<td data-label="Стратегия">Один большой <code>dump.sql</code> на весь проект</td>
+<td data-label="Ломается, когда">схема меняется, дамп правит один человек, тесты начинают зависеть от чужих строк</td>
+<td data-label="Чем лечится">разбить на маленькие наборы тестовых данных по сценариям</td>
 </tr>
 <tr>
-<td><code>@Sql</code> на тест/класс</td>
-<td>скрипт с данными дублирует смысл теста, при смене схемы падают десятки файлов</td>
-<td>строители для доменных данных, <code>@Sql</code> — только для справочников и legacy-таблиц</td>
+<td data-label="Стратегия"><code>@Sql</code> на тест/класс</td>
+<td data-label="Ломается, когда">скрипт с данными дублирует смысл теста, при смене схемы падают десятки файлов</td>
+<td data-label="Чем лечится">строители для доменных данных, <code>@Sql</code> — только для справочников и legacy-таблиц</td>
 </tr>
 <tr>
-<td>Test Data Builder (6.6)</td>
-<td>объект строится через слой персистентности со своими правилами (генерируемые id, аудит-поля)</td>
-<td>отдельный <code>persist(builder)</code>-хелпер, который сохраняет и возвращает управляемую сущность</td>
+<td data-label="Стратегия">Test Data Builder (6.6)</td>
+<td data-label="Ломается, когда">объект строится через слой персистентности со своими правилами (генерируемые id, аудит-поля)</td>
+<td data-label="Чем лечится">отдельный <code>persist(builder)</code>-хелпер, который сохраняет и возвращает управляемую сущность</td>
 </tr>
 </tbody>
 </table>
@@ -1800,7 +1800,7 @@ env <span class="p">|</span> grep -i -E <span class="s1">'docker|testcontainers'
 <h3 id="616-параллельный-запуск-интеграционных-тестов">6.16 Параллельный запуск интеграционных тестов</h3>
 <p>Параллельный запуск JUnit (3.8) даёт кратный выигрыш на доменных тестах и почти всегда ломает интеграционные, потому что превращает единственную базу, единственный брокер и единственный WireMock в общие ресурсы, за которые тесты начинают бороться. Ниже разобрано, что именно ломается и как это решают, какая конфигурация разумна для проекта с отдельным интеграционным заданием и почему глобальный <code>concurrent</code> может замедлить сборку.</p>
 <p>Таблица перечисляет элементы, которые ломаются при параллельном запуске, и решение для каждого.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Элемент</th>
@@ -1810,39 +1810,39 @@ env <span class="p">|</span> grep -i -E <span class="s1">'docker|testcontainers'
 </thead>
 <tbody>
 <tr>
-<td>Одна БД, <code>TRUNCATE</code> перед тестом</td>
-<td>тест A чистит таблицы, пока тест B в них пишет</td>
-<td>схема или база на класс (6.14), либо <code>@ResourceLock("db")</code> на интеграционных классах</td>
+<td data-label="Элемент">Одна БД, <code>TRUNCATE</code> перед тестом</td>
+<td data-label="Что ломается">тест A чистит таблицы, пока тест B в них пишет</td>
+<td data-label="Решение">схема или база на класс (6.14), либо <code>@ResourceLock("db")</code> на интеграционных классах</td>
 </tr>
 <tr>
-<td>Транзакционный контекст Spring</td>
-<td><code>TransactionSynchronizationManager</code> — <code>ThreadLocal</code>; при <code>CONCURRENT</code> внутри класса поведение непредсказуемо</td>
-<td>параллелить <strong>классы</strong>, а не методы: <code>parallel.mode.default=same_thread</code> + <code>mode.classes.default=concurrent</code></td>
+<td data-label="Элемент">Транзакционный контекст Spring</td>
+<td data-label="Что ломается"><code>TransactionSynchronizationManager</code> — <code>ThreadLocal</code>; при <code>CONCURRENT</code> внутри класса поведение непредсказуемо</td>
+<td data-label="Решение">параллелить <strong>классы</strong>, а не методы: <code>parallel.mode.default=same_thread</code> + <code>mode.classes.default=concurrent</code></td>
 </tr>
 <tr>
-<td>WireMock на фиксированном порту</td>
-<td>конфликт «Address already in use»</td>
-<td><code>dynamicPort()</code> всегда</td>
+<td data-label="Элемент">WireMock на фиксированном порту</td>
+<td data-label="Что ломается">конфликт «Address already in use»</td>
+<td data-label="Решение"><code>dynamicPort()</code> всегда</td>
 </tr>
 <tr>
-<td>Один топик Kafka и одна consumer group</td>
-<td>тесты вычитывают чужие сообщения</td>
-<td>уникальные имена топиков и групп на класс: <code>"orders-" + UUID.randomUUID()</code></td>
+<td data-label="Элемент">Один топик Kafka и одна consumer group</td>
+<td data-label="Что ломается">тесты вычитывают чужие сообщения</td>
+<td data-label="Решение">уникальные имена топиков и групп на класс: <code>"orders-" + UUID.randomUUID()</code></td>
 </tr>
 <tr>
-<td>Kafka-потребители приложения</td>
-<td>контейнеры слушателей стартуют вместе с контекстом и едят всё, что появляется в топике</td>
-<td><code>spring.kafka.listener.auto-startup=false</code> + ручной старт нужного слушателя в тесте</td>
+<td data-label="Элемент">Kafka-потребители приложения</td>
+<td data-label="Что ломается">контейнеры слушателей стартуют вместе с контекстом и едят всё, что появляется в топике</td>
+<td data-label="Решение"><code>spring.kafka.listener.auto-startup=false</code> + ручной старт нужного слушателя в тесте</td>
 </tr>
 <tr>
-<td><code>SecurityContextHolder</code>, MDC, <code>RequestContextHolder</code></td>
-<td><code>ThreadLocal</code> протекает в пул ForkJoin</td>
-<td><code>@BeforeEach</code>-очистка или <code>@Execution(SAME_THREAD)</code> на таких классах</td>
+<td data-label="Элемент"><code>SecurityContextHolder</code>, MDC, <code>RequestContextHolder</code></td>
+<td data-label="Что ломается"><code>ThreadLocal</code> протекает в пул ForkJoin</td>
+<td data-label="Решение"><code>@BeforeEach</code>-очистка или <code>@Execution(SAME_THREAD)</code> на таких классах</td>
 </tr>
 <tr>
-<td>Метрики, счётчики, кеши</td>
-<td>суммируются между тестами</td>
-<td>сброс в расширении</td>
+<td data-label="Элемент">Метрики, счётчики, кеши</td>
+<td data-label="Что ломается">суммируются между тестами</td>
+<td data-label="Решение">сброс в расширении</td>
 </tr>
 </tbody>
 </table>
@@ -2120,7 +2120,7 @@ Fault.MALFORMED_RESPONSE_CHUNK:      ProtocolException: protocol error: Frame ty
 </code></pre></div>
 
 <p>Таблица ниже сравнивает оба подхода; для выбора важнее всего строки про гейт деплоя и полиглотность.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2130,39 +2130,39 @@ Fault.MALFORMED_RESPONSE_CHUNK:      ProtocolException: protocol error: Frame ty
 </thead>
 <tbody>
 <tr>
-<td>Направление</td>
-<td>consumer-driven</td>
-<td>чаще producer-driven (можно и CD)</td>
+<td data-label="">Направление</td>
+<td data-label="Pact">consumer-driven</td>
+<td data-label="Spring Cloud Contract">чаще producer-driven (можно и CD)</td>
 </tr>
 <tr>
-<td>Где живёт контракт</td>
-<td>генерируется из теста потребителя</td>
-<td>пишется руками, лежит у поставщика (или в отдельном репо)</td>
+<td data-label="">Где живёт контракт</td>
+<td data-label="Pact">генерируется из теста потребителя</td>
+<td data-label="Spring Cloud Contract">пишется руками, лежит у поставщика (или в отдельном репо)</td>
 </tr>
 <tr>
-<td>Транспорт контракта</td>
-<td>Pact Broker</td>
-<td>Maven-репозиторий (stubs-jar)</td>
+<td data-label="">Транспорт контракта</td>
+<td data-label="Pact">Pact Broker</td>
+<td data-label="Spring Cloud Contract">Maven-репозиторий (stubs-jar)</td>
 </tr>
 <tr>
-<td>Гейт на деплой</td>
-<td><code>can-i-deploy</code></td>
-<td>нет из коробки; строится на версиях артефактов</td>
+<td data-label="">Гейт на деплой</td>
+<td data-label="Pact"><code>can-i-deploy</code></td>
+<td data-label="Spring Cloud Contract">нет из коробки; строится на версиях артефактов</td>
 </tr>
 <tr>
-<td>Полиглотность</td>
-<td>сильная (JS, Go, Python, .NET…)</td>
-<td>ориентирован на JVM (стабы можно использовать откуда угодно через standalone)</td>
+<td data-label="">Полиглотность</td>
+<td data-label="Pact">сильная (JS, Go, Python, .NET…)</td>
+<td data-label="Spring Cloud Contract">ориентирован на JVM (стабы можно использовать откуда угодно через standalone)</td>
 </tr>
 <tr>
-<td>Сообщения (Kafka/AMQP)</td>
-<td>да</td>
-<td>да</td>
+<td data-label="">Сообщения (Kafka/AMQP)</td>
+<td data-label="Pact">да</td>
+<td data-label="Spring Cloud Contract">да</td>
 </tr>
 <tr>
-<td>Порог входа</td>
-<td>средний, нужен брокер</td>
-<td>ниже в JVM-монорепе</td>
+<td data-label="">Порог входа</td>
+<td data-label="Pact">средний, нужен брокер</td>
+<td data-label="Spring Cloud Contract">ниже в JVM-монорепе</td>
 </tr>
 </tbody>
 </table>
@@ -2477,7 +2477,7 @@ commitSync(смещение записи + 1) после каждого сооб
 <h3 id="98-тесты-многопоточного-кода-латчи-и-барьеры">9.8 Тесты многопоточного кода: латчи и барьеры</h3>
 <p>Синхронизаторы из <code>java.util.concurrent</code> позволяют в тесте управлять тем, когда потоки стартуют, встречаются и завершаются, и без них гонку не воспроизвести. <code>CountDownLatch</code> (9.4) — базовый из них, но у всего семейства есть разделение труда. Ниже таблица синхронизаторов, готовый каркас теста гонки и честные границы применимости таких тестов.</p>
 <p>Таблица показывает, что даёт каждый примитив и где он пригождается в тесте.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Примитив</th>
@@ -2487,29 +2487,29 @@ commitSync(смещение записи + 1) после каждого сооб
 </thead>
 <tbody>
 <tr>
-<td><code>CountDownLatch</code></td>
-<td>однократный «старт» или «финиш»</td>
-<td>синхронный старт N потоков, ожидание завершения</td>
+<td data-label="Примитив"><code>CountDownLatch</code></td>
+<td data-label="Что даёт">однократный «старт» или «финиш»</td>
+<td data-label="Типовое применение в тесте">синхронный старт N потоков, ожидание завершения</td>
 </tr>
 <tr>
-<td><code>CyclicBarrier</code></td>
-<td>многократная точка встречи</td>
-<td>несколько раундов гонки в одном тесте</td>
+<td data-label="Примитив"><code>CyclicBarrier</code></td>
+<td data-label="Что даёт">многократная точка встречи</td>
+<td data-label="Типовое применение в тесте">несколько раундов гонки в одном тесте</td>
 </tr>
 <tr>
-<td><code>Phaser</code></td>
-<td>динамическое число участников, фазы</td>
-<td>сценарии «часть потоков отвалилась»</td>
+<td data-label="Примитив"><code>Phaser</code></td>
+<td data-label="Что даёт">динамическое число участников, фазы</td>
+<td data-label="Типовое применение в тесте">сценарии «часть потоков отвалилась»</td>
 </tr>
 <tr>
-<td><code>Semaphore</code></td>
-<td>ограничение параллелизма</td>
-<td>проверка bulkhead и пулов</td>
+<td data-label="Примитив"><code>Semaphore</code></td>
+<td data-label="Что даёт">ограничение параллелизма</td>
+<td data-label="Типовое применение в тесте">проверка bulkhead и пулов</td>
 </tr>
 <tr>
-<td><code>Exchanger</code></td>
-<td>обмен значениями между двумя потоками</td>
-<td>проверка передачи через границу потока</td>
+<td data-label="Примитив"><code>Exchanger</code></td>
+<td data-label="Что даёт">обмен значениями между двумя потоками</td>
+<td data-label="Типовое применение в тесте">проверка передачи через границу потока</td>
 </tr>
 </tbody>
 </table>
@@ -2774,7 +2774,7 @@ grep -rl --include<span class="o">=</span><span class="s1">'*Test.java'</span> -
 </blockquote>
 <h3 id="116-стратегия-покрытия-для-финтех-бэкенда">11.6 Стратегия покрытия для финтех-бэкенда</h3>
 <p>Стратегия покрытия отвечает на вопрос, что и каким уровнем тестов покрывать в первую очередь, и для финтеха её удобно строить по отношению цены ошибки к цене теста. Таблица ниже отсортирована именно так: сверху то, где ошибка стоит дороже всего, а тест сравнительно дёшев; в последнем столбце — почему выбран именно этот уровень теста.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -2784,54 +2784,54 @@ grep -rl --include<span class="o">=</span><span class="s1">'*Test.java'</span> -
 </thead>
 <tbody>
 <tr>
-<td>Денежная арифметика, округления, комиссии, курсы</td>
-<td>доменный + property-based</td>
-<td>ошибка = расхождение баланса; property-тест ловит потерю копейки (10.1)</td>
+<td data-label="Что">Денежная арифметика, округления, комиссии, курсы</td>
+<td data-label="Уровень теста">доменный + property-based</td>
+<td data-label="Почему именно так">ошибка = расхождение баланса; property-тест ловит потерю копейки (10.1)</td>
 </tr>
 <tr>
-<td>Идемпотентность: HTTP с <code>Idempotency-Key</code>, потребитель Kafka, повтор платежа</td>
-<td>интеграционный на Testcontainers</td>
-<td>воспроизводится только на реальном хранилище с уникальными индексами</td>
+<td data-label="Что">Идемпотентность: HTTP с <code>Idempotency-Key</code>, потребитель Kafka, повтор платежа</td>
+<td data-label="Уровень теста">интеграционный на Testcontainers</td>
+<td data-label="Почему именно так">воспроизводится только на реальном хранилище с уникальными индексами</td>
 </tr>
 <tr>
-<td>Транзакционные границы и откаты</td>
-<td>интеграционный без <code>@Transactional</code> на тесте</td>
-<td>откат в тесте прячет ровно то, что проверяется (6.7)</td>
+<td data-label="Что">Транзакционные границы и откаты</td>
+<td data-label="Уровень теста">интеграционный без <code>@Transactional</code> на тесте</td>
+<td data-label="Почему именно так">откат в тесте прячет ровно то, что проверяется (6.7)</td>
 </tr>
 <tr>
-<td>Лимиты, блокировки, статусы счёта</td>
-<td>доменный</td>
-<td>чистая логика, дешёвые тесты</td>
+<td data-label="Что">Лимиты, блокировки, статусы счёта</td>
+<td data-label="Уровень теста">доменный</td>
+<td data-label="Почему именно так">чистая логика, дешёвые тесты</td>
 </tr>
 <tr>
-<td>Миграции</td>
-<td>интеграционный (прогон на чистой БД)</td>
-<td>каждый прогон = тест миграции (6.6)</td>
+<td data-label="Что">Миграции</td>
+<td data-label="Уровень теста">интеграционный (прогон на чистой БД)</td>
+<td data-label="Почему именно так">каждый прогон = тест миграции (6.6)</td>
 </tr>
 <tr>
-<td>Контракты API наружу</td>
-<td><code>@JsonTest</code>/<code>@WebMvcTest</code> + схема-контракт</td>
-<td>утечка внутренних полей и смена формата — частая регрессия</td>
+<td data-label="Что">Контракты API наружу</td>
+<td data-label="Уровень теста"><code>@JsonTest</code>/<code>@WebMvcTest</code> + схема-контракт</td>
+<td data-label="Почему именно так">утечка внутренних полей и смена формата — частая регрессия</td>
 </tr>
 <tr>
-<td>Авторизация: кто какой эндпоинт может дёрнуть</td>
-<td>слайс с Spring Security</td>
-<td>матрица ролей проверяется параметризованным тестом (гл. 13, 42)</td>
+<td data-label="Что">Авторизация: кто какой эндпоинт может дёрнуть</td>
+<td data-label="Уровень теста">слайс с Spring Security</td>
+<td data-label="Почему именно так">матрица ролей проверяется параметризованным тестом (гл. 13, 42)</td>
 </tr>
 <tr>
-<td>Обработка отказов внешних систем</td>
-<td>WireMock/Toxiproxy</td>
-<td>ветки, которые срабатывают в инциденте</td>
+<td data-label="Что">Обработка отказов внешних систем</td>
+<td data-label="Уровень теста">WireMock/Toxiproxy</td>
+<td data-label="Почему именно так">ветки, которые срабатывают в инциденте</td>
 </tr>
 <tr>
-<td>Отчётность и выгрузки в регулятор</td>
-<td>approval-тесты</td>
-<td>формат фиксирован, изменение должно быть видно в дифе PR</td>
+<td data-label="Что">Отчётность и выгрузки в регулятор</td>
+<td data-label="Уровень теста">approval-тесты</td>
+<td data-label="Почему именно так">формат фиксирован, изменение должно быть видно в дифе PR</td>
 </tr>
 <tr>
-<td>Конфигурация (профили, свойства)</td>
-<td>smoke-тест контекста</td>
-<td>«не поднялось в проде» — самый дешёвый в предотвращении класс отказов</td>
+<td data-label="Что">Конфигурация (профили, свойства)</td>
+<td data-label="Уровень теста">smoke-тест контекста</td>
+<td data-label="Почему именно так">«не поднялось в проде» — самый дешёвый в предотвращении класс отказов</td>
 </tr>
 </tbody>
 </table>
@@ -2840,7 +2840,7 @@ grep -rl --include<span class="o">=</span><span class="s1">'*Test.java'</span> -
 <p>Скорость набора и его стабильность решают, будет ли команда вообще запускать тесты: медленный набор перестают гонять локально, а набор с нестабильными тестами перестают воспринимать всерьёз, и в обоих случаях тесты теряют смысл как обратная связь. Нестабильным называют тест, который при неизменном коде то падает, то проходит, и почти у каждого такого теста есть конкретная, находимая причина. Раздел начинается с бюджетов времени и кеша контекстов Spring, затем разбирает разделение и параллелизацию набора, а в конце — семь групп причин нестабильности, способы их ловить и политику карантина.</p>
 <h3 id="121-бюджеты-времени-на-тесты">12.1 Бюджеты времени на тесты</h3>
 <p>Бюджет времени — ориентир, сколько может занимать тест или набор каждого уровня, прежде чем его надо ускорять. Медленные тесты не запускают, и дело тут не в дисциплине, а в психологии: обратная связь длиннее 10 минут перестаёт быть обратной связью. Таблица ниже даёт ориентиры, которые стоит зафиксировать в команде, и то, что делать при превышении каждого.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -2850,24 +2850,24 @@ grep -rl --include<span class="o">=</span><span class="s1">'*Test.java'</span> -
 </thead>
 <tbody>
 <tr>
-<td>Один доменный тест</td>
-<td>&lt; 1 мс</td>
-<td>убрать Spring, убрать I/O</td>
+<td data-label="Уровень">Один доменный тест</td>
+<td data-label="Бюджет">&lt; 1 мс</td>
+<td data-label="Что делать при превышении">убрать Spring, убрать I/O</td>
 </tr>
 <tr>
-<td>Весь «быстрый» набор локально</td>
-<td>&lt; 60 с</td>
-<td>вынести в теги, распараллелить</td>
+<td data-label="Уровень">Весь «быстрый» набор локально</td>
+<td data-label="Бюджет">&lt; 60 с</td>
+<td data-label="Что делать при превышении">вынести в теги, распараллелить</td>
 </tr>
 <tr>
-<td>Один интеграционный тест</td>
-<td>&lt; 500 мс (без старта контейнеров)</td>
-<td>singleton-контейнеры, <code>TRUNCATE</code> вместо пересоздания</td>
+<td data-label="Уровень">Один интеграционный тест</td>
+<td data-label="Бюджет">&lt; 500 мс (без старта контейнеров)</td>
+<td data-label="Что делать при превышении">singleton-контейнеры, <code>TRUNCATE</code> вместо пересоздания</td>
 </tr>
 <tr>
-<td>Полная сборка модуля в CI</td>
-<td>&lt; 10 мин</td>
-<td>параллелизм, кеш контекстов, шардирование</td>
+<td data-label="Уровень">Полная сборка модуля в CI</td>
+<td data-label="Бюджет">&lt; 10 мин</td>
+<td data-label="Что делать при превышении">параллелизм, кеш контекстов, шардирование</td>
 </tr>
 </tbody>
 </table>
@@ -2912,7 +2912,7 @@ grep -rl --include<span class="o">=</span><span class="s1">'*Test.java'</span> -
 <h3 id="131-тестовые-срезы-spring-boot">13.1 Тестовые срезы Spring Boot</h3>
 <p>Срез (<code>@...Test</code>) — аннотация, которая включает <strong>ограниченный набор автоконфигураций</strong> и применяет фильтр компонентов, так что обычные <code>@Component</code> и <code>@ConfigurationProperties</code> не сканируются. Срез быстрее полного контекста, но и проверяет меньше, и именно здесь легко получить тест, который зелёный только потому, что нужная часть приложения не поднялась. Ниже таблица срезов и два практических уточнения — о подмене БД в <code>@DataJpaTest</code> и о мок-бинах в <code>@WebMvcTest</code>.</p>
 <p>Таблица показывает для каждого среза, что он поднимает, чего в нём нет и для чего его обычно используют; столбец «Чего нет» стоит читать особенно внимательно.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Срез</th>
@@ -2923,40 +2923,40 @@ grep -rl --include<span class="o">=</span><span class="s1">'*Test.java'</span> -
 </thead>
 <tbody>
 <tr>
-<td><code>@WebMvcTest</code></td>
-<td>инфраструктуру Spring MVC, <code>MockMvc</code> (и <code>MockMvcTester</code> при наличии AssertJ), бины <code>@Controller</code>, <code>@ControllerAdvice</code>, <code>@JsonComponent</code>/<code>@JacksonComponent</code>, <code>Converter</code>, <code>Filter</code>, <code>HandlerInterceptor</code>, <code>WebMvcConfigurer</code></td>
-<td>сервисов, репозиториев, <code>DataSource</code>; обычные <code>@Component</code> не сканируются (<a href="https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html">Spring Boot, Testing</a>)</td>
-<td>отображение запросов, валидация, обработка ошибок, сериализация ответа, правила безопасности на эндпоинте</td>
+<td data-label="Срез"><code>@WebMvcTest</code></td>
+<td data-label="Что поднимает">инфраструктуру Spring MVC, <code>MockMvc</code> (и <code>MockMvcTester</code> при наличии AssertJ), бины <code>@Controller</code>, <code>@ControllerAdvice</code>, <code>@JsonComponent</code>/<code>@JacksonComponent</code>, <code>Converter</code>, <code>Filter</code>, <code>HandlerInterceptor</code>, <code>WebMvcConfigurer</code></td>
+<td data-label="Чего нет">сервисов, репозиториев, <code>DataSource</code>; обычные <code>@Component</code> не сканируются (<a href="https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html">Spring Boot, Testing</a>)</td>
+<td data-label="Типовое применение">отображение запросов, валидация, обработка ошибок, сериализация ответа, правила безопасности на эндпоинте</td>
 </tr>
 <tr>
-<td><code>@DataJpaTest</code></td>
-<td>JPA, <code>EntityManager</code>, репозитории Spring Data, <code>TestEntityManager</code>; <strong>транзакционен и откатывается</strong>, по умолчанию подменяет БД на встроенную</td>
-<td>web-слоя, сервисов</td>
-<td>проверка отображения, <code>@EntityGraph</code>, <code>Specification</code>, нативных запросов</td>
+<td data-label="Срез"><code>@DataJpaTest</code></td>
+<td data-label="Что поднимает">JPA, <code>EntityManager</code>, репозитории Spring Data, <code>TestEntityManager</code>; <strong>транзакционен и откатывается</strong>, по умолчанию подменяет БД на встроенную</td>
+<td data-label="Чего нет">web-слоя, сервисов</td>
+<td data-label="Типовое применение">проверка отображения, <code>@EntityGraph</code>, <code>Specification</code>, нативных запросов</td>
 </tr>
 <tr>
-<td><code>@JsonTest</code></td>
-<td>выбранный JSON-преобразователь, <code>@JacksonComponent</code>-бины, модули, хелперы <code>JacksonTester</code>/<code>GsonTester</code>/<code>BasicJsonTester</code></td>
-<td>всего остального</td>
-<td>контракт сериализации DTO: формат дат, денег, <code>null</code>-полей</td>
+<td data-label="Срез"><code>@JsonTest</code></td>
+<td data-label="Что поднимает">выбранный JSON-преобразователь, <code>@JacksonComponent</code>-бины, модули, хелперы <code>JacksonTester</code>/<code>GsonTester</code>/<code>BasicJsonTester</code></td>
+<td data-label="Чего нет">всего остального</td>
+<td data-label="Типовое применение">контракт сериализации DTO: формат дат, денег, <code>null</code>-полей</td>
 </tr>
 <tr>
-<td><code>@RestClientTest</code></td>
-<td>строители <code>RestClient</code>/<code>RestTemplate</code> и <code>MockRestServiceServer</code></td>
-<td>сервера</td>
-<td>проверка клиента к чужому API без сети</td>
+<td data-label="Срез"><code>@RestClientTest</code></td>
+<td data-label="Что поднимает">строители <code>RestClient</code>/<code>RestTemplate</code> и <code>MockRestServiceServer</code></td>
+<td data-label="Чего нет">сервера</td>
+<td data-label="Типовое применение">проверка клиента к чужому API без сети</td>
 </tr>
 <tr>
-<td><code>@WebFluxTest</code></td>
-<td>WebFlux, <code>WebTestClient</code></td>
-<td>блокирующего стека</td>
-<td>реактивные эндпоинты (гл. 11)</td>
+<td data-label="Срез"><code>@WebFluxTest</code></td>
+<td data-label="Что поднимает">WebFlux, <code>WebTestClient</code></td>
+<td data-label="Чего нет">блокирующего стека</td>
+<td data-label="Типовое применение">реактивные эндпоинты (гл. 11)</td>
 </tr>
 <tr>
-<td><code>@DataRedisTest</code>, <code>@DataMongoTest</code>, <code>@JdbcTest</code>, <code>@DataR2dbcTest</code></td>
-<td>соответствующий слой доступа</td>
-<td>прочего</td>
-<td>точечные проверки доступа к данным</td>
+<td data-label="Срез"><code>@DataRedisTest</code>, <code>@DataMongoTest</code>, <code>@JdbcTest</code>, <code>@DataR2dbcTest</code></td>
+<td data-label="Что поднимает">соответствующий слой доступа</td>
+<td data-label="Чего нет">прочего</td>
+<td data-label="Типовое применение">точечные проверки доступа к данным</td>
 </tr>
 </tbody>
 </table>
@@ -3043,7 +3043,7 @@ grep -rl --include<span class="o">=</span><span class="s1">'*Test.java'</span> -
 <h3 id="134-mockmvc-testresttemplate-и-webtestclient">13.4 <code>MockMvc</code>, <code>TestRestTemplate</code> и <code>WebTestClient</code></h3>
 <p>Тестовые HTTP-клиенты Spring различаются главным образом тем, <strong>где проходит граница теста</strong>: внутри <code>DispatcherServlet</code> или на настоящем сокете. От этого зависит, что тест вообще способен проверить и как он взаимодействует с транзакциями. Ниже сравнение четырёх клиентов, практический выбор между ними и пример на <code>MockMvcTester</code>.</p>
 <p>Таблица сравнивает клиентов по границе теста и по тому, что каждый проверяет и чего не видит; самое важное в ней — последний столбец для <code>MockMvc</code>.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Клиент</th>
@@ -3054,28 +3054,28 @@ grep -rl --include<span class="o">=</span><span class="s1">'*Test.java'</span> -
 </thead>
 <tbody>
 <tr>
-<td><code>MockMvc</code> (<code>webEnvironment=MOCK</code>)</td>
-<td>внутри <code>DispatcherServlet</code>, без сокета и без контейнера сервлетов</td>
-<td>маршрутизация, аргументы, валидация, сериализация, <code>@ControllerAdvice</code>, фильтры Spring Security</td>
-<td>реальный HTTP: кодировку на уровне сервера, HTTP/2, сжатие, таймауты, настройки Tomcat/Netty, асинхронный ответ по-настоящему</td>
+<td data-label="Клиент"><code>MockMvc</code> (<code>webEnvironment=MOCK</code>)</td>
+<td data-label="Где граница">внутри <code>DispatcherServlet</code>, без сокета и без контейнера сервлетов</td>
+<td data-label="Что проверяется">маршрутизация, аргументы, валидация, сериализация, <code>@ControllerAdvice</code>, фильтры Spring Security</td>
+<td data-label="Чего не проверяет">реальный HTTP: кодировку на уровне сервера, HTTP/2, сжатие, таймауты, настройки Tomcat/Netty, асинхронный ответ по-настоящему</td>
 </tr>
 <tr>
-<td><code>TestRestTemplate</code> (<code>RANDOM_PORT</code>)</td>
-<td>настоящий сокет, реальный сервер</td>
-<td>всё то же плюс серверные настройки, заголовки, статусы, перенаправления</td>
-<td>— (но тест дороже и требует старта сервера)</td>
+<td data-label="Клиент"><code>TestRestTemplate</code> (<code>RANDOM_PORT</code>)</td>
+<td data-label="Где граница">настоящий сокет, реальный сервер</td>
+<td data-label="Что проверяется">всё то же плюс серверные настройки, заголовки, статусы, перенаправления</td>
+<td data-label="Чего не проверяет">— (но тест дороже и требует старта сервера)</td>
 </tr>
 <tr>
-<td><code>WebTestClient</code> (<code>RANDOM_PORT</code> или привязка к контексту)</td>
-<td>реальный сокет либо mock-привязка</td>
-<td>fluent-API, удобная работа с реактивными и потоковыми ответами</td>
-<td>при mock-привязке — то же, что у <code>MockMvc</code></td>
+<td data-label="Клиент"><code>WebTestClient</code> (<code>RANDOM_PORT</code> или привязка к контексту)</td>
+<td data-label="Где граница">реальный сокет либо mock-привязка</td>
+<td data-label="Что проверяется">fluent-API, удобная работа с реактивными и потоковыми ответами</td>
+<td data-label="Чего не проверяет">при mock-привязке — то же, что у <code>MockMvc</code></td>
 </tr>
 <tr>
-<td><code>RestTestClient</code> (Spring Framework 7)</td>
-<td>обёртка над <code>RestClient</code> в стиле <code>WebTestClient</code></td>
-<td>синхронный аналог <code>WebTestClient</code> для серверных тестов</td>
-<td>зависит от режима привязки</td>
+<td data-label="Клиент"><code>RestTestClient</code> (Spring Framework 7)</td>
+<td data-label="Где граница">обёртка над <code>RestClient</code> в стиле <code>WebTestClient</code></td>
+<td data-label="Что проверяется">синхронный аналог <code>WebTestClient</code> для серверных тестов</td>
+<td data-label="Чего не проверяет">зависит от режима привязки</td>
 </tr>
 </tbody>
 </table>
@@ -3388,5 +3388,5 @@ docker stats --no-stream --filter <span class="nv">label</span><span class="o">=
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-назначение-тестов-и-их-объём">1. Назначение тестов и их объём</a></li><li><a href="#2-свойства-хорошего-теста">2. Свойства хорошего теста</a></li><li><a href="#3-junit-платформа-жизненный-цикл-расширения">3. JUnit: платформа, жизненный цикл, расширения</a></li><li><a href="#4-проверки-проверки">4. Проверки (проверки)</a></li><li><a href="#5-тестовые-дублёры-и-mockito">5. Тестовые дублёры и Mockito</a></li><li><a href="#6-интеграционные-тесты-и-testcontainers">6. Интеграционные тесты и Testcontainers</a></li><li><a href="#7-тестирование-внешних-http-интеграций">7. Тестирование внешних HTTP-интеграций</a></li><li><a href="#8-контрактное-тестирование">8. Контрактное тестирование</a></li><li><a href="#9-тестирование-асинхронного-и-распределённого-кода">9. Тестирование асинхронного и распределённого кода</a></li><li><a href="#10-другие-виды-тестов">10. Другие виды тестов</a></li><li><a href="#11-покрытие-кода">11. Покрытие кода</a></li><li><a href="#12-скорость-и-нестабильные-тесты">12. Скорость и нестабильные тесты</a></li><li><a href="#13-spring-boot-срезы-кеш-контекстов-и-тестовые-клиенты">13. Spring Boot: срезы, кеш контекстов и тестовые клиенты</a></li><li><a href="#14-разобранные-инциденты">14. Разобранные инциденты</a></li><li><a href="#15-грабли-и-антипаттерны">15. Грабли и антипаттерны</a></li><li><a href="#16-диагностика">16. Диагностика</a></li><li><a href="#17-вопросы-на-интервью">17. Вопросы на интервью</a></li><li><a href="#18-попробовать-руками">18. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

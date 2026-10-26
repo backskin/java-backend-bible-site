@@ -3,7 +3,7 @@
 <title>29. Apache Kafka изнутри — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Apache Kafka изнутри">
 <a class="skip" href="#content">К тексту</a>
@@ -55,7 +55,7 @@ offset:   0    1    2    3    4    5    6    7    8    9
 <p>Все выводы этого подраздела получены 2026-10-21 на кластере из трёх брокеров Apache Kafka 3.9.1 в режиме KRaft, поднятом в kind (<code>tmp/k8s/kafka3.yaml</code>), клиент — Kafka 4.2.1 из Spring Boot 4.1.1. На узлах задано только то, без чего кластер не соберётся: идентификатор узла, слушатели, роли и список контроллеров. Всё остальное — настоящие умолчания.</p>
 <h4>Откуда берётся значение: шесть уровней</h4>
 <p>Для настроек брокера Kafka хранит значение и источник, из которого оно пришло. Вывод инструмента <code>kafka-configs.sh</code> называет источники так, и это самая полезная классификация: она отвечает на вопрос «почему здесь именно это число».</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Источник в выводе</th>
@@ -65,34 +65,34 @@ offset:   0    1    2    3    4    5    6    7    8    9
 </thead>
 <tbody>
 <tr>
-<td><code>DYNAMIC_BROKER_CONFIG</code></td>
-<td><code>kafka-configs.sh --alter --entity-type brokers --entity-name N</code> (хранится в метаданных кластера, действует без перезапуска)</td>
-<td>высший для брокера N</td>
+<td data-label="Источник в выводе"><code>DYNAMIC_BROKER_CONFIG</code></td>
+<td data-label="Где задаётся"><code>kafka-configs.sh --alter --entity-type brokers --entity-name N</code> (хранится в метаданных кластера, действует без перезапуска)</td>
+<td data-label="Приоритет">высший для брокера N</td>
 </tr>
 <tr>
-<td><code>DYNAMIC_DEFAULT_BROKER_CONFIG</code></td>
-<td>то же, но для всех брокеров сразу (<code>--entity-default</code>); ⚠️ в запуске не встречался, описан по справочнику источников</td>
-<td>ниже предыдущего</td>
+<td data-label="Источник в выводе"><code>DYNAMIC_DEFAULT_BROKER_CONFIG</code></td>
+<td data-label="Где задаётся">то же, но для всех брокеров сразу (<code>--entity-default</code>); ⚠️ в запуске не встречался, описан по справочнику источников</td>
+<td data-label="Приоритет">ниже предыдущего</td>
 </tr>
 <tr>
-<td><code>STATIC_BROKER_CONFIG</code></td>
-<td><code>server.properties</code> или переменные окружения образа (<code>KAFKA_...</code>), читается при старте</td>
-<td>ниже динамических</td>
+<td data-label="Источник в выводе"><code>STATIC_BROKER_CONFIG</code></td>
+<td data-label="Где задаётся"><code>server.properties</code> или переменные окружения образа (<code>KAFKA_...</code>), читается при старте</td>
+<td data-label="Приоритет">ниже динамических</td>
 </tr>
 <tr>
-<td><code>DEFAULT_CONFIG</code></td>
-<td>значение, зашитое в код брокера</td>
-<td>самый низкий</td>
+<td data-label="Источник в выводе"><code>DEFAULT_CONFIG</code></td>
+<td data-label="Где задаётся">значение, зашитое в код брокера</td>
+<td data-label="Приоритет">самый низкий</td>
 </tr>
 <tr>
-<td><code>DYNAMIC_TOPIC_CONFIG</code></td>
-<td>настройка конкретной темы, заданная при создании или через <code>kafka-configs.sh --entity-type topics</code></td>
-<td>для темы выше всех брокерских</td>
+<td data-label="Источник в выводе"><code>DYNAMIC_TOPIC_CONFIG</code></td>
+<td data-label="Где задаётся">настройка конкретной темы, заданная при создании или через <code>kafka-configs.sh --entity-type topics</code></td>
+<td data-label="Приоритет">для темы выше всех брокерских</td>
 </tr>
 <tr>
-<td>клиентская настройка</td>
-<td>в коде или файле свойств приложения; в Kafka её значение по умолчанию живёт в самой клиентской библиотеке</td>
-<td>отдельный мир: брокер её не видит</td>
+<td data-label="Источник в выводе">клиентская настройка</td>
+<td data-label="Где задаётся">в коде или файле свойств приложения; в Kafka её значение по умолчанию живёт в самой клиентской библиотеке</td>
+<td data-label="Приоритет">отдельный мир: брокер её не видит</td>
 </tr>
 </tbody>
 </table>
@@ -162,7 +162,7 @@ ContainerProperties:       ackMode=BATCH, pollTimeout=5000 мс, idleBetweenPoll
 <p>Из вывода видно, что Boot сам почти ничего не меняет: <code>acks</code>, <code>retries</code>, <code>linger.ms</code> и остальные настройки производителя остаются значениями клиентской библиотеки, пока вы не задали <code>spring.kafka.producer.*</code>. Для потребителя важны две вещи. Режим подтверждения у контейнера по умолчанию <code>BATCH</code>: смещения фиксируются после обработки всей пачки, возвращённой <code>poll()</code>, а не после каждой записи (подробно 11.3). <code>spring.kafka.consumer.auto-offset-reset</code> не задан, значит действует клиентское <code>latest</code>. Адрес брокера по умолчанию <code>localhost:9092</code>: если приложение внезапно пытается подключиться к локальному порту, а вы задали адрес в другом месте, проверьте именно это.</p>
 <h4>Таблица значений, на которые опирается эта глава</h4>
 <p>Сводка сделана по выводам выше; везде, где значение связано с версией, оно относится к брокеру 3.9.1 и клиенту 4.2.1. Колонка «Где смотреть» подсказывает, какую команду или какой раздел открыть.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -172,104 +172,104 @@ ContainerProperties:       ackMode=BATCH, pollTimeout=5000 мс, idleBetweenPoll
 </thead>
 <tbody>
 <tr>
-<td>Партиций у новой темы (<code>num.partitions</code>)</td>
-<td>1</td>
-<td>брокер, <code>--describe --all</code></td>
+<td data-label="Что">Партиций у новой темы (<code>num.partitions</code>)</td>
+<td data-label="Значение по умолчанию">1</td>
+<td data-label="Где смотреть">брокер, <code>--describe --all</code></td>
 </tr>
 <tr>
-<td>Фактор репликации новой темы (<code>default.replication.factor</code>)</td>
-<td>1</td>
-<td>то же</td>
+<td data-label="Что">Фактор репликации новой темы (<code>default.replication.factor</code>)</td>
+<td data-label="Значение по умолчанию">1</td>
+<td data-label="Где смотреть">то же</td>
 </tr>
 <tr>
-<td><code>min.insync.replicas</code></td>
-<td>1</td>
-<td>брокер и тема; смысл — 4.3</td>
+<td data-label="Что"><code>min.insync.replicas</code></td>
+<td data-label="Значение по умолчанию">1</td>
+<td data-label="Где смотреть">брокер и тема; смысл — 4.3</td>
 </tr>
 <tr>
-<td><code>unclean.leader.election.enable</code></td>
-<td><code>false</code></td>
-<td>то же; смысл — 4.4</td>
+<td data-label="Что"><code>unclean.leader.election.enable</code></td>
+<td data-label="Значение по умолчанию"><code>false</code></td>
+<td data-label="Где смотреть">то же; смысл — 4.4</td>
 </tr>
 <tr>
-<td><code>auto.create.topics.enable</code></td>
-<td><code>true</code> (тема создаётся при первом обращении)</td>
-<td>то же</td>
+<td data-label="Что"><code>auto.create.topics.enable</code></td>
+<td data-label="Значение по умолчанию"><code>true</code> (тема создаётся при первом обращении)</td>
+<td data-label="Где смотреть">то же</td>
 </tr>
 <tr>
-<td>Срок хранения (<code>log.retention.hours</code> / <code>retention.ms</code>)</td>
-<td>168 ч = 7 суток</td>
-<td>8.1</td>
+<td data-label="Что">Срок хранения (<code>log.retention.hours</code> / <code>retention.ms</code>)</td>
+<td data-label="Значение по умолчанию">168 ч = 7 суток</td>
+<td data-label="Где смотреть">8.1</td>
 </tr>
 <tr>
-<td>Размер сегмента (<code>log.segment.bytes</code>)</td>
-<td>1 073 741 824 (1 ГиБ)</td>
-<td>2.1</td>
+<td data-label="Что">Размер сегмента (<code>log.segment.bytes</code>)</td>
+<td data-label="Значение по умолчанию">1 073 741 824 (1 ГиБ)</td>
+<td data-label="Где смотреть">2.1</td>
 </tr>
 <tr>
-<td>Максимальный размер сообщения (<code>message.max.bytes</code>)</td>
-<td>1 048 588 байт</td>
-<td>5.2</td>
+<td data-label="Что">Максимальный размер сообщения (<code>message.max.bytes</code>)</td>
+<td data-label="Значение по умолчанию">1 048 588 байт</td>
+<td data-label="Где смотреть">5.2</td>
 </tr>
 <tr>
-<td><code>replica.lag.time.max.ms</code> (критерий ISR)</td>
-<td>30 000</td>
-<td>4.1</td>
+<td data-label="Что"><code>replica.lag.time.max.ms</code> (критерий ISR)</td>
+<td data-label="Значение по умолчанию">30 000</td>
+<td data-label="Где смотреть">4.1</td>
 </tr>
 <tr>
-<td>Партиций <code>__consumer_offsets</code> (<code>offsets.topic.num.partitions</code>)</td>
-<td>50</td>
-<td>6.15</td>
+<td data-label="Что">Партиций <code>__consumer_offsets</code> (<code>offsets.topic.num.partitions</code>)</td>
+<td data-label="Значение по умолчанию">50</td>
+<td data-label="Где смотреть">6.15</td>
 </tr>
 <tr>
-<td>Фактор репликации <code>__consumer_offsets</code> / <code>__transaction_state</code></td>
-<td>3 / 3, <code>min.insync.replicas</code> у транзакционного 2</td>
-<td>6.15, 5.7</td>
+<td data-label="Что">Фактор репликации <code>__consumer_offsets</code> / <code>__transaction_state</code></td>
+<td data-label="Значение по умолчанию">3 / 3, <code>min.insync.replicas</code> у транзакционного 2</td>
+<td data-label="Где смотреть">6.15, 5.7</td>
 </tr>
 <tr>
-<td><code>group.initial.rebalance.delay.ms</code></td>
-<td>3000</td>
-<td>6.2, 6.15</td>
+<td data-label="Что"><code>group.initial.rebalance.delay.ms</code></td>
+<td data-label="Значение по умолчанию">3000</td>
+<td data-label="Где смотреть">6.2, 6.15</td>
 </tr>
 <tr>
-<td><code>group.min.session.timeout.ms</code> / <code>group.max.session.timeout.ms</code></td>
-<td>6000 / 1 800 000</td>
-<td>6.15</td>
+<td data-label="Что"><code>group.min.session.timeout.ms</code> / <code>group.max.session.timeout.ms</code></td>
+<td data-label="Значение по умолчанию">6000 / 1 800 000</td>
+<td data-label="Где смотреть">6.15</td>
 </tr>
 <tr>
-<td><code>broker.session.timeout.ms</code> / <code>broker.heartbeat.interval.ms</code></td>
-<td>9000 / 2000</td>
-<td>3.4</td>
+<td data-label="Что"><code>broker.session.timeout.ms</code> / <code>broker.heartbeat.interval.ms</code></td>
+<td data-label="Значение по умолчанию">9000 / 2000</td>
+<td data-label="Где смотреть">3.4</td>
 </tr>
 <tr>
-<td><code>leader.imbalance.check.interval.seconds</code> / <code>...per.broker.percentage</code></td>
-<td>300 / 10</td>
-<td>3.4</td>
+<td data-label="Что"><code>leader.imbalance.check.interval.seconds</code> / <code>...per.broker.percentage</code></td>
+<td data-label="Значение по умолчанию">300 / 10</td>
+<td data-label="Где смотреть">3.4</td>
 </tr>
 <tr>
-<td><code>controller.quorum.election.timeout.ms</code> / <code>fetch.timeout.ms</code></td>
-<td>1000 / 2000</td>
-<td>3.4</td>
+<td data-label="Что"><code>controller.quorum.election.timeout.ms</code> / <code>fetch.timeout.ms</code></td>
+<td data-label="Значение по умолчанию">1000 / 2000</td>
+<td data-label="Где смотреть">3.4</td>
 </tr>
 <tr>
-<td>Производитель: <code>acks</code>, <code>enable.idempotence</code>, <code>linger.ms</code>, <code>delivery.timeout.ms</code></td>
-<td><code>all</code>, <code>true</code>, 5, 120 000</td>
-<td>5.2, 7.5</td>
+<td data-label="Что">Производитель: <code>acks</code>, <code>enable.idempotence</code>, <code>linger.ms</code>, <code>delivery.timeout.ms</code></td>
+<td data-label="Значение по умолчанию"><code>all</code>, <code>true</code>, 5, 120 000</td>
+<td data-label="Где смотреть">5.2, 7.5</td>
 </tr>
 <tr>
-<td>Потребитель: <code>enable.auto.commit</code>, <code>auto.offset.reset</code>, <code>isolation.level</code></td>
-<td><code>true</code>, <code>latest</code>, <code>read_uncommitted</code></td>
-<td>6.7, 7.6</td>
+<td data-label="Что">Потребитель: <code>enable.auto.commit</code>, <code>auto.offset.reset</code>, <code>isolation.level</code></td>
+<td data-label="Значение по умолчанию"><code>true</code>, <code>latest</code>, <code>read_uncommitted</code></td>
+<td data-label="Где смотреть">6.7, 7.6</td>
 </tr>
 <tr>
-<td>Потребитель: <code>session.timeout.ms</code>, <code>heartbeat.interval.ms</code>, <code>max.poll.interval.ms</code>, <code>max.poll.records</code></td>
-<td>45 000, 3000, 300 000, 500</td>
-<td>6.6, 6.14</td>
+<td data-label="Что">Потребитель: <code>session.timeout.ms</code>, <code>heartbeat.interval.ms</code>, <code>max.poll.interval.ms</code>, <code>max.poll.records</code></td>
+<td data-label="Значение по умолчанию">45 000, 3000, 300 000, 500</td>
+<td data-label="Где смотреть">6.6, 6.14</td>
 </tr>
 <tr>
-<td>Spring Kafka: <code>ackMode</code>, <code>pollTimeout</code></td>
-<td><code>BATCH</code>, 5000 мс</td>
-<td>11.3</td>
+<td data-label="Что">Spring Kafka: <code>ackMode</code>, <code>pollTimeout</code></td>
+<td data-label="Значение по умолчанию"><code>BATCH</code>, 5000 мс</td>
+<td data-label="Где смотреть">11.3</td>
 </tr>
 </tbody>
 </table>
@@ -388,7 +388,7 @@ headers         [varint keyLen, key, varint valueLen, value]...
 
 <p>Благодаря числам переменной длины дельты почти ничего не стоят. Если запись идёт в том же пакете миллисекунда в миллисекунду за предыдущей, <code>timestampDelta</code> и <code>offsetDelta</code> занимают по одному байту. В итоге запись без ключа и без заголовков обходится минимум в <strong>7 байт</strong> накладных расходов: по байту на каждое из семи служебных полей (<code>length</code>, <code>attributes</code>, <code>timestampDelta</code>, <code>offsetDelta</code>, <code>keyLength</code>, <code>valueLength</code>, <code>headersCount</code>).</p>
 <p>Посчитаем реальный случай: JSON-событие о платеже на 200 байт, ключ на 16 байт и два заголовка (<code>traceparent</code> 55 байт + <code>eventType</code> 20 байт), что вместе с именами заголовков даёт ≈ 90 байт. Таблица сравнивает четыре сценария, и смотреть в ней стоит на последний столбец: доля накладных расходов меняется на два порядка в зависимости от того, сколько записей попало в пакет и насколько они велики.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сценарий</th>
@@ -399,28 +399,28 @@ headers         [varint keyLen, key, varint valueLen, value]...
 </thead>
 <tbody>
 <tr>
-<td>1 запись в пакете</td>
-<td class="num">306 Б</td>
-<td>61 + ~314 = 375 Б</td>
-<td class="num">23 %</td>
+<td data-label="Сценарий">1 запись в пакете</td>
+<td data-label="Полезная нагрузка" class="num">306 Б</td>
+<td data-label="На проводе">61 + ~314 = 375 Б</td>
+<td data-label="Накладные расходы" class="num">23 %</td>
 </tr>
 <tr>
-<td>100 записей в пакете</td>
-<td class="num">30 600 Б</td>
-<td>61 + ~31 400 = 31 461 Б</td>
-<td class="num">2,8 %</td>
+<td data-label="Сценарий">100 записей в пакете</td>
+<td data-label="Полезная нагрузка" class="num">30 600 Б</td>
+<td data-label="На проводе">61 + ~31 400 = 31 461 Б</td>
+<td data-label="Накладные расходы" class="num">2,8 %</td>
 </tr>
 <tr>
-<td>1 запись, payload 20 Б (счётчик)</td>
-<td class="num">20 Б</td>
-<td>61 + ~28 = 89 Б</td>
-<td class="num">345 %</td>
+<td data-label="Сценарий">1 запись, payload 20 Б (счётчик)</td>
+<td data-label="Полезная нагрузка" class="num">20 Б</td>
+<td data-label="На проводе">61 + ~28 = 89 Б</td>
+<td data-label="Накладные расходы" class="num">345 %</td>
 </tr>
 <tr>
-<td>1000 записей по 20 Б</td>
-<td class="num">20 000 Б</td>
-<td>61 + ~28 000 = 28 061 Б</td>
-<td class="num">40 %</td>
+<td data-label="Сценарий">1000 записей по 20 Б</td>
+<td data-label="Полезная нагрузка" class="num">20 000 Б</td>
+<td data-label="На проводе">61 + ~28 000 = 28 061 Б</td>
+<td data-label="Накладные расходы" class="num">40 %</td>
 </tr>
 </tbody>
 </table>
@@ -492,7 +492,7 @@ bin/kafka-dump-log.sh --files .../00000000000000524288.snapshot
 <p>Файл <code>.snapshot</code> содержит сериализованное состояние <code>ProducerStateManager</code> — компонента брокера, который помнит, какие номера записей от какого производителя уже приняты. По каждому активному PID в нём хранятся последние 5 sequence, эпоха и смещение первой записи текущей транзакции. Брокер пишет снимок при роллинге сегмента, чтобы после перезапуска не перечитывать весь журнал ради восстановления состояния дедупликации.</p>
 <p>Файл <code>.txnindex</code> (<code>transaction index</code>) появляется на транзакционных партициях и хранит список <strong>прерванных</strong> транзакций в виде диапазонов (firstOffset, lastOffset, lastStableOffset). По нему брокер при <code>isolation.level=read_committed</code> составляет для ответа список <code>aborted transactions</code>, чтобы клиент выбросил отменённые записи, не читая ради этого весь журнал (подробно — в 5.7).</p>
 <p>Ниже сведены все файлы, которые могут встретиться в каталоге партиции: что в каждом лежит, при каких условиях он появляется и чем его читать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Файл</th>
@@ -503,52 +503,52 @@ bin/kafka-dump-log.sh --files .../00000000000000524288.snapshot
 </thead>
 <tbody>
 <tr>
-<td><code>NNN.log</code></td>
-<td>Пакеты записей</td>
-<td>Всегда</td>
-<td><code>kafka-dump-log.sh</code></td>
+<td data-label="Файл"><code>NNN.log</code></td>
+<td data-label="Что внутри">Пакеты записей</td>
+<td data-label="Когда появляется">Всегда</td>
+<td data-label="Читается чем"><code>kafka-dump-log.sh</code></td>
 </tr>
 <tr>
-<td><code>NNN.index</code></td>
-<td>Разреженный (отн. смещение → позиция), 8 Б/запись</td>
-<td>Всегда</td>
-<td><code>--index-sanity-check</code></td>
+<td data-label="Файл"><code>NNN.index</code></td>
+<td data-label="Что внутри">Разреженный (отн. смещение → позиция), 8 Б/запись</td>
+<td data-label="Когда появляется">Всегда</td>
+<td data-label="Читается чем"><code>--index-sanity-check</code></td>
 </tr>
 <tr>
-<td><code>NNN.timeindex</code></td>
-<td>Разреженный (timestamp → отн. смещение), 12 Б/запись</td>
-<td>Всегда</td>
-<td><code>kafka-dump-log.sh</code></td>
+<td data-label="Файл"><code>NNN.timeindex</code></td>
+<td data-label="Что внутри">Разреженный (timestamp → отн. смещение), 12 Б/запись</td>
+<td data-label="Когда появляется">Всегда</td>
+<td data-label="Читается чем"><code>kafka-dump-log.sh</code></td>
 </tr>
 <tr>
-<td><code>NNN.snapshot</code></td>
-<td>Состояние <code>ProducerStateManager</code> на момент роллинга</td>
-<td>При идемпотентных производителях</td>
-<td><code>kafka-dump-log.sh</code></td>
+<td data-label="Файл"><code>NNN.snapshot</code></td>
+<td data-label="Что внутри">Состояние <code>ProducerStateManager</code> на момент роллинга</td>
+<td data-label="Когда появляется">При идемпотентных производителях</td>
+<td data-label="Читается чем"><code>kafka-dump-log.sh</code></td>
 </tr>
 <tr>
-<td><code>NNN.txnindex</code></td>
-<td>Диапазоны прерванных транзакций</td>
-<td>При транзакциях</td>
-<td><code>kafka-dump-log.sh</code></td>
+<td data-label="Файл"><code>NNN.txnindex</code></td>
+<td data-label="Что внутри">Диапазоны прерванных транзакций</td>
+<td data-label="Когда появляется">При транзакциях</td>
+<td data-label="Читается чем"><code>kafka-dump-log.sh</code></td>
 </tr>
 <tr>
-<td><code>NNN.deleted</code> / <code>.swap</code> / <code>.cleaned</code></td>
-<td>Временные при удалении и compaction</td>
-<td>Во время работы cleaner</td>
-<td>—</td>
+<td data-label="Файл"><code>NNN.deleted</code> / <code>.swap</code> / <code>.cleaned</code></td>
+<td data-label="Что внутри">Временные при удалении и compaction</td>
+<td data-label="Когда появляется">Во время работы cleaner</td>
+<td data-label="Читается чем">—</td>
 </tr>
 <tr>
-<td><code>leader-epoch-checkpoint</code></td>
-<td>Пары «эпоха → стартовое смещение»</td>
-<td>Всегда</td>
-<td><code>cat</code> (текстовый)</td>
+<td data-label="Файл"><code>leader-epoch-checkpoint</code></td>
+<td data-label="Что внутри">Пары «эпоха → стартовое смещение»</td>
+<td data-label="Когда появляется">Всегда</td>
+<td data-label="Читается чем"><code>cat</code> (текстовый)</td>
 </tr>
 <tr>
-<td><code>partition.metadata</code></td>
-<td><code>version</code> + topic id (UUID)</td>
-<td>С 2.8</td>
-<td><code>cat</code> (текстовый)</td>
+<td data-label="Файл"><code>partition.metadata</code></td>
+<td data-label="Что внутри"><code>version</code> + topic id (UUID)</td>
+<td data-label="Когда появляется">С 2.8</td>
+<td data-label="Читается чем"><code>cat</code> (текстовый)</td>
 </tr>
 </tbody>
 </table>
@@ -911,7 +911,7 @@ Follower2 LEO=102 [..................|  ]
 <h3 id="43-acks-и-mininsyncreplicas">4.3 <code>acks</code> и <code>min.insync.replicas</code></h3>
 <p><code>acks</code> — это параметр производителя, который определяет, в какой момент лидер отвечает производителю, что запись принята, а значит, и то, какие отказы производитель переживёт без потерь. Проблема в том, что даже самое строгое его значение сработает как задумано только в паре с настройкой топика <code>min.insync.replicas</code>, о которой часто забывают. Разберём три значения <code>acks</code>, ловушку с «текущим ISR» и каноническую конфигурацию для данных, которые нельзя терять.</p>
 <p>Таблица показывает, когда приходит ответ при каждом значении и что при этом можно потерять. Главное в ней — формулировка в строке <code>all</code>: «из текущего ISR».</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th><code>acks</code></th>
@@ -921,19 +921,19 @@ Follower2 LEO=102 [..................|  ]
 </thead>
 <tbody>
 <tr>
-<td><code>0</code></td>
-<td>Сразу после записи в сокет</td>
-<td>Всё: сеть, отказ лидера, переполнение — тихо</td>
+<td data-label="acks"><code>0</code></td>
+<td data-label="Когда приходит ответ">Сразу после записи в сокет</td>
+<td data-label="Что теряется">Всё: сеть, отказ лидера, переполнение — тихо</td>
 </tr>
 <tr>
-<td><code>1</code></td>
-<td>После записи в лог лидера (в page cache!)</td>
-<td>Данные, не успевшие реплицироваться, при отказе лидера</td>
+<td data-label="acks"><code>1</code></td>
+<td data-label="Когда приходит ответ">После записи в лог лидера (в page cache!)</td>
+<td data-label="Что теряется">Данные, не успевшие реплицироваться, при отказе лидера</td>
 </tr>
 <tr>
-<td><code>all</code> (<code>-1</code>)</td>
-<td>После подтверждения всеми репликами <strong>из текущего ISR</strong></td>
-<td>Только при потере всех ISR-реплик</td>
+<td data-label="acks"><code>all</code> (<code>-1</code>)</td>
+<td data-label="Когда приходит ответ">После подтверждения всеми репликами <strong>из текущего ISR</strong></td>
+<td data-label="Что теряется">Только при потере всех ISR-реплик</td>
 </tr>
 </tbody>
 </table>
@@ -999,7 +999,7 @@ bin/kafka-topics.sh --bootstrap-server kafka:9092 --create <span class="se">\</s
 <p>Тем же механизмом пользуется и потребитель. Клиент запоминает эпоху лидера и, если после смены лидера обнаруживает, что его позиция относится к «чужой» линии истории, корректно откатывается (<code>log truncation detected</code>).</p>
 <h3 id="46-комбинации-настроек-ведущие-к-потере-данных">4.6 Комбинации настроек, ведущие к потере данных</h3>
 <p>Опасная комбинация — это сочетание настроек и отказа, при котором подтверждённые данные теряются или дублируются. Из предыдущих подразделов складывается короткий их список, и в таблице ниже они сведены вместе; в каждой строке сказано, как именно происходит потеря. Две строки описывают потерю не в брокере, а на стороне клиента.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Комбинация</th>
@@ -1009,44 +1009,44 @@ bin/kafka-topics.sh --bootstrap-server kafka:9092 --create <span class="se">\</s
 </thead>
 <tbody>
 <tr>
-<td><code>acks=0</code></td>
-<td>Да, всегда возможна</td>
-<td>Производитель не знает об ошибке; потеря при любом сбое сети или брокера</td>
+<td data-label="Комбинация"><code>acks=0</code></td>
+<td data-label="Теряется?">Да, всегда возможна</td>
+<td data-label="Как именно">Производитель не знает об ошибке; потеря при любом сбое сети или брокера</td>
 </tr>
 <tr>
-<td><code>acks=1</code>, отказ лидера</td>
-<td>Да</td>
-<td>Записи, попавшие на лидера, но не реплицированные, исчезают при выборе нового лидера</td>
+<td data-label="Комбинация"><code>acks=1</code>, отказ лидера</td>
+<td data-label="Теряется?">Да</td>
+<td data-label="Как именно">Записи, попавшие на лидера, но не реплицированные, исчезают при выборе нового лидера</td>
 </tr>
 <tr>
-<td><code>acks=all</code>, <code>min.insync.replicas=1</code>, ISR схлопнулся до 1, отказ лидера</td>
-<td>Да</td>
-<td>Классика: производитель получает успех, данные только на одной реплике, она умирает</td>
+<td data-label="Комбинация"><code>acks=all</code>, <code>min.insync.replicas=1</code>, ISR схлопнулся до 1, отказ лидера</td>
+<td data-label="Теряется?">Да</td>
+<td data-label="Как именно">Классика: производитель получает успех, данные только на одной реплике, она умирает</td>
 </tr>
 <tr>
-<td><code>acks=all</code>, <code>min.insync.replicas=2</code>, RF=3, отказ 1 брокера</td>
-<td>Нет</td>
-<td>Запись подтверждена минимум двумя репликами</td>
+<td data-label="Комбинация"><code>acks=all</code>, <code>min.insync.replicas=2</code>, RF=3, отказ 1 брокера</td>
+<td data-label="Теряется?">Нет</td>
+<td data-label="Как именно">Запись подтверждена минимум двумя репликами</td>
 </tr>
 <tr>
-<td><code>acks=all</code>, <code>min.insync.replicas=2</code>, <code>unclean.leader.election.enable=true</code>, отказ обоих ISR</td>
-<td>Да</td>
-<td>Лидером станет отставшая реплика, хвост лога исчезнет</td>
+<td data-label="Комбинация"><code>acks=all</code>, <code>min.insync.replicas=2</code>, <code>unclean.leader.election.enable=true</code>, отказ обоих ISR</td>
+<td data-label="Теряется?">Да</td>
+<td data-label="Как именно">Лидером станет отставшая реплика, хвост лога исчезнет</td>
 </tr>
 <tr>
-<td><code>acks=all</code>, <code>retries&gt;0</code>, <code>enable.idempotence=false</code>, повтор после таймаута</td>
-<td>Не теряются, но <strong>дублируются</strong></td>
-<td>Брокер записал, ответ потерялся, производитель повторил</td>
+<td data-label="Комбинация"><code>acks=all</code>, <code>retries&gt;0</code>, <code>enable.idempotence=false</code>, повтор после таймаута</td>
+<td data-label="Теряется?">Не теряются, но <strong>дублируются</strong></td>
+<td data-label="Как именно">Брокер записал, ответ потерялся, производитель повторил</td>
 </tr>
 <tr>
-<td>Потребитель фиксирует до обработки</td>
-<td>Да, на стороне потребителя</td>
-<td>Падение между фиксацией и обработкой — сообщение не обработано и не будет перечитано</td>
+<td data-label="Комбинация">Потребитель фиксирует до обработки</td>
+<td data-label="Теряется?">Да, на стороне потребителя</td>
+<td data-label="Как именно">Падение между фиксацией и обработкой — сообщение не обработано и не будет перечитано</td>
 </tr>
 <tr>
-<td>Синхронный <code>fsync</code> не настроен, одновременный отказ питания всех реплик</td>
-<td>Да</td>
-<td>Kafka по умолчанию <strong>не делает fsync</strong> на каждую запись, полагаясь на репликацию</td>
+<td data-label="Комбинация">Синхронный <code>fsync</code> не настроен, одновременный отказ питания всех реплик</td>
+<td data-label="Теряется?">Да</td>
+<td data-label="Как именно">Kafka по умолчанию <strong>не делает fsync</strong> на каждую запись, полагаясь на репликацию</td>
 </tr>
 </tbody>
 </table>
@@ -1093,7 +1093,7 @@ bin/kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic payments <s
 </blockquote>
 <h3 id="49-полная-таблица-сценариев-потери-данных">4.9 Полная таблица сценариев потери данных</h3>
 <p>Сценарий потери данных — это конкретная последовательность событий при конкретных настройках, после которой подтверждённая или отправленная запись не доходит до потребителя. Таблица ниже — ключевой справочный материал главы: в ней собраны все сочетания, которые встречаются при разборе инцидентов «Kafka потеряла сообщение». Читать её нужно по строкам, потому что колонка «Что именно происходит» описывает последовательность событий, а не абстрактный риск. В заголовках RF означает replication factor, а <code>minISR</code> — <code>min.insync.replicas</code>; в столбце «Событие» ISR означает состав ISR в момент сбоя.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">#</th>
@@ -1108,184 +1108,184 @@ bin/kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic payments <s
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td><code>0</code></td>
-<td class="num">любой</td>
-<td class="num">любой</td>
-<td>любой</td>
-<td>Любой сбой</td>
-<td><strong>Да</strong></td>
-<td>Производитель не ждёт ответа. Сетевой RST, полный буфер брокера, отказ лидера — всё молча. <code>record-error-rate</code> даже не растёт</td>
+<td data-label="#" class="num">1</td>
+<td data-label="acks"><code>0</code></td>
+<td data-label="RF" class="num">любой</td>
+<td data-label="minISR" class="num">любой</td>
+<td data-label="unclean">любой</td>
+<td data-label="Событие">Любой сбой</td>
+<td data-label="Потеря?"><strong>Да</strong></td>
+<td data-label="Что именно происходит">Производитель не ждёт ответа. Сетевой RST, полный буфер брокера, отказ лидера — всё молча. <code>record-error-rate</code> даже не растёт</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td><code>1</code></td>
-<td class="num">3</td>
-<td class="num">—</td>
-<td>false</td>
-<td>Лидер упал сразу после ответа</td>
-<td><strong>Да</strong></td>
-<td>Запись в page cache лидера, ведомые реплики её не получили. Новый лидер из ISR её не имеет</td>
+<td data-label="#" class="num">2</td>
+<td data-label="acks"><code>1</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">—</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">Лидер упал сразу после ответа</td>
+<td data-label="Потеря?"><strong>Да</strong></td>
+<td data-label="Что именно происходит">Запись в page cache лидера, ведомые реплики её не получили. Новый лидер из ISR её не имеет</td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td><code>1</code></td>
-<td class="num">3</td>
-<td class="num">—</td>
-<td>false</td>
-<td>Лидер жив, упала ведомая реплика</td>
-<td>Нет</td>
-<td>Запись доедет, когда ведомая реплика вернётся</td>
+<td data-label="#" class="num">3</td>
+<td data-label="acks"><code>1</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">—</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">Лидер жив, упала ведомая реплика</td>
+<td data-label="Потеря?">Нет</td>
+<td data-label="Что именно происходит">Запись доедет, когда ведомая реплика вернётся</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td><code>all</code></td>
-<td class="num">3</td>
-<td class="num"><strong>1</strong></td>
-<td>false</td>
-<td>ISR схлопнулся до лидера, лидер упал</td>
-<td><strong>Да</strong></td>
-<td>Самый коварный: производитель получил успех, данных нет ни у кого. Конфигурация Kafka по умолчанию</td>
+<td data-label="#" class="num">4</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num"><strong>1</strong></td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">ISR схлопнулся до лидера, лидер упал</td>
+<td data-label="Потеря?"><strong>Да</strong></td>
+<td data-label="Что именно происходит">Самый коварный: производитель получил успех, данных нет ни у кого. Конфигурация Kafka по умолчанию</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td><code>all</code></td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td>false</td>
-<td>Отказ 1 брокера</td>
-<td>Нет</td>
-<td>Запись подтверждена ≥2 репликами; одна из них станет лидером</td>
+<td data-label="#" class="num">5</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">Отказ 1 брокера</td>
+<td data-label="Потеря?">Нет</td>
+<td data-label="Что именно происходит">Запись подтверждена ≥2 репликами; одна из них станет лидером</td>
 </tr>
 <tr>
-<td class="num">6</td>
-<td><code>all</code></td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td>false</td>
-<td>Отказ 2 брокеров одновременно</td>
-<td>Нет (потери), <strong>да</strong> (доступность)</td>
-<td>ISR = 1 &lt; minISR → лидер отвергает запись <code>NotEnoughReplicasException</code>. Производитель знает об отказе</td>
+<td data-label="#" class="num">6</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">Отказ 2 брокеров одновременно</td>
+<td data-label="Потеря?">Нет (потери), <strong>да</strong> (доступность)</td>
+<td data-label="Что именно происходит">ISR = 1 &lt; minISR → лидер отвергает запись <code>NotEnoughReplicasException</code>. Производитель знает об отказе</td>
 </tr>
 <tr>
-<td class="num">7</td>
-<td><code>all</code></td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td><strong>true</strong></td>
-<td>Отказ обеих ISR-реплик, поднялась третья (отставшая)</td>
-<td><strong>Да</strong></td>
-<td>Контроллер делает unclean election. Хвост лога отставшей реплики короче — подтверждённые записи исчезают, их смещения достаются новым записям</td>
+<td data-label="#" class="num">7</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean"><strong>true</strong></td>
+<td data-label="Событие">Отказ обеих ISR-реплик, поднялась третья (отставшая)</td>
+<td data-label="Потеря?"><strong>Да</strong></td>
+<td data-label="Что именно происходит">Контроллер делает unclean election. Хвост лога отставшей реплики короче — подтверждённые записи исчезают, их смещения достаются новым записям</td>
 </tr>
 <tr>
-<td class="num">8</td>
-<td><code>all</code></td>
-<td class="num">2</td>
-<td class="num">2</td>
-<td>false</td>
-<td>Плановый рестарт 1 брокера</td>
-<td>Нет (потери), <strong>да</strong> (доступность)</td>
-<td>RF=2 + minISR=2 = запись останавливается при любом рестарте. Антипаттерн</td>
+<td data-label="#" class="num">8</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">2</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">Плановый рестарт 1 брокера</td>
+<td data-label="Потеря?">Нет (потери), <strong>да</strong> (доступность)</td>
+<td data-label="Что именно происходит">RF=2 + minISR=2 = запись останавливается при любом рестарте. Антипаттерн</td>
 </tr>
 <tr>
-<td class="num">9</td>
-<td><code>all</code></td>
-<td class="num">3</td>
-<td class="num">3</td>
-<td>false</td>
-<td>Плановый рестарт 1 брокера</td>
-<td>Нет (потери), <strong>да</strong> (доступность)</td>
-<td>То же самое, только дороже: «максимальная надёжность» = нулевая толерантность к обслуживанию</td>
+<td data-label="#" class="num">9</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">3</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">Плановый рестарт 1 брокера</td>
+<td data-label="Потеря?">Нет (потери), <strong>да</strong> (доступность)</td>
+<td data-label="Что именно происходит">То же самое, только дороже: «максимальная надёжность» = нулевая толерантность к обслуживанию</td>
 </tr>
 <tr>
-<td class="num">10</td>
-<td><code>all</code></td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td>false</td>
-<td>Одновременный отказ питания всей стойки, все 3 реплики в ней</td>
-<td><strong>Да</strong></td>
-<td>Kafka не делает fsync; данные были в page cache. Лечится rack awareness, а не <code>flush.ms</code></td>
+<td data-label="#" class="num">10</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">Одновременный отказ питания всей стойки, все 3 реплики в ней</td>
+<td data-label="Потеря?"><strong>Да</strong></td>
+<td data-label="Что именно происходит">Kafka не делает fsync; данные были в page cache. Лечится rack awareness, а не <code>flush.ms</code></td>
 </tr>
 <tr>
-<td class="num">11</td>
-<td><code>all</code></td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td>false</td>
-<td><code>enable.idempotence=false</code>, повтор после таймаута</td>
-<td>Нет, но <strong>дубли</strong></td>
-<td>Брокер записал, ответ потерялся, производитель повторил. В 4.x требует явного отключения идемпотентности</td>
+<td data-label="#" class="num">11</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие"><code>enable.idempotence=false</code>, повтор после таймаута</td>
+<td data-label="Потеря?">Нет, но <strong>дубли</strong></td>
+<td data-label="Что именно происходит">Брокер записал, ответ потерялся, производитель повторил. В 4.x требует явного отключения идемпотентности</td>
 </tr>
 <tr>
-<td class="num">12</td>
-<td><code>all</code></td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td>false</td>
-<td><code>enable.idempotence=false</code>, <code>max.in.flight=5</code>, повтор пакета #1</td>
-<td>Нет, но <strong>переупорядочивание</strong></td>
-<td>Пакет #2 записался, #1 переотправлен после него. Порядок по ключу нарушен молча</td>
+<td data-label="#" class="num">12</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие"><code>enable.idempotence=false</code>, <code>max.in.flight=5</code>, повтор пакета #1</td>
+<td data-label="Потеря?">Нет, но <strong>переупорядочивание</strong></td>
+<td data-label="Что именно происходит">Пакет #2 записался, #1 переотправлен после него. Порядок по ключу нарушен молча</td>
 </tr>
 <tr>
-<td class="num">13</td>
-<td><code>all</code></td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td>false</td>
-<td><code>delivery.timeout.ms</code> истёк, приложение не обработало callback</td>
-<td><strong>Да</strong></td>
-<td>Kafka честно сообщила об ошибке — потеря произошла в вашем коде. Самая частая «потеря в Kafka» на практике</td>
+<td data-label="#" class="num">13</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие"><code>delivery.timeout.ms</code> истёк, приложение не обработало callback</td>
+<td data-label="Потеря?"><strong>Да</strong></td>
+<td data-label="Что именно происходит">Kafka честно сообщила об ошибке — потеря произошла в вашем коде. Самая частая «потеря в Kafka» на практике</td>
 </tr>
 <tr>
-<td class="num">14</td>
-<td><code>all</code></td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td>false</td>
-<td><code>send()</code> без подписки на future, брокер недоступен</td>
-<td><strong>Да</strong></td>
-<td>То же самое, но даже без записи в лог приложения</td>
+<td data-label="#" class="num">14</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие"><code>send()</code> без подписки на future, брокер недоступен</td>
+<td data-label="Потеря?"><strong>Да</strong></td>
+<td data-label="Что именно происходит">То же самое, но даже без записи в лог приложения</td>
 </tr>
 <tr>
-<td class="num">15</td>
-<td>—</td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td>false</td>
-<td>Потребитель: <code>enable.auto.commit=true</code>, обработка в пуле потоков (см. 6.7), падение после фиксации</td>
-<td><strong>Да</strong></td>
-<td>До 500 записей (<code>max.poll.records</code>) не обработаны, смещение ушло вперёд</td>
+<td data-label="#" class="num">15</td>
+<td data-label="acks">—</td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">Потребитель: <code>enable.auto.commit=true</code>, обработка в пуле потоков (см. 6.7), падение после фиксации</td>
+<td data-label="Потеря?"><strong>Да</strong></td>
+<td data-label="Что именно происходит">До 500 записей (<code>max.poll.records</code>) не обработаны, смещение ушло вперёд</td>
 </tr>
 <tr>
-<td class="num">16</td>
-<td>—</td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td>false</td>
-<td>Потребитель отстал больше <code>retention.ms</code>, <code>auto.offset.reset=latest</code></td>
-<td><strong>Да</strong></td>
-<td>Молчаливый прыжок в конец. Ни ошибки, ни метрики — только дырка в данных</td>
+<td data-label="#" class="num">16</td>
+<td data-label="acks">—</td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">Потребитель отстал больше <code>retention.ms</code>, <code>auto.offset.reset=latest</code></td>
+<td data-label="Потеря?"><strong>Да</strong></td>
+<td data-label="Что именно происходит">Молчаливый прыжок в конец. Ни ошибки, ни метрики — только дырка в данных</td>
 </tr>
 <tr>
-<td class="num">17</td>
-<td>—</td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td>false</td>
-<td>Компактный топик, потребитель медленнее <code>delete.retention.ms</code></td>
-<td><strong>Да</strong> (удалений)</td>
-<td>Tombstone вычищен до того, как потребитель его увидел → призрачный ключ в проекции навсегда</td>
+<td data-label="#" class="num">17</td>
+<td data-label="acks">—</td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">Компактный топик, потребитель медленнее <code>delete.retention.ms</code></td>
+<td data-label="Потеря?"><strong>Да</strong> (удалений)</td>
+<td data-label="Что именно происходит">Tombstone вычищен до того, как потребитель его увидел → призрачный ключ в проекции навсегда</td>
 </tr>
 <tr>
-<td class="num">18</td>
-<td><code>all</code></td>
-<td class="num">3</td>
-<td class="num">2</td>
-<td>false</td>
-<td>Топик пересоздан с тем же именем</td>
-<td><strong>Да</strong></td>
-<td>Данные ушли, смещения группы указывают в пустоту, <code>auto.offset.reset</code> решает судьбу</td>
+<td data-label="#" class="num">18</td>
+<td data-label="acks"><code>all</code></td>
+<td data-label="RF" class="num">3</td>
+<td data-label="minISR" class="num">2</td>
+<td data-label="unclean">false</td>
+<td data-label="Событие">Топик пересоздан с тем же именем</td>
+<td data-label="Потеря?"><strong>Да</strong></td>
+<td data-label="Что именно происходит">Данные ушли, смещения группы указывают в пустоту, <code>auto.offset.reset</code> решает судьбу</td>
 </tr>
 </tbody>
 </table>
@@ -1350,7 +1350,7 @@ bin/kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic payments <s
 <p>Компрессия (<em>compression</em>) в Kafka — это сжатие пакета целиком на стороне производителя выбранным кодеком. Брокер по умолчанию хранит пакет в том же сжатом виде, поэтому выбор кодека влияет сразу на сеть, диск и page cache. Посмотрим на четыре доступных кодека, правило выбора между ними и то, почему эффект от сжатия больше, чем кажется.</p>
 <p>Кодек задаёт параметр производителя <code>compression.type</code> (по умолчанию <code>none</code>). Брокер при значении по умолчанию <code>compression.type=producer</code> на топике хранит пакет в том же виде, в каком получил, и именно это позволяет обходиться zero-copy (2.3).</p>
 <p>В таблице кодеки сравниваются по степени сжатия и нагрузке на процессор, а в последнем столбце сказано, в каких ситуациях каждый из них уместен.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Кодек</th>
@@ -1361,28 +1361,28 @@ bin/kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic payments <s
 </thead>
 <tbody>
 <tr>
-<td><code>gzip</code></td>
-<td>Высокая</td>
-<td>Высокий</td>
-<td>Архивные топики, дорогой межрегиональный трафик, низкий RPS</td>
+<td data-label="Кодек"><code>gzip</code></td>
+<td data-label="Степень сжатия">Высокая</td>
+<td data-label="CPU">Высокий</td>
+<td data-label="Когда брать">Архивные топики, дорогой межрегиональный трафик, низкий RPS</td>
 </tr>
 <tr>
-<td><code>snappy</code></td>
-<td>Средняя</td>
-<td>Низкий</td>
-<td>Прежний выбор по умолчанию; сейчас почти всегда проигрывает lz4</td>
+<td data-label="Кодек"><code>snappy</code></td>
+<td data-label="Степень сжатия">Средняя</td>
+<td data-label="CPU">Низкий</td>
+<td data-label="Когда брать">Прежний выбор по умолчанию; сейчас почти всегда проигрывает lz4</td>
 </tr>
 <tr>
-<td><code>lz4</code></td>
-<td>Средняя</td>
-<td>Очень низкий</td>
-<td>Разумный выбор по умолчанию для большинства высоконагруженных топиков</td>
+<td data-label="Кодек"><code>lz4</code></td>
+<td data-label="Степень сжатия">Средняя</td>
+<td data-label="CPU">Очень низкий</td>
+<td data-label="Когда брать">Разумный выбор по умолчанию для большинства высоконагруженных топиков</td>
 </tr>
 <tr>
-<td><code>zstd</code></td>
-<td>Высокая, настраиваемая уровнем</td>
-<td>Средний</td>
-<td>Лучшее соотношение для JSON/текста; поддержан с Kafka 2.1</td>
+<td data-label="Кодек"><code>zstd</code></td>
+<td data-label="Степень сжатия">Высокая, настраиваемая уровнем</td>
+<td data-label="CPU">Средний</td>
+<td data-label="Когда брать">Лучшее соотношение для JSON/текста; поддержан с Kafka 2.1</td>
 </tr>
 </tbody>
 </table>
@@ -1549,7 +1549,7 @@ bin/kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic payments <s
 <h3 id="57-транзакции-в-деталях-координатор-маркеры-lso">5.7 Транзакции в деталях: координатор, маркеры, LSO</h3>
 <p>Протокол транзакций — это последовательность удалённых вызовов (<em>remote procedure call</em>, RPC) между производителем, координатором транзакций и лидерами партиций, которая стоит за каждым методом транзакционного API. В разделе 5.6 транзакции были описаны схемой, а здесь разобрано то, без чего их не получится отлаживать: какие RPC стоят за каждым вызовом клиента, почему одна зависшая транзакция останавливает чтение всей партиции, как эпоха отсекает зомби и чем ограничена область действия exactly-once (exactly-once semantics, EOS). В конце посчитана цена транзакции и собраны типовые ошибки конфигурации.</p>
 <p><strong>Жизненный цикл транзакции по шагам.</strong> За каждым шагом стоит реальный RPC, и каждый из них виден в логах. В таблице шаги идут по порядку, и для каждого указано, какой вызов клиента его запускает и что в этот момент делает брокер. Главное здесь — шаг 4, на котором пакеты уже лежат в партиции, хотя транзакция ещё не зафиксирована.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">#</th>
@@ -1560,40 +1560,40 @@ bin/kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic payments <s
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td><code>initTransactions()</code></td>
-<td><code>FindCoordinator(txn)</code></td>
-<td>Находится координатор: партиция <code>__transaction_state</code> = <code>hash(transactional.id) % 50</code>, её лидер и есть координатор</td>
+<td data-label="#" class="num">1</td>
+<td data-label="Что делает клиент"><code>initTransactions()</code></td>
+<td data-label="RPC"><code>FindCoordinator(txn)</code></td>
+<td data-label="Что происходит на брокере">Находится координатор: партиция <code>__transaction_state</code> = <code>hash(transactional.id) % 50</code>, её лидер и есть координатор</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td><code>initTransactions()</code></td>
-<td><code>InitProducerId</code></td>
-<td>Координатор выдаёт PID, <strong>инкрементирует producerEpoch</strong>, аварийно завершает незакрытые транзакции прошлой эпохи (пишет ABORT-маркеры)</td>
+<td data-label="#" class="num">2</td>
+<td data-label="Что делает клиент"><code>initTransactions()</code></td>
+<td data-label="RPC"><code>InitProducerId</code></td>
+<td data-label="Что происходит на брокере">Координатор выдаёт PID, <strong>инкрементирует producerEpoch</strong>, аварийно завершает незакрытые транзакции прошлой эпохи (пишет ABORT-маркеры)</td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td>первый <code>send()</code> в партицию</td>
-<td><code>AddPartitionsToTxn</code></td>
-<td>Партиция регистрируется в состоянии транзакции — координатор должен знать, куда потом писать маркер</td>
+<td data-label="#" class="num">3</td>
+<td data-label="Что делает клиент">первый <code>send()</code> в партицию</td>
+<td data-label="RPC"><code>AddPartitionsToTxn</code></td>
+<td data-label="Что происходит на брокере">Партиция регистрируется в состоянии транзакции — координатор должен знать, куда потом писать маркер</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td><code>send()</code></td>
-<td><code>Produce</code> (isTransactional=1)</td>
-<td>Пакеты пишутся в партицию <strong>сразу</strong>, но помечены транзакционными; LSO партиции замирает на первом смещении транзакции</td>
+<td data-label="#" class="num">4</td>
+<td data-label="Что делает клиент"><code>send()</code></td>
+<td data-label="RPC"><code>Produce</code> (isTransactional=1)</td>
+<td data-label="Что происходит на брокере">Пакеты пишутся в партицию <strong>сразу</strong>, но помечены транзакционными; LSO партиции замирает на первом смещении транзакции</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td><code>sendOffsetsToTransaction()</code></td>
-<td><code>AddOffsetsToTxn</code> + <code>TxnOffsetCommit</code></td>
-<td>Смещения пишутся в <code>__consumer_offsets</code> тоже как часть транзакции</td>
+<td data-label="#" class="num">5</td>
+<td data-label="Что делает клиент"><code>sendOffsetsToTransaction()</code></td>
+<td data-label="RPC"><code>AddOffsetsToTxn</code> + <code>TxnOffsetCommit</code></td>
+<td data-label="Что происходит на брокере">Смещения пишутся в <code>__consumer_offsets</code> тоже как часть транзакции</td>
 </tr>
 <tr>
-<td class="num">6</td>
-<td><code>commitTransaction()</code></td>
-<td><code>EndTxn</code></td>
-<td>Координатор пишет <code>PREPARE_COMMIT</code> в <code>__transaction_state</code>, затем <strong><code>WriteTxnMarkers</code></strong> во все затронутые партиции, затем <code>COMPLETE_COMMIT</code></td>
+<td data-label="#" class="num">6</td>
+<td data-label="Что делает клиент"><code>commitTransaction()</code></td>
+<td data-label="RPC"><code>EndTxn</code></td>
+<td data-label="Что происходит на брокере">Координатор пишет <code>PREPARE_COMMIT</code> в <code>__transaction_state</code>, затем <strong><code>WriteTxnMarkers</code></strong> во все затронутые партиции, затем <code>COMPLETE_COMMIT</code></td>
 </tr>
 </tbody>
 </table>
@@ -1640,7 +1640,7 @@ Kubernetes считает под мёртвым по liveness, поднимае�
 
 <p><strong>Почему EOS работает только в связке Kafka → Kafka.</strong> Атомарность здесь держится на <strong>одном журнале решения</strong> — <code>__transaction_state</code>. Все участники, то есть партиции данных и <code>__consumer_offsets</code>, находятся внутри Kafka и подчиняются маркерам от координатора. Внешняя БД в этом протоколе не участвует: у неё свой журнал и своё решение о фиксации. Чтобы связать их, понадобился бы настоящая двухфазная фиксация с координатором, которая знает обе системы, — стандарт XA для распределённых транзакций. Kafka такого интерфейса не предоставляет, и транзакционный производитель XA-ресурсом быть не умеет. Значит, вариантов остаётся ровно три: Transactional Outbox, идемпотентный потребитель по прикладному ключу или осознанная схема «сначала БД, потом Kafka с повтором». Все три разобраны в главе 31 (<code>31-integration-patterns-consistency.md</code>).</p>
 <p><strong>Цена транзакций в числах и раундах.</strong> В таблице перечислено, во что обходится каждая транзакция независимо от того, сколько записей в ней; из неё видно, почему транзакции должны быть крупными.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Накладной расход</th>
@@ -1649,30 +1649,30 @@ Kubernetes считает под мёртвым по liveness, поднимае�
 </thead>
 <tbody>
 <tr>
-<td>RPC к координатору</td>
-<td><code>AddPartitionsToTxn</code> (1 раз на новую партицию) + <code>EndTxn</code> = минимум 2 дополнительных round-trip</td>
+<td data-label="Накладной расход">RPC к координатору</td>
+<td data-label="Величина"><code>AddPartitionsToTxn</code> (1 раз на новую партицию) + <code>EndTxn</code> = минимум 2 дополнительных round-trip</td>
 </tr>
 <tr>
-<td>Записи в <code>__transaction_state</code></td>
-<td>3 (BEGIN/PREPARE/COMPLETE), каждая с <code>acks=all</code> и <code>min.isr=2</code></td>
+<td data-label="Накладной расход">Записи в <code>__transaction_state</code></td>
+<td data-label="Величина">3 (BEGIN/PREPARE/COMPLETE), каждая с <code>acks=all</code> и <code>min.isr=2</code></td>
 </tr>
 <tr>
-<td>Control-маркеры</td>
-<td>по 1 пакету (~78 байт) <strong>в каждую затронутую партицию</strong></td>
+<td data-label="Накладной расход">Control-маркеры</td>
+<td data-label="Величина">по 1 пакету (~78 байт) <strong>в каждую затронутую партицию</strong></td>
 </tr>
 <tr>
-<td>Латентность для <code>read_committed</code></td>
-<td>+время до маркера; при мелких транзакциях это единицы мс, при пакетной обработке — вся длительность транзакции</td>
+<td data-label="Накладной расход">Латентность для <code>read_committed</code></td>
+<td data-label="Величина">+время до маркера; при мелких транзакциях это единицы мс, при пакетной обработке — вся длительность транзакции</td>
 </tr>
 <tr>
-<td>Дисковые смещения</td>
-<td>маркеры занимают смещения — нумерация становится «дырявой»</td>
+<td data-label="Накладной расход">Дисковые смещения</td>
+<td data-label="Величина">маркеры занимают смещения — нумерация становится «дырявой»</td>
 </tr>
 </tbody>
 </table>
 <p>Практический вывод такой: транзакция на одно сообщение — худшее, что можно придумать, потому что ради одной записи приходится платить тремя записями в <code>__transaction_state</code> и маркером. Транзакция должна покрывать <strong>пакет из <code>poll()</code></strong>. Тогда накладные расходы размазываются на сотни записей и составляют единицы процентов. Как это измерить, показано в упражнении 11.</p>
 <p><strong>Типовые ошибки конфигурации транзакций.</strong> Таблица построена по схеме «ошибка → симптом → почему так происходит»; первые три строки встречаются чаще всего.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ошибка</th>
@@ -1682,39 +1682,39 @@ Kubernetes считает под мёртвым по liveness, поднимае�
 </thead>
 <tbody>
 <tr>
-<td><code>transactional.id</code> одинаковый на всех подах</td>
-<td>Работает один под, остальные <code>ProducerFencedException</code></td>
-<td>Fencing работает как задумано</td>
+<td data-label="Ошибка"><code>transactional.id</code> одинаковый на всех подах</td>
+<td data-label="Симптом">Работает один под, остальные <code>ProducerFencedException</code></td>
+<td data-label="Почему">Fencing работает как задумано</td>
 </tr>
 <tr>
-<td><code>transactional.id</code> случайный при каждом старте (UUID)</td>
-<td>Дубли после рестарта; растёт <code>__transaction_state</code></td>
-<td>Нет преемственности: незакрытые транзакции прошлой сессии некому зафенсить, они висят до таймаута</td>
+<td data-label="Ошибка"><code>transactional.id</code> случайный при каждом старте (UUID)</td>
+<td data-label="Симптом">Дубли после рестарта; растёт <code>__transaction_state</code></td>
+<td data-label="Почему">Нет преемственности: незакрытые транзакции прошлой сессии некому зафенсить, они висят до таймаута</td>
 </tr>
 <tr>
-<td>Потребитель остался на <code>read_uncommitted</code> (значение по умолчанию!)</td>
-<td>Видны данные отменённых транзакций</td>
-<td><code>isolation.level</code> надо ставить явно — это самая частая ошибка «EOS не работает»</td>
+<td data-label="Ошибка">Потребитель остался на <code>read_uncommitted</code> (значение по умолчанию!)</td>
+<td data-label="Симптом">Видны данные отменённых транзакций</td>
+<td data-label="Почему"><code>isolation.level</code> надо ставить явно — это самая частая ошибка «EOS не работает»</td>
 </tr>
 <tr>
-<td>Транзакция охватывает вызов внешнего API</td>
-<td>Транзакции по 30 с, LSO стоит, потребители не видят данных</td>
-<td>Внешний вызов внутри транзакции = длительность транзакции равна latency чужого сервиса</td>
+<td data-label="Ошибка">Транзакция охватывает вызов внешнего API</td>
+<td data-label="Симптом">Транзакции по 30 с, LSO стоит, потребители не видят данных</td>
+<td data-label="Почему">Внешний вызов внутри транзакции = длительность транзакции равна latency чужого сервиса</td>
 </tr>
 <tr>
-<td><code>transaction.timeout.ms</code> &gt; <code>transaction.max.timeout.ms</code> брокера</td>
-<td>Производитель не стартует</td>
-<td>Брокер отвергает завышенный таймаут</td>
+<td data-label="Ошибка"><code>transaction.timeout.ms</code> &gt; <code>transaction.max.timeout.ms</code> брокера</td>
+<td data-label="Симптом">Производитель не стартует</td>
+<td data-label="Почему">Брокер отвергает завышенный таймаут</td>
 </tr>
 <tr>
-<td><code>max.poll.interval.ms</code> меньше длительности транзакции</td>
-<td>Перебалансировка внутри транзакции → <code>CommitFailedException</code> на <code>sendOffsetsToTransaction</code></td>
-<td>Два независимых таймаута, которые надо согласовать</td>
+<td data-label="Ошибка"><code>max.poll.interval.ms</code> меньше длительности транзакции</td>
+<td data-label="Симптом">Перебалансировка внутри транзакции → <code>CommitFailedException</code> на <code>sendOffsetsToTransaction</code></td>
+<td data-label="Почему">Два независимых таймаута, которые надо согласовать</td>
 </tr>
 <tr>
-<td>Один <code>KafkaProducer</code> с <code>transactional.id</code> из нескольких потоков</td>
-<td><code>IllegalStateException</code>, ConcurrentModification-подобные ошибки</td>
-<td>Транзакционный производитель <strong>не потокобезопасен</strong> относительно begin/commit; нужен producer-per-thread с разными id</td>
+<td data-label="Ошибка">Один <code>KafkaProducer</code> с <code>transactional.id</code> из нескольких потоков</td>
+<td data-label="Симптом"><code>IllegalStateException</code>, ConcurrentModification-подобные ошибки</td>
+<td data-label="Почему">Транзакционный производитель <strong>не потокобезопасен</strong> относительно begin/commit; нужен producer-per-thread с разными id</td>
 </tr>
 </tbody>
 </table>
@@ -1747,7 +1747,7 @@ Kubernetes считает под мёртвым по liveness, поднимае�
 <p>Новый обратный вызов <code>onPartitionsLost</code> позволяет отличить ситуацию «партиции честно отозваны» от ситуации «мы выпали из группы, и партиции уже у кого-то другого». Во втором случае фиксировать смещения бессмысленно и даже вредно: новый владелец уже обрабатывает эти партиции со своей позиции.</p>
 <p>В 4.x <code>partition.assignment.strategy</code> по умолчанию равен <code>RangeAssignor,CooperativeStickyAssignor</code> (<a href="https://kafka.apache.org/43/generated/consumer_config.html">consumer configs</a>). Группа выбирает ассайнер, который поддерживают все её члены, поэтому смешанная группа откатывается на Range (eager). Чтобы действительно получить cooperative, нужно оставить в списке <strong>только</strong> <code>CooperativeStickyAssignor</code>. Переходить на него надо <strong>двумя rolling-рестартами</strong>, то есть поочерёдными перезапусками всех подов: сначала добавить cooperative в список, потом убрать старый ассайнер. Если сделать это одним шагом, поведение группы не определено.</p>
 <p>В таблице сравниваются четыре встроенных ассайнера классического протокола. Главное различие между ними в том, какой протокол перебалансировки каждый использует.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ассайнер</th>
@@ -1757,24 +1757,24 @@ Kubernetes считает под мёртвым по liveness, поднимае�
 </thead>
 <tbody>
 <tr>
-<td><code>RangeAssignor</code></td>
-<td>eager</td>
-<td>Делит партиции каждого топика диапазонами. При нескольких топиках систематически перегружает первых потребителей; зато со-партиционирует одноимённые партиции разных топиков (полезно для join)</td>
+<td data-label="Ассайнер"><code>RangeAssignor</code></td>
+<td data-label="Протокол">eager</td>
+<td data-label="Свойства">Делит партиции каждого топика диапазонами. При нескольких топиках систематически перегружает первых потребителей; зато со-партиционирует одноимённые партиции разных топиков (полезно для join)</td>
 </tr>
 <tr>
-<td><code>RoundRobinAssignor</code></td>
-<td>eager</td>
-<td>Равномернее Range, но при перебалансировке переназначает почти всё</td>
+<td data-label="Ассайнер"><code>RoundRobinAssignor</code></td>
+<td data-label="Протокол">eager</td>
+<td data-label="Свойства">Равномернее Range, но при перебалансировке переназначает почти всё</td>
 </tr>
 <tr>
-<td><code>StickyAssignor</code></td>
-<td>eager</td>
-<td>Равномерность + минимум перемещений, но всё ещё stop-the-world</td>
+<td data-label="Ассайнер"><code>StickyAssignor</code></td>
+<td data-label="Протокол">eager</td>
+<td data-label="Свойства">Равномерность + минимум перемещений, но всё ещё stop-the-world</td>
 </tr>
 <tr>
-<td><code>CooperativeStickyAssignor</code></td>
-<td>cooperative</td>
-<td>То же, что Sticky, плюс инкрементальный отзыв — рекомендуемый выбор для <code>classic</code></td>
+<td data-label="Ассайнер"><code>CooperativeStickyAssignor</code></td>
+<td data-label="Протокол">cooperative</td>
+<td data-label="Свойства">То же, что Sticky, плюс инкрементальный отзыв — рекомендуемый выбор для <code>classic</code></td>
 </tr>
 </tbody>
 </table>
@@ -2607,7 +2607,7 @@ bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 <span class="se">\</s
 <p><strong>Почему <code>max.poll.records</code> не уменьшает сетевой трафик.</strong> Записи к этому моменту уже лежат в клиентском буфере, куда они пришли целыми пакетами по <code>max.partition.fetch.bytes</code>, а <code>max.poll.records</code> лишь нарезает выдачу. Уменьшив этот параметр, вы сократите время обработки одной итерации и тем самым спасётесь от <code>max.poll.interval.ms</code>, но расход памяти потребителя от этого не снизится.</p>
 <p><strong>Сколько памяти держит потребитель.</strong> Верхняя оценка — <code>min(fetch.max.bytes, max.partition.fetch.bytes × число_назначенных_партиций)</code> <strong>распакованных</strong> данных плюс буферы для декомпрессии. При 1 МиБ на партицию и 200 назначенных партициях это до 200 МиБ в куче, что легко объясняет OOM в поде с <code>-Xmx256m</code>. А при <code>ConcurrentMessageListenerContainer</code> с concurrency=8 эту цифру надо умножить на 8, потому что у каждого контейнера свой потребитель со своим буфером.</p>
 <p><strong>Настройка fetch под нагрузку.</strong> Типовых режимов четыре. Таблица показывает для каждого значения трёх параметров и ситуацию, в которой режим уместен; первая строка соответствует значениям по умолчанию.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -2619,32 +2619,32 @@ bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 <span class="se">\</s
 </thead>
 <tbody>
 <tr>
-<td>Минимальная латентность (по умолчанию)</td>
-<td>1</td>
-<td>500</td>
-<td>1 МиБ</td>
-<td>Реакция на событие важнее эффективности; цена — много мелких запросов</td>
+<td data-label="Режим">Минимальная латентность (по умолчанию)</td>
+<td data-label="fetch.min.bytes">1</td>
+<td data-label="fetch.max.wait.ms">500</td>
+<td data-label="max.partition.fetch.bytes">1 МиБ</td>
+<td data-label="Когда">Реакция на событие важнее эффективности; цена — много мелких запросов</td>
 </tr>
 <tr>
-<td>Сбалансированный</td>
-<td>64 КиБ</td>
-<td>500</td>
-<td>1 МиБ</td>
-<td>Высокий RPS, допустима задержка до 0,5 с</td>
+<td data-label="Режим">Сбалансированный</td>
+<td data-label="fetch.min.bytes">64 КиБ</td>
+<td data-label="fetch.max.wait.ms">500</td>
+<td data-label="max.partition.fetch.bytes">1 МиБ</td>
+<td data-label="Когда">Высокий RPS, допустима задержка до 0,5 с</td>
 </tr>
 <tr>
-<td>Пропускная способность</td>
-<td>1 МиБ</td>
-<td>100–200</td>
-<td>4–8 МиБ</td>
-<td>Пакетная обработка, ETL; разгружает брокер в разы</td>
+<td data-label="Режим">Пропускная способность</td>
+<td data-label="fetch.min.bytes">1 МиБ</td>
+<td data-label="fetch.max.wait.ms">100–200</td>
+<td data-label="max.partition.fetch.bytes">4–8 МиБ</td>
+<td data-label="Когда">Пакетная обработка, ETL; разгружает брокер в разы</td>
 </tr>
 <tr>
-<td>«Тонкий» потребитель</td>
-<td>1</td>
-<td>500</td>
-<td>64–128 КиБ</td>
-<td>Много партиций на экземпляр, мало памяти</td>
+<td data-label="Режим">«Тонкий» потребитель</td>
+<td data-label="fetch.min.bytes">1</td>
+<td data-label="fetch.max.wait.ms">500</td>
+<td data-label="max.partition.fetch.bytes">64–128 КиБ</td>
+<td data-label="Когда">Много партиций на экземпляр, мало памяти</td>
 </tr>
 </tbody>
 </table>
@@ -2663,7 +2663,7 @@ bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 <span class="se">\</s
 <li>Когда все члены ушли, например сервис выключен, через 7 суток координатор удаляет смещения группы и пишет tombstone. После этого группа переходит в состояние <code>Dead</code> и исчезает из <code>--list</code>.</li>
 </ul>
 <p><strong>Что происходит после долгого простоя группы.</strong> Здесь три разных сценария, которые обычно путают. В таблице для каждого указано, что к моменту старта успело удалиться и как поведёт себя потребитель.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Простой</th>
@@ -2673,19 +2673,19 @@ bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 <span class="se">\</s
 </thead>
 <tbody>
 <tr>
-<td>Меньше <code>retention.ms</code> топика и меньше 7 суток</td>
-<td>Ничего</td>
-<td>Продолжит с сохранённого смещения; большой лаг, но данные целы</td>
+<td data-label="Простой">Меньше <code>retention.ms</code> топика и меньше 7 суток</td>
+<td data-label="Что удалилось">Ничего</td>
+<td data-label="Что увидит потребитель при старте">Продолжит с сохранённого смещения; большой лаг, но данные целы</td>
 </tr>
 <tr>
-<td>Больше <code>retention.ms</code> топика, меньше 7 суток</td>
-<td>Данные топика, смещение группы живо</td>
-<td>Сохранённое смещение <strong>вне диапазона</strong> → <code>OffsetOutOfRangeException</code> → <code>auto.offset.reset</code>. При <code>latest</code> — тихая потеря</td>
+<td data-label="Простой">Больше <code>retention.ms</code> топика, меньше 7 суток</td>
+<td data-label="Что удалилось">Данные топика, смещение группы живо</td>
+<td data-label="Что увидит потребитель при старте">Сохранённое смещение <strong>вне диапазона</strong> → <code>OffsetOutOfRangeException</code> → <code>auto.offset.reset</code>. При <code>latest</code> — тихая потеря</td>
 </tr>
 <tr>
-<td>Больше <code>offsets.retention.minutes</code> (7 суток) с пустой группой</td>
-<td>Смещение группы</td>
-<td>Группа выглядит новой → <strong>всегда</strong> <code>auto.offset.reset</code>. При <code>earliest</code> — перечитывание всего retention, лавина дублей</td>
+<td data-label="Простой">Больше <code>offsets.retention.minutes</code> (7 суток) с пустой группой</td>
+<td data-label="Что удалилось">Смещение группы</td>
+<td data-label="Что увидит потребитель при старте">Группа выглядит новой → <strong>всегда</strong> <code>auto.offset.reset</code>. При <code>earliest</code> — перечитывание всего retention, лавина дублей</td>
 </tr>
 </tbody>
 </table>
@@ -2721,7 +2721,7 @@ bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 --group billing <span
 </code></pre></div>
 
 <p>Что при этом теряется и что приобретается, сведено в таблицу:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Свойство</th>
@@ -2731,29 +2731,29 @@ bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 --group billing <span
 </thead>
 <tbody>
 <tr>
-<td>Перебалансировка</td>
-<td>Есть, со всеми последствиями</td>
-<td>Нет вообще</td>
+<td data-label="Свойство">Перебалансировка</td>
+<td data-label="subscribe()">Есть, со всеми последствиями</td>
+<td data-label="assign()">Нет вообще</td>
 </tr>
 <tr>
-<td>Автоматическое перераспределение при падении экземпляра</td>
-<td>Есть</td>
-<td>Нет — партиции осиротеют</td>
+<td data-label="Свойство">Автоматическое перераспределение при падении экземпляра</td>
+<td data-label="subscribe()">Есть</td>
+<td data-label="assign()">Нет — партиции осиротеют</td>
 </tr>
 <tr>
-<td>Фиксация в <code>__consumer_offsets</code></td>
-<td>Штатный</td>
-<td>Работает, если задан <code>group.id</code>, но группа не координируется</td>
+<td data-label="Свойство">Фиксация в <code>__consumer_offsets</code></td>
+<td data-label="subscribe()">Штатный</td>
+<td data-label="assign()">Работает, если задан <code>group.id</code>, но группа не координируется</td>
 </tr>
 <tr>
-<td>Контроль «кто что читает»</td>
-<td>У координатора</td>
-<td>У вас, полностью</td>
+<td data-label="Свойство">Контроль «кто что читает»</td>
+<td data-label="subscribe()">У координатора</td>
+<td data-label="assign()">У вас, полностью</td>
 </tr>
 <tr>
-<td>Типичное применение</td>
-<td>99 % сервисов</td>
-<td>Инструменты, разовое вычитывание, чтение конкретной партиции при разборе инцидента, системы со своим шардированием (например, партиция привязана к поду Kubernetes по ordinal)</td>
+<td data-label="Свойство">Типичное применение</td>
+<td data-label="subscribe()">99 % сервисов</td>
+<td data-label="assign()">Инструменты, разовое вычитывание, чтение конкретной партиции при разборе инцидента, системы со своим шардированием (например, партиция привязана к поду Kubernetes по ordinal)</td>
 </tr>
 </tbody>
 </table>
@@ -2819,7 +2819,7 @@ worst_case = 500 × 0.120 = 60 с. С запасом ×2 → max.poll.interval.m
 <p><strong>Правило 4: блокирующий повтор входит в бюджет.</strong> Сумма пауз <code>BackOff</code> между повторными попытками прибавляется к времени обработки записи. <code>ExponentialBackOff(1000, 2.0)</code> на 5 попыток даёт 1+2+4+8+16 = 31 с <strong>на одну запись</strong>, и при <code>max.poll.records=500</code> одной сбойной записи хватит, чтобы съесть весь бюджет. Поэтому здесь нужен либо <code>ContainerPausingBackOffHandler</code>, либо неблокирующие повторы через отдельные топики (разд. 11.5).</p>
 <p><strong>Правило 5: в KIP-848 правила 1–2 от вас не зависят.</strong> В режиме <code>group.protocol=consumer</code> таймаут сессии и интервал heartbeat задаются на брокере — <code>group.consumer.session.timeout.ms</code> (<strong>45000</strong>) и <code>group.consumer.heartbeat.interval.ms</code> (<strong>5000</strong>) (<a href="https://kafka.apache.org/43/generated/kafka_config.html">broker configs</a>), а клиентские значения игнорируются. <code>max.poll.interval.ms</code> при этом остаётся клиентским, потому что описывает вашу обработку, а не сессию.</p>
 <p>Сводная таблица ниже устроена по схеме «симптом → виноватый таймаут → действие» и помогает по строке в логе сразу понять, куда смотреть:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Симптом в логе / метрике</th>
@@ -2829,29 +2829,29 @@ worst_case = 500 × 0.120 = 60 с. С запасом ×2 → max.poll.interval.m
 </thead>
 <tbody>
 <tr>
-<td><code>consumer poll timeout has expired</code></td>
-<td><code>max.poll.interval.ms</code></td>
-<td>Снизить <code>max.poll.records</code>, ускорить обработку, пауза контейнера</td>
+<td data-label="Симптом в логе / метрике"><code>consumer poll timeout has expired</code></td>
+<td data-label="Виноват"><code>max.poll.interval.ms</code></td>
+<td data-label="Действие">Снизить <code>max.poll.records</code>, ускорить обработку, пауза контейнера</td>
 </tr>
 <tr>
-<td><code>Member ... has failed, removing it from the group</code> (на брокере)</td>
-<td><code>session.timeout.ms</code></td>
-<td>GC-паузы, зависший процесс, сеть; смотреть <code>last-heartbeat-seconds-ago</code></td>
+<td data-label="Симптом в логе / метрике"><code>Member ... has failed, removing it from the group</code> (на брокере)</td>
+<td data-label="Виноват"><code>session.timeout.ms</code></td>
+<td data-label="Действие">GC-паузы, зависший процесс, сеть; смотреть <code>last-heartbeat-seconds-ago</code></td>
 </tr>
 <tr>
-<td>Перебалансировки при rolling-деплое, по два на под</td>
-<td>Нет static membership</td>
-<td><code>group.instance.id</code> + <code>session.timeout.ms</code> с запасом на рестарт</td>
+<td data-label="Симптом в логе / метрике">Перебалансировки при rolling-деплое, по два на под</td>
+<td data-label="Виноват">Нет static membership</td>
+<td data-label="Действие"><code>group.instance.id</code> + <code>session.timeout.ms</code> с запасом на рестарт</td>
 </tr>
 <tr>
-<td><code>CommitFailedException</code> без предшествующего poll timeout</td>
-<td>Перебалансировка по чужой причине</td>
-<td>Смотреть generation и то, кто вступала в группу; часто это падающий сосед</td>
+<td data-label="Симптом в логе / метрике"><code>CommitFailedException</code> без предшествующего poll timeout</td>
+<td data-label="Виноват">Перебалансировка по чужой причине</td>
+<td data-label="Действие">Смотреть generation и то, кто вступала в группу; часто это падающий сосед</td>
 </tr>
 <tr>
-<td>Группа в <code>PreparingRebalance</code> дольше <code>session.timeout.ms</code></td>
-<td>Член, который не шлёт JoinGroup</td>
-<td>Найти зависший под; в KIP-848 этой патологии нет</td>
+<td data-label="Симптом в логе / метрике">Группа в <code>PreparingRebalance</code> дольше <code>session.timeout.ms</code></td>
+<td data-label="Виноват">Член, который не шлёт JoinGroup</td>
+<td data-label="Действие">Найти зависший под; в KIP-848 этой патологии нет</td>
 </tr>
 </tbody>
 </table>
@@ -2905,7 +2905,7 @@ t=   2 с  координатор — брокер 2, состояние Stable,
 <p>Через две секунды координатором стал брокер 2: он был следующей репликой партиции 5 в ISR и получил лидерство по правилам 3.4. Группа сохранила состояние <code>Stable</code> и одного участника: потребитель заметил, что координатор пропал, выяснил нового и продолжил, не пересоздавая членство. Это то, что называют «координатор переживает перевыборы»: никто не перезапускает группу, потому что её состояние было в реплицированном журнале. Ограничение: в этом опыте группа была почти пустой, и загрузка состояния заняла доли секунды; при тысячах групп на одной партиции и большом объёме смещений окно загрузки растёт (размер буфера чтения при загрузке задаёт <code>offsets.load.buffer.size</code>, умолчание 5 МиБ), и в это время клиенты получают <code>COORDINATOR_LOAD_IN_PROGRESS</code>.</p>
 <h4>Какими настройками управляет координатор</h4>
 <p>Группой управляют сразу несколько настроек из трёх разных мест, и их легко перепутать. Все значения ниже сверены командами и клиентской библиотекой (1.3).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Настройка</th>
@@ -2916,58 +2916,58 @@ t=   2 с  координатор — брокер 2, состояние Stable,
 </thead>
 <tbody>
 <tr>
-<td><code>session.timeout.ms</code></td>
-<td>клиент</td>
-<td>45000</td>
-<td>сколько координатор ждёт heartbeat; потом исключает участника</td>
+<td data-label="Настройка"><code>session.timeout.ms</code></td>
+<td data-label="Где">клиент</td>
+<td data-label="Значение">45000</td>
+<td data-label="Что делает">сколько координатор ждёт heartbeat; потом исключает участника</td>
 </tr>
 <tr>
-<td><code>heartbeat.interval.ms</code></td>
-<td>клиент</td>
-<td>3000</td>
-<td>как часто клиент шлёт heartbeat (по документации обычно не выше трети сессии)</td>
+<td data-label="Настройка"><code>heartbeat.interval.ms</code></td>
+<td data-label="Где">клиент</td>
+<td data-label="Значение">3000</td>
+<td data-label="Что делает">как часто клиент шлёт heartbeat (по документации обычно не выше трети сессии)</td>
 </tr>
 <tr>
-<td><code>max.poll.interval.ms</code></td>
-<td>клиент</td>
-<td>300000</td>
-<td>как долго клиент может не вызывать <code>poll()</code>; иначе группа сочтёт участника сбойным и запустит перебалансировку</td>
+<td data-label="Настройка"><code>max.poll.interval.ms</code></td>
+<td data-label="Где">клиент</td>
+<td data-label="Значение">300000</td>
+<td data-label="Что делает">как долго клиент может не вызывать <code>poll()</code>; иначе группа сочтёт участника сбойным и запустит перебалансировку</td>
 </tr>
 <tr>
-<td><code>group.min.session.timeout.ms</code> / <code>group.max.session.timeout.ms</code></td>
-<td>брокер</td>
-<td>6000 / 1800000</td>
-<td>допустимый диапазон <code>session.timeout.ms</code>; значение вне диапазона будет отвергнуто</td>
+<td data-label="Настройка"><code>group.min.session.timeout.ms</code> / <code>group.max.session.timeout.ms</code></td>
+<td data-label="Где">брокер</td>
+<td data-label="Значение">6000 / 1800000</td>
+<td data-label="Что делает">допустимый диапазон <code>session.timeout.ms</code>; значение вне диапазона будет отвергнуто</td>
 </tr>
 <tr>
-<td><code>group.initial.rebalance.delay.ms</code></td>
-<td>брокер</td>
-<td>3000</td>
-<td>сколько координатор ждёт новых участников новой группы перед первой перебалансировкой</td>
+<td data-label="Настройка"><code>group.initial.rebalance.delay.ms</code></td>
+<td data-label="Где">брокер</td>
+<td data-label="Значение">3000</td>
+<td data-label="Что делает">сколько координатор ждёт новых участников новой группы перед первой перебалансировкой</td>
 </tr>
 <tr>
-<td><code>offsets.topic.num.partitions</code></td>
-<td>брокер</td>
-<td>50</td>
-<td>делитель формулы выбора координатора; не менять</td>
+<td data-label="Настройка"><code>offsets.topic.num.partitions</code></td>
+<td data-label="Где">брокер</td>
+<td data-label="Значение">50</td>
+<td data-label="Что делает">делитель формулы выбора координатора; не менять</td>
 </tr>
 <tr>
-<td><code>offsets.topic.replication.factor</code></td>
-<td>брокер</td>
-<td>3</td>
-<td>RF служебной темы</td>
+<td data-label="Настройка"><code>offsets.topic.replication.factor</code></td>
+<td data-label="Где">брокер</td>
+<td data-label="Значение">3</td>
+<td data-label="Что делает">RF служебной темы</td>
 </tr>
 <tr>
-<td><code>offsets.retention.minutes</code></td>
-<td>брокер</td>
-<td>10080 (7 суток)</td>
-<td>срок хранения смещений группы без активности (⚠️ точное условие отсчёта по документации не сверялось)</td>
+<td data-label="Настройка"><code>offsets.retention.minutes</code></td>
+<td data-label="Где">брокер</td>
+<td data-label="Значение">10080 (7 суток)</td>
+<td data-label="Что делает">срок хранения смещений группы без активности (⚠️ точное условие отсчёта по документации не сверялось)</td>
 </tr>
 <tr>
-<td><code>group.consumer.session.timeout.ms</code> / <code>group.consumer.heartbeat.interval.ms</code></td>
-<td>брокер</td>
-<td>45000 / 5000</td>
-<td>то же для нового протокола, где значения задаёт брокер, а не клиент</td>
+<td data-label="Настройка"><code>group.consumer.session.timeout.ms</code> / <code>group.consumer.heartbeat.interval.ms</code></td>
+<td data-label="Где">брокер</td>
+<td data-label="Значение">45000 / 5000</td>
+<td data-label="Что делает">то же для нового протокола, где значения задаёт брокер, а не клиент</td>
 </tr>
 </tbody>
 </table>
@@ -2985,7 +2985,7 @@ t=   2 с  координатор — брокер 2, состояние Stable,
 <p>Гарантия доставки (<em>delivery guarantee</em>) — это обещание системы о том, сколько раз сообщение будет обработано при сбоях: не больше одного раза, не меньше одного раза или ровно один раз. Про Kafka часто говорят, что она «умеет exactly-once», и на этом строят архитектуру. На деле эта гарантия действует только внутри Kafka и заканчивается на первой же внешней системе, например на базе данных, куда потребитель записывает проведённый платёж. Ниже сведены три уровня гарантий и настройки, которые к ним приводят; затем разобрано, что такое exactly-once на самом деле и где проходят его границы; и, наконец, показано, что делать вместо него при записи во внешнюю БД. Далее раздел углубляется: подраздел 7.4 даёт теорию (где в цепочке рождаются потери и дубли и почему «ровно один раз» складывается из двух половин), 7.5–7.7 разбирают настройки производителя, потребителя и транзакций с запусками, в которых сбой внедрён намеренно, 7.8 повторяет это для базы данных, 7.9 оценивает цену гарантий, а 7.10–7.12 сводят всё в таблицы настроек, исходов и порядок выбора.</p>
 <h3 id="71-уровни-гарантий-доставки">7.1 Уровни гарантий доставки</h3>
 <p>Уровень гарантии доставки — это результат сочетания настроек производителя и порядка фиксации на потребителе. Уровней три. At-most-once («не больше одного раза») допускает потерю, но не дубль. At-least-once («хотя бы один раз») допускает дубль, но не потерю. Exactly-once («ровно один раз») не допускает ни того, ни другого. Таблица сводит уровни с настройками вместе, и смотреть в ней стоит на последний столбец: даже самый строгий уровень работает только на маршруте Kafka → Kafka. После таблицы сказано, какой уровень на деле выбирает большинство систем и почему.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Гарантия</th>
@@ -2996,22 +2996,22 @@ t=   2 с  координатор — брокер 2, состояние Stable,
 </thead>
 <tbody>
 <tr>
-<td><strong>at-most-once</strong></td>
-<td><code>acks=0</code> или <code>acks=1</code> без повторных попыток</td>
-<td>фиксация <strong>до</strong> обработки</td>
-<td>Сообщение может пропасть, но не продублируется</td>
+<td data-label="Гарантия"><strong>at-most-once</strong></td>
+<td data-label="Производитель"><code>acks=0</code> или <code>acks=1</code> без повторных попыток</td>
+<td data-label="Потребитель">фиксация <strong>до</strong> обработки</td>
+<td data-label="Что реально происходит">Сообщение может пропасть, но не продублируется</td>
 </tr>
 <tr>
-<td><strong>at-least-once</strong></td>
-<td><code>acks=all</code>, повторные попытки включены</td>
-<td>фиксация <strong>после</strong> обработки</td>
-<td>Дубли при сбоях гарантированы, потерь нет</td>
+<td data-label="Гарантия"><strong>at-least-once</strong></td>
+<td data-label="Производитель"><code>acks=all</code>, повторные попытки включены</td>
+<td data-label="Потребитель">фиксация <strong>после</strong> обработки</td>
+<td data-label="Что реально происходит">Дубли при сбоях гарантированы, потерь нет</td>
 </tr>
 <tr>
-<td><strong>exactly-once (EOS)</strong></td>
-<td>транзакции + <code>transactional.id</code></td>
-<td><code>isolation.level=read_committed</code>, смещения фиксируются в транзакции</td>
-<td>Только Kafka → Kafka</td>
+<td data-label="Гарантия"><strong>exactly-once (EOS)</strong></td>
+<td data-label="Производитель">транзакции + <code>transactional.id</code></td>
+<td data-label="Потребитель"><code>isolation.level=read_committed</code>, смещения фиксируются в транзакции</td>
+<td data-label="Что реально происходит">Только Kafka → Kafka</td>
 </tr>
 </tbody>
 </table>
@@ -3099,7 +3099,7 @@ t=   2 с  координатор — брокер 2, состояние Stable,
 <h3 id="74-теория-где-в-цепочке-рождаются-потери-и-дубли">7.4 Теория: где в цепочке рождаются потери и дубли</h3>
 <p>Чтобы настраивать доставку осмысленно, нужно сначала увидеть цепочку, по которой сообщение проходит от кода производителя до внешней системы, и найти в ней каждое место, где отказ оставляет одну из сторон в неведении. Гарантию доставки задаёт вся цепочка целиком, и результат определяет самое слабое звено. Поэтому раздел начинается с карты звеньев, затем объясняет, почему «ровно один раз» нельзя получить доставкой, а можно получить обработкой, и только после этого переходит к настройкам.</p>
 <p>Рассмотрим путь одного платежа. Сервис вызывает <code>send()</code>, производитель отправляет запрос брокеру, брокер дописывает запись в журнал лидера, ведомые реплики реплицируют её, лидер отвечает подтверждением; потребитель забирает запись запросом <code>Fetch</code>, обрабатывает её (в том числе пишет в базу данных) и фиксирует смещение. В каждом звене возможен сбой в «неудобный момент», то есть после того, как действие выполнено, но до того, как о нём узнала вторая сторона. Таблица перечисляет такие моменты и результат, который они дают при настройках по умолчанию либо при самых слабых вариантах.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">№</th>
@@ -3111,60 +3111,60 @@ t=   2 с  координатор — брокер 2, состояние Stable,
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td>Производитель → брокер: запрос дошёл, ответ потерян или истёк <code>request.timeout.ms</code></td>
-<td>производитель не знает, записано ли</td>
-<td>при повторе дубль; без повтора потеря</td>
-<td>идемпотентный производитель (7.5)</td>
+<td data-label="№" class="num">1</td>
+<td data-label="Звено и момент сбоя">Производитель → брокер: запрос дошёл, ответ потерян или истёк <code>request.timeout.ms</code></td>
+<td data-label="Что неизвестно">производитель не знает, записано ли</td>
+<td data-label="Результат">при повторе дубль; без повтора потеря</td>
+<td data-label="Чем закрывается">идемпотентный производитель (7.5)</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td>Лидер принял запись, но не успел реплицировать (<code>acks=1</code>) и упал</td>
-<td>производитель уверен, что записано</td>
-<td>потеря</td>
-<td><code>acks=all</code>, <code>min.insync.replicas</code> (4.3)</td>
+<td data-label="№" class="num">2</td>
+<td data-label="Звено и момент сбоя">Лидер принял запись, но не успел реплицировать (<code>acks=1</code>) и упал</td>
+<td data-label="Что неизвестно">производитель уверен, что записано</td>
+<td data-label="Результат">потеря</td>
+<td data-label="Чем закрывается"><code>acks=all</code>, <code>min.insync.replicas</code> (4.3)</td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td>Выборы лидера из отставшей реплики (unclean)</td>
-<td>—</td>
-<td>потеря записей</td>
-<td><code>unclean.leader.election.enable=false</code> (4.4)</td>
+<td data-label="№" class="num">3</td>
+<td data-label="Звено и момент сбоя">Выборы лидера из отставшей реплики (unclean)</td>
+<td data-label="Что неизвестно">—</td>
+<td data-label="Результат">потеря записей</td>
+<td data-label="Чем закрывается"><code>unclean.leader.election.enable=false</code> (4.4)</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td>Потребитель обработал, упал до фиксации смещения</td>
-<td>брокер не знает, что запись обработана</td>
-<td>дубль обработки</td>
-<td>идемпотентный обработчик (7.3, 7.8)</td>
+<td data-label="№" class="num">4</td>
+<td data-label="Звено и момент сбоя">Потребитель обработал, упал до фиксации смещения</td>
+<td data-label="Что неизвестно">брокер не знает, что запись обработана</td>
+<td data-label="Результат">дубль обработки</td>
+<td data-label="Чем закрывается">идемпотентный обработчик (7.3, 7.8)</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td>Потребитель зафиксировал смещение, упало до обработки</td>
-<td>обработка не состоялась</td>
-<td>потеря обработки</td>
-<td>фиксация после обработки (7.6)</td>
+<td data-label="№" class="num">5</td>
+<td data-label="Звено и момент сбоя">Потребитель зафиксировал смещение, упало до обработки</td>
+<td data-label="Что неизвестно">обработка не состоялась</td>
+<td data-label="Результат">потеря обработки</td>
+<td data-label="Чем закрывается">фиксация после обработки (7.6)</td>
 </tr>
 <tr>
-<td class="num">6</td>
-<td>Побочный эффект во внешней системе выполнен, смещение не зафиксировано</td>
-<td>—</td>
-<td>дубль эффекта</td>
-<td>уникальный ключ или смещение в той же транзакции БД (7.8)</td>
+<td data-label="№" class="num">6</td>
+<td data-label="Звено и момент сбоя">Побочный эффект во внешней системе выполнен, смещение не зафиксировано</td>
+<td data-label="Что неизвестно">—</td>
+<td data-label="Результат">дубль эффекта</td>
+<td data-label="Чем закрывается">уникальный ключ или смещение в той же транзакции БД (7.8)</td>
 </tr>
 <tr>
-<td class="num">7</td>
-<td>Перебалансировка: старый и новый владелец партиции пересекаются</td>
-<td>кто владеет партицией</td>
-<td>дубль обработки</td>
-<td>идемпотентность, фенсинг (14.2)</td>
+<td data-label="№" class="num">7</td>
+<td data-label="Звено и момент сбоя">Перебалансировка: старый и новый владелец партиции пересекаются</td>
+<td data-label="Что неизвестно">кто владеет партицией</td>
+<td data-label="Результат">дубль обработки</td>
+<td data-label="Чем закрывается">идемпотентность, фенсинг (14.2)</td>
 </tr>
 <tr>
-<td class="num">8</td>
-<td>Потребитель отстал на дольше срока хранения</td>
-<td>—</td>
-<td>записи удалены до чтения</td>
-<td>retention, мониторинг лага (8.1)</td>
+<td data-label="№" class="num">8</td>
+<td data-label="Звено и момент сбоя">Потребитель отстал на дольше срока хранения</td>
+<td data-label="Что неизвестно">—</td>
+<td data-label="Результат">записи удалены до чтения</td>
+<td data-label="Чем закрывается">retention, мониторинг лага (8.1)</td>
 </tr>
 </tbody>
 </table>
@@ -3186,7 +3186,7 @@ enable.idempotence=true : отправлено 200, потерянных под�
 <p>Все три прогона дали одно и то же. Без идемпотентности каждое из десяти потерянных подтверждений превратилось ровно в один дубль. С идемпотентностью производитель повторял отправку столько же раз (метрика повторов <code>record-retry-total</code> показала те же 10), но брокер отбросил повторы, и журнал остался без дублей. За все шесть запусков опыта прокси суммарно оборвал 448 соединений, то есть сбой был не единичным.</p>
 <p>Механизм описан в KIP-98. Каждому производителю при инициализации выдаётся идентификатор PID, наружу клиентом не показываемый. Для пары «PID — партиция» производитель нумерует записи подряд с нуля (номер последовательности, <em>sequence number</em>), а брокер помнит последние полученные номера. Запрос принимается, только если его номер ровно на единицу больше последнего принятого от этого PID в этой партиции; запись с меньшим номером означает дубль, и брокер отвечает ошибкой дубликата, которую производитель спокойно игнорирует; больший номер означает пропуск и приводит к <code>OutOfOrderSequenceException</code>, то есть сигнализирует о возможной потере данных. В статье Confluent механизм сравнён с TCP, с важной разницей: номера последовательности сохраняются в реплицируемом журнале, поэтому после смены лидера новый лидер тоже знает, какие пачки уже приняты.<sup id="fnref:s29-g2"><a class="footnote-ref" href="#fn:s29-g2">25</a></sup></p>
 <p>Настройки, которые образуют эту гарантию, взаимосвязаны, и документация это прямо оговаривает:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Настройка</th>
@@ -3196,39 +3196,39 @@ enable.idempotence=true : отправлено 200, потерянных под�
 </thead>
 <tbody>
 <tr>
-<td><code>acks</code></td>
-<td><code>all</code></td>
-<td>сколько реплик должны подтвердить запись, прежде чем лидер ответит</td>
+<td data-label="Настройка"><code>acks</code></td>
+<td data-label="Значение по умолчанию"><code>all</code></td>
+<td data-label="Что делает для доставки">сколько реплик должны подтвердить запись, прежде чем лидер ответит</td>
 </tr>
 <tr>
-<td><code>enable.idempotence</code></td>
-<td>включена, если нет конфликтующих настроек</td>
-<td>PID и номера последовательности; требует <code>acks=all</code>, <code>retries &gt; 0</code> и <code>max.in.flight.requests.per.connection ≤ 5</code></td>
+<td data-label="Настройка"><code>enable.idempotence</code></td>
+<td data-label="Значение по умолчанию">включена, если нет конфликтующих настроек</td>
+<td data-label="Что делает для доставки">PID и номера последовательности; требует <code>acks=all</code>, <code>retries &gt; 0</code> и <code>max.in.flight.requests.per.connection ≤ 5</code></td>
 </tr>
 <tr>
-<td><code>retries</code></td>
-<td>2147483647</td>
-<td>сколько раз повторять при временных ошибках (граничит <code>delivery.timeout.ms</code>)</td>
+<td data-label="Настройка"><code>retries</code></td>
+<td data-label="Значение по умолчанию">2147483647</td>
+<td data-label="Что делает для доставки">сколько раз повторять при временных ошибках (граничит <code>delivery.timeout.ms</code>)</td>
 </tr>
 <tr>
-<td><code>delivery.timeout.ms</code></td>
-<td>120000 (2 минуты)</td>
-<td>верхний предел времени от вызова <code>send()</code> до отчёта об успехе или неудаче, включая повторы</td>
+<td data-label="Настройка"><code>delivery.timeout.ms</code></td>
+<td data-label="Значение по умолчанию">120000 (2 минуты)</td>
+<td data-label="Что делает для доставки">верхний предел времени от вызова <code>send()</code> до отчёта об успехе или неудаче, включая повторы</td>
 </tr>
 <tr>
-<td><code>request.timeout.ms</code></td>
-<td>30000</td>
-<td>сколько ждать ответ на один запрос до повтора</td>
+<td data-label="Настройка"><code>request.timeout.ms</code></td>
+<td data-label="Значение по умолчанию">30000</td>
+<td data-label="Что делает для доставки">сколько ждать ответ на один запрос до повтора</td>
 </tr>
 <tr>
-<td><code>max.in.flight.requests.per.connection</code></td>
-<td>5 (⚠️ значение по памяти, на странице извлечь не удалось)</td>
-<td>сколько неподтверждённых запросов допустимо; при идемпотентности порядок сохраняется до 5</td>
+<td data-label="Настройка"><code>max.in.flight.requests.per.connection</code></td>
+<td data-label="Значение по умолчанию">5 (⚠️ значение по памяти, на странице извлечь не удалось)</td>
+<td data-label="Что делает для доставки">сколько неподтверждённых запросов допустимо; при идемпотентности порядок сохраняется до 5</td>
 </tr>
 <tr>
-<td><code>transactional.id</code></td>
-<td>не задан</td>
-<td>включает транзакции и подразумевает идемпотентность</td>
+<td data-label="Настройка"><code>transactional.id</code></td>
+<td data-label="Значение по умолчанию">не задан</td>
+<td data-label="Что делает для доставки">включает транзакции и подразумевает идемпотентность</td>
 </tr>
 </tbody>
 </table>
@@ -3243,7 +3243,7 @@ enable.idempotence=true : отправлено 200, потерянных под�
 </blockquote>
 <h3 id="76-потребитель-порядок-фиксации-и-настройки">7.6 Потребитель: порядок фиксации и настройки</h3>
 <p>Звенья 4 и 5 определяются порядком двух действий: обработать запись и зафиксировать смещение. Брокер не знает, что вы сделали с записью, он знает только, до какого смещения вы дочитали, и это смещение вы сообщаете ему сами. Поэтому гарантия на стороне потребителя — это договорённость о порядке, и оба варианта проверены запусками в подразделах 6.7 и 7.1 (at-most-once потерял 3 записи из 5, at-least-once дал 10 обработок на 5 сообщений). Здесь важнее другое: какие настройки превращают договорённость в код.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Настройка</th>
@@ -3253,29 +3253,29 @@ enable.idempotence=true : отправлено 200, потерянных под�
 </thead>
 <tbody>
 <tr>
-<td><code>enable.auto.commit</code></td>
-<td><code>true</code></td>
-<td>смещения фиксируются в фоне; в Spring Boot отключается через <code>spring.kafka.consumer.enable-auto-commit=false</code></td>
+<td data-label="Настройка"><code>enable.auto.commit</code></td>
+<td data-label="Значение по умолчанию"><code>true</code></td>
+<td data-label="Как влияет на гарантию">смещения фиксируются в фоне; в Spring Boot отключается через <code>spring.kafka.consumer.enable-auto-commit=false</code></td>
 </tr>
 <tr>
-<td><code>auto.commit.interval.ms</code></td>
-<td>5000</td>
-<td>как часто фоновая фиксация; чем реже, тем больше повторов после сбоя, но фиксация идёт по факту выдачи записей, а не обработки</td>
+<td data-label="Настройка"><code>auto.commit.interval.ms</code></td>
+<td data-label="Значение по умолчанию">5000</td>
+<td data-label="Как влияет на гарантию">как часто фоновая фиксация; чем реже, тем больше повторов после сбоя, но фиксация идёт по факту выдачи записей, а не обработки</td>
 </tr>
 <tr>
-<td><code>max.poll.records</code></td>
-<td>500</td>
-<td>размер пачки на <code>poll()</code>: после сбоя повторится вся пачка с последней фиксации</td>
+<td data-label="Настройка"><code>max.poll.records</code></td>
+<td data-label="Значение по умолчанию">500</td>
+<td data-label="Как влияет на гарантию">размер пачки на <code>poll()</code>: после сбоя повторится вся пачка с последней фиксации</td>
 </tr>
 <tr>
-<td><code>isolation.level</code></td>
-<td><code>read_uncommitted</code></td>
-<td>при <code>read_committed</code> потребитель не видит записи отменённых транзакций (7.7)</td>
+<td data-label="Настройка"><code>isolation.level</code></td>
+<td data-label="Значение по умолчанию"><code>read_uncommitted</code></td>
+<td data-label="Как влияет на гарантию">при <code>read_committed</code> потребитель не видит записи отменённых транзакций (7.7)</td>
 </tr>
 <tr>
-<td><code>auto.offset.reset</code></td>
-<td><code>latest</code> для новых групп (⚠️ по памяти)</td>
-<td>с какого места читать, если смещения нет: от этого зависит, что считается потерей при первом запуске</td>
+<td data-label="Настройка"><code>auto.offset.reset</code></td>
+<td data-label="Значение по умолчанию"><code>latest</code> для новых групп (⚠️ по памяти)</td>
+<td data-label="Как влияет на гарантию">с какого места читать, если смещения нет: от этого зависит, что считается потерей при первом запуске</td>
 </tr>
 </tbody>
 </table>
@@ -3363,7 +3363,7 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 </blockquote>
 <h3 id="710-сводная-таблица-настроек-по-уровням-гарантий">7.10 Сводная таблица настроек по уровням гарантий</h3>
 <p>Всё сказанное в подразделах 7.4–7.9 сводится в одну таблицу, которую удобно держать перед глазами при ревью конфигурации. Столбцы — три уровня, строки — настройки трёх участников: производителя, брокера и топика, потребителя. Рекомендуемые значения для кластера из трёх брокеров (<code>replication.factor=3</code>, <code>min.insync.replicas=2</code>) относятся к практике и обоснованы в подразделах 4.3–4.6 и 14.6; значения по умолчанию взяты из документации Kafka 4.3, там где сверено.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Настройка</th>
@@ -3374,82 +3374,82 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 </thead>
 <tbody>
 <tr>
-<td><strong>Производитель</strong> <code>acks</code></td>
-<td><code>0</code> или <code>1</code></td>
-<td><code>all</code></td>
-<td><code>all</code></td>
+<td data-label="Настройка"><strong>Производитель</strong> <code>acks</code></td>
+<td data-label="at-most-once"><code>0</code> или <code>1</code></td>
+<td data-label="at-least-once"><code>all</code></td>
+<td data-label="exactly-once (Kafka → Kafka)"><code>all</code></td>
 </tr>
 <tr>
-<td><code>enable.idempotence</code></td>
-<td><code>false</code></td>
-<td><code>true</code> (по умолчанию)</td>
-<td><code>true</code> (подразумевается)</td>
+<td data-label="Настройка"><code>enable.idempotence</code></td>
+<td data-label="at-most-once"><code>false</code></td>
+<td data-label="at-least-once"><code>true</code> (по умолчанию)</td>
+<td data-label="exactly-once (Kafka → Kafka)"><code>true</code> (подразумевается)</td>
 </tr>
 <tr>
-<td><code>retries</code> / <code>delivery.timeout.ms</code></td>
-<td><code>0</code> либо не важно</td>
-<td>по умолчанию (2147483647 / 120000)</td>
-<td>по умолчанию</td>
+<td data-label="Настройка"><code>retries</code> / <code>delivery.timeout.ms</code></td>
+<td data-label="at-most-once"><code>0</code> либо не важно</td>
+<td data-label="at-least-once">по умолчанию (2147483647 / 120000)</td>
+<td data-label="exactly-once (Kafka → Kafka)">по умолчанию</td>
 </tr>
 <tr>
-<td><code>transactional.id</code></td>
-<td>не задан</td>
-<td>не задан</td>
-<td>стабильный между рестартами</td>
+<td data-label="Настройка"><code>transactional.id</code></td>
+<td data-label="at-most-once">не задан</td>
+<td data-label="at-least-once">не задан</td>
+<td data-label="exactly-once (Kafka → Kafka)">стабильный между рестартами</td>
 </tr>
 <tr>
-<td><strong>Топик и брокер</strong> <code>replication.factor</code></td>
-<td>1–3</td>
-<td>3</td>
-<td>3</td>
+<td data-label="Настройка"><strong>Топик и брокер</strong> <code>replication.factor</code></td>
+<td data-label="at-most-once">1–3</td>
+<td data-label="at-least-once">3</td>
+<td data-label="exactly-once (Kafka → Kafka)">3</td>
 </tr>
 <tr>
-<td><code>min.insync.replicas</code></td>
-<td>1</td>
-<td>2</td>
-<td>2</td>
+<td data-label="Настройка"><code>min.insync.replicas</code></td>
+<td data-label="at-most-once">1</td>
+<td data-label="at-least-once">2</td>
+<td data-label="exactly-once (Kafka → Kafka)">2</td>
 </tr>
 <tr>
-<td><code>unclean.leader.election.enable</code></td>
-<td>не важно</td>
-<td><code>false</code></td>
-<td><code>false</code></td>
+<td data-label="Настройка"><code>unclean.leader.election.enable</code></td>
+<td data-label="at-most-once">не важно</td>
+<td data-label="at-least-once"><code>false</code></td>
+<td data-label="exactly-once (Kafka → Kafka)"><code>false</code></td>
 </tr>
 <tr>
-<td>служебные топики транзакций</td>
-<td>—</td>
-<td>—</td>
-<td><code>transaction.state.log.replication.factor</code> и <code>min.isr</code> по уровню кластера (⚠️ умолчания не сверялись)</td>
+<td data-label="Настройка">служебные топики транзакций</td>
+<td data-label="at-most-once">—</td>
+<td data-label="at-least-once">—</td>
+<td data-label="exactly-once (Kafka → Kafka)"><code>transaction.state.log.replication.factor</code> и <code>min.isr</code> по уровню кластера (⚠️ умолчания не сверялись)</td>
 </tr>
 <tr>
-<td><strong>Потребитель</strong> <code>enable.auto.commit</code></td>
-<td><code>true</code> допустим</td>
-<td><code>false</code></td>
-<td><code>false</code></td>
+<td data-label="Настройка"><strong>Потребитель</strong> <code>enable.auto.commit</code></td>
+<td data-label="at-most-once"><code>true</code> допустим</td>
+<td data-label="at-least-once"><code>false</code></td>
+<td data-label="exactly-once (Kafka → Kafka)"><code>false</code></td>
 </tr>
 <tr>
-<td>порядок фиксации</td>
-<td>до обработки</td>
-<td>после обработки</td>
-<td>в транзакции (<code>sendOffsetsToTransaction</code>)</td>
+<td data-label="Настройка">порядок фиксации</td>
+<td data-label="at-most-once">до обработки</td>
+<td data-label="at-least-once">после обработки</td>
+<td data-label="exactly-once (Kafka → Kafka)">в транзакции (<code>sendOffsetsToTransaction</code>)</td>
 </tr>
 <tr>
-<td><code>isolation.level</code></td>
-<td>не важно</td>
-<td>не важно</td>
-<td><code>read_committed</code> у читателей результата</td>
+<td data-label="Настройка"><code>isolation.level</code></td>
+<td data-label="at-most-once">не важно</td>
+<td data-label="at-least-once">не важно</td>
+<td data-label="exactly-once (Kafka → Kafka)"><code>read_committed</code> у читателей результата</td>
 </tr>
 <tr>
-<td>Обработчик</td>
-<td>не нужна идемпотентность</td>
-<td><strong>идемпотентный</strong> (ключ, <code>ON CONFLICT</code>, смещение в БД)</td>
-<td>для Kafka-приёмника не нужен</td>
+<td data-label="Настройка">Обработчик</td>
+<td data-label="at-most-once">не нужна идемпотентность</td>
+<td data-label="at-least-once"><strong>идемпотентный</strong> (ключ, <code>ON CONFLICT</code>, смещение в БД)</td>
+<td data-label="exactly-once (Kafka → Kafka)">для Kafka-приёмника не нужен</td>
 </tr>
 <tr>
-<td>Что теряется или дублируется</td>
-<td>возможна потеря</td>
-<td>возможны дубли</td>
-<td>нет ни того ни другого, пока всё внутри Kafka</td>
+<td data-label="Настройка">Что теряется или дублируется</td>
+<td data-label="at-most-once">возможна потеря</td>
+<td data-label="at-least-once">возможны дубли</td>
+<td data-label="exactly-once (Kafka → Kafka)">нет ни того ни другого, пока всё внутри Kafka</td>
 </tr>
 </tbody>
 </table>
@@ -3462,7 +3462,7 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 </blockquote>
 <h3 id="711-что-происходит-при-сбоях-таблица-исходов">7.11 Что происходит при сбоях: таблица исходов</h3>
 <p>Последняя таблица раздела отвечает на вопрос, который задают чаще всего: «а что будет, если...». Исходы указаны для двух режимов: at-least-once с идемпотентным производителем и EOS на транзакциях; строки, подтверждённые запусками этой главы, помечены ссылкой на подраздел.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сбой</th>
@@ -3472,44 +3472,44 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 </thead>
 <tbody>
 <tr>
-<td>Потеряно подтверждение записи</td>
-<td>повтор, дубль отброшен брокером (7.5: 0 дублей из 10)</td>
-<td>то же</td>
+<td data-label="Сбой">Потеряно подтверждение записи</td>
+<td data-label="at-least-once (идемпотентный производитель, фиксация после обработки)">повтор, дубль отброшен брокером (7.5: 0 дублей из 10)</td>
+<td data-label="exactly-once (транзакции)">то же</td>
 </tr>
 <tr>
-<td>Производитель перезапущен посреди пачки</td>
-<td>часть записей мог дописать прежний PID; после рестарта повтор той же бизнес-записи пройдёт как новая</td>
-<td>незавершённая транзакция отменена при <code>initTransactions()</code> (7.7), результаты невидимы читателям <code>read_committed</code></td>
+<td data-label="Сбой">Производитель перезапущен посреди пачки</td>
+<td data-label="at-least-once (идемпотентный производитель, фиксация после обработки)">часть записей мог дописать прежний PID; после рестарта повтор той же бизнес-записи пройдёт как новая</td>
+<td data-label="exactly-once (транзакции)">незавершённая транзакция отменена при <code>initTransactions()</code> (7.7), результаты невидимы читателям <code>read_committed</code></td>
 </tr>
 <tr>
-<td>Потребитель упал до фиксации смещения</td>
-<td>вся пачка с последней фиксации обработана снова (7.7: 10 дублей)</td>
-<td>пачка обработана снова, но прежний результат отменён: дублей нет (7.7: 0)</td>
+<td data-label="Сбой">Потребитель упал до фиксации смещения</td>
+<td data-label="at-least-once (идемпотентный производитель, фиксация после обработки)">вся пачка с последней фиксации обработана снова (7.7: 10 дублей)</td>
+<td data-label="exactly-once (транзакции)">пачка обработана снова, но прежний результат отменён: дублей нет (7.7: 0)</td>
 </tr>
 <tr>
-<td>Потребитель упал после фиксации, до обработки</td>
-<td>при фиксации после обработки невозможно; при фиксации до — потеря</td>
-<td>невозможно: фиксация смещения и результат — одна транзакция</td>
+<td data-label="Сбой">Потребитель упал после фиксации, до обработки</td>
+<td data-label="at-least-once (идемпотентный производитель, фиксация после обработки)">при фиксации после обработки невозможно; при фиксации до — потеря</td>
+<td data-label="exactly-once (транзакции)">невозможно: фиксация смещения и результат — одна транзакция</td>
 </tr>
 <tr>
-<td>Падение между фиксацией БД и фиксацией Kafka</td>
-<td>дубль строки без защиты (7.8: 110 из 100)</td>
-<td>не применим: БД вне транзакции Kafka</td>
+<td data-label="Сбой">Падение между фиксацией БД и фиксацией Kafka</td>
+<td data-label="at-least-once (идемпотентный производитель, фиксация после обработки)">дубль строки без защиты (7.8: 110 из 100)</td>
+<td data-label="exactly-once (транзакции)">не применим: БД вне транзакции Kafka</td>
 </tr>
 <tr>
-<td>Перебалансировка, два владельца партиции</td>
-<td>возможна двойная обработка пачки (14.2)</td>
-<td>запись старого владельца отгорожена эпохой (7.2)</td>
+<td data-label="Сбой">Перебалансировка, два владельца партиции</td>
+<td data-label="at-least-once (идемпотентный производитель, фиксация после обработки)">возможна двойная обработка пачки (14.2)</td>
+<td data-label="exactly-once (транзакции)">запись старого владельца отгорожена эпохой (7.2)</td>
 </tr>
 <tr>
-<td>Брокер-лидер упал после <code>acks=all</code> при <code>min.insync.replicas=2</code></td>
-<td>потери нет: запись есть минимум на двух репликах (4.3)</td>
-<td>то же</td>
+<td data-label="Сбой">Брокер-лидер упал после <code>acks=all</code> при <code>min.insync.replicas=2</code></td>
+<td data-label="at-least-once (идемпотентный производитель, фиксация после обработки)">потери нет: запись есть минимум на двух репликах (4.3)</td>
+<td data-label="exactly-once (транзакции)">то же</td>
 </tr>
 <tr>
-<td>Транзакция не завершена за <code>transaction.timeout.ms</code></td>
-<td>не применимо</td>
-<td>координатор отменяет; читатели <code>read_committed</code> ждут до этого момента (7.7)</td>
+<td data-label="Сбой">Транзакция не завершена за <code>transaction.timeout.ms</code></td>
+<td data-label="at-least-once (идемпотентный производитель, фиксация после обработки)">не применимо</td>
+<td data-label="exactly-once (транзакции)">координатор отменяет; читатели <code>read_committed</code> ждут до этого момента (7.7)</td>
 </tr>
 </tbody>
 </table>
@@ -3579,7 +3579,7 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 <p>«Просто JSON» работает ровно до первого производителя, который переименует поле. В REST несовместимость видна сразу, в интеграционном тесте или на первом же запросе. В Kafka она проявляется у потребителя через недели, когда исправить производитель уже поздно, потому что данные в старом и новом формате вперемешку лежат в журнале.</p>
 <p>Реестр решает эту задачу так. Schema Registry (Confluent, а также совместимые реализации — Apicurio, Karapace) хранит схемы и их версии и выдаёт им числовые id. Сериализатор превращает объект в <code>byte[]</code> и кладёт в начало каждого значения 5 байт: magic byte <code>0x00</code> и 4 байта schema id. Десериализатор читает id, получает схему из реестра (с локальным кэшем) и декодирует сообщение.</p>
 <p>Реестр работает с тремя форматами, и в таблице они сравниваются по плюсам и минусам:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Формат</th>
@@ -3589,19 +3589,19 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 </thead>
 <tbody>
 <tr>
-<td><strong>Avro</strong></td>
-<td>Компактный бинарь, встроенная модель эволюции, схема отдельно от данных, богатые логические типы</td>
-<td>Требует реестр обязательно; генерация классов</td>
+<td data-label="Формат"><strong>Avro</strong></td>
+<td data-label="Плюсы">Компактный бинарь, встроенная модель эволюции, схема отдельно от данных, богатые логические типы</td>
+<td data-label="Минусы">Требует реестр обязательно; генерация классов</td>
 </tr>
 <tr>
-<td><strong>Protobuf</strong></td>
-<td>Компактный, общий с gRPC (см. главу 28, <code>28-grpc-jsonrpc-graphql-soap.md</code>), эволюция по номерам полей</td>
-<td>Слабее выражает «обязательность»; в proto3 нет required</td>
+<td data-label="Формат"><strong>Protobuf</strong></td>
+<td data-label="Плюсы">Компактный, общий с gRPC (см. главу 28, <code>28-grpc-jsonrpc-graphql-soap.md</code>), эволюция по номерам полей</td>
+<td data-label="Минусы">Слабее выражает «обязательность»; в proto3 нет required</td>
 </tr>
 <tr>
-<td><strong>JSON Schema</strong></td>
-<td>Человекочитаемо, отладка глазами</td>
-<td>Крупный объём, валидация дороже, эволюция менее строгая</td>
+<td data-label="Формат"><strong>JSON Schema</strong></td>
+<td data-label="Плюсы">Человекочитаемо, отладка глазами</td>
+<td data-label="Минусы">Крупный объём, валидация дороже, эволюция менее строгая</td>
 </tr>
 </tbody>
 </table>
@@ -3609,7 +3609,7 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 <h3 id="92-режимы-совместимости">9.2 Режимы совместимости</h3>
 <p>Режим совместимости (<em>compatibility mode</em>) — это правило, по которому реестр решает, какие изменения схемы пропустить, и из которого следует, в каком порядке обновлять производителей и потребителей. Ошибиться здесь легко, потому что направление совместимости и порядок выката связаны неочевидно. Ниже сведены все режимы, объяснено, почему по умолчанию стоит <code>BACKWARD</code>, и перечислены правила эволюции и стратегии именования subject.</p>
 <p>Реестр проверяет новую версию схемы против предыдущих, а режим задаётся на subject (так реестр называет именованную цепочку версий одной схемы) или глобально. <strong>По умолчанию действует <code>BACKWARD</code></strong> (<a href="https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html">Schema Evolution and Compatibility</a>). В таблице для каждого режима указано, что он означает, какие изменения разрешает и кого при нём обновлять первым:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -3620,46 +3620,46 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 </thead>
 <tbody>
 <tr>
-<td><code>BACKWARD</code></td>
-<td>Новая схема читает данные, записанные старой</td>
-<td>Добавить необязательное поле (с default), удалить поле</td>
-<td>Сначала <strong>потребители</strong>, потом производители</td>
+<td data-label="Режим"><code>BACKWARD</code></td>
+<td data-label="Смысл">Новая схема читает данные, записанные старой</td>
+<td data-label="Что можно менять">Добавить необязательное поле (с default), удалить поле</td>
+<td data-label="Порядок обновления">Сначала <strong>потребители</strong>, потом производители</td>
 </tr>
 <tr>
-<td><code>BACKWARD_TRANSITIVE</code></td>
-<td>То же против <strong>всех</strong> прошлых версий</td>
-<td>—</td>
-<td>Сначала потребители</td>
+<td data-label="Режим"><code>BACKWARD_TRANSITIVE</code></td>
+<td data-label="Смысл">То же против <strong>всех</strong> прошлых версий</td>
+<td data-label="Что можно менять">—</td>
+<td data-label="Порядок обновления">Сначала потребители</td>
 </tr>
 <tr>
-<td><code>FORWARD</code></td>
-<td>Старая схема читает данные новой</td>
-<td>Добавить поле, удалить необязательное</td>
-<td>Сначала <strong>производители</strong>, потом потребители</td>
+<td data-label="Режим"><code>FORWARD</code></td>
+<td data-label="Смысл">Старая схема читает данные новой</td>
+<td data-label="Что можно менять">Добавить поле, удалить необязательное</td>
+<td data-label="Порядок обновления">Сначала <strong>производители</strong>, потом потребители</td>
 </tr>
 <tr>
-<td><code>FORWARD_TRANSITIVE</code></td>
-<td>То же против всех версий</td>
-<td>—</td>
-<td>Сначала производители</td>
+<td data-label="Режим"><code>FORWARD_TRANSITIVE</code></td>
+<td data-label="Смысл">То же против всех версий</td>
+<td data-label="Что можно менять">—</td>
+<td data-label="Порядок обновления">Сначала производители</td>
 </tr>
 <tr>
-<td><code>FULL</code></td>
-<td>И то и другое</td>
-<td>Только добавление/удаление необязательных полей</td>
-<td>В любом порядке</td>
+<td data-label="Режим"><code>FULL</code></td>
+<td data-label="Смысл">И то и другое</td>
+<td data-label="Что можно менять">Только добавление/удаление необязательных полей</td>
+<td data-label="Порядок обновления">В любом порядке</td>
 </tr>
 <tr>
-<td><code>FULL_TRANSITIVE</code></td>
-<td>FULL против всех версий</td>
-<td>—</td>
-<td>В любом порядке</td>
+<td data-label="Режим"><code>FULL_TRANSITIVE</code></td>
+<td data-label="Смысл">FULL против всех версий</td>
+<td data-label="Что можно менять">—</td>
+<td data-label="Порядок обновления">В любом порядке</td>
 </tr>
 <tr>
-<td><code>NONE</code></td>
-<td>Проверок нет</td>
-<td>Всё</td>
-<td>Одновременно всех или новый топик</td>
+<td data-label="Режим"><code>NONE</code></td>
+<td data-label="Смысл">Проверок нет</td>
+<td data-label="Что можно менять">Всё</td>
+<td data-label="Порядок обновления">Одновременно всех или новый топик</td>
 </tr>
 </tbody>
 </table>
@@ -3790,7 +3790,7 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 <p><strong><code>concurrency</code> не должна превышать число партиций.</strong> Иначе лишние контейнеры получат пустое назначение и будут простаивать, занимая соединения. Хорошее значение получается, если разделить число партиций на число подов и округлить вверх. Масштабируя поды, помните, что общий параллелизм группы всё равно упирается в число партиций (6.1).</p>
 <h3 id="113-ackmode">11.3 <code>AckMode</code></h3>
 <p><code>AckMode</code> — это настройка контейнера Spring, которая определяет, в какой момент он фиксирует смещения, а значит, какое окно повторной обработки вы получите после сбоя. Чем реже фиксация, тем больше записей придётся обработать повторно после падения, но тем меньше обращений к брокеру. Ниже перечислены все режимы, а после таблицы сказано, какой брать для критичных потоков.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th><code>AckMode</code></th>
@@ -3799,28 +3799,28 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 </thead>
 <tbody>
 <tr>
-<td><code>RECORD</code></td>
-<td>После каждой успешно обработанной записи</td>
+<td data-label="AckMode"><code>RECORD</code></td>
+<td data-label="Когда фиксируется смещение">После каждой успешно обработанной записи</td>
 </tr>
 <tr>
-<td><code>BATCH</code> (по умолчанию)</td>
-<td>После обработки всех записей, вернувшихся из одного <code>poll()</code></td>
+<td data-label="AckMode"><code>BATCH</code> (по умолчанию)</td>
+<td data-label="Когда фиксируется смещение">После обработки всех записей, вернувшихся из одного <code>poll()</code></td>
 </tr>
 <tr>
-<td><code>TIME</code></td>
-<td>По таймеру <code>ackTime</code></td>
+<td data-label="AckMode"><code>TIME</code></td>
+<td data-label="Когда фиксируется смещение">По таймеру <code>ackTime</code></td>
 </tr>
 <tr>
-<td><code>COUNT</code></td>
-<td>После N записей</td>
+<td data-label="AckMode"><code>COUNT</code></td>
+<td data-label="Когда фиксируется смещение">После N записей</td>
 </tr>
 <tr>
-<td><code>MANUAL</code></td>
-<td>Приложение вызывает <code>ack.acknowledge()</code>, фиксация — в конце обработки пакета</td>
+<td data-label="AckMode"><code>MANUAL</code></td>
+<td data-label="Когда фиксируется смещение">Приложение вызывает <code>ack.acknowledge()</code>, фиксация — в конце обработки пакета</td>
 </tr>
 <tr>
-<td><code>MANUAL_IMMEDIATE</code></td>
-<td>Приложение вызывает <code>ack.acknowledge()</code>, фиксация выполняется немедленно</td>
+<td data-label="AckMode"><code>MANUAL_IMMEDIATE</code></td>
+<td data-label="Когда фиксируется смещение">Приложение вызывает <code>ack.acknowledge()</code>, фиксация выполняется немедленно</td>
 </tr>
 </tbody>
 </table>
@@ -3955,7 +3955,7 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 </ul>
 <p>Посчитаем на кластере: пусть у топика P партиций, а в деплое K подов. Тогда <code>concurrency = ceil(P / K)</code> даёт полную загрузку, потому что суммарное число потребителей оказывается ≥ P. Если P не делится на K нацело, распределение будет неравномерным, и часть контейнеров получит на одну партицию больше. Поэтому P обычно выбирают кратным ожидаемому максимуму K.</p>
 <p>Таблица показывает четыре типичные конфигурации. Смотреть стоит на последний столбец: недобор потоков гораздо безопаснее перебора.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Конфигурация</th>
@@ -3966,28 +3966,28 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 </thead>
 <tbody>
 <tr>
-<td>Ровно</td>
-<td class="num">12</td>
-<td>4 × 3 = 12</td>
-<td>По одной партиции на поток, идеально</td>
+<td data-label="Конфигурация">Ровно</td>
+<td data-label="Партиций" class="num">12</td>
+<td data-label="Подов × concurrency">4 × 3 = 12</td>
+<td data-label="Результат">По одной партиции на поток, идеально</td>
 </tr>
 <tr>
-<td>С запасом на масштабирование</td>
-<td class="num">24</td>
-<td>4 × 3 = 12</td>
-<td>По 2 партиции на поток; можно вырасти до 8 подов без изменения топика</td>
+<td data-label="Конфигурация">С запасом на масштабирование</td>
+<td data-label="Партиций" class="num">24</td>
+<td data-label="Подов × concurrency">4 × 3 = 12</td>
+<td data-label="Результат">По 2 партиции на поток; можно вырасти до 8 подов без изменения топика</td>
 </tr>
 <tr>
-<td>Перебор</td>
-<td class="num">12</td>
-<td>6 × 4 = 24</td>
-<td>12 потоков простаивают, перебалансировки дольше</td>
+<td data-label="Конфигурация">Перебор</td>
+<td data-label="Партиций" class="num">12</td>
+<td data-label="Подов × concurrency">6 × 4 = 24</td>
+<td data-label="Результат">12 потоков простаивают, перебалансировки дольше</td>
 </tr>
 <tr>
-<td>Недобор</td>
-<td class="num">48</td>
-<td>2 × 2 = 4</td>
-<td>По 12 партиций на поток; лаг при всплеске, но порядок и корректность целы</td>
+<td data-label="Конфигурация">Недобор</td>
+<td data-label="Партиций" class="num">48</td>
+<td data-label="Подов × concurrency">2 × 2 = 4</td>
+<td data-label="Результат">По 12 партиций на поток; лаг при всплеске, но порядок и корректность целы</td>
 </tr>
 </tbody>
 </table>
@@ -4107,7 +4107,7 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 <h3 id="1111-тестирование-embeddedkafka-и-testcontainers">11.11 Тестирование: <code>EmbeddedKafka</code> и Testcontainers</h3>
 <p>Интеграционный тест с Kafka — это тест, в котором код приложения работает с настоящим брокером, а не с заглушкой. Пишут такие тесты на одном из двух инструментов: <code>@EmbeddedKafka</code> поднимает брокер внутри тестовой JVM, а Testcontainers запускает настоящий образ в Docker. Выбор между ними — компромисс между скоростью и достоверностью, и неправильный выбор даёт либо медленную сборку в CI, либо тесты, которые не проверяют того, что сломается в проде. Ниже сравнение по критериям, пример быстрого теста на DLT и рекомендация, как совмещать оба уровня.</p>
 <p>Таблица сравнивает инструменты по десяти критериям. Главное различие видно в строках «Совпадение с продом» и «Несколько брокеров, отказы».</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -4117,54 +4117,54 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 </thead>
 <tbody>
 <tr>
-<td>Что запускается</td>
-<td>Брокер в том же JVM, из <code>spring-kafka-test</code></td>
-<td>Настоящий образ <code>apache/kafka:4.3.1</code> в Docker</td>
+<td data-label="Критерий">Что запускается</td>
+<td data-label="@EmbeddedKafka">Брокер в том же JVM, из <code>spring-kafka-test</code></td>
+<td data-label="Testcontainers (KafkaContainer)">Настоящий образ <code>apache/kafka:4.3.1</code> в Docker</td>
 </tr>
 <tr>
-<td>Время старта</td>
-<td>2–5 с</td>
-<td>5–15 с (плюс скачивание образа один раз)</td>
+<td data-label="Критерий">Время старта</td>
+<td data-label="@EmbeddedKafka">2–5 с</td>
+<td data-label="Testcontainers (KafkaContainer)">5–15 с (плюс скачивание образа один раз)</td>
 </tr>
 <tr>
-<td>Требует Docker</td>
-<td>Нет</td>
-<td>Да — и это блокер в части CI</td>
+<td data-label="Критерий">Требует Docker</td>
+<td data-label="@EmbeddedKafka">Нет</td>
+<td data-label="Testcontainers (KafkaContainer)">Да — и это блокер в части CI</td>
 </tr>
 <tr>
-<td>Совпадение с продом</td>
-<td>Версия брокера = версии <code>kafka-clients</code> в проекте, не та, что в проде</td>
-<td>Та же версия и тот же дистрибутив</td>
+<td data-label="Критерий">Совпадение с продом</td>
+<td data-label="@EmbeddedKafka">Версия брокера = версии <code>kafka-clients</code> в проекте, не та, что в проде</td>
+<td data-label="Testcontainers (KafkaContainer)">Та же версия и тот же дистрибутив</td>
 </tr>
 <tr>
-<td>KRaft</td>
-<td>Поддерживается в актуальных версиях</td>
-<td>Нативно</td>
+<td data-label="Критерий">KRaft</td>
+<td data-label="@EmbeddedKafka">Поддерживается в актуальных версиях</td>
+<td data-label="Testcontainers (KafkaContainer)">Нативно</td>
 </tr>
 <tr>
-<td>Транзакции, EOS</td>
-<td>Работают, но требуют <code>transaction.state.log.replication.factor=1</code></td>
-<td>Работают; ближе к продовому поведению</td>
+<td data-label="Критерий">Транзакции, EOS</td>
+<td data-label="@EmbeddedKafka">Работают, но требуют <code>transaction.state.log.replication.factor=1</code></td>
+<td data-label="Testcontainers (KafkaContainer)">Работают; ближе к продовому поведению</td>
 </tr>
 <tr>
-<td>Compaction, retention</td>
-<td>Формально работают, но тайминги log cleaner в однопроцессном брокере проверять неудобно</td>
-<td>Проверяется честно</td>
+<td data-label="Критерий">Compaction, retention</td>
+<td data-label="@EmbeddedKafka">Формально работают, но тайминги log cleaner в однопроцессном брокере проверять неудобно</td>
+<td data-label="Testcontainers (KafkaContainer)">Проверяется честно</td>
 </tr>
 <tr>
-<td>Несколько брокеров, отказы</td>
-<td><code>count = 3</code> возможно, но убить брокер «по-настоящему» нельзя</td>
-<td><code>docker stop</code> / <code>pause</code> контейнера — полноценные сценарии отказа</td>
+<td data-label="Критерий">Несколько брокеров, отказы</td>
+<td data-label="@EmbeddedKafka"><code>count = 3</code> возможно, но убить брокер «по-настоящему» нельзя</td>
+<td data-label="Testcontainers (KafkaContainer)"><code>docker stop</code> / <code>pause</code> контейнера — полноценные сценарии отказа</td>
 </tr>
 <tr>
-<td>Изоляция между тестами</td>
-<td>Общий брокер на контекст; топики надо чистить руками</td>
-<td>Контейнер на класс или singleton с reuse</td>
+<td data-label="Критерий">Изоляция между тестами</td>
+<td data-label="@EmbeddedKafka">Общий брокер на контекст; топики надо чистить руками</td>
+<td data-label="Testcontainers (KafkaContainer)">Контейнер на класс или singleton с reuse</td>
 </tr>
 <tr>
-<td>Где применять</td>
-<td>Юнит-уровень: сериализация, маршрутизация слушателей, DLT, логика обработчика</td>
-<td>Интеграционный уровень: гарантии, конфигурация, транзакции, сценарии отказа</td>
+<td data-label="Критерий">Где применять</td>
+<td data-label="@EmbeddedKafka">Юнит-уровень: сериализация, маршрутизация слушателей, DLT, логика обработчика</td>
+<td data-label="Testcontainers (KafkaContainer)">Интеграционный уровень: гарантии, конфигурация, транзакции, сценарии отказа</td>
 </tr>
 </tbody>
 </table>
@@ -4235,7 +4235,7 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 <p>Метрики Kafka — это счётчики и измерители, которые брокеры и клиенты публикуют о своей работе. Их сотни, но для эксплуатации нужна небольшая часть, и важно понимать, на что в каждой смотреть: на абсолютное значение, на производную или на отклонение от нуля. Ниже метрики сгруппированы по трём компонентам — потребителю, производителю и брокеру, — и для каждой сказано, что она означает и когда её значение должно насторожить.</p>
 <p>Kafka экспортирует всё через JMX. В Spring Boot клиентские метрики попадают в Micrometer, библиотеку метрик Spring, автоматически (<code>KafkaClientMetrics</code>), а брокерские собирают в Prometheus через JMX Exporter. Общая методика оповещений изложена в главе 51 (<code>51-observability.md</code>), а здесь речь пойдёт о специфике Kafka.</p>
 <p><strong>Потребитель.</strong> В таблице девять метрик потребителя. У большинства из них смотрят на тренд или на приближение к одному из таймаутов.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метрика</th>
@@ -4245,54 +4245,54 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 </thead>
 <tbody>
 <tr>
-<td><code>records-lag-max</code></td>
-<td>Максимальный лаг по назначенным партициям</td>
-<td><strong>Производную</strong>, а не абсолют: устойчивый рост = не справляемся</td>
+<td data-label="Метрика"><code>records-lag-max</code></td>
+<td data-label="Что означает">Максимальный лаг по назначенным партициям</td>
+<td data-label="На что смотреть"><strong>Производную</strong>, а не абсолют: устойчивый рост = не справляемся</td>
 </tr>
 <tr>
-<td><code>records-consumed-rate</code></td>
-<td>Записей в секунду</td>
-<td>Падение в ноль при ненулевом лаге = потребитель встал</td>
+<td data-label="Метрика"><code>records-consumed-rate</code></td>
+<td data-label="Что означает">Записей в секунду</td>
+<td data-label="На что смотреть">Падение в ноль при ненулевом лаге = потребитель встал</td>
 </tr>
 <tr>
-<td><code>fetch-latency-avg</code></td>
-<td>Латентность fetch-запроса</td>
-<td>Рост = проблемы сети или перегруз брокера</td>
+<td data-label="Метрика"><code>fetch-latency-avg</code></td>
+<td data-label="Что означает">Латентность fetch-запроса</td>
+<td data-label="На что смотреть">Рост = проблемы сети или перегруз брокера</td>
 </tr>
 <tr>
-<td><code>time-between-poll-max</code></td>
-<td>Максимальный интервал между <code>poll()</code></td>
-<td>Приближение к <code>max.poll.interval.ms</code> — предвестник перебалансировки</td>
+<td data-label="Метрика"><code>time-between-poll-max</code></td>
+<td data-label="Что означает">Максимальный интервал между <code>poll()</code></td>
+<td data-label="На что смотреть">Приближение к <code>max.poll.interval.ms</code> — предвестник перебалансировки</td>
 </tr>
 <tr>
-<td><code>commit-latency-avg/max</code></td>
-<td>Латентность фиксации смещения</td>
-<td>Рост = перегружен координатор</td>
+<td data-label="Метрика"><code>commit-latency-avg/max</code></td>
+<td data-label="Что означает">Латентность фиксации смещения</td>
+<td data-label="На что смотреть">Рост = перегружен координатор</td>
 </tr>
 <tr>
-<td><code>rebalance-rate-per-hour</code></td>
-<td>Частота перебалансировок</td>
-<td>Должна быть около нуля; &gt;1–2/час = разбираться</td>
+<td data-label="Метрика"><code>rebalance-rate-per-hour</code></td>
+<td data-label="Что означает">Частота перебалансировок</td>
+<td data-label="На что смотреть">Должна быть около нуля; &gt;1–2/час = разбираться</td>
 </tr>
 <tr>
-<td><code>rebalance-latency-avg</code></td>
-<td>Длительность перебалансировки</td>
-<td>Время простоя группы</td>
+<td data-label="Метрика"><code>rebalance-latency-avg</code></td>
+<td data-label="Что означает">Длительность перебалансировки</td>
+<td data-label="На что смотреть">Время простоя группы</td>
 </tr>
 <tr>
-<td><code>failed-rebalance-rate-per-hour</code></td>
-<td>Неудачные перебалансировки</td>
-<td>Явный признак патологии</td>
+<td data-label="Метрика"><code>failed-rebalance-rate-per-hour</code></td>
+<td data-label="Что означает">Неудачные перебалансировки</td>
+<td data-label="На что смотреть">Явный признак патологии</td>
 </tr>
 <tr>
-<td><code>last-heartbeat-seconds-ago</code></td>
-<td>Давность heartbeat</td>
-<td>Близко к <code>session.timeout.ms</code> — сеть или GC</td>
+<td data-label="Метрика"><code>last-heartbeat-seconds-ago</code></td>
+<td data-label="Что означает">Давность heartbeat</td>
+<td data-label="На что смотреть">Близко к <code>session.timeout.ms</code> — сеть или GC</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Производитель.</strong> Для производителя самая важная метрика стоит первой: любое ненулевое значение <code>record-error-rate</code> означает, что данные не доехали.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Метрика</th>
@@ -4301,37 +4301,37 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 </thead>
 <tbody>
 <tr>
-<td><code>record-error-rate</code></td>
-<td>Записи, окончательно не доставленные. Любое ненулевое значение — оповещение</td>
+<td data-label="Метрика"><code>record-error-rate</code></td>
+<td data-label="Что означает">Записи, окончательно не доставленные. Любое ненулевое значение — оповещение</td>
 </tr>
 <tr>
-<td><code>record-retry-rate</code></td>
-<td>Повторные отправки. Рост = нестабильность брокеров или ISR</td>
+<td data-label="Метрика"><code>record-retry-rate</code></td>
+<td data-label="Что означает">Повторные отправки. Рост = нестабильность брокеров или ISR</td>
 </tr>
 <tr>
-<td><code>buffer-available-bytes</code></td>
-<td>Свободное место в <code>buffer.memory</code>. Падение к нулю → <code>send()</code> блокируется</td>
+<td data-label="Метрика"><code>buffer-available-bytes</code></td>
+<td data-label="Что означает">Свободное место в <code>buffer.memory</code>. Падение к нулю → <code>send()</code> блокируется</td>
 </tr>
 <tr>
-<td><code>request-latency-avg/max</code></td>
-<td>Латентность ProduceRequest</td>
+<td data-label="Метрика"><code>request-latency-avg/max</code></td>
+<td data-label="Что означает">Латентность ProduceRequest</td>
 </tr>
 <tr>
-<td><code>batch-size-avg</code></td>
-<td>Средний размер пакета. Сильно меньше <code>batch.size</code> = пакетирование не работает</td>
+<td data-label="Метрика"><code>batch-size-avg</code></td>
+<td data-label="Что означает">Средний размер пакета. Сильно меньше <code>batch.size</code> = пакетирование не работает</td>
 </tr>
 <tr>
-<td><code>compression-rate-avg</code></td>
-<td>Коэффициент сжатия</td>
+<td data-label="Метрика"><code>compression-rate-avg</code></td>
+<td data-label="Что означает">Коэффициент сжатия</td>
 </tr>
 <tr>
-<td><code>waiting-threads</code></td>
-<td>Потоки, ждущие места в буфере. &gt;0 — уже плохо</td>
+<td data-label="Метрика"><code>waiting-threads</code></td>
+<td data-label="Что означает">Потоки, ждущие места в буфере. &gt;0 — уже плохо</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Брокер.</strong> Для брокерных метрик в таблице указана норма. Для первых четырёх она равна нулю или единице, так что любое отклонение — повод для оповещения.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метрика</th>
@@ -4341,49 +4341,49 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 </thead>
 <tbody>
 <tr>
-<td><code>kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions</code></td>
-<td><strong>0</strong></td>
-<td>Партиции, где ISR &lt; RF. Устойчиво &gt;0 — отстающий или упавший брокер</td>
+<td data-label="Метрика"><code>kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions</code></td>
+<td data-label="Норма"><strong>0</strong></td>
+<td data-label="Смысл">Партиции, где ISR &lt; RF. Устойчиво &gt;0 — отстающий или упавший брокер</td>
 </tr>
 <tr>
-<td><code>kafka.controller:type=KafkaController,name=OfflinePartitionsCount</code></td>
-<td><strong>0</strong></td>
-<td>Партиции без лидера — запись и чтение недоступны. Критическое оповещение</td>
+<td data-label="Метрика"><code>kafka.controller:type=KafkaController,name=OfflinePartitionsCount</code></td>
+<td data-label="Норма"><strong>0</strong></td>
+<td data-label="Смысл">Партиции без лидера — запись и чтение недоступны. Критическое оповещение</td>
 </tr>
 <tr>
-<td><code>kafka.controller:type=KafkaController,name=ActiveControllerCount</code></td>
-<td>Сумма по кластеру = <strong>1</strong></td>
-<td>0 = нет контроллера</td>
+<td data-label="Метрика"><code>kafka.controller:type=KafkaController,name=ActiveControllerCount</code></td>
+<td data-label="Норма">Сумма по кластеру = <strong>1</strong></td>
+<td data-label="Смысл">0 = нет контроллера</td>
 </tr>
 <tr>
-<td><code>UnderMinIsrPartitionCount</code></td>
-<td><strong>0</strong></td>
-<td>ISR ниже <code>min.insync.replicas</code> → запись с <code>acks=all</code> отвергается</td>
+<td data-label="Метрика"><code>UnderMinIsrPartitionCount</code></td>
+<td data-label="Норма"><strong>0</strong></td>
+<td data-label="Смысл">ISR ниже <code>min.insync.replicas</code> → запись с <code>acks=all</code> отвергается</td>
 </tr>
 <tr>
-<td><code>IsrShrinksPerSec</code> / <code>IsrExpandsPerSec</code></td>
-<td>~0</td>
-<td>«Мигание» ISR = сеть, GC, перегруженный диск</td>
+<td data-label="Метрика"><code>IsrShrinksPerSec</code> / <code>IsrExpandsPerSec</code></td>
+<td data-label="Норма">~0</td>
+<td data-label="Смысл">«Мигание» ISR = сеть, GC, перегруженный диск</td>
 </tr>
 <tr>
-<td><code>RequestHandlerAvgIdlePercent</code></td>
-<td>«между 0 и 1, в идеале <strong>&gt; 0.3</strong>» (<a href="https://kafka.apache.org/43/operations/monitoring/">Monitoring</a>)</td>
-<td>Доля простоя пула обработчиков запросов. Ниже 0.3 — брокер задыхается: сначала проверить iowait, затем <code>num.io.threads</code> (по умолчанию 8), затем добавлять брокеры</td>
+<td data-label="Метрика"><code>RequestHandlerAvgIdlePercent</code></td>
+<td data-label="Норма">«между 0 и 1, в идеале <strong>&gt; 0.3</strong>» (<a href="https://kafka.apache.org/43/operations/monitoring/">Monitoring</a>)</td>
+<td data-label="Смысл">Доля простоя пула обработчиков запросов. Ниже 0.3 — брокер задыхается: сначала проверить iowait, затем <code>num.io.threads</code> (по умолчанию 8), затем добавлять брокеры</td>
 </tr>
 <tr>
-<td><code>NetworkProcessorAvgIdlePercent</code></td>
-<td>«между 0 и 1, в идеале <strong>&gt; 0.3</strong>» (<a href="https://kafka.apache.org/43/operations/monitoring/">Monitoring</a>)</td>
-<td>То же для сетевых потоков (<code>num.network.threads</code>, по умолчанию 3); проседает при TLS и большом числе соединений</td>
+<td data-label="Метрика"><code>NetworkProcessorAvgIdlePercent</code></td>
+<td data-label="Норма">«между 0 и 1, в идеале <strong>&gt; 0.3</strong>» (<a href="https://kafka.apache.org/43/operations/monitoring/">Monitoring</a>)</td>
+<td data-label="Смысл">То же для сетевых потоков (<code>num.network.threads</code>, по умолчанию 3); проседает при TLS и большом числе соединений</td>
 </tr>
 <tr>
-<td><code>BytesInPerSec</code> / <code>BytesOutPerSec</code></td>
-<td>—</td>
-<td>Базовая нагрузка; out обычно кратно in из-за репликации и нескольких групп</td>
+<td data-label="Метрика"><code>BytesInPerSec</code> / <code>BytesOutPerSec</code></td>
+<td data-label="Норма">—</td>
+<td data-label="Смысл">Базовая нагрузка; out обычно кратно in из-за репликации и нескольких групп</td>
 </tr>
 <tr>
-<td><code>LeaderCount</code></td>
-<td>Равномерно</td>
-<td>Перекос = один брокер несёт непропорциональную нагрузку</td>
+<td data-label="Метрика"><code>LeaderCount</code></td>
+<td data-label="Норма">Равномерно</td>
+<td data-label="Смысл">Перекос = один брокер несёт непропорциональную нагрузку</td>
 </tr>
 </tbody>
 </table>
@@ -4419,7 +4419,7 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 <p>Пакет уходит, когда набрал <code>batch.size</code> <strong>или</strong> когда прошло <code>linger.ms</code>. Значит, поведение определяет тот из параметров, который сработает раньше, а это зависит от трафика на <strong>партицию</strong>, а не на топик.</p>
 <p>Считать стоит от такой формулы: при числе записей в секунду на одну партицию <code>r</code> и среднем размере записи <code>s</code> пакет заполняется за <code>batch.size / (r × s)</code> секунд. Если это время меньше <code>linger.ms</code>, поведение определяет <code>batch.size</code>, а если больше, то <code>linger.ms</code>.</p>
 <p>В таблице пять типовых режимов трафика. Для каждого указано, что выставить, что получится и чем за это придётся заплатить.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Трафик на партицию</th>
@@ -4430,34 +4430,34 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 </thead>
 <tbody>
 <tr>
-<td>10 msg/s × 300 Б</td>
-<td><code>linger.ms=50</code>, <code>batch.size=16384</code></td>
-<td>Пакеты по 1–2 записи, компрессия почти не работает</td>
-<td>Ничем: на таком трафике это неважно</td>
+<td data-label="Трафик на партицию">10 msg/s × 300 Б</td>
+<td data-label="Что выставить"><code>linger.ms=50</code>, <code>batch.size=16384</code></td>
+<td data-label="Что получится">Пакеты по 1–2 записи, компрессия почти не работает</td>
+<td data-label="Чем платим">Ничем: на таком трафике это неважно</td>
 </tr>
 <tr>
-<td>1 000 msg/s × 300 Б</td>
-<td><code>linger.ms=5</code> (по умолчанию), <code>batch.size=16384</code></td>
-<td>Пакет заполнился бы за ~55 мс, поэтому отправку решает <code>linger.ms</code>: ~5–6 записей в пакете</td>
-<td>Сжатие слабое. Если поднять <code>linger.ms</code> до 20–50, пакеты вырастут до 20–50 записей, а сжатие улучшится примерно на пятую часть ценой +45 мс задержки. В запуске на однотипном платёжном JSON по 300 Б (Kafka 4.2.1, localhost) zstd сжал в 4,7 раза при <code>linger.ms=5</code> и в 5,7 раза при 50, lz4 — в 2,8 и 3,3 раза; записей в пакете вышло 15,6 и 62</td>
+<td data-label="Трафик на партицию">1 000 msg/s × 300 Б</td>
+<td data-label="Что выставить"><code>linger.ms=5</code> (по умолчанию), <code>batch.size=16384</code></td>
+<td data-label="Что получится">Пакет заполнился бы за ~55 мс, поэтому отправку решает <code>linger.ms</code>: ~5–6 записей в пакете</td>
+<td data-label="Чем платим">Сжатие слабое. Если поднять <code>linger.ms</code> до 20–50, пакеты вырастут до 20–50 записей, а сжатие улучшится примерно на пятую часть ценой +45 мс задержки. В запуске на однотипном платёжном JSON по 300 Б (Kafka 4.2.1, localhost) zstd сжал в 4,7 раза при <code>linger.ms=5</code> и в 5,7 раза при 50, lz4 — в 2,8 и 3,3 раза; записей в пакете вышло 15,6 и 62</td>
 </tr>
 <tr>
-<td>10 000 msg/s × 300 Б</td>
-<td><code>linger.ms=5</code>, <code>batch.size=65536</code></td>
-<td>Пакет 64 КиБ заполнялся бы ~22 мс, а <code>linger.ms</code> истекает через 5 мс → правит <code>linger.ms</code>, ~50 записей (~15 КиБ); чтобы правил <code>batch.size</code>, <code>linger.ms</code> должен быть больше 22 мс</td>
-<td>Память: 64 КиБ × число партиций</td>
+<td data-label="Трафик на партицию">10 000 msg/s × 300 Б</td>
+<td data-label="Что выставить"><code>linger.ms=5</code>, <code>batch.size=65536</code></td>
+<td data-label="Что получится">Пакет 64 КиБ заполнялся бы ~22 мс, а <code>linger.ms</code> истекает через 5 мс → правит <code>linger.ms</code>, ~50 записей (~15 КиБ); чтобы правил <code>batch.size</code>, <code>linger.ms</code> должен быть больше 22 мс</td>
+<td data-label="Чем платим">Память: 64 КиБ × число партиций</td>
 </tr>
 <tr>
-<td>100 000 msg/s × 300 Б</td>
-<td><code>linger.ms=5</code>, <code>batch.size=262144</code></td>
-<td>Пакет 256 КиБ заполнялся бы ~8,7 мс, дольше <code>linger.ms</code> → правит <code>linger.ms</code>, пакеты по ~500 записей (~146 КиБ), компрессия максимальная</td>
-<td><code>buffer.memory</code> надо поднимать: 256 КиБ × 50 партиций = 12,5 МиБ только под активные пакеты</td>
+<td data-label="Трафик на партицию">100 000 msg/s × 300 Б</td>
+<td data-label="Что выставить"><code>linger.ms=5</code>, <code>batch.size=262144</code></td>
+<td data-label="Что получится">Пакет 256 КиБ заполнялся бы ~8,7 мс, дольше <code>linger.ms</code> → правит <code>linger.ms</code>, пакеты по ~500 записей (~146 КиБ), компрессия максимальная</td>
+<td data-label="Чем платим"><code>buffer.memory</code> надо поднимать: 256 КиБ × 50 партиций = 12,5 МиБ только под активные пакеты</td>
 </tr>
 <tr>
-<td>Пиковые всплески</td>
-<td><code>linger.ms=5</code>, <code>batch.size=32768</code>, <code>buffer.memory=128MiB</code></td>
-<td>Всплеск буферизуется, а не блокирует поток</td>
-<td>Больше RSS; при недоступности брокера буфер дольше держит непотерянные данные</td>
+<td data-label="Трафик на партицию">Пиковые всплески</td>
+<td data-label="Что выставить"><code>linger.ms=5</code>, <code>batch.size=32768</code>, <code>buffer.memory=128MiB</code></td>
+<td data-label="Что получится">Всплеск буферизуется, а не блокирует поток</td>
+<td data-label="Чем платим">Больше RSS; при недоступности брокера буфер дольше держит непотерянные данные</td>
 </tr>
 </tbody>
 </table>
@@ -4483,7 +4483,7 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 <h3 id="132-компрессия-порядки-величин-по-типам-данных">13.2 Компрессия: порядки величин по типам данных</h3>
 <p>Коэффициент сжатия — это отношение исходного размера данных к сжатому, и зависит он от природы данных сильнее, чем от кодека. Поэтому начинать выбор кодека стоит с типа данных, а продолжать — с узкого места кластера. Ниже две таблицы: ожидаемые порядки сжатия и соответствие кодека узкому месту; после них сказано, почему эффект от сжатия на брокер больше, чем кажется.</p>
 <p>Точные коэффициенты зависят от данных, поэтому ниже приведены <strong>порядки</strong>. Проверять их стоит на своих данных командой из 2.7, сравнив <code>size</code> пакета с суммой <code>valueSize</code>. Первая таблица показывает, чего ждать от разных типов данных при пакете примерно из 100 записей:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип данных</th>
@@ -4493,39 +4493,39 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 </thead>
 <tbody>
 <tr>
-<td>JSON с повторяющимися ключами</td>
-<td>5–10×</td>
-<td>Имена полей повторяются в каждой записи — идеальный случай для словарных кодеков</td>
+<td data-label="Тип данных">JSON с повторяющимися ключами</td>
+<td data-label="Ожидаемый порядок сжатия (пакет ~100 записей)">5–10×</td>
+<td data-label="Комментарий">Имена полей повторяются в каждой записи — идеальный случай для словарных кодеков</td>
 </tr>
 <tr>
-<td>Avro/Protobuf (схема снаружи)</td>
-<td>1,5–3×</td>
-<td>Имён полей нет, остаются только значения; сжимать всё равно стоит из-за повторов в значениях</td>
+<td data-label="Тип данных">Avro/Protobuf (схема снаружи)</td>
+<td data-label="Ожидаемый порядок сжатия (пакет ~100 записей)">1,5–3×</td>
+<td data-label="Комментарий">Имён полей нет, остаются только значения; сжимать всё равно стоит из-за повторов в значениях</td>
 </tr>
 <tr>
-<td>Текстовые логи</td>
-<td>6–12×</td>
-<td>Много общего префикса</td>
+<td data-label="Тип данных">Текстовые логи</td>
+<td data-label="Ожидаемый порядок сжатия (пакет ~100 записей)">6–12×</td>
+<td data-label="Комментарий">Много общего префикса</td>
 </tr>
 <tr>
-<td>UUID, хеши, случайные строки</td>
-<td>~1×</td>
-<td>Энтропия близка к максимуму; компрессия только тратит CPU</td>
+<td data-label="Тип данных">UUID, хеши, случайные строки</td>
+<td data-label="Ожидаемый порядок сжатия (пакет ~100 записей)">~1×</td>
+<td data-label="Комментарий">Энтропия близка к максимуму; компрессия только тратит CPU</td>
 </tr>
 <tr>
-<td>Уже сжатое (изображения, gzip-блобы)</td>
-<td>&lt; 1×</td>
-<td>Становится <strong>больше</strong>. <code>compression.type=none</code></td>
+<td data-label="Тип данных">Уже сжатое (изображения, gzip-блобы)</td>
+<td data-label="Ожидаемый порядок сжатия (пакет ~100 записей)">&lt; 1×</td>
+<td data-label="Комментарий">Становится <strong>больше</strong>. <code>compression.type=none</code></td>
 </tr>
 <tr>
-<td>Числовые метрики</td>
-<td>3–6×</td>
-<td>Похожие значения, varint'ы</td>
+<td data-label="Тип данных">Числовые метрики</td>
+<td data-label="Ожидаемый порядок сжатия (пакет ~100 записей)">3–6×</td>
+<td data-label="Комментарий">Похожие значения, varint'ы</td>
 </tr>
 </tbody>
 </table>
 <p>Выбор кодека — компромисс, и привязывать его надо к узкому месту, как во второй таблице:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Узкое место</th>
@@ -4535,29 +4535,29 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 </thead>
 <tbody>
 <tr>
-<td>Межзональный/межрегиональный трафик (платный)</td>
-<td><code>zstd</code></td>
-<td>Максимум сжатия при приемлемом CPU; оплата трафика доминирует</td>
+<td data-label="Узкое место">Межзональный/межрегиональный трафик (платный)</td>
+<td data-label="Кодек"><code>zstd</code></td>
+<td data-label="Обоснование">Максимум сжатия при приемлемом CPU; оплата трафика доминирует</td>
 </tr>
 <tr>
-<td>CPU брокера (<code>RequestHandlerAvgIdlePercent</code> &lt; 0.3)</td>
-<td><code>lz4</code></td>
-<td>Брокер не распаковывает, но CPU тратится клиентами; lz4 дешевле всех при приличном сжатии</td>
+<td data-label="Узкое место">CPU брокера (<code>RequestHandlerAvgIdlePercent</code> &lt; 0.3)</td>
+<td data-label="Кодек"><code>lz4</code></td>
+<td data-label="Обоснование">Брокер не распаковывает, но CPU тратится клиентами; lz4 дешевле всех при приличном сжатии</td>
 </tr>
 <tr>
-<td>CPU потребителя (в профиле видно <code>decompress</code>)</td>
-<td><code>lz4</code></td>
-<td>Распаковка lz4 в разы дешевле zstd/gzip</td>
+<td data-label="Узкое место">CPU потребителя (в профиле видно <code>decompress</code>)</td>
+<td data-label="Кодек"><code>lz4</code></td>
+<td data-label="Обоснование">Распаковка lz4 в разы дешевле zstd/gzip</td>
 </tr>
 <tr>
-<td>Место на диске и объём page cache</td>
-<td><code>zstd</code> (уровень 6+)</td>
-<td>Данные лежат сжатыми, кэш вмещает кратно больше</td>
+<td data-label="Узкое место">Место на диске и объём page cache</td>
+<td data-label="Кодек"><code>zstd</code> (уровень 6+)</td>
+<td data-label="Обоснование">Данные лежат сжатыми, кэш вмещает кратно больше</td>
 </tr>
 <tr>
-<td>Совместимость со старыми клиентами</td>
-<td><code>snappy</code></td>
-<td>Универсально поддержан; во всём остальном проигрывает lz4</td>
+<td data-label="Узкое место">Совместимость со старыми клиентами</td>
+<td data-label="Кодек"><code>snappy</code></td>
+<td data-label="Обоснование">Универсально поддержан; во всём остальном проигрывает lz4</td>
 </tr>
 </tbody>
 </table>
@@ -4566,7 +4566,7 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 </blockquote>
 <h3 id="133-maxinflight-повторы-и-порядок">13.3 <code>max.in.flight</code>, повторы и порядок</h3>
 <p><code>max.in.flight.requests.per.connection</code> — это число запросов, которые производитель может отправить брокеру, не дожидаясь ответа на предыдущие. Вместе с идемпотентностью и повторными попытками оно определяет, сохранится ли порядок записей в партиции и появятся ли дубли. Таблица ниже перебирает все осмысленные сочетания трёх настроек, а после неё разобран самый опасный случай и способ поймать его на старте приложения.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th><code>enable.idempotence</code></th>
@@ -4578,39 +4578,39 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 </thead>
 <tbody>
 <tr>
-<td><code>true</code> (по умолчанию в 4.x)</td>
-<td class="num">1–5</td>
-<td>Любые</td>
-<td><strong>Сохраняется</strong> — брокер упорядочивает по sequence и отвергает дырки</td>
-<td>Нет (в пределах сессии)</td>
+<td data-label="enable.idempotence"><code>true</code> (по умолчанию в 4.x)</td>
+<td data-label="max.in.flight" class="num">1–5</td>
+<td data-label="Повторы">Любые</td>
+<td data-label="Порядок в партиции"><strong>Сохраняется</strong> — брокер упорядочивает по sequence и отвергает дырки</td>
+<td data-label="Дубли">Нет (в пределах сессии)</td>
 </tr>
 <tr>
-<td><code>true</code></td>
-<td class="num">&gt; 5</td>
-<td>—</td>
-<td>Производитель не запустится: <code>ConfigException</code></td>
-<td>—</td>
+<td data-label="enable.idempotence"><code>true</code></td>
+<td data-label="max.in.flight" class="num">&gt; 5</td>
+<td data-label="Повторы">—</td>
+<td data-label="Порядок в партиции">Производитель не запустится: <code>ConfigException</code></td>
+<td data-label="Дубли">—</td>
 </tr>
 <tr>
-<td><code>false</code></td>
-<td class="num">1</td>
-<td>Любые</td>
-<td>Сохраняется (ценой пропускной способности: один запрос за раз)</td>
-<td>Есть</td>
+<td data-label="enable.idempotence"><code>false</code></td>
+<td data-label="max.in.flight" class="num">1</td>
+<td data-label="Повторы">Любые</td>
+<td data-label="Порядок в партиции">Сохраняется (ценой пропускной способности: один запрос за раз)</td>
+<td data-label="Дубли">Есть</td>
 </tr>
 <tr>
-<td><code>false</code></td>
-<td class="num">&gt; 1</td>
-<td>&gt; 0</td>
-<td><strong>Ломается молча</strong></td>
-<td>Есть</td>
+<td data-label="enable.idempotence"><code>false</code></td>
+<td data-label="max.in.flight" class="num">&gt; 1</td>
+<td data-label="Повторы">&gt; 0</td>
+<td data-label="Порядок в партиции"><strong>Ломается молча</strong></td>
+<td data-label="Дубли">Есть</td>
 </tr>
 <tr>
-<td><code>false</code></td>
-<td class="num">&gt; 1</td>
-<td>0</td>
-<td>Сохраняется, но любая ошибка = потеря</td>
-<td>Нет</td>
+<td data-label="enable.idempotence"><code>false</code></td>
+<td data-label="max.in.flight" class="num">&gt; 1</td>
+<td data-label="Повторы">0</td>
+<td data-label="Порядок в партиции">Сохраняется, но любая ошибка = потеря</td>
+<td data-label="Дубли">Нет</td>
 </tr>
 </tbody>
 </table>
@@ -4637,7 +4637,7 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 
 <p>Например, при 100 МБ/с входящего трафика, отставании потребителей не больше чем на 10 минут и сжатии 4× получается <code>100 × 600 / 4 = 15 ГБ</code> page cache. Машина с 32 ГБ покрывает это с запасом, а машина с 16 ГБ при любом всплеске лага начнёт читать с диска.</p>
 <p><strong>Потоки.</strong> У брокера два пула потоков, и отвечают они за разное (<a href="https://kafka.apache.org/43/generated/kafka_config.html">broker configs</a>). Сетевые потоки читают и пишут сокеты, а потоки ввода-вывода обрабатывают сами запросы. В таблице пулы приведены вместе с глубиной очереди между ними и потоками репликации, и для каждого параметра сказано, когда его стоит поднимать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Параметр</th>
@@ -4648,28 +4648,28 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 </thead>
 <tbody>
 <tr>
-<td><code>num.network.threads</code></td>
-<td class="num"><strong>3</strong></td>
-<td>Читают/пишут сокеты, складывают запросы в очередь. CPU-лёгкие, но их не должно не хватать</td>
-<td><code>NetworkProcessorAvgIdlePercent</code> &lt; 0.3; много клиентских соединений; TLS</td>
+<td data-label="Параметр"><code>num.network.threads</code></td>
+<td data-label="По умолчанию" class="num"><strong>3</strong></td>
+<td data-label="Что делает">Читают/пишут сокеты, складывают запросы в очередь. CPU-лёгкие, но их не должно не хватать</td>
+<td data-label="Когда поднимать"><code>NetworkProcessorAvgIdlePercent</code> &lt; 0.3; много клиентских соединений; TLS</td>
 </tr>
 <tr>
-<td><code>num.io.threads</code></td>
-<td class="num"><strong>8</strong></td>
-<td>Обрабатывают запросы: пишут в лог, читают, отвечают. Здесь же дисковый I/O</td>
-<td><code>RequestHandlerAvgIdlePercent</code> &lt; 0.3</td>
+<td data-label="Параметр"><code>num.io.threads</code></td>
+<td data-label="По умолчанию" class="num"><strong>8</strong></td>
+<td data-label="Что делает">Обрабатывают запросы: пишут в лог, читают, отвечают. Здесь же дисковый I/O</td>
+<td data-label="Когда поднимать"><code>RequestHandlerAvgIdlePercent</code> &lt; 0.3</td>
 </tr>
 <tr>
-<td><code>queued.max.requests</code></td>
-<td class="num"><strong>500</strong></td>
-<td>Глубина очереди между пулами</td>
-<td>Практически никогда; рост очереди — симптом, а не причина</td>
+<td data-label="Параметр"><code>queued.max.requests</code></td>
+<td data-label="По умолчанию" class="num"><strong>500</strong></td>
+<td data-label="Что делает">Глубина очереди между пулами</td>
+<td data-label="Когда поднимать">Практически никогда; рост очереди — симптом, а не причина</td>
 </tr>
 <tr>
-<td><code>num.replica.fetchers</code></td>
-<td class="num"><strong>1</strong></td>
-<td>Потоки репликации на брокер-источник</td>
-<td>Толстые партиции, отставание ведомых реплик при живой сети</td>
+<td data-label="Параметр"><code>num.replica.fetchers</code></td>
+<td data-label="По умолчанию" class="num"><strong>1</strong></td>
+<td data-label="Что делает">Потоки репликации на брокер-источник</td>
+<td data-label="Когда поднимать">Толстые партиции, отставание ведомых реплик при живой сети</td>
 </tr>
 </tbody>
 </table>
@@ -4685,7 +4685,7 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 <li><strong><code>max.poll.interval.ms</code>.</strong> Либо вы ждёте завершения задач, и тогда пул не помогает, если ждать приходится дольше интервала, либо не ждёте, и тогда смещение фиксируется до обработки.</li>
 </ol>
 <p>Какой вариант выбрать, зависит от характера обработки и от того, важен ли порядок. Обработку называют CPU-bound, если её время уходит на вычисления, и I/O-bound, если на ожидание внешних систем. Матрица ниже сводит допустимые решения и условия, при которых каждое из них работает.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -4695,29 +4695,29 @@ bin/kafka-reassign-partitions.sh --bootstrap-server kafka:9092 <span class="se">
 </thead>
 <tbody>
 <tr>
-<td>Обработка CPU-bound, порядок по ключу важен</td>
-<td>Больше партиций + больше подов</td>
-<td>Единственный полностью корректный вариант</td>
+<td data-label="Ситуация">Обработка CPU-bound, порядок по ключу важен</td>
+<td data-label="Решение">Больше партиций + больше подов</td>
+<td data-label="Условие применимости">Единственный полностью корректный вариант</td>
 </tr>
 <tr>
-<td>Обработка I/O-bound (ждём внешний сервис), порядок важен</td>
-<td>Пакетный слушатель и пакетный вызов внешнего сервиса</td>
-<td>Внешний API умеет пакеты</td>
+<td data-label="Ситуация">Обработка I/O-bound (ждём внешний сервис), порядок важен</td>
+<td data-label="Решение">Пакетный слушатель и пакетный вызов внешнего сервиса</td>
+<td data-label="Условие применимости">Внешний API умеет пакеты</td>
 </tr>
 <tr>
-<td>Обработка I/O-bound, порядок <strong>не</strong> важен</td>
-<td>Пул + <code>pause</code>/<code>resume</code> + фиксация префикса</td>
-<td>Нужен строгий учёт завершённых смещений</td>
+<td data-label="Ситуация">Обработка I/O-bound, порядок <strong>не</strong> важен</td>
+<td data-label="Решение">Пул + <code>pause</code>/<code>resume</code> + фиксация префикса</td>
+<td data-label="Условие применимости">Нужен строгий учёт завершённых смещений</td>
 </tr>
 <tr>
-<td>Обработка I/O-bound, порядок не важен, Java 21</td>
-<td>Виртуальные потоки в слушателе с ожиданием всех задач пакета</td>
-<td>Ждём завершения всего пакета перед выходом из слушателя — <code>max.poll.interval.ms</code> под контролем (см. главу 08, <code>08-concurrency.md</code>)</td>
+<td data-label="Ситуация">Обработка I/O-bound, порядок не важен, Java 21</td>
+<td data-label="Решение">Виртуальные потоки в слушателе с ожиданием всех задач пакета</td>
+<td data-label="Условие применимости">Ждём завершения всего пакета перед выходом из слушателя — <code>max.poll.interval.ms</code> под контролем (см. главу 08, <code>08-concurrency.md</code>)</td>
 </tr>
 <tr>
-<td>Нужна конкуренция за работу без порядка</td>
-<td>Share groups (KIP-932, production-ready с 4.2)</td>
-<td>Kafka ≥ 4.2 и готовность к новой модели</td>
+<td data-label="Ситуация">Нужна конкуренция за работу без порядка</td>
+<td data-label="Решение">Share groups (KIP-932, production-ready с 4.2)</td>
+<td data-label="Условие применимости">Kafka ≥ 4.2 и готовность к новой модели</td>
 </tr>
 </tbody>
 </table>
@@ -4749,7 +4749,7 @@ RPS_одного_консьюмера = 1000 / p99_времени_обработ
 <p>Например, при пике 30 000 msg/s и p99 обработки 4 мс один потребитель тянет 250 msg/s, и получается <code>P_min = 30000/250 × 2 = 240</code>. Такое большое число само по себе служит сигналом: либо обработка слишком медленная и её надо переводить на пакетную, либо нужен другой дизайн. Если перейти на пакетную запись в БД, p99 на запись падает до 0,2 мс, и тогда <code>P_min = 30000/5000 × 2 = 12</code>. Оптимизировать обработку дешевле, чем заводить 240 партиций.</p>
 <p><strong>Снизу — от догона.</strong> Догоном называют обработку накопившегося лага после простоя. Если после часового простоя поток надо догнать за 15 минут, требуемая пропускная способность составит <code>нормальный_RPS × (1 + 60/15) = 5×</code>. На критичных потоках число партиций обычно определяет именно это требование, а не пиковый трафик.</p>
 <p><strong>Сверху — цена партиции.</strong> Таблица перечисляет, какие ресурсы расходует каждая партиция и где этот расход даёт о себе знать; последняя строка менее очевидна, чем остальные.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ресурс</th>
@@ -4759,44 +4759,44 @@ RPS_одного_консьюмера = 1000 / p99_времени_обработ
 </thead>
 <tbody>
 <tr>
-<td>Файловые дескрипторы</td>
-<td>≥ 3 на реплику (log, index, timeindex) × число открытых сегментов</td>
-<td><code>Too many open files</code>; <code>ulimit -n</code> надо поднимать до сотен тысяч</td>
+<td data-label="Ресурс">Файловые дескрипторы</td>
+<td data-label="Расход на партицию">≥ 3 на реплику (log, index, timeindex) × число открытых сегментов</td>
+<td data-label="Где бьёт"><code>Too many open files</code>; <code>ulimit -n</code> надо поднимать до сотен тысяч</td>
 </tr>
 <tr>
-<td>Память брокера</td>
-<td>Буферы записи + <code>mmap</code> индексов (до 10 МиБ на сегмент)</td>
-<td>Heap и адресное пространство</td>
+<td data-label="Ресурс">Память брокера</td>
+<td data-label="Расход на партицию">Буферы записи + <code>mmap</code> индексов (до 10 МиБ на сегмент)</td>
+<td data-label="Где бьёт">Heap и адресное пространство</td>
 </tr>
 <tr>
-<td>Метаданные</td>
-<td>Запись в <code>__cluster_metadata</code>, состояние у контроллера</td>
-<td>Время восстановления контроллера</td>
+<td data-label="Ресурс">Метаданные</td>
+<td data-label="Расход на партицию">Запись в <code>__cluster_metadata</code>, состояние у контроллера</td>
+<td data-label="Где бьёт">Время восстановления контроллера</td>
 </tr>
 <tr>
-<td>Время выбора лидеров</td>
-<td>Линейно по числу партиций упавшего брокера</td>
-<td>Длительность деградации при отказе</td>
+<td data-label="Ресурс">Время выбора лидеров</td>
+<td data-label="Расход на партицию">Линейно по числу партиций упавшего брокера</td>
+<td data-label="Где бьёт">Длительность деградации при отказе</td>
 </tr>
 <tr>
-<td>Перебалансировка (classic)</td>
-<td>Линейно: назначение вычисляется на клиенте</td>
-<td>Длительность stop-the-world</td>
+<td data-label="Ресурс">Перебалансировка (classic)</td>
+<td data-label="Расход на партицию">Линейно: назначение вычисляется на клиенте</td>
+<td data-label="Где бьёт">Длительность stop-the-world</td>
 </tr>
 <tr>
-<td>Репликация вхолостую</td>
-<td>2 fetch-запроса/с на партицию-источник при <code>replica.fetch.wait.max.ms=500</code></td>
-<td>CPU/сеть на пустом кластере</td>
+<td data-label="Ресурс">Репликация вхолостую</td>
+<td data-label="Расход на партицию">2 fetch-запроса/с на партицию-источник при <code>replica.fetch.wait.max.ms=500</code></td>
+<td data-label="Где бьёт">CPU/сеть на пустом кластере</td>
 </tr>
 <tr>
-<td>Транзакции</td>
-<td>+1 control-маркер на партицию на транзакцию</td>
-<td>Latency и «дырявые» смещения</td>
+<td data-label="Ресурс">Транзакции</td>
+<td data-label="Расход на партицию">+1 control-маркер на партицию на транзакцию</td>
+<td data-label="Где бьёт">Latency и «дырявые» смещения</td>
 </tr>
 <tr>
-<td>Латентность записи</td>
-<td>Больше партиций = мельче пакеты при том же трафике</td>
-<td>Компрессия и пропускная способность падают</td>
+<td data-label="Ресурс">Латентность записи</td>
+<td data-label="Расход на партицию">Больше партиций = мельче пакеты при том же трафике</td>
+<td data-label="Где бьёт">Компрессия и пропускная способность падают</td>
 </tr>
 </tbody>
 </table>
@@ -5184,7 +5184,7 @@ java -jar jmxterm.jar -l localhost:9999 -n -v silent <span class="s">&lt;&lt;'CM
 <h3 id="167-чтение-лога-перебалансировки">16.7 Чтение лога перебалансировки</h3>
 <p>Лог перебалансировки — это сообщения клиентской библиотеки потребителя о вступлении в группу, назначении партиций и выходе из группы. На уровне DEBUG он становится самым информативным источником при разборе перебалансировок, потому что в нём видно каждое вступление, каждое назначение и каждую причину выхода. Сначала включите подробный лог, затем сверяйтесь с таблицей, в которой ключевые строки сопоставлены с тем, что они означают.</p>
 <p>На потребителе поднимите уровень логирования: <code>logging.level.org.apache.kafka.clients.consumer.internals: DEBUG</code>. Ключевые строки и их смысл такие:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Строка в логе</th>
@@ -5193,40 +5193,40 @@ java -jar jmxterm.jar -l localhost:9999 -n -v silent <span class="s">&lt;&lt;'CM
 </thead>
 <tbody>
 <tr>
-<td><code>(Re-)joining group</code></td>
-<td>Началась перебалансировка</td>
+<td data-label="Строка в логе"><code>(Re-)joining group</code></td>
+<td data-label="Что произошло">Началась перебалансировка</td>
 </tr>
 <tr>
-<td><code>Successfully joined group with generation N</code></td>
-<td>Поколение выросло; каждая перебалансировка увеличивает N</td>
+<td data-label="Строка в логе"><code>Successfully joined group with generation N</code></td>
+<td data-label="Что произошло">Поколение выросло; каждая перебалансировка увеличивает N</td>
 </tr>
 <tr>
-<td><code>Notifying assignor about the new Assignment</code> / <code>Adding newly assigned partitions</code></td>
-<td>Назначение получено</td>
+<td data-label="Строка в логе"><code>Notifying assignor about the new Assignment</code> / <code>Adding newly assigned partitions</code></td>
+<td data-label="Что произошло">Назначение получено</td>
 </tr>
 <tr>
-<td><code>Revoke previously assigned partitions</code></td>
-<td>Eager-отзыв (или частичный при cooperative)</td>
+<td data-label="Строка в логе"><code>Revoke previously assigned partitions</code></td>
+<td data-label="Что произошло">Eager-отзыв (или частичный при cooperative)</td>
 </tr>
 <tr>
-<td><code>Member ... sending LeaveGroup request ... due to consumer poll timeout has expired</code></td>
-<td><strong>Превышен <code>max.poll.interval.ms</code></strong></td>
+<td data-label="Строка в логе"><code>Member ... sending LeaveGroup request ... due to consumer poll timeout has expired</code></td>
+<td data-label="Что произошло"><strong>Превышен <code>max.poll.interval.ms</code></strong></td>
 </tr>
 <tr>
-<td><code>Attempt to heartbeat failed since group is rebalancing</code></td>
-<td>Перебалансировка идёт, фиксации будут отвергнуты</td>
+<td data-label="Строка в логе"><code>Attempt to heartbeat failed since group is rebalancing</code></td>
+<td data-label="Что произошло">Перебалансировка идёт, фиксации будут отвергнуты</td>
 </tr>
 <tr>
-<td><code>Offset commit failed ... Commit cannot be completed since the group has already rebalanced</code></td>
-<td>Классический <code>CommitFailedException</code> — партиции отобраны</td>
+<td data-label="Строка в логе"><code>Offset commit failed ... Commit cannot be completed since the group has already rebalanced</code></td>
+<td data-label="Что произошло">Классический <code>CommitFailedException</code> — партиции отобраны</td>
 </tr>
 <tr>
-<td><code>Setting offset for partition ... to the committed offset</code></td>
-<td>Нормальный старт с сохранённой позиции</td>
+<td data-label="Строка в логе"><code>Setting offset for partition ... to the committed offset</code></td>
+<td data-label="Что произошло">Нормальный старт с сохранённой позиции</td>
 </tr>
 <tr>
-<td><code>Resetting offset for partition ... to offset N</code></td>
-<td>Сработал <code>auto.offset.reset</code> — <strong>проверьте, не потеряли ли данные</strong></td>
+<td data-label="Строка в логе"><code>Resetting offset for partition ... to offset N</code></td>
+<td data-label="Что произошло">Сработал <code>auto.offset.reset</code> — <strong>проверьте, не потеряли ли данные</strong></td>
 </tr>
 </tbody>
 </table>
@@ -5586,5 +5586,5 @@ java -jar jmxterm.jar -l localhost:9999 -n -v silent <span class="s">&lt;&lt;'CM
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-kafka-как-распределённый-журнал">1. Kafka как распределённый журнал</a></li><li><a href="#2-устройство-брокера-партиции-сегменты-страничный-кэш">2. Устройство брокера: партиции, сегменты, страничный кэш</a></li><li><a href="#3-kraft-кворум-контроллеров-вместо-zookeeper">3. KRaft: кворум контроллеров вместо ZooKeeper</a></li><li><a href="#4-репликация-и-сохранность-данных">4. Репликация и сохранность данных</a></li><li><a href="#5-производитель-путь-записи-пакетирование-идемпотентность-транзакции">5. Производитель: путь записи, пакетирование, идемпотентность, транзакции</a></li><li><a href="#6-потребитель-группы-перебалансировка-смещения">6. Потребитель: группы, перебалансировка, смещения</a></li><li><a href="#7-гарантии-доставки">7. Гарантии доставки</a></li><li><a href="#8-retention-и-compaction">8. Retention и compaction</a></li><li><a href="#9-схемы-schema-registry-и-эволюция">9. Схемы: Schema Registry и эволюция</a></li><li><a href="#10-kafka-streams-ksqldb-и-connect">10. Kafka Streams, ksqlDB и Connect</a></li><li><a href="#11-spring-kafka-на-практике">11. Spring Kafka на практике</a></li><li><a href="#12-эксплуатация">12. Эксплуатация</a></li><li><a href="#13-производительность-и-тюнинг">13. Производительность и тюнинг</a></li><li><a href="#14-разобранные-инциденты">14. Разобранные инциденты</a></li><li><a href="#15-грабли-и-антипаттерны">15. Грабли и антипаттерны</a></li><li><a href="#16-диагностика">16. Диагностика</a></li><li><a href="#17-вопросы-на-интервью">17. Вопросы на интервью</a></li><li><a href="#18-попробовать-руками">18. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

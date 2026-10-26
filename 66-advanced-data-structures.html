@@ -3,7 +3,7 @@
 <title>66. Продвинутые структуры данных — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Продвинутые структуры данных">
 <a class="skip" href="#content">К тексту</a>
@@ -675,7 +675,7 @@
 <p><strong>Что спросят дальше.</strong> Где это применяется? В маршрутизации HTTP-запросов по шаблонам путей во многих веб-фреймворках, в таблицах маршрутов, в индексе ключей Redis (структура <code>rax</code> в исходниках Redis ⚠️ не проверено по текущей версии). Чем отличается от B-дерева индекса по строкам? B-дерево сравнивает ключи целиком и хорошо работает с диском, префиксное дерево сравнивает по символам и хорошо работает в памяти.</p>
 <h3 id="19-опыт-память-и-глубина-промаха">1.9 Опыт: память и глубина промаха</h3>
 <p>Чтобы увидеть цену префиксного дерева на данных, похожих на настоящие, опыт <code>S1x</code> строит структуры на двухстах тысячах шестнадцатизначных номеров карт, которые начинаются с одного из двухсот восьмизначных BIN, и измеряет занятую память после сборки мусора. Строки ключей общие для всех структур и в замер не входят.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Структура</th>
@@ -685,35 +685,35 @@
 </thead>
 <tbody>
 <tr>
-<td><code>HashSet&lt;String&gt;</code></td>
-<td class="num">7.7</td>
-<td class="num">—</td>
+<td data-label="Структура"><code>HashSet&lt;String&gt;</code></td>
+<td data-label="Память, МБ" class="num">7.7</td>
+<td data-label="Узлов" class="num">—</td>
 </tr>
 <tr>
-<td><code>TreeSet&lt;String&gt;</code></td>
-<td class="num">8.0</td>
-<td class="num">—</td>
+<td data-label="Структура"><code>TreeSet&lt;String&gt;</code></td>
+<td data-label="Память, МБ" class="num">8.0</td>
+<td data-label="Узлов" class="num">—</td>
 </tr>
 <tr>
-<td>префиксное дерево на массивах из 10 ссылок</td>
-<td class="num">91.1</td>
-<td class="num">1 138 778</td>
+<td data-label="Структура">префиксное дерево на массивах из 10 ссылок</td>
+<td data-label="Память, МБ" class="num">91.1</td>
+<td data-label="Узлов" class="num">1 138 778</td>
 </tr>
 <tr>
-<td>префиксное дерево на <code>HashMap</code></td>
-<td class="num">149.1</td>
-<td class="num">1 138 778</td>
+<td data-label="Структура">префиксное дерево на <code>HashMap</code></td>
+<td data-label="Память, МБ" class="num">149.1</td>
+<td data-label="Узлов" class="num">1 138 778</td>
 </tr>
 <tr>
-<td>сжатое префиксное дерево</td>
-<td class="num">51.7</td>
-<td class="num">280 969</td>
+<td data-label="Структура">сжатое префиксное дерево</td>
+<td data-label="Память, МБ" class="num">51.7</td>
+<td data-label="Узлов" class="num">280 969</td>
 </tr>
 </tbody>
 </table>
 <p>Честное сравнение требует добавить к хеш-множеству сами строки, которые дерево не хранит: двести тысяч строк по 16 символов занимают на JDK 21 около 11 МБ (заголовок строки, массив байтов и выравнивание), итого около 19 МБ против 91 МБ у дерева на массивах. Префиксное дерево на номерах карт занимает в пять раз больше памяти, несмотря на общие BIN, потому что после префикса из восьми цифр у каждого номера свой хвост из восьми узлов. Дерево на словарях ещё дороже: <code>HashMap</code> с одним элементом весит больше массива из десяти ссылок. Сжатие уменьшает число узлов в четыре раза, но на таких данных всё равно проигрывает хеш-множеству. Вывод совпадает с предупреждением Седжвика и Уэйна: префиксное дерево оправдано, когда нужны префиксные запросы, а не просто проверка наличия.</p>
 <p>Вторая часть опыта проверяет утверждение H Седжвика и Уэйна: промах в дереве из N случайных ключей в среднем просматривает около <code>log_R N</code> узлов.<sup id="fnref7:a65-1"><a class="footnote-ref" href="#fn:a65-1">1</a></sup> Для шестнадцатизначных номеров, R = 10, и ста тысяч случайных запросов:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>N</th>
@@ -725,18 +725,18 @@
 </thead>
 <tbody>
 <tr>
-<td>узлов при промахе</td>
-<td class="num">2.74</td>
-<td class="num">3.74</td>
-<td class="num">4.74</td>
-<td class="num">5.74</td>
+<td data-label="N">узлов при промахе</td>
+<td data-label="1 000" class="num">2.74</td>
+<td data-label="10 000" class="num">3.74</td>
+<td data-label="100 000" class="num">4.74</td>
+<td data-label="1 000 000" class="num">5.74</td>
 </tr>
 <tr>
-<td>log₁₀ N</td>
-<td class="num">3.00</td>
-<td class="num">4.00</td>
-<td class="num">5.00</td>
-<td class="num">6.00</td>
+<td data-label="N">log₁₀ N</td>
+<td data-label="1 000" class="num">3.00</td>
+<td data-label="10 000" class="num">4.00</td>
+<td data-label="100 000" class="num">5.00</td>
+<td data-label="1 000 000" class="num">6.00</td>
 </tr>
 </tbody>
 </table>
@@ -1170,7 +1170,7 @@
 <p><strong>Что спросят дальше.</strong> Где это в практике? Тот же приём «внутри группы всё взаимозаменяемо» работает при распределении: если платёжные шлюзы одной группы эквивалентны по маршруту, балансировка внутри группы свободна, а между группами нет.</p>
 <h3 id="211-опыт-четыре-реализации-на-модели-эрдёша-и-реньи">2.11 Опыт: четыре реализации на модели Эрдёша и Реньи</h3>
 <p>Чтобы увидеть разницу эвристик своими глазами, опыт повторяет эксперимент Седжвика и Уэйна (упражнения 1.5.17 и 1.5.21): генерировать случайные пары, сливать их и остановиться, когда останется одна группа.<sup id="fnref10:a65-4"><a class="footnote-ref" href="#fn:a65-4">4</a></sup> Все четыре реализации получают одинаковый поток пар. Считаются число пар до полной связности, обращения к массиву, высота самого высокого дерева в конце и время. Для N = 1000 и 10 000 результат усреднён по пяти прогонам, для больших N по трём; quick-find и quick-union без весов на миллионе не запускались.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">N</th>
@@ -1184,130 +1184,130 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">1 000</td>
-<td>quick-find</td>
-<td class="num">3 540</td>
-<td class="num">1 129 464</td>
-<td class="num">319,1</td>
-<td class="num">1</td>
-<td class="num">1</td>
+<td data-label="N" class="num">1 000</td>
+<td data-label="вариант">quick-find</td>
+<td data-label="пар до связности" class="num">3 540</td>
+<td data-label="обращений к массиву" class="num">1 129 464</td>
+<td data-label="на пару" class="num">319,1</td>
+<td data-label="высота" class="num">1</td>
+<td data-label="мс" class="num">1</td>
 </tr>
 <tr>
-<td class="num">1 000</td>
-<td>quick-union</td>
-<td class="num">3 540</td>
-<td class="num">594 963</td>
-<td class="num">168,1</td>
-<td class="num">201</td>
-<td class="num">0</td>
+<td data-label="N" class="num">1 000</td>
+<td data-label="вариант">quick-union</td>
+<td data-label="пар до связности" class="num">3 540</td>
+<td data-label="обращений к массиву" class="num">594 963</td>
+<td data-label="на пару" class="num">168,1</td>
+<td data-label="высота" class="num">201</td>
+<td data-label="мс" class="num">0</td>
 </tr>
 <tr>
-<td class="num">1 000</td>
-<td>взвешенное</td>
-<td class="num">3 540</td>
-<td class="num">19 340</td>
-<td class="num">5,5</td>
-<td class="num">5</td>
-<td class="num">0</td>
+<td data-label="N" class="num">1 000</td>
+<td data-label="вариант">взвешенное</td>
+<td data-label="пар до связности" class="num">3 540</td>
+<td data-label="обращений к массиву" class="num">19 340</td>
+<td data-label="на пару" class="num">5,5</td>
+<td data-label="высота" class="num">5</td>
+<td data-label="мс" class="num">0</td>
 </tr>
 <tr>
-<td class="num">1 000</td>
-<td>взвешенное + сжатие</td>
-<td class="num">3 540</td>
-<td class="num">16 017</td>
-<td class="num">4,5</td>
-<td class="num">2</td>
-<td class="num">0</td>
+<td data-label="N" class="num">1 000</td>
+<td data-label="вариант">взвешенное + сжатие</td>
+<td data-label="пар до связности" class="num">3 540</td>
+<td data-label="обращений к массиву" class="num">16 017</td>
+<td data-label="на пару" class="num">4,5</td>
+<td data-label="высота" class="num">2</td>
+<td data-label="мс" class="num">0</td>
 </tr>
 <tr>
-<td class="num">10 000</td>
-<td>quick-find</td>
-<td class="num">48 200</td>
-<td class="num">112 475 563</td>
-<td class="num">2 333,5</td>
-<td class="num">1</td>
-<td class="num">29</td>
+<td data-label="N" class="num">10 000</td>
+<td data-label="вариант">quick-find</td>
+<td data-label="пар до связности" class="num">48 200</td>
+<td data-label="обращений к массиву" class="num">112 475 563</td>
+<td data-label="на пару" class="num">2 333,5</td>
+<td data-label="высота" class="num">1</td>
+<td data-label="мс" class="num">29</td>
 </tr>
 <tr>
-<td class="num">10 000</td>
-<td>quick-union</td>
-<td class="num">48 200</td>
-<td class="num">90 386 271</td>
-<td class="num">1 875,2</td>
-<td class="num">1 822</td>
-<td class="num">138</td>
+<td data-label="N" class="num">10 000</td>
+<td data-label="вариант">quick-union</td>
+<td data-label="пар до связности" class="num">48 200</td>
+<td data-label="обращений к массиву" class="num">90 386 271</td>
+<td data-label="на пару" class="num">1 875,2</td>
+<td data-label="высота" class="num">1 822</td>
+<td data-label="мс" class="num">138</td>
 </tr>
 <tr>
-<td class="num">10 000</td>
-<td>взвешенное</td>
-<td class="num">48 200</td>
-<td class="num">275 080</td>
-<td class="num">5,7</td>
-<td class="num">7</td>
-<td class="num">1</td>
+<td data-label="N" class="num">10 000</td>
+<td data-label="вариант">взвешенное</td>
+<td data-label="пар до связности" class="num">48 200</td>
+<td data-label="обращений к массиву" class="num">275 080</td>
+<td data-label="на пару" class="num">5,7</td>
+<td data-label="высота" class="num">7</td>
+<td data-label="мс" class="num">1</td>
 </tr>
 <tr>
-<td class="num">10 000</td>
-<td>взвешенное + сжатие</td>
-<td class="num">48 200</td>
-<td class="num">212 036</td>
-<td class="num">4,4</td>
-<td class="num">2</td>
-<td class="num">0</td>
+<td data-label="N" class="num">10 000</td>
+<td data-label="вариант">взвешенное + сжатие</td>
+<td data-label="пар до связности" class="num">48 200</td>
+<td data-label="обращений к массиву" class="num">212 036</td>
+<td data-label="на пару" class="num">4,4</td>
+<td data-label="высота" class="num">2</td>
+<td data-label="мс" class="num">0</td>
 </tr>
 <tr>
-<td class="num">100 000</td>
-<td>quick-find</td>
-<td class="num">586 994</td>
-<td class="num">11 246 634 038</td>
-<td class="num">19 159,7</td>
-<td class="num">1</td>
-<td class="num">4 003</td>
+<td data-label="N" class="num">100 000</td>
+<td data-label="вариант">quick-find</td>
+<td data-label="пар до связности" class="num">586 994</td>
+<td data-label="обращений к массиву" class="num">11 246 634 038</td>
+<td data-label="на пару" class="num">19 159,7</td>
+<td data-label="высота" class="num">1</td>
+<td data-label="мс" class="num">4 003</td>
 </tr>
 <tr>
-<td class="num">100 000</td>
-<td>quick-union</td>
-<td class="num">586 994</td>
-<td class="num">11 717 361 103</td>
-<td class="num">19 961,6</td>
-<td class="num">18 043</td>
-<td class="num">42 313</td>
+<td data-label="N" class="num">100 000</td>
+<td data-label="вариант">quick-union</td>
+<td data-label="пар до связности" class="num">586 994</td>
+<td data-label="обращений к массиву" class="num">11 717 361 103</td>
+<td data-label="на пару" class="num">19 961,6</td>
+<td data-label="высота" class="num">18 043</td>
+<td data-label="мс" class="num">42 313</td>
 </tr>
 <tr>
-<td class="num">100 000</td>
-<td>взвешенное</td>
-<td class="num">586 994</td>
-<td class="num">3 431 117</td>
-<td class="num">5,8</td>
-<td class="num">8</td>
-<td class="num">15</td>
+<td data-label="N" class="num">100 000</td>
+<td data-label="вариант">взвешенное</td>
+<td data-label="пар до связности" class="num">586 994</td>
+<td data-label="обращений к массиву" class="num">3 431 117</td>
+<td data-label="на пару" class="num">5,8</td>
+<td data-label="высота" class="num">8</td>
+<td data-label="мс" class="num">15</td>
 </tr>
 <tr>
-<td class="num">100 000</td>
-<td>взвешенное + сжатие</td>
-<td class="num">586 994</td>
-<td class="num">2 542 142</td>
-<td class="num">4,3</td>
-<td class="num">2</td>
-<td class="num">6</td>
+<td data-label="N" class="num">100 000</td>
+<td data-label="вариант">взвешенное + сжатие</td>
+<td data-label="пар до связности" class="num">586 994</td>
+<td data-label="обращений к массиву" class="num">2 542 142</td>
+<td data-label="на пару" class="num">4,3</td>
+<td data-label="высота" class="num">2</td>
+<td data-label="мс" class="num">6</td>
 </tr>
 <tr>
-<td class="num">1 000 000</td>
-<td>взвешенное</td>
-<td class="num">7 221 438</td>
-<td class="num">42 718 365</td>
-<td class="num">5,9</td>
-<td class="num">9</td>
-<td class="num">279</td>
+<td data-label="N" class="num">1 000 000</td>
+<td data-label="вариант">взвешенное</td>
+<td data-label="пар до связности" class="num">7 221 438</td>
+<td data-label="обращений к массиву" class="num">42 718 365</td>
+<td data-label="на пару" class="num">5,9</td>
+<td data-label="высота" class="num">9</td>
+<td data-label="мс" class="num">279</td>
 </tr>
 <tr>
-<td class="num">1 000 000</td>
-<td>взвешенное + сжатие</td>
-<td class="num">7 221 438</td>
-<td class="num">30 826 541</td>
-<td class="num">4,3</td>
-<td class="num">2</td>
-<td class="num">112</td>
+<td data-label="N" class="num">1 000 000</td>
+<td data-label="вариант">взвешенное + сжатие</td>
+<td data-label="пар до связности" class="num">7 221 438</td>
+<td data-label="обращений к массиву" class="num">30 826 541</td>
+<td data-label="на пару" class="num">4,3</td>
+<td data-label="высота" class="num">2</td>
+<td data-label="мс" class="num">112</td>
 </tr>
 </tbody>
 </table>
@@ -1767,7 +1767,7 @@
 <p><strong>Что спросят дальше.</strong> Что, если диапазон значений огромный (наносекунды)? Корзины делают логарифмическими: точность в процентах, а не в единицах. Как объединить перцентили с нескольких экземпляров сервиса? Усреднять перцентили нельзя; складывают гистограммы, а перцентиль считают по сумме, и дерево здесь удобно, потому что гистограммы складываются поэлементно.</p>
 <h3 id="310-опыт-где-дерево-фенвика-выигрывает">3.10 Опыт: где дерево Фенвика выигрывает</h3>
 <p>Опыт сравнивает три способа на одном потоке из 200 000 операций над массивом из 100 000 элементов: простой массив (изменение O(1), сумма O(n)), массив префиксов (изменение O(n), сумма O(1)) и дерево Фенвика. Отрезки случайные, доля изменений u меняется от нуля до единицы. Каждая строка это среднее по двум прогонам после прогревающего.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">доля изменений</th>
@@ -1778,40 +1778,40 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">0,00</td>
-<td class="num">2639</td>
-<td class="num">2</td>
-<td class="num">8</td>
+<td data-label="доля изменений" class="num">0,00</td>
+<td data-label="массив, мс" class="num">2639</td>
+<td data-label="префиксы, мс" class="num">2</td>
+<td data-label="Фенвик, мс" class="num">8</td>
 </tr>
 <tr>
-<td class="num">0,01</td>
-<td class="num">2289</td>
-<td class="num">8</td>
-<td class="num">6</td>
+<td data-label="доля изменений" class="num">0,01</td>
+<td data-label="массив, мс" class="num">2289</td>
+<td data-label="префиксы, мс" class="num">8</td>
+<td data-label="Фенвик, мс" class="num">6</td>
 </tr>
 <tr>
-<td class="num">0,10</td>
-<td class="num">2093</td>
-<td class="num">66</td>
-<td class="num">6</td>
+<td data-label="доля изменений" class="num">0,10</td>
+<td data-label="массив, мс" class="num">2093</td>
+<td data-label="префиксы, мс" class="num">66</td>
+<td data-label="Фенвик, мс" class="num">6</td>
 </tr>
 <tr>
-<td class="num">0,50</td>
-<td class="num">1192</td>
-<td class="num">320</td>
-<td class="num">6</td>
+<td data-label="доля изменений" class="num">0,50</td>
+<td data-label="массив, мс" class="num">1192</td>
+<td data-label="префиксы, мс" class="num">320</td>
+<td data-label="Фенвик, мс" class="num">6</td>
 </tr>
 <tr>
-<td class="num">0,90</td>
-<td class="num">234</td>
-<td class="num">575</td>
-<td class="num">5</td>
+<td data-label="доля изменений" class="num">0,90</td>
+<td data-label="массив, мс" class="num">234</td>
+<td data-label="префиксы, мс" class="num">575</td>
+<td data-label="Фенвик, мс" class="num">5</td>
 </tr>
 <tr>
-<td class="num">1,00</td>
-<td class="num">3</td>
-<td class="num">640</td>
-<td class="num">5</td>
+<td data-label="доля изменений" class="num">1,00</td>
+<td data-label="массив, мс" class="num">3</td>
+<td data-label="префиксы, мс" class="num">640</td>
+<td data-label="Фенвик, мс" class="num">5</td>
 </tr>
 </tbody>
 </table>
@@ -2247,7 +2247,7 @@
 <p><strong>Что спросят дальше.</strong> Можно ли проще? Да: при 400 вызовах достаточно <code>TreeMap</code> со счётчиками на концах и заметания при каждом вызове, O(k) на вызов. Его разбирает глава 65 (раздел 7, «Что спросят дальше» к задаче My Calendar I). Дерево нужно, когда вызовов много или когда кроме глобального максимума спрашивают максимум на отрезке.</p>
 <h3 id="47-опыт-цена-дерева-отрезков">4.7 Опыт: цена дерева отрезков</h3>
 <p>Первый замер сравнивает три структуры на массиве из 2²⁰ элементов и двух миллионах операций, где половина операций изменения в точке, половина запросы на случайных отрезках: дерево снизу вверх для минимума, рекурсивное ленивое дерево для минимума (изменение в точке сделано прибавкой разницы) и дерево Фенвика для суммы. Три прогона после прогревающего:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>структура</th>
@@ -2257,19 +2257,19 @@
 </thead>
 <tbody>
 <tr>
-<td>снизу вверх, минимум</td>
-<td>202–205</td>
-<td>2N <code>long</code>, 16,8 МБ</td>
+<td data-label="структура">снизу вверх, минимум</td>
+<td data-label="время, мс">202–205</td>
+<td data-label="память">2N <code>long</code>, 16,8 МБ</td>
 </tr>
 <tr>
-<td>рекурсивное ленивое, минимум</td>
-<td>616–643</td>
-<td>2 × 4N <code>long</code>, 67,1 МБ</td>
+<td data-label="структура">рекурсивное ленивое, минимум</td>
+<td data-label="время, мс">616–643</td>
+<td data-label="память">2 × 4N <code>long</code>, 67,1 МБ</td>
 </tr>
 <tr>
-<td>Фенвик, сумма</td>
-<td>91–122</td>
-<td>N + 1 <code>long</code>, 8,4 МБ</td>
+<td data-label="структура">Фенвик, сумма</td>
+<td data-label="время, мс">91–122</td>
+<td data-label="память">N + 1 <code>long</code>, 8,4 МБ</td>
 </tr>
 </tbody>
 </table>
@@ -2970,7 +2970,7 @@
 <p><strong>Что спросят дальше.</strong> Что, если повтор пришёл, пока первый запрос ещё выполняется? Нужно хранить не только факт ключа, но и состояние (в работе, завершён с таким-то ответом), и на повтор во время работы отвечать «повторите позже» или ждать результата. Это уже вопрос проектирования API (глава 27).</p>
 <h3 id="65-опыт-форма-списка-и-многопоточный-доступ">6.5 Опыт: форма списка и многопоточный доступ</h3>
 <p>Опыт отвечает на три вопроса: совпадает ли форма случайного списка с теорией, насколько он медленнее дерева в одном потоке и где он начинает выигрывать при параллельном доступе. Первый замер проверяет форму. В список вставляются случайные числа, затем выполняется 100 000 поисков существующих ключей, и считаются шаги: каждый шаг вправо и каждый спуск на уровень.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">N</th>
@@ -2983,35 +2983,35 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">1 000</td>
-<td class="num">12</td>
-<td>0,521 / 0,223 / 0,131 / 0,062</td>
-<td class="num">2,00</td>
-<td class="num">20,5</td>
-<td class="num">19,9</td>
+<td data-label="N" class="num">1 000</td>
+<td data-label="уровней" class="num">12</td>
+<td data-label="доля узлов уровней 1/2/3/4">0,521 / 0,223 / 0,131 / 0,062</td>
+<td data-label="ссылок на узел" class="num">2,00</td>
+<td data-label="шагов поиска" class="num">20,5</td>
+<td data-label="2 · log₂ N" class="num">19,9</td>
 </tr>
 <tr>
-<td class="num">100 000</td>
-<td class="num">18</td>
-<td>0,501 / 0,248 / 0,125 / 0,064</td>
-<td class="num">2,00</td>
-<td class="num">32,6</td>
-<td class="num">33,2</td>
+<td data-label="N" class="num">100 000</td>
+<td data-label="уровней" class="num">18</td>
+<td data-label="доля узлов уровней 1/2/3/4">0,501 / 0,248 / 0,125 / 0,064</td>
+<td data-label="ссылок на узел" class="num">2,00</td>
+<td data-label="шагов поиска" class="num">32,6</td>
+<td data-label="2 · log₂ N" class="num">33,2</td>
 </tr>
 <tr>
-<td class="num">1 000 000</td>
-<td class="num">26</td>
-<td>0,500 / 0,250 / 0,125 / 0,063</td>
-<td class="num">2,00</td>
-<td class="num">44,3</td>
-<td class="num">39,9</td>
+<td data-label="N" class="num">1 000 000</td>
+<td data-label="уровней" class="num">26</td>
+<td data-label="доля узлов уровней 1/2/3/4">0,500 / 0,250 / 0,125 / 0,063</td>
+<td data-label="ссылок на узел" class="num">2,00</td>
+<td data-label="шагов поиска" class="num">44,3</td>
+<td data-label="2 · log₂ N" class="num">39,9</td>
 </tr>
 </tbody>
 </table>
 <p>Доли уровней точно повторяют <code>1/2^k</code>, ссылок на узел ровно две, а длина поиска держится около <code>2 · log₂ N</code>. На миллионе шагов чуть больше, потому что используемых уровней 26 при <code>log₂ N ≈ 20</code>: верхние шесть уровней почти пусты, но поиск всё равно спускается через каждый из них.</p>
 <p>Второй замер однопоточный: миллион случайных ключей вставить и найти. Список из задачи 6.2 тратит 812–880 мс на вставку и 1020–1055 мс на поиск, <code>ConcurrentSkipListMap</code> 878–910 и 1068–1155 мс, <code>TreeMap</code> 517–527 и 462–506 мс. В одном потоке дерево вдвое быстрее: узлов на пути меньше, и шаги вправо по списку чаще промахиваются мимо кэша. Самописный список работает со скоростью библиотечного, но не быстрее.</p>
 <p>Третий замер многопоточный: отображение на миллион ключей, заполненная наполовину, и потоки, которые 600 мс выполняют 90% чтений и 10% записей случайных ключей. В таблице лучший из трёх прогонов, в миллионах операций в секунду, на машине с 16 логическими процессорами.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">потоков</th>
@@ -3022,34 +3022,34 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td class="num">1,5</td>
-<td class="num">2,1</td>
-<td class="num">2,5</td>
+<td data-label="потоков" class="num">1</td>
+<td data-label="ConcurrentSkipListMap" class="num">1,5</td>
+<td data-label="synchronizedSortedMap(TreeMap)" class="num">2,1</td>
+<td data-label="TreeMap + ReentrantReadWriteLock" class="num">2,5</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td class="num">3,1</td>
-<td class="num">2,3</td>
-<td class="num">1,6</td>
+<td data-label="потоков" class="num">2</td>
+<td data-label="ConcurrentSkipListMap" class="num">3,1</td>
+<td data-label="synchronizedSortedMap(TreeMap)" class="num">2,3</td>
+<td data-label="TreeMap + ReentrantReadWriteLock" class="num">1,6</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td class="num">6,4</td>
-<td class="num">2,3</td>
-<td class="num">1,0</td>
+<td data-label="потоков" class="num">4</td>
+<td data-label="ConcurrentSkipListMap" class="num">6,4</td>
+<td data-label="synchronizedSortedMap(TreeMap)" class="num">2,3</td>
+<td data-label="TreeMap + ReentrantReadWriteLock" class="num">1,0</td>
 </tr>
 <tr>
-<td class="num">8</td>
-<td class="num">11,1</td>
-<td class="num">2,3</td>
-<td class="num">1,1</td>
+<td data-label="потоков" class="num">8</td>
+<td data-label="ConcurrentSkipListMap" class="num">11,1</td>
+<td data-label="synchronizedSortedMap(TreeMap)" class="num">2,3</td>
+<td data-label="TreeMap + ReentrantReadWriteLock" class="num">1,1</td>
 </tr>
 <tr>
-<td class="num">16</td>
-<td class="num">17,0</td>
-<td class="num">2,2</td>
-<td class="num">1,1</td>
+<td data-label="потоков" class="num">16</td>
+<td data-label="ConcurrentSkipListMap" class="num">17,0</td>
+<td data-label="synchronizedSortedMap(TreeMap)" class="num">2,2</td>
+<td data-label="TreeMap + ReentrantReadWriteLock" class="num">1,1</td>
 </tr>
 </tbody>
 </table>
@@ -3762,7 +3762,7 @@
 <p><strong>Что спросят дальше.</strong> Как сделать несколько производителей? Номер для записи захватывается CAS (или <code>getAndIncrement</code>), а публикация идёт отдельно, потому что производители заканчивают запись не в порядке захвата: Disruptor ждёт, пока предыдущий номер опубликован, или ведёт отдельную карту опубликованных ячеек. Чем ждать, если кольцо пусто? Активное ожидание (<code>Thread.onSpinWait</code>) даёт минимальную задержку и съедает ядро, <code>LockSupport.parkNanos</code> экономит процессор ценой задержки, а блокировка с условной переменной возвращает всю цену очереди.</p>
 <h3 id="87-опыт-кольцо-против-очередей">8.7 Опыт: кольцо против очередей</h3>
 <p>Двадцать миллионов чисел передаются из одного потока в другой. Сравниваются кольцо из задачи 8.6 (ёмкость 1024, пачки по 256), <code>ArrayBlockingQueue</code> той же ёмкости с <code>put</code> и <code>take</code>, <code>ArrayBlockingQueue</code> с активным <code>offer</code> и <code>drainTo</code> пачками и неограниченная <code>ConcurrentLinkedQueue</code>. Три прогона после прогревающего, в миллионах сообщений в секунду:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>способ</th>
@@ -3773,28 +3773,28 @@
 </thead>
 <tbody>
 <tr>
-<td><code>SpscRing</code></td>
-<td class="num">144,9</td>
-<td class="num">173,9</td>
-<td class="num">140,8</td>
+<td data-label="способ"><code>SpscRing</code></td>
+<td data-label="прогон 1" class="num">144,9</td>
+<td data-label="прогон 2" class="num">173,9</td>
+<td data-label="прогон 3" class="num">140,8</td>
 </tr>
 <tr>
-<td><code>ArrayBlockingQueue</code>, <code>put</code> / <code>take</code></td>
-<td class="num">20,4</td>
-<td class="num">22,3</td>
-<td class="num">23,7</td>
+<td data-label="способ"><code>ArrayBlockingQueue</code>, <code>put</code> / <code>take</code></td>
+<td data-label="прогон 1" class="num">20,4</td>
+<td data-label="прогон 2" class="num">22,3</td>
+<td data-label="прогон 3" class="num">23,7</td>
 </tr>
 <tr>
-<td><code>ArrayBlockingQueue</code>, <code>offer</code> / <code>drainTo</code></td>
-<td class="num">8,9</td>
-<td class="num">8,4</td>
-<td class="num">9,1</td>
+<td data-label="способ"><code>ArrayBlockingQueue</code>, <code>offer</code> / <code>drainTo</code></td>
+<td data-label="прогон 1" class="num">8,9</td>
+<td data-label="прогон 2" class="num">8,4</td>
+<td data-label="прогон 3" class="num">9,1</td>
 </tr>
 <tr>
-<td><code>ConcurrentLinkedQueue</code></td>
-<td class="num">24,4</td>
-<td class="num">23,5</td>
-<td class="num">23,8</td>
+<td data-label="способ"><code>ConcurrentLinkedQueue</code></td>
+<td data-label="прогон 1" class="num">24,4</td>
+<td data-label="прогон 2" class="num">23,5</td>
+<td data-label="прогон 3" class="num">23,8</td>
 </tr>
 </tbody>
 </table>
@@ -4248,7 +4248,7 @@
 <p><strong>Что спросят дальше.</strong> Как поделить фильтр между экземплярами сервиса? Сериализовать <code>toLongArray()</code> и раздавать; объединение двух фильтров с одинаковыми параметрами это побитовое ИЛИ. Что есть готового? Guava <code>BloomFilter</code> и модуль RedisBloom (глава 22, раздел 7.7).</p>
 <h3 id="97-опыт-память-и-пересечение-при-разной-плотности">9.7 Опыт: память и пересечение при разной плотности</h3>
 <p>Опыт берёт миллион клиентов и признак, который есть у доли клиентов от 0,01% до 50%, строит четыре представления и измеряет память (по разнице занятой кучи после сборки мусора) и время пересечения двух независимых признаков одинаковой плотности (лучшее из семи прогонов, после прогревающего прохода).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">доля</th>
@@ -4264,59 +4264,59 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">0,01%</td>
-<td class="num">100</td>
-<td class="num">125,0</td>
-<td class="num">5,9</td>
-<td class="num">0,4</td>
-<td>1,5 (15/0)</td>
-<td class="num">15</td>
-<td class="num">0</td>
-<td class="num">1</td>
+<td data-label="доля" class="num">0,01%</td>
+<td data-label="клиентов с признаком" class="num">100</td>
+<td data-label="BitSet, КБ" class="num">125,0</td>
+<td data-label="HashSet&lt;Integer&gt;, КБ" class="num">5,9</td>
+<td data-label="int[], КБ" class="num">0,4</td>
+<td data-label="мини-Roaring, КБ (массивов/карт)">1,5 (15/0)</td>
+<td data-label="И: BitSet, мкс" class="num">15</td>
+<td data-label="И: HashSet, мкс" class="num">0</td>
+<td data-label="И: мини-Roaring, мкс" class="num">1</td>
 </tr>
 <tr>
-<td class="num">0,1%</td>
-<td class="num">1 000</td>
-<td class="num">125,0</td>
-<td class="num">56,2</td>
-<td class="num">4,0</td>
-<td>4,4 (16/0)</td>
-<td class="num">11</td>
-<td class="num">24</td>
-<td class="num">16</td>
+<td data-label="доля" class="num">0,1%</td>
+<td data-label="клиентов с признаком" class="num">1 000</td>
+<td data-label="BitSet, КБ" class="num">125,0</td>
+<td data-label="HashSet&lt;Integer&gt;, КБ" class="num">56,2</td>
+<td data-label="int[], КБ" class="num">4,0</td>
+<td data-label="мини-Roaring, КБ (массивов/карт)">4,4 (16/0)</td>
+<td data-label="И: BitSet, мкс" class="num">11</td>
+<td data-label="И: HashSet, мкс" class="num">24</td>
+<td data-label="И: мини-Roaring, мкс" class="num">16</td>
 </tr>
 <tr>
-<td class="num">1%</td>
-<td class="num">10 000</td>
-<td class="num">125,0</td>
-<td class="num">545,6</td>
-<td class="num">40,0</td>
-<td>32,6 (16/0)</td>
-<td class="num">13</td>
-<td class="num">288</td>
-<td class="num">193</td>
+<td data-label="доля" class="num">1%</td>
+<td data-label="клиентов с признаком" class="num">10 000</td>
+<td data-label="BitSet, КБ" class="num">125,0</td>
+<td data-label="HashSet&lt;Integer&gt;, КБ" class="num">545,6</td>
+<td data-label="int[], КБ" class="num">40,0</td>
+<td data-label="мини-Roaring, КБ (массивов/карт)">32,6 (16/0)</td>
+<td data-label="И: BitSet, мкс" class="num">13</td>
+<td data-label="И: HashSet, мкс" class="num">288</td>
+<td data-label="И: мини-Roaring, мкс" class="num">193</td>
 </tr>
 <tr>
-<td class="num">10%</td>
-<td class="num">100 000</td>
-<td class="num">125,0</td>
-<td class="num">6 897,0</td>
-<td class="num">400,0</td>
-<td>128,3 (1/15)</td>
-<td class="num">12</td>
-<td class="num">2 917</td>
-<td class="num">139</td>
+<td data-label="доля" class="num">10%</td>
+<td data-label="клиентов с признаком" class="num">100 000</td>
+<td data-label="BitSet, КБ" class="num">125,0</td>
+<td data-label="HashSet&lt;Integer&gt;, КБ" class="num">6 897,0</td>
+<td data-label="int[], КБ" class="num">400,0</td>
+<td data-label="мини-Roaring, КБ (массивов/карт)">128,3 (1/15)</td>
+<td data-label="И: BitSet, мкс" class="num">12</td>
+<td data-label="И: HashSet, мкс" class="num">2 917</td>
+<td data-label="И: мини-Roaring, мкс" class="num">139</td>
 </tr>
 <tr>
-<td class="num">50%</td>
-<td class="num">500 000</td>
-<td class="num">125,0</td>
-<td class="num">30 658,7</td>
-<td class="num">2 097,2</td>
-<td>132,4 (0/16)</td>
-<td class="num">31</td>
-<td class="num">9 908</td>
-<td class="num">68</td>
+<td data-label="доля" class="num">50%</td>
+<td data-label="клиентов с признаком" class="num">500 000</td>
+<td data-label="BitSet, КБ" class="num">125,0</td>
+<td data-label="HashSet&lt;Integer&gt;, КБ" class="num">30 658,7</td>
+<td data-label="int[], КБ" class="num">2 097,2</td>
+<td data-label="мини-Roaring, КБ (массивов/карт)">132,4 (0/16)</td>
+<td data-label="И: BitSet, мкс" class="num">31</td>
+<td data-label="И: HashSet, мкс" class="num">9 908</td>
+<td data-label="И: мини-Roaring, мкс" class="num">68</td>
 </tr>
 </tbody>
 </table>
@@ -4324,7 +4324,7 @@
 <p>По скорости пересечения упрощённая версия проигрывает <code>BitSet</code> везде, где контейнеры массивы: при 1% она тратит 193 микросекунды против 13, потому что каждый элемент ищется двоичным поиском. Настоящая библиотека пересекает массивы слиянием и специальными инструкциями, и такого провала у неё нет ⚠️ не проверено замером в этой книге: библиотека не подключалась. Вывод для практики: если номера плотные и диапазон умеренный, <code>BitSet</code> лучший выбор и по памяти, и по скорости; если множеств много и большинство разреженные, берут библиотеку Roaring, а не пишут свою.</p>
 <h2 id="10-что-из-этого-встречается-в-бэкенде">10. Что из этого встречается в бэкенде</h2>
 <p>Структуры этой главы сильно различаются по тому, как часто они нужны в коде обычного сервиса. Сводная таблица ниже отвечает на вопрос «если я это не напишу на собеседовании, встречу ли я это на работе» и показывает, чем обычно заменяют каждую структуру в промышленном коде. Оценки частоты субъективны и отражают опыт бэкенд-разработки на Java и Kotlin в банковских и платёжных системах, а не статистику.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>структура</th>
@@ -4335,70 +4335,70 @@
 </thead>
 <tbody>
 <tr>
-<td>префиксное дерево</td>
-<td>редко: автодополнение, BIN, маршрутизация</td>
-<td>часто</td>
-<td>поиск по префиксу в базе (<code>LIKE 'abc%'</code> по B-дереву), Elasticsearch, <code>TreeMap.subMap</code> по строкам</td>
+<td data-label="структура">префиксное дерево</td>
+<td data-label="в коде сервиса">редко: автодополнение, BIN, маршрутизация</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="чем обычно заменяют или где встречают">поиск по префиксу в базе (<code>LIKE 'abc%'</code> по B-дереву), Elasticsearch, <code>TreeMap.subMap</code> по строкам</td>
 </tr>
 <tr>
-<td>сжатое префиксное дерево</td>
-<td>почти никогда напрямую</td>
-<td>редко</td>
-<td>таблицы маршрутизации, роутеры HTTP-фреймворков, ART в индексах баз ⚠️ не проверено, в каких именно</td>
+<td data-label="структура">сжатое префиксное дерево</td>
+<td data-label="в коде сервиса">почти никогда напрямую</td>
+<td data-label="на собеседовании">редко</td>
+<td data-label="чем обычно заменяют или где встречают">таблицы маршрутизации, роутеры HTTP-фреймворков, ART в индексах баз ⚠️ не проверено, в каких именно</td>
 </tr>
 <tr>
-<td>система множеств (DSU)</td>
-<td>иногда, в пакетных задачах</td>
-<td>часто</td>
-<td>склейка клиентов в МДМ, кластеры в антифроде, графовые базы и движки компонент связности</td>
+<td data-label="структура">система множеств (DSU)</td>
+<td data-label="в коде сервиса">иногда, в пакетных задачах</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="чем обычно заменяют или где встречают">склейка клиентов в МДМ, кластеры в антифроде, графовые базы и движки компонент связности</td>
 </tr>
 <tr>
-<td>дерево Фенвика</td>
-<td>редко</td>
-<td>средне</td>
-<td>агрегаты в базе, гистограммы метрик</td>
+<td data-label="структура">дерево Фенвика</td>
+<td data-label="в коде сервиса">редко</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="чем обычно заменяют или где встречают">агрегаты в базе, гистограммы метрик</td>
 </tr>
 <tr>
-<td>дерево отрезков</td>
-<td>редко: резервирование по слотам</td>
-<td>средне</td>
-<td>агрегаты в базе, <code>EXCLUDE</code>-ограничения для пересечений (глава 65)</td>
+<td data-label="структура">дерево отрезков</td>
+<td data-label="в коде сервиса">редко: резервирование по слотам</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="чем обычно заменяют или где встречают">агрегаты в базе, <code>EXCLUDE</code>-ограничения для пересечений (глава 65)</td>
 </tr>
 <tr>
-<td>разреженная таблица, sqrt, Мо</td>
-<td>почти никогда</td>
-<td>редко, олимпиадный уклон</td>
-<td>колоночные хранилища с агрегатами по блокам</td>
+<td data-label="структура">разреженная таблица, sqrt, Мо</td>
+<td data-label="в коде сервиса">почти никогда</td>
+<td data-label="на собеседовании">редко, олимпиадный уклон</td>
+<td data-label="чем обычно заменяют или где встречают">колоночные хранилища с агрегатами по блокам</td>
 </tr>
 <tr>
-<td>список с пропусками</td>
-<td>часто, но как <code>ConcurrentSkipListMap</code></td>
-<td>средне</td>
-<td>упорядоченные множества Redis, memtable LSM-хранилищ</td>
+<td data-label="структура">список с пропусками</td>
+<td data-label="в коде сервиса">часто, но как <code>ConcurrentSkipListMap</code></td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="чем обычно заменяют или где встречают">упорядоченные множества Redis, memtable LSM-хранилищ</td>
 </tr>
 <tr>
-<td>персистентные структуры</td>
-<td>иногда: снимки конфигурации и справочников</td>
-<td>редко</td>
-<td><code>AtomicReference</code> на неизменяемый снимок, <code>CopyOnWriteArrayList</code>, темпоральные таблицы</td>
+<td data-label="структура">персистентные структуры</td>
+<td data-label="в коде сервиса">иногда: снимки конфигурации и справочников</td>
+<td data-label="на собеседовании">редко</td>
+<td data-label="чем обычно заменяют или где встречают"><code>AtomicReference</code> на неизменяемый снимок, <code>CopyOnWriteArrayList</code>, темпоральные таблицы</td>
 </tr>
 <tr>
-<td>кольцевой буфер</td>
-<td>часто внутри библиотек: метрики, ограничители, логгеры</td>
-<td>средне</td>
-<td><code>ArrayDeque</code>, <code>ArrayBlockingQueue</code>, Disruptor, Micrometer, Resilience4j</td>
+<td data-label="структура">кольцевой буфер</td>
+<td data-label="в коде сервиса">часто внутри библиотек: метрики, ограничители, логгеры</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="чем обычно заменяют или где встречают"><code>ArrayDeque</code>, <code>ArrayBlockingQueue</code>, Disruptor, Micrometer, Resilience4j</td>
 </tr>
 <tr>
-<td><code>BitSet</code> и битовые карты</td>
-<td>иногда: сегменты, флаги, пулы</td>
-<td>средне</td>
-<td>битовые индексы в колоночных базах, <code>SETBIT</code> в Redis, Roaring в поиске и аналитике</td>
+<td data-label="структура"><code>BitSet</code> и битовые карты</td>
+<td data-label="в коде сервиса">иногда: сегменты, флаги, пулы</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="чем обычно заменяют или где встречают">битовые индексы в колоночных базах, <code>SETBIT</code> в Redis, Roaring в поиске и аналитике</td>
 </tr>
 <tr>
-<td>фильтр Блума</td>
-<td>иногда: предварительные проверки</td>
-<td>средне</td>
-<td>Guava, RedisBloom, фильтры в SSTable и в PostgreSQL (<code>bloom</code>, глава 20)</td>
+<td data-label="структура">фильтр Блума</td>
+<td data-label="в коде сервиса">иногда: предварительные проверки</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="чем обычно заменяют или где встречают">Guava, RedisBloom, фильтры в SSTable и в PostgreSQL (<code>bloom</code>, глава 20)</td>
 </tr>
 </tbody>
 </table>
@@ -4434,7 +4434,7 @@
 <p>Структуры этой главы ломаются на редких сочетаниях операций, и примеры из условия их почти никогда не ловят. Поэтому основной инструмент отладки здесь не печать, а сравнение с медленным, но очевидно правильным эталоном на тысячах случайных сценариев. Все тесты в <code>algo-tests/66</code> устроены именно так.</p>
 <h3 id="121-эталоны-для-каждой-структуры">12.1 Эталоны для каждой структуры</h3>
 <p>Для каждой структуры есть простой эталон, который пишется за минуту и не может ошибиться в тех же местах. Он медленный, но на входах из десятков элементов это неважно, а его правильность видна с одного взгляда. Таблица перечисляет эталоны, которые использованы в тестах главы.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>структура</th>
@@ -4444,54 +4444,54 @@
 </thead>
 <tbody>
 <tr>
-<td>префиксное дерево</td>
-<td><code>HashSet&lt;String&gt;</code> и перебор строк</td>
-<td><code>search</code>, <code>startsWith</code>, результат автодополнения</td>
+<td data-label="структура">префиксное дерево</td>
+<td data-label="эталон"><code>HashSet&lt;String&gt;</code> и перебор строк</td>
+<td data-label="что сравнивать"><code>search</code>, <code>startsWith</code>, результат автодополнения</td>
 </tr>
 <tr>
-<td>система множеств</td>
-<td>обход в ширину по накопленным рёбрам</td>
-<td>связность, размер компоненты, число компонент</td>
+<td data-label="структура">система множеств</td>
+<td data-label="эталон">обход в ширину по накопленным рёбрам</td>
+<td data-label="что сравнивать">связность, размер компоненты, число компонент</td>
 </tr>
 <tr>
-<td>взвешенная система множеств</td>
-<td>скрытые «курсы» к общей единице</td>
-<td>отношение любых двух величин</td>
+<td data-label="структура">взвешенная система множеств</td>
+<td data-label="эталон">скрытые «курсы» к общей единице</td>
+<td data-label="что сравнивать">отношение любых двух величин</td>
 </tr>
 <tr>
-<td>дерево Фенвика, дерево отрезков</td>
-<td>обычный массив и цикл по отрезку</td>
-<td>сумма, минимум, спуск, после каждой операции</td>
+<td data-label="структура">дерево Фенвика, дерево отрезков</td>
+<td data-label="эталон">обычный массив и цикл по отрезку</td>
+<td data-label="что сравнивать">сумма, минимум, спуск, после каждой операции</td>
 </tr>
 <tr>
-<td>разреженная таблица, LCA</td>
-<td>перебор отрезка, подъём по родителям</td>
-<td>минимум, максимум, общий предок</td>
+<td data-label="структура">разреженная таблица, LCA</td>
+<td data-label="эталон">перебор отрезка, подъём по родителям</td>
+<td data-label="что сравнивать">минимум, максимум, общий предок</td>
 </tr>
 <tr>
-<td>алгоритм Мо</td>
-<td><code>HashSet</code> на каждом отрезке</td>
-<td>число различных</td>
+<td data-label="структура">алгоритм Мо</td>
+<td data-label="эталон"><code>HashSet</code> на каждом отрезке</td>
+<td data-label="что сравнивать">число различных</td>
 </tr>
 <tr>
-<td>список с пропусками</td>
-<td><code>TreeMap</code> со счётчиками</td>
-<td>поиск, удаление, нижний уровень целиком</td>
+<td data-label="структура">список с пропусками</td>
+<td data-label="эталон"><code>TreeMap</code> со счётчиками</td>
+<td data-label="что сравнивать">поиск, удаление, нижний уровень целиком</td>
 </tr>
 <tr>
-<td>персистентные структуры</td>
-<td>копия массива на каждую версию</td>
-<td>любой запрос к любой версии</td>
+<td data-label="структура">персистентные структуры</td>
+<td data-label="эталон">копия массива на каждую версию</td>
+<td data-label="что сравнивать">любой запрос к любой версии</td>
 </tr>
 <tr>
-<td>кольцевой буфер</td>
-<td><code>ArrayDeque</code></td>
-<td>голова, хвост, флаги, порядок</td>
+<td data-label="структура">кольцевой буфер</td>
+<td data-label="эталон"><code>ArrayDeque</code></td>
+<td data-label="что сравнивать">голова, хвост, флаги, порядок</td>
 </tr>
 <tr>
-<td>битовые карты</td>
-<td><code>HashSet&lt;Integer&gt;</code></td>
-<td>размер, принадлежность, пересечение</td>
+<td data-label="структура">битовые карты</td>
+<td data-label="эталон"><code>HashSet&lt;Integer&gt;</code></td>
+<td data-label="что сравнивать">размер, принадлежность, пересечение</td>
 </tr>
 </tbody>
 </table>
@@ -4677,5 +4677,5 @@
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-префиксное-дерево">1. Префиксное дерево</a></li><li><a href="#2-система-непересекающихся-множеств">2. Система непересекающихся множеств</a></li><li><a href="#3-дерево-фенвика">3. Дерево Фенвика</a></li><li><a href="#4-дерево-отрезков">4. Дерево отрезков</a></li><li><a href="#5-разреженная-таблица-и-sqrt-декомпозиция">5. Разреженная таблица и sqrt-декомпозиция</a></li><li><a href="#6-список-с-пропусками">6. Список с пропусками</a></li><li><a href="#7-персистентные-структуры">7. Персистентные структуры</a></li><li><a href="#8-кольцевой-буфер">8. Кольцевой буфер</a></li><li><a href="#9-bitset-и-битовые-карты">9. BitSet и битовые карты</a></li><li><a href="#10-что-из-этого-встречается-в-бэкенде">10. Что из этого встречается в бэкенде</a></li><li><a href="#11-грабли-и-антипаттерны">11. Грабли и антипаттерны</a></li><li><a href="#12-диагностика-отладка-решения">12. Диагностика: отладка решения</a></li><li><a href="#13-вопросы-на-интервью">13. Вопросы на интервью</a></li><li><a href="#14-попробовать-руками">14. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

@@ -3,7 +3,7 @@
 <title>46. Docker и сборка JVM-приложений — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Docker и сборка JVM-приложений">
 <a class="skip" href="#content">К тексту</a>
@@ -24,7 +24,7 @@
 <h3 id="11-контейнер-как-набор-механизмов-ядра-linux">1.1 Контейнер как набор механизмов ядра Linux</h3>
 <p>Объекта «контейнер» в ядре Linux попросту нет. Есть процесс, которому при <code>clone()</code>/<code>unshare()</code> выдали собственные namespace'ы, поместили его в cgroup с лимитами, смонтировали ему корневую ФС из наложенных друг на друга слоёв, урезали capabilities и навесили seccomp-фильтр. Docker, containerd и runc только и делают, что выстраивают эти примитивы в правильном порядке. Стоит это понять, и половина «магии» пропадает: если внутри контейнера что-то видно, хотя не должно, или не видно, хотя должно, ответ всегда в том, какой namespace не изолировали и какой файл из <code>/proc</code> или <code>/sys</code> пробросили внутрь.</p>
 <p>В таблице ниже перечислены namespace'ы, которые вам действительно встретятся на практике; смотреть в ней стоит на правую колонку, где собрано, чем каждый из них отзывается в Java-приложении.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Namespace</th>
@@ -34,44 +34,44 @@
 </thead>
 <tbody>
 <tr>
-<td><code>pid</code></td>
-<td>дерево процессов</td>
-<td>ваш <code>java</code> — PID 1 со всеми вытекающими (см. раздел 8)</td>
+<td data-label="Namespace"><code>pid</code></td>
+<td data-label="Что изолирует">дерево процессов</td>
+<td data-label="Что из этого следует для Java">ваш <code>java</code> — PID 1 со всеми вытекающими (см. раздел 8)</td>
 </tr>
 <tr>
-<td><code>mnt</code></td>
-<td>точки монтирования</td>
-<td>своя корневая ФС из слоёв образа</td>
+<td data-label="Namespace"><code>mnt</code></td>
+<td data-label="Что изолирует">точки монтирования</td>
+<td data-label="Что из этого следует для Java">своя корневая ФС из слоёв образа</td>
 </tr>
 <tr>
-<td><code>net</code></td>
-<td>сетевой стек: интерфейсы, порты, таблицы маршрутизации, <code>conntrack</code></td>
-<td><code>localhost</code> внутри контейнера — это не хост; порт 8080 занят «своим» 8080</td>
+<td data-label="Namespace"><code>net</code></td>
+<td data-label="Что изолирует">сетевой стек: интерфейсы, порты, таблицы маршрутизации, <code>conntrack</code></td>
+<td data-label="Что из этого следует для Java"><code>localhost</code> внутри контейнера — это не хост; порт 8080 занят «своим» 8080</td>
 </tr>
 <tr>
-<td><code>uts</code></td>
-<td>hostname и domainname</td>
-<td><code>InetAddress.getLocalHost()</code> вернёт id контейнера, а не имя узла</td>
+<td data-label="Namespace"><code>uts</code></td>
+<td data-label="Что изолирует">hostname и domainname</td>
+<td data-label="Что из этого следует для Java"><code>InetAddress.getLocalHost()</code> вернёт id контейнера, а не имя узла</td>
 </tr>
 <tr>
-<td><code>ipc</code></td>
-<td>System V IPC, POSIX-очереди, разделяемая память</td>
-<td><code>/dev/shm</code> по умолчанию 64 МБ — ломает Chrome в тестах и некоторые нативные библиотеки</td>
+<td data-label="Namespace"><code>ipc</code></td>
+<td data-label="Что изолирует">System V IPC, POSIX-очереди, разделяемая память</td>
+<td data-label="Что из этого следует для Java"><code>/dev/shm</code> по умолчанию 64 МБ — ломает Chrome в тестах и некоторые нативные библиотеки</td>
 </tr>
 <tr>
-<td><code>user</code></td>
-<td>отображение UID/GID</td>
-<td>rootless-контейнеры: root внутри = непривилегированный UID снаружи</td>
+<td data-label="Namespace"><code>user</code></td>
+<td data-label="Что изолирует">отображение UID/GID</td>
+<td data-label="Что из этого следует для Java">rootless-контейнеры: root внутри = непривилегированный UID снаружи</td>
 </tr>
 <tr>
-<td><code>cgroup</code></td>
-<td>вид на иерархию cgroup</td>
-<td>без него <code>/proc/self/cgroup</code> показывает пути хоста</td>
+<td data-label="Namespace"><code>cgroup</code></td>
+<td data-label="Что изолирует">вид на иерархию cgroup</td>
+<td data-label="Что из этого следует для Java">без него <code>/proc/self/cgroup</code> показывает пути хоста</td>
 </tr>
 <tr>
-<td><code>time</code> (5.6+)</td>
-<td><code>CLOCK_MONOTONIC</code>/<code>BOOTTIME</code></td>
-<td>редко используется; <strong>системное время не изолируется никогда</strong></td>
+<td data-label="Namespace"><code>time</code> (5.6+)</td>
+<td data-label="Что изолирует"><code>CLOCK_MONOTONIC</code>/<code>BOOTTIME</code></td>
+<td data-label="Что из этого следует для Java">редко используется; <strong>системное время не изолируется никогда</strong></td>
 </tr>
 </tbody>
 </table>
@@ -137,7 +137,7 @@ cpu.weight        # 1..10000, аналог shares
 </ul>
 <p>В k8s цепочка запуска выглядит так: kubelet → CRI → <strong>containerd</strong> (или CRI-O) → <strong>runc</strong> (или crun, gVisor, Kata). Docker Engine в ней не участвует с k8s 1.24, когда удалили dockershim, но образы, собранные Docker'ом, работают везде, потому что формат у всех один и тот же.</p>
 <p>В таблице сравниваются инструменты, которые встретятся вам чаще всего; главное, на что стоит в ней смотреть, — нужен ли инструменту демон и может ли он работать без root.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Инструмент</th>
@@ -148,28 +148,28 @@ cpu.weight        # 1..10000, аналог shares
 </thead>
 <tbody>
 <tr>
-<td>Docker CE</td>
-<td><code>dockerd</code> (root)</td>
-<td>демон под root</td>
-<td>эталон UX, BuildKit по умолчанию с 23.0</td>
+<td data-label="Инструмент">Docker CE</td>
+<td data-label="Демон"><code>dockerd</code> (root)</td>
+<td data-label="root">демон под root</td>
+<td data-label="Особенности">эталон UX, BuildKit по умолчанию с 23.0</td>
 </tr>
 <tr>
-<td>Podman</td>
-<td>нет демона</td>
-<td>rootless из коробки</td>
-<td>fork/exec-модель, pods как первоклассная сущность, <code>podman generate kube</code></td>
+<td data-label="Инструмент">Podman</td>
+<td data-label="Демон">нет демона</td>
+<td data-label="root">rootless из коробки</td>
+<td data-label="Особенности">fork/exec-модель, pods как первоклассная сущность, <code>podman generate kube</code></td>
 </tr>
 <tr>
-<td>nerdctl</td>
-<td>containerd</td>
-<td>опционально rootless</td>
-<td>«docker CLI для containerd», поддерживает lazy-pulling (stargz)</td>
+<td data-label="Инструмент">nerdctl</td>
+<td data-label="Демон">containerd</td>
+<td data-label="root">опционально rootless</td>
+<td data-label="Особенности">«docker CLI для containerd», поддерживает lazy-pulling (stargz)</td>
 </tr>
 <tr>
-<td>Buildah</td>
-<td>нет</td>
-<td>rootless</td>
-<td>только сборка, без запуска; удобен в CI без привилегий</td>
+<td data-label="Инструмент">Buildah</td>
+<td data-label="Демон">нет</td>
+<td data-label="root">rootless</td>
+<td data-label="Особенности">только сборка, без запуска; удобен в CI без привилегий</td>
 </tr>
 </tbody>
 </table>
@@ -184,7 +184,7 @@ cpu.weight        # 1..10000, аналог shares
 <p>Есть и вещи, которых в rootless-режиме нет вовсе, и узнать о них лучше заранее, а не посреди миграции. Порты ниже 1024 без дополнительной настройки ядра не биндятся; Java-сервису это не мешает, потому что он и так слушает 8080, но поднять локально nginx на 80 уже не получится. Оверлей файловой системы работает через <code>fuse-overlayfs</code>, который заметно медленнее ядерного overlay2, и на сборке с тысячами мелких файлов разница чувствуется. Наконец, <code>--privileged</code> внутри rootless настоящих привилегий не даёт, поэтому всё, чему нужен CRIU, а значит и CRaC из раздела 5.5, в этом режиме не заведётся.</p>
 <p>Взамен Podman даёт то, чего у Docker нет: под как первоклассную сущность и команду <code>podman kube generate</code>, которая превращает запущенный под в манифест Kubernetes, и обратную к ней <code>podman kube play</code>, которая поднимает контейнеры по готовому манифесту. Для разработчика это прямая дорога от «запустил локально» к «получил черновик манифеста», и особенно она полезна в OpenShift-контурах, где Red Hat продвигает Podman как основной инструмент.</p>
 <p>С Docker Podman совместим на уровне командной строки, и в подавляющем большинстве случаев эта совместимость действительно соблюдается: <code>alias docker=podman</code> закрывает повседневные задачи. В таблице ниже собраны места, где она всё-таки протекает, — именно на них при переезде уходят дни, поэтому смотреть стоит прежде всего на правую колонку с тем, что с этим делать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -195,34 +195,34 @@ cpu.weight        # 1..10000, аналог shares
 </thead>
 <tbody>
 <tr>
-<td>Демон и сокет</td>
-<td><code>dockerd</code>, <code>/var/run/docker.sock</code></td>
-<td>нет; есть эмуляция API через <code>podman system service</code></td>
-<td>Testcontainers работает через эмуляцию с <code>DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock</code></td>
+<td data-label="Что">Демон и сокет</td>
+<td data-label="Docker"><code>dockerd</code>, <code>/var/run/docker.sock</code></td>
+<td data-label="Podman">нет; есть эмуляция API через <code>podman system service</code></td>
+<td data-label="Что с этим делать">Testcontainers работает через эмуляцию с <code>DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock</code></td>
 </tr>
 <tr>
-<td><code>docker compose</code></td>
-<td>встроен</td>
-<td>внешний <code>podman-compose</code> либо <code>docker compose</code> поверх эмуляции сокета</td>
-<td>для локальной разработки чаще проще оставить Docker Desktop</td>
+<td data-label="Что"><code>docker compose</code></td>
+<td data-label="Docker">встроен</td>
+<td data-label="Podman">внешний <code>podman-compose</code> либо <code>docker compose</code> поверх эмуляции сокета</td>
+<td data-label="Что с этим делать">для локальной разработки чаще проще оставить Docker Desktop</td>
 </tr>
 <tr>
-<td>Автозапуск контейнеров</td>
-<td><code>--restart</code> у демона</td>
-<td>systemd-юниты (<code>podman generate systemd</code>, в новых версиях Quadlet)</td>
-<td>описывать сервисы юнитами, а не флагом</td>
+<td data-label="Что">Автозапуск контейнеров</td>
+<td data-label="Docker"><code>--restart</code> у демона</td>
+<td data-label="Podman">systemd-юниты (<code>podman generate systemd</code>, в новых версиях Quadlet)</td>
+<td data-label="Что с этим делать">описывать сервисы юнитами, а не флагом</td>
 </tr>
 <tr>
-<td>Сборка</td>
-<td>BuildKit</td>
-<td><code>buildah</code> под капотом, синтаксис Dockerfile поддержан</td>
-<td>кеш-маунты и <code>--mount=type=secret</code> поддерживаются не полностью — проверяйте на своей версии ⚠️ не проверено</td>
+<td data-label="Что">Сборка</td>
+<td data-label="Docker">BuildKit</td>
+<td data-label="Podman"><code>buildah</code> под капотом, синтаксис Dockerfile поддержан</td>
+<td data-label="Что с этим делать">кеш-маунты и <code>--mount=type=secret</code> поддерживаются не полностью — проверяйте на своей версии ⚠️ не проверено</td>
 </tr>
 <tr>
-<td>Права на файлы в томах</td>
-<td>UID совпадают</td>
-<td>сдвиг по subuid</td>
-<td><code>podman unshare</code>, <code>:U</code> у монтирования</td>
+<td data-label="Что">Права на файлы в томах</td>
+<td data-label="Docker">UID совпадают</td>
+<td data-label="Podman">сдвиг по subuid</td>
+<td data-label="Что с этим делать"><code>podman unshare</code>, <code>:U</code> у монтирования</td>
 </tr>
 </tbody>
 </table>
@@ -428,7 +428,7 @@ docker buildx build <span class="se">\</span>
 <p>Всё, что было сказано выше про порядок инструкций и кеш-маунты, проверялось на машине разработчика, и там оно работает без всяких усилий, потому что кеш сборщика лежит на локальном диске и переживает сотни сборок подряд. В CI этого условия нет: исполнитель эфемерен, он поднимается под задачу и уничтожается после неё вместе со всем, что успел записать сборщик. Поэтому сборка, которая локально идёт сорок секунд, в конвейере занимает восемь минут, и разработчик искренне не понимает, куда делась польза от аккуратно выстроенного Dockerfile. Дальше разберём, почему кеш теряется, какими способами его выносят наружу, чем каждый из них платит и как измерить, окупается ли он вообще.</p>
 <p>Механика потери простая. Кеш слоёв BuildKit хранится в каталоге состояния сборщика (у docker-container-драйвера это том контейнера <code>buildx_buildkit_*</code>, у обычного демона — <code>/var/lib/docker/buildkit</code>) и живёт ровно столько, сколько живёт сам сборщик. Исполнитель GitLab с executor'ом <code>kubernetes</code> или <code>docker-autoscaler</code> создаёт под каждую задачу новый под или новую машину, и новый сборщик получает пустое состояние. Даже там, где исполнители статические и демон один на всех, вас ждёт вторая беда: параллельные задачи разных проектов делят один кеш и вытесняют друг друга по политике сборщика мусора BuildKit, так что попадание в кеш превращается в лотерею. Отсюда общее правило: <strong>в CI кеш нужно явно экспортировать наружу и явно импортировать обратно</strong>, иначе его просто нет, как бы хорошо ни был написан Dockerfile.</p>
 <p>Делается это парой флагов: <code>--cache-to</code> задаёт, куда выгружать кеш, а <code>--cache-from</code> — откуда его подхватывать, и главный выбор здесь касается типа хранилища. В таблице ниже сведены четыре режима, которые действительно встречаются в работе, и для каждого честно указано, где лежит кеш, что именно в него попадает и чем вы за это платите (<a href="https://docs.docker.com/build/cache/backends/">Cache backends, Docker Docs</a>).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип</th>
@@ -439,28 +439,28 @@ docker buildx build <span class="se">\</span>
 </thead>
 <tbody>
 <tr>
-<td><code>inline</code></td>
-<td>внутри самого образа, «embeds the build cache into the image»</td>
-<td>только слои финального образа</td>
-<td>нельзя сохранить промежуточные стадии, то есть кеш сборочной стадии multi-stage теряется целиком</td>
+<td data-label="Тип"><code>inline</code></td>
+<td data-label="Где хранится">внутри самого образа, «embeds the build cache into the image»</td>
+<td data-label="Что кешируется">только слои финального образа</td>
+<td data-label="Чем платим">нельзя сохранить промежуточные стадии, то есть кеш сборочной стадии multi-stage теряется целиком</td>
 </tr>
 <tr>
-<td><code>registry</code></td>
-<td>отдельный образ-кеш в реестре, «a separate image, pushed to a dedicated location»</td>
-<td>с <code>mode=max</code> — все слои, включая промежуточные стадии</td>
-<td>лишний push и pull на каждую сборку, место в реестре, свой цикл чистки</td>
+<td data-label="Тип"><code>registry</code></td>
+<td data-label="Где хранится">отдельный образ-кеш в реестре, «a separate image, pushed to a dedicated location»</td>
+<td data-label="Что кешируется">с <code>mode=max</code> — все слои, включая промежуточные стадии</td>
+<td data-label="Чем платим">лишний push и pull на каждую сборку, место в реестре, свой цикл чистки</td>
 </tr>
 <tr>
-<td><code>local</code></td>
-<td>каталог на файловой системе исполнителя</td>
-<td>всё, что попросите</td>
-<td>переживает задачу только там, где каталог переживает задачу: нужен persistent volume или встроенный кеш CI</td>
+<td data-label="Тип"><code>local</code></td>
+<td data-label="Где хранится">каталог на файловой системе исполнителя</td>
+<td data-label="Что кешируется">всё, что попросите</td>
+<td data-label="Чем платим">переживает задачу только там, где каталог переживает задачу: нужен persistent volume или встроенный кеш CI</td>
 </tr>
 <tr>
-<td><code>gha</code></td>
-<td>кеш GitHub Actions (в статусе beta)</td>
-<td>всё</td>
-<td>привязка к одной платформе, квота на репозиторий и вытеснение по ней</td>
+<td data-label="Тип"><code>gha</code></td>
+<td data-label="Где хранится">кеш GitHub Actions (в статусе beta)</td>
+<td data-label="Что кешируется">всё</td>
+<td data-label="Чем платим">привязка к одной платформе, квота на репозиторий и вытеснение по ней</td>
 </tr>
 </tbody>
 </table>
@@ -489,7 +489,7 @@ docker buildx build <span class="se">\</span>
 <p>Базовый образ — это то, что стоит в строке <code>FROM</code> финальной стадии: дистрибутив, JVM и набор системных библиотек, поверх которых ложится ваше приложение. Выбор базы определяет, кто отвечает за CVE в нативной части, как быстро приходят патчи, сколько весит образ и что вы сможете сделать внутри контейнера во время инцидента. В этом разделе мы сравним сборки OpenJDK от разных поставщиков, разберёмся, нужен ли во время выполнения JDK или хватит JRE, что внутри у distroless и Alpine, как собрать собственную среду выполнения через jlink, как тегировать образы и где экономия на размере перестаёт окупаться.</p>
 <h3 id="31-дистрибутивы-openjdk">3.1 Дистрибутивы OpenJDK</h3>
 <p>Все сборки из таблицы ниже проходят TCK и совместимы по API, поэтому выбирать между ними приходится не по функциональности, а по жизненному циклу, набору бэкпортов, базовому дистрибутиву и по тому, кто отвечает за CVE в нативной части. Смотреть в таблице стоит на две последние колонки — кто поддерживает сборку и в какой ситуации её брать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Образ</th>
@@ -501,53 +501,53 @@ docker buildx build <span class="se">\</span>
 </thead>
 <tbody>
 <tr>
-<td><code>eclipse-temurin</code> (Adoptium)</td>
-<td>Ubuntu (<code>jammy</code>/<code>noble</code>), Alpine, Windows</td>
-<td><code>21-jdk</code>, <code>21-jre</code>, <code>21-jdk-alpine</code>, <code>21-jre-alpine</code></td>
-<td>сообщество Eclipse, LTS долго</td>
-<td>выбор по умолчанию, если нет причин взять другое</td>
+<td data-label="Образ"><code>eclipse-temurin</code> (Adoptium)</td>
+<td data-label="Дистрибутив">Ubuntu (<code>jammy</code>/<code>noble</code>), Alpine, Windows</td>
+<td data-label="Теги"><code>21-jdk</code>, <code>21-jre</code>, <code>21-jdk-alpine</code>, <code>21-jre-alpine</code></td>
+<td data-label="Поддержка">сообщество Eclipse, LTS долго</td>
+<td data-label="Когда брать">выбор по умолчанию, если нет причин взять другое</td>
 </tr>
 <tr>
-<td><code>amazoncorretto</code></td>
-<td>Amazon Linux 2/2023, Alpine</td>
-<td><code>21</code>, <code>21-alpine</code>, <code>21-headless</code></td>
-<td>Amazon, бесплатно, LTS до 2030+</td>
-<td>AWS-инфраструктура, нужен вендор с SLA</td>
+<td data-label="Образ"><code>amazoncorretto</code></td>
+<td data-label="Дистрибутив">Amazon Linux 2/2023, Alpine</td>
+<td data-label="Теги"><code>21</code>, <code>21-alpine</code>, <code>21-headless</code></td>
+<td data-label="Поддержка">Amazon, бесплатно, LTS до 2030+</td>
+<td data-label="Когда брать">AWS-инфраструктура, нужен вендор с SLA</td>
 </tr>
 <tr>
-<td><code>azul/zulu-openjdk</code></td>
-<td>Ubuntu, Alpine</td>
-<td><code>21-jre</code>, <code>21-jre-headless</code></td>
-<td>Azul, платная опция; <strong>CRaC-сборки только у Azul и Liberica</strong></td>
-<td>нужен CRaC или коммерческий саппорт</td>
+<td data-label="Образ"><code>azul/zulu-openjdk</code></td>
+<td data-label="Дистрибутив">Ubuntu, Alpine</td>
+<td data-label="Теги"><code>21-jre</code>, <code>21-jre-headless</code></td>
+<td data-label="Поддержка">Azul, платная опция; <strong>CRaC-сборки только у Azul и Liberica</strong></td>
+<td data-label="Когда брать">нужен CRaC или коммерческий саппорт</td>
 </tr>
 <tr>
-<td><code>bellsoft/liberica-openjre-debian</code></td>
-<td>Debian, Alpine (в т.ч. <strong>musl-native</strong>)</td>
-<td><code>21</code>, <code>25-cds</code>, <code>21-lite</code></td>
-<td>BellSoft</td>
-<td>Spring Boot официально использует в примерах; <code>-lite</code> заметно меньше</td>
+<td data-label="Образ"><code>bellsoft/liberica-openjre-debian</code></td>
+<td data-label="Дистрибутив">Debian, Alpine (в т.ч. <strong>musl-native</strong>)</td>
+<td data-label="Теги"><code>21</code>, <code>25-cds</code>, <code>21-lite</code></td>
+<td data-label="Поддержка">BellSoft</td>
+<td data-label="Когда брать">Spring Boot официально использует в примерах; <code>-lite</code> заметно меньше</td>
 </tr>
 <tr>
-<td><code>registry.access.redhat.com/ubi9/openjdk-21-runtime</code></td>
-<td>RHEL UBI</td>
-<td><code>1.x</code></td>
-<td>Red Hat</td>
-<td><strong>OpenShift</strong>: соответствие политикам, поддержка Red Hat на весь стек</td>
+<td data-label="Образ"><code>registry.access.redhat.com/ubi9/openjdk-21-runtime</code></td>
+<td data-label="Дистрибутив">RHEL UBI</td>
+<td data-label="Теги"><code>1.x</code></td>
+<td data-label="Поддержка">Red Hat</td>
+<td data-label="Когда брать"><strong>OpenShift</strong>: соответствие политикам, поддержка Red Hat на весь стек</td>
 </tr>
 <tr>
-<td><code>gcr.io/distroless/java21-debian13</code></td>
-<td>Debian, без userland</td>
-<td><code>latest</code>, <code>nonroot</code>, <code>debug</code>, <code>debug-nonroot</code></td>
-<td>Google</td>
-<td>минимальная поверхность атаки</td>
+<td data-label="Образ"><code>gcr.io/distroless/java21-debian13</code></td>
+<td data-label="Дистрибутив">Debian, без userland</td>
+<td data-label="Теги"><code>latest</code>, <code>nonroot</code>, <code>debug</code>, <code>debug-nonroot</code></td>
+<td data-label="Поддержка">Google</td>
+<td data-label="Когда брать">минимальная поверхность атаки</td>
 </tr>
 <tr>
-<td><code>openjdk</code> (Docker Official)</td>
-<td>—</td>
-<td>—</td>
-<td><strong>deprecated</strong></td>
-<td>не использовать, репозиторий заморожен</td>
+<td data-label="Образ"><code>openjdk</code> (Docker Official)</td>
+<td data-label="Дистрибутив">—</td>
+<td data-label="Теги">—</td>
+<td data-label="Поддержка"><strong>deprecated</strong></td>
+<td data-label="Когда брать">не использовать, репозиторий заморожен</td>
 </tr>
 </tbody>
 </table>
@@ -601,7 +601,7 @@ docker buildx build <span class="se">\</span>
 <p>Alpine привлекает маленьким размером, но под этим размером лежит другая стандартная библиотека C, и для JVM это отнюдь не мелочь. Разберём, как Java пришла на musl, чем musl отличается от glibc в тех местах, которые задевают Java-сервис, и когда Alpine всё-таки оправдан.</p>
 <p>Вместо glibc Alpine использует <strong>musl libc</strong>. До Java 16 официальных сборок HotSpot под musl не было: <code>eclipse-temurin:*-alpine</code> собирались на основе проекта <strong>Portola</strong> (<a href="https://openjdk.org/jeps/386">JEP 386</a>, «Alpine Linux Port», интегрирован в JDK 16), а до него в ходу были образы с <code>glibc</code>-совместимой прослойкой (<code>sgerrand/alpine-pkg-glibc</code>), которые порождали плавающие сегфолты, и воспроизвести их было невозможно.</p>
 <p>Сегодня Alpine-сборки Temurin, Corretto, Zulu и Liberica официальны и стабильны, но отличия от glibc остались, и в таблице ниже собраны те, что задевают Java-сервис. Самые опасные строки выделены жирным — это распределитель памяти и размер стека нативного потока.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аспект</th>
@@ -611,29 +611,29 @@ docker buildx build <span class="se">\</span>
 </thead>
 <tbody>
 <tr>
-<td><code>malloc</code></td>
-<td>ptmalloc2 с per-thread аренами</td>
-<td>простой, компактный, <strong>заметно медленнее, когда память одновременно выделяет много потоков</strong></td>
+<td data-label="Аспект"><code>malloc</code></td>
+<td data-label="glibc">ptmalloc2 с per-thread аренами</td>
+<td data-label="musl">простой, компактный, <strong>заметно медленнее, когда память одновременно выделяет много потоков</strong></td>
 </tr>
 <tr>
-<td>Размер</td>
-<td>больше</td>
-<td>меньше на ~100 МБ в итоговом образе</td>
+<td data-label="Аспект">Размер</td>
+<td data-label="glibc">больше</td>
+<td data-label="musl">меньше на ~100 МБ в итоговом образе</td>
 </tr>
 <tr>
-<td>DNS</td>
-<td><code>getaddrinfo</code>, <code>/etc/nsswitch.conf</code>, поиск по <code>search</code>-доменам</td>
-<td>своя реализация, исторически без <code>nsswitch</code>, без TCP-фолбэка в старых версиях</td>
+<td data-label="Аспект">DNS</td>
+<td data-label="glibc"><code>getaddrinfo</code>, <code>/etc/nsswitch.conf</code>, поиск по <code>search</code>-доменам</td>
+<td data-label="musl">своя реализация, исторически без <code>nsswitch</code>, без TCP-фолбэка в старых версиях</td>
 </tr>
 <tr>
-<td>Stack size потока по умолчанию</td>
-<td>8 МБ</td>
-<td><strong>128 КБ</strong> — рекурсивный парсер или глубокий стек Spring падает на <code>StackOverflowError</code></td>
+<td data-label="Аспект">Stack size потока по умолчанию</td>
+<td data-label="glibc">8 МБ</td>
+<td data-label="musl"><strong>128 КБ</strong> — рекурсивный парсер или глубокий стек Spring падает на <code>StackOverflowError</code></td>
 </tr>
 <tr>
-<td>Нативные библиотеки</td>
-<td>почти всё собрано под glibc</td>
-<td>netty-tcnative, snappy, rocksdb, jemalloc — нужны musl-сборки, иногда их просто нет</td>
+<td data-label="Аспект">Нативные библиотеки</td>
+<td data-label="glibc">почти всё собрано под glibc</td>
+<td data-label="musl">netty-tcnative, snappy, rocksdb, jemalloc — нужны musl-сборки, иногда их просто нет</td>
 </tr>
 </tbody>
 </table>
@@ -673,7 +673,7 @@ docker buildx build <span class="se">\</span>
 <h3 id="37-окупаемость-уменьшения-образа">3.7 Окупаемость уменьшения образа</h3>
 <p>В разделе 2.9 уже говорилось, зачем вообще следить за размером образа, но там речь шла о доводах качественных, а решение «переходим на distroless» или «остаёмся на slim» принимают по цифрам. Беда в том, что цифра, которую показывает <code>docker images</code>, к этому решению имеет мало отношения: она не учитывает ни сжатия при передаче, ни повторно использования слоёв между вашими сервисами, ни того, что половина образа на узле уже лежит. Разберёмся, что считать на самом деле, сколько это стоит в секундах выката и где проходит граница, за которой минус сто мегабайт обходятся дороже, чем стоят.</p>
 <p>Начнём с того, что в реестре и в сети образ живёт в сжатом виде, а на диске узла — в распакованном, и эти числа различаются примерно вдвое. В таблице ниже приведены порядки для типового Spring Boot сервиса с jar на 60 МБ, собранного на разных базах, а колонка «своё» показывает то, что добавляет поверх базы именно ваше приложение.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>База</th>
@@ -685,39 +685,39 @@ docker buildx build <span class="se">\</span>
 </thead>
 <tbody>
 <tr>
-<td><code>eclipse-temurin:21-jdk-jammy</code></td>
-<td class="num">≈ 450 МБ</td>
-<td class="num">≈ 190 МБ</td>
-<td class="num">60 МБ</td>
-<td>8–10</td>
+<td data-label="База"><code>eclipse-temurin:21-jdk-jammy</code></td>
+<td data-label="Распакованный размер" class="num">≈ 450 МБ</td>
+<td data-label="Сжатый (что едет по сети)" class="num">≈ 190 МБ</td>
+<td data-label="Своё поверх базы" class="num">60 МБ</td>
+<td data-label="Слоёв">8–10</td>
 </tr>
 <tr>
-<td><code>eclipse-temurin:21-jre-jammy</code></td>
-<td class="num">≈ 270 МБ</td>
-<td class="num">≈ 110 МБ</td>
-<td class="num">60 МБ</td>
-<td>6–8</td>
+<td data-label="База"><code>eclipse-temurin:21-jre-jammy</code></td>
+<td data-label="Распакованный размер" class="num">≈ 270 МБ</td>
+<td data-label="Сжатый (что едет по сети)" class="num">≈ 110 МБ</td>
+<td data-label="Своё поверх базы" class="num">60 МБ</td>
+<td data-label="Слоёв">6–8</td>
 </tr>
 <tr>
-<td><code>gcr.io/distroless/java21-debian13</code></td>
-<td class="num">≈ 190 МБ</td>
-<td class="num">≈ 85 МБ</td>
-<td class="num">60 МБ</td>
-<td>4–6</td>
+<td data-label="База"><code>gcr.io/distroless/java21-debian13</code></td>
+<td data-label="Распакованный размер" class="num">≈ 190 МБ</td>
+<td data-label="Сжатый (что едет по сети)" class="num">≈ 85 МБ</td>
+<td data-label="Своё поверх базы" class="num">60 МБ</td>
+<td data-label="Слоёв">4–6</td>
 </tr>
 <tr>
-<td><code>eclipse-temurin:21-jre-alpine</code></td>
-<td class="num">≈ 180 МБ</td>
-<td class="num">≈ 75 МБ</td>
-<td class="num">60 МБ</td>
-<td>6–8</td>
+<td data-label="База"><code>eclipse-temurin:21-jre-alpine</code></td>
+<td data-label="Распакованный размер" class="num">≈ 180 МБ</td>
+<td data-label="Сжатый (что едет по сети)" class="num">≈ 75 МБ</td>
+<td data-label="Своё поверх базы" class="num">60 МБ</td>
+<td data-label="Слоёв">6–8</td>
 </tr>
 <tr>
-<td>jlink-среда выполнения на минимальном наборе модулей</td>
-<td class="num">≈ 100 МБ</td>
-<td class="num">≈ 45 МБ</td>
-<td class="num">60 МБ</td>
-<td>3–5</td>
+<td data-label="База">jlink-среда выполнения на минимальном наборе модулей</td>
+<td data-label="Распакованный размер" class="num">≈ 100 МБ</td>
+<td data-label="Сжатый (что едет по сети)" class="num">≈ 45 МБ</td>
+<td data-label="Своё поверх базы" class="num">60 МБ</td>
+<td data-label="Слоёв">3–5</td>
 </tr>
 </tbody>
 </table>
@@ -818,7 +818,7 @@ java -Djarmode<span class="o">=</span>tools -jar my-app.jar <span class="nb">hel
 
 <p>⚠️ Имена <code>BPL_JVM_THREAD_COUNT</code>, <code>BPL_JVM_HEAD_ROOM</code>, <code>BPL_JVM_LOADED_CLASS_COUNT</code> и <code>BP_JVM_VERSION</code> на странице Java-reference в открытом виде не перечислены (проверка 2026-09-21): их документируют README отдельных buildpack'ов, поэтому перед использованием сверяйтесь с ними.</p>
 <p>В таблице ниже Buildpacks честно сравниваются со своим Dockerfile по восьми критериям; стоит обратить внимание на строку «Обновление базы», потому что именно она чаще всего решает спор в пользу Buildpacks.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -828,44 +828,44 @@ java -Djarmode<span class="o">=</span>tools -jar my-app.jar <span class="nb">hel
 </thead>
 <tbody>
 <tr>
-<td>Порог входа</td>
-<td><code>./mvnw spring-boot:build-image</code></td>
-<td>надо знать Docker</td>
+<td data-label="">Порог входа</td>
+<td data-label="Buildpacks"><code>./mvnw spring-boot:build-image</code></td>
+<td data-label="Свой Dockerfile">надо знать Docker</td>
 </tr>
 <tr>
-<td>Обновление базы</td>
-<td>пересборка с новым builder'ом, <code>pack rebase</code> меняет базу <strong>без пересборки приложения</strong></td>
-<td>вручную (Renovate)</td>
+<td data-label="">Обновление базы</td>
+<td data-label="Buildpacks">пересборка с новым builder'ом, <code>pack rebase</code> меняет базу <strong>без пересборки приложения</strong></td>
+<td data-label="Свой Dockerfile">вручную (Renovate)</td>
 </tr>
 <tr>
-<td>Контроль над содержимым</td>
-<td>низкий, «чёрный ящик»</td>
-<td>полный</td>
+<td data-label="">Контроль над содержимым</td>
+<td data-label="Buildpacks">низкий, «чёрный ящик»</td>
+<td data-label="Свой Dockerfile">полный</td>
 </tr>
 <tr>
-<td>Размер образа</td>
-<td>обычно больше (≈ +50–120 МБ на служебные слои)</td>
-<td>меньше</td>
+<td data-label="">Размер образа</td>
+<td data-label="Buildpacks">обычно больше (≈ +50–120 МБ на служебные слои)</td>
+<td data-label="Свой Dockerfile">меньше</td>
 </tr>
 <tr>
-<td>Нестандартные требования (нативные библиотеки, свои сертификаты)</td>
-<td>больно</td>
-<td>тривиально</td>
+<td data-label="">Нестандартные требования (нативные библиотеки, свои сертификаты)</td>
+<td data-label="Buildpacks">больно</td>
+<td data-label="Свой Dockerfile">тривиально</td>
 </tr>
 <tr>
-<td>Воспроизводимость</td>
-<td>из коробки</td>
-<td>нужна дисциплина</td>
+<td data-label="">Воспроизводимость</td>
+<td data-label="Buildpacks">из коробки</td>
+<td data-label="Свой Dockerfile">нужна дисциплина</td>
 </tr>
 <tr>
-<td>Скорость сборки</td>
-<td>медленнее (детект + слои)</td>
-<td>быстрее с кеш-маунтами</td>
+<td data-label="">Скорость сборки</td>
+<td data-label="Buildpacks">медленнее (детект + слои)</td>
+<td data-label="Свой Dockerfile">быстрее с кеш-маунтами</td>
 </tr>
 <tr>
-<td>Память JVM</td>
-<td>считает калькулятор (иногда неверно)</td>
-<td>ваш <code>MaxRAMPercentage</code></td>
+<td data-label="">Память JVM</td>
+<td data-label="Buildpacks">считает калькулятор (иногда неверно)</td>
+<td data-label="Свой Dockerfile">ваш <code>MaxRAMPercentage</code></td>
 </tr>
 </tbody>
 </table>
@@ -940,7 +940,7 @@ mvn compile jib:buildTar       <span class="c1"># в tar</span>
 <p>Здесь, однако, нужна осторожность. Spring Boot рассчитывает, что загрузчик классов для приложения настроят <code>PropertiesLauncher</code>/<code>JarLauncher</code>, и при запуске через <code>-cp</code> с главным классом приложения часть возможностей теряется — загрузка из <code>BOOT-INF/classes</code> с нестандартным layout и <code>loader.path</code>. Для стандартного <code>extract</code>-layout это безопасно, потому что Boot уже сгенерировал корректный манифест.</p>
 <h3 id="46-сравнение-способов-упаковки-приложения">4.6 Сравнение способов упаковки приложения</h3>
 <p>Все способы упаковки из этого и соседних разделов собраны в одну таблицу, чтобы выбор можно было сделать по нескольким осям сразу: сколько получается слоёв, нужен ли Docker, насколько вы контролируете содержимое и как быстро стартует приложение. Главная колонка здесь последняя — в ней сказано, в какой ситуации брать каждый вариант.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -953,60 +953,60 @@ mvn compile jib:buildTar       <span class="c1"># в tar</span>
 </thead>
 <tbody>
 <tr>
-<td>fat jar одним <code>COPY</code></td>
-<td>1 толстый</td>
-<td>да</td>
-<td>полный</td>
-<td>медленнее</td>
-<td>никогда в проде</td>
+<td data-label="Способ">fat jar одним <code>COPY</code></td>
+<td data-label="Слои">1 толстый</td>
+<td data-label="Нужен Docker">да</td>
+<td data-label="Контроль">полный</td>
+<td data-label="Старт">медленнее</td>
+<td data-label="Когда брать">никогда в проде</td>
 </tr>
 <tr>
-<td>layered jar + Dockerfile</td>
-<td>4+</td>
-<td>да</td>
-<td>полный</td>
-<td>средне</td>
-<td><strong>выбор по умолчанию</strong></td>
+<td data-label="Способ">layered jar + Dockerfile</td>
+<td data-label="Слои">4+</td>
+<td data-label="Нужен Docker">да</td>
+<td data-label="Контроль">полный</td>
+<td data-label="Старт">средне</td>
+<td data-label="Когда брать"><strong>выбор по умолчанию</strong></td>
 </tr>
 <tr>
-<td>extract без <code>--layers</code> (<code>lib/</code> + тонкий jar)</td>
-<td>2–3</td>
-<td>да</td>
-<td>полный</td>
-<td>быстрее всего</td>
-<td>когда включаете CDS/AOT-кеш</td>
+<td data-label="Способ">extract без <code>--layers</code> (<code>lib/</code> + тонкий jar)</td>
+<td data-label="Слои">2–3</td>
+<td data-label="Нужен Docker">да</td>
+<td data-label="Контроль">полный</td>
+<td data-label="Старт">быстрее всего</td>
+<td data-label="Когда брать">когда включаете CDS/AOT-кеш</td>
 </tr>
 <tr>
-<td>Buildpacks</td>
-<td>много</td>
-<td>нет (демон нужен для локального)</td>
-<td>низкий</td>
-<td>средне</td>
-<td>быстрый старт проекта, централизованный патчинг базы</td>
+<td data-label="Способ">Buildpacks</td>
+<td data-label="Слои">много</td>
+<td data-label="Нужен Docker">нет (демон нужен для локального)</td>
+<td data-label="Контроль">низкий</td>
+<td data-label="Старт">средне</td>
+<td data-label="Когда брать">быстрый старт проекта, централизованный патчинг базы</td>
 </tr>
 <tr>
-<td>Jib</td>
-<td>3–4</td>
-<td>нет</td>
-<td>средний</td>
-<td>средне</td>
-<td>CI без демона, быстрые итерации</td>
+<td data-label="Способ">Jib</td>
+<td data-label="Слои">3–4</td>
+<td data-label="Нужен Docker">нет</td>
+<td data-label="Контроль">средний</td>
+<td data-label="Старт">средне</td>
+<td data-label="Когда брать">CI без демона, быстрые итерации</td>
 </tr>
 <tr>
-<td>jlink + своя среда выполнения</td>
-<td>2–3</td>
-<td>да</td>
-<td>полный</td>
-<td>быстрее</td>
-<td>жёсткие требования к размеру</td>
+<td data-label="Способ">jlink + своя среда выполнения</td>
+<td data-label="Слои">2–3</td>
+<td data-label="Нужен Docker">да</td>
+<td data-label="Контроль">полный</td>
+<td data-label="Старт">быстрее</td>
+<td data-label="Когда брать">жёсткие требования к размеру</td>
 </tr>
 <tr>
-<td>native image</td>
-<td>1–2</td>
-<td>да</td>
-<td>полный</td>
-<td>мгновенный</td>
-<td>см. раздел 6</td>
+<td data-label="Способ">native image</td>
+<td data-label="Слои">1–2</td>
+<td data-label="Нужен Docker">да</td>
+<td data-label="Контроль">полный</td>
+<td data-label="Старт">мгновенный</td>
+<td data-label="Когда брать">см. раздел 6</td>
 </tr>
 </tbody>
 </table>
@@ -1129,7 +1129,7 @@ java -XX:AOTCache<span class="o">=</span>app.aot -jar application.jar
 <p>Оправдан CRaC в serverless и при scale-to-zero, когда к холодному старту предъявляют жёсткие требования, а native image не подходит из-за динамики приложения. Во всех остальных случаях сначала стоит попробовать AOT-кеш, которому не нужны ни особая JVM, ни привилегии, ни изменения в коде.</p>
 <h3 id="56-сводная-таблица-способов-ускорить-старт">5.6 Сводная таблица способов ускорить старт</h3>
 <p>Таблица ниже сводит вместе все способы ускорить старт из этого раздела и native image из следующего, чтобы их можно было сравнить по выигрышу, по цене в коде и требованиям и по рискам. Обратите внимание на порядок величин в колонке выигрыша: проценты у механизмов HotSpot и десятки раз у CRaC и native image.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Подход</th>
@@ -1141,46 +1141,46 @@ java -XX:AOTCache<span class="o">=</span>app.aot -jar application.jar
 </thead>
 <tbody>
 <tr>
-<td>extract вместо fat jar</td>
-<td>5–10 %</td>
-<td>нет</td>
-<td>нет</td>
-<td>минимальные</td>
+<td data-label="Подход">extract вместо fat jar</td>
+<td data-label="Выигрыш старта">5–10 %</td>
+<td data-label="Изменения в коде">нет</td>
+<td data-label="Требования">нет</td>
+<td data-label="Риски">минимальные</td>
 </tr>
 <tr>
-<td>AppCDS</td>
-<td>20–35 %</td>
-<td>нет</td>
-<td>тренировочный прогон в образе</td>
-<td>молчаливый откат при смене classpath</td>
+<td data-label="Подход">AppCDS</td>
+<td data-label="Выигрыш старта">20–35 %</td>
+<td data-label="Изменения в коде">нет</td>
+<td data-label="Требования">тренировочный прогон в образе</td>
+<td data-label="Риски">молчаливый откат при смене classpath</td>
 </tr>
 <tr>
-<td>AOT-кеш (JEP 483, JDK 24+)</td>
-<td>до ~42 % (данные JEP)</td>
-<td>нет</td>
-<td>JDK 24+, тренировка</td>
-<td>то же + репрезентативность тренировки</td>
+<td data-label="Подход">AOT-кеш (JEP 483, JDK 24+)</td>
+<td data-label="Выигрыш старта">до ~42 % (данные JEP)</td>
+<td data-label="Изменения в коде">нет</td>
+<td data-label="Требования">JDK 24+, тренировка</td>
+<td data-label="Риски">то же + репрезентативность тренировки</td>
 </tr>
 <tr>
-<td><code>-XX:TieredStopAtLevel=1</code></td>
-<td>10–20 % до готовности</td>
-<td>нет</td>
-<td>нет</td>
-<td><strong>хуже пиковая производительность</strong> — только для коротких задач</td>
+<td data-label="Подход"><code>-XX:TieredStopAtLevel=1</code></td>
+<td data-label="Выигрыш старта">10–20 % до готовности</td>
+<td data-label="Изменения в коде">нет</td>
+<td data-label="Требования">нет</td>
+<td data-label="Риски"><strong>хуже пиковая производительность</strong> — только для коротких задач</td>
 </tr>
 <tr>
-<td>CRaC</td>
-<td>10–50×</td>
-<td>да (Resource-обработчики)</td>
-<td>Zulu/Liberica CRaC, CRIU, привилегии</td>
-<td>секреты в снимке, дубли идентификаторов</td>
+<td data-label="Подход">CRaC</td>
+<td data-label="Выигрыш старта">10–50×</td>
+<td data-label="Изменения в коде">да (Resource-обработчики)</td>
+<td data-label="Требования">Zulu/Liberica CRaC, CRIU, привилегии</td>
+<td data-label="Риски">секреты в снимке, дубли идентификаторов</td>
 </tr>
 <tr>
-<td>GraalVM native image</td>
-<td>30–100×</td>
-<td>да (hints)</td>
-<td>GraalVM, долгая сборка</td>
-<td>см. раздел 6</td>
+<td data-label="Подход">GraalVM native image</td>
+<td data-label="Выигрыш старта">30–100×</td>
+<td data-label="Изменения в коде">да (hints)</td>
+<td data-label="Требования">GraalVM, долгая сборка</td>
+<td data-label="Риски">см. раздел 6</td>
 </tr>
 </tbody>
 </table>
@@ -1199,7 +1199,7 @@ java -XX:AOTCache<span class="o">=</span>app.aot -jar application.jar
 </ol>
 <h3 id="62-ограничения-статического-анализа-и-hints">6.2 Ограничения статического анализа и hints</h3>
 <p>Всё, чего статический анализ не видит, надо объявить явно, и такие объявления называют метаданными или hints. В таблице ниже перечислены механизмы Java, которые ломаются в closed world, с объяснением причины и способом починки; стоит заметить, что последние три строки не чинятся вообще.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Механизм</th>
@@ -1209,44 +1209,44 @@ java -XX:AOTCache<span class="o">=</span>app.aot -jar application.jar
 </thead>
 <tbody>
 <tr>
-<td>Рефлексия (<code>Class.forName</code>, <code>getDeclaredMethod</code>)</td>
-<td>имя класса — строка, вычисляемая во время выполнения</td>
-<td>metadata / <code>RuntimeHints</code></td>
+<td data-label="Механизм">Рефлексия (<code>Class.forName</code>, <code>getDeclaredMethod</code>)</td>
+<td data-label="Почему ломается">имя класса — строка, вычисляемая во время выполнения</td>
+<td data-label="Как чинить">metadata / <code>RuntimeHints</code></td>
 </tr>
 <tr>
-<td>Динамические прокси (<code>Proxy.newProxyInstance</code>)</td>
-<td>классы генерируются во время выполнения</td>
-<td>объявить набор интерфейсов</td>
+<td data-label="Механизм">Динамические прокси (<code>Proxy.newProxyInstance</code>)</td>
+<td data-label="Почему ломается">классы генерируются во время выполнения</td>
+<td data-label="Как чинить">объявить набор интерфейсов</td>
 </tr>
 <tr>
-<td>Ресурсы (<code>getResourceAsStream</code>)</td>
-<td>не видны анализу</td>
-<td><code>resources</code> в metadata</td>
+<td data-label="Механизм">Ресурсы (<code>getResourceAsStream</code>)</td>
+<td data-label="Почему ломается">не видны анализу</td>
+<td data-label="Как чинить"><code>resources</code> в metadata</td>
 </tr>
 <tr>
-<td>Сериализация (Java, Jackson)</td>
-<td>рефлексия по полям</td>
-<td>hints на конструкторы и поля</td>
+<td data-label="Механизм">Сериализация (Java, Jackson)</td>
+<td data-label="Почему ломается">рефлексия по полям</td>
+<td data-label="Как чинить">hints на конструкторы и поля</td>
 </tr>
 <tr>
-<td>JNI</td>
-<td>вызовы из нативного кода</td>
-<td><code>jni</code> в metadata</td>
+<td data-label="Механизм">JNI</td>
+<td data-label="Почему ломается">вызовы из нативного кода</td>
+<td data-label="Как чинить"><code>jni</code> в metadata</td>
 </tr>
 <tr>
-<td>Динамическая генерация классов (CGLIB, ASM во время выполнения)</td>
-<td>классов ещё нет</td>
-<td><strong>не чинится</strong>, нужен build-time-эквивалент</td>
+<td data-label="Механизм">Динамическая генерация классов (CGLIB, ASM во время выполнения)</td>
+<td data-label="Почему ломается">классов ещё нет</td>
+<td data-label="Как чинить"><strong>не чинится</strong>, нужен build-time-эквивалент</td>
 </tr>
 <tr>
-<td><code>MethodHandles.Lookup.defineClass</code></td>
-<td>то же</td>
-<td>не чинится</td>
+<td data-label="Механизм"><code>MethodHandles.Lookup.defineClass</code></td>
+<td data-label="Почему ломается">то же</td>
+<td data-label="Как чинить">не чинится</td>
 </tr>
 <tr>
-<td>Загрузка внешних jar во время выполнения (плагины)</td>
-<td>closed world</td>
-<td>не чинится</td>
+<td data-label="Механизм">Загрузка внешних jar во время выполнения (плагины)</td>
+<td data-label="Почему ломается">closed world</td>
+<td data-label="Как чинить">не чинится</td>
 </tr>
 </tbody>
 </table>
@@ -1311,7 +1311,7 @@ native-image --pgo<span class="o">=</span>default.iprof -jar app.jar -o app
 
 <p>⚠️ PGO и G1 в Native Image доступны только в <strong>Oracle GraalVM</strong> (но не в GraalVM Community / Mandrel), а лицензионные условия Oracle GraalVM менялись несколько раз, поэтому перед использованием в коммерческом продукте проверяйте текущие. По первичному источнику в рамках бюджета этой главы эти условия не сверялись.</p>
 <p>В таблице ниже HotSpot и native image сравниваются по десяти метрикам; жирным выделено то, в чём каждая сторона заметно выигрывает или проигрывает.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метрика</th>
@@ -1321,54 +1321,54 @@ native-image --pgo<span class="o">=</span>default.iprof -jar app.jar -o app
 </thead>
 <tbody>
 <tr>
-<td>Время старта до готовности</td>
-<td>2–8 с (0,5–3 с с AOT-кешем)</td>
-<td><strong>20–80 мс</strong></td>
+<td data-label="Метрика">Время старта до готовности</td>
+<td data-label="HotSpot JVM (JDK 21/25)">2–8 с (0,5–3 с с AOT-кешем)</td>
+<td data-label="Native Image"><strong>20–80 мс</strong></td>
 </tr>
 <tr>
-<td>RSS в покое</td>
-<td>250–500 МБ</td>
-<td><strong>40–120 МБ</strong></td>
+<td data-label="Метрика">RSS в покое</td>
+<td data-label="HotSpot JVM (JDK 21/25)">250–500 МБ</td>
+<td data-label="Native Image"><strong>40–120 МБ</strong></td>
 </tr>
 <tr>
-<td>Пиковая пропускная способность</td>
-<td><strong>база (100 %)</strong></td>
-<td>70–95 % без PGO, 85–100 % с PGO</td>
+<td data-label="Метрика">Пиковая пропускная способность</td>
+<td data-label="HotSpot JVM (JDK 21/25)"><strong>база (100 %)</strong></td>
+<td data-label="Native Image">70–95 % без PGO, 85–100 % с PGO</td>
 </tr>
 <tr>
-<td>Время до пика</td>
-<td>десятки секунд — минуты прогрева</td>
-<td><strong>сразу</strong></td>
+<td data-label="Метрика">Время до пика</td>
+<td data-label="HotSpot JVM (JDK 21/25)">десятки секунд — минуты прогрева</td>
+<td data-label="Native Image"><strong>сразу</strong></td>
 </tr>
 <tr>
-<td>Время сборки</td>
-<td>1–3 мин</td>
-<td><strong>5–30 мин</strong></td>
+<td data-label="Метрика">Время сборки</td>
+<td data-label="HotSpot JVM (JDK 21/25)">1–3 мин</td>
+<td data-label="Native Image"><strong>5–30 мин</strong></td>
 </tr>
 <tr>
-<td>Память сборщика</td>
-<td>2 ГБ</td>
-<td><strong>8–16 ГБ и больше</strong></td>
+<td data-label="Метрика">Память сборщика</td>
+<td data-label="HotSpot JVM (JDK 21/25)">2 ГБ</td>
+<td data-label="Native Image"><strong>8–16 ГБ и больше</strong></td>
 </tr>
 <tr>
-<td>Профилирование</td>
-<td>JFR, async-profiler, любые агенты</td>
-<td>ограниченный JFR, <code>perf</code>; нет <code>jcmd</code>, нет heap dump в привычном виде</td>
+<td data-label="Метрика">Профилирование</td>
+<td data-label="HotSpot JVM (JDK 21/25)">JFR, async-profiler, любые агенты</td>
+<td data-label="Native Image">ограниченный JFR, <code>perf</code>; нет <code>jcmd</code>, нет heap dump в привычном виде</td>
 </tr>
 <tr>
-<td>Отладка</td>
-<td>штатная</td>
-<td>gdb, сложнее; нет hot-swap</td>
+<td data-label="Метрика">Отладка</td>
+<td data-label="HotSpot JVM (JDK 21/25)">штатная</td>
+<td data-label="Native Image">gdb, сложнее; нет hot-swap</td>
 </tr>
 <tr>
-<td>Совместимость библиотек</td>
-<td>полная</td>
-<td>нужны метаданные, часть не работает</td>
+<td data-label="Метрика">Совместимость библиотек</td>
+<td data-label="HotSpot JVM (JDK 21/25)">полная</td>
+<td data-label="Native Image">нужны метаданные, часть не работает</td>
 </tr>
 <tr>
-<td>Динамика (плагины, скрипты, агенты)</td>
-<td>да</td>
-<td><strong>нет</strong></td>
+<td data-label="Метрика">Динамика (плагины, скрипты, агенты)</td>
+<td data-label="HotSpot JVM (JDK 21/25)">да</td>
+<td data-label="Native Image"><strong>нет</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1409,7 +1409,7 @@ native-image --pgo<span class="o">=</span>default.iprof -jar app.jar -o app
 <p>В эпоху Java 8 это лечили флагами <code>-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code> (8u131+) или просто жёстким <code>-Xmx</code>. В JDK 10 появился <code>-XX:+UseContainerSupport</code> (<a href="https://bugs.openjdk.org/browse/JDK-8146115">JDK-8146115</a>), который потом бэкпортировали в 8u191, и с тех пор он включён по умолчанию.</p>
 <h3 id="72-параметры-cgroups-которые-читает-jvm">7.2 Параметры cgroups, которые читает JVM</h3>
 <p>С <code>UseContainerSupport=true</code>, а это значение по умолчанию, JVM при старте определяет версию cgroup-иерархии и читает из неё несколько файлов. В таблице ниже для каждого параметра указано, где он лежит в v1 и в v2, а в последней колонке — во что JVM его превращает; главные строки здесь первая и четвёртая, потому что из них получаются размер кучи и <code>availableProcessors()</code>.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -1420,40 +1420,40 @@ native-image --pgo<span class="o">=</span>default.iprof -jar app.jar -o app
 </thead>
 <tbody>
 <tr>
-<td>Лимит памяти</td>
-<td><code>memory.limit_in_bytes</code></td>
-<td><code>memory.max</code></td>
-<td>база для <code>*RAMPercentage</code></td>
+<td data-label="Что">Лимит памяти</td>
+<td data-label="cgroups v1"><code>memory.limit_in_bytes</code></td>
+<td data-label="cgroups v2"><code>memory.max</code></td>
+<td data-label="Во что превращается">база для <code>*RAMPercentage</code></td>
 </tr>
 <tr>
-<td>Soft-лимит</td>
-<td><code>memory.soft_limit_in_bytes</code></td>
-<td><code>memory.high</code></td>
-<td>учитывается в некоторых версиях</td>
+<td data-label="Что">Soft-лимит</td>
+<td data-label="cgroups v1"><code>memory.soft_limit_in_bytes</code></td>
+<td data-label="cgroups v2"><code>memory.high</code></td>
+<td data-label="Во что превращается">учитывается в некоторых версиях</td>
 </tr>
 <tr>
-<td>Swap</td>
-<td><code>memory.memsw.limit_in_bytes</code></td>
-<td><code>memory.swap.max</code></td>
-<td>обычно 0 в k8s</td>
+<td data-label="Что">Swap</td>
+<td data-label="cgroups v1"><code>memory.memsw.limit_in_bytes</code></td>
+<td data-label="cgroups v2"><code>memory.swap.max</code></td>
+<td data-label="Во что превращается">обычно 0 в k8s</td>
 </tr>
 <tr>
-<td>Квота CPU</td>
-<td><code>cpu.cfs_quota_us</code> / <code>cpu.cfs_period_us</code></td>
-<td><code>cpu.max</code></td>
-<td><code>availableProcessors()</code></td>
+<td data-label="Что">Квота CPU</td>
+<td data-label="cgroups v1"><code>cpu.cfs_quota_us</code> / <code>cpu.cfs_period_us</code></td>
+<td data-label="cgroups v2"><code>cpu.max</code></td>
+<td data-label="Во что превращается"><code>availableProcessors()</code></td>
 </tr>
 <tr>
-<td>Shares</td>
-<td><code>cpu.shares</code></td>
-<td><code>cpu.weight</code></td>
-<td>учитывались раньше, сейчас игнорируются при расчёте (см. ниже)</td>
+<td data-label="Что">Shares</td>
+<td data-label="cgroups v1"><code>cpu.shares</code></td>
+<td data-label="cgroups v2"><code>cpu.weight</code></td>
+<td data-label="Во что превращается">учитывались раньше, сейчас игнорируются при расчёте (см. ниже)</td>
 </tr>
 <tr>
-<td>cpuset</td>
-<td><code>cpuset.cpus</code></td>
-<td><code>cpuset.cpus.effective</code></td>
-<td>верхняя граница для <code>availableProcessors()</code></td>
+<td data-label="Что">cpuset</td>
+<td data-label="cgroups v1"><code>cpuset.cpus</code></td>
+<td data-label="cgroups v2"><code>cpuset.cpus.effective</code></td>
+<td data-label="Во что превращается">верхняя граница для <code>availableProcessors()</code></td>
 </tr>
 </tbody>
 </table>
@@ -1574,7 +1574,7 @@ jcmd <span class="m">1</span> VM.native_memory summary <span class="nv">scale</s
 <h3 id="76-cpu-квота-ограничение-скорости-и-размер-пулов">7.6 CPU: квота, ограничение скорости и размер пулов</h3>
 <p><code>availableProcessors()</code> — это число, от которого пляшут почти все пулы потоков в экосистеме, и поэтому CPU-лимит пода влияет на поведение JVM гораздо сильнее, чем кажется. Разберём, как размеры пулов зависят от этого числа, какие две противоположные беды возникают из-за CPU-лимита и как измерить ограничение скорости вместо того, чтобы о нём гадать.</p>
 <p>В таблице ниже собраны размеры по умолчанию для основных пулов; обратите внимание, что два последних в списке от числа CPU не зависят вовсе.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Пул</th>
@@ -1583,40 +1583,40 @@ jcmd <span class="m">1</span> VM.native_memory summary <span class="nv">scale</s
 </thead>
 <tbody>
 <tr>
-<td>ForkJoinPool.commonPool</td>
-<td><code>availableProcessors() - 1</code>, но не меньше 1</td>
+<td data-label="Пул">ForkJoinPool.commonPool</td>
+<td data-label="Размер по умолчанию"><code>availableProcessors() - 1</code>, но не меньше 1</td>
 </tr>
 <tr>
-<td>Планировщик виртуальных потоков</td>
-<td>parallelism = <code>availableProcessors()</code>, maxPoolSize = 256 (<a href="https://openjdk.org/jeps/444">JEP 444</a>)</td>
+<td data-label="Пул">Планировщик виртуальных потоков</td>
+<td data-label="Размер по умолчанию">parallelism = <code>availableProcessors()</code>, maxPoolSize = 256 (<a href="https://openjdk.org/jeps/444">JEP 444</a>)</td>
 </tr>
 <tr>
-<td>GC-потоки G1 (<code>ParallelGCThreads</code>)</td>
-<td>N при N ≤ 8 CPU, далее <code>8 + (N-8)*5/8</code></td>
+<td data-label="Пул">GC-потоки G1 (<code>ParallelGCThreads</code>)</td>
+<td data-label="Размер по умолчанию">N при N ≤ 8 CPU, далее <code>8 + (N-8)*5/8</code></td>
 </tr>
 <tr>
-<td><code>ConcGCThreads</code></td>
-<td>≈ <code>ParallelGCThreads / 4</code></td>
+<td data-label="Пул"><code>ConcGCThreads</code></td>
+<td data-label="Размер по умолчанию">≈ <code>ParallelGCThreads / 4</code></td>
 </tr>
 <tr>
-<td>Компиляторные потоки (<code>CICompilerCount</code>)</td>
-<td>2 при 1 CPU, далее растёт</td>
+<td data-label="Пул">Компиляторные потоки (<code>CICompilerCount</code>)</td>
+<td data-label="Размер по умолчанию">2 при 1 CPU, далее растёт</td>
 </tr>
 <tr>
-<td>Netty <code>EventLoopGroup</code></td>
-<td><code>availableProcessors() * 2</code></td>
+<td data-label="Пул">Netty <code>EventLoopGroup</code></td>
+<td data-label="Размер по умолчанию"><code>availableProcessors() * 2</code></td>
 </tr>
 <tr>
-<td>Tomcat <code>maxThreads</code></td>
-<td>200 (не зависит от CPU)</td>
+<td data-label="Пул">Tomcat <code>maxThreads</code></td>
+<td data-label="Размер по умолчанию">200 (не зависит от CPU)</td>
 </tr>
 <tr>
-<td>HikariCP</td>
-<td>10 (не зависит)</td>
+<td data-label="Пул">HikariCP</td>
+<td data-label="Размер по умолчанию">10 (не зависит)</td>
 </tr>
 <tr>
-<td><code>Executors.newWorkStealingPool()</code></td>
-<td><code>availableProcessors()</code></td>
+<td data-label="Пул"><code>Executors.newWorkStealingPool()</code></td>
+<td data-label="Размер по умолчанию"><code>availableProcessors()</code></td>
 </tr>
 </tbody>
 </table>
@@ -1641,7 +1641,7 @@ jcmd <span class="m">1</span> VM.native_memory summary <span class="nv">scale</s
 
 <h3 id="77-выбор-gc-в-контейнере">7.7 Выбор GC в контейнере</h3>
 <p>Полный разбор алгоритмов сборки мусора дан в главе 07 (<code>07-memory-and-gc.md</code>), а здесь нас интересует только то, что специфично для контейнера: в тесных лимитах выбор GC определяется не столько требованиями к паузам, сколько числом ядер и объёмом памяти, которые видит JVM. В таблице ниже сведены типовые условия и подходящий для них сборщик; смотреть стоит на первую строку, потому что именно в неё незаметно попадают поды с маленьким CPU-лимитом.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Условия</th>
@@ -1651,24 +1651,24 @@ jcmd <span class="m">1</span> VM.native_memory summary <span class="nv">scale</s
 </thead>
 <tbody>
 <tr>
-<td>&lt; 2 CPU <strong>или</strong> &lt; ~1792 МБ памяти</td>
-<td><strong>SerialGC</strong> (выбирается эргономикой автоматически)</td>
-<td>на одном ядре параллельный GC только мешает; накладные структуры меньше</td>
+<td data-label="Условия">&lt; 2 CPU <strong>или</strong> &lt; ~1792 МБ памяти</td>
+<td data-label="GC"><strong>SerialGC</strong> (выбирается эргономикой автоматически)</td>
+<td data-label="Почему">на одном ядре параллельный GC только мешает; накладные структуры меньше</td>
 </tr>
 <tr>
-<td>2+ CPU, 2–32 ГБ heap, обычный сервис</td>
-<td><strong>G1</strong> (по умолчанию)</td>
-<td>сбалансирован, паузы 10–100 мс, предсказуемый footprint</td>
+<td data-label="Условия">2+ CPU, 2–32 ГБ heap, обычный сервис</td>
+<td data-label="GC"><strong>G1</strong> (по умолчанию)</td>
+<td data-label="Почему">сбалансирован, паузы 10–100 мс, предсказуемый footprint</td>
 </tr>
 <tr>
-<td>Жёсткое требование p99, heap 8+ ГБ, есть CPU в запасе</td>
-<td><strong>ZGC</strong> (<code>-XX:+UseZGC</code>; в JDK 21 generational-режим (<a href="https://openjdk.org/jeps/439">JEP 439</a>) по умолчанию выключен и включается через <code>-XX:+ZGenerational</code>, в JDK 23 он стал режимом по умолчанию (<a href="https://openjdk.org/jeps/474">JEP 474</a>), а в JDK 24 non-generational режим удалён (<a href="https://openjdk.org/jeps/490">JEP 490</a>))</td>
-<td>паузы &lt; 1 мс, но <strong>выше footprint и потребление CPU</strong>; в тесном контейнере проигрывает</td>
+<td data-label="Условия">Жёсткое требование p99, heap 8+ ГБ, есть CPU в запасе</td>
+<td data-label="GC"><strong>ZGC</strong> (<code>-XX:+UseZGC</code>; в JDK 21 generational-режим (<a href="https://openjdk.org/jeps/439">JEP 439</a>) по умолчанию выключен и включается через <code>-XX:+ZGenerational</code>, в JDK 23 он стал режимом по умолчанию (<a href="https://openjdk.org/jeps/474">JEP 474</a>), а в JDK 24 non-generational режим удалён (<a href="https://openjdk.org/jeps/490">JEP 490</a>))</td>
+<td data-label="Почему">паузы &lt; 1 мс, но <strong>выше footprint и потребление CPU</strong>; в тесном контейнере проигрывает</td>
 </tr>
 <tr>
-<td>Короткоживущие задачи, CLI, задания</td>
-<td><strong>SerialGC</strong> явно + <code>-XX:TieredStopAtLevel=1</code></td>
-<td>минимум прогрева, минимум накладных</td>
+<td data-label="Условия">Короткоживущие задачи, CLI, задания</td>
+<td data-label="GC"><strong>SerialGC</strong> явно + <code>-XX:TieredStopAtLevel=1</code></td>
+<td data-label="Почему">минимум прогрева, минимум накладных</td>
 </tr>
 </tbody>
 </table>
@@ -1685,7 +1685,7 @@ jcmd <span class="m">1</span> VM.native_memory summary <span class="nv">scale</s
 <h3 id="79-эволюция-контейнерной-поддержки-jvm-по-версиям">7.9 Эволюция контейнерной поддержки JVM по версиям</h3>
 <p>Всё, что разобрано в этом разделе, описывает поведение современной JVM, но в банке рядом с сервисом на Java 21 почти наверняка работают сервис на Java 11 и старый сервис на Java 8, и на вопрос «а как это ведёт себя у нас» получаются три разных ответа. Контейнерная поддержка добавлялась в HotSpot кусками на протяжении десяти лет, причём часть изменений приезжала в старые ветки бэкпортами, а значит, зависит не от мажорной версии, а от конкретного апдейта. Ниже сведено, что и когда появилось, а потом разобрано главное практическое следствие — что ломается при обновлении JDK в контейнере, где раньше стоял явный <code>-Xmx</code>.</p>
 <p>Таблица читается так: в левой колонке версия, в которой изменение стало доступно, в правой — что именно изменилось в наблюдаемом поведении. Смотреть в ней надо прежде всего на строки про cgroups v2 и про <code>cpu.shares</code>, потому что именно они объясняют большинство расхождений между кластерами.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Версия</th>
@@ -1694,52 +1694,52 @@ jcmd <span class="m">1</span> VM.native_memory summary <span class="nv">scale</s
 </thead>
 <tbody>
 <tr>
-<td>до 8u131</td>
-<td>контейнерных лимитов JVM не видит вообще: куча считается от памяти узла, <code>availableProcessors()</code> — от числа ядер узла</td>
+<td data-label="Версия">до 8u131</td>
+<td data-label="Что появилось или изменилось">контейнерных лимитов JVM не видит вообще: куча считается от памяти узла, <code>availableProcessors()</code> — от числа ядер узла</td>
 </tr>
 <tr>
-<td>8u131</td>
-<td>экспериментальный <code>-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code> — только память, только вручную, только cgroups v1</td>
+<td data-label="Версия">8u131</td>
+<td data-label="Что появилось или изменилось">экспериментальный <code>-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code> — только память, только вручную, только cgroups v1</td>
 </tr>
 <tr>
-<td>10</td>
-<td><code>-XX:+UseContainerSupport</code> включён по умолчанию (<a href="https://bugs.openjdk.org/browse/JDK-8146115">JDK-8146115</a>): читаются лимит памяти и квота CPU из cgroups v1; появляются <code>MaxRAMPercentage</code>, <code>InitialRAMPercentage</code>, <code>ActiveProcessorCount</code></td>
+<td data-label="Версия">10</td>
+<td data-label="Что появилось или изменилось"><code>-XX:+UseContainerSupport</code> включён по умолчанию (<a href="https://bugs.openjdk.org/browse/JDK-8146115">JDK-8146115</a>): читаются лимит памяти и квота CPU из cgroups v1; появляются <code>MaxRAMPercentage</code>, <code>InitialRAMPercentage</code>, <code>ActiveProcessorCount</code></td>
 </tr>
 <tr>
-<td>8u191</td>
-<td>тот же <code>UseContainerSupport</code> бэкпортирован в восьмёрку и включён по умолчанию — граница, по которой стоит проверять старые сервисы</td>
+<td data-label="Версия">8u191</td>
+<td data-label="Что появилось или изменилось">тот же <code>UseContainerSupport</code> бэкпортирован в восьмёрку и включён по умолчанию — граница, по которой стоит проверять старые сервисы</td>
 </tr>
 <tr>
-<td>11</td>
-<td>поведение как в 10; cgroups v2 ещё не поддерживается</td>
+<td data-label="Версия">11</td>
+<td data-label="Что появилось или изменилось">поведение как в 10; cgroups v2 ещё не поддерживается</td>
 </tr>
 <tr>
-<td>15</td>
-<td>поддержка cgroups v2 (<a href="https://bugs.openjdk.org/browse/JDK-8230305">JDK-8230305</a>, Fix Version 15 в трекере)</td>
+<td data-label="Версия">15</td>
+<td data-label="Что появилось или изменилось">поддержка cgroups v2 (<a href="https://bugs.openjdk.org/browse/JDK-8230305">JDK-8230305</a>, Fix Version 15 в трекере)</td>
 </tr>
 <tr>
-<td>11.0.16, 8u372</td>
-<td>бэкпорт поддержки cgroups v2; <strong>ниже этих апдейтов на узле с чистой v2 детекции нет вовсе, берутся значения хоста</strong></td>
+<td data-label="Версия">11.0.16, 8u372</td>
+<td data-label="Что появилось или изменилось">бэкпорт поддержки cgroups v2; <strong>ниже этих апдейтов на узле с чистой v2 детекции нет вовсе, берутся значения хоста</strong></td>
 </tr>
 <tr>
-<td>17.0.5, 11.0.17, 18.0.2</td>
-<td><code>cpu.shares</code> больше не учитывается при расчёте <code>availableProcessors()</code> (<a href="https://bugs.openjdk.org/browse/JDK-8281181">JDK-8281181</a>); вернуть старое поведение можно <code>-XX:+UseContainerCpuShares</code></td>
+<td data-label="Версия">17.0.5, 11.0.17, 18.0.2</td>
+<td data-label="Что появилось или изменилось"><code>cpu.shares</code> больше не учитывается при расчёте <code>availableProcessors()</code> (<a href="https://bugs.openjdk.org/browse/JDK-8281181">JDK-8281181</a>); вернуть старое поведение можно <code>-XX:+UseContainerCpuShares</code></td>
 </tr>
 <tr>
-<td>19</td>
-<td>то же изменение в основной ветке; <code>UseContainerCpuShares</code> и <code>PreferContainerQuotaForCPUCount</code> объявлены deprecated</td>
+<td data-label="Версия">19</td>
+<td data-label="Что появилось или изменилось">то же изменение в основной ветке; <code>UseContainerCpuShares</code> и <code>PreferContainerQuotaForCPUCount</code> объявлены deprecated</td>
 </tr>
 <tr>
-<td>21</td>
-<td>флаги <code>UseContainerCpuShares</code> и <code>PreferContainerQuotaForCPUCount</code> истекают (в JDK 20 они уже obsolete и ни на что не влияют, <a href="https://bugs.openjdk.org/browse/JDK-8282684">JDK-8282684</a>); остаётся только расчёт по квоте и cpuset</td>
+<td data-label="Версия">21</td>
+<td data-label="Что появилось или изменилось">флаги <code>UseContainerCpuShares</code> и <code>PreferContainerQuotaForCPUCount</code> истекают (в JDK 20 они уже obsolete и ни на что не влияют, <a href="https://bugs.openjdk.org/browse/JDK-8282684">JDK-8282684</a>); остаётся только расчёт по квоте и cpuset</td>
 </tr>
 <tr>
-<td>24</td>
-<td>AOT-кеш JEP 483 — не контейнерная функция, но именно в контейнере она и применяется (раздел 5.4)</td>
+<td data-label="Версия">24</td>
+<td data-label="Что появилось или изменилось">AOT-кеш JEP 483 — не контейнерная функция, но именно в контейнере она и применяется (раздел 5.4)</td>
 </tr>
 <tr>
-<td>25</td>
-<td>одношаговое создание AOT-кеша <code>-XX:AOTCacheOutput</code>; man-страница подтверждает, что <code>UseContainerSupport</code> включён по умолчанию</td>
+<td data-label="Версия">25</td>
+<td data-label="Что появилось или изменилось">одношаговое создание AOT-кеша <code>-XX:AOTCacheOutput</code>; man-страница подтверждает, что <code>UseContainerSupport</code> включён по умолчанию</td>
 </tr>
 </tbody>
 </table>
@@ -1843,7 +1843,7 @@ docker run -d --name t app:1.4.2
 <p>Это стандартный приём из UBI-образов Red Hat.</p>
 <h3 id="85-корневая-фс-только-для-чтения">8.5 Корневая ФС только для чтения</h3>
 <p><code>readOnlyRootFilesystem: true</code> в <code>securityContext</code> — сильная мера защиты: атакующий не сможет ни дописать бинарник, ни подменить конфиг, ни сохранить payload. Проблема в том, что JVM и Tomcat пишут на диск в нескольких местах, и каждому из них нужно выделить записываемый том. В таблице ниже перечислены эти места, кто в них пишет и чем их заменить:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Путь</th>
@@ -1853,29 +1853,29 @@ docker run -d --name t app:1.4.2
 </thead>
 <tbody>
 <tr>
-<td><code>/tmp</code></td>
-<td>JVM (perf data, <code>hsperfdata_*</code>), Tomcat (temp, upload), Netty</td>
-<td><code>emptyDir</code> или <code>tmpfs</code></td>
+<td data-label="Путь"><code>/tmp</code></td>
+<td data-label="Кто пишет">JVM (perf data, <code>hsperfdata_*</code>), Tomcat (temp, upload), Netty</td>
+<td data-label="Решение"><code>emptyDir</code> или <code>tmpfs</code></td>
 </tr>
 <tr>
-<td><code>/app/logs</code></td>
-<td>Logback с file appender</td>
-<td>не писать в файл, писать в stdout</td>
+<td data-label="Путь"><code>/app/logs</code></td>
+<td data-label="Кто пишет">Logback с file appender</td>
+<td data-label="Решение">не писать в файл, писать в stdout</td>
 </tr>
 <tr>
-<td>heap dump path</td>
-<td><code>-XX:HeapDumpPath</code></td>
-<td><code>emptyDir</code> с достаточным размером</td>
+<td data-label="Путь">heap dump path</td>
+<td data-label="Кто пишет"><code>-XX:HeapDumpPath</code></td>
+<td data-label="Решение"><code>emptyDir</code> с достаточным размером</td>
 </tr>
 <tr>
-<td>JFR-файлы</td>
-<td><code>-XX:StartFlightRecording=filename=</code></td>
-<td><code>emptyDir</code></td>
+<td data-label="Путь">JFR-файлы</td>
+<td data-label="Кто пишет"><code>-XX:StartFlightRecording=filename=</code></td>
+<td data-label="Решение"><code>emptyDir</code></td>
 </tr>
 <tr>
-<td>CRaC-снимки</td>
-<td><code>-XX:CRaCCheckpointTo</code></td>
-<td>volume</td>
+<td data-label="Путь">CRaC-снимки</td>
+<td data-label="Кто пишет"><code>-XX:CRaCCheckpointTo</code></td>
+<td data-label="Решение">volume</td>
 </tr>
 </tbody>
 </table>
@@ -1927,7 +1927,7 @@ trivy fs --scanners vuln --severity HIGH,CRITICAL .    <span class="c1"># ска
 </code></pre></div>
 
 <p>В таблице ниже собраны типовые находки и то, что за ними стоит на самом деле; левая колонка — что показал сканер, правая — насколько это важно и что с этим делать.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Находка</th>
@@ -1936,28 +1936,28 @@ trivy fs --scanners vuln --severity HIGH,CRITICAL .    <span class="c1"># ска
 </thead>
 <tbody>
 <tr>
-<td>CRITICAL в вашей зависимости (Jackson, Log4j, Netty, snakeyaml)</td>
-<td><strong>чинить в первую очередь</strong>: код достижим</td>
+<td data-label="Находка">CRITICAL в вашей зависимости (Jackson, Log4j, Netty, snakeyaml)</td>
+<td data-label="Реальность"><strong>чинить в первую очередь</strong>: код достижим</td>
 </tr>
 <tr>
-<td>CRITICAL в базовом образе, пакет присутствует, но не используется JVM (<code>libgnutls</code> при отсутствии сетевых вызовов через него)</td>
-<td>чинить обновлением базы, но приоритет ниже</td>
+<td data-label="Находка">CRITICAL в базовом образе, пакет присутствует, но не используется JVM (<code>libgnutls</code> при отсутствии сетевых вызовов через него)</td>
+<td data-label="Реальность">чинить обновлением базы, но приоритет ниже</td>
 </tr>
 <tr>
-<td>HIGH без доступного фикса (<code>--ignore-unfixed</code> их скроет)</td>
-<td>ждать исправления от авторов образа, документировать исключение</td>
+<td data-label="Находка">HIGH без доступного фикса (<code>--ignore-unfixed</code> их скроет)</td>
+<td data-label="Реальность">ждать исправления от авторов образа, документировать исключение</td>
 </tr>
 <tr>
-<td>CVE в <code>apt</code>, <code>dpkg</code>, <code>perl-base</code> в <code>-jdk</code>-образе</td>
-<td>исчезнет само при переходе на distroless</td>
+<td data-label="Находка">CVE в <code>apt</code>, <code>dpkg</code>, <code>perl-base</code> в <code>-jdk</code>-образе</td>
+<td data-label="Реальность">исчезнет само при переходе на distroless</td>
 </tr>
 <tr>
-<td>CVE с вектором «local privilege escalation»</td>
-<td>в контейнере с <code>drop: ALL</code> и non-root обычно неэксплуатируема; но объяснять это придётся</td>
+<td data-label="Находка">CVE с вектором «local privilege escalation»</td>
+<td data-label="Реальность">в контейнере с <code>drop: ALL</code> и non-root обычно неэксплуатируема; но объяснять это придётся</td>
 </tr>
 <tr>
-<td>Секрет, найденный сканером (<code>--scanners secret</code>)</td>
-<td><strong>всегда инцидент</strong>, независимо от «это тестовый»</td>
+<td data-label="Находка">Секрет, найденный сканером (<code>--scanners secret</code>)</td>
+<td data-label="Реальность"><strong>всегда инцидент</strong>, независимо от «это тестовый»</td>
 </tr>
 </tbody>
 </table>
@@ -2534,7 +2534,7 @@ kubectl <span class="nb">exec</span> pod -- cat /proc/1/smaps_rollup
 <li><strong>Только после этого</strong> снимайте heap dump и анализируйте его в Eclipse MAT (глава 07).</li>
 </ol>
 <p>В таблице ниже собраны exit-коды контейнера, которые встречаются чаще всего, и их значение; особенно внимательно стоит смотреть на код 137, потому что у него две разные причины.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th class="num">Код</th>
@@ -2543,32 +2543,32 @@ kubectl <span class="nb">exec</span> pod -- cat /proc/1/smaps_rollup
 </thead>
 <tbody>
 <tr>
-<td class="num">0</td>
-<td>нормальное завершение</td>
+<td data-label="Код" class="num">0</td>
+<td data-label="Что значит">нормальное завершение</td>
 </tr>
 <tr>
-<td class="num">1</td>
-<td><code>System.exit(1)</code>, ошибка приложения</td>
+<td data-label="Код" class="num">1</td>
+<td data-label="Что значит"><code>System.exit(1)</code>, ошибка приложения</td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td><code>-XX:+ExitOnOutOfMemoryError</code> (типично)</td>
+<td data-label="Код" class="num">3</td>
+<td data-label="Что значит"><code>-XX:+ExitOnOutOfMemoryError</code> (типично)</td>
 </tr>
 <tr>
-<td class="num">125/126/127</td>
-<td>ошибка среды выполнения/прав/«команда не найдена» — обычно битый <code>ENTRYPOINT</code></td>
+<td data-label="Код" class="num">125/126/127</td>
+<td data-label="Что значит">ошибка среды выполнения/прав/«команда не найдена» — обычно битый <code>ENTRYPOINT</code></td>
 </tr>
 <tr>
-<td class="num">137</td>
-<td>SIGKILL: OOMKilled <strong>или</strong> истёк grace period при неотвеченном SIGTERM</td>
+<td data-label="Код" class="num">137</td>
+<td data-label="Что значит">SIGKILL: OOMKilled <strong>или</strong> истёк grace period при неотвеченном SIGTERM</td>
 </tr>
 <tr>
-<td class="num">139</td>
-<td>SIGSEGV — падение в нативном коде (проверьте <code>hs_err_pid*.log</code>)</td>
+<td data-label="Код" class="num">139</td>
+<td data-label="Что значит">SIGSEGV — падение в нативном коде (проверьте <code>hs_err_pid*.log</code>)</td>
 </tr>
 <tr>
-<td class="num">143</td>
-<td>SIGTERM — штатная остановка (это норма при деплое)</td>
+<td data-label="Код" class="num">143</td>
+<td data-label="Что значит">SIGTERM — штатная остановка (это норма при деплое)</td>
 </tr>
 </tbody>
 </table>
@@ -2890,5 +2890,5 @@ ls -lh /proc/1/root/tmp/heap.hprof
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-устройство-контейнера">1. Устройство контейнера</a></li><li><a href="#2-образ-и-слои">2. Образ и слои</a></li><li><a href="#3-базовые-образы-для-jvm">3. Базовые образы для JVM</a></li><li><a href="#4-layered-jar-и-альтернативы-толстому-jar">4. Layered jar и альтернативы «толстому jar»</a></li><li><a href="#5-ускорение-старта-cds-aot-кеш-crac">5. Ускорение старта: CDS, AOT-кеш, CRaC</a></li><li><a href="#6-graalvm-native-image">6. GraalVM Native Image</a></li><li><a href="#7-jvm-в-контейнере">7. JVM в контейнере</a></li><li><a href="#8-процессы-сигналы-и-остановка">8. Процессы, сигналы и остановка</a></li><li><a href="#9-безопасность-образа-и-цепочка-поставки">9. Безопасность образа и цепочка поставки</a></li><li><a href="#10-локальная-разработка-и-отладка">10. Локальная разработка и отладка</a></li><li><a href="#11-грабли-и-антипаттерны">11. Грабли и антипаттерны</a></li><li><a href="#12-диагностика">12. Диагностика</a></li><li><a href="#13-разобранные-инциденты">13. Разобранные инциденты</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

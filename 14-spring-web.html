@@ -3,7 +3,7 @@
 <title>14. Spring Web: MVC и WebFlux — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Spring Web: MVC и WebFlux">
 <a class="skip" href="#content">К тексту</a>
@@ -23,7 +23,7 @@
 <p>Под общим именем Spring Web живут два веб-фреймворка с разными моделями исполнения: Servlet-стек Spring MVC, где запрос от начала до конца обслуживает один поток, и реактивный Spring WebFlux, где немногочисленные потоки event loop обслуживают все запросы сразу. Выбор между ними определяет почти всё остальное — какие драйверы баз данных годятся, как хранится контекст запроса, что происходит при блокирующем вызове, — поэтому ошибиться здесь дорого, а переиграть решение потом трудно. В этом разделе сначала разобрано, чем стеки на самом деле различаются и что у них общего, а затем зафиксировано состояние версий на сентябрь 2026 года, потому что от версии здесь зависят и ответы на интервью.</p>
 <h3 id="11-сервлетный-и-реактивный-стеки">1.1 Сервлетный и реактивный стеки</h3>
 <p>Spring Web — это не одна технология, а два независимых веб-фреймворка, которые живут в одном репозитории и делят между собой часть инфраструктуры. Различаются они уже на уровне серверного контракта и модели потоков, и из этого вытекают все остальные различия; в таблице ниже их стоит читать сверху вниз, от контракта к последствиям для блокировки и доступа к данным:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -33,39 +33,39 @@
 </thead>
 <tbody>
 <tr>
-<td>Контракт сервера</td>
-<td>Servlet API (Jakarta Servlet 6.1 в Framework 7)</td>
-<td><code>HttpHandler</code> поверх Reactor Netty / Servlet non-blocking I/O</td>
+<td data-label="">Контракт сервера</td>
+<td data-label="Spring MVC (spring-webmvc)">Servlet API (Jakarta Servlet 6.1 в Framework 7)</td>
+<td data-label="Spring WebFlux (spring-webflux)"><code>HttpHandler</code> поверх Reactor Netty / Servlet non-blocking I/O</td>
 </tr>
 <tr>
-<td>Модель исполнения</td>
-<td>поток на запрос (thread-per-request)</td>
-<td>event loop, небольшое фиксированное число потоков</td>
+<td data-label="">Модель исполнения</td>
+<td data-label="Spring MVC (spring-webmvc)">поток на запрос (thread-per-request)</td>
+<td data-label="Spring WebFlux (spring-webflux)">event loop, небольшое фиксированное число потоков</td>
 </tr>
 <tr>
-<td>Ядро диспетчеризации</td>
-<td><code>DispatcherServlet</code></td>
-<td><code>DispatcherHandler</code></td>
+<td data-label="">Ядро диспетчеризации</td>
+<td data-label="Spring MVC (spring-webmvc)"><code>DispatcherServlet</code></td>
+<td data-label="Spring WebFlux (spring-webflux)"><code>DispatcherHandler</code></td>
 </tr>
 <tr>
-<td>Типы возврата</td>
-<td><code>T</code>, <code>ResponseEntity&lt;T&gt;</code>, <code>Callable</code>, <code>DeferredResult</code>, <code>CompletableFuture</code>, реактивные типы</td>
-<td><code>Mono&lt;T&gt;</code>, <code>Flux&lt;T&gt;</code>, <code>ResponseEntity&lt;Mono&lt;T&gt;&gt;</code>, <code>T</code></td>
+<td data-label="">Типы возврата</td>
+<td data-label="Spring MVC (spring-webmvc)"><code>T</code>, <code>ResponseEntity&lt;T&gt;</code>, <code>Callable</code>, <code>DeferredResult</code>, <code>CompletableFuture</code>, реактивные типы</td>
+<td data-label="Spring WebFlux (spring-webflux)"><code>Mono&lt;T&gt;</code>, <code>Flux&lt;T&gt;</code>, <code>ResponseEntity&lt;Mono&lt;T&gt;&gt;</code>, <code>T</code></td>
 </tr>
 <tr>
-<td>Блокировка</td>
-<td>нормальна и ожидаема</td>
-<td>фатальна в event loop</td>
+<td data-label="">Блокировка</td>
+<td data-label="Spring MVC (spring-webmvc)">нормальна и ожидаема</td>
+<td data-label="Spring WebFlux (spring-webflux)">фатальна в event loop</td>
 </tr>
 <tr>
-<td>Доступ к данным</td>
-<td>JDBC/JPA</td>
-<td>R2DBC, реактивные драйверы</td>
+<td data-label="">Доступ к данным</td>
+<td data-label="Spring MVC (spring-webmvc)">JDBC/JPA</td>
+<td data-label="Spring WebFlux (spring-webflux)">R2DBC, реактивные драйверы</td>
 </tr>
 <tr>
-<td>Перехват</td>
-<td><code>Filter</code>, <code>HandlerInterceptor</code></td>
-<td><code>WebFilter</code>; для функциональных маршрутов — <code>HandlerFilterFunction</code> (своего <code>HandlerInterceptor</code> в WebFlux нет)</td>
+<td data-label="">Перехват</td>
+<td data-label="Spring MVC (spring-webmvc)"><code>Filter</code>, <code>HandlerInterceptor</code></td>
+<td data-label="Spring WebFlux (spring-webflux)"><code>WebFilter</code>; для функциональных маршрутов — <code>HandlerFilterFunction</code> (своего <code>HandlerInterceptor</code> в WebFlux нет)</td>
 </tr>
 </tbody>
 </table>
@@ -179,7 +179,7 @@
 </blockquote>
 <h3 id="24-разрешение-аргументов-обработчика">2.4 Разрешение аргументов обработчика</h3>
 <p>Каждый параметр метода контроллера заполняет свой <code>HandlerMethodArgumentResolver</code>, и именно распознаватель решает, откуда взять значение и что делать, если его в запросе нет. От этого зависит, какой статус получит клиент при пропущенном параметре, поэтому в таблице ниже для каждой аннотации указаны распознаватель, источник данных и поведение при отсутствии значения; особенно стоит обратить внимание на <code>@PathVariable</code>, который в этом случае даёт 500, а не 400:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аннотация</th>
@@ -190,46 +190,46 @@
 </thead>
 <tbody>
 <tr>
-<td><code>@RequestParam</code></td>
-<td><code>RequestParamMethodArgumentResolver</code></td>
-<td>query string + form body (<code>application/x-www-form-urlencoded</code>)</td>
-<td><code>MissingServletRequestParameterException</code> → 400</td>
+<td data-label="Аннотация"><code>@RequestParam</code></td>
+<td data-label="Распознаватель"><code>RequestParamMethodArgumentResolver</code></td>
+<td data-label="Источник">query string + form body (<code>application/x-www-form-urlencoded</code>)</td>
+<td data-label="Поведение при отсутствии"><code>MissingServletRequestParameterException</code> → 400</td>
 </tr>
 <tr>
-<td><code>@PathVariable</code></td>
-<td><code>PathVariableMethodArgumentResolver</code></td>
-<td>переменные из <code>PathPattern</code></td>
-<td><code>MissingPathVariableException</code> → 500 (это ошибка сервера: мапинг несогласован)</td>
+<td data-label="Аннотация"><code>@PathVariable</code></td>
+<td data-label="Распознаватель"><code>PathVariableMethodArgumentResolver</code></td>
+<td data-label="Источник">переменные из <code>PathPattern</code></td>
+<td data-label="Поведение при отсутствии"><code>MissingPathVariableException</code> → 500 (это ошибка сервера: мапинг несогласован)</td>
 </tr>
 <tr>
-<td><code>@RequestHeader</code></td>
-<td><code>RequestHeaderMethodArgumentResolver</code></td>
-<td>заголовки</td>
-<td><code>MissingRequestHeaderException</code> → 400</td>
+<td data-label="Аннотация"><code>@RequestHeader</code></td>
+<td data-label="Распознаватель"><code>RequestHeaderMethodArgumentResolver</code></td>
+<td data-label="Источник">заголовки</td>
+<td data-label="Поведение при отсутствии"><code>MissingRequestHeaderException</code> → 400</td>
 </tr>
 <tr>
-<td><code>@RequestBody</code></td>
-<td><code>RequestResponseBodyMethodProcessor</code></td>
-<td>тело через <code>HttpMessageConverter</code></td>
-<td><code>HttpMessageNotReadableException</code> → 400</td>
+<td data-label="Аннотация"><code>@RequestBody</code></td>
+<td data-label="Распознаватель"><code>RequestResponseBodyMethodProcessor</code></td>
+<td data-label="Источник">тело через <code>HttpMessageConverter</code></td>
+<td data-label="Поведение при отсутствии"><code>HttpMessageNotReadableException</code> → 400</td>
 </tr>
 <tr>
-<td><code>@ModelAttribute</code></td>
-<td><code>ServletModelAttributeMethodProcessor</code></td>
-<td>параметры запроса через <code>WebDataBinder</code></td>
-<td>привязка «best effort», ошибки в <code>BindingResult</code></td>
+<td data-label="Аннотация"><code>@ModelAttribute</code></td>
+<td data-label="Распознаватель"><code>ServletModelAttributeMethodProcessor</code></td>
+<td data-label="Источник">параметры запроса через <code>WebDataBinder</code></td>
+<td data-label="Поведение при отсутствии">привязка «best effort», ошибки в <code>BindingResult</code></td>
 </tr>
 <tr>
-<td><code>@RequestPart</code></td>
-<td><code>RequestPartMethodArgumentResolver</code></td>
-<td>часть multipart, <strong>через конвертеры</strong> по <code>Content-Type</code> части</td>
-<td><code>MissingServletRequestPartException</code> → 400</td>
+<td data-label="Аннотация"><code>@RequestPart</code></td>
+<td data-label="Распознаватель"><code>RequestPartMethodArgumentResolver</code></td>
+<td data-label="Источник">часть multipart, <strong>через конвертеры</strong> по <code>Content-Type</code> части</td>
+<td data-label="Поведение при отсутствии"><code>MissingServletRequestPartException</code> → 400</td>
 </tr>
 <tr>
-<td><code>@CookieValue</code></td>
-<td><code>ServletCookieValueMethodArgumentResolver</code></td>
-<td>куки</td>
-<td>400</td>
+<td data-label="Аннотация"><code>@CookieValue</code></td>
+<td data-label="Распознаватель"><code>ServletCookieValueMethodArgumentResolver</code></td>
+<td data-label="Источник">куки</td>
+<td data-label="Поведение при отсутствии">400</td>
 </tr>
 </tbody>
 </table>
@@ -329,7 +329,7 @@
 <h3 id="27-реализации-handlermapping-и-порядок-их-проверки">2.7 Реализации <code>HandlerMapping</code> и порядок их проверки</h3>
 <p><code>HandlerMapping</code> отвечает на один вопрос: какой обработчик должен получить этот запрос. В приложении таких компонентов несколько, и порядок, в котором <code>DispatcherServlet</code> их опрашивает, объясняет целый класс загадочных ошибок — от функционального маршрута, молча перебившего аннотационный, до 404 на корневом пути, который есть только в curl. Ниже разобрано, как устроен перебор, какие отображения регистрирует Boot и в каком порядке, и три практических следствия из этого порядка.</p>
 <p><code>DispatcherServlet.getHandler()</code> сам по себе — цикл в четыре строки: перебрать список <code>handlerMappings</code>, у каждого вызвать <code>getHandler(request)</code> и вернуть первый непустой <code>HandlerExecutionChain</code>. Вся логика сосредоточена в том, как этот список отсортирован и что каждый его элемент считает «своим». Формируют список <code>WebMvcAutoConfiguration</code> и <code>WebMvcConfigurationSupport</code>, а сортируется он по <code>Ordered</code>; в таблице отображения перечислены в порядке проверки, от первого к последнему:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Порядок</th>
@@ -339,39 +339,39 @@
 </thead>
 <tbody>
 <tr>
-<td><code>-1</code></td>
-<td><code>RouterFunctionMapping</code></td>
-<td>функциональные маршруты <code>RouterFunctions.route()</code></td>
+<td data-label="Порядок"><code>-1</code></td>
+<td data-label="Бин"><code>RouterFunctionMapping</code></td>
+<td data-label="Что обслуживает">функциональные маршруты <code>RouterFunctions.route()</code></td>
 </tr>
 <tr>
-<td><code>0</code></td>
-<td><code>RequestMappingHandlerMapping</code></td>
-<td>всё, что помечено <code>@RequestMapping</code>/<code>@GetMapping</code>/…</td>
+<td data-label="Порядок"><code>0</code></td>
+<td data-label="Бин"><code>RequestMappingHandlerMapping</code></td>
+<td data-label="Что обслуживает">всё, что помечено <code>@RequestMapping</code>/<code>@GetMapping</code>/…</td>
 </tr>
 <tr>
-<td><code>1</code></td>
-<td><code>WebSocketHandlerMapping</code> (если включён <code>@EnableWebSocket</code>)</td>
-<td><code>WebSocketHandler</code>, зарегистрированные в <code>WebSocketConfigurer</code>; порядок меняется через <code>setOrder</code> у реестра</td>
+<td data-label="Порядок"><code>1</code></td>
+<td data-label="Бин"><code>WebSocketHandlerMapping</code> (если включён <code>@EnableWebSocket</code>)</td>
+<td data-label="Что обслуживает"><code>WebSocketHandler</code>, зарегистрированные в <code>WebSocketConfigurer</code>; порядок меняется через <code>setOrder</code> у реестра</td>
 </tr>
 <tr>
-<td><code>2</code></td>
-<td><code>BeanNameUrlHandlerMapping</code></td>
-<td>бины, чьё имя начинается с <code>/</code> (legacy XML-стиль)</td>
+<td data-label="Порядок"><code>2</code></td>
+<td data-label="Бин"><code>BeanNameUrlHandlerMapping</code></td>
+<td data-label="Что обслуживает">бины, чьё имя начинается с <code>/</code> (legacy XML-стиль)</td>
 </tr>
 <tr>
-<td><code>2</code></td>
-<td><code>WelcomePageHandlerMapping</code></td>
-<td><code>GET /</code> → <code>index.html</code>, если <code>Accept</code> допускает <code>text/html</code> (в том числе <code>*/*</code> или отсутствие заголовка)</td>
+<td data-label="Порядок"><code>2</code></td>
+<td data-label="Бин"><code>WelcomePageHandlerMapping</code></td>
+<td data-label="Что обслуживает"><code>GET /</code> → <code>index.html</code>, если <code>Accept</code> допускает <code>text/html</code> (в том числе <code>*/*</code> или отсутствие заголовка)</td>
 </tr>
 <tr>
-<td><code>Integer.MAX_VALUE - 10</code></td>
-<td><code>WelcomePageNotAcceptableHandlerMapping</code></td>
-<td><code>GET /</code>, когда <code>text/html</code> клиент не принимает: ответ 406</td>
+<td data-label="Порядок"><code>Integer.MAX_VALUE - 10</code></td>
+<td data-label="Бин"><code>WelcomePageNotAcceptableHandlerMapping</code></td>
+<td data-label="Что обслуживает"><code>GET /</code>, когда <code>text/html</code> клиент не принимает: ответ 406</td>
 </tr>
 <tr>
-<td><code>Integer.MAX_VALUE - 1</code></td>
-<td><code>SimpleUrlHandlerMapping</code> (ресурсы)</td>
-<td><code>spring.web.resources.static-locations</code>, webjars</td>
+<td data-label="Порядок"><code>Integer.MAX_VALUE - 1</code></td>
+<td data-label="Бин"><code>SimpleUrlHandlerMapping</code> (ресурсы)</td>
+<td data-label="Что обслуживает"><code>spring.web.resources.static-locations</code>, webjars</td>
 </tr>
 </tbody>
 </table>
@@ -500,7 +500,7 @@
 </blockquote>
 <h3 id="211-requestbodyadvice-логирование-шифрование-полей-миграция-форматов">2.11 <code>RequestBodyAdvice</code>: логирование, шифрование полей, миграция форматов</h3>
 <p><code>RequestBodyAdvice</code> перехватывает чтение тела запроса так же, как <code>ResponseBodyAdvice</code> из раздела 2.6 перехватывает запись ответа, только знают о нём гораздо реже. У него четыре точки перехвата, и каждая из них полезна: через них можно подменить сам поток байтов, поправить уже десериализованный объект или решить, что делать с пустым телом. В таблице ниже перечислено, когда вызывается каждый метод и что в нём можно сделать, а дальше идут два рабочих сценария — расшифровка полей и аудит тела без утечки секретов:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метод</th>
@@ -510,24 +510,24 @@
 </thead>
 <tbody>
 <tr>
-<td><code>supports(...)</code></td>
-<td>один раз на комбинацию (параметр, конвертер)</td>
-<td>решить, участвовать ли</td>
+<td data-label="Метод"><code>supports(...)</code></td>
+<td data-label="Когда вызывается">один раз на комбинацию (параметр, конвертер)</td>
+<td data-label="Что можно">решить, участвовать ли</td>
 </tr>
 <tr>
-<td><code>beforeBodyRead(...)</code></td>
-<td>до чтения потока</td>
-<td>подменить <code>HttpInputMessage</code> — то есть <strong>сам поток байтов</strong> и заголовки</td>
+<td data-label="Метод"><code>beforeBodyRead(...)</code></td>
+<td data-label="Когда вызывается">до чтения потока</td>
+<td data-label="Что можно">подменить <code>HttpInputMessage</code> — то есть <strong>сам поток байтов</strong> и заголовки</td>
 </tr>
 <tr>
-<td><code>afterBodyRead(...)</code></td>
-<td>после десериализации, до валидации</td>
-<td>подправить объект, дополнить полями, нормализовать</td>
+<td data-label="Метод"><code>afterBodyRead(...)</code></td>
+<td data-label="Когда вызывается">после десериализации, до валидации</td>
+<td data-label="Что можно">подправить объект, дополнить полями, нормализовать</td>
 </tr>
 <tr>
-<td><code>handleEmptyBody(...)</code></td>
-<td>тело пустое</td>
-<td>подставить объект по умолчанию вместо 400</td>
+<td data-label="Метод"><code>handleEmptyBody(...)</code></td>
+<td data-label="Когда вызывается">тело пустое</td>
+<td data-label="Что можно">подставить объект по умолчанию вместо 400</td>
 </tr>
 </tbody>
 </table>
@@ -605,7 +605,7 @@
 </code></pre></div>
 
 <p>Чем глубже уровень, тем больше он видит и тем меньше может сделать с самим запросом. В таблице это сопоставление разложено по возможностям; особенно полезно посмотреть на последнюю строку, где видно, в каком виде каждый уровень получает исключение контроллера:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -616,40 +616,40 @@
 </thead>
 <tbody>
 <tr>
-<td>Работает для</td>
-<td>любых запросов, включая статику, <code>/error</code>, чужие сервлеты</td>
-<td>только запросов, прошедших через <code>DispatcherServlet</code></td>
-<td>только вызовов методов Spring-бинов</td>
+<td data-label="">Работает для</td>
+<td data-label="Фильтр">любых запросов, включая статику, <code>/error</code>, чужие сервлеты</td>
+<td data-label="Интерцептор">только запросов, прошедших через <code>DispatcherServlet</code></td>
+<td data-label="AOP-аспект">только вызовов методов Spring-бинов</td>
 </tr>
 <tr>
-<td>Знает о обработчике</td>
-<td>нет</td>
-<td>да (<code>HandlerMethod</code>, аннотации метода)</td>
-<td>да (сигнатура, значения аргументов)</td>
+<td data-label="">Знает о обработчике</td>
+<td data-label="Фильтр">нет</td>
+<td data-label="Интерцептор">да (<code>HandlerMethod</code>, аннотации метода)</td>
+<td data-label="AOP-аспект">да (сигнатура, значения аргументов)</td>
 </tr>
 <tr>
-<td>Может подменить request/response</td>
-<td>да (<code>HttpServletRequestWrapper</code>)</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="">Может подменить request/response</td>
+<td data-label="Фильтр">да (<code>HttpServletRequestWrapper</code>)</td>
+<td data-label="Интерцептор">нет</td>
+<td data-label="AOP-аспект">нет</td>
 </tr>
 <tr>
-<td>Может прервать цепочку</td>
-<td>да (не вызывать <code>chain.doFilter</code>)</td>
-<td>да (<code>preHandle</code> → <code>false</code>)</td>
-<td>да (не вызывать <code>proceed()</code>)</td>
+<td data-label="">Может прервать цепочку</td>
+<td data-label="Фильтр">да (не вызывать <code>chain.doFilter</code>)</td>
+<td data-label="Интерцептор">да (<code>preHandle</code> → <code>false</code>)</td>
+<td data-label="AOP-аспект">да (не вызывать <code>proceed()</code>)</td>
 </tr>
 <tr>
-<td>Видит десериализованное тело</td>
-<td>нет (только сырые байты)</td>
-<td>нет</td>
-<td>да</td>
+<td data-label="">Видит десериализованное тело</td>
+<td data-label="Фильтр">нет (только сырые байты)</td>
+<td data-label="Интерцептор">нет</td>
+<td data-label="AOP-аспект">да</td>
 </tr>
 <tr>
-<td>Ловит исключения контроллера</td>
-<td>да, но уже после <code>HandlerExceptionResolver</code> — то есть видит 500, а не исключение</td>
-<td><code>afterCompletion(… Exception ex)</code> — видит исключение, если оно не обработано</td>
-<td>да, напрямую</td>
+<td data-label="">Ловит исключения контроллера</td>
+<td data-label="Фильтр">да, но уже после <code>HandlerExceptionResolver</code> — то есть видит 500, а не исключение</td>
+<td data-label="Интерцептор"><code>afterCompletion(… Exception ex)</code> — видит исключение, если оно не обработано</td>
+<td data-label="AOP-аспект">да, напрямую</td>
 </tr>
 </tbody>
 </table>
@@ -768,7 +768,7 @@
 <p><strong>Шаг 19 происходит раньше шага 20.</strong> К моменту вызова <code>postHandle</code> тело ответа уже записано в буфер, а если буфер переполнился, оно вместе с заголовками уже ушло клиенту. Поэтому попытка «дописать заголовок» или «поменять статус» в <code>postHandle</code> работает нестабильно: при маленьком ответе она сработает, потому что буфер Tomcat по умолчанию 8 КБ и заголовки ещё не отправлены, а при большом молча не сработает, и вы получите <code>IllegalStateException: Cannot call sendError() after the response has been committed</code> или просто не увидите заголовка. Менять ответ надо в <code>ResponseBodyAdvice</code>, пока он ещё не записан, или в фильтре через обёртку.</p>
 <p><strong>На шаге 6 разбирается multipart.</strong> Запускает разбор <code>DispatcherServlet</code> в <code>checkMultipart</code>: <code>StandardServletMultipartResolver</code> оборачивает запрос и сразу вызывает <code>request.getParts()</code>, а сами байты режет уже контейнер. Так устроено по умолчанию, потому что в Boot свойство <code>spring.servlet.multipart.resolve-lazily</code> равно <code>false</code> и разбор ранний; при <code>true</code> обёртка откладывает вызов <code>getParts()</code> до первого обращения к части или параметру (подробнее в разделе 7.5). На практике это значит, что фильтр, стоящий до <code>DispatcherServlet</code>, увидит multipart-запрос как поток сырых байтов, и если он этот поток прочитает, контроллер получит пустые части.</p>
 <p>Теперь та же последовательность, но с точки зрения того, что доступно в каждой точке. Смотреть в таблице стоит прежде всего на последний столбец — где ответ ещё можно изменить:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Точка</th>
@@ -780,60 +780,60 @@
 </thead>
 <tbody>
 <tr>
-<td>фильтр, до <code>doFilter</code></td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>да (полностью)</td>
+<td data-label="Точка">фильтр, до <code>doFilter</code></td>
+<td data-label="Есть HandlerMethod?">нет</td>
+<td data-label="Есть аргументы?">нет</td>
+<td data-label="Есть результат?">нет</td>
+<td data-label="Можно менять ответ?">да (полностью)</td>
 </tr>
 <tr>
-<td><code>preHandle</code></td>
-<td>да</td>
-<td>нет</td>
-<td>нет</td>
-<td>да (статус, заголовки)</td>
+<td data-label="Точка"><code>preHandle</code></td>
+<td data-label="Есть HandlerMethod?">да</td>
+<td data-label="Есть аргументы?">нет</td>
+<td data-label="Есть результат?">нет</td>
+<td data-label="Можно менять ответ?">да (статус, заголовки)</td>
 </tr>
 <tr>
-<td>AOP <code>@Around</code>, до <code>proceed</code></td>
-<td>да (сигнатура)</td>
-<td>да</td>
-<td>нет</td>
-<td>нет напрямую</td>
+<td data-label="Точка">AOP <code>@Around</code>, до <code>proceed</code></td>
+<td data-label="Есть HandlerMethod?">да (сигнатура)</td>
+<td data-label="Есть аргументы?">да</td>
+<td data-label="Есть результат?">нет</td>
+<td data-label="Можно менять ответ?">нет напрямую</td>
 </tr>
 <tr>
-<td>AOP <code>@Around</code>, после <code>proceed</code></td>
-<td>да</td>
-<td>да</td>
-<td>да (объект)</td>
-<td>нет напрямую</td>
+<td data-label="Точка">AOP <code>@Around</code>, после <code>proceed</code></td>
+<td data-label="Есть HandlerMethod?">да</td>
+<td data-label="Есть аргументы?">да</td>
+<td data-label="Есть результат?">да (объект)</td>
+<td data-label="Можно менять ответ?">нет напрямую</td>
 </tr>
 <tr>
-<td><code>ResponseBodyAdvice</code></td>
-<td>да</td>
-<td>нет</td>
-<td>да (объект тела)</td>
-<td>да (заголовки, тело)</td>
+<td data-label="Точка"><code>ResponseBodyAdvice</code></td>
+<td data-label="Есть HandlerMethod?">да</td>
+<td data-label="Есть аргументы?">нет</td>
+<td data-label="Есть результат?">да (объект тела)</td>
+<td data-label="Можно менять ответ?">да (заголовки, тело)</td>
 </tr>
 <tr>
-<td><code>postHandle</code></td>
-<td>да</td>
-<td>нет</td>
-<td><code>ModelAndView</code> (для <code>@ResponseBody</code> — <code>null</code>)</td>
-<td>ненадёжно</td>
+<td data-label="Точка"><code>postHandle</code></td>
+<td data-label="Есть HandlerMethod?">да</td>
+<td data-label="Есть аргументы?">нет</td>
+<td data-label="Есть результат?"><code>ModelAndView</code> (для <code>@ResponseBody</code> — <code>null</code>)</td>
+<td data-label="Можно менять ответ?">ненадёжно</td>
 </tr>
 <tr>
-<td><code>afterCompletion</code></td>
-<td>да</td>
-<td>нет</td>
-<td>нет, только <code>Exception</code></td>
-<td>нет</td>
+<td data-label="Точка"><code>afterCompletion</code></td>
+<td data-label="Есть HandlerMethod?">да</td>
+<td data-label="Есть аргументы?">нет</td>
+<td data-label="Есть результат?">нет, только <code>Exception</code></td>
+<td data-label="Можно менять ответ?">нет</td>
 </tr>
 <tr>
-<td>фильтр, после <code>doFilter</code></td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет (уже отправлен клиенту)</td>
+<td data-label="Точка">фильтр, после <code>doFilter</code></td>
+<td data-label="Есть HandlerMethod?">нет</td>
+<td data-label="Есть аргументы?">нет</td>
+<td data-label="Есть результат?">нет</td>
+<td data-label="Можно менять ответ?">нет (уже отправлен клиенту)</td>
 </tr>
 </tbody>
 </table>
@@ -872,7 +872,7 @@
 </code></pre></div>
 
 <p>К этой константе приложен javadoc «Filters that wrap the servlet request should be ordered less than or equal to this», то есть всё, что оборачивает запрос, должно стоять в отрицательной зоне (<a href="https://raw.githubusercontent.com/spring-projects/spring-boot/3.5.x/spring-boot-project/spring-boot/src/main/java/org/springframework/boot/web/servlet/filter/OrderedFilter.java">OrderedFilter, исходник Spring Boot</a>). Для конкретных фильтров значения получаются такие:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Фильтр</th>
@@ -882,39 +882,39 @@
 </thead>
 <tbody>
 <tr>
-<td><code>OrderedCharacterEncodingFilter</code></td>
-<td><code>private int order = Ordered.HIGHEST_PRECEDENCE;</code></td>
-<td><code>Integer.MIN_VALUE</code></td>
+<td data-label="Фильтр"><code>OrderedCharacterEncodingFilter</code></td>
+<td data-label="Объявление порядка"><code>private int order = Ordered.HIGHEST_PRECEDENCE;</code></td>
+<td data-label="Фактическое значение"><code>Integer.MIN_VALUE</code></td>
 </tr>
 <tr>
-<td><code>OrderedHiddenHttpMethodFilter</code></td>
-<td><code>REQUEST_WRAPPER_FILTER_MAX_ORDER - 10000</code></td>
-<td><code>-10000</code></td>
+<td data-label="Фильтр"><code>OrderedHiddenHttpMethodFilter</code></td>
+<td data-label="Объявление порядка"><code>REQUEST_WRAPPER_FILTER_MAX_ORDER - 10000</code></td>
+<td data-label="Фактическое значение"><code>-10000</code></td>
 </tr>
 <tr>
-<td><code>OrderedFormContentFilter</code></td>
-<td><code>REQUEST_WRAPPER_FILTER_MAX_ORDER - 9900</code></td>
-<td><code>-9900</code></td>
+<td data-label="Фильтр"><code>OrderedFormContentFilter</code></td>
+<td data-label="Объявление порядка"><code>REQUEST_WRAPPER_FILTER_MAX_ORDER - 9900</code></td>
+<td data-label="Фактическое значение"><code>-9900</code></td>
 </tr>
 <tr>
-<td><code>OrderedRequestContextFilter</code></td>
-<td><code>REQUEST_WRAPPER_FILTER_MAX_ORDER - 105</code></td>
-<td><code>-105</code></td>
+<td data-label="Фильтр"><code>OrderedRequestContextFilter</code></td>
+<td data-label="Объявление порядка"><code>REQUEST_WRAPPER_FILTER_MAX_ORDER - 105</code></td>
+<td data-label="Фактическое значение"><code>-105</code></td>
 </tr>
 <tr>
-<td><code>springSecurityFilterChain</code> (<code>DelegatingFilterProxy</code>)</td>
-<td><code>spring.security.filter.order</code></td>
-<td><code>-100</code></td>
+<td data-label="Фильтр"><code>springSecurityFilterChain</code> (<code>DelegatingFilterProxy</code>)</td>
+<td data-label="Объявление порядка"><code>spring.security.filter.order</code></td>
+<td data-label="Фактическое значение"><code>-100</code></td>
 </tr>
 <tr>
-<td><code>WebMvcMetricsFilter</code> / <code>ServerHttpObservationFilter</code></td>
-<td><code>management.observations.http.server.*</code> / <code>Ordered.HIGHEST_PRECEDENCE + 1</code></td>
-<td>около <code>Integer.MIN_VALUE + 1</code></td>
+<td data-label="Фильтр"><code>WebMvcMetricsFilter</code> / <code>ServerHttpObservationFilter</code></td>
+<td data-label="Объявление порядка"><code>management.observations.http.server.*</code> / <code>Ordered.HIGHEST_PRECEDENCE + 1</code></td>
+<td data-label="Фактическое значение">около <code>Integer.MIN_VALUE + 1</code></td>
 </tr>
 <tr>
-<td>ваш <code>@Component Filter</code> без <code>@Order</code></td>
-<td>—</td>
-<td><code>Ordered.LOWEST_PRECEDENCE</code> = <code>Integer.MAX_VALUE</code></td>
+<td data-label="Фильтр">ваш <code>@Component Filter</code> без <code>@Order</code></td>
+<td data-label="Объявление порядка">—</td>
+<td data-label="Фактическое значение"><code>Ordered.LOWEST_PRECEDENCE</code> = <code>Integer.MAX_VALUE</code></td>
 </tr>
 </tbody>
 </table>
@@ -1367,7 +1367,7 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 <h3 id="46-ошибки-до-контроллера-и-их-унификация">4.6 Ошибки до контроллера и их унификация</h3>
 <p>Ошибки до контроллера — это отказы, которые случаются раньше, чем начал выполняться ваш метод: в контейнере, в фильтрах, в Security, при разборе тела или подборе обработчика. Именно они чаще всего приходят клиенту в «чужом» формате, потому что <code>@ControllerAdvice</code> видит только часть из них. Условно все ошибки делятся по месту возникновения на четыре зоны, и «из коробки» <code>@ControllerAdvice</code> покрывает только вторую; ниже для каждой зоны показано, кто отвечает на ошибку по умолчанию и как привести ответ к своему формату, а затем разобраны два самых неприятных случая — битый JSON и 404 рядом с SPA-фолбэком.</p>
 <p><strong>Зона 1: до <code>DispatcherServlet</code></strong> — фильтры, Security и сам контейнер. В таблице видно, что часть этих ошибок из приложения не исправить вообще, и их приходится закрывать на балансировщике или прокси:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -1377,44 +1377,44 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td>Исключение в вашем фильтре</td>
-<td>контейнер → ERROR-диспатч → <code>BasicErrorController</code></td>
-<td>фильтр-обёртка с <code>handlerExceptionResolver</code> (раздел 4.4)</td>
+<td data-label="Что">Исключение в вашем фильтре</td>
+<td data-label="Кто отвечает по умолчанию">контейнер → ERROR-диспатч → <code>BasicErrorController</code></td>
+<td data-label="Как привести к своему формату">фильтр-обёртка с <code>handlerExceptionResolver</code> (раздел 4.4)</td>
 </tr>
 <tr>
-<td><code>AuthenticationException</code></td>
-<td><code>AuthenticationEntryPoint</code> Security</td>
-<td>подменить entry point (раздел 3.9)</td>
+<td data-label="Что"><code>AuthenticationException</code></td>
+<td data-label="Кто отвечает по умолчанию"><code>AuthenticationEntryPoint</code> Security</td>
+<td data-label="Как привести к своему формату">подменить entry point (раздел 3.9)</td>
 </tr>
 <tr>
-<td><code>AccessDeniedException</code> в фильтре</td>
-<td><code>AccessDeniedHandler</code> Security</td>
-<td>подменить handler</td>
+<td data-label="Что"><code>AccessDeniedException</code> в фильтре</td>
+<td data-label="Кто отвечает по умолчанию"><code>AccessDeniedHandler</code> Security</td>
+<td data-label="Как привести к своему формату">подменить handler</td>
 </tr>
 <tr>
-<td>Превышен <code>server.max-http-request-header-size</code></td>
-<td>Tomcat, 400 с HTML</td>
-<td>никак из приложения — только на балансировщике</td>
+<td data-label="Что">Превышен <code>server.max-http-request-header-size</code></td>
+<td data-label="Кто отвечает по умолчанию">Tomcat, 400 с HTML</td>
+<td data-label="Как привести к своему формату">никак из приложения — только на балансировщике</td>
 </tr>
 <tr>
-<td>Битый HTTP (плохой chunked, обрыв)</td>
-<td>Tomcat, 400/соединение закрыто</td>
-<td>никак</td>
+<td data-label="Что">Битый HTTP (плохой chunked, обрыв)</td>
+<td data-label="Кто отвечает по умолчанию">Tomcat, 400/соединение закрыто</td>
+<td data-label="Как привести к своему формату">никак</td>
 </tr>
 <tr>
-<td>Превышен <code>server.tomcat.max-swallow-size</code></td>
-<td>обрыв соединения</td>
-<td>ограничивать размер раньше, на прокси</td>
+<td data-label="Что">Превышен <code>server.tomcat.max-swallow-size</code></td>
+<td data-label="Кто отвечает по умолчанию">обрыв соединения</td>
+<td data-label="Как привести к своему формату">ограничивать размер раньше, на прокси</td>
 </tr>
 <tr>
-<td>URL с недопустимыми символами</td>
-<td>Tomcat, 400 <code>Invalid character found in the request target</code></td>
-<td>нормализовать на прокси; <code>relaxed-path-chars</code> только осознанно</td>
+<td data-label="Что">URL с недопустимыми символами</td>
+<td data-label="Кто отвечает по умолчанию">Tomcat, 400 <code>Invalid character found in the request target</code></td>
+<td data-label="Как привести к своему формату">нормализовать на прокси; <code>relaxed-path-chars</code> только осознанно</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Зона 2: внутри <code>DispatcherServlet</code>, до тела метода.</strong> Здесь ловится всё, но надо знать, какое именно исключение бросается в каждой ситуации:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -1424,79 +1424,79 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td>Нет обработчика для пути</td>
-<td><code>NoResourceFoundException</code> (Boot 3+)</td>
-<td class="num">404</td>
+<td data-label="Ситуация">Нет обработчика для пути</td>
+<td data-label="Исключение"><code>NoResourceFoundException</code> (Boot 3+)</td>
+<td data-label="Статус" class="num">404</td>
 </tr>
 <tr>
-<td>Метод не поддержан</td>
-<td><code>HttpRequestMethodNotSupportedException</code></td>
-<td class="num">405 (+ заголовок <code>Allow</code>)</td>
+<td data-label="Ситуация">Метод не поддержан</td>
+<td data-label="Исключение"><code>HttpRequestMethodNotSupportedException</code></td>
+<td data-label="Статус" class="num">405 (+ заголовок <code>Allow</code>)</td>
 </tr>
 <tr>
-<td><code>Content-Type</code> не подходит</td>
-<td><code>HttpMediaTypeNotSupportedException</code></td>
-<td class="num">415</td>
+<td data-label="Ситуация"><code>Content-Type</code> не подходит</td>
+<td data-label="Исключение"><code>HttpMediaTypeNotSupportedException</code></td>
+<td data-label="Статус" class="num">415</td>
 </tr>
 <tr>
-<td><code>Accept</code> не подходит</td>
-<td><code>HttpMediaTypeNotAcceptableException</code></td>
-<td class="num">406</td>
+<td data-label="Ситуация"><code>Accept</code> не подходит</td>
+<td data-label="Исключение"><code>HttpMediaTypeNotAcceptableException</code></td>
+<td data-label="Статус" class="num">406</td>
 </tr>
 <tr>
-<td>Битый JSON в теле</td>
-<td><code>HttpMessageNotReadableException</code> (причина — <code>JsonParseException</code>)</td>
-<td class="num">400</td>
+<td data-label="Ситуация">Битый JSON в теле</td>
+<td data-label="Исключение"><code>HttpMessageNotReadableException</code> (причина — <code>JsonParseException</code>)</td>
+<td data-label="Статус" class="num">400</td>
 </tr>
 <tr>
-<td>Корректный JSON, но тип поля не тот</td>
-<td><code>HttpMessageNotReadableException</code> (причина — <code>MismatchedInputException</code> / <code>InvalidFormatException</code>)</td>
-<td class="num">400</td>
+<td data-label="Ситуация">Корректный JSON, но тип поля не тот</td>
+<td data-label="Исключение"><code>HttpMessageNotReadableException</code> (причина — <code>MismatchedInputException</code> / <code>InvalidFormatException</code>)</td>
+<td data-label="Статус" class="num">400</td>
 </tr>
 <tr>
-<td>Нет обязательного query-параметра</td>
-<td><code>MissingServletRequestParameterException</code></td>
-<td class="num">400</td>
+<td data-label="Ситуация">Нет обязательного query-параметра</td>
+<td data-label="Исключение"><code>MissingServletRequestParameterException</code></td>
+<td data-label="Статус" class="num">400</td>
 </tr>
 <tr>
-<td>Нет обязательного заголовка</td>
-<td><code>MissingRequestHeaderException</code></td>
-<td class="num">400</td>
+<td data-label="Ситуация">Нет обязательного заголовка</td>
+<td data-label="Исключение"><code>MissingRequestHeaderException</code></td>
+<td data-label="Статус" class="num">400</td>
 </tr>
 <tr>
-<td><code>?page=abc</code> при <code>int page</code></td>
-<td><code>MethodArgumentTypeMismatchException</code></td>
-<td class="num">400</td>
+<td data-label="Ситуация"><code>?page=abc</code> при <code>int page</code></td>
+<td data-label="Исключение"><code>MethodArgumentTypeMismatchException</code></td>
+<td data-label="Статус" class="num">400</td>
 </tr>
 <tr>
-<td>Ошибка валидации тела</td>
-<td><code>MethodArgumentNotValidException</code></td>
-<td class="num">400</td>
+<td data-label="Ситуация">Ошибка валидации тела</td>
+<td data-label="Исключение"><code>MethodArgumentNotValidException</code></td>
+<td data-label="Статус" class="num">400</td>
 </tr>
 <tr>
-<td>Ошибка валидации параметров</td>
-<td><code>HandlerMethodValidationException</code></td>
-<td class="num">400</td>
+<td data-label="Ситуация">Ошибка валидации параметров</td>
+<td data-label="Исключение"><code>HandlerMethodValidationException</code></td>
+<td data-label="Статус" class="num">400</td>
 </tr>
 <tr>
-<td>Нет части multipart</td>
-<td><code>MissingServletRequestPartException</code></td>
-<td class="num">400</td>
+<td data-label="Ситуация">Нет части multipart</td>
+<td data-label="Исключение"><code>MissingServletRequestPartException</code></td>
+<td data-label="Статус" class="num">400</td>
 </tr>
 <tr>
-<td>Файл больше лимита</td>
-<td><code>MaxUploadSizeExceededException</code></td>
-<td class="num">413</td>
+<td data-label="Ситуация">Файл больше лимита</td>
+<td data-label="Исключение"><code>MaxUploadSizeExceededException</code></td>
+<td data-label="Статус" class="num">413</td>
 </tr>
 <tr>
-<td>Таймаут async-запроса</td>
-<td><code>AsyncRequestTimeoutException</code></td>
-<td class="num">503</td>
+<td data-label="Ситуация">Таймаут async-запроса</td>
+<td data-label="Исключение"><code>AsyncRequestTimeoutException</code></td>
+<td data-label="Статус" class="num">503</td>
 </tr>
 <tr>
-<td>Нет обязательной <code>@PathVariable</code></td>
-<td><code>MissingPathVariableException</code></td>
-<td class="num"><strong>500</strong> (это баг мапинга, не клиента)</td>
+<td data-label="Ситуация">Нет обязательной <code>@PathVariable</code></td>
+<td data-label="Исключение"><code>MissingPathVariableException</code></td>
+<td data-label="Статус" class="num"><strong>500</strong> (это баг мапинга, не клиента)</td>
 </tr>
 </tbody>
 </table>
@@ -1647,7 +1647,7 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 <p>Method validation — это проверка ограничений, стоящих прямо на параметрах метода (<code>@Min</code> на <code>@RequestParam</code>, <code>@NotBlank</code> на заголовке), а не внутри DTO. До Spring 6.1 она работала через AOP и отдавала 500, в 6.1 её встроили в сам MVC, и теперь ошибки валидации приходят двумя разными исключениями в зависимости от того, где стояло ограничение. Ниже разобрано, что изменилось, в какой ситуации какое исключение бросается и как привести оба к одному формату ответа.</p>
 <p>До Spring 6.1, чтобы заработало <code>@RequestParam @Min(1) int page</code>, на класс контроллера приходилось вешать <code>@Validated</code>. Тогда создавался AOP-прокси, и нарушения прилетали как <code>ConstraintViolationException</code>, которое по умолчанию превращалось в <strong>500</strong>, а не в 400, — это была одна из самых неприятных мелочей Spring MVC.</p>
 <p>Spring 6.1 встроил method validation прямо в <code>RequestMappingHandlerAdapter</code>. Теперь ограничения на параметрах работают <strong>без</strong> <code>@Validated</code> на классе, а при нарушении бросается <code>HandlerMethodValidationException</code>, которое реализует <code>ErrorResponse</code> и по умолчанию даёт <strong>400</strong> (<a href="https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-validation.html">Spring MVC: Validation</a>). Какое исключение вы получите в каждой ситуации и где в нём лежат нарушения, показано в таблице; обратите внимание на последнюю строку, где всё ещё возможен 500:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -1658,28 +1658,28 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td><code>@Valid @RequestBody Dto</code> (один объект, ограничения внутри DTO)</td>
-<td><code>MethodArgumentNotValidException</code> (наследник <code>BindException</code>)</td>
-<td>400</td>
-<td><code>BindingResult.getFieldErrors()</code></td>
+<td data-label="Ситуация"><code>@Valid @RequestBody Dto</code> (один объект, ограничения внутри DTO)</td>
+<td data-label="Исключение"><code>MethodArgumentNotValidException</code> (наследник <code>BindException</code>)</td>
+<td data-label="Статус по умолчанию">400</td>
+<td data-label="Где нарушения"><code>BindingResult.getFieldErrors()</code></td>
 </tr>
 <tr>
-<td>Ограничения <strong>прямо на параметрах</strong> метода (<code>@Min</code>, <code>@NotBlank</code> на <code>@RequestParam</code>/<code>@PathVariable</code>/<code>@RequestHeader</code>)</td>
-<td><code>HandlerMethodValidationException</code></td>
-<td>400</td>
-<td><code>getAllValidationResults()</code> → <code>ParameterValidationResult</code></td>
+<td data-label="Ситуация">Ограничения <strong>прямо на параметрах</strong> метода (<code>@Min</code>, <code>@NotBlank</code> на <code>@RequestParam</code>/<code>@PathVariable</code>/<code>@RequestHeader</code>)</td>
+<td data-label="Исключение"><code>HandlerMethodValidationException</code></td>
+<td data-label="Статус по умолчанию">400</td>
+<td data-label="Где нарушения"><code>getAllValidationResults()</code> → <code>ParameterValidationResult</code></td>
 </tr>
 <tr>
-<td><code>@Valid</code> на элементах контейнера (<code>List&lt;@Valid Dto&gt;</code> как <code>@RequestBody</code>)</td>
-<td><code>HandlerMethodValidationException</code></td>
-<td>400</td>
-<td>там же</td>
+<td data-label="Ситуация"><code>@Valid</code> на элементах контейнера (<code>List&lt;@Valid Dto&gt;</code> как <code>@RequestBody</code>)</td>
+<td data-label="Исключение"><code>HandlerMethodValidationException</code></td>
+<td data-label="Статус по умолчанию">400</td>
+<td data-label="Где нарушения">там же</td>
 </tr>
 <tr>
-<td><code>@Validated</code> на <strong>сервисном</strong> бине (не контроллере)</td>
-<td><code>ConstraintViolationException</code></td>
-<td>500, если не обработать</td>
-<td><code>getConstraintViolations()</code></td>
+<td data-label="Ситуация"><code>@Validated</code> на <strong>сервисном</strong> бине (не контроллере)</td>
+<td data-label="Исключение"><code>ConstraintViolationException</code></td>
+<td data-label="Статус по умолчанию">500, если не обработать</td>
+<td data-label="Где нарушения"><code>getConstraintViolations()</code></td>
 </tr>
 </tbody>
 </table>
@@ -1985,7 +1985,7 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </blockquote>
 <h3 id="62-модули-и-производительность">6.2 Модули и производительность</h3>
 <p>Модули Jackson добавляют поддержку типов и языков, которых нет в ядре, — <code>java.time</code>, <code>Optional</code>, Kotlin-классов, конструкторной привязки, — а два из них ускоряют доступ к полям. Часть модулей Boot подключает сам, часть нужна только в особых случаях. В таблице для каждого модуля указано, зачем он нужен и когда его подключать:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Модуль</th>
@@ -1995,34 +1995,34 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td><code>jackson-datatype-jsr310</code> (<code>JavaTimeModule</code>)</td>
-<td><code>Instant</code>, <code>LocalDate</code>, <code>OffsetDateTime</code></td>
-<td>всегда; Boot подключает сам</td>
+<td data-label="Модуль"><code>jackson-datatype-jsr310</code> (<code>JavaTimeModule</code>)</td>
+<td data-label="Зачем"><code>Instant</code>, <code>LocalDate</code>, <code>OffsetDateTime</code></td>
+<td data-label="Когда нужен">всегда; Boot подключает сам</td>
 </tr>
 <tr>
-<td><code>jackson-module-parameter-names</code></td>
-<td>конструкторная привязка без <code>@JsonProperty</code></td>
-<td>для records и immutable DTO; нужен <code>-parameters</code></td>
+<td data-label="Модуль"><code>jackson-module-parameter-names</code></td>
+<td data-label="Зачем">конструкторная привязка без <code>@JsonProperty</code></td>
+<td data-label="Когда нужен">для records и immutable DTO; нужен <code>-parameters</code></td>
 </tr>
 <tr>
-<td><code>jackson-datatype-jdk8</code></td>
-<td><code>Optional</code>, <code>OptionalInt</code></td>
-<td>если Optional в API (не советую, см. ниже)</td>
+<td data-label="Модуль"><code>jackson-datatype-jdk8</code></td>
+<td data-label="Зачем"><code>Optional</code>, <code>OptionalInt</code></td>
+<td data-label="Когда нужен">если Optional в API (не советую, см. ниже)</td>
 </tr>
 <tr>
-<td><code>jackson-module-kotlin</code></td>
-<td>data-классы, nullability, значения по умолчанию</td>
-<td>Kotlin-проекты, обязателен</td>
+<td data-label="Модуль"><code>jackson-module-kotlin</code></td>
+<td data-label="Зачем">data-классы, nullability, значения по умолчанию</td>
+<td data-label="Когда нужен">Kotlin-проекты, обязателен</td>
 </tr>
 <tr>
-<td><code>jackson-module-blackbird</code></td>
-<td>замена рефлексии на методы доступа, сгенерированные через <code>LambdaMetafactory</code></td>
-<td>горячие пути с крупным JSON</td>
+<td data-label="Модуль"><code>jackson-module-blackbird</code></td>
+<td data-label="Зачем">замена рефлексии на методы доступа, сгенерированные через <code>LambdaMetafactory</code></td>
+<td data-label="Когда нужен">горячие пути с крупным JSON</td>
 </tr>
 <tr>
-<td><code>jackson-module-afterburner</code></td>
-<td>предшественник Blackbird на ASM</td>
-<td>устарел, на Java 17+ используйте Blackbird</td>
+<td data-label="Модуль"><code>jackson-module-afterburner</code></td>
+<td data-label="Зачем">предшественник Blackbird на ASM</td>
+<td data-label="Когда нужен">устарел, на Java 17+ используйте Blackbird</td>
 </tr>
 </tbody>
 </table>
@@ -2225,7 +2225,7 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </blockquote>
 <h3 id="69-null-и-отсутствующее-поле-patch-и-jsoninclude">6.9 <code>null</code> и отсутствующее поле, PATCH и <code>@JsonInclude</code></h3>
 <p>JSON различает три состояния поля — значение, явный <code>null</code> и отсутствие поля, — а обычный Java-объект после десериализации различает только два, и для частичного обновления ресурса эта потеря принципиальна. Ниже показано, как эти три состояния выглядят и что с ними делает Jackson, разобраны три подхода к PATCH и рабочая реализация JSON Merge Patch, а в конце — чем опасен <code>non_null</code> для публичных контрактов:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>JSON</th>
@@ -2235,19 +2235,19 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td><code>{"phone": "+7999..."}</code></td>
-<td>установить значение</td>
-<td><code>"+7999..."</code></td>
+<td data-label="JSON"><code>{"phone": "+7999..."}</code></td>
+<td data-label="Что имел в виду клиент">установить значение</td>
+<td data-label="Java-поле после десериализации"><code>"+7999..."</code></td>
 </tr>
 <tr>
-<td><code>{"phone": null}</code></td>
-<td><strong>стереть</strong> значение</td>
-<td><code>null</code></td>
+<td data-label="JSON"><code>{"phone": null}</code></td>
+<td data-label="Что имел в виду клиент"><strong>стереть</strong> значение</td>
+<td data-label="Java-поле после десериализации"><code>null</code></td>
 </tr>
 <tr>
-<td><code>{}</code></td>
-<td>не трогать</td>
-<td><code>null</code></td>
+<td data-label="JSON"><code>{}</code></td>
+<td data-label="Что имел в виду клиент">не трогать</td>
+<td data-label="Java-поле после десериализации"><code>null</code></td>
 </tr>
 </tbody>
 </table>
@@ -2552,7 +2552,7 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 <p>Асинхронная обработка в Spring MVC позволяет вернуть рабочий поток сервлет-контейнера в пул, пока запрос ждёт результата, а виртуальные потоки из Java 21 решают ту же задачу иначе — делают сам поток настолько дешёвым, что беречь его больше не нужно. Долгое время async был единственным способом держать много медленных запросов на ограниченном пуле Tomcat, и с приходом виртуальных потоков заметная часть этих приёмов потеряла смысл, а другая часть осталась обязательной. В разделе разобраны механика Servlet async и типы возвращаемых значений, таймауты и конфигурация executor-а, то, что меняют и чего не меняют виртуальные потоки, перенос контекста на async-поток и точный список того, что переключает <code>spring.threads.virtual.enabled</code>.</p>
 <h3 id="81-механизм-servlet-async">8.1 Механизм Servlet async</h3>
 <p>Смысл асинхронной обработки в MVC один — <strong>освободить exec-поток контейнера</strong>, пока запрос ждёт. <code>DispatcherServlet</code> вызывает <code>request.startAsync()</code> и выходит из цепочки фильтров, exec-поток возвращается в пул, а ответ остаётся открытым. Когда результат готов, сервлет-контейнер делает <strong>ASYNC-диспатч</strong>: запрос снова проходит цепочку фильтров, уже на другом потоке, и завершается (<a href="https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-async.html">Spring MVC: Async Requests</a>). Типов возвращаемого значения, которые запускают этот механизм, несколько, и в таблице для каждого указано, кто вычисляет результат и когда этот тип уместен:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип возврата</th>
@@ -2562,29 +2562,29 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td><code>Callable&lt;T&gt;</code></td>
-<td>поток из <code>AsyncTaskExecutor</code> (Spring сам сабмитит)</td>
-<td>«долгая CPU/IO-работа, но своего пула нет» — на деле почти никогда: вы просто переложили поток из пула Tomcat в другой пул</td>
+<td data-label="Тип возврата"><code>Callable&lt;T&gt;</code></td>
+<td data-label="Кто вычисляет">поток из <code>AsyncTaskExecutor</code> (Spring сам сабмитит)</td>
+<td data-label="Когда применять">«долгая CPU/IO-работа, но своего пула нет» — на деле почти никогда: вы просто переложили поток из пула Tomcat в другой пул</td>
 </tr>
 <tr>
-<td><code>DeferredResult&lt;T&gt;</code></td>
-<td><strong>кто угодно</strong>, снаружи (обратный вызов брокера, событие, webhook)</td>
-<td>long polling, ожидание внешнего события, интеграция с колбэчным API</td>
+<td data-label="Тип возврата"><code>DeferredResult&lt;T&gt;</code></td>
+<td data-label="Кто вычисляет"><strong>кто угодно</strong>, снаружи (обратный вызов брокера, событие, webhook)</td>
+<td data-label="Когда применять">long polling, ожидание внешнего события, интеграция с колбэчным API</td>
 </tr>
 <tr>
-<td><code>CompletableFuture&lt;T&gt;</code></td>
-<td>ваш пул / <code>@Async</code> / асинхронный клиент</td>
-<td>композиция нескольких параллельных вызовов</td>
+<td data-label="Тип возврата"><code>CompletableFuture&lt;T&gt;</code></td>
+<td data-label="Кто вычисляет">ваш пул / <code>@Async</code> / асинхронный клиент</td>
+<td data-label="Когда применять">композиция нескольких параллельных вызовов</td>
 </tr>
 <tr>
-<td><code>WebAsyncTask&lt;T&gt;</code></td>
-<td>как <code>Callable</code>, но со своим таймаутом и executor</td>
-<td>когда нужен таймаут именно на эту операцию</td>
+<td data-label="Тип возврата"><code>WebAsyncTask&lt;T&gt;</code></td>
+<td data-label="Кто вычисляет">как <code>Callable</code>, но со своим таймаутом и executor</td>
+<td data-label="Когда применять">когда нужен таймаут именно на эту операцию</td>
 </tr>
 <tr>
-<td><code>Mono</code>/<code>Flux</code></td>
-<td>Reactor</td>
-<td>если вы уже используете <code>WebClient</code> и не хотите блокироваться</td>
+<td data-label="Тип возврата"><code>Mono</code>/<code>Flux</code></td>
+<td data-label="Кто вычисляет">Reactor</td>
+<td data-label="Когда применять">если вы уже используете <code>WebClient</code> и не хотите блокироваться</td>
 </tr>
 </tbody>
 </table>
@@ -2671,7 +2671,7 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 <h3 id="84-распространение-контекста-на-async-поток">8.4 Распространение контекста на async-поток</h3>
 <p>Всё, что живёт в <code>ThreadLocal</code>, при переходе на async-поток теряется, а там лежит почти весь контекст запроса: <code>SecurityContextHolder</code>, MDC логгера, <code>RequestContextHolder</code>, <code>LocaleContextHolder</code>, <code>TransactionSynchronizationManager</code> и текущий <code>Observation</code> Micrometer. Симптомы одинаковые и неприятные — логи второй половины запроса без <code>traceId</code>, <code>AuthenticationCredentialsNotFoundException</code> внутри <code>Callable</code>, «потерянная» трасса в Jaeger, <code>LazyInitializationException</code> в <code>StreamingResponseBody</code>. Ниже сначала показано, что Spring переносит сам, а что нет, затем рабочий рецепт с декораторами executor-а и отдельно — особый случай <code>StreamingResponseBody</code>.</p>
 <p>В таблице по столбцам разложены способы уйти на другой поток, а по строкам — виды контекста; особенно стоит посмотреть на строку MDC, где «нет» стоит почти везде:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Контекст</th>
@@ -2683,39 +2683,39 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td><code>RequestContextHolder</code></td>
-<td>да (<code>RequestContextFilter</code> восстанавливает)</td>
-<td>нет</td>
-<td>нет</td>
-<td>да</td>
+<td data-label="Контекст"><code>RequestContextHolder</code></td>
+<td data-label="Callable/WebAsyncTask">да (<code>RequestContextFilter</code> восстанавливает)</td>
+<td data-label="StreamingResponseBody">нет</td>
+<td data-label="@Async">нет</td>
+<td data-label="ASYNC-диспатч (вторая половина)">да</td>
 </tr>
 <tr>
-<td><code>LocaleContextHolder</code></td>
-<td>да</td>
-<td>нет</td>
-<td>нет</td>
-<td>да</td>
+<td data-label="Контекст"><code>LocaleContextHolder</code></td>
+<td data-label="Callable/WebAsyncTask">да</td>
+<td data-label="StreamingResponseBody">нет</td>
+<td data-label="@Async">нет</td>
+<td data-label="ASYNC-диспатч (вторая половина)">да</td>
 </tr>
 <tr>
-<td><code>SecurityContext</code></td>
-<td>только с <code>DelegatingSecurityContext*Executor</code></td>
-<td>нет</td>
-<td>только с ним же</td>
-<td>да, если <code>SecurityContextPersistenceFilter</code>/<code>SecurityContextHolderFilter</code> в цепочке ASYNC</td>
+<td data-label="Контекст"><code>SecurityContext</code></td>
+<td data-label="Callable/WebAsyncTask">только с <code>DelegatingSecurityContext*Executor</code></td>
+<td data-label="StreamingResponseBody">нет</td>
+<td data-label="@Async">только с ним же</td>
+<td data-label="ASYNC-диспатч (вторая половина)">да, если <code>SecurityContextPersistenceFilter</code>/<code>SecurityContextHolderFilter</code> в цепочке ASYNC</td>
 </tr>
 <tr>
-<td>MDC</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>да, если фильтр с <code>shouldNotFilterAsyncDispatch() = false</code></td>
+<td data-label="Контекст">MDC</td>
+<td data-label="Callable/WebAsyncTask">нет</td>
+<td data-label="StreamingResponseBody">нет</td>
+<td data-label="@Async">нет</td>
+<td data-label="ASYNC-диспатч (вторая половина)">да, если фильтр с <code>shouldNotFilterAsyncDispatch() = false</code></td>
 </tr>
 <tr>
-<td>транзакция</td>
-<td>нет и не должно</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Контекст">транзакция</td>
+<td data-label="Callable/WebAsyncTask">нет и не должно</td>
+<td data-label="StreamingResponseBody">нет</td>
+<td data-label="@Async">нет</td>
+<td data-label="ASYNC-диспатч (вторая половина)">нет</td>
 </tr>
 </tbody>
 </table>
@@ -2813,7 +2813,7 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 <p>HTTP-клиент — это то, через что ваш сервис сам ходит в чужие сервисы, и именно здесь деградация соседа чаще всего превращается в отказ вашего сервиса: без таймаутов и с маленьким пулом соединений медленная интеграция съедает все потоки. В Spring сейчас три клиента и декларативный слой поверх них, и они различаются не только стилем API, но и тем, какую фабрику соединений используют, как ставятся таймауты и где могут утечь соединения. В разделе сначала дан ландшафт клиентов на 2026 год, затем разобраны правильная настройка <code>RestClient</code> и <code>WebClient</code>, HTTP Interface, различия фабрик запросов, безопасное логирование и пошаговая миграция с <code>RestTemplate</code>.</p>
 <h3 id="91-http-клиенты-spring-на-2026-год">9.1 HTTP-клиенты Spring на 2026 год</h3>
 <p>К 2026 году у Spring сложилась понятная расстановка клиентов: один уходит, один стал выбором по умолчанию для синхронного кода, один остаётся для реактивного, а декларативный HTTP Interface работает поверх любого из них. В таблице для каждого указаны версия появления, статус и ситуация, в которой его стоит брать; главное в ней — статус <code>RestTemplate</code> в первой строке:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Клиент</th>
@@ -2825,39 +2825,39 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td><code>RestTemplate</code></td>
-<td>Spring 3.0</td>
-<td>maintenance; в Framework 7 объявлен к deprecation в 7.1</td>
-<td>синхронный</td>
-<td>только legacy; мигрировать</td>
+<td data-label="Клиент"><code>RestTemplate</code></td>
+<td data-label="Введён">Spring 3.0</td>
+<td data-label="Статус">maintenance; в Framework 7 объявлен к deprecation в 7.1</td>
+<td data-label="Модель">синхронный</td>
+<td data-label="Когда брать">только legacy; мигрировать</td>
 </tr>
 <tr>
-<td><code>RestClient</code></td>
-<td>Spring 6.1</td>
-<td>рекомендуемый</td>
-<td>синхронный, fluent</td>
-<td>по умолчанию для любых синхронных вызовов</td>
+<td data-label="Клиент"><code>RestClient</code></td>
+<td data-label="Введён">Spring 6.1</td>
+<td data-label="Статус">рекомендуемый</td>
+<td data-label="Модель">синхронный, fluent</td>
+<td data-label="Когда брать">по умолчанию для любых синхронных вызовов</td>
 </tr>
 <tr>
-<td><code>WebClient</code></td>
-<td>Spring 5.0</td>
-<td>активный</td>
-<td>реактивный</td>
-<td>WebFlux, стриминг, высокий concurrency</td>
+<td data-label="Клиент"><code>WebClient</code></td>
+<td data-label="Введён">Spring 5.0</td>
+<td data-label="Статус">активный</td>
+<td data-label="Модель">реактивный</td>
+<td data-label="Когда брать">WebFlux, стриминг, высокий concurrency</td>
 </tr>
 <tr>
-<td>HTTP Interface (<code>@HttpExchange</code>)</td>
-<td>Spring 6.0 (группы — 7.0)</td>
-<td>рекомендуемый</td>
-<td>декларативный поверх любого из трёх</td>
-<td>когда интеграций больше одной</td>
+<td data-label="Клиент">HTTP Interface (<code>@HttpExchange</code>)</td>
+<td data-label="Введён">Spring 6.0 (группы — 7.0)</td>
+<td data-label="Статус">рекомендуемый</td>
+<td data-label="Модель">декларативный поверх любого из трёх</td>
+<td data-label="Когда брать">когда интеграций больше одной</td>
 </tr>
 <tr>
-<td><code>RestTestClient</code></td>
-<td>Spring 7.0</td>
-<td>новый</td>
-<td>синхронный тестовый</td>
-<td>нереактивная альтернатива <code>WebTestClient</code></td>
+<td data-label="Клиент"><code>RestTestClient</code></td>
+<td data-label="Введён">Spring 7.0</td>
+<td data-label="Статус">новый</td>
+<td data-label="Модель">синхронный тестовый</td>
+<td data-label="Когда брать">нереактивная альтернатива <code>WebTestClient</code></td>
 </tr>
 </tbody>
 </table>
@@ -3012,7 +3012,7 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 <hr>
 <h3 id="95-фабрики-запросов-и-их-различия">9.5 Фабрики запросов и их различия</h3>
 <p><code>RestClient</code> сам в сеть ходить не умеет и делегирует эту работу <code>ClientHttpRequestFactory</code>, так что пул соединений, набор таймаутов и поддержка HTTP/2 определяются именно фабрикой. По classpath Spring выбирает её в порядке Apache HttpComponents 5 → Jetty Client → Reactor Netty → JDK <code>HttpClient</code> → <code>SimpleClientHttpRequestFactory</code> (<a href="https://docs.spring.io/spring-framework/reference/integration/rest-clients.html">Spring Framework: REST Clients</a>). Разница между ними существеннее, чем кажется, и в таблице ниже стоит прежде всего посмотреть на столбец пула соединений и на значение <code>maxPerRoute</code> у HC5:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Фабрика</th>
@@ -3024,39 +3024,39 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td><code>HttpComponentsClientHttpRequestFactory</code> (HC5)</td>
-<td>полноценный <code>PoolingHttpClientConnectionManager</code>: <code>maxTotal</code>, <code>maxPerRoute</code> (по умолчанию <strong>5</strong>!), TTL, валидация idle, фоновая эвикция</td>
-<td>connect, socket/response, <strong>connectionRequest</strong></td>
-<td>да (opt-in)</td>
-<td>максимум контроля; значение по умолчанию <code>maxPerRoute=5</code> — источник половины инцидентов</td>
+<td data-label="Фабрика"><code>HttpComponentsClientHttpRequestFactory</code> (HC5)</td>
+<td data-label="Пул соединений">полноценный <code>PoolingHttpClientConnectionManager</code>: <code>maxTotal</code>, <code>maxPerRoute</code> (по умолчанию <strong>5</strong>!), TTL, валидация idle, фоновая эвикция</td>
+<td data-label="Таймауты">connect, socket/response, <strong>connectionRequest</strong></td>
+<td data-label="HTTP/2">да (opt-in)</td>
+<td data-label="Особенности">максимум контроля; значение по умолчанию <code>maxPerRoute=5</code> — источник половины инцидентов</td>
 </tr>
 <tr>
-<td><code>JdkClientHttpRequestFactory</code></td>
-<td>нет настраиваемого пула: keep-alive кэш JDK, размер через системные свойства <code>jdk.httpclient.connectionPoolSize</code></td>
-<td>connect (на <code>HttpClient</code>), read (на фабрике, реализован через <code>.orTimeout</code>)</td>
-<td>да, по умолчанию</td>
-<td>нет <code>maxPerRoute</code>; на HTTP/1.1 при исчерпании кэша просто открывает новые соединения — незаметное исчерпание портов</td>
+<td data-label="Фабрика"><code>JdkClientHttpRequestFactory</code></td>
+<td data-label="Пул соединений">нет настраиваемого пула: keep-alive кэш JDK, размер через системные свойства <code>jdk.httpclient.connectionPoolSize</code></td>
+<td data-label="Таймауты">connect (на <code>HttpClient</code>), read (на фабрике, реализован через <code>.orTimeout</code>)</td>
+<td data-label="HTTP/2">да, по умолчанию</td>
+<td data-label="Особенности">нет <code>maxPerRoute</code>; на HTTP/1.1 при исчерпании кэша просто открывает новые соединения — незаметное исчерпание портов</td>
 </tr>
 <tr>
-<td><code>JettyClientHttpRequestFactory</code></td>
-<td><code>HttpClient</code> Jetty со своим пулом</td>
-<td>connect, read</td>
-<td>да</td>
-<td>редко используется вне Jetty-стека</td>
+<td data-label="Фабрика"><code>JettyClientHttpRequestFactory</code></td>
+<td data-label="Пул соединений"><code>HttpClient</code> Jetty со своим пулом</td>
+<td data-label="Таймауты">connect, read</td>
+<td data-label="HTTP/2">да</td>
+<td data-label="Особенности">редко используется вне Jetty-стека</td>
 </tr>
 <tr>
-<td><code>ReactorClientHttpRequestFactory</code> (с 6.2; в 6.1 назывался <code>ReactorNettyClientRequestFactory</code>)</td>
-<td><code>ConnectionProvider</code> Reactor Netty</td>
-<td>connect, read, <code>pendingAcquire</code></td>
-<td>да</td>
-<td>позволяет использовать один пул для <code>RestClient</code> и <code>WebClient</code></td>
+<td data-label="Фабрика"><code>ReactorClientHttpRequestFactory</code> (с 6.2; в 6.1 назывался <code>ReactorNettyClientRequestFactory</code>)</td>
+<td data-label="Пул соединений"><code>ConnectionProvider</code> Reactor Netty</td>
+<td data-label="Таймауты">connect, read, <code>pendingAcquire</code></td>
+<td data-label="HTTP/2">да</td>
+<td data-label="Особенности">позволяет использовать один пул для <code>RestClient</code> и <code>WebClient</code></td>
 </tr>
 <tr>
-<td><code>SimpleClientHttpRequestFactory</code></td>
-<td>нет (<code>HttpURLConnection</code>)</td>
-<td>connect, read</td>
-<td>нет</td>
-<td>только для тестов; не поддерживает PATCH без обходных путей</td>
+<td data-label="Фабрика"><code>SimpleClientHttpRequestFactory</code></td>
+<td data-label="Пул соединений">нет (<code>HttpURLConnection</code>)</td>
+<td data-label="Таймауты">connect, read</td>
+<td data-label="HTTP/2">нет</td>
+<td data-label="Особенности">только для тестов; не поддерживает PATCH без обходных путей</td>
 </tr>
 </tbody>
 </table>
@@ -3129,7 +3129,7 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </code></pre></div>
 
 <p><strong>Шаг 2. Переписать вызовы.</strong> Соответствие методов <code>RestTemplate</code> цепочкам <code>RestClient</code> сведено в таблицу:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th><code>RestTemplate</code></th>
@@ -3138,40 +3138,40 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td><code>getForObject(url, Dto.class, vars)</code></td>
-<td><code>get().uri(url, vars).retrieve().body(Dto.class)</code></td>
+<td data-label="RestTemplate"><code>getForObject(url, Dto.class, vars)</code></td>
+<td data-label="RestClient"><code>get().uri(url, vars).retrieve().body(Dto.class)</code></td>
 </tr>
 <tr>
-<td><code>getForEntity(...)</code></td>
-<td><code>get().uri(...).retrieve().toEntity(Dto.class)</code></td>
+<td data-label="RestTemplate"><code>getForEntity(...)</code></td>
+<td data-label="RestClient"><code>get().uri(...).retrieve().toEntity(Dto.class)</code></td>
 </tr>
 <tr>
-<td><code>postForObject(url, body, Dto.class)</code></td>
-<td><code>post().uri(url).body(body).retrieve().body(Dto.class)</code></td>
+<td data-label="RestTemplate"><code>postForObject(url, body, Dto.class)</code></td>
+<td data-label="RestClient"><code>post().uri(url).body(body).retrieve().body(Dto.class)</code></td>
 </tr>
 <tr>
-<td><code>postForLocation(...)</code></td>
-<td><code>post().uri(...).body(b).retrieve().toBodilessEntity().getHeaders().getLocation()</code></td>
+<td data-label="RestTemplate"><code>postForLocation(...)</code></td>
+<td data-label="RestClient"><code>post().uri(...).body(b).retrieve().toBodilessEntity().getHeaders().getLocation()</code></td>
 </tr>
 <tr>
-<td><code>exchange(url, method, entity, type)</code></td>
-<td><code>method(m).uri(url).headers(...).body(...).retrieve().toEntity(type)</code></td>
+<td data-label="RestTemplate"><code>exchange(url, method, entity, type)</code></td>
+<td data-label="RestClient"><code>method(m).uri(url).headers(...).body(...).retrieve().toEntity(type)</code></td>
 </tr>
 <tr>
-<td><code>exchange(..., new ParameterizedTypeReference&lt;List&lt;Dto&gt;&gt;(){})</code></td>
-<td><code>.retrieve().body(new ParameterizedTypeReference&lt;List&lt;Dto&gt;&gt;(){})</code></td>
+<td data-label="RestTemplate"><code>exchange(..., new ParameterizedTypeReference&lt;List&lt;Dto&gt;&gt;(){})</code></td>
+<td data-label="RestClient"><code>.retrieve().body(new ParameterizedTypeReference&lt;List&lt;Dto&gt;&gt;(){})</code></td>
 </tr>
 <tr>
-<td><code>delete(url, vars)</code></td>
-<td><code>delete().uri(url, vars).retrieve().toBodilessEntity()</code></td>
+<td data-label="RestTemplate"><code>delete(url, vars)</code></td>
+<td data-label="RestClient"><code>delete().uri(url, vars).retrieve().toBodilessEntity()</code></td>
 </tr>
 <tr>
-<td><code>setErrorHandler(handler)</code></td>
-<td><code>defaultStatusHandler(predicate, handler)</code></td>
+<td data-label="RestTemplate"><code>setErrorHandler(handler)</code></td>
+<td data-label="RestClient"><code>defaultStatusHandler(predicate, handler)</code></td>
 </tr>
 <tr>
-<td><code>RestTemplate</code> + <code>HttpEntity</code> для заголовков</td>
-<td><code>.header(name, value)</code> / <code>.headers(h -&gt; ...)</code></td>
+<td data-label="RestTemplate"><code>RestTemplate</code> + <code>HttpEntity</code> для заголовков</td>
+<td data-label="RestClient"><code>.header(name, value)</code> / <code>.headers(h -&gt; ...)</code></td>
 </tr>
 </tbody>
 </table>
@@ -3410,7 +3410,7 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 <p><strong>Наблюдаемость.</strong> Всё, что основано на <code>ThreadLocal</code> — MDC, трассировка, <code>SecurityContext</code>, — требует дополнительной настройки. Это работает, но добавляет ещё один слой, который ломается при обновлениях.</p>
 <h3 id="113-влияние-виртуальных-потоков-на-выбор-стека">11.3 Влияние виртуальных потоков на выбор стека</h3>
 <p>Виртуальные потоки закрывают главный технический аргумент за WebFlux — «блокирующая модель не масштабируется по числу одновременных запросов». С <code>spring.threads.virtual.enabled=true</code> на Java 21+ MVC держит десятки тысяч одновременных медленных запросов и при этом сохраняет императивный код, работающая трассировка стека, JDBC/JPA, <code>ThreadLocal</code> и обычный отладчик. Но часть задач виртуальные потоки не покрывают, и за WebFlux они остаются; в таблице ниже эти задачи сопоставлены построчно, и решающие строки — про backpressure и стриминг:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Задача</th>
@@ -3420,39 +3420,39 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td>Много ждущих запросов</td>
-<td>да</td>
-<td>да</td>
+<td data-label="Задача">Много ждущих запросов</td>
+<td data-label="Виртуальные потоки">да</td>
+<td data-label="WebFlux">да</td>
 </tr>
 <tr>
-<td>Сквозной backpressure</td>
-<td>нет (нужен семафор/лимитер руками)</td>
-<td>да</td>
+<td data-label="Задача">Сквозной backpressure</td>
+<td data-label="Виртуальные потоки">нет (нужен семафор/лимитер руками)</td>
+<td data-label="WebFlux">да</td>
 </tr>
 <tr>
-<td>Стриминг элемент-за-элементом от БД до клиента</td>
-<td>частично (<code>Stream</code> + <code>StreamingResponseBody</code>)</td>
-<td>да, естественно</td>
+<td data-label="Задача">Стриминг элемент-за-элементом от БД до клиента</td>
+<td data-label="Виртуальные потоки">частично (<code>Stream</code> + <code>StreamingResponseBody</code>)</td>
+<td data-label="WebFlux">да, естественно</td>
 </tr>
 <tr>
-<td>Композиция параллельных вызовов</td>
-<td><code>StructuredTaskScope</code> (preview с Java 21, в Java 25 всё ещё preview, JEP 505)</td>
-<td>операторы Reactor</td>
+<td data-label="Задача">Композиция параллельных вызовов</td>
+<td data-label="Виртуальные потоки"><code>StructuredTaskScope</code> (preview с Java 21, в Java 25 всё ещё preview, JEP 505)</td>
+<td data-label="WebFlux">операторы Reactor</td>
 </tr>
 <tr>
-<td>Отладка и трассировки стека</td>
-<td>обычные</td>
-<td>требуют инструментов</td>
+<td data-label="Задача">Отладка и трассировки стека</td>
+<td data-label="Виртуальные потоки">обычные</td>
+<td data-label="WebFlux">требуют инструментов</td>
 </tr>
 <tr>
-<td>JDBC/JPA</td>
-<td>да</td>
-<td>нет</td>
+<td data-label="Задача">JDBC/JPA</td>
+<td data-label="Виртуальные потоки">да</td>
+<td data-label="WebFlux">нет</td>
 </tr>
 <tr>
-<td>Pinning на <code>synchronized</code></td>
-<td>проблема до Java 24</td>
-<td>не применимо</td>
+<td data-label="Задача">Pinning на <code>synchronized</code></td>
+<td data-label="Виртуальные потоки">проблема до Java 24</td>
+<td data-label="WebFlux">не применимо</td>
 </tr>
 </tbody>
 </table>
@@ -3512,7 +3512,7 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 <p>При этом <code>MockMvc</code> <strong>не</strong> проверяет реальную сериализацию на уровне сокета, работу сервлет-контейнера (таймауты, лимиты размера, HTTP/2) и настоящую цепочку Security, если в <code>@WebMvcTest</code> не импортирована её конфигурация. Для этого нужен <code>@SpringBootTest(webEnvironment = RANDOM_PORT)</code> вместе с <code>TestRestTemplate</code>/<code>RestTestClient</code>/<code>WebTestClient</code>.</p>
 <h3 id="122-слайсы">12.2 Слайсы</h3>
 <p>Тестовый слайс поднимает не весь контекст приложения, а только ту его часть, которая относится к одному слою, и поэтому стартует быстро и проверяет конфигурацию именно этого слоя. В таблице для каждого веб-слайса указано, что он поднимает и чего в нём нет, чтобы было понятно, какие бины придётся подменить заглушкой:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аннотация</th>
@@ -3522,24 +3522,24 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </thead>
 <tbody>
 <tr>
-<td><code>@WebMvcTest</code></td>
-<td><code>DispatcherServlet</code>, контроллеры, <code>@ControllerAdvice</code>, конвертеры, фильтры, <code>WebMvcConfigurer</code>, Security-конфиг</td>
-<td>сервисы, репозитории, <code>@Component</code> общего назначения</td>
+<td data-label="Аннотация"><code>@WebMvcTest</code></td>
+<td data-label="Что поднимает"><code>DispatcherServlet</code>, контроллеры, <code>@ControllerAdvice</code>, конвертеры, фильтры, <code>WebMvcConfigurer</code>, Security-конфиг</td>
+<td data-label="Что не поднимает">сервисы, репозитории, <code>@Component</code> общего назначения</td>
 </tr>
 <tr>
-<td><code>@WebFluxTest</code></td>
-<td>то же для WebFlux + <code>WebTestClient</code></td>
-<td>то же</td>
+<td data-label="Аннотация"><code>@WebFluxTest</code></td>
+<td data-label="Что поднимает">то же для WebFlux + <code>WebTestClient</code></td>
+<td data-label="Что не поднимает">то же</td>
 </tr>
 <tr>
-<td><code>@RestClientTest</code></td>
-<td><code>RestClient.Builder</code>/<code>RestTemplateBuilder</code> + <code>MockRestServiceServer</code></td>
-<td>веб-слой</td>
+<td data-label="Аннотация"><code>@RestClientTest</code></td>
+<td data-label="Что поднимает"><code>RestClient.Builder</code>/<code>RestTemplateBuilder</code> + <code>MockRestServiceServer</code></td>
+<td data-label="Что не поднимает">веб-слой</td>
 </tr>
 <tr>
-<td><code>@JsonTest</code></td>
-<td><code>ObjectMapper</code>/<code>JsonMapper</code> + <code>JacksonTester</code></td>
-<td>всё остальное</td>
+<td data-label="Аннотация"><code>@JsonTest</code></td>
+<td data-label="Что поднимает"><code>ObjectMapper</code>/<code>JsonMapper</code> + <code>JacksonTester</code></td>
+<td data-label="Что не поднимает">всё остальное</td>
 </tr>
 </tbody>
 </table>
@@ -3893,7 +3893,7 @@ curl -N -H <span class="s1">'Accept: text/event-stream'</span> -w <span class="s
 <p>К этому добавляют <code>Hooks.onOperatorDebug()</code> в тестах или <code>checkpoint("описание")</code> в самой цепочке: оба дают осмысленную трассировку стека ценой производительности, поэтому в проде используют только <code>checkpoint</code>.</p>
 <h3 id="152-actuator-эндпоинты">15.2 Actuator-эндпоинты</h3>
 <p>Actuator отдаёт по HTTP почти всё, что нужно для диагностики веб-слоя, — отображения, бины, применённые свойства, метрики запросов и thread dump, — и работает даже тогда, когда доступа к хосту нет. В таблице перечислены эндпоинты, которые полезны именно для веб-слоя, и то, что каждый из них даёт:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Эндпоинт</th>
@@ -3902,36 +3902,36 @@ curl -N -H <span class="s1">'Accept: text/event-stream'</span> -w <span class="s
 </thead>
 <tbody>
 <tr>
-<td><code>/actuator/mappings</code></td>
-<td>все зарегистрированные отображения и их условия</td>
+<td data-label="Эндпоинт"><code>/actuator/mappings</code></td>
+<td data-label="Что даёт">все зарегистрированные отображения и их условия</td>
 </tr>
 <tr>
-<td><code>/actuator/beans</code></td>
-<td>есть ли ваш <code>ArgumentResolver</code>/<code>ControllerAdvice</code> в контексте</td>
+<td data-label="Эндпоинт"><code>/actuator/beans</code></td>
+<td data-label="Что даёт">есть ли ваш <code>ArgumentResolver</code>/<code>ControllerAdvice</code> в контексте</td>
 </tr>
 <tr>
-<td><code>/actuator/configprops</code></td>
-<td>реально применённые <code>spring.mvc.*</code>, <code>spring.jackson.*</code></td>
+<td data-label="Эндпоинт"><code>/actuator/configprops</code></td>
+<td data-label="Что даёт">реально применённые <code>spring.mvc.*</code>, <code>spring.jackson.*</code></td>
 </tr>
 <tr>
-<td><code>/actuator/metrics/http.server.requests</code></td>
-<td>латентность и статусы по <code>uri</code>, <code>method</code>, <code>outcome</code>, <code>exception</code></td>
+<td data-label="Эндпоинт"><code>/actuator/metrics/http.server.requests</code></td>
+<td data-label="Что даёт">латентность и статусы по <code>uri</code>, <code>method</code>, <code>outcome</code>, <code>exception</code></td>
 </tr>
 <tr>
-<td><code>/actuator/metrics/http.client.requests</code></td>
-<td>то же для исходящих вызовов (<code>RestClient</code>/<code>WebClient</code> с observability)</td>
+<td data-label="Эндпоинт"><code>/actuator/metrics/http.client.requests</code></td>
+<td data-label="Что даёт">то же для исходящих вызовов (<code>RestClient</code>/<code>WebClient</code> с observability)</td>
 </tr>
 <tr>
-<td><code>/actuator/metrics/tomcat.threads.busy</code></td>
-<td>занятость пула Tomcat — главный индикатор насыщения</td>
+<td data-label="Эндпоинт"><code>/actuator/metrics/tomcat.threads.busy</code></td>
+<td data-label="Что даёт">занятость пула Tomcat — главный индикатор насыщения</td>
 </tr>
 <tr>
-<td><code>/actuator/threaddump</code></td>
-<td>thread dump без доступа к хосту</td>
+<td data-label="Эндпоинт"><code>/actuator/threaddump</code></td>
+<td data-label="Что даёт">thread dump без доступа к хосту</td>
 </tr>
 <tr>
-<td><code>/actuator/httpexchanges</code></td>
-<td>последние N запросов (нужен бин <code>HttpExchangeRepository</code>)</td>
+<td data-label="Эндпоинт"><code>/actuator/httpexchanges</code></td>
+<td data-label="Что даёт">последние N запросов (нужен бин <code>HttpExchangeRepository</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -4211,5 +4211,5 @@ java -jar app.jar --debug <span class="m">2</span>&gt;<span class="p">&amp;</spa
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-стеки-spring-mvc-и-webflux">1. Стеки Spring MVC и WebFlux</a></li><li><a href="#2-устройство-dispatcherservlet">2. Устройство DispatcherServlet</a></li><li><a href="#3-уровни-перехвата-фильтры-интерцепторы-aop">3. Уровни перехвата: фильтры, интерцепторы, AOP</a></li><li><a href="#4-обработка-ошибок-и-problemdetail">4. Обработка ошибок и ProblemDetail</a></li><li><a href="#5-валидация">5. Валидация</a></li><li><a href="#6-настройка-jackson">6. Настройка Jackson</a></li><li><a href="#7-контент-негоциация-cors-multipart-streaming">7. Контент-негоциация, CORS, multipart, streaming</a></li><li><a href="#8-async-в-mvc-и-виртуальные-потоки">8. Async в MVC и виртуальные потоки</a></li><li><a href="#9-http-клиенты">9. HTTP-клиенты</a></li><li><a href="#10-webflux-архитектура">10. WebFlux: архитектура</a></li><li><a href="#11-сравнение-mvc-и-webflux">11. Сравнение MVC и WebFlux</a></li><li><a href="#12-тестирование-веб-слоя-и-документация-api">12. Тестирование веб-слоя и документация API</a></li><li><a href="#13-разобранные-инциденты">13. Разобранные инциденты</a></li><li><a href="#14-грабли-и-антипаттерны">14. Грабли и антипаттерны</a></li><li><a href="#15-диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками">17. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

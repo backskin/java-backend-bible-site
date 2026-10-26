@@ -3,7 +3,7 @@
 <title>9. Spring Core под капотом — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Spring Core под капотом">
 <a class="skip" href="#content">К тексту</a>
@@ -211,7 +211,7 @@
 
 <p>У XML-контекста два описания, ровно по числу тегов <code>&lt;bean&gt;</code>. У контекста на аннотациях их восемь: кроме самой конфигурации и двух бинов, <code>AnnotationConfigApplicationContext</code> зарегистрировал пять служебных. Это постпроцессоры, которые и придают смысл аннотациям: один разбирает классы <code>@Configuration</code> и <code>@Bean</code>-методы, другой обрабатывает <code>@Autowired</code>, третий — <code>@PostConstruct</code> и <code>@PreDestroy</code>, остальные два — <code>@EventListener</code>. Без них аннотации остались бы просто метаданными в байткоде.</p>
 <p>Описания разных источников представлены разными классами. Запуск показывает это для бина <code>app</code>: в конфигурации <code>AppConfig</code> его описание — <code>ConfigurationClassBeanDefinition</code>, а найденное сканированием — <code>ScannedGenericBeanDefinition</code>. Всего классов пять:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Класс</th>
@@ -220,24 +220,24 @@
 </thead>
 <tbody>
 <tr>
-<td><code>ConfigurationClassBeanDefinition</code></td>
-<td><code>@Bean</code>-метод в классе конфигурации</td>
+<td data-label="Класс"><code>ConfigurationClassBeanDefinition</code></td>
+<td data-label="Откуда берётся"><code>@Bean</code>-метод в классе конфигурации</td>
 </tr>
 <tr>
-<td><code>ScannedGenericBeanDefinition</code></td>
-<td><code>@ComponentScan</code>; несёт <code>AnnotationMetadata</code>, прочитанную без загрузки класса</td>
+<td data-label="Класс"><code>ScannedGenericBeanDefinition</code></td>
+<td data-label="Откуда берётся"><code>@ComponentScan</code>; несёт <code>AnnotationMetadata</code>, прочитанную без загрузки класса</td>
 </tr>
 <tr>
-<td><code>AnnotatedGenericBeanDefinition</code></td>
-<td>прямая регистрация класса, <code>context.register(Foo.class)</code></td>
+<td data-label="Класс"><code>AnnotatedGenericBeanDefinition</code></td>
+<td data-label="Откуда берётся">прямая регистрация класса, <code>context.register(Foo.class)</code></td>
 </tr>
 <tr>
-<td><code>GenericBeanDefinition</code></td>
-<td>программная регистрация</td>
+<td data-label="Класс"><code>GenericBeanDefinition</code></td>
+<td data-label="Откуда берётся">программная регистрация</td>
 </tr>
 <tr>
-<td><code>RootBeanDefinition</code></td>
-<td>итоговое, «слитое» описание, по которому фабрика создаёт объект</td>
+<td data-label="Класс"><code>RootBeanDefinition</code></td>
+<td data-label="Откуда берётся">итоговое, «слитое» описание, по которому фабрика создаёт объект</td>
 </tr>
 </tbody>
 </table>
@@ -280,7 +280,7 @@
 </code></pre></div>
 
 <p>Контекст приложения, <code>ApplicationContext</code>, расширяет <code>BeanFactory</code> и отличается от фабрики двумя вещами, обе видны в выводе. Он сам находит и подключает все постпроцессоры, поэтому <code>@PostConstruct</code> сработал. И он создаёт синглтоны на старте, в методе <code>preInstantiateSingletons</code> внутри <code>refresh()</code>, а не по первому запросу. Раннее создание выгодно: ошибка конфигурации, например неверный пароль к базе, проявится при запуске, а не на первом платеже. Кроме этого, контекст добавляет к фабрике службы, которые нужны настоящему приложению (<a href="https://docs.spring.io/spring-framework/reference/core/beans/context-introduction.html">Spring Reference: Container Overview</a>):</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Возможность</th>
@@ -290,34 +290,34 @@
 </thead>
 <tbody>
 <tr>
-<td>Интернационализация</td>
-<td><code>MessageSource</code></td>
-<td><code>getMessage(code, args, locale)</code> поверх ResourceBundle</td>
+<td data-label="Возможность">Интернационализация</td>
+<td data-label="Интерфейс"><code>MessageSource</code></td>
+<td data-label="Что даёт"><code>getMessage(code, args, locale)</code> поверх ResourceBundle</td>
 </tr>
 <tr>
-<td>Доступ к ресурсам</td>
-<td><code>ResourceLoader</code></td>
-<td>префиксы <code>classpath:</code>, <code>file:</code>, <code>http:</code>, объект <code>Resource</code></td>
+<td data-label="Возможность">Доступ к ресурсам</td>
+<td data-label="Интерфейс"><code>ResourceLoader</code></td>
+<td data-label="Что даёт">префиксы <code>classpath:</code>, <code>file:</code>, <code>http:</code>, объект <code>Resource</code></td>
 </tr>
 <tr>
-<td>События</td>
-<td><code>ApplicationEventPublisher</code></td>
-<td><code>publishEvent</code>, <code>@EventListener</code> (раздел 10)</td>
+<td data-label="Возможность">События</td>
+<td data-label="Интерфейс"><code>ApplicationEventPublisher</code></td>
+<td data-label="Что даёт"><code>publishEvent</code>, <code>@EventListener</code> (раздел 10)</td>
 </tr>
 <tr>
-<td>Жизненный цикл</td>
-<td><code>Lifecycle</code>/<code>SmartLifecycle</code></td>
-<td><code>start()</code>/<code>stop()</code>, graceful shutdown</td>
+<td data-label="Возможность">Жизненный цикл</td>
+<td data-label="Интерфейс"><code>Lifecycle</code>/<code>SmartLifecycle</code></td>
+<td data-label="Что даёт"><code>start()</code>/<code>stop()</code>, graceful shutdown</td>
 </tr>
 <tr>
-<td>Иерархия</td>
-<td><code>HierarchicalBeanFactory</code></td>
-<td>родительский контекст</td>
+<td data-label="Возможность">Иерархия</td>
+<td data-label="Интерфейс"><code>HierarchicalBeanFactory</code></td>
+<td data-label="Что даёт">родительский контекст</td>
 </tr>
 <tr>
-<td>Окружение</td>
-<td><code>EnvironmentCapable</code></td>
-<td>профили и <code>PropertySource</code> (раздел 11)</td>
+<td data-label="Возможность">Окружение</td>
+<td data-label="Интерфейс"><code>EnvironmentCapable</code></td>
+<td data-label="Что даёт">профили и <code>PropertySource</code> (раздел 11)</td>
 </tr>
 </tbody>
 </table>
@@ -400,7 +400,7 @@
 <p>Вывод делится на три части, и каждая соответствует своему этапу старта. Строки 2–3 — работа с описаниями: постпроцессоры фабрики уже видят все одиннадцать описаний, включая добавленное <code>queueConsumer</code>, но ни одного объекта приложения ещё нет. Строка 4 — регистрация постпроцессоров бинов: они создаются раньше всех обычных бинов, иначе им нечего было бы обрабатывать. Строки 5–9 — создание бинов: конструктор, постпроцессор до инициализации, <code>@PostConstruct</code>, постпроцессор после инициализации и обратный вызов <code>afterSingletonsInstantiated</code>, который приходит, когда созданы все синглтоны. Строки 10–11 — запуск: компоненты <code>SmartLifecycle</code> стартуют только после того, как всё создано, а событие <code>ContextRefreshedEvent</code> публикуется последним. Отсюда простое правило: потребитель очереди или планировщик стоит запускать в <code>SmartLifecycle.start()</code>, а не в <code>@PostConstruct</code>, потому что в <code>@PostConstruct</code> другие бины ещё могут быть не готовы.<sup id="fnref:b09-30"><a class="footnote-ref" href="#fn:b09-30">5</a></sup></p>
 <h3 id="32-двенадцать-шагов-refresh">3.2 Двенадцать шагов <code>refresh()</code></h3>
 <p>Опыт показывает этапы, а сам метод состоит из двенадцати шагов. В таблице для каждого шага сказано, что он делает и какой строке опыта соответствует.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Шаг</th>
@@ -410,64 +410,64 @@
 </thead>
 <tbody>
 <tr>
-<td>1 <code>prepareRefresh</code></td>
-<td>фиксирует время старта, готовит <code>Environment</code> с профилями и свойствами (раздел 11), проверяет обязательные свойства из <code>setRequiredProperties</code>, заводит список ранних событий</td>
-<td>—</td>
+<td data-label="Шаг">1 <code>prepareRefresh</code></td>
+<td data-label="Что делает">фиксирует время старта, готовит <code>Environment</code> с профилями и свойствами (раздел 11), проверяет обязательные свойства из <code>setRequiredProperties</code>, заводит список ранних событий</td>
+<td data-label="В опыте">—</td>
 </tr>
 <tr>
-<td>2 <code>obtainFreshBeanFactory</code></td>
-<td>отдаёт фабрику; XML-контексты (<code>AbstractRefreshableApplicationContext</code>) здесь создают <code>DefaultListableBeanFactory</code> и читают в неё описания, а у <code>GenericApplicationContext</code> и всех контекстов Boot фабрика создана ещё в конструкторе</td>
-<td>—</td>
+<td data-label="Шаг">2 <code>obtainFreshBeanFactory</code></td>
+<td data-label="Что делает">отдаёт фабрику; XML-контексты (<code>AbstractRefreshableApplicationContext</code>) здесь создают <code>DefaultListableBeanFactory</code> и читают в неё описания, а у <code>GenericApplicationContext</code> и всех контекстов Boot фабрика создана ещё в конструкторе</td>
+<td data-label="В опыте">—</td>
 </tr>
 <tr>
-<td>3 <code>prepareBeanFactory</code></td>
-<td>ставит загрузчик классов, вычислитель выражений SpEL (<code>StandardBeanExpressionResolver</code>), <code>ResourceEditorRegistrar</code>, постпроцессор <code>ApplicationContextAwareProcessor</code> для интерфейсов <code>Aware</code>; делает сам контекст доступным для внедрения как <code>ApplicationContext</code>, <code>BeanFactory</code> и <code>ApplicationEventPublisher</code>, а <code>Environment</code> регистрирует бином</td>
-<td>—</td>
+<td data-label="Шаг">3 <code>prepareBeanFactory</code></td>
+<td data-label="Что делает">ставит загрузчик классов, вычислитель выражений SpEL (<code>StandardBeanExpressionResolver</code>), <code>ResourceEditorRegistrar</code>, постпроцессор <code>ApplicationContextAwareProcessor</code> для интерфейсов <code>Aware</code>; делает сам контекст доступным для внедрения как <code>ApplicationContext</code>, <code>BeanFactory</code> и <code>ApplicationEventPublisher</code>, а <code>Environment</code> регистрирует бином</td>
+<td data-label="В опыте">—</td>
 </tr>
 <tr>
-<td>4 <code>postProcessBeanFactory</code></td>
-<td>пустой шаблонный метод для подклассов; веб-контексты регистрируют здесь области видимости <code>request</code>, <code>session</code>, <code>application</code></td>
-<td>—</td>
+<td data-label="Шаг">4 <code>postProcessBeanFactory</code></td>
+<td data-label="Что делает">пустой шаблонный метод для подклассов; веб-контексты регистрируют здесь области видимости <code>request</code>, <code>session</code>, <code>application</code></td>
+<td data-label="В опыте">—</td>
 </tr>
 <tr>
-<td>5 <code>invokeBeanFactoryPostProcessors</code></td>
-<td>вызывает постпроцессоры фабрики: сначала <code>BeanDefinitionRegistryPostProcessor</code>, которые добавляют описания, затем <code>BeanFactoryPostProcessor</code>, которые их меняют</td>
-<td>строки 2–3</td>
+<td data-label="Шаг">5 <code>invokeBeanFactoryPostProcessors</code></td>
+<td data-label="Что делает">вызывает постпроцессоры фабрики: сначала <code>BeanDefinitionRegistryPostProcessor</code>, которые добавляют описания, затем <code>BeanFactoryPostProcessor</code>, которые их меняют</td>
+<td data-label="В опыте">строки 2–3</td>
 </tr>
 <tr>
-<td>6 <code>registerBeanPostProcessors</code></td>
-<td>создаёт и регистрирует постпроцессоры бинов: сначала <code>PriorityOrdered</code>, затем <code>Ordered</code>, затем остальные, последним <code>ApplicationListenerDetector</code></td>
-<td>строка 4</td>
+<td data-label="Шаг">6 <code>registerBeanPostProcessors</code></td>
+<td data-label="Что делает">создаёт и регистрирует постпроцессоры бинов: сначала <code>PriorityOrdered</code>, затем <code>Ordered</code>, затем остальные, последним <code>ApplicationListenerDetector</code></td>
+<td data-label="В опыте">строка 4</td>
 </tr>
 <tr>
-<td>7 <code>initMessageSource</code></td>
-<td>находит бин <code>messageSource</code> или создаёт пустой</td>
-<td>—</td>
+<td data-label="Шаг">7 <code>initMessageSource</code></td>
+<td data-label="Что делает">находит бин <code>messageSource</code> или создаёт пустой</td>
+<td data-label="В опыте">—</td>
 </tr>
 <tr>
-<td>8 <code>initApplicationEventMulticaster</code></td>
-<td>находит бин <code>applicationEventMulticaster</code> или создаёт <code>SimpleApplicationEventMulticaster</code>, который вызывает слушателей синхронно, в потоке публикации</td>
-<td>—</td>
+<td data-label="Шаг">8 <code>initApplicationEventMulticaster</code></td>
+<td data-label="Что делает">находит бин <code>applicationEventMulticaster</code> или создаёт <code>SimpleApplicationEventMulticaster</code>, который вызывает слушателей синхронно, в потоке публикации</td>
+<td data-label="В опыте">—</td>
 </tr>
 <tr>
-<td>9 <code>onRefresh</code></td>
-<td>шаблонный метод; Spring Boot создаёт здесь встроенный веб-сервер, но трафик он ещё не принимает</td>
-<td>—</td>
+<td data-label="Шаг">9 <code>onRefresh</code></td>
+<td data-label="Что делает">шаблонный метод; Spring Boot создаёт здесь встроенный веб-сервер, но трафик он ещё не принимает</td>
+<td data-label="В опыте">—</td>
 </tr>
 <tr>
-<td>10 <code>registerListeners</code></td>
-<td>подключает слушателей и рассылает накопленные ранние события</td>
-<td>—</td>
+<td data-label="Шаг">10 <code>registerListeners</code></td>
+<td data-label="Что делает">подключает слушателей и рассылает накопленные ранние события</td>
+<td data-label="В опыте">—</td>
 </tr>
 <tr>
-<td>11 <code>finishBeanFactoryInitialization</code></td>
-<td>ставит <code>ConversionService</code>, создаёт бины <code>LoadTimeWeaverAware</code>, замораживает конфигурацию (<code>freezeConfiguration</code>) и создаёт все синглтоны (<code>preInstantiateSingletons</code>), после чего вызывает <code>SmartInitializingSingleton</code></td>
-<td>строки 5–9</td>
+<td data-label="Шаг">11 <code>finishBeanFactoryInitialization</code></td>
+<td data-label="Что делает">ставит <code>ConversionService</code>, создаёт бины <code>LoadTimeWeaverAware</code>, замораживает конфигурацию (<code>freezeConfiguration</code>) и создаёт все синглтоны (<code>preInstantiateSingletons</code>), после чего вызывает <code>SmartInitializingSingleton</code></td>
+<td data-label="В опыте">строки 5–9</td>
 </tr>
 <tr>
-<td>12 <code>finishRefresh</code></td>
-<td>запускает <code>LifecycleProcessor</code>, а через него бины <code>SmartLifecycle</code> с <code>isAutoStartup() == true</code>; в Boot среди них <code>WebServerStartStopLifecycle</code>, который открывает порт; публикует <code>ContextRefreshedEvent</code></td>
-<td>строки 10–11</td>
+<td data-label="Шаг">12 <code>finishRefresh</code></td>
+<td data-label="Что делает">запускает <code>LifecycleProcessor</code>, а через него бины <code>SmartLifecycle</code> с <code>isAutoStartup() == true</code>; в Boot среди них <code>WebServerStartStopLifecycle</code>, который открывает порт; публикует <code>ContextRefreshedEvent</code></td>
+<td data-label="В опыте">строки 10–11</td>
 </tr>
 </tbody>
 </table>
@@ -517,7 +517,7 @@ GoodConfig: постпроцессор обработал limitProperties = true
 <p>Во втором случае метод статический, экземпляр конфигурации не нужен, но параметр <code>LimitProperties</code> всё равно надо создать, и создают его на шаге 5. Бин остаётся в контейнере необработанным: <code>AuditingBpp</code> его не видел. Если бы на месте <code>AuditingBpp</code> был механизм AOP, бин остался бы без прокси, и <code>@Transactional</code> или <code>@Cacheable</code> на нём молча не работали бы. Важнее всего здесь то, что в журнале нет ни строки: бин создан до шага 6, а проверка, которая пишет предупреждение, появляется только на шаге 6.</p>
 <p>В третьем случае бин нужен постпроцессору бинов, и создают его на шаге 6, посреди регистрации постпроцессоров. Здесь проверка <code>PostProcessorRegistrationDelegate$BeanPostProcessorChecker</code> уже работает. Она сравнивает число зарегистрированных постпроцессоров с целевым и, если их меньше, пишет то самое предупреждение <code>is not eligible for getting processed by all BeanPostProcessors</code>, называя виновника, <code>limitsAware</code>. Результат тот же, что во втором случае: бин без обработки.</p>
 <p>Четвёртая конфигурация ничего не создаёт раньше времени, и <code>AuditingBpp</code> обрабатывает <code>LimitProperties</code> как обычно. Отсюда способы лечения. Метод, который возвращает <code>BeanFactoryPostProcessor</code> или <code>BeanPostProcessor</code>, объявляют <code>static</code> и без параметров. Настройки такой постпроцессор берёт из <code>Environment</code>, а не из бинов. Если зависимость всё же нужна, её получают лениво, через <code>ObjectProvider</code>, в момент первого использования, а не при создании постпроцессора.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Где создан бин</th>
@@ -527,19 +527,19 @@ GoodConfig: постпроцессор обработал limitProperties = true
 </thead>
 <tbody>
 <tr>
-<td>шаг 5, для постпроцессора фабрики</td>
-<td>все постпроцессоры бинов: внедрение через конструктор и в поля, <code>@PostConstruct</code>, привязку <code>@ConfigurationProperties</code> (её выполняет <code>ConfigurationPropertiesBindingPostProcessor</code>), прокси</td>
-<td>нет; конфигурация с конструктором вообще не поднимается</td>
+<td data-label="Где создан бин">шаг 5, для постпроцессора фабрики</td>
+<td data-label="Что он теряет">все постпроцессоры бинов: внедрение через конструктор и в поля, <code>@PostConstruct</code>, привязку <code>@ConfigurationProperties</code> (её выполняет <code>ConfigurationPropertiesBindingPostProcessor</code>), прокси</td>
+<td data-label="Видно ли в журнале">нет; конфигурация с конструктором вообще не поднимается</td>
 </tr>
 <tr>
-<td>шаг 6, для постпроцессора бинов</td>
-<td>постпроцессоры, зарегистрированные позже, в том числе создатель прокси AOP</td>
-<td>да, предупреждение <code>is not eligible…</code></td>
+<td data-label="Где создан бин">шаг 6, для постпроцессора бинов</td>
+<td data-label="Что он теряет">постпроцессоры, зарегистрированные позже, в том числе создатель прокси AOP</td>
+<td data-label="Видно ли в журнале">да, предупреждение <code>is not eligible…</code></td>
 </tr>
 <tr>
-<td>шаг 11</td>
-<td>ничего, это штатный момент</td>
-<td>—</td>
+<td data-label="Где создан бин">шаг 11</td>
+<td data-label="Что он теряет">ничего, это штатный момент</td>
+<td data-label="Видно ли в журнале">—</td>
 </tr>
 </tbody>
 </table>
@@ -622,7 +622,7 @@ GoodConfig: постпроцессор обработал limitProperties = true
 
 <p>Так же устроены транзакции, кэш и асинхронные вызовы Spring: их постпроцессоры возвращают на этом шаге прокси, а остальные бины получают прокси вместо исходного объекта (раздел 8). Из порядка этапов вытекает следствие, которое часто ломает код. В строке 5 <code>@PostConstruct</code> печатает <code>this — LimitService</code>: он вызван на исходном объекте, а прокси появился только в строке 8. Поэтому вызов метода с <code>@Transactional</code> или <code>@Cacheable</code> изнутри <code>@PostConstruct</code> идёт мимо прокси, и транзакции у него нет. Работу, которой нужны транзакции, при старте выполняют позже, когда прокси уже созданы (подраздел 4.3).</p>
 <p>Постпроцессор бинов работает с объектами, а постпроцессор фабрики из раздела 3 — с их описаниями, и путать их нельзя:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -632,24 +632,24 @@ GoodConfig: постпроцессор обработал limitProperties = true
 </thead>
 <tbody>
 <tr>
-<td>когда работает</td>
-<td>шаг 5 <code>refresh()</code>, до создания обычных бинов</td>
-<td>регистрируется на шаге 6, вызывается для каждого бина на шаге 11</td>
+<td data-label="">когда работает</td>
+<td data-label="BeanFactoryPostProcessor">шаг 5 <code>refresh()</code>, до создания обычных бинов</td>
+<td data-label="BeanPostProcessor">регистрируется на шаге 6, вызывается для каждого бина на шаге 11</td>
 </tr>
 <tr>
-<td>с чем</td>
-<td>с описаниями бинов (<code>BeanDefinition</code>)</td>
-<td>с созданными объектами</td>
+<td data-label="">с чем</td>
+<td data-label="BeanFactoryPostProcessor">с описаниями бинов (<code>BeanDefinition</code>)</td>
+<td data-label="BeanPostProcessor">с созданными объектами</td>
 </tr>
 <tr>
-<td>что может</td>
-<td>менять scope, класс, свойства, <code>lazyInit</code>; добавлять описания через <code>BeanDefinitionRegistryPostProcessor</code></td>
-<td>заменить объект другим, например прокси; проверить или донастроить его</td>
+<td data-label="">что может</td>
+<td data-label="BeanFactoryPostProcessor">менять scope, класс, свойства, <code>lazyInit</code>; добавлять описания через <code>BeanDefinitionRegistryPostProcessor</code></td>
+<td data-label="BeanPostProcessor">заменить объект другим, например прокси; проверить или донастроить его</td>
 </tr>
 <tr>
-<td>примеры в Spring</td>
-<td><code>ConfigurationClassPostProcessor</code>, <code>PropertySourcesPlaceholderConfigurer</code></td>
-<td><code>AutowiredAnnotationBeanPostProcessor</code>, <code>CommonAnnotationBeanPostProcessor</code>, <code>AsyncAnnotationBeanPostProcessor</code>, <code>AnnotationAwareAspectJAutoProxyCreator</code></td>
+<td data-label="">примеры в Spring</td>
+<td data-label="BeanFactoryPostProcessor"><code>ConfigurationClassPostProcessor</code>, <code>PropertySourcesPlaceholderConfigurer</code></td>
+<td data-label="BeanPostProcessor"><code>AutowiredAnnotationBeanPostProcessor</code>, <code>CommonAnnotationBeanPostProcessor</code>, <code>AsyncAnnotationBeanPostProcessor</code>, <code>AnnotationAwareAspectJAutoProxyCreator</code></td>
 </tr>
 </tbody>
 </table>
@@ -877,7 +877,7 @@ Spring Boot, цикл через сеттеры: BeanCurrentlyInCreationExceptio
 <span class="p">}</span>
 </code></pre></div>
 
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Постпроцессор</th>
@@ -887,19 +887,19 @@ Spring Boot, цикл через сеттеры: BeanCurrentlyInCreationExceptio
 </thead>
 <tbody>
 <tr>
-<td>прокси только после инициализации</td>
-<td><code>BeanCurrentlyInCreationException: Bean with name 'Payments' has been injected into other beans [Limits] in its raw version as part of a circular reference, but has eventually been wrapped</code></td>
-<td>контекст поднялся, оба соседа получили объекты из контекста</td>
+<td data-label="Постпроцессор">прокси только после инициализации</td>
+<td data-label="Spring 5.3.30 и 6.1.10"><code>BeanCurrentlyInCreationException: Bean with name 'Payments' has been injected into other beans [Limits] in its raw version as part of a circular reference, but has eventually been wrapped</code></td>
+<td data-label="Spring 6.2.5 и 7.0.9">контекст поднялся, оба соседа получили объекты из контекста</td>
 </tr>
 <tr>
-<td>прокси по ранней ссылке</td>
-<td>контекст поднялся, соседи получили объекты из контекста</td>
-<td>то же</td>
+<td data-label="Постпроцессор">прокси по ранней ссылке</td>
+<td data-label="Spring 5.3.30 и 6.1.10">контекст поднялся, соседи получили объекты из контекста</td>
+<td data-label="Spring 6.2.5 и 7.0.9">то же</td>
 </tr>
 <tr>
-<td>прокси обоим бинам после инициализации</td>
-<td>та же ошибка о «сырой» версии</td>
-<td>контекст поднялся, но <strong><code>Payments</code> получил «сырой» <code>Limits</code> без прокси</strong></td>
+<td data-label="Постпроцессор">прокси обоим бинам после инициализации</td>
+<td data-label="Spring 5.3.30 и 6.1.10">та же ошибка о «сырой» версии</td>
+<td data-label="Spring 6.2.5 и 7.0.9">контекст поднялся, но <strong><code>Payments</code> получил «сырой» <code>Limits</code> без прокси</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1068,7 +1068,7 @@ final-класс: AopConfigException, причина IllegalArgumentException: C
 
 <p>Методы <code>public</code>, <code>protected</code> и package-private из того же пакета прокси перехватил, а <code>final</code>, <code>static</code> и <code>private</code> прошли мимо. Хуже всего с <code>final</code>-методом: Spring только пишет предупреждение при создании прокси, и то лишь для публичного метода (о <code>protected final</code> в том же опыте он промолчал), а сам метод выполняется на экземпляре прокси, у которого поля не инициализированы, поэтому <code>limitFinal()</code> вернул <code>null</code> вместо лимита. Такая ошибка выглядит как загадочное пустое значение, а не как пропущенная транзакция. <code>final</code>-класс, наоборот, отвергается громко: контекст не поднимется с <code>AopConfigException</code>. У прокси JDK ограничение другое и проще: он перехватывает только методы интерфейса.</p>
 <p>Видимость имеет значение и для самой аннотации <code>@Transactional</code>. Тот же сервис переводов с <code>@Transactional</code> на <code>protected</code>-методе <code>refund</code> и package-private методе <code>hold</code> собран на трёх версиях Spring:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метод</th>
@@ -1078,19 +1078,19 @@ final-класс: AopConfigException, причина IllegalArgumentException: C
 </thead>
 <tbody>
 <tr>
-<td><code>public transfer()</code></td>
-<td>транзакция есть</td>
-<td>транзакция есть</td>
+<td data-label="Метод"><code>public transfer()</code></td>
+<td data-label="Spring 5.3.30">транзакция есть</td>
+<td data-label="Spring 6.1.10 и 7.0.9">транзакция есть</td>
 </tr>
 <tr>
-<td><code>protected refund()</code></td>
-<td><strong>транзакции нет</strong>, без предупреждения</td>
-<td>транзакция есть</td>
+<td data-label="Метод"><code>protected refund()</code></td>
+<td data-label="Spring 5.3.30"><strong>транзакции нет</strong>, без предупреждения</td>
+<td data-label="Spring 6.1.10 и 7.0.9">транзакция есть</td>
 </tr>
 <tr>
-<td>package-private <code>hold()</code></td>
-<td><strong>транзакции нет</strong>, без предупреждения</td>
-<td>транзакция есть</td>
+<td data-label="Метод">package-private <code>hold()</code></td>
+<td data-label="Spring 5.3.30"><strong>транзакции нет</strong>, без предупреждения</td>
+<td data-label="Spring 6.1.10 и 7.0.9">транзакция есть</td>
 </tr>
 </tbody>
 </table>
@@ -1253,7 +1253,7 @@ ChainLab.main
 </code></pre></div>
 
 <p>Встроенные аннотации Spring работают тем же механизмом, и отличаются они только перехватчиком, который попадает в цепочку:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аннотация</th>
@@ -1263,34 +1263,34 @@ ChainLab.main
 </thead>
 <tbody>
 <tr>
-<td><code>@Transactional</code></td>
-<td><code>TransactionInterceptor</code> (совет <code>BeanFactoryTransactionAttributeSourceAdvisor</code>)</td>
-<td><code>@EnableTransactionManagement</code></td>
+<td data-label="Аннотация"><code>@Transactional</code></td>
+<td data-label="Перехватчик в цепочке"><code>TransactionInterceptor</code> (совет <code>BeanFactoryTransactionAttributeSourceAdvisor</code>)</td>
+<td data-label="Чем включается"><code>@EnableTransactionManagement</code></td>
 </tr>
 <tr>
-<td><code>@Cacheable</code>, <code>@CacheEvict</code></td>
-<td><code>CacheInterceptor</code> (совет <code>BeanFactoryCacheOperationSourceAdvisor</code>)</td>
-<td><code>@EnableCaching</code></td>
+<td data-label="Аннотация"><code>@Cacheable</code>, <code>@CacheEvict</code></td>
+<td data-label="Перехватчик в цепочке"><code>CacheInterceptor</code> (совет <code>BeanFactoryCacheOperationSourceAdvisor</code>)</td>
+<td data-label="Чем включается"><code>@EnableCaching</code></td>
 </tr>
 <tr>
-<td><code>@Async</code></td>
-<td><code>AnnotationAsyncExecutionInterceptor</code> (совет <code>AsyncAnnotationAdvisor</code>)</td>
-<td><code>@EnableAsync</code></td>
+<td data-label="Аннотация"><code>@Async</code></td>
+<td data-label="Перехватчик в цепочке"><code>AnnotationAsyncExecutionInterceptor</code> (совет <code>AsyncAnnotationAdvisor</code>)</td>
+<td data-label="Чем включается"><code>@EnableAsync</code></td>
 </tr>
 <tr>
-<td><code>@Retryable</code> из Spring 7</td>
-<td><code>RetryAnnotationInterceptor</code></td>
-<td><code>@EnableResilientMethods</code></td>
+<td data-label="Аннотация"><code>@Retryable</code> из Spring 7</td>
+<td data-label="Перехватчик в цепочке"><code>RetryAnnotationInterceptor</code></td>
+<td data-label="Чем включается"><code>@EnableResilientMethods</code></td>
 </tr>
 <tr>
-<td><code>@PreAuthorize</code></td>
-<td><code>AuthorizationManagerBeforeMethodInterceptor</code></td>
-<td><code>@EnableMethodSecurity</code></td>
+<td data-label="Аннотация"><code>@PreAuthorize</code></td>
+<td data-label="Перехватчик в цепочке"><code>AuthorizationManagerBeforeMethodInterceptor</code></td>
+<td data-label="Чем включается"><code>@EnableMethodSecurity</code></td>
 </tr>
 <tr>
-<td><code>@Validated</code> на классе</td>
-<td><code>MethodValidationInterceptor</code></td>
-<td><code>MethodValidationPostProcessor</code></td>
+<td data-label="Аннотация"><code>@Validated</code> на классе</td>
+<td data-label="Перехватчик в цепочке"><code>MethodValidationInterceptor</code></td>
+<td data-label="Чем включается"><code>MethodValidationPostProcessor</code></td>
 </tr>
 </tbody>
 </table>
@@ -1354,7 +1354,7 @@ dailyLimit дважды:
 
 <p>Так и должно быть: повторять имеет смысл всю транзакцию целиком, потому что первая попытка свои изменения уже откатила. Так же, первым в цепочке, встаёт перехватчик <code>@Async</code> (раздел 8.5), и транзакция на асинхронном методе открывается уже в потоке исполнителя. Проверки прав Spring Security имеют небольшие значения порядка и тоже стоят снаружи транзакции; в Spring Security 7.1.1 это <code>PRE_FILTER</code> = 100, <code>PRE_AUTHORIZE</code> = 200, <code>SECURED</code> = 300, <code>JSR250</code> = 400, <code>POST_AUTHORIZE</code> = 500 и <code>POST_FILTER</code> = 600, поэтому отклонённый вызов не занимает соединение с базой.</p>
 <p>Сводная таблица ниже пригодится на ревью кода. Для каждой пары она показывает, что должно стоять снаружи, и что сломается при обратном порядке:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Пара</th>
@@ -1364,24 +1364,24 @@ dailyLimit дважды:
 </thead>
 <tbody>
 <tr>
-<td>кэш и транзакция</td>
-<td>кэш (<code>@EnableCaching(order = 100)</code>)</td>
-<td>транзакция и соединение на каждое попадание в кэш; по умолчанию порядок именно обратный</td>
+<td data-label="Пара">кэш и транзакция</td>
+<td data-label="Снаружи">кэш (<code>@EnableCaching(order = 100)</code>)</td>
+<td data-label="Что будет при обратном порядке">транзакция и соединение на каждое попадание в кэш; по умолчанию порядок именно обратный</td>
 </tr>
 <tr>
-<td>повтор и транзакция</td>
-<td>повтор (так по умолчанию в Spring 7)</td>
-<td>все попытки идут в одной транзакции, а в PostgreSQL после ошибки SQL транзакция отклоняет любые команды до отката</td>
+<td data-label="Пара">повтор и транзакция</td>
+<td data-label="Снаружи">повтор (так по умолчанию в Spring 7)</td>
+<td data-label="Что будет при обратном порядке">все попытки идут в одной транзакции, а в PostgreSQL после ошибки SQL транзакция отклоняет любые команды до отката</td>
 </tr>
 <tr>
-<td>проверка прав и транзакция</td>
-<td>проверка прав (так по умолчанию)</td>
-<td>соединение из пула тратится на вызовы, которые всё равно будут отклонены</td>
+<td data-label="Пара">проверка прав и транзакция</td>
+<td data-label="Снаружи">проверка прав (так по умолчанию)</td>
+<td data-label="Что будет при обратном порядке">соединение из пула тратится на вызовы, которые всё равно будут отклонены</td>
 </tr>
 <tr>
-<td>свой аспект журнала и транзакция</td>
-<td>аспект с явным <code>@Order</code></td>
-<td>журнал сообщает об успехе до фиксации</td>
+<td data-label="Пара">свой аспект журнала и транзакция</td>
+<td data-label="Снаружи">аспект с явным <code>@Order</code></td>
+<td data-label="Что будет при обратном порядке">журнал сообщает об успехе до фиксации</td>
 </tr>
 </tbody>
 </table>
@@ -1403,7 +1403,7 @@ weaveinfo Join point 'method-execution(void dev.team.ltw.PaymentOrderService.pro
 
 <p>Агенту нужен файл <code>META-INF/aop.xml</code>, где перечислены аспекты и пакеты для вплетения, а без агента тот же код выполняется без аудита. Класс объекта остался прежним, <code>PaymentOrderService</code>: прокси нет, код аспекта встроен в сам метод <code>process</code>, поэтому перехват не зависит от того, кто и как его вызвал. Вплетение снимает и ограничения подкласса: AspectJ перехватывает <code>private</code> и <code>final</code> методы, конструкторы и обращения к полям.</p>
 <p>Взамен проект получает отдельный шаг сборки или агент в команде запуска, а отладка усложняется, потому что байткод класса больше не совпадает с исходным текстом. Решений на прокси хватает для подавляющего большинства задач, где применяются аспекты, а AspectJ требует от команды освоить новые инструменты и идиомы.<sup id="fnref2:b09-1"><a class="footnote-ref" href="#fn:b09-1">4</a></sup> Поэтому к вплетению переходят, когда без него не обойтись: нужно перехватывать объекты, созданные не контейнером, например доменные сущности, или вызовы внутри одного класса, и перестроить код нельзя.<sup id="fnref7:b09-37"><a class="footnote-ref" href="#fn:b09-37">14</a></sup></p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1413,29 +1413,29 @@ weaveinfo Join point 'method-execution(void dev.team.ltw.PaymentOrderService.pro
 </thead>
 <tbody>
 <tr>
-<td>Когда связывается</td>
-<td>при создании бина, во время работы</td>
-<td>при компиляции (<code>ajc</code>) или при загрузке класса (агент)</td>
+<td data-label="">Когда связывается</td>
+<td data-label="Spring AOP (прокси)">при создании бина, во время работы</td>
+<td data-label="AspectJ (вплетение)">при компиляции (<code>ajc</code>) или при загрузке класса (агент)</td>
 </tr>
 <tr>
-<td>Что перехватывает</td>
-<td>выполнение методов бинов через прокси</td>
-<td>методы, конструкторы, поля любых объектов</td>
+<td data-label="">Что перехватывает</td>
+<td data-label="Spring AOP (прокси)">выполнение методов бинов через прокси</td>
+<td data-label="AspectJ (вплетение)">методы, конструкторы, поля любых объектов</td>
 </tr>
 <tr>
-<td>Вызов через <code>this</code></td>
-<td>не перехватывается</td>
-<td>перехватывается</td>
+<td data-label="">Вызов через <code>this</code></td>
+<td data-label="Spring AOP (прокси)">не перехватывается</td>
+<td data-label="AspectJ (вплетение)">перехватывается</td>
 </tr>
 <tr>
-<td><code>final</code>, <code>private</code></td>
-<td>не перехватываются</td>
-<td>перехватываются</td>
+<td data-label=""><code>final</code>, <code>private</code></td>
+<td data-label="Spring AOP (прокси)">не перехватываются</td>
+<td data-label="AspectJ (вплетение)">перехватываются</td>
 </tr>
 <tr>
-<td>Сборка и запуск</td>
-<td>без изменений</td>
-<td>компилятор <code>ajc</code> или <code>-javaagent</code></td>
+<td data-label="">Сборка и запуск</td>
+<td data-label="Spring AOP (прокси)">без изменений</td>
+<td data-label="AspectJ (вплетение)">компилятор <code>ajc</code> или <code>-javaagent</code></td>
 </tr>
 </tbody>
 </table>
@@ -1478,7 +1478,7 @@ weaveinfo Join point 'method-execution(void dev.team.ltw.PaymentOrderService.pro
 
 <p>Все слушатели выполнились в потоке <code>main</code>, а <code>publishEvent</code> вернул управление только через 232 мс, когда отработал последний из них. Так ведёт себя мультикастер по умолчанию, <code>SimpleApplicationEventMulticaster</code>: он вызывает слушателей по очереди в потоке публикатора, и время публикации складывается из времени всех слушателей, которых не видно в коде сервиса. Порядок задаёт <code>@Order</code>. Слушатель может вернуть объект, и контейнер опубликует его следующим событием: так поручение на 750 000,00 породило <code>FraudCheckRequested</code>, а коллекцию контейнер публикует поэлементно. Цепочка выполняется синхронно и рекурсивно, поэтому две-три ступени читаются нормально, а длинная цепочка — это скрытый оркестратор, которому место в явном коде.<sup id="fnref:b09-38"><a class="footnote-ref" href="#fn:b09-38">16</a></sup></p>
 <p>Атрибут <code>condition</code> — выражение SpEL, которое вычисляется до вызова слушателя, и обращаться в нём к событию можно по-разному. Опыт проверил пять способов, собрав класс сначала без флага компилятора <code>-parameters</code>, а потом с ним:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Условие</th>
@@ -1488,29 +1488,29 @@ weaveinfo Join point 'method-execution(void dev.team.ltw.PaymentOrderService.pro
 </thead>
 <tbody>
 <tr>
-<td><code>#event.amount &gt;= 600000</code></td>
-<td><code>EL1007E: Property or field 'amount' cannot be found on null</code></td>
-<td>сработал</td>
+<td data-label="Условие"><code>#event.amount &gt;= 600000</code></td>
+<td data-label="без -parameters"><code>EL1007E: Property or field 'amount' cannot be found on null</code></td>
+<td data-label="с -parameters">сработал</td>
 </tr>
 <tr>
-<td><code>#a0.amount &gt;= 600000</code></td>
-<td>сработал</td>
-<td>сработал</td>
+<td data-label="Условие"><code>#a0.amount &gt;= 600000</code></td>
+<td data-label="без -parameters">сработал</td>
+<td data-label="с -parameters">сработал</td>
 </tr>
 <tr>
-<td><code>#root.event.amount &gt;= 600000</code></td>
-<td><code>EL1008E: ... cannot be found on object of type 'PayloadApplicationEvent'</code></td>
-<td>та же ошибка</td>
+<td data-label="Условие"><code>#root.event.amount &gt;= 600000</code></td>
+<td data-label="без -parameters"><code>EL1008E: ... cannot be found on object of type 'PayloadApplicationEvent'</code></td>
+<td data-label="с -parameters">та же ошибка</td>
 </tr>
 <tr>
-<td><code>#root.event.payload.amount &gt;= 600000</code></td>
-<td>сработал</td>
-<td>сработал</td>
+<td data-label="Условие"><code>#root.event.payload.amount &gt;= 600000</code></td>
+<td data-label="без -parameters">сработал</td>
+<td data-label="с -parameters">сработал</td>
 </tr>
 <tr>
-<td><code>#root.args[0].amount &gt;= 600000</code></td>
-<td>сработал</td>
-<td>сработал</td>
+<td data-label="Условие"><code>#root.args[0].amount &gt;= 600000</code></td>
+<td data-label="без -parameters">сработал</td>
+<td data-label="с -parameters">сработал</td>
 </tr>
 </tbody>
 </table>
@@ -1568,7 +1568,7 @@ ERROR org.springframework.scheduling.support.TaskUtils$LoggingErrorHandler -- Un
 </code></pre></div>
 
 <p>Транзакционные слушатели сработали уже после того, как <code>publishEvent</code> вернул управление и метод сервиса закончился: <code>BEFORE_COMMIT</code> перед фиксацией, оба <code>AFTER_COMMIT</code> после неё, причём не в порядке объявления. Без транзакции слушатель не вызывается вообще, кроме того, у которого задан <code>fallbackExecution = true</code>; ошибки при этом нет, и в модульном тесте без транзакции такой слушатель просто молчит. Ставить <code>fallbackExecution</code> ради зелёного теста опасно: в рабочем коде без транзакции письмо уйдёт раньше, чем что-либо будет записано, а правильный тест открывает настоящую транзакцию через <code>TransactionTemplate</code>.<sup id="fnref4:b09-38"><a class="footnote-ref" href="#fn:b09-38">16</a></sup></p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Фаза</th>
@@ -1579,28 +1579,28 @@ ERROR org.springframework.scheduling.support.TaskUtils$LoggingErrorHandler -- Un
 </thead>
 <tbody>
 <tr>
-<td><code>BEFORE_COMMIT</code></td>
-<td>перед фиксацией, в той же транзакции</td>
-<td>дозапись и проверка в той же транзакции</td>
-<td>откатывает основную транзакцию</td>
+<td data-label="Фаза"><code>BEFORE_COMMIT</code></td>
+<td data-label="Когда">перед фиксацией, в той же транзакции</td>
+<td data-label="Чем полезна">дозапись и проверка в той же транзакции</td>
+<td data-label="Исключение слушателя">откатывает основную транзакцию</td>
 </tr>
 <tr>
-<td><code>AFTER_COMMIT</code> (по умолчанию)</td>
-<td>после фиксации</td>
-<td>отправка наружу: Kafka, HTTP, почта</td>
-<td>на основную транзакцию не влияет</td>
+<td data-label="Фаза"><code>AFTER_COMMIT</code> (по умолчанию)</td>
+<td data-label="Когда">после фиксации</td>
+<td data-label="Чем полезна">отправка наружу: Kafka, HTTP, почта</td>
+<td data-label="Исключение слушателя">на основную транзакцию не влияет</td>
 </tr>
 <tr>
-<td><code>AFTER_ROLLBACK</code></td>
-<td>после отката</td>
-<td>метрики, уведомление о сбое</td>
-<td>не влияет</td>
+<td data-label="Фаза"><code>AFTER_ROLLBACK</code></td>
+<td data-label="Когда">после отката</td>
+<td data-label="Чем полезна">метрики, уведомление о сбое</td>
+<td data-label="Исключение слушателя">не влияет</td>
 </tr>
 <tr>
-<td><code>AFTER_COMPLETION</code></td>
-<td>после любого исхода</td>
-<td>освобождение ресурсов</td>
-<td>не влияет</td>
+<td data-label="Фаза"><code>AFTER_COMPLETION</code></td>
+<td data-label="Когда">после любого исхода</td>
+<td data-label="Чем полезна">освобождение ресурсов</td>
+<td data-label="Исключение слушателя">не влияет</td>
 </tr>
 </tbody>
 </table>
@@ -1659,7 +1659,7 @@ java.lang.IllegalStateException: СМС-шлюз недоступен
 <p>Есть и второй способ сделать события асинхронными: задать пул самому мультикастеру через <code>setTaskExecutor</code>. Но тогда асинхронными становятся все события приложения, включая системные, поэтому помечать <code>@Async</code> нужные слушатели почти всегда лучше. Сочетание <code>@TransactionalEventListener</code> и <code>@Async</code> ставит слушателя в очередь после фиксации, и его ошибка никак не связана с транзакцией и не видна вызывающему, поэтому для критичной работы такой слушатель должен хотя бы записывать в журнал постановку и результат.<sup id="fnref6:b09-38"><a class="footnote-ref" href="#fn:b09-38">16</a></sup></p>
 <h3 id="106-события-spring-и-брокер-сообщений">10.6 События Spring и брокер сообщений</h3>
 <p>Брокер сообщений — отдельный сервер, например Kafka или RabbitMQ, который принимает сообщения от одних процессов, хранит их и доставляет другим. Событие Spring и сообщение брокера решают похожие задачи, но гарантии у них разные, и таблица ниже показывает, где кончается область каждого.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1669,29 +1669,29 @@ java.lang.IllegalStateException: СМС-шлюз недоступен
 </thead>
 <tbody>
 <tr>
-<td>Границы</td>
-<td>один процесс, один контекст</td>
-<td>между процессами и сервисами</td>
+<td data-label="">Границы</td>
+<td data-label="Событие Spring">один процесс, один контекст</td>
+<td data-label="Kafka, RabbitMQ">между процессами и сервисами</td>
 </tr>
 <tr>
-<td>Доставка</td>
-<td>в памяти, пока процесс жив</td>
-<td>хотя бы один раз, с хранением и повторами</td>
+<td data-label="">Доставка</td>
+<td data-label="Событие Spring">в памяти, пока процесс жив</td>
+<td data-label="Kafka, RabbitMQ">хотя бы один раз, с хранением и повторами</td>
 </tr>
 <tr>
-<td>Переживает перезапуск</td>
-<td>нет</td>
-<td>да</td>
+<td data-label="">Переживает перезапуск</td>
+<td data-label="Событие Spring">нет</td>
+<td data-label="Kafka, RabbitMQ">да</td>
 </tr>
 <tr>
-<td>Наблюдаемость</td>
-<td>события видны только в стеке вызовов</td>
-<td>отставание потребителя, смещения, очередь недоставленных</td>
+<td data-label="">Наблюдаемость</td>
+<td data-label="Событие Spring">события видны только в стеке вызовов</td>
+<td data-label="Kafka, RabbitMQ">отставание потребителя, смещения, очередь недоставленных</td>
 </tr>
 <tr>
-<td>Изменение контракта</td>
-<td>рефакторинг в одном модуле</td>
-<td>схемы, совместимость версий</td>
+<td data-label="">Изменение контракта</td>
+<td data-label="Событие Spring">рефакторинг в одном модуле</td>
+<td data-label="Kafka, RabbitMQ">схемы, совместимость версий</td>
 </tr>
 </tbody>
 </table>
@@ -1860,7 +1860,7 @@ SynchronousQueue (ёмкость 0):      потоков максимум 8, п�
 
 <p>С очередью на 500 мест пул так и остался из двух потоков, а 48 задач ждали в очереди. Пул создаёт потоки сверх ядра только тогда, когда очередь заполнена, поэтому при большой очереди максимальный размер не достигается вовсе, и на этом попадаются почти все, кто впервые настраивает пул. С очередью на 10 мест пул вырос до восьми потоков, а 32 задачи отверг. <code>SynchronousQueue</code> задачи не хранит, а передаёт сразу свободному потоку, поэтому пул рос до максимума с первой задачи сверх ядра. Очередь сглаживает короткие всплески, но если задачи приходят быстрее, чем выполняются, неограниченная очередь растёт в памяти, и вместо понятного исключения отказ придёт исчерпанием памяти, когда задержка уже станет заметна всем.<sup id="fnref:b09-42"><a class="footnote-ref" href="#fn:b09-42">24</a></sup></p>
 <p>Когда очередь полна и все потоки заняты, пул применяет политику насыщения (<em>saturation policy</em>):</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Политика</th>
@@ -1870,24 +1870,24 @@ SynchronousQueue (ёмкость 0):      потоков максимум 8, п�
 </thead>
 <tbody>
 <tr>
-<td><code>AbortPolicy</code> (по умолчанию)</td>
-<td>бросает <code>RejectedExecutionException</code> вызывающему</td>
-<td>отказ нужно увидеть: ответить 503, положить задачу в очередь недоставленных</td>
+<td data-label="Политика"><code>AbortPolicy</code> (по умолчанию)</td>
+<td data-label="Что делает">бросает <code>RejectedExecutionException</code> вызывающему</td>
+<td data-label="Когда уместна">отказ нужно увидеть: ответить 503, положить задачу в очередь недоставленных</td>
 </tr>
 <tr>
-<td><code>CallerRunsPolicy</code></td>
-<td>выполняет задачу в вызывающем потоке</td>
-<td>естественное торможение источника: поток запроса занят и не принимает новое</td>
+<td data-label="Политика"><code>CallerRunsPolicy</code></td>
+<td data-label="Что делает">выполняет задачу в вызывающем потоке</td>
+<td data-label="Когда уместна">естественное торможение источника: поток запроса занят и не принимает новое</td>
 </tr>
 <tr>
-<td><code>DiscardPolicy</code></td>
-<td>молча выбрасывает задачу</td>
-<td>только для необязательной работы, например прогрева кэша</td>
+<td data-label="Политика"><code>DiscardPolicy</code></td>
+<td data-label="Что делает">молча выбрасывает задачу</td>
+<td data-label="Когда уместна">только для необязательной работы, например прогрева кэша</td>
 </tr>
 <tr>
-<td><code>DiscardOldestPolicy</code></td>
-<td>выбрасывает самую старую задачу из очереди</td>
-<td>метрики и журналы, где свежее ценнее старого</td>
+<td data-label="Политика"><code>DiscardOldestPolicy</code></td>
+<td data-label="Что делает">выбрасывает самую старую задачу из очереди</td>
+<td data-label="Когда уместна">метрики и журналы, где свежее ценнее старого</td>
 </tr>
 </tbody>
 </table>
@@ -2591,5 +2591,5 @@ TransactionInterceptor Completing transaction for [dev.team.proxy.TxVisibilityLa
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-инверсия-управления-и-внедрение-зависимостей">1. Инверсия управления и внедрение зависимостей</a></li><li><a href="#2-как-устроен-контейнер-spring">2. Как устроен контейнер Spring</a></li><li><a href="#3-как-стартует-контекст-метод-refresh">3. Как стартует контекст: метод refresh()</a></li><li><a href="#4-жизненный-цикл-бина">4. Жизненный цикл бина</a></li><li><a href="#5-способы-внедрения-и-области-видимости">5. Способы внедрения и области видимости</a></li><li><a href="#6-циклические-зависимости">6. Циклические зависимости</a></li><li><a href="#7-configuration-и-подкласс-cglib">7. @Configuration и подкласс CGLIB</a></li><li><a href="#8-прокси">8. Прокси</a></li><li><a href="#9-aop-аспекты-и-порядок-перехватчиков">9. AOP: аспекты и порядок перехватчиков</a></li><li><a href="#10-события">10. События</a></li><li><a href="#11-настройки-environment-профили-условия-spel-и-преобразование-типов">11. Настройки: Environment, профили, условия, SpEL и преобразование типов</a></li><li><a href="#12-фоновая-работа-async-scheduled-smartlifecycle">12. Фоновая работа: @Async, @Scheduled, SmartLifecycle</a></li><li><a href="#13-расширение-контейнера">13. Расширение контейнера</a></li><li><a href="#14-тестирование-контекста">14. Тестирование контекста</a></li><li><a href="#15-spring-aot-и-нативный-образ">15. Spring AOT и нативный образ</a></li><li><a href="#16-разобранные-инциденты">16. Разобранные инциденты</a></li><li><a href="#17-грабли-и-антипаттерны">17. Грабли и антипаттерны</a></li><li><a href="#18-диагностика">18. Диагностика</a></li><li><a href="#19-вопросы-на-интервью">19. Вопросы на интервью</a></li><li><a href="#20-попробовать-руками">20. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

@@ -3,7 +3,7 @@
 <title>6. JVM изнутри — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="JVM изнутри">
 <a class="skip" href="#content">К тексту</a>
@@ -109,7 +109,7 @@ F init
 </blockquote>
 <h3 id="11b-classnotfoundexception-и-noclassdeffounderror">1.1b <code>ClassNotFoundException</code> и <code>NoClassDefFoundError</code></h3>
 <p><code>ClassNotFoundException</code> — это проверяемое исключение, которое бросает загрузчик, когда его явно попросили найти класс по имени и он его не нашёл, а <code>NoClassDefFoundError</code> — это ошибка, которую бросает сама JVM, когда не может связать уже скомпилированную ссылку на класс. На первый взгляд оба сообщают об одном событии, «класс не найден», но бросают их разные участники и по разным причинам. Различать их просят на каждом втором интервью, и различие здесь содержательное: от того, какое из двух вы видите, зависит, где искать причину, в classpath или в упавшем статическом инициализаторе. Сначала таблица сравнивает их по типу, источнику, смыслу и первому действию, а затем разобран неочевидный случай, когда <code>NoClassDefFoundError</code> возникает по двум совершенно разным причинам с похожим текстом.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -119,24 +119,24 @@ F init
 </thead>
 <tbody>
 <tr>
-<td>Тип</td>
-<td>checked <code>Exception</code></td>
-<td><code>Error</code> (подкласс <code>LinkageError</code>)</td>
+<td data-label="">Тип</td>
+<td data-label="ClassNotFoundException">checked <code>Exception</code></td>
+<td data-label="NoClassDefFoundError"><code>Error</code> (подкласс <code>LinkageError</code>)</td>
 </tr>
 <tr>
-<td>Кто бросает</td>
-<td>загрузчик: <code>Class.forName</code>, <code>ClassLoader.loadClass</code>, <code>ClassLoader.findSystemClass</code></td>
-<td>JVM при <strong>резолюции символической ссылки</strong> из байткода (<code>new</code>, <code>invoke*</code>, <code>getstatic</code>, <code>checkcast</code>)</td>
+<td data-label="">Кто бросает</td>
+<td data-label="ClassNotFoundException">загрузчик: <code>Class.forName</code>, <code>ClassLoader.loadClass</code>, <code>ClassLoader.findSystemClass</code></td>
+<td data-label="NoClassDefFoundError">JVM при <strong>резолюции символической ссылки</strong> из байткода (<code>new</code>, <code>invoke*</code>, <code>getstatic</code>, <code>checkcast</code>)</td>
 </tr>
 <tr>
-<td>Смысл</td>
-<td>«меня явно попросили найти класс по имени, и я его не нашёл»; обычно это динамическая загрузка: JDBC-драйвер, плагин, класс из конфига, <code>Class.forName(props.get("handler"))</code></td>
-<td>«компилятор этот класс знал, а среда выполнения его не видит»: либо класса действительно нет, либо он есть, но его <strong>инициализация уже провалилась</strong></td>
+<td data-label="">Смысл</td>
+<td data-label="ClassNotFoundException">«меня явно попросили найти класс по имени, и я его не нашёл»; обычно это динамическая загрузка: JDBC-драйвер, плагин, класс из конфига, <code>Class.forName(props.get("handler"))</code></td>
+<td data-label="NoClassDefFoundError">«компилятор этот класс знал, а среда выполнения его не видит»: либо класса действительно нет, либо он есть, но его <strong>инициализация уже провалилась</strong></td>
 </tr>
 <tr>
-<td>Что делать</td>
-<td>проверить имя (бинарное, с <code>$</code> для вложенных) и то, что jar лежит в classpath того загрузчика, из которого вызвали</td>
-<td>сравнить classpath сборки и среды выполнения; проверить, не было ли раньше <code>ExceptionInInitializerError</code></td>
+<td data-label="">Что делать</td>
+<td data-label="ClassNotFoundException">проверить имя (бинарное, с <code>$</code> для вложенных) и то, что jar лежит в classpath того загрузчика, из которого вызвали</td>
+<td data-label="NoClassDefFoundError">сравнить classpath сборки и среды выполнения; проверить, не было ли раньше <code>ExceptionInInitializerError</code></td>
 </tr>
 </tbody>
 </table>
@@ -171,7 +171,7 @@ F init
 <h3 id="12-иерархия-загрузчиков-и-parent-delegation">1.2 Иерархия загрузчиков и parent delegation</h3>
 <p>Загрузчик классов — это объект, который по имени класса находит его байты и превращает их в <code>Class</code>, и загрузчики в JVM выстроены в иерархию, где каждый, прежде чем искать сам, спрашивает родителя. От того, как устроена эта иерархия, зависит, какую из двух версий одной библиотеки получит ваш код, и именно здесь рождаются <code>ClassCastException</code> между одинаковыми на вид классами и взаимоблокировки при загрузке. Ниже разобраны три встроенных загрузчика, алгоритм parent delegation, обратная ему модель child-first и то, зачем загрузчики объявляют себя parallel-capable.</p>
 <p>Начиная с Java 9 в JDK три встроенных загрузчика (<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ClassLoader.html">ClassLoader, Java 21</a>), и таблица показывает для каждого, как его получить из кода, что он загружает и каким классом представлен:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Загрузчик</th>
@@ -182,22 +182,22 @@ F init
 </thead>
 <tbody>
 <tr>
-<td>Bootstrap</td>
-<td>никак (в API это <code>null</code>)</td>
-<td><code>java.base</code>, <code>java.logging</code>, <code>java.desktop</code>, <code>jdk.management</code> и другие ядровые модули</td>
-<td>нативный код HotSpot</td>
+<td data-label="Загрузчик">Bootstrap</td>
+<td data-label="Как получить">никак (в API это <code>null</code>)</td>
+<td data-label="Что загружает"><code>java.base</code>, <code>java.logging</code>, <code>java.desktop</code>, <code>jdk.management</code> и другие ядровые модули</td>
+<td data-label="Представление">нативный код HotSpot</td>
 </tr>
 <tr>
-<td>Platform</td>
-<td><code>ClassLoader.getPlatformClassLoader()</code></td>
-<td>модули Java SE/JDK, которым не нужны полные привилегии: <code>java.sql</code>, <code>java.scripting</code>, <code>jdk.crypto.ec</code>, <code>jdk.charsets</code></td>
-<td><code>jdk.internal.loader.ClassLoaders$PlatformClassLoader</code></td>
+<td data-label="Загрузчик">Platform</td>
+<td data-label="Как получить"><code>ClassLoader.getPlatformClassLoader()</code></td>
+<td data-label="Что загружает">модули Java SE/JDK, которым не нужны полные привилегии: <code>java.sql</code>, <code>java.scripting</code>, <code>jdk.crypto.ec</code>, <code>jdk.charsets</code></td>
+<td data-label="Представление"><code>jdk.internal.loader.ClassLoaders$PlatformClassLoader</code></td>
 </tr>
 <tr>
-<td>Application (system)</td>
-<td><code>ClassLoader.getSystemClassLoader()</code></td>
-<td>classpath, module path приложения, JDK-инструменты</td>
-<td><code>ClassLoaders$AppClassLoader</code></td>
+<td data-label="Загрузчик">Application (system)</td>
+<td data-label="Как получить"><code>ClassLoader.getSystemClassLoader()</code></td>
+<td data-label="Что загружает">classpath, module path приложения, JDK-инструменты</td>
+<td data-label="Представление"><code>ClassLoaders$AppClassLoader</code></td>
 </tr>
 </tbody>
 </table>
@@ -229,7 +229,7 @@ F init
 </blockquote>
 <h3 id="12a-classforname-и-classloaderloadclass">1.2a <code>Class.forName</code> и <code>ClassLoader.loadClass</code></h3>
 <p><code>Class.forName</code> и <code>ClassLoader.loadClass</code> — это два способа получить объект <code>Class</code> по имени класса, записанному строкой. Первый по умолчанию класс ещё и инициализирует, а второй нет, и различаются они к тому же тем, какой загрузчик используется. Это различие в одном слове, <strong>инициализации</strong>, имеет вполне ощутимые следствия: от него зависит, выполнится ли чужой статический код в момент поиска класса и найдёт ли фреймворк классы приложения. Таблица сводит три формы вызова вместе, а за ней разобраны четыре практических следствия.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -240,34 +240,34 @@ F init
 </thead>
 <tbody>
 <tr>
-<td>Загрузчик</td>
-<td><em>caller's class loader</em>, то есть загрузчик класса, из которого вызвали</td>
-<td>указанный явно</td>
-<td>указанный явно (сам объект)</td>
+<td data-label="">Загрузчик</td>
+<td data-label="Class.forName(String)"><em>caller's class loader</em>, то есть загрузчик класса, из которого вызвали</td>
+<td data-label="Class.forName(String, boolean, ClassLoader)">указанный явно</td>
+<td data-label="loader.loadClass(String)">указанный явно (сам объект)</td>
 </tr>
 <tr>
-<td>Инициализация</td>
-<td><strong>да</strong>, выполняет <code>&lt;clinit&gt;</code></td>
-<td>по флагу</td>
-<td><strong>нет</strong>, только load + link</td>
+<td data-label="">Инициализация</td>
+<td data-label="Class.forName(String)"><strong>да</strong>, выполняет <code>&lt;clinit&gt;</code></td>
+<td data-label="Class.forName(String, boolean, ClassLoader)">по флагу</td>
+<td data-label="loader.loadClass(String)"><strong>нет</strong>, только load + link</td>
 </tr>
 <tr>
-<td>Возвращает</td>
-<td><code>Class&lt;?&gt;</code></td>
-<td><code>Class&lt;?&gt;</code></td>
-<td><code>Class&lt;?&gt;</code></td>
+<td data-label="">Возвращает</td>
+<td data-label="Class.forName(String)"><code>Class&lt;?&gt;</code></td>
+<td data-label="Class.forName(String, boolean, ClassLoader)"><code>Class&lt;?&gt;</code></td>
+<td data-label="loader.loadClass(String)"><code>Class&lt;?&gt;</code></td>
 </tr>
 <tr>
-<td>Ошибка</td>
-<td><code>ClassNotFoundException</code></td>
-<td>то же</td>
-<td>то же</td>
+<td data-label="">Ошибка</td>
+<td data-label="Class.forName(String)"><code>ClassNotFoundException</code></td>
+<td data-label="Class.forName(String, boolean, ClassLoader)">то же</td>
+<td data-label="loader.loadClass(String)">то же</td>
 </tr>
 <tr>
-<td>Доступ</td>
-<td>public API</td>
-<td>public API</td>
-<td><code>loadClass(String)</code> public, <code>loadClass(String, boolean)</code> protected</td>
+<td data-label="">Доступ</td>
+<td data-label="Class.forName(String)">public API</td>
+<td data-label="Class.forName(String, boolean, ClassLoader)">public API</td>
+<td data-label="loader.loadClass(String)"><code>loadClass(String)</code> public, <code>loadClass(String, boolean)</code> protected</td>
 </tr>
 </tbody>
 </table>
@@ -288,7 +288,7 @@ F init
 <p><strong>Четвёртое.</strong> TCCL служит для того, чтобы обойти parent delegation в обратную сторону, «сверху вниз»: коду из <code>java.base</code>, например <code>ServiceLoader</code>, нужно загрузить реализацию из приложения, а по цепочке родителей до неё не добраться. Отсюда правило: если фреймворк работает в пуле потоков, который создал не он, TCCL там может оказаться не тем. В Tomcat это <code>WebappClassLoader</code> только внутри потоков обработки запросов, а в вашем <code>ExecutorService</code> TCCL наследуется от того потока, который создал пул. Классический баг выглядит так: <code>ServiceLoader</code>, вызванный в фоновом потоке, не находит ничего.</p>
 <h3 id="12b-кастомные-загрузчики-классов">1.2b Кастомные загрузчики классов</h3>
 <p>Кастомный загрузчик — это подкласс <code>ClassLoader</code> со своими правилами поиска и делегирования, и в обычном сервисе писать его не приходится. Зато понимать, где такие загрузчики уже работают, нужно, потому что ломаются вещи именно там: в контейнерах, плагинах, средствах hot reload и генераторах прокси. Сначала таблица показывает, где они встречаются и по какой модели делегируют, затем приведён скелет корректного child-first загрузчика и разобрано, когда он оправдан.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Где</th>
@@ -298,44 +298,44 @@ F init
 </thead>
 <tbody>
 <tr>
-<td>Сервлет-контейнер (Tomcat <code>WebappClassLoader</code>, Jetty)</td>
-<td>child-first с parent-first списком (<code>jakarta.*</code>, <code>org.apache.*</code>)</td>
-<td>изоляция веб-приложений друг от друга и от контейнера; hot redeploy без перезапуска JVM</td>
+<td data-label="Где">Сервлет-контейнер (Tomcat <code>WebappClassLoader</code>, Jetty)</td>
+<td data-label="Модель">child-first с parent-first списком (<code>jakarta.*</code>, <code>org.apache.*</code>)</td>
+<td data-label="Зачем">изоляция веб-приложений друг от друга и от контейнера; hot redeploy без перезапуска JVM</td>
 </tr>
 <tr>
-<td>WebLogic/WildFly (EAR)</td>
-<td>иерархия EAR → WAR/EJB, <code>jboss-deployment-structure.xml</code></td>
-<td>изоляция модулей внутри одного развёртывания, см. главу 21 (<code>21-oracle-and-legacy.md</code>)</td>
+<td data-label="Где">WebLogic/WildFly (EAR)</td>
+<td data-label="Модель">иерархия EAR → WAR/EJB, <code>jboss-deployment-structure.xml</code></td>
+<td data-label="Зачем">изоляция модулей внутри одного развёртывания, см. главу 21 (<code>21-oracle-and-legacy.md</code>)</td>
 </tr>
 <tr>
-<td>Spring Boot fat jar (<code>LaunchedClassLoader</code>)</td>
-<td>parent-first, но вложенные jar из <code>BOOT-INF/lib</code> читаются без распаковки</td>
-<td>один исполняемый артефакт</td>
+<td data-label="Где">Spring Boot fat jar (<code>LaunchedClassLoader</code>)</td>
+<td data-label="Модель">parent-first, но вложенные jar из <code>BOOT-INF/lib</code> читаются без распаковки</td>
+<td data-label="Зачем">один исполняемый артефакт</td>
 </tr>
 <tr>
-<td>OSGi (Equinox, Felix)</td>
-<td>граф, а не дерево: делегация по <code>Import-Package</code></td>
-<td>версионированные бандлы, несколько версий одной библиотеки одновременно</td>
+<td data-label="Где">OSGi (Equinox, Felix)</td>
+<td data-label="Модель">граф, а не дерево: делегация по <code>Import-Package</code></td>
+<td data-label="Зачем">версионированные бандлы, несколько версий одной библиотеки одновременно</td>
 </tr>
 <tr>
-<td>Плагины (IDE, Jenkins, Kafka Connect, Trino, Presto)</td>
-<td>child-first + список shared-пакетов API</td>
-<td>плагин со своими зависимостями, которые не конфликтуют с хостом</td>
+<td data-label="Где">Плагины (IDE, Jenkins, Kafka Connect, Trino, Presto)</td>
+<td data-label="Модель">child-first + список shared-пакетов API</td>
+<td data-label="Зачем">плагин со своими зависимостями, которые не конфликтуют с хостом</td>
 </tr>
 <tr>
-<td>Hot reload (JRebel, DCEVM, Spring Boot DevTools)</td>
-<td><code>RestartClassLoader</code>: классы приложения в отдельном загрузчике, библиотеки в родительском</td>
-<td>пересоздать загрузчик приложения за миллисекунды вместо перезапуска JVM</td>
+<td data-label="Где">Hot reload (JRebel, DCEVM, Spring Boot DevTools)</td>
+<td data-label="Модель"><code>RestartClassLoader</code>: классы приложения в отдельном загрузчике, библиотеки в родительском</td>
+<td data-label="Зачем">пересоздать загрузчик приложения за миллисекунды вместо перезапуска JVM</td>
 </tr>
 <tr>
-<td>Скриптовые движки (Groovy, Nashorn/GraalJS, JRuby)</td>
-<td>новый загрузчик на каждый скомпилированный скрипт</td>
-<td>изоляция и возможность выгрузки</td>
+<td data-label="Где">Скриптовые движки (Groovy, Nashorn/GraalJS, JRuby)</td>
+<td data-label="Модель">новый загрузчик на каждый скомпилированный скрипт</td>
+<td data-label="Зачем">изоляция и возможность выгрузки</td>
 </tr>
 <tr>
-<td>Генерация прокси (ByteBuddy, CGLIB, Javassist, Hibernate)</td>
-<td><code>defineClass</code> в загрузчик целевого класса или hidden class</td>
-<td>динамические подклассы, AOP, ленивые прокси</td>
+<td data-label="Где">Генерация прокси (ByteBuddy, CGLIB, Javassist, Hibernate)</td>
+<td data-label="Модель"><code>defineClass</code> в загрузчик целевого класса или hidden class</td>
+<td data-label="Зачем">динамические подклассы, AOP, ленивые прокси</td>
 </tr>
 </tbody>
 </table>
@@ -399,7 +399,7 @@ jshell&gt; String.class.getClassLoader<span class="o">()</span>                 
 <h3 id="15-утечки-классов-и-metaspace">1.5 Утечки классов и Metaspace</h3>
 <p>Утечкой классов называют ситуацию, когда загрузчик приложения уже не нужен, но собраться не может, и вместе с ним в Metaspace навсегда остаются все определённые им классы. Проблема в том, что класс выгружается только вместе со своим загрузчиком, а загрузчик только тогда, когда недостижимы <strong>все три</strong> вещи: сам объект <code>ClassLoader</code>, все объекты <code>Class</code>, которые он определил, и все экземпляры этих классов. Хватает одной живой ссылки, чтобы весь граф классов, а это десятки мегабайт Metaspace для типичного Spring-приложения, остался в памяти до конца жизни процесса. Ниже перечислены классические удерживатели таких ссылок, способы диагностики и то, как та же утечка выглядит в современном микросервисе без hot redeploy.</p>
 <p>Таблица собирает типичные удерживатели, которые встречаются при hot redeploy в Tomcat и старых app-серверах, в тестах с множеством Spring-контекстов и в плагинах, и для каждого показывает механизм и лечение:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Удерживатель</th>
@@ -409,29 +409,29 @@ jshell&gt; String.class.getClassLoader<span class="o">()</span>                 
 </thead>
 <tbody>
 <tr>
-<td><code>ThreadLocal</code> в пуловых потоках контейнера</td>
-<td>значение ссылается на класс из веб-приложения → на его загрузчик</td>
-<td><code>remove()</code> в <code>finally</code>; фильтр, чистящий TL в конце запроса</td>
+<td data-label="Удерживатель"><code>ThreadLocal</code> в пуловых потоках контейнера</td>
+<td data-label="Механизм">значение ссылается на класс из веб-приложения → на его загрузчик</td>
+<td data-label="Лечение"><code>remove()</code> в <code>finally</code>; фильтр, чистящий TL в конце запроса</td>
 </tr>
 <tr>
-<td><code>java.sql.DriverManager</code></td>
-<td>статический реестр в <code>java.base</code> держит <code>Driver</code>, загруженный приложением</td>
-<td><code>DriverManager.deregisterDriver</code> в <code>ServletContextListener.contextDestroyed</code></td>
+<td data-label="Удерживатель"><code>java.sql.DriverManager</code></td>
+<td data-label="Механизм">статический реестр в <code>java.base</code> держит <code>Driver</code>, загруженный приложением</td>
+<td data-label="Лечение"><code>DriverManager.deregisterDriver</code> в <code>ServletContextListener.contextDestroyed</code></td>
 </tr>
 <tr>
-<td>Shutdown hooks, <code>Timer</code>, не остановленные <code>ExecutorService</code></td>
-<td>живой поток → его context class loader → всё приложение</td>
-<td>останавливать потоки при остановке контекста</td>
+<td data-label="Удерживатель">Shutdown hooks, <code>Timer</code>, не остановленные <code>ExecutorService</code></td>
+<td data-label="Механизм">живой поток → его context class loader → всё приложение</td>
+<td data-label="Лечение">останавливать потоки при остановке контекста</td>
 </tr>
 <tr>
-<td>JMX MBeans, <code>java.util.logging</code> handlers, <code>ObjectStreamClass</code> caches, <code>java.beans.Introspector</code></td>
-<td>глобальные кэши JDK держат <code>Class</code></td>
-<td><code>Introspector.flushCaches()</code>, <code>LogManager.reset()</code>, снятие MBeans</td>
+<td data-label="Удерживатель">JMX MBeans, <code>java.util.logging</code> handlers, <code>ObjectStreamClass</code> caches, <code>java.beans.Introspector</code></td>
+<td data-label="Механизм">глобальные кэши JDK держат <code>Class</code></td>
+<td data-label="Лечение"><code>Introspector.flushCaches()</code>, <code>LogManager.reset()</code>, снятие MBeans</td>
 </tr>
 <tr>
-<td>Библиотеки со статическими кэшами (<code>Class → Meta</code>) без <code>WeakReference</code></td>
-<td>старый Guice, ранние версии Jackson/Groovy</td>
-<td><code>SoftReference</code>/<code>WeakHashMap</code> по <code>Class</code>; проверить, что ключ не держит значение (ClassValue)</td>
+<td data-label="Удерживатель">Библиотеки со статическими кэшами (<code>Class → Meta</code>) без <code>WeakReference</code></td>
+<td data-label="Механизм">старый Guice, ранние версии Jackson/Groovy</td>
+<td data-label="Лечение"><code>SoftReference</code>/<code>WeakHashMap</code> по <code>Class</code>; проверить, что ключ не держит значение (ClassValue)</td>
 </tr>
 </tbody>
 </table>
@@ -661,7 +661,7 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 </blockquote>
 <h3 id="23-инструкции-вызова-методов">2.3 Инструкции вызова методов</h3>
 <p>Инструкция вызова — это байткод, которым один метод передаёт управление другому, и в JVM их пять: они различаются тем, как находят целевой метод, статически по constant pool или по фактическому типу объекта во время исполнения. Именно от этого различия зависит, сколько стоит вызов в интерпретаторе и что с ним сможет сделать JIT. Таблица сводит все пять инструкций, а за ней разобраны цена виртуальных вызовов и устройство <code>invokedynamic</code>, на котором держится половина современной Java.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Инструкция</th>
@@ -671,29 +671,29 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 </thead>
 <tbody>
 <tr>
-<td><code>invokestatic</code></td>
-<td>статическая, по constant pool</td>
-<td>статические методы</td>
+<td data-label="Инструкция"><code>invokestatic</code></td>
+<td data-label="Диспетчеризация">статическая, по constant pool</td>
+<td data-label="Для чего">статические методы</td>
 </tr>
 <tr>
-<td><code>invokespecial</code></td>
-<td>статическая</td>
-<td><code>&lt;init&gt;</code>, <code>super.m()</code>, private-методы (до JDK 11; после nestmates для них используется <code>invokevirtual</code>)</td>
+<td data-label="Инструкция"><code>invokespecial</code></td>
+<td data-label="Диспетчеризация">статическая</td>
+<td data-label="Для чего"><code>&lt;init&gt;</code>, <code>super.m()</code>, private-методы (до JDK 11; после nestmates для них используется <code>invokevirtual</code>)</td>
 </tr>
 <tr>
-<td><code>invokevirtual</code></td>
-<td>по vtable объекта</td>
-<td>обычные instance-методы классов</td>
+<td data-label="Инструкция"><code>invokevirtual</code></td>
+<td data-label="Диспетчеризация">по vtable объекта</td>
+<td data-label="Для чего">обычные instance-методы классов</td>
 </tr>
 <tr>
-<td><code>invokeinterface</code></td>
-<td>по itable (поиск по интерфейсу)</td>
-<td>методы интерфейсов; в интерпретаторе дороже vtable</td>
+<td data-label="Инструкция"><code>invokeinterface</code></td>
+<td data-label="Диспетчеризация">по itable (поиск по интерфейсу)</td>
+<td data-label="Для чего">методы интерфейсов; в интерпретаторе дороже vtable</td>
 </tr>
 <tr>
-<td><code>invokedynamic</code></td>
-<td>через bootstrap method и <code>CallSite</code>, связывание при первом исполнении</td>
-<td>лямбды, конкатенация строк (JDK 9+), <code>switch</code> по паттернам, records <code>toString</code>/<code>hashCode</code></td>
+<td data-label="Инструкция"><code>invokedynamic</code></td>
+<td data-label="Диспетчеризация">через bootstrap method и <code>CallSite</code>, связывание при первом исполнении</td>
+<td data-label="Для чего">лямбды, конкатенация строк (JDK 9+), <code>switch</code> по паттернам, records <code>toString</code>/<code>hashCode</code></td>
 </tr>
 </tbody>
 </table>
@@ -741,7 +741,7 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 <li><strong>C2 (server, opto)</strong> — оптимизирующий компилятор на графе «море узлов» (sea of nodes, Click 1995). Он делает глобальные оптимизации, агрессивное встраивание, escape analysis, оптимизации циклов, векторизацию и спекуляции на профиле. Компилирует он в 10–100 раз дольше C1, зато даёт пиковую производительность.</li>
 </ul>
 <p>Начиная с JDK 8 они работают вместе в режиме <strong>tiered compilation</strong> (<code>-XX:+TieredCompilation</code> включён по умолчанию). Таблица показывает, кто исполняет метод на каждом из уровней, собирается ли там профиль и когда метод на этот уровень попадает:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Уровень</th>
@@ -752,34 +752,34 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 </thead>
 <tbody>
 <tr>
-<td class="num">0</td>
-<td>интерпретатор</td>
-<td>полное (счётчики + типы, после разгона)</td>
-<td>старт любого метода</td>
+<td data-label="Уровень" class="num">0</td>
+<td data-label="Исполнитель">интерпретатор</td>
+<td data-label="Профилирование">полное (счётчики + типы, после разгона)</td>
+<td data-label="Когда">старт любого метода</td>
 </tr>
 <tr>
-<td class="num">1</td>
-<td>C1</td>
-<td>нет</td>
-<td><em>тривиальные</em> методы (геттеры, <code>MaxTrivialSize</code> = 6 байт) или методы, которые C2 отказался компилировать; финальное состояние</td>
+<td data-label="Уровень" class="num">1</td>
+<td data-label="Исполнитель">C1</td>
+<td data-label="Профилирование">нет</td>
+<td data-label="Когда"><em>тривиальные</em> методы (геттеры, <code>MaxTrivialSize</code> = 6 байт) или методы, которые C2 отказался компилировать; финальное состояние</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td>C1</td>
-<td>только счётчики вызовов и back-edge</td>
-<td>когда очередь C2 переполнена: чтобы быстро уйти с 0 и не тратить время на полный профиль</td>
+<td data-label="Уровень" class="num">2</td>
+<td data-label="Исполнитель">C1</td>
+<td data-label="Профилирование">только счётчики вызовов и back-edge</td>
+<td data-label="Когда">когда очередь C2 переполнена: чтобы быстро уйти с 0 и не тратить время на полный профиль</td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td>C1</td>
-<td>полное (счётчики + MDO: типы, ветвления)</td>
-<td>основной путь; код на 25–35 % медленнее уровня 1 из-за сбора профиля</td>
+<td data-label="Уровень" class="num">3</td>
+<td data-label="Исполнитель">C1</td>
+<td data-label="Профилирование">полное (счётчики + MDO: типы, ветвления)</td>
+<td data-label="Когда">основной путь; код на 25–35 % медленнее уровня 1 из-за сбора профиля</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td>C2</td>
-<td>нет</td>
-<td>финальное состояние для горячих методов</td>
+<td data-label="Уровень" class="num">4</td>
+<td data-label="Исполнитель">C2</td>
+<td data-label="Профилирование">нет</td>
+<td data-label="Когда">финальное состояние для горячих методов</td>
 </tr>
 </tbody>
 </table>
@@ -788,7 +788,7 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 <h3 id="33-пороги-и-предикаты-компиляции">3.3 Пороги и предикаты компиляции</h3>
 <p>Порог компиляции — это значение счётчика вызовов или обратных переходов, после которого политика компиляции (<em>compilation policy</em>, класс <code>CompilationPolicy</code> внутри HotSpot, который решает, когда и куда отправлять метод) переводит метод на следующий уровень. Предикат — это формула, по которой эти счётчики сравниваются с порогами. Знать их стоит не ради заучивания чисел, а потому что из формулы видно две неочевидные вещи: метод с длинным циклом компилируется раньше, чем подсказывает число вызовов, а под нагрузкой пороги фактически растут. Ниже приведена таблица порогов, сам предикат и выводы из него.</p>
 <p>Пороги задаются флагами из <code>compiler_globals.hpp</code> (<a href="https://github.com/openjdk/jdk/blob/master/src/hotspot/share/compiler/compiler_globals.hpp">исходник HotSpot</a>), и таблица показывает их значения по умолчанию в JDK 21/25:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Флаг</th>
@@ -798,54 +798,54 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 </thead>
 <tbody>
 <tr>
-<td><code>Tier3InvocationThreshold</code></td>
-<td class="num">200</td>
-<td>вызовов для перехода 0 → 3</td>
+<td data-label="Флаг"><code>Tier3InvocationThreshold</code></td>
+<td data-label="Значение" class="num">200</td>
+<td data-label="Смысл">вызовов для перехода 0 → 3</td>
 </tr>
 <tr>
-<td><code>Tier3MinInvocationThreshold</code></td>
-<td class="num">100</td>
-<td>минимум вызовов, при котором учитываются циклы</td>
+<td data-label="Флаг"><code>Tier3MinInvocationThreshold</code></td>
+<td data-label="Значение" class="num">100</td>
+<td data-label="Смысл">минимум вызовов, при котором учитываются циклы</td>
 </tr>
 <tr>
-<td><code>Tier3CompileThreshold</code></td>
-<td class="num">2000</td>
-<td>вызовов + обратных переходов (при i &gt; 100)</td>
+<td data-label="Флаг"><code>Tier3CompileThreshold</code></td>
+<td data-label="Значение" class="num">2000</td>
+<td data-label="Смысл">вызовов + обратных переходов (при i &gt; 100)</td>
 </tr>
 <tr>
-<td><code>Tier3BackEdgeThreshold</code></td>
-<td class="num">60 000</td>
-<td>обратных переходов для OSR на уровне 3</td>
+<td data-label="Флаг"><code>Tier3BackEdgeThreshold</code></td>
+<td data-label="Значение" class="num">60 000</td>
+<td data-label="Смысл">обратных переходов для OSR на уровне 3</td>
 </tr>
 <tr>
-<td><code>Tier4InvocationThreshold</code></td>
-<td class="num">5000</td>
-<td>вызовов для 3 → 4</td>
+<td data-label="Флаг"><code>Tier4InvocationThreshold</code></td>
+<td data-label="Значение" class="num">5000</td>
+<td data-label="Смысл">вызовов для 3 → 4</td>
 </tr>
 <tr>
-<td><code>Tier4MinInvocationThreshold</code></td>
-<td class="num">600</td>
-<td>минимум вызовов для учёта циклов</td>
+<td data-label="Флаг"><code>Tier4MinInvocationThreshold</code></td>
+<td data-label="Значение" class="num">600</td>
+<td data-label="Смысл">минимум вызовов для учёта циклов</td>
 </tr>
 <tr>
-<td><code>Tier4CompileThreshold</code></td>
-<td class="num">15 000</td>
-<td>вызовов + обратных переходов (при i &gt; 600)</td>
+<td data-label="Флаг"><code>Tier4CompileThreshold</code></td>
+<td data-label="Значение" class="num">15 000</td>
+<td data-label="Смысл">вызовов + обратных переходов (при i &gt; 600)</td>
 </tr>
 <tr>
-<td><code>Tier4BackEdgeThreshold</code></td>
-<td class="num">40 000</td>
-<td>обратных переходов для OSR на уровне 4</td>
+<td data-label="Флаг"><code>Tier4BackEdgeThreshold</code></td>
+<td data-label="Значение" class="num">40 000</td>
+<td data-label="Смысл">обратных переходов для OSR на уровне 4</td>
 </tr>
 <tr>
-<td><code>Tier0InvokeNotifyFreqLog</code></td>
-<td class="num">7</td>
-<td>интерпретатор уведомляет policy каждые 2⁷ = 128 вызовов</td>
+<td data-label="Флаг"><code>Tier0InvokeNotifyFreqLog</code></td>
+<td data-label="Значение" class="num">7</td>
+<td data-label="Смысл">интерпретатор уведомляет policy каждые 2⁷ = 128 вызовов</td>
 </tr>
 <tr>
-<td><code>Tier3LoadFeedback</code> / <code>Tier4LoadFeedback</code></td>
-<td class="num">5 / 3</td>
-<td>пороги удваиваются, когда очередь на поток превышает столько задач</td>
+<td data-label="Флаг"><code>Tier3LoadFeedback</code> / <code>Tier4LoadFeedback</code></td>
+<td data-label="Значение" class="num">5 / 3</td>
+<td data-label="Смысл">пороги удваиваются, когда очередь на поток превышает столько задач</td>
 </tr>
 </tbody>
 </table>
@@ -909,7 +909,7 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 <p>Такой выбор правилен для CLI-утилит и однократных задач длительностью до нескольких секунд: миграций Flyway/Liquibase, запущенных отдельным процессом, генераторов, <code>jlink</code>-образов для инструментов. Он же хорош для unit-тестов в CI, где Maven Surefire с <code>argLine=-XX:TieredStopAtLevel=1 -XX:+UseSerialGC</code> на большом проекте сокращает время прогона на 20–40 %, потому что каждый форк JVM не тратит время на C2, и для локального запуска Spring Boot при разработке. А вот для любого сервиса, который живёт дольше минуты, такой выбор будет ошибкой. Подробнее о настройке старта в контейнере рассказывает глава 46 (<code>46-docker-jvm.md</code>).</p>
 <p><code>-XX:-TieredCompilation</code>, то есть только C2, как в «server mode» до JDK 8, — противоположная крайность. Без C1 метод остаётся в интерпретаторе до <code>CompileThreshold=10000</code>, а потом сразу получает лучший код. Прогрев от этого удлиняется, зато в стационарном режиме code cache меньше, потому что нет уровней 2–3, и нет промежуточной ступеньки с медленным кодом C1. Оправдан такой режим для процессов, где важен исключительно пик после долгого прогрева, вроде числодробилок и многочасовых пакетов, а также для экономии code cache в очень больших приложениях. Заметьте, что при <code>-XX:-TieredCompilation</code> значение <code>ReservedCodeCacheSize</code> по умолчанию падает с 240 до 48 МБ.</p>
 <p><strong>Почему первые запросы медленные: разложение по слагаемым.</strong> Таблица раскладывает время медленных запросов типичного сервиса на Spring Boot в первые 60 секунд под трафиком, и для каждого слагаемого указывает его вклад и способ лечения:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Слагаемое</th>
@@ -919,39 +919,39 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 </thead>
 <tbody>
 <tr>
-<td>Загрузка + верификация + связывание классов на пути запроса (Jackson, Hibernate proxy, Spring AOP)</td>
-<td>секунды на первых запросах</td>
-<td>AOT-кэш / CDS (§10.2)</td>
+<td data-label="Слагаемое">Загрузка + верификация + связывание классов на пути запроса (Jackson, Hibernate proxy, Spring AOP)</td>
+<td data-label="Вклад">секунды на первых запросах</td>
+<td data-label="Чем лечится">AOT-кэш / CDS (§10.2)</td>
 </tr>
 <tr>
-<td>Связывание <code>invokedynamic</code>: лямбды, конкатенация, <code>MethodHandle</code>-цепочки</td>
-<td>сотни мс суммарно</td>
-<td>AOT-кэш, меньше уникальных лямбд на пути старта</td>
+<td data-label="Слагаемое">Связывание <code>invokedynamic</code>: лямбды, конкатенация, <code>MethodHandle</code>-цепочки</td>
+<td data-label="Вклад">сотни мс суммарно</td>
+<td data-label="Чем лечится">AOT-кэш, меньше уникальных лямбд на пути старта</td>
 </tr>
 <tr>
-<td>Интерпретация до уровня 3 (первые ~200 вызовов каждого метода)</td>
-<td>10–50× замедление на этих вызовах</td>
-<td>ничем, кроме прогрева</td>
+<td data-label="Слагаемое">Интерпретация до уровня 3 (первые ~200 вызовов каждого метода)</td>
+<td data-label="Вклад">10–50× замедление на этих вызовах</td>
+<td data-label="Чем лечится">ничем, кроме прогрева</td>
 </tr>
 <tr>
-<td>Код уровня 3 до достижения порога уровня 4 (следующие ~5000 вызовов)</td>
-<td>2–5× замедление</td>
-<td>JEP 515 (профили в AOT-кэше)</td>
+<td data-label="Слагаемое">Код уровня 3 до достижения порога уровня 4 (следующие ~5000 вызовов)</td>
+<td data-label="Вклад">2–5× замедление</td>
+<td data-label="Чем лечится">JEP 515 (профили в AOT-кэше)</td>
 </tr>
 <tr>
-<td>Ожидание в очереди C2 при массовом прогреве</td>
-<td>десятки секунд при cpu limit = 1</td>
-<td>больше CPU на старте, <code>CICompilerCount</code></td>
+<td data-label="Слагаемое">Ожидание в очереди C2 при массовом прогреве</td>
+<td data-label="Вклад">десятки секунд при cpu limit = 1</td>
+<td data-label="Чем лечится">больше CPU на старте, <code>CICompilerCount</code></td>
 </tr>
 <tr>
-<td>Первые деоптимизации (unstable_if на первых редких ветках)</td>
-<td>единицы мс каждая</td>
-<td>ничем, это норма</td>
+<td data-label="Слагаемое">Первые деоптимизации (unstable_if на первых редких ветках)</td>
+<td data-label="Вклад">единицы мс каждая</td>
+<td data-label="Чем лечится">ничем, это норма</td>
 </tr>
 <tr>
-<td>Холодные кэши: JIT-код не в iTLB, данные не в L3, пулы соединений пусты, JPA-метамодель не построена</td>
-<td>зависит</td>
-<td>прогревочные запросы</td>
+<td data-label="Слагаемое">Холодные кэши: JIT-код не в iTLB, данные не в L3, пулы соединений пусты, JPA-метамодель не построена</td>
+<td data-label="Вклад">зависит</td>
+<td data-label="Чем лечится">прогревочные запросы</td>
 </tr>
 </tbody>
 </table>
@@ -971,7 +971,7 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 <h3 id="42-type-profiles">4.2 Type profiles</h3>
 <p>Профиль типов (<em>type profile</em>) — это запись о том, объекты каких классов приходили приёмником в конкретный виртуальный вызов; приёмником (<em>receiver</em>) называют объект, у которого вызывают метод, то есть <code>x</code> в <code>x.pay()</code>. По этой записи C2 решает, можно ли такой вызов заинлайнить. Для каждого виртуального вызова MDO хранит до <code>TypeProfileWidth</code> (по умолчанию 2) конкретных классов приёмника со счётчиками и ещё один счётчик для «прочих». Ниже показано, как C2 классифицирует call site по этим данным, как проверить значения флагов на своей JVM и почему разница между мономорфным и мегаморфным вызовом так велика.</p>
 <p>Таблица показывает четыре класса call site и то, что C2 делает с каждым из них. В ней встречаются два понятия, подробно разобранные в §5.2 и §6.1. Guard — это проверка, которую компилятор вставляет перед оптимизированным кодом, например «класс приёмника равен <code>X</code>». Uncommon trap — это ловушка на случай, когда проверка не прошла: вместо кода для редкого случая стоит переход обратно в интерпретатор с отменой оптимизаций.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Наблюдение</th>
@@ -981,24 +981,24 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 </thead>
 <tbody>
 <tr>
-<td>один класс</td>
-<td>мономорфный</td>
-<td>guard <code>klass == X</code> + прямой вызов или встраивание; при промахе — uncommon trap</td>
+<td data-label="Наблюдение">один класс</td>
+<td data-label="Название">мономорфный</td>
+<td data-label="Что делает C2">guard <code>klass == X</code> + прямой вызов или встраивание; при промахе — uncommon trap</td>
 </tr>
 <tr>
-<td>два класса</td>
-<td>биморфный</td>
-<td>два guard-а + два встраивания; при промахе — trap или виртуальный вызов</td>
+<td data-label="Наблюдение">два класса</td>
+<td data-label="Название">биморфный</td>
+<td data-label="Что делает C2">два guard-а + два встраивания; при промахе — trap или виртуальный вызов</td>
 </tr>
 <tr>
-<td>три и более, один доминирует ≥ 90 % (<code>TypeProfileMajorReceiverPercent</code>)</td>
-<td>мегаморфный с major receiver</td>
-<td>встраивание доминирующего + виртуальный вызов для остальных</td>
+<td data-label="Наблюдение">три и более, один доминирует ≥ 90 % (<code>TypeProfileMajorReceiverPercent</code>)</td>
+<td data-label="Название">мегаморфный с major receiver</td>
+<td data-label="Что делает C2">встраивание доминирующего + виртуальный вызов для остальных</td>
 </tr>
 <tr>
-<td>три и более без доминанты</td>
-<td>мегаморфный</td>
-<td>виртуальный вызов через vtable/itable, <strong>без встраивания</strong></td>
+<td data-label="Наблюдение">три и более без доминанты</td>
+<td data-label="Название">мегаморфный</td>
+<td data-label="Что делает C2">виртуальный вызов через vtable/itable, <strong>без встраивания</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1032,7 +1032,7 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 <h3 id="51-встраивание-inlining">5.1 Встраивание (inlining)</h3>
 <p>Встраивание (<em>inlining</em>, встраивание) — это подстановка тела вызываемого метода в место вызова. Сам по себе он экономит немного: пролог и эпилог вызова и сохранение регистров стоят единицы наносекунд. Настоящая его ценность в том, что он <strong>открывает контекст</strong>: после встраивания компилятор видит, что аргумент на самом деле константа, что объект не покидает метода (escape analysis), что проверка на <code>null</code> уже была и что цикл вызывающего и цикл вызываемого можно слить. Практически все остальные оптимизации C2 работают внутри одной единицы компиляции, то есть метода, отданного на компиляцию, вместе со всем, что в него встроено. Поэтому границы того, что компилятор вообще способен оптимизировать, определяет встраивание. Ниже приведены лимиты, по которым C2 решает, встраивать ли метод, правило чтения этих лимитов и причины отказа, которые встречаются в <code>PrintInlining</code>.</p>
 <p>Решение принимается для каждого call site по набору правил (<code>InlineTree::should_inline</code>/<code>should_not_inline</code> в <code>opto/bytecodeInfo.cpp</code>). Основные пороги берутся из <code>c2_globals.hpp</code> (<a href="https://github.com/openjdk/jdk/blob/master/src/hotspot/share/opto/c2_globals.hpp">исходник</a>), и таблица сводит их вместе:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Флаг</th>
@@ -1042,44 +1042,44 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 </thead>
 <tbody>
 <tr>
-<td><code>MaxInlineSize</code></td>
-<td>35 байт байткода</td>
-<td>максимальный размер <strong>холодного</strong> метода для встраивания</td>
+<td data-label="Флаг"><code>MaxInlineSize</code></td>
+<td data-label="По умолчанию">35 байт байткода</td>
+<td data-label="Смысл">максимальный размер <strong>холодного</strong> метода для встраивания</td>
 </tr>
 <tr>
-<td><code>FreqInlineSize</code></td>
-<td>325 (x86/aarch64; платформозависим)</td>
-<td>максимальный размер <strong>горячего</strong> метода (call site частый по профилю)</td>
+<td data-label="Флаг"><code>FreqInlineSize</code></td>
+<td data-label="По умолчанию">325 (x86/aarch64; платформозависим)</td>
+<td data-label="Смысл">максимальный размер <strong>горячего</strong> метода (call site частый по профилю)</td>
 </tr>
 <tr>
-<td><code>MaxTrivialSize</code></td>
-<td>6</td>
-<td>метод меньше — встраивается всегда (геттеры, сеттеры)</td>
+<td data-label="Флаг"><code>MaxTrivialSize</code></td>
+<td data-label="По умолчанию">6</td>
+<td data-label="Смысл">метод меньше — встраивается всегда (геттеры, сеттеры)</td>
 </tr>
 <tr>
-<td><code>MaxInlineLevel</code></td>
-<td>15</td>
-<td>максимальная глубина вложенного встраивания (было 9 до JDK 14)</td>
+<td data-label="Флаг"><code>MaxInlineLevel</code></td>
+<td data-label="По умолчанию">15</td>
+<td data-label="Смысл">максимальная глубина вложенного встраивания (было 9 до JDK 14)</td>
 </tr>
 <tr>
-<td><code>MaxRecursiveInlineLevel</code></td>
-<td>1</td>
-<td>глубина встраивания рекурсивных вызовов</td>
+<td data-label="Флаг"><code>MaxRecursiveInlineLevel</code></td>
+<td data-label="По умолчанию">1</td>
+<td data-label="Смысл">глубина встраивания рекурсивных вызовов</td>
 </tr>
 <tr>
-<td><code>InlineSmallCode</code></td>
-<td>2500 байт машинного кода (x86_64; платформозависим)</td>
-<td>если метод <strong>уже скомпилирован</strong> и его нативный код больше — не встраивать</td>
+<td data-label="Флаг"><code>InlineSmallCode</code></td>
+<td data-label="По умолчанию">2500 байт машинного кода (x86_64; платформозависим)</td>
+<td data-label="Смысл">если метод <strong>уже скомпилирован</strong> и его нативный код больше — не встраивать</td>
 </tr>
 <tr>
-<td><code>MaxNodeLimit</code></td>
-<td>80 000 узлов IR</td>
-<td>предел размера единицы компиляции; при превышении C2 отказывается («out of nodes»)</td>
+<td data-label="Флаг"><code>MaxNodeLimit</code></td>
+<td data-label="По умолчанию">80 000 узлов IR</td>
+<td data-label="Смысл">предел размера единицы компиляции; при превышении C2 отказывается («out of nodes»)</td>
 </tr>
 <tr>
-<td><code>DesiredMethodLimit</code></td>
-<td>8000</td>
-<td>суммарный размер байткода встроенного дерева</td>
+<td data-label="Флаг"><code>DesiredMethodLimit</code></td>
+<td data-label="По умолчанию">8000</td>
+<td data-label="Смысл">суммарный размер байткода встроенного дерева</td>
 </tr>
 </tbody>
 </table>
@@ -1171,7 +1171,7 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 <hr>
 <h3 id="56-constant-folding-и-поля-static-final">5.6 Constant folding и поля <code>static final</code></h3>
 <p>Свёртка констант (<em>constant folding</em>) — это вычисление выражений с известными значениями ещё при компиляции, и C2 делает это агрессивно, однако «константа» для него означает не то же самое, что <code>final</code> в исходнике. От того, доверяет ли компилятор полю, зависит, исчезнет ли оно из машинного кода или будет читаться на каждом вызове. Ниже таблица показывает, каким полям C2 доверяет и почему, затем пример сравнивает два варианта одного метода, а в конце разобраны частный случай неизменяемых коллекций и ловушка с изменяемыми объектами.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -1181,34 +1181,34 @@ mvn dependency:tree -Dincludes<span class="o">=</span>org.slf4j:slf4j-api
 </thead>
 <tbody>
 <tr>
-<td><code>static final int N = 100;</code></td>
-<td><strong>да</strong>, значение вкомпилировано ещё javac</td>
-<td>constant variable, <code>ldc</code>/<code>bipush</code> в байткоде</td>
+<td data-label="Что"><code>static final int N = 100;</code></td>
+<td data-label="Константа для C2?"><strong>да</strong>, значение вкомпилировано ещё javac</td>
+<td data-label="Почему">constant variable, <code>ldc</code>/<code>bipush</code> в байткоде</td>
 </tr>
 <tr>
-<td><code>static final String S = "abc";</code></td>
-<td><strong>да</strong>, там же</td>
-<td>то же</td>
+<td data-label="Что"><code>static final String S = "abc";</code></td>
+<td data-label="Константа для C2?"><strong>да</strong>, там же</td>
+<td data-label="Почему">то же</td>
 </tr>
 <tr>
-<td><code>static final Config C = load();</code></td>
-<td><strong>да, значение ссылки</strong> после инициализации класса</td>
-<td>C2 читает поле из <code>InstanceKlass</code> и знает: оно неизменно после <code>&lt;clinit&gt;</code>, так как запись в <code>static final</code> вне <code>&lt;clinit&gt;</code> запрещена верификатором</td>
+<td data-label="Что"><code>static final Config C = load();</code></td>
+<td data-label="Константа для C2?"><strong>да, значение ссылки</strong> после инициализации класса</td>
+<td data-label="Почему">C2 читает поле из <code>InstanceKlass</code> и знает: оно неизменно после <code>&lt;clinit&gt;</code>, так как запись в <code>static final</code> вне <code>&lt;clinit&gt;</code> запрещена верификатором</td>
 </tr>
 <tr>
-<td><code>private final int n;</code> (поле экземпляра)</td>
-<td><strong>нет</strong> в общем случае</td>
-<td>рефлексия и <code>Unsafe</code> могут его переписать; C2 читает поле как обычное</td>
+<td data-label="Что"><code>private final int n;</code> (поле экземпляра)</td>
+<td data-label="Константа для C2?"><strong>нет</strong> в общем случае</td>
+<td data-label="Почему">рефлексия и <code>Unsafe</code> могут его переписать; C2 читает поле как обычное</td>
 </tr>
 <tr>
-<td><code>final</code> поле <code>record</code>-а</td>
-<td><strong>да</strong>, если объект — константа</td>
-<td>trusted finals: records, hidden classes и <code>java.lang.invoke</code> считаются надёжными</td>
+<td data-label="Что"><code>final</code> поле <code>record</code>-а</td>
+<td data-label="Константа для C2?"><strong>да</strong>, если объект — константа</td>
+<td data-label="Почему">trusted finals: records, hidden classes и <code>java.lang.invoke</code> считаются надёжными</td>
 </tr>
 <tr>
-<td>поле, помеченное <code>@Stable</code> (внутреннее JDK)</td>
-<td><strong>да</strong> после первой ненулевой записи</td>
-<td>механизм для <code>List.of</code>, <code>Integer.valueOf</code> кэша, <code>MethodHandle</code></td>
+<td data-label="Что">поле, помеченное <code>@Stable</code> (внутреннее JDK)</td>
+<td data-label="Константа для C2?"><strong>да</strong> после первой ненулевой записи</td>
+<td data-label="Почему">механизм для <code>List.of</code>, <code>Integer.valueOf</code> кэша, <code>MethodHandle</code></td>
 </tr>
 </tbody>
 </table>
@@ -1345,7 +1345,7 @@ phase2 2.881792E11
 </code></pre></div>
 
 <p>Таблица перечисляет самые частые значения <code>reason</code>, гипотезу, которая за каждым стоит, и типичный источник срабатывания:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Причина</th>
@@ -1355,54 +1355,54 @@ phase2 2.881792E11
 </thead>
 <tbody>
 <tr>
-<td><code>class_check</code></td>
-<td>тип приёмника/объекта — тот, что в профиле</td>
-<td>появился новый класс в мономорфном сайте; после прогрева пришли другие данные</td>
+<td data-label="Причина"><code>class_check</code></td>
+<td data-label="Гипотеза, которая не подтвердилась">тип приёмника/объекта — тот, что в профиле</td>
+<td data-label="Типичный источник">появился новый класс в мономорфном сайте; после прогрева пришли другие данные</td>
 </tr>
 <tr>
-<td><code>unstable_if</code></td>
-<td>ветка никогда не исполнялась</td>
-<td>первый <code>if (retry)</code>, первый <code>catch</code>, первый <code>log.isDebugEnabled()</code></td>
+<td data-label="Причина"><code>unstable_if</code></td>
+<td data-label="Гипотеза, которая не подтвердилась">ветка никогда не исполнялась</td>
+<td data-label="Типичный источник">первый <code>if (retry)</code>, первый <code>catch</code>, первый <code>log.isDebugEnabled()</code></td>
 </tr>
 <tr>
-<td><code>null_check</code></td>
-<td>ссылка не бывает <code>null</code> (implicit null check через SIGSEGV)</td>
-<td>первый <code>null</code> после миллиона не-null</td>
+<td data-label="Причина"><code>null_check</code></td>
+<td data-label="Гипотеза, которая не подтвердилась">ссылка не бывает <code>null</code> (implicit null check через SIGSEGV)</td>
+<td data-label="Типичный источник">первый <code>null</code> после миллиона не-null</td>
 </tr>
 <tr>
-<td><code>range_check</code></td>
-<td>индекс в границах</td>
-<td>первый выход за границы (исключение)</td>
+<td data-label="Причина"><code>range_check</code></td>
+<td data-label="Гипотеза, которая не подтвердилась">индекс в границах</td>
+<td data-label="Типичный источник">первый выход за границы (исключение)</td>
 </tr>
 <tr>
-<td><code>unloaded</code> / <code>uninitialized</code></td>
-<td>класс уже загружен/инициализирован</td>
-<td>вызов кода, класс которого ещё не загружался при компиляции</td>
+<td data-label="Причина"><code>unloaded</code> / <code>uninitialized</code></td>
+<td data-label="Гипотеза, которая не подтвердилась">класс уже загружен/инициализирован</td>
+<td data-label="Типичный источник">вызов кода, класс которого ещё не загружался при компиляции</td>
 </tr>
 <tr>
-<td><code>bimorphic</code> / <code>speculate_class_check</code></td>
-<td>сайт биморфен</td>
-<td>третий тип</td>
+<td data-label="Причина"><code>bimorphic</code> / <code>speculate_class_check</code></td>
+<td data-label="Гипотеза, которая не подтвердилась">сайт биморфен</td>
+<td data-label="Типичный источник">третий тип</td>
 </tr>
 <tr>
-<td><code>array_check</code></td>
-<td><code>aastore</code> в массив известного типа</td>
-<td>ковариантный массив</td>
+<td data-label="Причина"><code>array_check</code></td>
+<td data-label="Гипотеза, которая не подтвердилась"><code>aastore</code> в массив известного типа</td>
+<td data-label="Типичный источник">ковариантный массив</td>
 </tr>
 <tr>
-<td><code>unhandled</code></td>
-<td>исключение не будет брошено здесь</td>
-<td><code>athrow</code> в редкой ветке</td>
+<td data-label="Причина"><code>unhandled</code></td>
+<td data-label="Гипотеза, которая не подтвердилась">исключение не будет брошено здесь</td>
+<td data-label="Типичный источник"><code>athrow</code> в редкой ветке</td>
 </tr>
 <tr>
-<td><code>constraint</code></td>
-<td>CHA-зависимость</td>
-<td>загрузка подкласса, переопределяющего встроенный метод</td>
+<td data-label="Причина"><code>constraint</code></td>
+<td data-label="Гипотеза, которая не подтвердилась">CHA-зависимость</td>
+<td data-label="Типичный источник">загрузка подкласса, переопределяющего встроенный метод</td>
 </tr>
 <tr>
-<td><code>loop_limit_check</code></td>
-<td>границы цикла не переполняются</td>
-<td><code>int</code>-переполнение счётчика</td>
+<td data-label="Причина"><code>loop_limit_check</code></td>
+<td data-label="Гипотеза, которая не подтвердилась">границы цикла не переполняются</td>
+<td data-label="Типичный источник"><code>int</code>-переполнение счётчика</td>
 </tr>
 </tbody>
 </table>
@@ -1434,7 +1434,7 @@ phase2 2.881792E11
 <p><strong>Code cache</strong> — это область нативной памяти, отдельная и от кучи, и от Metaspace, в которой живёт весь сгенерированный машинный код. Туда попадают nmethod-ы C1 и C2, каждый из которых состоит из заголовка, кода, relocation info (списка мест в коде, где записаны адреса, которые надо поправить при перемещении или патчинге), oop maps и scope descriptors для деоптимизации, а также OSR-версии, адаптеры между интерпретаторными и скомпилированными соглашениями вызова (i2c/c2i adapters, по одному на сигнатуру), стабы среды выполнения, шаблоны интерпретатора и буферы компиляторов. Ниже описано, как задаётся его размер, почему у него есть верхний предел и как он делится на сегменты.</p>
 <p>Размер фиксируется при старте флагом <code>-XX:ReservedCodeCacheSize</code>: по умолчанию это <strong>240 МБ</strong> при tiered и <strong>48 МБ</strong> при <code>-XX:-TieredCompilation</code>, а максимум составляет 2 ГБ (<a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html">java, Java 21</a>). Виртуальное адресное пространство резервируется целиком, а физическая память выделяется (<em>commit</em>) по мере роста начиная с <code>InitialCodeCacheSize</code>. Предел в 2 ГБ объясняется тем, что код использует относительные 32-битные переходы (<code>call rel32</code>) между nmethod-ами и стабами, и весь code cache должен укладываться в ±2 ГБ.</p>
 <p>Начиная с JDK 9 code cache <strong>сегментирован</strong> (<a href="https://openjdk.org/jeps/197">JEP 197</a>), если tiered включён и <code>ReservedCodeCacheSize ≥ 240 МБ</code>. Таблица показывает три сегмента, флаги, которые задают их размер, содержимое и время жизни кода в каждом:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сегмент</th>
@@ -1445,22 +1445,22 @@ phase2 2.881792E11
 </thead>
 <tbody>
 <tr>
-<td>Non-nmethod</td>
-<td><code>NonNMethodCodeHeapSize</code></td>
-<td>интерпретатор, стабы, адаптеры, буферы компиляторов</td>
-<td>вечно</td>
+<td data-label="Сегмент">Non-nmethod</td>
+<td data-label="Флаг"><code>NonNMethodCodeHeapSize</code></td>
+<td data-label="Содержимое">интерпретатор, стабы, адаптеры, буферы компиляторов</td>
+<td data-label="Время жизни">вечно</td>
 </tr>
 <tr>
-<td>Profiled</td>
-<td><code>ProfiledCodeHeapSize</code></td>
-<td>nmethod уровней 2 и 3 (C1 с профилем)</td>
-<td>короткое — заменяются C2</td>
+<td data-label="Сегмент">Profiled</td>
+<td data-label="Флаг"><code>ProfiledCodeHeapSize</code></td>
+<td data-label="Содержимое">nmethod уровней 2 и 3 (C1 с профилем)</td>
+<td data-label="Время жизни">короткое — заменяются C2</td>
 </tr>
 <tr>
-<td>Non-profiled</td>
-<td><code>NonProfiledCodeHeapSize</code></td>
-<td>nmethod уровней 1 и 4</td>
-<td>долгое</td>
+<td data-label="Сегмент">Non-profiled</td>
+<td data-label="Флаг"><code>NonProfiledCodeHeapSize</code></td>
+<td data-label="Содержимое">nmethod уровней 1 и 4</td>
+<td data-label="Время жизни">долгое</td>
 </tr>
 </tbody>
 </table>
@@ -1564,7 +1564,7 @@ jvm_memory_max_bytes{area="nonheap", id="CodeHeap 'non-profiled nmethods'"}
 <p>Для backend-разработчика Graal сегодня важен прежде всего не как JIT, а как <strong>Native Image</strong>, то есть AOT-компиляция в исполняемый файл с closed-world assumption и вовсе без JIT. Closed-world assumption («замкнутый мир») означает, что все классы, которые программа когда-либо использует, известны на этапе сборки, поэтому динамическую загрузку и рефлексию приходится описывать заранее; об этом рассказывает глава 46 (<code>46-docker-jvm.md</code>).</p>
 <h3 id="102-leyden-и-aot-кэш">10.2 Leyden и AOT-кэш</h3>
 <p><strong>Project Leyden</strong> — это ответ OpenJDK на цену старта: вместо того чтобы при каждом запуске заново загружать, верифицировать и компилировать, JVM переносит часть этой работы на этап сборки, <em>сдвигая вычисления во времени</em> (shift computation in time), но сохраняя семантику Java и не требуя closed-world, как Native Image. Проблема, которую он решает, такова: всё, что описано в §1–6, при каждом старте JVM происходит с нуля, от загрузки, верификации и связывания тысяч классов до интерпретации, профилирования и компиляции в C1 и C2. Для сервиса, который живёт неделями, это несущественно, а для контейнера, который Kubernetes перезапускает и масштабирует десятки раз в день, прогрев превращается в прямые затраты и деградацию p99. Ниже таблица показывает этапы, уже вошедшие в релизы, а за ней разобраны ограничения и рекомендация.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>JDK</th>
@@ -1574,29 +1574,29 @@ jvm_memory_max_bytes{area="nonheap", id="CodeHeap 'non-profiled nmethods'"}
 </thead>
 <tbody>
 <tr>
-<td>5–10</td>
-<td>CDS/AppCDS (<a href="https://openjdk.org/jeps/310">JEP 310</a>)</td>
-<td>архив распарсенных классов, отображаемый в память (<code>-Xshare</code>, <code>-XX:SharedArchiveFile</code>); JDK 19+ — <code>-XX:+AutoCreateSharedArchive</code></td>
+<td data-label="JDK">5–10</td>
+<td data-label="JEP">CDS/AppCDS (<a href="https://openjdk.org/jeps/310">JEP 310</a>)</td>
+<td data-label="Что даёт">архив распарсенных классов, отображаемый в память (<code>-Xshare</code>, <code>-XX:SharedArchiveFile</code>); JDK 19+ — <code>-XX:+AutoCreateSharedArchive</code></td>
 </tr>
 <tr>
-<td>24</td>
-<td><a href="https://openjdk.org/jeps/483">JEP 483</a> AOT Class Loading &amp; Linking</td>
-<td>AOT-кэш с <strong>загруженными и слинкованными</strong> классами; тренировочный запуск <code>-XX:AOTMode=record -XX:AOTConfiguration=app.aotconf</code>, затем <code>-XX:AOTMode=create -XX:AOTCache=app.aot</code>, в проде <code>-XX:AOTCache=app.aot</code>. Spring PetClinic: старт 4,49 с → 2,60 с</td>
+<td data-label="JDK">24</td>
+<td data-label="JEP"><a href="https://openjdk.org/jeps/483">JEP 483</a> AOT Class Loading &amp; Linking</td>
+<td data-label="Что даёт">AOT-кэш с <strong>загруженными и слинкованными</strong> классами; тренировочный запуск <code>-XX:AOTMode=record -XX:AOTConfiguration=app.aotconf</code>, затем <code>-XX:AOTMode=create -XX:AOTCache=app.aot</code>, в проде <code>-XX:AOTCache=app.aot</code>. Spring PetClinic: старт 4,49 с → 2,60 с</td>
 </tr>
 <tr>
-<td>25</td>
-<td><a href="https://openjdk.org/jeps/514">JEP 514</a> AOT Command-Line Ergonomics</td>
-<td>одна команда <code>-XX:AOTCacheOutput=app.aot</code> создаёт кэш из тренировочного запуска без промежуточного шага</td>
+<td data-label="JDK">25</td>
+<td data-label="JEP"><a href="https://openjdk.org/jeps/514">JEP 514</a> AOT Command-Line Ergonomics</td>
+<td data-label="Что даёт">одна команда <code>-XX:AOTCacheOutput=app.aot</code> создаёт кэш из тренировочного запуска без промежуточного шага</td>
 </tr>
 <tr>
-<td>25</td>
-<td><a href="https://openjdk.org/jeps/515">JEP 515</a> AOT Method Profiling</td>
-<td>в кэш пишутся <strong>профили MDO</strong> из тренировочного запуска, при старте C2 сразу получает профиль без разгона: пример со стримами 90 мс → 73 мс, кэш вырос на ~2,5 %</td>
+<td data-label="JDK">25</td>
+<td data-label="JEP"><a href="https://openjdk.org/jeps/515">JEP 515</a> AOT Method Profiling</td>
+<td data-label="Что даёт">в кэш пишутся <strong>профили MDO</strong> из тренировочного запуска, при старте C2 сразу получает профиль без разгона: пример со стримами 90 мс → 73 мс, кэш вырос на ~2,5 %</td>
 </tr>
 <tr>
-<td>28 (proposed)</td>
-<td><a href="https://openjdk.org/jeps/544">JEP 544</a> AOT Code Compilation</td>
-<td>в кэш пишется <strong>машинный код C1/C2</strong>, при старте он используется сразу; AOT и JIT код совместимы (те же компиляторы), при расхождении с профилем — обычная деоптимизация; заявлено −65…−80 % времени старта и −75 % времени warmup</td>
+<td data-label="JDK">28 (proposed)</td>
+<td data-label="JEP"><a href="https://openjdk.org/jeps/544">JEP 544</a> AOT Code Compilation</td>
+<td data-label="Что даёт">в кэш пишется <strong>машинный код C1/C2</strong>, при старте он используется сразу; AOT и JIT код совместимы (те же компиляторы), при расхождении с профилем — обычная деоптимизация; заявлено −65…−80 % времени старта и −75 % времени warmup</td>
 </tr>
 </tbody>
 </table>
@@ -1646,7 +1646,7 @@ jvm_memory_max_bytes{area="nonheap", id="CodeHeap 'non-profiled nmethods'"}
 
 <p>Метод занимает 33 байта, то есть меньше <code>MaxInlineSize=35</code>, и поэтому будет встраиваться даже в холодные call site.</p>
 <p>Таблица трассирует одну итерацию по operand stack, при этом локалы распределены так: 0=<code>r</code>, 1=<code>xs</code>, 2–3=<code>s</code>, 4=<code>i</code>. Стек записан слева направо, вершина справа:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">bci</th>
@@ -1657,88 +1657,88 @@ jvm_memory_max_bytes{area="nonheap", id="CodeHeap 'non-profiled nmethods'"}
 </thead>
 <tbody>
 <tr>
-<td class="num">5</td>
-<td><code>iload 4</code></td>
-<td><code>[0]</code></td>
-<td>s=0.0, i=0</td>
+<td data-label="bci" class="num">5</td>
+<td data-label="Инструкция"><code>iload 4</code></td>
+<td data-label="Стек после"><code>[0]</code></td>
+<td data-label="Локалы">s=0.0, i=0</td>
 </tr>
 <tr>
-<td class="num">7</td>
-<td><code>aload_1</code></td>
-<td><code>[0, xs]</code></td>
-<td></td>
+<td data-label="bci" class="num">7</td>
+<td data-label="Инструкция"><code>aload_1</code></td>
+<td data-label="Стек после"><code>[0, xs]</code></td>
+<td data-label="Локалы"></td>
 </tr>
 <tr>
-<td class="num">8</td>
-<td><code>arraylength</code></td>
-<td><code>[0, 1024]</code></td>
-<td></td>
+<td data-label="bci" class="num">8</td>
+<td data-label="Инструкция"><code>arraylength</code></td>
+<td data-label="Стек после"><code>[0, 1024]</code></td>
+<td data-label="Локалы"></td>
 </tr>
 <tr>
-<td class="num">9</td>
-<td><code>if_icmpge 31</code></td>
-<td><code>[]</code></td>
-<td>не прыгнули</td>
+<td data-label="bci" class="num">9</td>
+<td data-label="Инструкция"><code>if_icmpge 31</code></td>
+<td data-label="Стек после"><code>[]</code></td>
+<td data-label="Локалы">не прыгнули</td>
 </tr>
 <tr>
-<td class="num">12</td>
-<td><code>dload_2</code></td>
-<td><code>[0.0]</code></td>
-<td></td>
+<td data-label="bci" class="num">12</td>
+<td data-label="Инструкция"><code>dload_2</code></td>
+<td data-label="Стек после"><code>[0.0]</code></td>
+<td data-label="Локалы"></td>
 </tr>
 <tr>
-<td class="num">13</td>
-<td><code>aload_0</code></td>
-<td><code>[0.0, r]</code></td>
-<td></td>
+<td data-label="bci" class="num">13</td>
+<td data-label="Инструкция"><code>aload_0</code></td>
+<td data-label="Стек после"><code>[0.0, r]</code></td>
+<td data-label="Локалы"></td>
 </tr>
 <tr>
-<td class="num">14</td>
-<td><code>aload_1</code></td>
-<td><code>[0.0, r, xs]</code></td>
-<td></td>
+<td data-label="bci" class="num">14</td>
+<td data-label="Инструкция"><code>aload_1</code></td>
+<td data-label="Стек после"><code>[0.0, r, xs]</code></td>
+<td data-label="Локалы"></td>
 </tr>
 <tr>
-<td class="num">15</td>
-<td><code>iload 4</code></td>
-<td><code>[0.0, r, xs, 0]</code></td>
-<td></td>
+<td data-label="bci" class="num">15</td>
+<td data-label="Инструкция"><code>iload 4</code></td>
+<td data-label="Стек после"><code>[0.0, r, xs, 0]</code></td>
+<td data-label="Локалы"></td>
 </tr>
 <tr>
-<td class="num">17</td>
-<td><code>daload</code></td>
-<td><code>[0.0, r, 0.0]</code></td>
-<td></td>
+<td data-label="bci" class="num">17</td>
+<td data-label="Инструкция"><code>daload</code></td>
+<td data-label="Стек после"><code>[0.0, r, 0.0]</code></td>
+<td data-label="Локалы"></td>
 </tr>
 <tr>
-<td class="num">18</td>
-<td><code>invokeinterface</code></td>
-<td><code>[0.0, 0.0]</code></td>
-<td>сняты <code>r</code> и аргумент, положен результат</td>
+<td data-label="bci" class="num">18</td>
+<td data-label="Инструкция"><code>invokeinterface</code></td>
+<td data-label="Стек после"><code>[0.0, 0.0]</code></td>
+<td data-label="Локалы">сняты <code>r</code> и аргумент, положен результат</td>
 </tr>
 <tr>
-<td class="num">23</td>
-<td><code>dadd</code></td>
-<td><code>[0.0]</code></td>
-<td></td>
+<td data-label="bci" class="num">23</td>
+<td data-label="Инструкция"><code>dadd</code></td>
+<td data-label="Стек после"><code>[0.0]</code></td>
+<td data-label="Локалы"></td>
 </tr>
 <tr>
-<td class="num">24</td>
-<td><code>dstore_2</code></td>
-<td><code>[]</code></td>
-<td>s=0.0</td>
+<td data-label="bci" class="num">24</td>
+<td data-label="Инструкция"><code>dstore_2</code></td>
+<td data-label="Стек после"><code>[]</code></td>
+<td data-label="Локалы">s=0.0</td>
 </tr>
 <tr>
-<td class="num">25</td>
-<td><code>iinc 4,1</code></td>
-<td><code>[]</code></td>
-<td>i=1</td>
+<td data-label="bci" class="num">25</td>
+<td data-label="Инструкция"><code>iinc 4,1</code></td>
+<td data-label="Стек после"><code>[]</code></td>
+<td data-label="Локалы">i=1</td>
 </tr>
 <tr>
-<td class="num">28</td>
-<td><code>goto 5</code></td>
-<td><code>[]</code></td>
-<td>back-edge</td>
+<td data-label="bci" class="num">28</td>
+<td data-label="Инструкция"><code>goto 5</code></td>
+<td data-label="Стек после"><code>[]</code></td>
+<td data-label="Локалы">back-edge</td>
 </tr>
 </tbody>
 </table>
@@ -1800,7 +1800,7 @@ jvm_memory_max_bytes{area="nonheap", id="CodeHeap 'non-profiled nmethods'"}
 <p><strong>Что произошло бы с третьим типом.</strong> После появления третьей реализации call site становится мегаморфным, потому что при <code>TypeProfileWidth=2</code> слотов только два, и третий тип уходит в «прочие». Если ни один тип не набирает <code>TypeProfileMajorReceiverPercent=90</code>, C2 перестаёт встраивать вовсе и оставляет вызов через itable. Скорость цикла при этом падает не на «стоимость вызова» (1–3 нс), а на всё, что после встраивания было возможно: вынос <code>k</code>, устранение проверок границ, unrolling. На этом примере мономорфный вариант быстрее мегаморфного в 5–15 раз, и это типичный порядок.</p>
 <h3 id="117-сводка-этапов-исполнения">11.7 Сводка этапов исполнения</h3>
 <p>Таблица сводит весь путь метода <code>total</code> в одну картину: на какой миллисекунде от старта наступает каждая стадия, кто в это время исполняет код и какую скорость это даёт по порядку величины относительно интерпретатора. За таблицей сформулированы три вывода, ради которых стоило проходить весь пример.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Стадия</th>
@@ -1811,46 +1811,46 @@ jvm_memory_max_bytes{area="nonheap", id="CodeHeap 'non-profiled nmethods'"}
 </thead>
 <tbody>
 <tr>
-<td>Первые вызовы</td>
-<td class="num">0–50 мс</td>
-<td>интерпретатор, резолюция, счётчики</td>
-<td>1×</td>
+<td data-label="Стадия">Первые вызовы</td>
+<td data-label="Время от старта" class="num">0–50 мс</td>
+<td data-label="Что исполняется">интерпретатор, резолюция, счётчики</td>
+<td data-label="Скорость (порядок)">1×</td>
 </tr>
 <tr>
-<td>~400-й вызов</td>
-<td class="num"></td>
-<td>заводится MDO, начинается профилирование типов</td>
-<td>0,8×</td>
+<td data-label="Стадия">~400-й вызов</td>
+<td data-label="Время от старта" class="num"></td>
+<td data-label="Что исполняется">заводится MDO, начинается профилирование типов</td>
+<td data-label="Скорость (порядок)">0,8×</td>
 </tr>
 <tr>
-<td>OSR на уровне 3</td>
-<td class="num">56 мс</td>
-<td>C1 с инструментацией, вход в середину цикла</td>
-<td>5–10×</td>
+<td data-label="Стадия">OSR на уровне 3</td>
+<td data-label="Время от старта" class="num">56 мс</td>
+<td data-label="Что исполняется">C1 с инструментацией, вход в середину цикла</td>
+<td data-label="Скорость (порядок)">5–10×</td>
 </tr>
 <tr>
-<td>Обычная компиляция уровня 3</td>
-<td class="num">57 мс</td>
-<td>C1 с инструментацией</td>
-<td>5–10×</td>
+<td data-label="Стадия">Обычная компиляция уровня 3</td>
+<td data-label="Время от старта" class="num">57 мс</td>
+<td data-label="Что исполняется">C1 с инструментацией</td>
+<td data-label="Скорость (порядок)">5–10×</td>
 </tr>
 <tr>
-<td>Уровень 4</td>
-<td class="num">63 мс</td>
-<td>C2: встраивание, LICM, RCE, unrolling</td>
-<td>30–60×</td>
+<td data-label="Стадия">Уровень 4</td>
+<td data-label="Время от старта" class="num">63 мс</td>
+<td data-label="Что исполняется">C2: встраивание, LICM, RCE, unrolling</td>
+<td data-label="Скорость (порядок)">30–60×</td>
 </tr>
 <tr>
-<td>Деоптимизация</td>
-<td class="num">476 мс</td>
-<td>интерпретатор, одна итерация</td>
-<td>1×</td>
+<td data-label="Стадия">Деоптимизация</td>
+<td data-label="Время от старта" class="num">476 мс</td>
+<td data-label="Что исполняется">интерпретатор, одна итерация</td>
+<td data-label="Скорость (порядок)">1×</td>
 </tr>
 <tr>
-<td>Перекомпиляция уровня 4</td>
-<td class="num">477 мс</td>
-<td>C2 с биморфным guard</td>
-<td>20–40×</td>
+<td data-label="Стадия">Перекомпиляция уровня 4</td>
+<td data-label="Время от старта" class="num">477 мс</td>
+<td data-label="Что исполняется">C2 с биморфным guard</td>
+<td data-label="Скорость (порядок)">20–40×</td>
 </tr>
 </tbody>
 </table>
@@ -2037,7 +2037,7 @@ awk <span class="s1">'{print $NF}'</span> cl.log <span class="p">|</span> sort <
 <p>Диагностика JVM — это наблюдение за тем, что виртуальная машина делает внутри: какие классы загружает, что компилирует и почему отменяет скомпилированное. Инструментов для этого четыре вида, и здесь они собраны в одном месте: флаги JVM, команды <code>jcmd</code>, события JFR и JITWatch. Нужен он потому, что по ходу главы инструменты появлялись по одному, а при расследовании важно быстро понять, какой из них отвечает на ваш вопрос и сколько стоит его включить на живом процессе. Сначала идут справочные подразделы по каждому инструменту, затем три чеклиста по типичным симптомам, а в конце дополнительные флаги и пошаговая работа с JITWatch.</p>
 <h3 id="141-флаги-jvm">14.1 Флаги JVM</h3>
 <p>Флаги JVM — это параметры командной строки вида <code>-XX:</code> и <code>-Xlog:</code>, которые включают внутренние журналы виртуальной машины. Они дают самый подробный взгляд на работу компилятора и загрузчиков, но почти все они требуют перезапуска, а часть из них диагностическая и на проде уместна только ненадолго. Таблица перечисляет, что можно увидеть, каким флагом или командой, и какие есть оговорки у каждого.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что смотреть</th>
@@ -2047,59 +2047,59 @@ awk <span class="s1">'{print $NF}'</span> cl.log <span class="p">|</span> sort <
 </thead>
 <tbody>
 <tr>
-<td>Какие методы и когда компилируются, деоптимизации</td>
-<td><code>-XX:+PrintCompilation</code></td>
-<td>stdout, безопасен для прода на короткое время; формат — §3.6</td>
+<td data-label="Что смотреть">Какие методы и когда компилируются, деоптимизации</td>
+<td data-label="Флаг / команда"><code>-XX:+PrintCompilation</code></td>
+<td data-label="Замечания">stdout, безопасен для прода на короткое время; формат — §3.6</td>
 </tr>
 <tr>
-<td>Решения по встраиванию</td>
-<td><code>-XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining</code></td>
-<td>много вывода; фильтровать через <code>-XX:CompileCommand=PrintInlining,com/acme/*.*</code> (JDK 17+: <code>-XX:CompileCommand=option,com/acme/Hot.calc,PrintInlining</code>)</td>
+<td data-label="Что смотреть">Решения по встраиванию</td>
+<td data-label="Флаг / команда"><code>-XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining</code></td>
+<td data-label="Замечания">много вывода; фильтровать через <code>-XX:CompileCommand=PrintInlining,com/acme/*.*</code> (JDK 17+: <code>-XX:CompileCommand=option,com/acme/Hot.calc,PrintInlining</code>)</td>
 </tr>
 <tr>
-<td>Полный лог компиляции для JITWatch</td>
-<td><code>-XX:+UnlockDiagnosticVMOptions -XX:+LogCompilation -XX:LogFile=hotspot.log</code></td>
-<td>XML, десятки МБ за минуты; включает встраивание, деопт, escape analysis</td>
+<td data-label="Что смотреть">Полный лог компиляции для JITWatch</td>
+<td data-label="Флаг / команда"><code>-XX:+UnlockDiagnosticVMOptions -XX:+LogCompilation -XX:LogFile=hotspot.log</code></td>
+<td data-label="Замечания">XML, десятки МБ за минуты; включает встраивание, деопт, escape analysis</td>
 </tr>
 <tr>
-<td>Ассемблер nmethod</td>
-<td><code>-XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly</code> + <code>CompileCommand=print,...</code></td>
-<td>требует библиотеку <code>hsdis</code> в <code>lib/</code> JDK; без неё печатает hex</td>
+<td data-label="Что смотреть">Ассемблер nmethod</td>
+<td data-label="Флаг / команда"><code>-XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly</code> + <code>CompileCommand=print,...</code></td>
+<td data-label="Замечания">требует библиотеку <code>hsdis</code> в <code>lib/</code> JDK; без неё печатает hex</td>
 </tr>
 <tr>
-<td>Деоптимизации</td>
-<td><code>-Xlog:deoptimization=debug</code> (JDK 17+); <code>-XX:+UnlockDiagnosticVMOptions -XX:+TraceDeoptimization</code></td>
-<td>причина, action, метод, bci</td>
+<td data-label="Что смотреть">Деоптимизации</td>
+<td data-label="Флаг / команда"><code>-Xlog:deoptimization=debug</code> (JDK 17+); <code>-XX:+UnlockDiagnosticVMOptions -XX:+TraceDeoptimization</code></td>
+<td data-label="Замечания">причина, action, метод, bci</td>
 </tr>
 <tr>
-<td>Загрузка/выгрузка классов</td>
-<td><code>-Xlog:class+load=info</code>, <code>-Xlog:class+unload=info</code>, <code>-Xlog:class+init=info</code></td>
-<td><code>class+load</code> показывает источник (jar/<code>shared objects file</code>) — полезно для дубликатов и проверки CDS</td>
+<td data-label="Что смотреть">Загрузка/выгрузка классов</td>
+<td data-label="Флаг / команда"><code>-Xlog:class+load=info</code>, <code>-Xlog:class+unload=info</code>, <code>-Xlog:class+init=info</code></td>
+<td data-label="Замечания"><code>class+load</code> показывает источник (jar/<code>shared objects file</code>) — полезно для дубликатов и проверки CDS</td>
 </tr>
 <tr>
-<td>JPMS-доступ</td>
-<td><code>-Xlog:module+access=info</code></td>
-<td>что именно нужно открыть <code>--add-opens</code></td>
+<td data-label="Что смотреть">JPMS-доступ</td>
+<td data-label="Флаг / команда"><code>-Xlog:module+access=info</code></td>
+<td data-label="Замечания">что именно нужно открыть <code>--add-opens</code></td>
 </tr>
 <tr>
-<td>Code cache при старте/переполнении</td>
-<td><code>-XX:+PrintCodeCache</code> (при выходе), <code>-XX:+PrintCodeCacheOnCompilation</code></td>
-<td></td>
+<td data-label="Что смотреть">Code cache при старте/переполнении</td>
+<td data-label="Флаг / команда"><code>-XX:+PrintCodeCache</code> (при выходе), <code>-XX:+PrintCodeCacheOnCompilation</code></td>
+<td data-label="Замечания"></td>
 </tr>
 <tr>
-<td>Отключить/сузить компиляцию для проверки гипотезы</td>
-<td><code>-XX:CompileCommand=exclude,...</code>, <code>dontinline</code>, <code>inline</code>, <code>compileonly</code></td>
-<td>не для прода; для локализации регрессии — заменить подозреваемый метод интерпретацией</td>
+<td data-label="Что смотреть">Отключить/сузить компиляцию для проверки гипотезы</td>
+<td data-label="Флаг / команда"><code>-XX:CompileCommand=exclude,...</code>, <code>dontinline</code>, <code>inline</code>, <code>compileonly</code></td>
+<td data-label="Замечания">не для прода; для локализации регрессии — заменить подозреваемый метод интерпретацией</td>
 </tr>
 <tr>
-<td>Сдвинуть пороги</td>
-<td><code>-XX:CompileThresholdScaling=0.1</code></td>
-<td>форсировать раннюю компиляцию в тестах</td>
+<td data-label="Что смотреть">Сдвинуть пороги</td>
+<td data-label="Флаг / команда"><code>-XX:CompileThresholdScaling=0.1</code></td>
+<td data-label="Замечания">форсировать раннюю компиляцию в тестах</td>
 </tr>
 <tr>
-<td>Все действующие флаги</td>
-<td><code>-XX:+PrintFlagsFinal</code> или <code>jcmd &lt;pid&gt; VM.flags -all</code></td>
-<td>сверять <code>ReservedCodeCacheSize</code>, <code>CICompilerCount</code>, <code>UseAES*</code> на конкретной машине</td>
+<td data-label="Что смотреть">Все действующие флаги</td>
+<td data-label="Флаг / команда"><code>-XX:+PrintFlagsFinal</code> или <code>jcmd &lt;pid&gt; VM.flags -all</code></td>
+<td data-label="Замечания">сверять <code>ReservedCodeCacheSize</code>, <code>CICompilerCount</code>, <code>UseAES*</code> на конкретной машине</td>
 </tr>
 </tbody>
 </table>
@@ -2181,7 +2181,7 @@ java -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -XX:+PrintF
 </code></pre></div>
 
 <p>Отдельно стоит собрать в одном месте JFR-события компиляции. Таблица перечисляет полный набор, который стоит включить в кастомный <code>.jfc</code> при расследовании, потому что в профиле <code>profile</code> часть из них выключена:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Событие</th>
@@ -2190,32 +2190,32 @@ java -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -XX:+PrintF
 </thead>
 <tbody>
 <tr>
-<td><code>jdk.Compilation</code></td>
-<td>метод, уровень, длительность компиляции, размер байткода и нативного кода, был ли OSR</td>
+<td data-label="Событие"><code>jdk.Compilation</code></td>
+<td data-label="Что даёт">метод, уровень, длительность компиляции, размер байткода и нативного кода, был ли OSR</td>
 </tr>
 <tr>
-<td><code>jdk.CompilerInlining</code></td>
-<td>решения о встраивании (выключено по умолчанию — включать точечно, объём огромный)</td>
+<td data-label="Событие"><code>jdk.CompilerInlining</code></td>
+<td data-label="Что даёт">решения о встраивании (выключено по умолчанию — включать точечно, объём огромный)</td>
 </tr>
 <tr>
-<td><code>jdk.Deoptimization</code></td>
-<td>причина, action, метод, bci, номер инструкции (JDK 17+)</td>
+<td data-label="Событие"><code>jdk.Deoptimization</code></td>
+<td data-label="Что даёт">причина, action, метод, bci, номер инструкции (JDK 17+)</td>
 </tr>
 <tr>
-<td><code>jdk.CompilerStatistics</code></td>
-<td>накопительно: число компиляций, ошибок, суммарное время</td>
+<td data-label="Событие"><code>jdk.CompilerStatistics</code></td>
+<td data-label="Что даёт">накопительно: число компиляций, ошибок, суммарное время</td>
 </tr>
 <tr>
-<td><code>jdk.CodeCacheStatistics</code> / <code>jdk.CodeCacheConfiguration</code> / <code>jdk.CodeCacheFull</code></td>
-<td>заполнение по сегментам, конфигурация, факт переполнения</td>
+<td data-label="Событие"><code>jdk.CodeCacheStatistics</code> / <code>jdk.CodeCacheConfiguration</code> / <code>jdk.CodeCacheFull</code></td>
+<td data-label="Что даёт">заполнение по сегментам, конфигурация, факт переполнения</td>
 </tr>
 <tr>
-<td><code>jdk.CompilerQueueUtilization</code></td>
-<td>длина очередей C1/C2 (JDK 21+)</td>
+<td data-label="Событие"><code>jdk.CompilerQueueUtilization</code></td>
+<td data-label="Что даёт">длина очередей C1/C2 (JDK 21+)</td>
 </tr>
 <tr>
-<td><code>jdk.ClassLoad</code> / <code>jdk.ClassDefine</code> / <code>jdk.ClassUnload</code></td>
-<td>динамика загрузки и генерации классов</td>
+<td data-label="Событие"><code>jdk.ClassLoad</code> / <code>jdk.ClassDefine</code> / <code>jdk.ClassUnload</code></td>
+<td data-label="Что даёт">динамика загрузки и генерации классов</td>
 </tr>
 </tbody>
 </table>
@@ -2393,5 +2393,5 @@ jfr print --events jdk.Compilation r.jfr <span class="p">|</span> grep -E <span 
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-загрузка-классов">1. Загрузка классов</a></li><li><a href="#2-class-файл-байткод-и-фрейм">2. Class-файл, байткод и фрейм</a></li><li><a href="#3-от-интерпретатора-к-c2-tiered-compilation">3. От интерпретатора к C2: tiered compilation</a></li><li><a href="#4-профиль-исполнения-для-jit">4. Профиль исполнения для JIT</a></li><li><a href="#5-оптимизации-c2">5. Оптимизации C2</a></li><li><a href="#6-спекуляции-и-деоптимизация">6. Спекуляции и деоптимизация</a></li><li><a href="#7-code-cache">7. Code cache</a></li><li><a href="#8-jmm-и-оптимизации-компилятора">8. JMM и оптимизации компилятора</a></li><li><a href="#9-jit-friendly-код-и-микробенчмарки">9. JIT-friendly код и микробенчмарки</a></li><li><a href="#10-graal-jit-leyden-и-aot-кэш">10. Graal JIT, Leyden и AOT-кэш</a></li><li><a href="#11-исполнение-кода-в-jvm-сквозной-пример">11. Исполнение кода в JVM: сквозной пример</a></li><li><a href="#12-разобранные-инциденты">12. Разобранные инциденты</a></li><li><a href="#13-грабли-и-антипаттерны">13. Грабли и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

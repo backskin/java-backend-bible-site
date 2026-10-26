@@ -3,7 +3,7 @@
 <title>42. Безопасность приложений, OAuth2/OIDC, Keycloak — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Безопасность приложений, OAuth2/OIDC, Keycloak">
 <a class="skip" href="#content">К тексту</a>
@@ -23,7 +23,7 @@
 <p>OAuth 2.0 — это протокол делегированного доступа: он позволяет приложению получить у сервера авторизации токен и ходить с ним в API от имени пользователя, ни разу не увидев его пароля. Почти все дыры в этой области возникают не из-за слабой криптографии, а из-за того, что команда путает роли участников, принимает access token за удостоверение личности или пропускает одну из проверок, на которых держится поток. Поэтому раздел начинается с ролей и с границы между OAuth и аутентификацией, затем подробно разбирает Authorization Code с PKCE, остальные потоки и то, что из них уже умерло, а после этого переходит к OIDC, к проверке <code>redirect_uri</code>, к PAR и JAR и к изменениям, которые приносит OAuth 2.1.</p>
 <h3 id="11-четыре-роли-oauth-20">1.1 Четыре роли OAuth 2.0</h3>
 <p>OAuth 2.0 (<a href="https://www.rfc-editor.org/rfc/rfc6749">RFC 6749</a>) определяет четыре роли, и почти вся путаница в проектах возникает оттого, что в реальной системе один и тот же сервис играет сразу несколько из них. Пока роли не разведены по сервисам хотя бы на бумаге, невозможно понять, чей токен куда должен попадать. В таблице ниже для каждой роли указано, кто её исполняет в типичном банке и за что она отвечает.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Роль</th>
@@ -33,24 +33,24 @@
 </thead>
 <tbody>
 <tr>
-<td>Resource owner</td>
-<td>Клиент банка (человек)</td>
-<td>Даёт согласие на доступ</td>
+<td data-label="Роль">Resource owner</td>
+<td data-label="Кто это в типичном банке">Клиент банка (человек)</td>
+<td data-label="Что делает">Даёт согласие на доступ</td>
 </tr>
 <tr>
-<td>Client</td>
-<td>SPA, мобильное приложение, BFF, другой микросервис</td>
-<td>Запрашивает токен и ходит с ним в API</td>
+<td data-label="Роль">Client</td>
+<td data-label="Кто это в типичном банке">SPA, мобильное приложение, BFF, другой микросервис</td>
+<td data-label="Что делает">Запрашивает токен и ходит с ним в API</td>
 </tr>
 <tr>
-<td>Authorization Server (AS)</td>
-<td>Keycloak</td>
-<td>Аутентифицирует, выдаёт токены</td>
+<td data-label="Роль">Authorization Server (AS)</td>
+<td data-label="Кто это в типичном банке">Keycloak</td>
+<td data-label="Что делает">Аутентифицирует, выдаёт токены</td>
 </tr>
 <tr>
-<td>Resource Server (RS)</td>
-<td><code>payments-api</code>, <code>accounts-api</code></td>
-<td>Проверяет токен и решает, пускать ли</td>
+<td data-label="Роль">Resource Server (RS)</td>
+<td data-label="Кто это в типичном банке"><code>payments-api</code>, <code>accounts-api</code></td>
+<td data-label="Что делает">Проверяет токен и решает, пускать ли</td>
 </tr>
 </tbody>
 </table>
@@ -108,7 +108,7 @@
 <p>⚠️ <strong>Грабли.</strong> RFC оставляет <code>code_challenge_method=plain</code> только для клиентов, которые физически не способны посчитать SHA-256, а в 2026 году таких нет. При <code>plain</code> значение <code>code_challenge</code> == <code>code_verifier</code>, поэтому, перехватив перенаправление, атакующий получает сразу оба, и защита сводится к нулю. Ставьте <code>S256</code> явно.</p>
 </blockquote>
 <p><strong><code>state</code> и <code>nonce</code>: какая атака чем закрывается.</strong> Это вопрос-ловушка, и на нём кандидаты часто сыпятся, потому что оба параметра выглядят как «случайная строка, которую потом сверяют». В таблице для каждого из них, а заодно и для PKCE, указано, где параметр живёт, от чего защищает и кто его проверяет.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Параметр</th>
@@ -119,22 +119,22 @@
 </thead>
 <tbody>
 <tr>
-<td><code>state</code></td>
-<td>Запрос авторизации → перенаправление обратно</td>
-<td><strong>CSRF на callback</strong>: атакующий заставляет браузер жертвы дёрнуть <code>/callback?code=&lt;код атакующего&gt;</code></td>
-<td>Клиент сверяет со значением в своей сессии</td>
+<td data-label="Параметр"><code>state</code></td>
+<td data-label="Где живёт">Запрос авторизации → перенаправление обратно</td>
+<td data-label="Что закрывает"><strong>CSRF на callback</strong>: атакующий заставляет браузер жертвы дёрнуть <code>/callback?code=&lt;код атакующего&gt;</code></td>
+<td data-label="Где проверяется">Клиент сверяет со значением в своей сессии</td>
 </tr>
 <tr>
-<td><code>nonce</code></td>
-<td>Запрос авторизации → claim внутри <code>id_token</code></td>
-<td><strong>Replay <code>id_token</code></strong>: повторное предъявление ранее выданного id_token</td>
-<td>Клиент сверяет <code>id_token.nonce</code> со значением в сессии</td>
+<td data-label="Параметр"><code>nonce</code></td>
+<td data-label="Где живёт">Запрос авторизации → claim внутри <code>id_token</code></td>
+<td data-label="Что закрывает"><strong>Replay <code>id_token</code></strong>: повторное предъявление ранее выданного id_token</td>
+<td data-label="Где проверяется">Клиент сверяет <code>id_token.nonce</code> со значением в сессии</td>
 </tr>
 <tr>
-<td>PKCE</td>
-<td><code>code_challenge</code> → <code>code_verifier</code> на <code>/token</code></td>
-<td>Перехват и инъекция <strong>кода</strong></td>
-<td>AS сверяет хеш</td>
+<td data-label="Параметр">PKCE</td>
+<td data-label="Где живёт"><code>code_challenge</code> → <code>code_verifier</code> на <code>/token</code></td>
+<td data-label="Что закрывает">Перехват и инъекция <strong>кода</strong></td>
+<td data-label="Где проверяется">AS сверяет хеш</td>
 </tr>
 </tbody>
 </table>
@@ -405,7 +405,7 @@
 <h3 id="16-проверка-redirecturi-и-открытое-перенаправление">1.6 Проверка <code>redirect_uri</code> и открытое перенаправление</h3>
 <p><code>redirect_uri</code> — это адрес, на который AS отправит код авторизации, и любое ослабление при его сравнении немедленно превращается в кражу кода. Поэтому RFC 9700 требует <strong>exact string matching</strong> зарегистрированных redirect URI: никаких подстрок, никаких вайлдкардов и никакого «хост совпал — значит, всё в порядке». Ниже разобрано, как именно ломают ослабленное сравнение, и перечислены правила, которые закрывают все варианты сразу.</p>
 <p>В таблице каждая строка — отдельный способ ослабить проверку; смотреть стоит на последний столбец, где видно, куда в итоге уезжает код.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ослабление</th>
@@ -416,28 +416,28 @@
 </thead>
 <tbody>
 <tr>
-<td>Префиксное сравнение</td>
-<td><code>https://app.bank.ru/cb</code></td>
-<td><code>https://app.bank.ru/cb.evil.com/</code></td>
-<td>Код уезжает на чужой домен</td>
+<td data-label="Ослабление">Префиксное сравнение</td>
+<td data-label="Пример регистрации"><code>https://app.bank.ru/cb</code></td>
+<td data-label="Что подставит атакующий"><code>https://app.bank.ru/cb.evil.com/</code></td>
+<td data-label="Итог">Код уезжает на чужой домен</td>
 </tr>
 <tr>
-<td>Вайлдкард в поддомене</td>
-<td><code>https://*.bank.ru/cb</code></td>
-<td><code>https://xss-lab.bank.ru/cb</code> (любой забытый поддомен)</td>
-<td>Код у того, кто контролирует поддомен</td>
+<td data-label="Ослабление">Вайлдкард в поддомене</td>
+<td data-label="Пример регистрации"><code>https://*.bank.ru/cb</code></td>
+<td data-label="Что подставит атакующий"><code>https://xss-lab.bank.ru/cb</code> (любой забытый поддомен)</td>
+<td data-label="Итог">Код у того, кто контролирует поддомен</td>
 </tr>
 <tr>
-<td>Вайлдкард в пути</td>
-<td><code>https://app.bank.ru/*</code></td>
-<td><code>https://app.bank.ru/legacy/redirect?to=evil</code></td>
-<td>Код улетает через <strong>открытое перенаправление</strong> внутри вашего же приложения</td>
+<td data-label="Ослабление">Вайлдкард в пути</td>
+<td data-label="Пример регистрации"><code>https://app.bank.ru/*</code></td>
+<td data-label="Что подставит атакующий"><code>https://app.bank.ru/legacy/redirect?to=evil</code></td>
+<td data-label="Итог">Код улетает через <strong>открытое перенаправление</strong> внутри вашего же приложения</td>
 </tr>
 <tr>
-<td>Игнор фрагмента/квери</td>
-<td><code>https://app.bank.ru/cb</code></td>
-<td><code>https://app.bank.ru/cb?next=//evil</code></td>
-<td>Зависит от приложения, часто утечка через Referer</td>
+<td data-label="Ослабление">Игнор фрагмента/квери</td>
+<td data-label="Пример регистрации"><code>https://app.bank.ru/cb</code></td>
+<td data-label="Что подставит атакующий"><code>https://app.bank.ru/cb?next=//evil</code></td>
+<td data-label="Итог">Зависит от приложения, часто утечка через Referer</td>
 </tr>
 </tbody>
 </table>
@@ -459,7 +459,7 @@
 <p>Платить за это приходится так: клиенту нужен дополнительный round-trip (для PAR) и умение подписывать JWT (для JAR), а вам — управление ключами клиентов. Для SPA без BFF это обычно неподъёмно, а для серверных интеграций обходится дёшево.</p>
 <h3 id="18-изменения-в-oauth-21">1.8 Изменения в OAuth 2.1</h3>
 <p>OAuth 2.1 — не новый протокол, а консолидация: RFC 6749, RFC 6750 и накопившиеся BCP сведены в один документ, из которого вырезаны опасные ветки. Список изменений полезно держать в голове, потому что на интервью именно такой ответ отличает того, кто читал туториал, от того, кто читал спецификацию. В таблице каждая строка показывает, как пункт выглядел в OAuth 2.0 и во что он превращается в черновике 2.1.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -469,39 +469,39 @@
 </thead>
 <tbody>
 <tr>
-<td>PKCE</td>
-<td>Опционален, введён отдельным RFC 7636</td>
-<td><strong>Обязателен</strong> для клиентов code flow; исключение — confidential-клиент с корректно реализованным OIDC <code>nonce</code>, которому PKCE по-прежнему RECOMMENDED</td>
+<td data-label="Что">PKCE</td>
+<td data-label="OAuth 2.0 (RFC 6749)">Опционален, введён отдельным RFC 7636</td>
+<td data-label="OAuth 2.1 (draft)"><strong>Обязателен</strong> для клиентов code flow; исключение — confidential-клиент с корректно реализованным OIDC <code>nonce</code>, которому PKCE по-прежнему RECOMMENDED</td>
 </tr>
 <tr>
-<td>Implicit (<code>response_type=token</code>)</td>
-<td>Есть</td>
-<td><strong>Удалён</strong></td>
+<td data-label="Что">Implicit (<code>response_type=token</code>)</td>
+<td data-label="OAuth 2.0 (RFC 6749)">Есть</td>
+<td data-label="OAuth 2.1 (draft)"><strong>Удалён</strong></td>
 </tr>
 <tr>
-<td>ROPC (<code>grant_type=password</code>)</td>
-<td>Есть</td>
-<td><strong>Удалён</strong></td>
+<td data-label="Что">ROPC (<code>grant_type=password</code>)</td>
+<td data-label="OAuth 2.0 (RFC 6749)">Есть</td>
+<td data-label="OAuth 2.1 (draft)"><strong>Удалён</strong></td>
 </tr>
 <tr>
-<td><code>redirect_uri</code></td>
-<td>Допускается частичное сравнение</td>
-<td>Только <strong>exact string matching</strong> (исключение — loopback-порт нативных приложений)</td>
+<td data-label="Что"><code>redirect_uri</code></td>
+<td data-label="OAuth 2.0 (RFC 6749)">Допускается частичное сравнение</td>
+<td data-label="OAuth 2.1 (draft)">Только <strong>exact string matching</strong> (исключение — loopback-порт нативных приложений)</td>
 </tr>
 <tr>
-<td>Bearer-токен в query string</td>
-<td>Разрешён RFC 6750</td>
-<td><strong>Запрещён</strong>, только заголовок <code>Authorization</code></td>
+<td data-label="Что">Bearer-токен в query string</td>
+<td data-label="OAuth 2.0 (RFC 6749)">Разрешён RFC 6750</td>
+<td data-label="OAuth 2.1 (draft)"><strong>Запрещён</strong>, только заголовок <code>Authorization</code></td>
 </tr>
 <tr>
-<td>Refresh-токены для public-клиентов</td>
-<td>Разрешены без условий</td>
-<td>Требуется <strong>sender-constrained</strong> либо <strong>одноразовые с ротацией</strong></td>
+<td data-label="Что">Refresh-токены для public-клиентов</td>
+<td data-label="OAuth 2.0 (RFC 6749)">Разрешены без условий</td>
+<td data-label="OAuth 2.1 (draft)">Требуется <strong>sender-constrained</strong> либо <strong>одноразовые с ротацией</strong></td>
 </tr>
 <tr>
-<td>Native apps, browser apps</td>
-<td>В отдельных BCP</td>
-<td>Втянуты в основной документ</td>
+<td data-label="Что">Native apps, browser apps</td>
+<td data-label="OAuth 2.0 (RFC 6749)">В отдельных BCP</td>
+<td data-label="OAuth 2.1 (draft)">Втянуты в основной документ</td>
 </tr>
 </tbody>
 </table>
@@ -514,7 +514,7 @@
 <p>Токен — это то, что сервер авторизации выдаёт клиенту и что ресурс-сервер проверяет на каждом запросе, поэтому от выбора его формата и срока жизни зависят и нагрузка на Keycloak, и то, можно ли отозвать доступ немедленно. Большинство практических проблем здесь растут из нескольких мест: JWT нельзя отозвать до <code>exp</code>, ротация refresh-токенов ломает клиентов с параллельными запросами, а ресурс-сервер забывает проверить <code>aud</code>. Раздел начинается со сравнения JWT и opaque-токенов и с того, как жить с неотзываемостью JWT, затем разбирает refresh-токены, хранение токена в браузере, audience, Token Exchange и sender-constrained токены, а заканчивается полным порядком проверок на ресурс-сервере и типовыми уязвимостями валидации.</p>
 <h3 id="21-jwt-и-непрозрачные-opaque-токены">2.1 JWT и непрозрачные (opaque) токены</h3>
 <p>JWT несёт все claims внутри себя и проверяется ресурс-сервером локально по подписи, а opaque-токен — это случайная ссылка, по которой ресурс-сервер каждый раз спрашивает сервер авторизации через introspection. Выбор между ними — это выбор между независимостью от AS и возможностью мгновенного отзыва, и получить оба свойства сразу нельзя. В таблице форматы сравниваются по шести параметрам, которые на практике и решают дело.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -524,34 +524,34 @@
 </thead>
 <tbody>
 <tr>
-<td>Проверка на RS</td>
-<td>Локально: подпись + claims, ~50–200 мкс</td>
-<td>Сетевой вызов в AS (<a href="https://www.rfc-editor.org/rfc/rfc7662">RFC 7662</a>)</td>
+<td data-label="">Проверка на RS</td>
+<td data-label="JWT (self-contained)">Локально: подпись + claims, ~50–200 мкс</td>
+<td data-label="Opaque + introspection">Сетевой вызов в AS (<a href="https://www.rfc-editor.org/rfc/rfc7662">RFC 7662</a>)</td>
 </tr>
 <tr>
-<td>Нагрузка на AS</td>
-<td>Только JWKS раз в N часов</td>
-<td>Каждый запрос (или кеш с TTL)</td>
+<td data-label="">Нагрузка на AS</td>
+<td data-label="JWT (self-contained)">Только JWKS раз в N часов</td>
+<td data-label="Opaque + introspection">Каждый запрос (или кеш с TTL)</td>
 </tr>
 <tr>
-<td>Отзыв</td>
-<td><strong>Невозможен</strong> до <code>exp</code></td>
-<td>Мгновенный</td>
+<td data-label="">Отзыв</td>
+<td data-label="JWT (self-contained)"><strong>Невозможен</strong> до <code>exp</code></td>
+<td data-label="Opaque + introspection">Мгновенный</td>
 </tr>
 <tr>
-<td>Размер</td>
-<td>0.7–4 КБ в каждом запросе</td>
-<td>~40 байт</td>
+<td data-label="">Размер</td>
+<td data-label="JWT (self-contained)">0.7–4 КБ в каждом запросе</td>
+<td data-label="Opaque + introspection">~40 байт</td>
 </tr>
 <tr>
-<td>Утечка данных</td>
-<td>Claims читаются base64 кем угодно</td>
-<td>Ничего не видно</td>
+<td data-label="">Утечка данных</td>
+<td data-label="JWT (self-contained)">Claims читаются base64 кем угодно</td>
+<td data-label="Opaque + introspection">Ничего не видно</td>
 </tr>
 <tr>
-<td>Отказоустойчивость</td>
-<td>RS живёт при мёртвом AS</td>
-<td>AS — SPOF на каждый запрос</td>
+<td data-label="">Отказоустойчивость</td>
+<td data-label="JWT (self-contained)">RS живёт при мёртвом AS</td>
+<td data-label="Opaque + introspection">AS — SPOF на каждый запрос</td>
 </tr>
 </tbody>
 </table>
@@ -694,7 +694,7 @@
 <h3 id="28-порядок-валидации-токена-на-ресурс-сервере">2.8 Порядок валидации токена на ресурс-сервере</h3>
 <p>Валидация на ресурс-сервере — это последовательность проверок, которую RS выполняет над каждым входящим токеном, прежде чем пустить запрос дальше. Ошибаются здесь чаще всего, потому что «работает» и «проверено» выглядят одинаково: некорректный токен тоже проходит, если проверку просто не написали. Ниже приведён полный порядок проверок, затем разобраны отдельно допуск по часам, кеш JWKS и эксплуатационная разница между локальной проверкой и интроспекцией.</p>
 <p>В таблице перечислены проверки для JWT access token по шагам, и для каждого шага указано, что сломается, если его пропустить.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">#</th>
@@ -704,54 +704,54 @@
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td><code>typ</code>/формат: это compact JWS из трёх частей</td>
-<td>Мусор доходит до парсера claims</td>
+<td data-label="#" class="num">1</td>
+<td data-label="Проверка"><code>typ</code>/формат: это compact JWS из трёх частей</td>
+<td data-label="Что ломается без неё">Мусор доходит до парсера claims</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td><code>alg</code> <strong>из белого списка</strong> (RS256/ES256/PS256), а не из токена</td>
-<td><code>alg: none</code>, RS256→HS256 confusion</td>
+<td data-label="#" class="num">2</td>
+<td data-label="Проверка"><code>alg</code> <strong>из белого списка</strong> (RS256/ES256/PS256), а не из токена</td>
+<td data-label="Что ломается без неё"><code>alg: none</code>, RS256→HS256 confusion</td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td><code>kid</code> есть в JWKS issuer'а; ключ получен <strong>только</strong> с <code>jwks_uri</code> из discovery</td>
-<td>Доверие <code>jku</code>/<code>x5u</code> из заголовка = подпись чужим ключом</td>
+<td data-label="#" class="num">3</td>
+<td data-label="Проверка"><code>kid</code> есть в JWKS issuer'а; ключ получен <strong>только</strong> с <code>jwks_uri</code> из discovery</td>
+<td data-label="Что ломается без неё">Доверие <code>jku</code>/<code>x5u</code> из заголовка = подпись чужим ключом</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td>Подпись корректна</td>
-<td>Всё</td>
+<td data-label="#" class="num">4</td>
+<td data-label="Проверка">Подпись корректна</td>
+<td data-label="Что ломается без неё">Всё</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td><code>iss</code> <strong>строго равен</strong> ожидаемому</td>
-<td>Токен чужого realm/экземпляра</td>
+<td data-label="#" class="num">5</td>
+<td data-label="Проверка"><code>iss</code> <strong>строго равен</strong> ожидаемому</td>
+<td data-label="Что ломается без неё">Токен чужого realm/экземпляра</td>
 </tr>
 <tr>
-<td class="num">6</td>
-<td><code>aud</code> содержит мой идентификатор (и/или <code>azp</code> == ожидаемый клиент)</td>
-<td>Token confusion (2.5)</td>
+<td data-label="#" class="num">6</td>
+<td data-label="Проверка"><code>aud</code> содержит мой идентификатор (и/или <code>azp</code> == ожидаемый клиент)</td>
+<td data-label="Что ломается без неё">Token confusion (2.5)</td>
 </tr>
 <tr>
-<td class="num">7</td>
-<td><code>exp</code> &gt; now − skew, <code>nbf</code> ≤ now + skew, разумный <code>iat</code></td>
-<td>Вечные токены</td>
+<td data-label="#" class="num">7</td>
+<td data-label="Проверка"><code>exp</code> &gt; now − skew, <code>nbf</code> ≤ now + skew, разумный <code>iat</code></td>
+<td data-label="Что ломается без неё">Вечные токены</td>
 </tr>
 <tr>
-<td class="num">8</td>
-<td><code>scope</code>/роли соответствуют эндпоинту</td>
-<td>Горизонтальное и вертикальное повышение прав</td>
+<td data-label="#" class="num">8</td>
+<td data-label="Проверка"><code>scope</code>/роли соответствуют эндпоинту</td>
+<td data-label="Что ломается без неё">Горизонтальное и вертикальное повышение прав</td>
 </tr>
 <tr>
-<td class="num">9</td>
-<td>Для sender-constrained — <code>cnf</code> против TLS-сертификата или DPoP-proof</td>
-<td>Bearer-кража работает</td>
+<td data-label="#" class="num">9</td>
+<td data-label="Проверка">Для sender-constrained — <code>cnf</code> против TLS-сертификата или DPoP-proof</td>
+<td data-label="Что ломается без неё">Bearer-кража работает</td>
 </tr>
 <tr>
-<td class="num">10</td>
-<td>Для чувствительных операций — <code>acr</code> и свежесть <code>auth_time</code></td>
-<td>Step-up превращается в формальность</td>
+<td data-label="#" class="num">10</td>
+<td data-label="Проверка">Для чувствительных операций — <code>acr</code> и свежесть <code>auth_time</code></td>
+<td data-label="Что ломается без неё">Step-up превращается в формальность</td>
 </tr>
 </tbody>
 </table>
@@ -764,7 +764,7 @@
 <li>Если декодер написан руками (а такое встречается: «взяли ключ из конфига, потому что так проще»), нет ни того, ни другого: ключ статичен, и ротация означает полный отказ. <strong>Публичный ключ в <code>application.yml</code> — антипаттерн</strong>, даже если он «не секрет».</li>
 </ol>
 <p><strong>Локальная проверка или интроспекция.</strong> Общая таблица trade-offs приведена в 2.1, а здесь речь об эксплуатационной разнице, которую редко проговаривают. Таблица ниже показывает, как ведут себя оба подхода при сбоях, отзыве, нагрузке и аудите.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аспект</th>
@@ -774,34 +774,34 @@
 </thead>
 <tbody>
 <tr>
-<td>Что ломается при недоступности AS</td>
-<td>Ничего (до истечения JWKS-кеша и смены ключей)</td>
-<td>Весь API</td>
+<td data-label="Аспект">Что ломается при недоступности AS</td>
+<td data-label="Локальная проверка JWT">Ничего (до истечения JWKS-кеша и смены ключей)</td>
+<td data-label="Интроспекция (RFC 7662)">Весь API</td>
 </tr>
 <tr>
-<td>Поведение при отзыве</td>
-<td>Токен работает до <code>exp</code></td>
-<td>Немедленно <code>active: false</code></td>
+<td data-label="Аспект">Поведение при отзыве</td>
+<td data-label="Локальная проверка JWT">Токен работает до <code>exp</code></td>
+<td data-label="Интроспекция (RFC 7662)">Немедленно <code>active: false</code></td>
 </tr>
 <tr>
-<td>Кто аутентифицируется в AS</td>
-<td>Никто (JWKS публичен)</td>
-<td>RS должен иметь свой <code>client_id</code>/секрет</td>
+<td data-label="Аспект">Кто аутентифицируется в AS</td>
+<td data-label="Локальная проверка JWT">Никто (JWKS публичен)</td>
+<td data-label="Интроспекция (RFC 7662)">RS должен иметь свой <code>client_id</code>/секрет</td>
 </tr>
 <tr>
-<td>Нагрузка</td>
-<td>~1 запрос в 5 минут</td>
-<td>1 запрос на каждый входящий</td>
+<td data-label="Аспект">Нагрузка</td>
+<td data-label="Локальная проверка JWT">~1 запрос в 5 минут</td>
+<td data-label="Интроспекция (RFC 7662)">1 запрос на каждый входящий</td>
 </tr>
 <tr>
-<td>Что видно в аудите AS</td>
-<td>Только выдача токена</td>
-<td>Каждое использование токена</td>
+<td data-label="Аспект">Что видно в аудите AS</td>
+<td data-label="Локальная проверка JWT">Только выдача токена</td>
+<td data-label="Интроспекция (RFC 7662)">Каждое использование токена</td>
 </tr>
 <tr>
-<td>Стоимость гибрида</td>
-<td>—</td>
-<td>Кеш ответа на N секунд = окно отзыва N секунд</td>
+<td data-label="Аспект">Стоимость гибрида</td>
+<td data-label="Локальная проверка JWT">—</td>
+<td data-label="Интроспекция (RFC 7662)">Кеш ответа на N секунд = окно отзыва N секунд</td>
 </tr>
 </tbody>
 </table>
@@ -855,7 +855,7 @@
 <h3 id="35-типы-клиентов-и-аутентификация-клиента">3.5 Типы клиентов и аутентификация клиента</h3>
 <p>Тип клиента определяет, может ли приложение хранить секрет, какие потоки ему доступны и есть ли у него сервисный аккаунт. В UI Keycloak этот тип задаётся не одним полем, а комбинацией переключателей, и от этой комбинации зависит буквально всё поведение клиента. Ниже сначала разобраны комбинации и судьба исчезнувшего bearer-only, затем способы, которыми клиент доказывает Keycloak свою подлинность, и выбор между ними.</p>
 <p>Таблица показывает, какие переключатели нужно выставить для каждого из четырёх типичных клиентов.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Комбинация</th>
@@ -867,38 +867,38 @@
 </thead>
 <tbody>
 <tr>
-<td>Public</td>
-<td>SPA, мобильное приложение</td>
-<td>Off</td>
-<td>On</td>
-<td>недоступно</td>
+<td data-label="Комбинация">Public</td>
+<td data-label="Что это">SPA, мобильное приложение</td>
+<td data-label="Client authentication">Off</td>
+<td data-label="Standard flow">On</td>
+<td data-label="Service accounts">недоступно</td>
 </tr>
 <tr>
-<td>Confidential</td>
-<td>BFF, серверное приложение</td>
-<td>On</td>
-<td>On</td>
-<td>опционально</td>
+<td data-label="Комбинация">Confidential</td>
+<td data-label="Что это">BFF, серверное приложение</td>
+<td data-label="Client authentication">On</td>
+<td data-label="Standard flow">On</td>
+<td data-label="Service accounts">опционально</td>
 </tr>
 <tr>
-<td>Bearer-only (исторически)</td>
-<td>Ресурс-сервер, который только проверяет токены</td>
-<td>On</td>
-<td>Off</td>
-<td>Off</td>
+<td data-label="Комбинация">Bearer-only (исторически)</td>
+<td data-label="Что это">Ресурс-сервер, который только проверяет токены</td>
+<td data-label="Client authentication">On</td>
+<td data-label="Standard flow">Off</td>
+<td data-label="Service accounts">Off</td>
 </tr>
 <tr>
-<td>Service-account-only</td>
-<td>Фоновый сервис, машинный доступ</td>
-<td>On</td>
-<td>Off</td>
-<td>On</td>
+<td data-label="Комбинация">Service-account-only</td>
+<td data-label="Что это">Фоновый сервис, машинный доступ</td>
+<td data-label="Client authentication">On</td>
+<td data-label="Standard flow">Off</td>
+<td data-label="Service accounts">On</td>
 </tr>
 </tbody>
 </table>
 <p>Как отдельный тип «bearer-only» из современного Keycloak <strong>исчез</strong>: он был свойством старых адаптеров, которые сами разбирали токен. Сегодня ресурс-сервер — это ваш Spring-сервис с <code>oauth2ResourceServer</code>, а в Keycloak ему заводят confidential-клиента с выключенными flow. Такой клиент нужен только для того, чтобы существовал <code>client_id</code> для преобразователя <code>aud</code>, для интроспекции и, если понадобится, для client-ролей. Если ресурс-сервер ничего из этого не делает, клиент ему формально вообще не нужен, но завести его всё равно стоит, потому что без него некуда вешать client-роли и audience.</p>
 <p><strong>Способы аутентификации клиента</strong> задаются полем <em>Client Authenticator</em>, и в таблице для каждого из них указано, как он работает и где ломается.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -908,24 +908,24 @@
 </thead>
 <tbody>
 <tr>
-<td><code>client_secret_basic</code> / <code>_post</code></td>
-<td>Общий секрет в заголовке <code>Authorization: Basic</code> или в теле</td>
-<td>Секрет надо где-то хранить, он ездит по сети, он один на всех экземпляров, его ротация — простой</td>
+<td data-label="Способ"><code>client_secret_basic</code> / <code>_post</code></td>
+<td data-label="Как работает">Общий секрет в заголовке <code>Authorization: Basic</code> или в теле</td>
+<td data-label="Где ломается">Секрет надо где-то хранить, он ездит по сети, он один на всех экземпляров, его ротация — простой</td>
 </tr>
 <tr>
-<td><code>private_key_jwt</code> (<em>Signed JWT</em>)</td>
-<td>Клиент подписывает короткоживущий JWT (<code>iss</code>=<code>sub</code>=<code>client_id</code>, <code>aud</code>=token endpoint, <code>jti</code>, <code>exp</code>) своим приватным ключом; Keycloak проверяет публичным из JWKS клиента</td>
-<td>Нужно управление ключами клиента; часы клиента должны быть в норме</td>
+<td data-label="Способ"><code>private_key_jwt</code> (<em>Signed JWT</em>)</td>
+<td data-label="Как работает">Клиент подписывает короткоживущий JWT (<code>iss</code>=<code>sub</code>=<code>client_id</code>, <code>aud</code>=token endpoint, <code>jti</code>, <code>exp</code>) своим приватным ключом; Keycloak проверяет публичным из JWKS клиента</td>
+<td data-label="Где ломается">Нужно управление ключами клиента; часы клиента должны быть в норме</td>
 </tr>
 <tr>
-<td><code>client_secret_jwt</code></td>
-<td>То же, но HMAC на общем секрете</td>
-<td>Секрет всё ещё общий — половина выигрыша теряется</td>
+<td data-label="Способ"><code>client_secret_jwt</code></td>
+<td data-label="Как работает">То же, но HMAC на общем секрете</td>
+<td data-label="Где ломается">Секрет всё ещё общий — половина выигрыша теряется</td>
 </tr>
 <tr>
-<td><code>tls_client_auth</code> (<em>X509</em>)</td>
-<td>mTLS: клиент предъявляет сертификат, Keycloak сверяет subject DN по маске</td>
-<td>Нужна PKI до каждого клиента и корректный проброс сертификата через прокси</td>
+<td data-label="Способ"><code>tls_client_auth</code> (<em>X509</em>)</td>
+<td data-label="Как работает">mTLS: клиент предъявляет сертификат, Keycloak сверяет subject DN по маске</td>
+<td data-label="Где ломается">Нужна PKI до каждого клиента и корректный проброс сертификата через прокси</td>
 </tr>
 </tbody>
 </table>
@@ -976,7 +976,7 @@
 </blockquote>
 <h3 id="38-типовые-настройки-protocol-mappers">3.8 Типовые настройки protocol mappers</h3>
 <p>Большинство задач с содержимым токена решаются стандартными преобразователями, если знать, какой из них взять и какие параметры в нём выставить. Ниже собраны рецепты для типичных задач, затем разобрано, как роли физически попадают в claim, зачем каждому API нужен свой преобразователь Audience и каких преобразователей лучше избегать. В таблице для каждой задачи указан тип преобразователя и параметры, от которых зависит результат.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Задача</th>
@@ -986,44 +986,44 @@
 </thead>
 <tbody>
 <tr>
-<td>Роли realm в <code>realm_access.roles</code></td>
-<td><em>User Realm Role</em></td>
-<td>Multivalued=On, Token Claim Name = <code>realm_access.roles</code></td>
+<td data-label="Задача">Роли realm в <code>realm_access.roles</code></td>
+<td data-label="Тип преобразователя"><em>User Realm Role</em></td>
+<td data-label="Ключевые параметры">Multivalued=On, Token Claim Name = <code>realm_access.roles</code></td>
 </tr>
 <tr>
-<td>Роли клиента в <code>resource_access</code></td>
-<td><em>User Client Role</em></td>
-<td>Client ID, Multivalued=On</td>
+<td data-label="Задача">Роли клиента в <code>resource_access</code></td>
+<td data-label="Тип преобразователя"><em>User Client Role</em></td>
+<td data-label="Ключевые параметры">Client ID, Multivalued=On</td>
 </tr>
 <tr>
-<td>Атрибут пользователя в claim</td>
-<td><em>User Attribute</em></td>
-<td>User Attribute = <code>tenant_id</code>, Claim = <code>tenant_id</code>, JSON Type = String</td>
+<td data-label="Задача">Атрибут пользователя в claim</td>
+<td data-label="Тип преобразователя"><em>User Attribute</em></td>
+<td data-label="Ключевые параметры">User Attribute = <code>tenant_id</code>, Claim = <code>tenant_id</code>, JSON Type = String</td>
 </tr>
 <tr>
-<td>Постоянное значение</td>
-<td><em>Hardcoded claim</em></td>
-<td>например <code>actor_type: service</code> для сервис-аккаунтов</td>
+<td data-label="Задача">Постоянное значение</td>
+<td data-label="Тип преобразователя"><em>Hardcoded claim</em></td>
+<td data-label="Ключевые параметры">например <code>actor_type: service</code> для сервис-аккаунтов</td>
 </tr>
 <tr>
-<td>Аудитория</td>
-<td><em>Audience</em></td>
-<td>Included Client Audience = <code>payments-api</code></td>
+<td data-label="Задача">Аудитория</td>
+<td data-label="Тип преобразователя"><em>Audience</em></td>
+<td data-label="Ключевые параметры">Included Client Audience = <code>payments-api</code></td>
 </tr>
 <tr>
-<td>Аудитория по scope автоматически</td>
-<td><em>Audience Resolve</em></td>
-<td>встроен в client scope <code>roles</code></td>
+<td data-label="Задача">Аудитория по scope автоматически</td>
+<td data-label="Тип преобразователя"><em>Audience Resolve</em></td>
+<td data-label="Ключевые параметры">встроен в client scope <code>roles</code></td>
 </tr>
 <tr>
-<td>Список групп</td>
-<td><em>Group Membership</em></td>
-<td>Full group path = Off, если путь не нужен</td>
+<td data-label="Задача">Список групп</td>
+<td data-label="Тип преобразователя"><em>Group Membership</em></td>
+<td data-label="Ключевые параметры">Full group path = Off, если путь не нужен</td>
 </tr>
 <tr>
-<td>Поле из внешнего IdP</td>
-<td><em>User Attribute</em> + IdP Attribute Importer</td>
-<td>связка «импортировать → положить в токен»</td>
+<td data-label="Задача">Поле из внешнего IdP</td>
+<td data-label="Тип преобразователя"><em>User Attribute</em> + IdP Attribute Importer</td>
+<td data-label="Ключевые параметры">связка «импортировать → положить в токен»</td>
 </tr>
 </tbody>
 </table>
@@ -1042,7 +1042,7 @@
 <h3 id="39-ключи-realm-jwks-и-ротация">3.9 Ключи realm, JWKS и ротация</h3>
 <p>Ключи realm подписывают все выдаваемые токены, а ресурс-серверы проверяют подпись по публичным ключам из JWKS, поэтому ошибка в ротации ключей кладёт сразу все сервисы, которые принимают токены. Realm держит несколько key providers, у каждого свой приоритет и своё состояние; для каждого алгоритма активен <strong>ровно один</strong> ключ, с наибольшим приоритетом, но в JWKS отдаются все ключи, помеченные как enabled. Ниже разобраны состояния ключа, правильный порядок ротации, команды для инвентаризации и особый случай HMAC-ключа.</p>
 <p>В таблице видно главное: пассивный ключ уже не подписывает новые токены, но всё ещё отдаётся в JWKS.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Состояние</th>
@@ -1053,22 +1053,22 @@
 </thead>
 <tbody>
 <tr>
-<td>Active</td>
-<td>да</td>
-<td>да</td>
-<td>текущий рабочий ключ</td>
+<td data-label="Состояние">Active</td>
+<td data-label="Подписывает новые токены">да</td>
+<td data-label="Отдаётся в JWKS">да</td>
+<td data-label="Зачем">текущий рабочий ключ</td>
 </tr>
 <tr>
-<td>Passive (enabled, active=Off)</td>
-<td>нет</td>
-<td><strong>да</strong></td>
-<td>проверка ранее выданных токенов</td>
+<td data-label="Состояние">Passive (enabled, active=Off)</td>
+<td data-label="Подписывает новые токены">нет</td>
+<td data-label="Отдаётся в JWKS"><strong>да</strong></td>
+<td data-label="Зачем">проверка ранее выданных токенов</td>
 </tr>
 <tr>
-<td>Disabled</td>
-<td>нет</td>
-<td>нет</td>
-<td>фактически удалён из обращения</td>
+<td data-label="Состояние">Disabled</td>
+<td data-label="Подписывает новые токены">нет</td>
+<td data-label="Отдаётся в JWKS">нет</td>
+<td data-label="Зачем">фактически удалён из обращения</td>
 </tr>
 </tbody>
 </table>
@@ -1091,7 +1091,7 @@ curl -s -H <span class="s2">"Authorization: Bearer </span><span class="nv">$ADMI
 <p>Отдельно стоит помнить, что refresh- и offline-токены Keycloak подписаны <strong>HMAC-ключом realm</strong> (провайдер <code>hmac-generated</code>, который в новом realm создаётся под именем <code>hmac-generated-hs512</code> с алгоритмом HS512), а не RSA. Ротация HMAC-ключа немедленно делает некорректными все выданные refresh-токены, то есть разлогинивает всех пользователей. Это не баг, но узнают об этом обычно в тот момент, когда «просто ротировали все ключи для порядка».</p>
 <h3 id="310-сессии-и-таймауты-keycloak">3.10 Сессии и таймауты Keycloak</h3>
 <p>Сессия в Keycloak — это состояние, которое сервер хранит о входе пользователя, и её срок жизни задаётся сразу несколькими параметрами, которые ограничивают друг друга. Половина тикетов вида «нас разлогинивает» и «нас не разлогинивает» объясняется тем, что эти тайминги не согласованы между собой. Ниже перечислены параметры (Realm Settings → Sessions / Tokens), затем правила их согласования и цифры о том, во что сессии обходятся по памяти. В таблице для каждого параметра указано, что он ограничивает, и типовое значение.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Параметр</th>
@@ -1101,49 +1101,49 @@ curl -s -H <span class="s2">"Authorization: Bearer </span><span class="nv">$ADMI
 </thead>
 <tbody>
 <tr>
-<td><code>SSO Session Idle</code></td>
-<td>Простой SSO-сессии</td>
-<td>30 мин</td>
+<td data-label="Параметр"><code>SSO Session Idle</code></td>
+<td data-label="Что ограничивает">Простой SSO-сессии</td>
+<td data-label="Типовое значение">30 мин</td>
 </tr>
 <tr>
-<td><code>SSO Session Max</code></td>
-<td>Абсолютный потолок сессии</td>
-<td>10 ч</td>
+<td data-label="Параметр"><code>SSO Session Max</code></td>
+<td data-label="Что ограничивает">Абсолютный потолок сессии</td>
+<td data-label="Типовое значение">10 ч</td>
 </tr>
 <tr>
-<td><code>Client Session Idle</code> / <code>Max</code></td>
-<td>То же на уровне отдельного клиента (если задано — перекрывает)</td>
-<td>наследует realm</td>
+<td data-label="Параметр"><code>Client Session Idle</code> / <code>Max</code></td>
+<td data-label="Что ограничивает">То же на уровне отдельного клиента (если задано — перекрывает)</td>
+<td data-label="Типовое значение">наследует realm</td>
 </tr>
 <tr>
-<td><code>Access Token Lifespan</code></td>
-<td>Жизнь access-токена</td>
-<td>1–5 мин</td>
+<td data-label="Параметр"><code>Access Token Lifespan</code></td>
+<td data-label="Что ограничивает">Жизнь access-токена</td>
+<td data-label="Типовое значение">1–5 мин</td>
 </tr>
 <tr>
-<td><code>Access Token Lifespan For Implicit Flow</code></td>
-<td>legacy, игнорируйте</td>
-<td>—</td>
+<td data-label="Параметр"><code>Access Token Lifespan For Implicit Flow</code></td>
+<td data-label="Что ограничивает">legacy, игнорируйте</td>
+<td data-label="Типовое значение">—</td>
 </tr>
 <tr>
-<td><code>Client Login Timeout</code></td>
-<td>Время на обмен кода на токен</td>
-<td>1 мин</td>
+<td data-label="Параметр"><code>Client Login Timeout</code></td>
+<td data-label="Что ограничивает">Время на обмен кода на токен</td>
+<td data-label="Типовое значение">1 мин</td>
 </tr>
 <tr>
-<td><code>Login timeout</code> / <code>Login action timeout</code></td>
-<td>Время на прохождение формы логина</td>
-<td>30 мин / 5 мин</td>
+<td data-label="Параметр"><code>Login timeout</code> / <code>Login action timeout</code></td>
+<td data-label="Что ограничивает">Время на прохождение формы логина</td>
+<td data-label="Типовое значение">30 мин / 5 мин</td>
 </tr>
 <tr>
-<td><code>Offline Session Idle</code> / <code>Max</code></td>
-<td>Жизнь offline-токенов</td>
-<td>30 дней</td>
+<td data-label="Параметр"><code>Offline Session Idle</code> / <code>Max</code></td>
+<td data-label="Что ограничивает">Жизнь offline-токенов</td>
+<td data-label="Типовое значение">30 дней</td>
 </tr>
 <tr>
-<td><code>Refresh Token Max Reuse</code></td>
-<td>Допуск на повторно использование</td>
-<td>0</td>
+<td data-label="Параметр"><code>Refresh Token Max Reuse</code></td>
+<td data-label="Что ограничивает">Допуск на повторно использование</td>
+<td data-label="Типовое значение">0</td>
 </tr>
 </tbody>
 </table>
@@ -1378,7 +1378,7 @@ curl -s -H <span class="s2">"Authorization: Bearer </span><span class="nv">$ADMI
 <p>После первого успешного входа пользователь живёт в Keycloak локально, с локальным хешем пароля, и АБС на пути входа больше не участвует. Через год, или после того как всех пользователей принудительно проведут через сброс пароля, провайдер выключают.</p>
 <h3 id="48-стоимость-сопровождения-собственных-spi">4.8 Стоимость сопровождения собственных SPI</h3>
 <p>Кастомный провайдер кажется разовой задачей на неделю разработки, но на деле это постоянная статья расходов, которая растёт с каждым обновлением Keycloak, и предъявлять её бизнесу нужно до того, как провайдер написан, а не после. Ниже эти расходы разложены по статьям, а затем сформулировано правило, по которому решают, стоит ли провайдер своей цены. В таблице видно, что самая дорогая статья — не сборка, а блокировка обновлений безопасности.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Статья</th>
@@ -1387,24 +1387,24 @@ curl -s -H <span class="s2">"Authorization: Bearer </span><span class="nv">$ADMI
 </thead>
 <tbody>
 <tr>
-<td>Сборка под версию</td>
-<td><code>provider</code> API не имеет гарантий совместимости: апгрейд Keycloak = пересборка + правка сигнатур</td>
+<td data-label="Статья">Сборка под версию</td>
+<td data-label="Что конкретно"><code>provider</code> API не имеет гарантий совместимости: апгрейд Keycloak = пересборка + правка сигнатур</td>
 </tr>
 <tr>
-<td>Интеграционные тесты</td>
-<td>Testcontainers с реальным образом Keycloak, импортом realm и прохождением flow по HTTP; юнит-тесты почти бесполезны</td>
+<td data-label="Статья">Интеграционные тесты</td>
+<td data-label="Что конкретно">Testcontainers с реальным образом Keycloak, импортом realm и прохождением flow по HTTP; юнит-тесты почти бесполезны</td>
 </tr>
 <tr>
-<td>Блокировка апгрейда</td>
-<td>Если провайдер не собирается под новую версию, вы не обновляетесь — включая security-патчи самого Keycloak</td>
+<td data-label="Статья">Блокировка апгрейда</td>
+<td data-label="Что конкретно">Если провайдер не собирается под новую версию, вы не обновляетесь — включая security-патчи самого Keycloak</td>
 </tr>
 <tr>
-<td>Диагностика</td>
-<td>Ошибка в SPI выглядит как «Keycloak не работает»; разделять приходится по логам с <code>org.keycloak.authentication:DEBUG</code></td>
+<td data-label="Статья">Диагностика</td>
+<td data-label="Что конкретно">Ошибка в SPI выглядит как «Keycloak не работает»; разделять приходится по логам с <code>org.keycloak.authentication:DEBUG</code></td>
 </tr>
 <tr>
-<td>Владелец</td>
-<td>Нужен человек, который помнит, зачем это написано, через три года</td>
+<td data-label="Статья">Владелец</td>
+<td data-label="Что конкретно">Нужен человек, который помнит, зачем это написано, через три года</td>
 </tr>
 </tbody>
 </table>
@@ -1417,7 +1417,7 @@ curl -s -H <span class="s2">"Authorization: Bearer </span><span class="nv">$ADMI
 <p>Эксплуатация Keycloak — это всё, что происходит с ним после того, как realm настроен: как конфигурацию держат в git, как Keycloak живёт в Kubernetes, где он упирается в производительность, как его обновляют и почему за реверс-прокси он внезапно начинает выдавать не тот issuer. Сбои здесь особенно болезненны, потому что Keycloak стоит на пути каждого входа и каждого refresh: потерянные при перезапуске сессии, ротация ключа, после которой сервисы отвечают 401, ручная правка в проде, которую никто не может воспроизвести. Раздел начинается с администрирования как кода, затем разбирает HA в Kubernetes и производительность, миграции между версиями, настройку hostname и прокси, Admin REST API и, наконец, экспорт realm как артефакт.</p>
 <h3 id="51-администрирование-как-код">5.1 Администрирование как код</h3>
 <p>Администрирование как код означает, что конфигурация realm — клиенты, scopes, роли, преобразователи, flows — описана в репозитории и применяется конвейером, а не кликами в UI. Ручные правки в UI приводят к дрейфу конфигурации: через полгода dev, test и prod различаются, никто не знает, чем именно, а восстановление после аварии превращается в археологию. В таблице варианты автоматизации расположены от простого к правильному, и для каждого указано, чем он хорош и где подводит.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Подход</th>
@@ -1427,29 +1427,29 @@ curl -s -H <span class="s2">"Authorization: Bearer </span><span class="nv">$ADMI
 </thead>
 <tbody>
 <tr>
-<td>Экспорт/импорт realm JSON</td>
-<td>Просто, полный снимок</td>
-<td>Огромный файл, секреты внутри, импорт — всё-или-ничего, плохой diff</td>
+<td data-label="Подход">Экспорт/импорт realm JSON</td>
+<td data-label="Плюсы">Просто, полный снимок</td>
+<td data-label="Минусы">Огромный файл, секреты внутри, импорт — всё-или-ничего, плохой diff</td>
 </tr>
 <tr>
-<td>Admin REST API из скрипта</td>
-<td>Точечно, без простоя</td>
-<td>Пишете свой идемпотентный оркестратор</td>
+<td data-label="Подход">Admin REST API из скрипта</td>
+<td data-label="Плюсы">Точечно, без простоя</td>
+<td data-label="Минусы">Пишете свой идемпотентный оркестратор</td>
 </tr>
 <tr>
-<td><code>keycloak-admin-client</code> (Java)</td>
-<td>Типобезопасно, удобно в интеграционных тестах</td>
-<td>То же, что выше, только на Java</td>
+<td data-label="Подход"><code>keycloak-admin-client</code> (Java)</td>
+<td data-label="Плюсы">Типобезопасно, удобно в интеграционных тестах</td>
+<td data-label="Минусы">То же, что выше, только на Java</td>
 </tr>
 <tr>
-<td><strong>Terraform provider <code>keycloak</code></strong></td>
-<td>Декларативно, diff-ы, план перед применением, state</td>
-<td>Провайдер отстаёт от новых фич Keycloak; state с секретами надо шифровать</td>
+<td data-label="Подход"><strong>Terraform provider <code>keycloak</code></strong></td>
+<td data-label="Плюсы">Декларативно, diff-ы, план перед применением, state</td>
+<td data-label="Минусы">Провайдер отстаёт от новых фич Keycloak; state с секретами надо шифровать</td>
 </tr>
 <tr>
-<td><strong>Keycloak Operator + Realm CR</strong></td>
-<td>GitOps-нативно, внутри k8s</td>
-<td><code>KeycloakRealmImport</code> — импорт, а не непрерывная сверка: изменения в UI не откатываются</td>
+<td data-label="Подход"><strong>Keycloak Operator + Realm CR</strong></td>
+<td data-label="Плюсы">GitOps-нативно, внутри k8s</td>
+<td data-label="Минусы"><code>KeycloakRealmImport</code> — импорт, а не непрерывная сверка: изменения в UI не откатываются</td>
 </tr>
 </tbody>
 </table>
@@ -1478,7 +1478,7 @@ curl -s -H <span class="s2">"Authorization: Bearer </span><span class="nv">$ADMI
 </blockquote>
 <h3 id="52-высокая-доступность-keycloak-в-kubernetes">5.2 Высокая доступность Keycloak в Kubernetes</h3>
 <p>Высокая доступность Keycloak упирается в то, где он хранит состояние, а хранит он его в двух местах: в <strong>PostgreSQL</strong> лежат realm, пользователи, клиенты, а при включённых persistent sessions ещё и сессии, в <strong>Infinispan</strong> — кеши. Именно распределённые кеши Infinispan и определяют, что пользователь потеряет при падении или перезапуске пода. Ниже приведён набор кешей по <a href="https://www.keycloak.org/server/caching">документации</a>, затем практические выводы для Kubernetes и то, как Keycloak разворачивают в нескольких датацентрах. В таблице главное — столбец «Владельцев».</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Кеш</th>
@@ -1489,34 +1489,34 @@ curl -s -H <span class="s2">"Authorization: Bearer </span><span class="nv">$ADMI
 </thead>
 <tbody>
 <tr>
-<td><code>realms</code>, <code>users</code>, <code>authorization</code></td>
-<td>local</td>
-<td>—</td>
-<td>10 000 записей</td>
+<td data-label="Кеш"><code>realms</code>, <code>users</code>, <code>authorization</code></td>
+<td data-label="Тип">local</td>
+<td data-label="Владельцев">—</td>
+<td data-label="Лимит">10 000 записей</td>
 </tr>
 <tr>
-<td><code>keys</code></td>
-<td>local</td>
-<td>—</td>
-<td>1 000, TTL 1 час</td>
+<td data-label="Кеш"><code>keys</code></td>
+<td data-label="Тип">local</td>
+<td data-label="Владельцев">—</td>
+<td data-label="Лимит">1 000, TTL 1 час</td>
 </tr>
 <tr>
-<td><code>work</code></td>
-<td>replicated</td>
-<td>все</td>
-<td>рассылка инвалидаций</td>
+<td data-label="Кеш"><code>work</code></td>
+<td data-label="Тип">replicated</td>
+<td data-label="Владельцев">все</td>
+<td data-label="Лимит">рассылка инвалидаций</td>
 </tr>
 <tr>
-<td><code>sessions</code>, <code>clientSessions</code>, <code>offlineSessions</code>, <code>offlineClientSessions</code></td>
-<td>distributed</td>
-<td><strong>1</strong></td>
-<td>10 000 на узел</td>
+<td data-label="Кеш"><code>sessions</code>, <code>clientSessions</code>, <code>offlineSessions</code>, <code>offlineClientSessions</code></td>
+<td data-label="Тип">distributed</td>
+<td data-label="Владельцев"><strong>1</strong></td>
+<td data-label="Лимит">10 000 на узел</td>
 </tr>
 <tr>
-<td><code>authenticationSessions</code>, <code>loginFailures</code>, <code>actionTokens</code></td>
-<td>distributed</td>
-<td><strong>1</strong></td>
-<td>—</td>
+<td data-label="Кеш"><code>authenticationSessions</code>, <code>loginFailures</code>, <code>actionTokens</code></td>
+<td data-label="Тип">distributed</td>
+<td data-label="Владельцев"><strong>1</strong></td>
+<td data-label="Лимит">—</td>
 </tr>
 </tbody>
 </table>
@@ -1567,7 +1567,7 @@ curl -s -H <span class="s2">"Authorization: Bearer </span><span class="nv">$ADMI
 <h3 id="55-hostname-реверс-прокси-и-issuer">5.5 Hostname, реверс-прокси и issuer</h3>
 <p>Keycloak должен знать, под каким адресом его видят снаружи, потому что этот адрес попадает в <code>issuer</code> токенов, в discovery-документ и во все перенаправления. В k8s внешний адрес почти никогда не совпадает с тем, который Keycloak видит у себя (<code>http://keycloak:8080</code>), и если это расхождение не настроить явно, токены начнут приходить с разным <code>iss</code> в зависимости от того, каким путём за ними ходили. Ниже разобраны опции hostname и прокси, затем классическая авария с issuer mismatch и порядок её лечения.</p>
 <p>Опции конфигурации hostname v2 (<a href="https://www.keycloak.org/server/hostname">keycloak.org/server/hostname</a>, проверено 2026-09-22) сведены в таблицу; самое важное в ней — значения по умолчанию.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Опция</th>
@@ -1577,29 +1577,29 @@ curl -s -H <span class="s2">"Authorization: Bearer </span><span class="nv">$ADMI
 </thead>
 <tbody>
 <tr>
-<td><code>KC_HOSTNAME</code> (<code>--hostname</code>)</td>
-<td>Полный URL <strong>или</strong> просто хост; при «просто хосте» схема, порт и context path берутся из запроса</td>
-<td>не задан (в проде задавать обязательно)</td>
+<td data-label="Опция"><code>KC_HOSTNAME</code> (<code>--hostname</code>)</td>
+<td data-label="Значение">Полный URL <strong>или</strong> просто хост; при «просто хосте» схема, порт и context path берутся из запроса</td>
+<td data-label="По умолчанию">не задан (в проде задавать обязательно)</td>
 </tr>
 <tr>
-<td><code>KC_HOSTNAME_ADMIN</code></td>
-<td>Отдельный URL для админ-консоли и Admin REST API (должен быть полным URL)</td>
-<td>не задан</td>
+<td data-label="Опция"><code>KC_HOSTNAME_ADMIN</code></td>
+<td data-label="Значение">Отдельный URL для админ-консоли и Admin REST API (должен быть полным URL)</td>
+<td data-label="По умолчанию">не задан</td>
 </tr>
 <tr>
-<td><code>KC_HOSTNAME_STRICT</code></td>
-<td><code>true</code> запрещает динамическое определение хоста из заголовков запроса</td>
-<td><code>true</code></td>
+<td data-label="Опция"><code>KC_HOSTNAME_STRICT</code></td>
+<td data-label="Значение"><code>true</code> запрещает динамическое определение хоста из заголовков запроса</td>
+<td data-label="По умолчанию"><code>true</code></td>
 </tr>
 <tr>
-<td><code>KC_HOSTNAME_BACKCHANNEL_DYNAMIC</code></td>
-<td><code>true</code> разрешает back-channel URL отличаться от front-channel и вычисляться динамически</td>
-<td><code>false</code></td>
+<td data-label="Опция"><code>KC_HOSTNAME_BACKCHANNEL_DYNAMIC</code></td>
+<td data-label="Значение"><code>true</code> разрешает back-channel URL отличаться от front-channel и вычисляться динамически</td>
+<td data-label="По умолчанию"><code>false</code></td>
 </tr>
 <tr>
-<td><code>KC_HOSTNAME_DEBUG</code></td>
-<td>включает эндпоинт <code>/realms/{realm}/hostname-debug</code></td>
-<td><code>false</code></td>
+<td data-label="Опция"><code>KC_HOSTNAME_DEBUG</code></td>
+<td data-label="Значение">включает эндпоинт <code>/realms/{realm}/hostname-debug</code></td>
+<td data-label="По умолчанию"><code>false</code></td>
 </tr>
 </tbody>
 </table>
@@ -1765,7 +1765,7 @@ kubectl cp keycloak-0:/tmp/retail.json ./realm-export/retail.json
 <p>Перед работой приложение выставляет <code>SET LOCAL app.tenant_id = '...'</code> в той же транзакции, и <code>SET LOCAL</code> здесь критичен: без <code>LOCAL</code> значение переживёт возврат соединения в пул и утечёт в следующий запрос <strong>другого</strong> тенанта. Это самая опасная ошибка при реализации RLS через пул соединений, и проверять её нужно тестом, который в одном пуле обслуживает двух тенантов подряд.</p>
 <h3 id="68-модель-keycloak-authorization-services">6.8 Модель Keycloak Authorization Services</h3>
 <p>Раз уж Keycloak умеет работать как PDP, стоит знать, из чего именно состоит его модель авторизации, — хотя бы для того, чтобы отказаться от неё аргументированно, а не по интуиции. Ниже разобраны объекты модели, протокол, по которому ресурс-сервер запрашивает решение, и оценка по трём осям — латентности, объёму и владению политиками, а таблица сначала перечисляет объекты модели с примерами.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Объект</th>
@@ -1775,29 +1775,29 @@ kubectl cp keycloak-0:/tmp/retail.json ./realm-export/retail.json
 </thead>
 <tbody>
 <tr>
-<td>Resource</td>
-<td>То, что защищаем; имеет тип, URI, владельца и набор scopes</td>
-<td><code>Отчёт #42</code>, тип <code>urn:reports:report</code></td>
+<td data-label="Объект">Resource</td>
+<td data-label="Что это">То, что защищаем; имеет тип, URI, владельца и набор scopes</td>
+<td data-label="Пример"><code>Отчёт #42</code>, тип <code>urn:reports:report</code></td>
 </tr>
 <tr>
-<td>Scope</td>
-<td>Действие над ресурсом</td>
-<td><code>report:view</code>, <code>report:export</code></td>
+<td data-label="Объект">Scope</td>
+<td data-label="Что это">Действие над ресурсом</td>
+<td data-label="Пример"><code>report:view</code>, <code>report:export</code></td>
 </tr>
 <tr>
-<td>Policy</td>
-<td>Условие: роль, группа, пользователь, клиент, время, JS, агрегат</td>
-<td>«роль <code>analyst</code> И рабочее время»</td>
+<td data-label="Объект">Policy</td>
+<td data-label="Что это">Условие: роль, группа, пользователь, клиент, время, JS, агрегат</td>
+<td data-label="Пример">«роль <code>analyst</code> И рабочее время»</td>
 </tr>
 <tr>
-<td>Permission</td>
-<td>Связка «ресурс (или тип ресурса) + scopes + политики»</td>
-<td>«на тип <code>report</code> scope <code>export</code> действует политика X»</td>
+<td data-label="Объект">Permission</td>
+<td data-label="Что это">Связка «ресурс (или тип ресурса) + scopes + политики»</td>
+<td data-label="Пример">«на тип <code>report</code> scope <code>export</code> действует политика X»</td>
 </tr>
 <tr>
-<td>Decision strategy</td>
-<td>Как агрегируются политики: <code>Unanimous</code> / <code>Affirmative</code> / <code>Consensus</code></td>
-<td>—</td>
+<td data-label="Объект">Decision strategy</td>
+<td data-label="Что это">Как агрегируются политики: <code>Unanimous</code> / <code>Affirmative</code> / <code>Consensus</code></td>
+<td data-label="Пример">—</td>
 </tr>
 </tbody>
 </table>
@@ -1822,7 +1822,7 @@ kubectl cp keycloak-0:/tmp/retail.json ./realm-export/retail.json
 <h2 id="7-owasp-top-102025-в-java-бэкенде">7. OWASP Top 10:2025 в Java-бэкенде</h2>
 <p>OWASP Top 10 — это рейтинг самых распространённых категорий уязвимостей веб-приложений, который OWASP периодически пересобирает по данным реальных находок, и на интервью по безопасности на него ссылаются чаще, чем на любой другой документ. Для бэкенд-разработчика полезен не сам список, а то, как каждая категория выглядит в конкретном Java-коде, как её найти и чем закрыть, поэтому раздел идёт по категориям именно в таком разрезе. Сначала показано, что изменилось в редакции 2025 года, затем по очереди разобраны контроль доступа, ошибки конфигурации, инъекции, небезопасная десериализация, XXE и работа с файлами, логирование и обработка исключительных ситуаций, реже разбираемые категории A04, A06 и A07 и, наконец, лог как точка атаки.</p>
 <p><strong>Статус на 2026-09-21:</strong> актуальна редакция <strong>OWASP Top 10:2025</strong>, анонсированная в ноябре 2025 на Global AppSec и финализированная в январе 2026 (<a href="https://top10.owasp.org/2025/">top10.owasp.org/2025</a>). Если на интервью вы цитируете список 2021 года, это заметят. В таблице видно, куда переехала каждая категория и какие появились впервые.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>2025</th>
@@ -1832,54 +1832,54 @@ kubectl cp keycloak-0:/tmp/retail.json ./realm-export/retail.json
 </thead>
 <tbody>
 <tr>
-<td>A01</td>
-<td>Broken Access Control</td>
-<td>A01 (<strong>поглотил SSRF</strong>, который был A10)</td>
+<td data-label="2025">A01</td>
+<td data-label="Категория">Broken Access Control</td>
+<td data-label="Было в 2021">A01 (<strong>поглотил SSRF</strong>, который был A10)</td>
 </tr>
 <tr>
-<td>A02</td>
-<td>Security Misconfiguration</td>
-<td>A05 — поднялась</td>
+<td data-label="2025">A02</td>
+<td data-label="Категория">Security Misconfiguration</td>
+<td data-label="Было в 2021">A05 — поднялась</td>
 </tr>
 <tr>
-<td>A03</td>
-<td><strong>Software Supply Chain Failures</strong></td>
-<td>новая (расширение A06 «Vulnerable and Outdated Components»)</td>
+<td data-label="2025">A03</td>
+<td data-label="Категория"><strong>Software Supply Chain Failures</strong></td>
+<td data-label="Было в 2021">новая (расширение A06 «Vulnerable and Outdated Components»)</td>
 </tr>
 <tr>
-<td>A04</td>
-<td>Cryptographic Failures</td>
-<td>A02 — опустилась</td>
+<td data-label="2025">A04</td>
+<td data-label="Категория">Cryptographic Failures</td>
+<td data-label="Было в 2021">A02 — опустилась</td>
 </tr>
 <tr>
-<td>A05</td>
-<td>Injection</td>
-<td>A03 — опустилась</td>
+<td data-label="2025">A05</td>
+<td data-label="Категория">Injection</td>
+<td data-label="Было в 2021">A03 — опустилась</td>
 </tr>
 <tr>
-<td>A06</td>
-<td>Insecure Design</td>
-<td>A04</td>
+<td data-label="2025">A06</td>
+<td data-label="Категория">Insecure Design</td>
+<td data-label="Было в 2021">A04</td>
 </tr>
 <tr>
-<td>A07</td>
-<td>Authentication Failures</td>
-<td>A07, переименована из «Identification and Authentication Failures»</td>
+<td data-label="2025">A07</td>
+<td data-label="Категория">Authentication Failures</td>
+<td data-label="Было в 2021">A07, переименована из «Identification and Authentication Failures»</td>
 </tr>
 <tr>
-<td>A08</td>
-<td>Software or Data Integrity Failures</td>
-<td>A08</td>
+<td data-label="2025">A08</td>
+<td data-label="Категория">Software or Data Integrity Failures</td>
+<td data-label="Было в 2021">A08</td>
 </tr>
 <tr>
-<td>A09</td>
-<td>Security Logging &amp; Alerting Failures</td>
-<td>A09, переименована (акцент на alerting)</td>
+<td data-label="2025">A09</td>
+<td data-label="Категория">Security Logging &amp; Alerting Failures</td>
+<td data-label="Было в 2021">A09, переименована (акцент на alerting)</td>
 </tr>
 <tr>
-<td>A10</td>
-<td><strong>Mishandling of Exceptional Conditions</strong></td>
-<td>новая</td>
+<td data-label="2025">A10</td>
+<td data-label="Категория"><strong>Mishandling of Exceptional Conditions</strong></td>
+<td data-label="Было в 2021">новая</td>
 </tr>
 </tbody>
 </table>
@@ -2129,7 +2129,7 @@ kubectl cp keycloak-0:/tmp/retail.json ./realm-export/retail.json
 </ol>
 <h3 id="85-сканеры-безопасности-и-их-возможности">8.5 Сканеры безопасности и их возможности</h3>
 <p>Сканер безопасности — это инструмент, который автоматически ищет определённый класс дефектов в коде, зависимостях, образах или на работающем стенде, и у каждого класса есть граница, за которую он не видит в принципе. Ценный навык здесь не в том, чтобы знать названия, а в том, чтобы понимать, какой класс дефектов инструмент способен увидеть и какой не увидит никогда. Ниже сначала сравнение классов сканеров, затем то, что остаётся на людях, и то, как выглядит зрелый процесс. В таблице особенно полезен столбец «Чего не найдёт никогда».</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Класс</th>
@@ -2141,46 +2141,46 @@ kubectl cp keycloak-0:/tmp/retail.json ./realm-export/retail.json
 </thead>
 <tbody>
 <tr>
-<td><strong>SCA</strong></td>
-<td>OWASP Dependency-Check, Snyk, Trivy, Dependabot/Renovate, Dependency-Track</td>
-<td>Известные CVE в прямых и транзитивных зависимостях, устаревшие версии, лицензии</td>
-<td>Уязвимость в вашем коде; 0-day</td>
-<td>Сопоставление по CPE даёт ложные совпадения по имени; уязвимый код может быть недостижим из приложения</td>
+<td data-label="Класс"><strong>SCA</strong></td>
+<td data-label="Инструменты">OWASP Dependency-Check, Snyk, Trivy, Dependabot/Renovate, Dependency-Track</td>
+<td data-label="Что находит">Известные CVE в прямых и транзитивных зависимостях, устаревшие версии, лицензии</td>
+<td data-label="Чего не найдёт никогда">Уязвимость в вашем коде; 0-day</td>
+<td data-label="Характер шума">Сопоставление по CPE даёт ложные совпадения по имени; уязвимый код может быть недостижим из приложения</td>
 </tr>
 <tr>
-<td><strong>SAST</strong></td>
-<td>Semgrep, SpotBugs+FindSecBugs, SonarQube, CodeQL</td>
-<td>Паттерны в исходниках: конкатенация SQL, отключённая проверка TLS, слабый ГПСЧ, path traversal, <code>enableDefaultTyping</code></td>
-<td>Логические дыры (IDOR, отсутствующая проверка владения), ошибки конфигурации среды выполнения</td>
-<td>Не видит контекста: не знает, что данные уже проверены выше по стеку</td>
+<td data-label="Класс"><strong>SAST</strong></td>
+<td data-label="Инструменты">Semgrep, SpotBugs+FindSecBugs, SonarQube, CodeQL</td>
+<td data-label="Что находит">Паттерны в исходниках: конкатенация SQL, отключённая проверка TLS, слабый ГПСЧ, path traversal, <code>enableDefaultTyping</code></td>
+<td data-label="Чего не найдёт никогда">Логические дыры (IDOR, отсутствующая проверка владения), ошибки конфигурации среды выполнения</td>
+<td data-label="Характер шума">Не видит контекста: не знает, что данные уже проверены выше по стеку</td>
 </tr>
 <tr>
-<td><strong>DAST</strong></td>
-<td>OWASP ZAP, Burp</td>
-<td>Реально достижимые дыры на работающем стенде: XSS, открытые эндпоинты, отсутствующие заголовки, часть инъекций</td>
-<td>Всё, что за аутентификацией и сложным состоянием, если не научить ходить по флоу; бизнес-логику</td>
-<td>Ложные срабатывания на отличиях ответов; медленный</td>
+<td data-label="Класс"><strong>DAST</strong></td>
+<td data-label="Инструменты">OWASP ZAP, Burp</td>
+<td data-label="Что находит">Реально достижимые дыры на работающем стенде: XSS, открытые эндпоинты, отсутствующие заголовки, часть инъекций</td>
+<td data-label="Чего не найдёт никогда">Всё, что за аутентификацией и сложным состоянием, если не научить ходить по флоу; бизнес-логику</td>
+<td data-label="Характер шума">Ложные срабатывания на отличиях ответов; медленный</td>
 </tr>
 <tr>
-<td><strong>IAST и проверка во время выполнения</strong></td>
-<td>агенты (Contrast и аналоги)</td>
-<td>То же, что DAST, но с трассировкой до строки кода</td>
-<td>Не покрытый тестами код</td>
-<td>Требует нагрузочного/функционального трафика</td>
+<td data-label="Класс"><strong>IAST и проверка во время выполнения</strong></td>
+<td data-label="Инструменты">агенты (Contrast и аналоги)</td>
+<td data-label="Что находит">То же, что DAST, но с трассировкой до строки кода</td>
+<td data-label="Чего не найдёт никогда">Не покрытый тестами код</td>
+<td data-label="Характер шума">Требует нагрузочного/функционального трафика</td>
 </tr>
 <tr>
-<td><strong>Секреты</strong></td>
-<td>gitleaks, trufflehog</td>
-<td>Ключи и токены в коде и истории</td>
-<td>Секрет, которого нет в git (в переменных CI)</td>
-<td>Много шума без <code>--only-verified</code></td>
+<td data-label="Класс"><strong>Секреты</strong></td>
+<td data-label="Инструменты">gitleaks, trufflehog</td>
+<td data-label="Что находит">Ключи и токены в коде и истории</td>
+<td data-label="Чего не найдёт никогда">Секрет, которого нет в git (в переменных CI)</td>
+<td data-label="Характер шума">Много шума без <code>--only-verified</code></td>
 </tr>
 <tr>
-<td><strong>Контейнеры</strong></td>
-<td>Trivy, Grype</td>
-<td>CVE в базовом образе и в пакетах ОС</td>
-<td>Дыры в приложении</td>
-<td>Уязвимости в пакетах, которых во время выполнения нет</td>
+<td data-label="Класс"><strong>Контейнеры</strong></td>
+<td data-label="Инструменты">Trivy, Grype</td>
+<td data-label="Что находит">CVE в базовом образе и в пакетах ОС</td>
+<td data-label="Чего не найдёт никогда">Дыры в приложении</td>
+<td data-label="Характер шума">Уязвимости в пакетах, которых во время выполнения нет</td>
 </tr>
 </tbody>
 </table>
@@ -2202,7 +2202,7 @@ kubectl cp keycloak-0:/tmp/retail.json ./realm-export/retail.json
 <p>Защита API — это набор механизмов, которые не дают злоупотреблять публичным интерфейсом, даже когда аутентификация и авторизация настроены правильно: перебирать пароли, выяснять, какие пользователи существуют, повторять перехваченные запросы, подсовывать поддельные webhooks или класть сервис одним огромным запросом. Для банка эти механизмы особенно важны, потому что повторный платёж или угаданный код подтверждения — это прямые деньги. Раздел разбирает rate limiting и защиту от перебора, валидацию входа как защиту ресурсов, enumeration, идемпотентность, защиту от replay и webhooks, а заканчивается правилами безопасного логирования.</p>
 <h3 id="91-rate-limiting-и-защита-от-перебора">9.1 Rate limiting и защита от перебора</h3>
 <p>Rate limiting ограничивает число запросов за окно времени по некоторому ключу, и для безопасности его главная задача — сделать перебор паролей и кодов слишком медленным, чтобы он имел смысл. Трудность в том, что ограничение по одному измерению всегда обходится, и нужны несколько ключей одновременно. В таблице для каждого ключа указано, что он ловит и в чём его слабость.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ключ</th>
@@ -2212,29 +2212,29 @@ kubectl cp keycloak-0:/tmp/retail.json ./realm-export/retail.json
 </thead>
 <tbody>
 <tr>
-<td>IP</td>
-<td>Грубый перебор с одной машины</td>
-<td>NAT (положите целое отделение), ботнет и резидентные прокси обходят</td>
+<td data-label="Ключ">IP</td>
+<td data-label="Что ловит">Грубый перебор с одной машины</td>
+<td data-label="Слабость">NAT (положите целое отделение), ботнет и резидентные прокси обходят</td>
 </tr>
 <tr>
-<td><code>sub</code> пользователя</td>
-<td>Злоупотребление легальным аккаунтом</td>
-<td>Требует аутентификации — не работает на <code>/login</code></td>
+<td data-label="Ключ"><code>sub</code> пользователя</td>
+<td data-label="Что ловит">Злоупотребление легальным аккаунтом</td>
+<td data-label="Слабость">Требует аутентификации — не работает на <code>/login</code></td>
 </tr>
 <tr>
-<td><code>client_id</code></td>
-<td>Сломанный интегратор</td>
-<td>Не различает его клиентов</td>
+<td data-label="Ключ"><code>client_id</code></td>
+<td data-label="Что ловит">Сломанный интегратор</td>
+<td data-label="Слабость">Не различает его клиентов</td>
 </tr>
 <tr>
-<td>Отпечаток устройства</td>
-<td>Credential stuffing</td>
-<td>Подделывается</td>
+<td data-label="Ключ">Отпечаток устройства</td>
+<td data-label="Что ловит">Credential stuffing</td>
+<td data-label="Слабость">Подделывается</td>
 </tr>
 <tr>
-<td>Логин из тела запроса</td>
-<td>Перебор пароля одного аккаунта</td>
-<td>Атакующий меняет логины (спрей)</td>
+<td data-label="Ключ">Логин из тела запроса</td>
+<td data-label="Что ловит">Перебор пароля одного аккаунта</td>
+<td data-label="Слабость">Атакующий меняет логины (спрей)</td>
 </tr>
 </tbody>
 </table>
@@ -2317,7 +2317,7 @@ X-Signature: base64(HMAC-SHA256(secret, method + "\n" + path + "\n" + timestamp 
 <li><strong>15 минут — DFD на доске.</strong> Рисуют внешние сущности, процессы, хранилища, потоки данных и <strong>границы доверия</strong> (браузер↔BFF, BFF↔сервис, сервис↔БД, сервис↔внешний партнёр). Граница доверия — это место, где что-то нужно проверять, и дальше разбирают именно их.</li>
 <li><strong>25 минут — STRIDE по каждой границе</strong>, буква за буквой; в таблице для каждой буквы указано, какое свойство нарушает угроза и какой вопрос задать на границе:</li>
 </ol>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Буква</th>
@@ -2328,40 +2328,40 @@ X-Signature: base64(HMAC-SHA256(secret, method + "\n" + path + "\n" + timestamp 
 </thead>
 <tbody>
 <tr>
-<td><strong>S</strong>poofing</td>
-<td>Подмена личности</td>
-<td>Аутентификацию</td>
-<td>Как мы знаем, кто это? Токен проверяется? <code>aud</code>?</td>
+<td data-label="Буква"><strong>S</strong>poofing</td>
+<td data-label="Угроза">Подмена личности</td>
+<td data-label="Нарушает">Аутентификацию</td>
+<td data-label="Типовой вопрос на этой границе">Как мы знаем, кто это? Токен проверяется? <code>aud</code>?</td>
 </tr>
 <tr>
-<td><strong>T</strong>ampering</td>
-<td>Изменение данных</td>
-<td>Целостность</td>
-<td>Что мешает поменять сумму по пути? Подпись? TLS?</td>
+<td data-label="Буква"><strong>T</strong>ampering</td>
+<td data-label="Угроза">Изменение данных</td>
+<td data-label="Нарушает">Целостность</td>
+<td data-label="Типовой вопрос на этой границе">Что мешает поменять сумму по пути? Подпись? TLS?</td>
 </tr>
 <tr>
-<td><strong>R</strong>epudiation</td>
-<td>Отказ от действия</td>
-<td>Неотказуемость</td>
-<td>Что останется в аудите? Хватит ли для спора с клиентом?</td>
+<td data-label="Буква"><strong>R</strong>epudiation</td>
+<td data-label="Угроза">Отказ от действия</td>
+<td data-label="Нарушает">Неотказуемость</td>
+<td data-label="Типовой вопрос на этой границе">Что останется в аудите? Хватит ли для спора с клиентом?</td>
 </tr>
 <tr>
-<td><strong>I</strong>nformation disclosure</td>
-<td>Утечка</td>
-<td>Конфиденциальность</td>
-<td>Что попадёт в лог? В ответ об ошибке? В метрику?</td>
+<td data-label="Буква"><strong>I</strong>nformation disclosure</td>
+<td data-label="Угроза">Утечка</td>
+<td data-label="Нарушает">Конфиденциальность</td>
+<td data-label="Типовой вопрос на этой границе">Что попадёт в лог? В ответ об ошибке? В метрику?</td>
 </tr>
 <tr>
-<td><strong>D</strong>enial of service</td>
-<td>Отказ</td>
-<td>Доступность</td>
-<td>Что будет при 1000 RPS? При теле 1 ГБ?</td>
+<td data-label="Буква"><strong>D</strong>enial of service</td>
+<td data-label="Угроза">Отказ</td>
+<td data-label="Нарушает">Доступность</td>
+<td data-label="Типовой вопрос на этой границе">Что будет при 1000 RPS? При теле 1 ГБ?</td>
 </tr>
 <tr>
-<td><strong>E</strong>levation of privilege</td>
-<td>Повышение прав</td>
-<td>Авторизацию</td>
-<td>Может ли клиент А тронуть ресурс клиента Б?</td>
+<td data-label="Буква"><strong>E</strong>levation of privilege</td>
+<td data-label="Угроза">Повышение прав</td>
+<td data-label="Нарушает">Авторизацию</td>
+<td data-label="Типовой вопрос на этой границе">Может ли клиент А тронуть ресурс клиента Б?</td>
 </tr>
 </tbody>
 </table>
@@ -2400,7 +2400,7 @@ X-Signature: base64(HMAC-SHA256(secret, method + "\n" + path + "\n" + timestamp 
 </ul>
 <h3 id="105-разделение-ответственности-с-иб-командой">10.5 Разделение ответственности с ИБ-командой</h3>
 <p>Безопасность приложения не принадлежит целиком ни разработке, ни ИБ: разработчики пишут код и знают, как он устроен, а ИБ знает угрозы и стандарты, но не может проверить каждую строку. Когда граница не проведена, каждая сторона считает, что уязвимость — забота другой. В таблице показано разделение ответственности, которое работает на практике.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Кто</th>
@@ -2409,20 +2409,20 @@ X-Signature: base64(HMAC-SHA256(secret, method + "\n" + path + "\n" + timestamp 
 </thead>
 <tbody>
 <tr>
-<td>Разработка</td>
-<td>Безопасный код, проверки авторизации, валидация, обработка находок, threat model фичи</td>
+<td data-label="Кто">Разработка</td>
+<td data-label="За что отвечает">Безопасный код, проверки авторизации, валидация, обработка находок, threat model фичи</td>
 </tr>
 <tr>
-<td>ИБ (AppSec)</td>
-<td>Стандарты и чеклисты, инструменты и их настройка, обучение, экспертиза в спорных случаях, pentest/bug bounty</td>
+<td data-label="Кто">ИБ (AppSec)</td>
+<td data-label="За что отвечает">Стандарты и чеклисты, инструменты и их настройка, обучение, экспертиза в спорных случаях, pentest/bug bounty</td>
 </tr>
 <tr>
-<td>Платформа/SRE</td>
-<td>Периметр, сеть, секреты, образы, admission-политики, патчинг базовой инфраструктуры</td>
+<td data-label="Кто">Платформа/SRE</td>
+<td data-label="За что отвечает">Периметр, сеть, секреты, образы, admission-политики, патчинг базовой инфраструктуры</td>
 </tr>
 <tr>
-<td>Владелец продукта</td>
-<td>Принятие риска (письменно), приоритет задач безопасности</td>
+<td data-label="Кто">Владелец продукта</td>
+<td data-label="За что отвечает">Принятие риска (письменно), приоритет задач безопасности</td>
 </tr>
 </tbody>
 </table>
@@ -2834,5 +2834,5 @@ curl -s <span class="nv">$KC</span>/protocol/openid-connect/certs <span class="p
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-устройство-oauth-20-и-oidc">1. Устройство OAuth 2.0 и OIDC</a></li><li><a href="#2-токены-формат-жизненный-цикл-отзыв">2. Токены: формат, жизненный цикл, отзыв</a></li><li><a href="#3-keycloak-модель-конфигурации">3. Keycloak: модель конфигурации</a></li><li><a href="#4-keycloak-аутентификация-mfa-федерация-spi">4. Keycloak: аутентификация, MFA, федерация, SPI</a></li><li><a href="#5-keycloak-в-эксплуатации">5. Keycloak в эксплуатации</a></li><li><a href="#6-модели-авторизации">6. Модели авторизации</a></li><li><a href="#7-owasp-top-102025-в-java-бэкенде">7. OWASP Top 10:2025 в Java-бэкенде</a></li><li><a href="#8-секреты-и-цепочка-поставки-a03">8. Секреты и цепочка поставки (A03)</a></li><li><a href="#9-защита-api">9. Защита API</a></li><li><a href="#10-процессы-безопасности">10. Процессы безопасности</a></li><li><a href="#11-разобранные-инциденты">11. Разобранные инциденты</a></li><li><a href="#12-грабли-и-антипаттерны">12. Грабли и антипаттерны</a></li><li><a href="#13-диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

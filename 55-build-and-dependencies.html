@@ -3,7 +3,7 @@
 <title>55. Сборка и зависимости — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Сборка и зависимости">
 <a class="skip" href="#content">К тексту</a>
@@ -39,7 +39,7 @@
 </blockquote>
 <h3 id="13-воспроизводимость-сборки">1.3 Воспроизводимость сборки</h3>
 <p>Здоровая сборка удовлетворяет трём уровням воспроизводимости, и их полезно различать:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -49,19 +49,19 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Повторяемость окружения</strong></td>
-<td>Сборка на машине коллеги и в CI даёт работающий артефакт</td>
-<td>wrapper (фиксированная версия сборщика), toolchain (фиксированный JDK), запрет локальных профилей</td>
+<td data-label="Уровень"><strong>Повторяемость окружения</strong></td>
+<td data-label="Что гарантируется">Сборка на машине коллеги и в CI даёт работающий артефакт</td>
+<td data-label="Чем достигается">wrapper (фиксированная версия сборщика), toolchain (фиксированный JDK), запрет локальных профилей</td>
 </tr>
 <tr>
-<td><strong>Детерминизм графа зависимостей</strong></td>
-<td>Один и тот же коммит всегда даёт один и тот же набор версий зависимостей</td>
-<td>отсутствие SNAPSHOT и диапазонов версий, BOM, lock-файлы, <code>enforcer</code></td>
+<td data-label="Уровень"><strong>Детерминизм графа зависимостей</strong></td>
+<td data-label="Что гарантируется">Один и тот же коммит всегда даёт один и тот же набор версий зависимостей</td>
+<td data-label="Чем достигается">отсутствие SNAPSHOT и диапазонов версий, BOM, lock-файлы, <code>enforcer</code></td>
 </tr>
 <tr>
-<td><strong>Бит-в-бит (reproducible build)</strong></td>
-<td>Два независимых прогона дают побайтово идентичный jar</td>
-<td><code>project.build.outputTimestamp</code>, нормализация порядка файлов, отсутствие временны́х меток и путей в артефакте</td>
+<td data-label="Уровень"><strong>Бит-в-бит (reproducible build)</strong></td>
+<td data-label="Что гарантируется">Два независимых прогона дают побайтово идентичный jar</td>
+<td data-label="Чем достигается"><code>project.build.outputTimestamp</code>, нормализация порядка файлов, отсутствие временны́х меток и путей в артефакте</td>
 </tr>
 </tbody>
 </table>
@@ -250,7 +250,7 @@ deploy:                 maven-deploy-plugin:3.1.4:deploy
 <p>Та же логика, что и с зависимостями: <code>&lt;pluginManagement&gt;</code> в родителе задаёт версии и конфигурацию <em>на случай, если</em> плагин будет использован; <code>&lt;plugins&gt;</code> реально подключает. Ребёнок, объявив плагин без версии, получит версию и конфигурацию из <code>pluginManagement</code> родителя.</p>
 <p>Это критично для воспроизводимости: <strong>плагин без указанной версии — ошибка</strong>. Maven 3 выдаёт предупреждение и подставляет версию из супер-POM или последнюю известную; результат сборки становится зависимым от времени. <code>maven-enforcer-plugin</code> умеет запрещать это правилом <code>requirePluginVersions</code>.</p>
 <h3 id="34-основные-плагины-maven">3.4 Основные плагины Maven</h3>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Плагин</th>
@@ -260,69 +260,69 @@ deploy:                 maven-deploy-plugin:3.1.4:deploy
 </thead>
 <tbody>
 <tr>
-<td><code>maven-compiler-plugin</code></td>
-<td>Вызывает <code>javac</code></td>
-<td><code>&lt;release&gt;21&lt;/release&gt;</code> вместо пары <code>source</code>/<code>target</code>: <code>release</code> дополнительно проверяет, что вы не используете API новее целевой версии. <code>source/target</code> этого не делают — отсюда <code>NoSuchMethodError</code> на старой JVM</td>
+<td data-label="Плагин"><code>maven-compiler-plugin</code></td>
+<td data-label="Что делает">Вызывает <code>javac</code></td>
+<td data-label="Тонкости, о которых спрашивают"><code>&lt;release&gt;21&lt;/release&gt;</code> вместо пары <code>source</code>/<code>target</code>: <code>release</code> дополнительно проверяет, что вы не используете API новее целевой версии. <code>source/target</code> этого не делают — отсюда <code>NoSuchMethodError</code> на старой JVM</td>
 </tr>
 <tr>
-<td><code>maven-surefire-plugin</code></td>
-<td>Юнит-тесты в фазе <code>test</code></td>
-<td>Шаблоны по умолчанию <code>**/Test*.java</code>, <code>**/*Test.java</code>, <code>**/*Tests.java</code>, <code>**/*TestCase.java</code>. <code>forkCount</code>, <code>reuseForks</code>, <code>argLine</code> (и конфликт <code>argLine</code> с JaCoCo)</td>
+<td data-label="Плагин"><code>maven-surefire-plugin</code></td>
+<td data-label="Что делает">Юнит-тесты в фазе <code>test</code></td>
+<td data-label="Тонкости, о которых спрашивают">Шаблоны по умолчанию <code>**/Test*.java</code>, <code>**/*Test.java</code>, <code>**/*Tests.java</code>, <code>**/*TestCase.java</code>. <code>forkCount</code>, <code>reuseForks</code>, <code>argLine</code> (и конфликт <code>argLine</code> с JaCoCo)</td>
 </tr>
 <tr>
-<td><code>maven-failsafe-plugin</code></td>
-<td>Интеграционные тесты</td>
-<td>Фазы <code>pre-integration-test</code>/<code>integration-test</code>/<code>post-integration-test</code>/<code>verify</code>; шаблоны <code>**/IT*.java</code>, <code>**/*IT.java</code>, <code>**/*ITCase.java</code></td>
+<td data-label="Плагин"><code>maven-failsafe-plugin</code></td>
+<td data-label="Что делает">Интеграционные тесты</td>
+<td data-label="Тонкости, о которых спрашивают">Фазы <code>pre-integration-test</code>/<code>integration-test</code>/<code>post-integration-test</code>/<code>verify</code>; шаблоны <code>**/IT*.java</code>, <code>**/*IT.java</code>, <code>**/*ITCase.java</code></td>
 </tr>
 <tr>
-<td><code>maven-jar-plugin</code></td>
-<td>Обычный jar</td>
-<td><code>&lt;archive&gt;&lt;manifestEntries&gt;</code> для метаданных; <code>skipIfEmpty</code></td>
+<td data-label="Плагин"><code>maven-jar-plugin</code></td>
+<td data-label="Что делает">Обычный jar</td>
+<td data-label="Тонкости, о которых спрашивают"><code>&lt;archive&gt;&lt;manifestEntries&gt;</code> для метаданных; <code>skipIfEmpty</code></td>
 </tr>
 <tr>
-<td><code>maven-shade-plugin</code></td>
-<td>Uber-jar с relocation</td>
-<td>Единственный способ переименовать пакеты зависимости; требует ручной настройки трансформеров для <code>META-INF/services</code></td>
+<td data-label="Плагин"><code>maven-shade-plugin</code></td>
+<td data-label="Что делает">Uber-jar с relocation</td>
+<td data-label="Тонкости, о которых спрашивают">Единственный способ переименовать пакеты зависимости; требует ручной настройки трансформеров для <code>META-INF/services</code></td>
 </tr>
 <tr>
-<td><code>maven-assembly-plugin</code></td>
-<td>Произвольные дистрибутивы (tar.gz, zip)</td>
-<td>Умеет всё, но медленнее и не умеет relocation</td>
+<td data-label="Плагин"><code>maven-assembly-plugin</code></td>
+<td data-label="Что делает">Произвольные дистрибутивы (tar.gz, zip)</td>
+<td data-label="Тонкости, о которых спрашивают">Умеет всё, но медленнее и не умеет relocation</td>
 </tr>
 <tr>
-<td><code>maven-enforcer-plugin</code></td>
-<td>Правила на сборку</td>
-<td><code>dependencyConvergence</code>, <code>banDuplicateClasses</code> (через extra-enforcer-rules), <code>requireMavenVersion</code>, <code>requireReleaseDeps</code>, <code>bannedDependencies</code></td>
+<td data-label="Плагин"><code>maven-enforcer-plugin</code></td>
+<td data-label="Что делает">Правила на сборку</td>
+<td data-label="Тонкости, о которых спрашивают"><code>dependencyConvergence</code>, <code>banDuplicateClasses</code> (через extra-enforcer-rules), <code>requireMavenVersion</code>, <code>requireReleaseDeps</code>, <code>bannedDependencies</code></td>
 </tr>
 <tr>
-<td><code>versions-maven-plugin</code></td>
-<td>Анализ и обновление версий</td>
-<td><code>versions:display-dependency-updates</code>, <code>versions:set</code>, <code>versions:use-latest-releases</code></td>
+<td data-label="Плагин"><code>versions-maven-plugin</code></td>
+<td data-label="Что делает">Анализ и обновление версий</td>
+<td data-label="Тонкости, о которых спрашивают"><code>versions:display-dependency-updates</code>, <code>versions:set</code>, <code>versions:use-latest-releases</code></td>
 </tr>
 <tr>
-<td><code>flatten-maven-plugin</code></td>
-<td>Плоский POM для публикации</td>
-<td>Обязателен с <code>${revision}</code></td>
+<td data-label="Плагин"><code>flatten-maven-plugin</code></td>
+<td data-label="Что делает">Плоский POM для публикации</td>
+<td data-label="Тонкости, о которых спрашивают">Обязателен с <code>${revision}</code></td>
 </tr>
 <tr>
-<td><code>jacoco-maven-plugin</code></td>
-<td>Покрытие</td>
-<td><code>prepare-agent</code> подставляет <code>argLine</code>; если вы задали свой <code>argLine</code>, надо писать <code>@{argLine}</code></td>
+<td data-label="Плагин"><code>jacoco-maven-plugin</code></td>
+<td data-label="Что делает">Покрытие</td>
+<td data-label="Тонкости, о которых спрашивают"><code>prepare-agent</code> подставляет <code>argLine</code>; если вы задали свой <code>argLine</code>, надо писать <code>@{argLine}</code></td>
 </tr>
 <tr>
-<td><code>spotless-maven-plugin</code></td>
-<td>Форматирование</td>
-<td><code>spotless:check</code> в CI, <code>spotless:apply</code> локально</td>
+<td data-label="Плагин"><code>spotless-maven-plugin</code></td>
+<td data-label="Что делает">Форматирование</td>
+<td data-label="Тонкости, о которых спрашивают"><code>spotless:check</code> в CI, <code>spotless:apply</code> локально</td>
 </tr>
 <tr>
-<td><code>git-commit-id-maven-plugin</code></td>
-<td>Метаданные коммита в манифест/<code>git.properties</code></td>
-<td>Их читает Spring Boot Actuator <code>/actuator/info</code></td>
+<td data-label="Плагин"><code>git-commit-id-maven-plugin</code></td>
+<td data-label="Что делает">Метаданные коммита в манифест/<code>git.properties</code></td>
+<td data-label="Тонкости, о которых спрашивают">Их читает Spring Boot Actuator <code>/actuator/info</code></td>
 </tr>
 <tr>
-<td><code>maven-dependency-plugin</code></td>
-<td>Анализ зависимостей</td>
-<td><code>tree</code>, <code>analyze</code>, <code>copy-dependencies</code>, <code>go-offline</code></td>
+<td data-label="Плагин"><code>maven-dependency-plugin</code></td>
+<td data-label="Что делает">Анализ зависимостей</td>
+<td data-label="Тонкости, о которых спрашивают"><code>tree</code>, <code>analyze</code>, <code>copy-dependencies</code>, <code>go-offline</code></td>
 </tr>
 </tbody>
 </table>
@@ -391,7 +391,7 @@ $ mvn verify                код возврата Maven: 1
 <h2 id="4-maven-зависимости">4. Maven: зависимости</h2>
 <h3 id="41-области-видимости-зависимостей-scope">4.1 Области видимости зависимостей (scope)</h3>
 <p>Scope отвечает на два вопроса: в какие classpath попадает зависимость и передаётся ли она транзитивно потребителям. Шесть значений (<a href="https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html">Introduction to the Dependency Mechanism</a>):</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Scope</th>
@@ -405,64 +405,64 @@ $ mvn verify                код возврата Maven: 1
 </thead>
 <tbody>
 <tr>
-<td><code>compile</code> (значение по умолчанию)</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td>да (как <code>compile</code>)</td>
-<td>да</td>
-<td><code>spring-core</code>, ваша доменная библиотека</td>
+<td data-label="Scope"><code>compile</code> (значение по умолчанию)</td>
+<td data-label="Compile CP">да</td>
+<td data-label="Test CP">да</td>
+<td data-label="Runtime CP">да</td>
+<td data-label="Транзитивен">да (как <code>compile</code>)</td>
+<td data-label="Попадает в fat-jar / war/lib">да</td>
+<td data-label="Типичный пример"><code>spring-core</code>, ваша доменная библиотека</td>
 </tr>
 <tr>
-<td><code>provided</code></td>
-<td>да</td>
-<td>да</td>
-<td><strong>нет</strong></td>
-<td><strong>нет</strong></td>
-<td><strong>нет</strong></td>
-<td><code>jakarta.servlet-api</code>, <code>lombok</code>, <code>spring-boot-configuration-processor</code></td>
+<td data-label="Scope"><code>provided</code></td>
+<td data-label="Compile CP">да</td>
+<td data-label="Test CP">да</td>
+<td data-label="Runtime CP"><strong>нет</strong></td>
+<td data-label="Транзитивен"><strong>нет</strong></td>
+<td data-label="Попадает в fat-jar / war/lib"><strong>нет</strong></td>
+<td data-label="Типичный пример"><code>jakarta.servlet-api</code>, <code>lombok</code>, <code>spring-boot-configuration-processor</code></td>
 </tr>
 <tr>
-<td><code>runtime</code></td>
-<td><strong>нет</strong></td>
-<td>да</td>
-<td>да</td>
-<td>да (как <code>runtime</code>)</td>
-<td>да</td>
-<td>JDBC-драйвер <code>org.postgresql:postgresql</code>, <code>logback-classic</code></td>
+<td data-label="Scope"><code>runtime</code></td>
+<td data-label="Compile CP"><strong>нет</strong></td>
+<td data-label="Test CP">да</td>
+<td data-label="Runtime CP">да</td>
+<td data-label="Транзитивен">да (как <code>runtime</code>)</td>
+<td data-label="Попадает в fat-jar / war/lib">да</td>
+<td data-label="Типичный пример">JDBC-драйвер <code>org.postgresql:postgresql</code>, <code>logback-classic</code></td>
 </tr>
 <tr>
-<td><code>test</code></td>
-<td>нет</td>
-<td>да</td>
-<td>нет</td>
-<td><strong>нет</strong></td>
-<td>нет</td>
-<td>JUnit, AssertJ, Testcontainers</td>
+<td data-label="Scope"><code>test</code></td>
+<td data-label="Compile CP">нет</td>
+<td data-label="Test CP">да</td>
+<td data-label="Runtime CP">нет</td>
+<td data-label="Транзитивен"><strong>нет</strong></td>
+<td data-label="Попадает в fat-jar / war/lib">нет</td>
+<td data-label="Типичный пример">JUnit, AssertJ, Testcontainers</td>
 </tr>
 <tr>
-<td><code>system</code></td>
-<td>да</td>
-<td>да</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
-<td>локальный jar по абсолютному пути — <strong>не использовать</strong></td>
+<td data-label="Scope"><code>system</code></td>
+<td data-label="Compile CP">да</td>
+<td data-label="Test CP">да</td>
+<td data-label="Runtime CP">нет</td>
+<td data-label="Транзитивен">нет</td>
+<td data-label="Попадает в fat-jar / war/lib">нет</td>
+<td data-label="Типичный пример">локальный jar по абсолютному пути — <strong>не использовать</strong></td>
 </tr>
 <tr>
-<td><code>import</code></td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>только <code>type=pom</code> внутри <code>dependencyManagement</code></td>
+<td data-label="Scope"><code>import</code></td>
+<td data-label="Compile CP">—</td>
+<td data-label="Test CP">—</td>
+<td data-label="Runtime CP">—</td>
+<td data-label="Транзитивен">—</td>
+<td data-label="Попадает в fat-jar / war/lib">—</td>
+<td data-label="Типичный пример">только <code>type=pom</code> внутри <code>dependencyManagement</code></td>
 </tr>
 </tbody>
 </table>
 <p>Точные формулировки документации стоит запомнить: <code>provided</code> — «A dependency with this scope is added to the classpath used for compilation and test, but not the runtime classpath. It is not transitive»; <code>runtime</code> — «the dependency is not required for compilation, but is for execution»; <code>import</code> — «This scope is only supported on a dependency of type <code>pom</code> in the <code>&lt;dependencyManagement&gt;</code> section».</p>
 <p><strong>Транзитивная таблица</strong> — как scope зависимости меняется, когда она приходит через другую зависимость. Столбец — scope вашей прямой зависимости, строка — scope её зависимости:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Прямая \ транзитивная</th>
@@ -474,32 +474,32 @@ $ mvn verify                код возврата Maven: 1
 </thead>
 <tbody>
 <tr>
-<td><strong>compile</strong></td>
-<td>compile</td>
-<td>—</td>
-<td>runtime</td>
-<td>—</td>
+<td data-label="Прямая \ транзитивная"><strong>compile</strong></td>
+<td data-label="compile">compile</td>
+<td data-label="provided">—</td>
+<td data-label="runtime">runtime</td>
+<td data-label="test">—</td>
 </tr>
 <tr>
-<td><strong>provided</strong></td>
-<td>provided</td>
-<td>—</td>
-<td>provided</td>
-<td>—</td>
+<td data-label="Прямая \ транзитивная"><strong>provided</strong></td>
+<td data-label="compile">provided</td>
+<td data-label="provided">—</td>
+<td data-label="runtime">provided</td>
+<td data-label="test">—</td>
 </tr>
 <tr>
-<td><strong>runtime</strong></td>
-<td>runtime</td>
-<td>—</td>
-<td>runtime</td>
-<td>—</td>
+<td data-label="Прямая \ транзитивная"><strong>runtime</strong></td>
+<td data-label="compile">runtime</td>
+<td data-label="provided">—</td>
+<td data-label="runtime">runtime</td>
+<td data-label="test">—</td>
 </tr>
 <tr>
-<td><strong>test</strong></td>
-<td>test</td>
-<td>—</td>
-<td>test</td>
-<td>—</td>
+<td data-label="Прямая \ транзитивная"><strong>test</strong></td>
+<td data-label="compile">test</td>
+<td data-label="provided">—</td>
+<td data-label="runtime">test</td>
+<td data-label="test">—</td>
 </tr>
 </tbody>
 </table>
@@ -511,7 +511,7 @@ $ mvn verify                код возврата Maven: 1
 <p>⚠️ <strong>Грабли.</strong> <code>provided</code> для <code>lombok</code> — верно; <code>provided</code> для <code>spring-boot-devtools</code> — верно; а вот <code>provided</code> для библиотеки, которую «вроде бы даёт сервлет-контейнер», в Spring Boot-приложении, запускаемом как исполняемый jar, — прямой путь к <code>NoClassDefFoundError</code> во время выполнения. В fat-jar никакого контейнера нет: всё, что нужно во время выполнения, должно быть <code>compile</code> или <code>runtime</code>.</p>
 </blockquote>
 <p><strong>Запуск.</strong> Проект с пятью зависимостями разных областей (<code>commons-text</code> compile, <code>jakarta.servlet-api</code> provided, <code>postgresql</code> runtime, <code>junit-jupiter</code> test, <code>jsr305</code> compile). Пути классов, которые Maven строит для каждой области (<code>dependency:build-classpath -DincludeScope=...</code>):</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Область</th>
@@ -521,19 +521,19 @@ $ mvn verify                код возврата Maven: 1
 </thead>
 <tbody>
 <tr>
-<td><code>compile</code></td>
-<td class="num">4</td>
-<td><code>commons-lang3</code>, <code>commons-text</code>, <code>jakarta.servlet-api</code>, <code>jsr305</code></td>
+<td data-label="Область"><code>compile</code></td>
+<td data-label="Файлов" class="num">4</td>
+<td data-label="Состав"><code>commons-lang3</code>, <code>commons-text</code>, <code>jakarta.servlet-api</code>, <code>jsr305</code></td>
 </tr>
 <tr>
-<td><code>runtime</code></td>
-<td class="num">5</td>
-<td><code>checker-qual</code>, <code>commons-lang3</code>, <code>commons-text</code>, <code>jsr305</code>, <code>postgresql</code></td>
+<td data-label="Область"><code>runtime</code></td>
+<td data-label="Файлов" class="num">5</td>
+<td data-label="Состав"><code>checker-qual</code>, <code>commons-lang3</code>, <code>commons-text</code>, <code>jsr305</code>, <code>postgresql</code></td>
 </tr>
 <tr>
-<td><code>test</code></td>
-<td class="num">14</td>
-<td>объединение <code>compile</code> и <code>runtime</code> (шесть файлов) и JUnit с его зависимостями (восемь файлов)</td>
+<td data-label="Область"><code>test</code></td>
+<td data-label="Файлов" class="num">14</td>
+<td data-label="Состав">объединение <code>compile</code> и <code>runtime</code> (шесть файлов) и JUnit с его зависимостями (восемь файлов)</td>
 </tr>
 </tbody>
 </table>
@@ -1181,7 +1181,7 @@ mvn -o verify
 <p>⚠️ <strong>Грабли.</strong> Плагины, не поддерживающие configuration cache, — главный блокер. До недавнего времени этим страдали Jacoco-интеграции, некоторые версии <code>com.github.johnrengelman.shadow</code>, самописные плагины с <code>project.</code> внутри <code>doLast</code>. Стратегия внедрения: включить с <code>problems=warn</code>, разобрать отчёт, починить своё, обновить или заменить чужое, переключить на <code>fail</code>.</p>
 </blockquote>
 <h3 id="65-kotlin-dsl-и-groovy-dsl">6.5 Kotlin DSL и Groovy DSL</h3>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -1191,39 +1191,39 @@ mvn -o verify
 </thead>
 <tbody>
 <tr>
-<td>Типобезопасность</td>
-<td>Нет: опечатка в имени метода — ошибка во время выполнения конфигурации</td>
-<td>Да: ошибка компиляции скрипта</td>
+<td data-label="Критерий">Типобезопасность</td>
+<td data-label="Groovy DSL (build.gradle)">Нет: опечатка в имени метода — ошибка во время выполнения конфигурации</td>
+<td data-label="Kotlin DSL (build.gradle.kts)">Да: ошибка компиляции скрипта</td>
 </tr>
 <tr>
-<td>Автодополнение в IDE</td>
-<td>Частичное, через эвристики</td>
-<td>Полное, включая параметры</td>
+<td data-label="Критерий">Автодополнение в IDE</td>
+<td data-label="Groovy DSL (build.gradle)">Частичное, через эвристики</td>
+<td data-label="Kotlin DSL (build.gradle.kts)">Полное, включая параметры</td>
 </tr>
 <tr>
-<td>Скорость первой компиляции скриптов</td>
-<td>Быстрее</td>
-<td>Медленнее (kotlin-compiler на каждый изменённый скрипт)</td>
+<td data-label="Критерий">Скорость первой компиляции скриптов</td>
+<td data-label="Groovy DSL (build.gradle)">Быстрее</td>
+<td data-label="Kotlin DSL (build.gradle.kts)">Медленнее (kotlin-compiler на каждый изменённый скрипт)</td>
 </tr>
 <tr>
-<td>Скорость при неизменных скриптах</td>
-<td>Сопоставимо</td>
-<td>Сопоставимо (скомпилированные скрипты кешируются)</td>
+<td data-label="Критерий">Скорость при неизменных скриптах</td>
+<td data-label="Groovy DSL (build.gradle)">Сопоставимо</td>
+<td data-label="Kotlin DSL (build.gradle.kts)">Сопоставимо (скомпилированные скрипты кешируются)</td>
 </tr>
 <tr>
-<td>Динамика (<code>ext</code>, произвольные свойства)</td>
-<td>Свободно</td>
-<td>Ограниченно, требует явных типов</td>
+<td data-label="Критерий">Динамика (<code>ext</code>, произвольные свойства)</td>
+<td data-label="Groovy DSL (build.gradle)">Свободно</td>
+<td data-label="Kotlin DSL (build.gradle.kts)">Ограниченно, требует явных типов</td>
 </tr>
 <tr>
-<td>Рефакторинг (переименование)</td>
-<td>Текстовый поиск</td>
-<td>Полноценный, IDE-managed</td>
+<td data-label="Критерий">Рефакторинг (переименование)</td>
+<td data-label="Groovy DSL (build.gradle)">Текстовый поиск</td>
+<td data-label="Kotlin DSL (build.gradle.kts)">Полноценный, IDE-managed</td>
 </tr>
 <tr>
-<td>Документация и Stack Overflow</td>
-<td>Больше примеров</td>
-<td>Стало достаточно с Gradle 7</td>
+<td data-label="Критерий">Документация и Stack Overflow</td>
+<td data-label="Groovy DSL (build.gradle)">Больше примеров</td>
+<td data-label="Kotlin DSL (build.gradle.kts)">Стало достаточно с Gradle 7</td>
 </tr>
 </tbody>
 </table>
@@ -1256,7 +1256,7 @@ mvn -o verify
 <h2 id="7-gradle-зависимости-и-структура">7. Gradle: зависимости и структура</h2>
 <h3 id="71-configurations">7.1 Configurations</h3>
 <p>Configuration в Gradle — именованный набор зависимостей с ролью. Плагин <code>java-library</code> создаёт основные:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Configuration</th>
@@ -1268,60 +1268,60 @@ mvn -o verify
 </thead>
 <tbody>
 <tr>
-<td><code>api</code></td>
-<td>да</td>
-<td>да</td>
-<td><strong>да</strong></td>
-<td>да</td>
+<td data-label="Configuration"><code>api</code></td>
+<td data-label="Компиляция модуля">да</td>
+<td data-label="Среда выполнения модуля">да</td>
+<td data-label="Compile CP потребителя"><strong>да</strong></td>
+<td data-label="Runtime CP потребителя">да</td>
 </tr>
 <tr>
-<td><code>implementation</code></td>
-<td>да</td>
-<td>да</td>
-<td><strong>нет</strong></td>
-<td>да</td>
+<td data-label="Configuration"><code>implementation</code></td>
+<td data-label="Компиляция модуля">да</td>
+<td data-label="Среда выполнения модуля">да</td>
+<td data-label="Compile CP потребителя"><strong>нет</strong></td>
+<td data-label="Runtime CP потребителя">да</td>
 </tr>
 <tr>
-<td><code>compileOnly</code></td>
-<td>да</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Configuration"><code>compileOnly</code></td>
+<td data-label="Компиляция модуля">да</td>
+<td data-label="Среда выполнения модуля">нет</td>
+<td data-label="Compile CP потребителя">нет</td>
+<td data-label="Runtime CP потребителя">нет</td>
 </tr>
 <tr>
-<td><code>compileOnlyApi</code></td>
-<td>да</td>
-<td>нет</td>
-<td><strong>да</strong></td>
-<td>нет</td>
+<td data-label="Configuration"><code>compileOnlyApi</code></td>
+<td data-label="Компиляция модуля">да</td>
+<td data-label="Среда выполнения модуля">нет</td>
+<td data-label="Compile CP потребителя"><strong>да</strong></td>
+<td data-label="Runtime CP потребителя">нет</td>
 </tr>
 <tr>
-<td><code>runtimeOnly</code></td>
-<td>нет</td>
-<td>да</td>
-<td>нет</td>
-<td>да</td>
+<td data-label="Configuration"><code>runtimeOnly</code></td>
+<td data-label="Компиляция модуля">нет</td>
+<td data-label="Среда выполнения модуля">да</td>
+<td data-label="Compile CP потребителя">нет</td>
+<td data-label="Runtime CP потребителя">да</td>
 </tr>
 <tr>
-<td><code>annotationProcessor</code></td>
-<td>только как процессор</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Configuration"><code>annotationProcessor</code></td>
+<td data-label="Компиляция модуля">только как процессор</td>
+<td data-label="Среда выполнения модуля">нет</td>
+<td data-label="Compile CP потребителя">нет</td>
+<td data-label="Runtime CP потребителя">нет</td>
 </tr>
 <tr>
-<td><code>testImplementation</code></td>
-<td>тесты</td>
-<td>тесты</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Configuration"><code>testImplementation</code></td>
+<td data-label="Компиляция модуля">тесты</td>
+<td data-label="Среда выполнения модуля">тесты</td>
+<td data-label="Compile CP потребителя">нет</td>
+<td data-label="Runtime CP потребителя">нет</td>
 </tr>
 <tr>
-<td><code>testRuntimeOnly</code></td>
-<td>нет</td>
-<td>тесты</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Configuration"><code>testRuntimeOnly</code></td>
+<td data-label="Компиляция модуля">нет</td>
+<td data-label="Среда выполнения модуля">тесты</td>
+<td data-label="Compile CP потребителя">нет</td>
+<td data-label="Runtime CP потребителя">нет</td>
 </tr>
 </tbody>
 </table>
@@ -1381,7 +1381,7 @@ mvn -o verify
 </blockquote>
 <h3 id="73-разрешение-версий-в-gradle">7.3 Разрешение версий в Gradle</h3>
 <p>Здесь фундаментальное расхождение с Maven. Документация Gradle: «Gradle considers all requested versions across the dependency graph and, by default, selects the <em>highest</em> version» (<a href="https://docs.gradle.org/current/userguide/graph_resolution.html">Graph Resolution</a>).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аспект</th>
@@ -1391,39 +1391,39 @@ mvn -o verify
 </thead>
 <tbody>
 <tr>
-<td>Базовое правило</td>
-<td>Ближайшая к корню (<code>nearest definition</code>)</td>
-<td><strong>Наибольшая</strong> из всех запрошенных</td>
+<td data-label="Аспект">Базовое правило</td>
+<td data-label="Maven">Ближайшая к корню (<code>nearest definition</code>)</td>
+<td data-label="Gradle"><strong>Наибольшая</strong> из всех запрошенных</td>
 </tr>
 <tr>
-<td>Tie-breaker</td>
-<td>Первая по порядку объявления</td>
-<td>Не нужен (порядок не важен)</td>
+<td data-label="Аспект">Tie-breaker</td>
+<td data-label="Maven">Первая по порядку объявления</td>
+<td data-label="Gradle">Не нужен (порядок не важен)</td>
 </tr>
 <tr>
-<td>Зависит ли от порядка строк в файле</td>
-<td><strong>Да</strong></td>
-<td>Нет</td>
+<td data-label="Аспект">Зависит ли от порядка строк в файле</td>
+<td data-label="Maven"><strong>Да</strong></td>
+<td data-label="Gradle">Нет</td>
 </tr>
 <tr>
-<td>Может выбрать более старую версию, чем просит кто-то в графе</td>
-<td><strong>Да</strong></td>
-<td>Нет (если нет <code>strictly</code>)</td>
+<td data-label="Аспект">Может выбрать более старую версию, чем просит кто-то в графе</td>
+<td data-label="Maven"><strong>Да</strong></td>
+<td data-label="Gradle">Нет (если нет <code>strictly</code>)</td>
 </tr>
 <tr>
-<td>Прямое объявление в корне</td>
-<td>Побеждает всегда (глубина 1)</td>
-<td>Участвует наравне с остальными, не побеждает автоматически</td>
+<td data-label="Аспект">Прямое объявление в корне</td>
+<td data-label="Maven">Побеждает всегда (глубина 1)</td>
+<td data-label="Gradle">Участвует наравне с остальными, не побеждает автоматически</td>
 </tr>
 <tr>
-<td>Диапазоны версий</td>
-<td>Поддержаны, но редко используются</td>
-<td>Поддержаны и работают предсказуемо</td>
+<td data-label="Аспект">Диапазоны версий</td>
+<td data-label="Maven">Поддержаны, но редко используются</td>
+<td data-label="Gradle">Поддержаны и работают предсказуемо</td>
 </tr>
 <tr>
-<td>Пререлизы</td>
-<td>Лексикографическое сравнение</td>
-<td>«By default, Gradle gives preference to versions without qualifiers when resolving conflicts»</td>
+<td data-label="Аспект">Пререлизы</td>
+<td data-label="Maven">Лексикографическое сравнение</td>
+<td data-label="Gradle">«By default, Gradle gives preference to versions without qualifiers when resolving conflicts»</td>
 </tr>
 </tbody>
 </table>
@@ -1724,7 +1724,7 @@ settings.gradle.kts
 <hr>
 <h2 id="8-сравнение-maven-и-gradle">8. Сравнение Maven и Gradle</h2>
 <h3 id="81-критерии-сравнения">8.1 Критерии сравнения</h3>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -1735,82 +1735,82 @@ settings.gradle.kts
 </thead>
 <tbody>
 <tr>
-<td><strong>Скорость «холодной» сборки</strong></td>
-<td>Сопоставима</td>
-<td>Сопоставима</td>
-<td>На чистом clean build разница в пределах 10–20 %</td>
+<td data-label="Критерий"><strong>Скорость «холодной» сборки</strong></td>
+<td data-label="Maven 3.9">Сопоставима</td>
+<td data-label="Gradle 9.x">Сопоставима</td>
+<td data-label="Комментарий">На чистом clean build разница в пределах 10–20 %</td>
 </tr>
 <tr>
-<td><strong>Скорость инкрементальной сборки</strong></td>
-<td>Плохо</td>
-<td><strong>Отлично</strong></td>
-<td>Maven пересобирает модуль целиком; Gradle пропускает up-to-date таски. На большом проекте это разница в разы</td>
+<td data-label="Критерий"><strong>Скорость инкрементальной сборки</strong></td>
+<td data-label="Maven 3.9">Плохо</td>
+<td data-label="Gradle 9.x"><strong>Отлично</strong></td>
+<td data-label="Комментарий">Maven пересобирает модуль целиком; Gradle пропускает up-to-date таски. На большом проекте это разница в разы</td>
 </tr>
 <tr>
-<td><strong>Воспроизводимость</strong></td>
-<td><strong>Выше</strong></td>
-<td>Ниже</td>
-<td>В Maven меньше степеней свободы; в Gradle скрипт может делать что угодно, включая недетерминированное</td>
+<td data-label="Критерий"><strong>Воспроизводимость</strong></td>
+<td data-label="Maven 3.9"><strong>Выше</strong></td>
+<td data-label="Gradle 9.x">Ниже</td>
+<td data-label="Комментарий">В Maven меньше степеней свободы; в Gradle скрипт может делать что угодно, включая недетерминированное</td>
 </tr>
 <tr>
-<td><strong>Читаемость чужой сборки</strong></td>
-<td><strong>Выше</strong></td>
-<td>Ниже</td>
-<td><code>pom.xml</code> всегда читается одинаково; <code>build.gradle.kts</code> с 15 плагинами и своими тасками требует расследования</td>
+<td data-label="Критерий"><strong>Читаемость чужой сборки</strong></td>
+<td data-label="Maven 3.9"><strong>Выше</strong></td>
+<td data-label="Gradle 9.x">Ниже</td>
+<td data-label="Комментарий"><code>pom.xml</code> всегда читается одинаково; <code>build.gradle.kts</code> с 15 плагинами и своими тасками требует расследования</td>
 </tr>
 <tr>
-<td><strong>Порог входа</strong></td>
-<td><strong>Ниже</strong></td>
-<td>Выше</td>
-<td>Maven осваивается за день; Gradle требует понимания фаз, Provider API, configurations</td>
+<td data-label="Критерий"><strong>Порог входа</strong></td>
+<td data-label="Maven 3.9"><strong>Ниже</strong></td>
+<td data-label="Gradle 9.x">Выше</td>
+<td data-label="Комментарий">Maven осваивается за день; Gradle требует понимания фаз, Provider API, configurations</td>
 </tr>
 <tr>
-<td><strong>Гибкость</strong></td>
-<td>Низкая</td>
-<td><strong>Высокая</strong></td>
-<td>Нестандартный шаг в Maven = свой плагин (отдельный артефакт, свой релизный цикл)</td>
+<td data-label="Критерий"><strong>Гибкость</strong></td>
+<td data-label="Maven 3.9">Низкая</td>
+<td data-label="Gradle 9.x"><strong>Высокая</strong></td>
+<td data-label="Комментарий">Нестандартный шаг в Maven = свой плагин (отдельный артефакт, свой релизный цикл)</td>
 </tr>
 <tr>
-<td><strong>Инструментарий и IDE</strong></td>
-<td>Отличная</td>
-<td>Хорошая</td>
-<td>IDEA понимает оба; в Maven структура выводится из POM без выполнения кода, в Gradle требуется запуск конфигурации (отсюда «Gradle sync» на минуты)</td>
+<td data-label="Критерий"><strong>Инструментарий и IDE</strong></td>
+<td data-label="Maven 3.9">Отличная</td>
+<td data-label="Gradle 9.x">Хорошая</td>
+<td data-label="Комментарий">IDEA понимает оба; в Maven структура выводится из POM без выполнения кода, в Gradle требуется запуск конфигурации (отсюда «Gradle sync» на минуты)</td>
 </tr>
 <tr>
-<td><strong>Разрешение конфликтов</strong></td>
-<td>Nearest-wins, часто неожиданно</td>
-<td>Highest-wins + rich versions</td>
-<td>У Gradle инструментарий богаче и предсказуемее</td>
+<td data-label="Критерий"><strong>Разрешение конфликтов</strong></td>
+<td data-label="Maven 3.9">Nearest-wins, часто неожиданно</td>
+<td data-label="Gradle 9.x">Highest-wins + rich versions</td>
+<td data-label="Комментарий">У Gradle инструментарий богаче и предсказуемее</td>
 </tr>
 <tr>
-<td><strong>Экосистема плагинов</strong></td>
-<td>Огромная, стабильная</td>
-<td>Большая, быстрее меняется</td>
-<td>Для банковских задач (подпись, лицензии, отчёты) чаще находится Maven-плагин</td>
+<td data-label="Критерий"><strong>Экосистема плагинов</strong></td>
+<td data-label="Maven 3.9">Огромная, стабильная</td>
+<td data-label="Gradle 9.x">Большая, быстрее меняется</td>
+<td data-label="Комментарий">Для банковских задач (подпись, лицензии, отчёты) чаще находится Maven-плагин</td>
 </tr>
 <tr>
-<td><strong>Стабильность между версиями</strong></td>
-<td><strong>Высокая</strong></td>
-<td>Ниже</td>
-<td>Сборка Maven 3.3 обычно работает на 3.9; сборка Gradle 6 на Gradle 9 — почти наверняка нет</td>
+<td data-label="Критерий"><strong>Стабильность между версиями</strong></td>
+<td data-label="Maven 3.9"><strong>Высокая</strong></td>
+<td data-label="Gradle 9.x">Ниже</td>
+<td data-label="Комментарий">Сборка Maven 3.3 обычно работает на 3.9; сборка Gradle 6 на Gradle 9 — почти наверняка нет</td>
 </tr>
 <tr>
-<td><strong>Поддержка Kotlin/мультиплатформы</strong></td>
-<td>Через плагин, ограниченно</td>
-<td><strong>Родная</strong></td>
-<td>Kotlin Multiplatform практически требует Gradle</td>
+<td data-label="Критерий"><strong>Поддержка Kotlin/мультиплатформы</strong></td>
+<td data-label="Maven 3.9">Через плагин, ограниченно</td>
+<td data-label="Gradle 9.x"><strong>Родная</strong></td>
+<td data-label="Комментарий">Kotlin Multiplatform практически требует Gradle</td>
 </tr>
 <tr>
-<td><strong>Build cache (удалённый)</strong></td>
-<td>Только в Maven Build Cache Extension (Apache/коммерческие)</td>
-<td><strong>Встроенный</strong></td>
-<td>Существенный аргумент для монорепо</td>
+<td data-label="Критерий"><strong>Build cache (удалённый)</strong></td>
+<td data-label="Maven 3.9">Только в Maven Build Cache Extension (Apache/коммерческие)</td>
+<td data-label="Gradle 9.x"><strong>Встроенный</strong></td>
+<td data-label="Комментарий">Существенный аргумент для монорепо</td>
 </tr>
 <tr>
-<td><strong>Дистрибуция сборочной логики</strong></td>
-<td>Свой Maven-плагин или parent POM</td>
-<td>Convention-плагины, composite builds</td>
-<td>В Gradle это заметно удобнее</td>
+<td data-label="Критерий"><strong>Дистрибуция сборочной логики</strong></td>
+<td data-label="Maven 3.9">Свой Maven-плагин или parent POM</td>
+<td data-label="Gradle 9.x">Convention-плагины, composite builds</td>
+<td data-label="Комментарий">В Gradle это заметно удобнее</td>
 </tr>
 </tbody>
 </table>
@@ -1848,7 +1848,7 @@ settings.gradle.kts
 
 <p>JVM при первом выполнении этой инструкции <code>invokestatic</code> ищет в загруженном классе <code>StringUtils</code> метод с <strong>точно такой</strong> сигнатурой. Не нашла — <code>NoSuchMethodError</code>. Если изменился возвращаемый тип или тип параметра — тоже <code>NoSuchMethodError</code>, потому что сигнатура в дескрипторе включает типы целиком.</p>
 <p>Таблица симптомов:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ошибка</th>
@@ -1858,44 +1858,44 @@ settings.gradle.kts
 </thead>
 <tbody>
 <tr>
-<td><code>NoClassDefFoundError: com/foo/Bar</code></td>
-<td>Класс был доступен при компиляции, отсутствует во время выполнения</td>
-<td><code>provided</code>/<code>compileOnly</code> там, где нужен <code>runtime</code>; exclusion выкинул лишнее; fat-jar собран без зависимости</td>
+<td data-label="Ошибка"><code>NoClassDefFoundError: com/foo/Bar</code></td>
+<td data-label="Что произошло">Класс был доступен при компиляции, отсутствует во время выполнения</td>
+<td data-label="Типичная причина"><code>provided</code>/<code>compileOnly</code> там, где нужен <code>runtime</code>; exclusion выкинул лишнее; fat-jar собран без зависимости</td>
 </tr>
 <tr>
-<td><code>ClassNotFoundException</code></td>
-<td>Класс ищется рефлексией и не найден</td>
-<td>То же, но через <code>Class.forName</code> — драйверы, SPI, Spring-автоконфигурации</td>
+<td data-label="Ошибка"><code>ClassNotFoundException</code></td>
+<td data-label="Что произошло">Класс ищется рефлексией и не найден</td>
+<td data-label="Типичная причина">То же, но через <code>Class.forName</code> — драйверы, SPI, Spring-автоконфигурации</td>
 </tr>
 <tr>
-<td><code>NoSuchMethodError: 'void com.Foo.bar(java.lang.String)'</code></td>
-<td>Класс есть, метод отсутствует или сигнатура другая</td>
-<td>Конфликт версий: загружена старая версия библиотеки</td>
+<td data-label="Ошибка"><code>NoSuchMethodError: 'void com.Foo.bar(java.lang.String)'</code></td>
+<td data-label="Что произошло">Класс есть, метод отсутствует или сигнатура другая</td>
+<td data-label="Типичная причина">Конфликт версий: загружена старая версия библиотеки</td>
 </tr>
 <tr>
-<td><code>NoSuchFieldError</code></td>
-<td>То же для поля</td>
-<td>Часто — константы, изменившие тип</td>
+<td data-label="Ошибка"><code>NoSuchFieldError</code></td>
+<td data-label="Что произошло">То же для поля</td>
+<td data-label="Типичная причина">Часто — константы, изменившие тип</td>
 </tr>
 <tr>
-<td><code>AbstractMethodError</code></td>
-<td>Класс реализует интерфейс старой версии, в новой добавлен метод</td>
-<td>Реализация SPI (JDBC-драйвер, сервлет-фильтр) не той версии</td>
+<td data-label="Ошибка"><code>AbstractMethodError</code></td>
+<td data-label="Что произошло">Класс реализует интерфейс старой версии, в новой добавлен метод</td>
+<td data-label="Типичная причина">Реализация SPI (JDBC-драйвер, сервлет-фильтр) не той версии</td>
 </tr>
 <tr>
-<td><code>IncompatibleClassChangeError</code></td>
-<td>Интерфейс стал классом или наоборот; <code>static</code>↔<code>instance</code></td>
-<td>Крупный мажорный апгрейд</td>
+<td data-label="Ошибка"><code>IncompatibleClassChangeError</code></td>
+<td data-label="Что произошло">Интерфейс стал классом или наоборот; <code>static</code>↔<code>instance</code></td>
+<td data-label="Типичная причина">Крупный мажорный апгрейд</td>
 </tr>
 <tr>
-<td><code>LinkageError: loader constraint violation</code></td>
-<td>Один класс загружен двумя загрузчиками</td>
-<td>Дубликат jar в разных classloader'ах (app-сервер, плагинная архитектура)</td>
+<td data-label="Ошибка"><code>LinkageError: loader constraint violation</code></td>
+<td data-label="Что произошло">Один класс загружен двумя загрузчиками</td>
+<td data-label="Типичная причина">Дубликат jar в разных classloader'ах (app-сервер, плагинная архитектура)</td>
 </tr>
 <tr>
-<td><code>ClassCastException: cannot cast Foo to Foo</code></td>
-<td>Тот же класс от разных загрузчиков</td>
-<td>То же</td>
+<td data-label="Ошибка"><code>ClassCastException: cannot cast Foo to Foo</code></td>
+<td data-label="Что произошло">Тот же класс от разных загрузчиков</td>
+<td data-label="Типичная причина">То же</td>
 </tr>
 </tbody>
 </table>
@@ -1904,7 +1904,7 @@ settings.gradle.kts
 <p>🔧 <strong>Под капотом.</strong> Почему компилятор молчит: он видит <strong>разрешённый</strong> classpath, в котором библиотека уже одна и той версии, которую выбрал сборщик. Проблема в том, что <em>другая</em> библиотека, скомпилированная кем-то раньше против <em>другой</em> версии, лежит в том же classpath уже в виде байткода. Её ссылки никто не перепроверял. Компилятор в принципе не может это поймать — для этого нужен отдельный анализ байткода всех зависимостей, чем и занимается, например, <code>maven-enforcer-plugin</code> с <code>banDuplicateClasses</code> и более серьёзные инструменты вроде <code>jdeps</code>.</p>
 </blockquote>
 <p><strong>Запуск.</strong> Три состояния одного проекта (<code>commons-text</code> 1.12.0 и <code>commons-lang3</code> в разных версиях), вывод программы <code>dq.App</code>:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Версия <code>commons-lang3</code></th>
@@ -1916,25 +1916,25 @@ settings.gradle.kts
 </thead>
 <tbody>
 <tr>
-<td>3.5 (прямая зависимость, ближе к корню)</td>
-<td>успешно</td>
-<td>работает</td>
-<td>работает</td>
-<td><code>NoSuchMethodError: ...Range.of(...)</code></td>
+<td data-label="Версия commons-lang3">3.5 (прямая зависимость, ближе к корню)</td>
+<td data-label="mvn compile">успешно</td>
+<td data-label="StringSubstitutor">работает</td>
+<td data-label="WordUtils">работает</td>
+<td data-label="NumericEntityEscaper"><code>NoSuchMethodError: ...Range.of(...)</code></td>
 </tr>
 <tr>
-<td>3.12.0 (закреплена в <code>dependencyManagement</code>)</td>
-<td>успешно</td>
-<td>работает</td>
-<td>работает</td>
-<td><code>NoSuchMethodError: ...Range.of(...)</code></td>
+<td data-label="Версия commons-lang3">3.12.0 (закреплена в <code>dependencyManagement</code>)</td>
+<td data-label="mvn compile">успешно</td>
+<td data-label="StringSubstitutor">работает</td>
+<td data-label="WordUtils">работает</td>
+<td data-label="NumericEntityEscaper"><code>NoSuchMethodError: ...Range.of(...)</code></td>
 </tr>
 <tr>
-<td>3.14.0 (выровнена или из BOM)</td>
-<td>успешно</td>
-<td>работает</td>
-<td>работает</td>
-<td>работает (<code>caf&amp;#233;</code>)</td>
+<td data-label="Версия commons-lang3">3.14.0 (выровнена или из BOM)</td>
+<td data-label="mvn compile">успешно</td>
+<td data-label="StringSubstitutor">работает</td>
+<td data-label="WordUtils">работает</td>
+<td data-label="NumericEntityEscaper">работает (<code>caf&amp;#233;</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -2200,7 +2200,7 @@ NumericEntityEscaper:
 <p><strong>4. Обновление.</strong> Поднять версию библиотеки, которая тянет старьё. Самое правильное и самое редко применяемое, потому что «мы не можем обновить, там мажор».</p>
 <p><strong>5. Shading с relocation.</strong> Крайняя мера — раздел 9.5.</p>
 <p><strong>Запуск.</strong> Три способа вылечить конфликт <code>commons-lang3</code>, каждый проверен запуском <code>dq.App</code>:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -2210,19 +2210,19 @@ NumericEntityEscaper:
 </thead>
 <tbody>
 <tr>
-<td>Выровнять прямую версию</td>
-<td>в POM <code>commons-lang3</code> 3.14.0 вместо 3.5</td>
-<td><code>NumericEntityEscaper: caf&amp;#233;</code></td>
+<td data-label="Способ">Выровнять прямую версию</td>
+<td data-label="Что изменено">в POM <code>commons-lang3</code> 3.14.0 вместо 3.5</td>
+<td data-label="Результат"><code>NumericEntityEscaper: caf&amp;#233;</code></td>
 </tr>
 <tr>
-<td>Импортировать BOM</td>
-<td>версии убраны из зависимостей, <code>platform-bom</code> в <code>dependencyManagement</code></td>
-<td>то же, <code>3.14.0</code></td>
+<td data-label="Способ">Импортировать BOM</td>
+<td data-label="Что изменено">версии убраны из зависимостей, <code>platform-bom</code> в <code>dependencyManagement</code></td>
+<td data-label="Результат">то же, <code>3.14.0</code></td>
 </tr>
 <tr>
-<td>Исключить без замены</td>
-<td><code>exclusion</code> на <code>commons-lang3</code></td>
-<td><code>NoClassDefFoundError</code>: так не лечится</td>
+<td data-label="Способ">Исключить без замены</td>
+<td data-label="Что изменено"><code>exclusion</code> на <code>commons-lang3</code></td>
+<td data-label="Результат"><code>NoClassDefFoundError</code>: так не лечится</td>
 </tr>
 </tbody>
 </table>
@@ -2402,7 +2402,7 @@ java lab.Main -&gt; lang3 в приложении: commons-lang3-3.5.jar
 
 <p>Отдельно полезна опция <code>--semantic-versioning</code>, которая «tells developers which part of the version you have to increment in order to follow semantic versioning» — то есть инструмент сам говорит, должен ли релиз быть патчем, минором или мажором. В CI это можно превратить в проверку: сравнить предложенную версию с вычисленной.</p>
 <p><strong>Альтернативы:</strong></p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Инструмент</th>
@@ -2412,24 +2412,24 @@ java lab.Main -&gt; lang3 в приложении: commons-lang3-3.5.jar
 </thead>
 <tbody>
 <tr>
-<td>japicmp</td>
-<td>Maven, Gradle</td>
-<td>Наиболее распространён; javassist; отчёты HTML/XML; semver-подсказка</td>
+<td data-label="Инструмент">japicmp</td>
+<td data-label="Экосистема">Maven, Gradle</td>
+<td data-label="Особенности">Наиболее распространён; javassist; отчёты HTML/XML; semver-подсказка</td>
 </tr>
 <tr>
-<td>Revapi</td>
-<td>Maven, CLI</td>
-<td>Более детальная модель совместимости и расширяемая система «differences»; строже настраивается, но сложнее</td>
+<td data-label="Инструмент">Revapi</td>
+<td data-label="Экосистема">Maven, CLI</td>
+<td data-label="Особенности">Более детальная модель совместимости и расширяемая система «differences»; строже настраивается, но сложнее</td>
 </tr>
 <tr>
-<td>binary-compatibility-validator</td>
-<td>Kotlin/Gradle (JetBrains)</td>
-<td>Дампит публичный ABI в <code>.api</code>-файл, который хранится в git; diff виден прямо в PR — очень удобно для ревью</td>
+<td data-label="Инструмент">binary-compatibility-validator</td>
+<td data-label="Экосистема">Kotlin/Gradle (JetBrains)</td>
+<td data-label="Особенности">Дампит публичный ABI в <code>.api</code>-файл, который хранится в git; diff виден прямо в PR — очень удобно для ревью</td>
 </tr>
 <tr>
-<td><code>jdeps</code>/<code>jdeprscan</code></td>
-<td>JDK</td>
-<td><code>jdeprscan</code> находит использование deprecated API JDK; не сравнивает две версии вашей библиотеки</td>
+<td data-label="Инструмент"><code>jdeps</code>/<code>jdeprscan</code></td>
+<td data-label="Экосистема">JDK</td>
+<td data-label="Особенности"><code>jdeprscan</code> находит использование deprecated API JDK; не сравнивает две версии вашей библиотеки</td>
 </tr>
 </tbody>
 </table>
@@ -2578,7 +2578,7 @@ mvn clean verify artifact:compare
 </blockquote>
 <h3 id="116-лицензии-зависимостей">11.6 Лицензии зависимостей</h3>
 <p>Лицензия транзитивной зависимости — юридическое обязательство вашего продукта. Категории риска для проприетарного backend-сервиса:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Категория</th>
@@ -2588,24 +2588,24 @@ mvn clean verify artifact:compare
 </thead>
 <tbody>
 <tr>
-<td>Permissive</td>
-<td>Apache-2.0, MIT, BSD-2/3, ISC</td>
-<td>Низкий: атрибуция, сохранение уведомлений. Apache-2.0 дополнительно даёт патентный грант</td>
+<td data-label="Категория">Permissive</td>
+<td data-label="Лицензии">Apache-2.0, MIT, BSD-2/3, ISC</td>
+<td data-label="Риск при использовании как библиотеки">Низкий: атрибуция, сохранение уведомлений. Apache-2.0 дополнительно даёт патентный грант</td>
 </tr>
 <tr>
-<td>Weak copyleft</td>
-<td>LGPL-2.1/3.0, EPL-1.0/2.0, MPL-2.0, CDDL</td>
-<td>Средний: изменения в самой библиотеке надо открывать; связывание обычно допустимо, но <strong>shading/relocation меняет картину</strong> — вы модифицируете и встраиваете</td>
+<td data-label="Категория">Weak copyleft</td>
+<td data-label="Лицензии">LGPL-2.1/3.0, EPL-1.0/2.0, MPL-2.0, CDDL</td>
+<td data-label="Риск при использовании как библиотеки">Средний: изменения в самой библиотеке надо открывать; связывание обычно допустимо, но <strong>shading/relocation меняет картину</strong> — вы модифицируете и встраиваете</td>
 </tr>
 <tr>
-<td>Strong copyleft</td>
-<td>GPL-2.0, GPL-3.0, <strong>AGPL-3.0</strong></td>
-<td>Высокий: распространение производного продукта требует открытия исходников. AGPL распространяет это и на сетевое использование (SaaS)</td>
+<td data-label="Категория">Strong copyleft</td>
+<td data-label="Лицензии">GPL-2.0, GPL-3.0, <strong>AGPL-3.0</strong></td>
+<td data-label="Риск при использовании как библиотеки">Высокий: распространение производного продукта требует открытия исходников. AGPL распространяет это и на сетевое использование (SaaS)</td>
 </tr>
 <tr>
-<td>Проприетарные/особые</td>
-<td>Oracle OTN (ojdbc старых версий), Elastic License, SSPL, BUSL</td>
-<td>Читать текст; часто запрещают предоставление как сервис</td>
+<td data-label="Категория">Проприетарные/особые</td>
+<td data-label="Лицензии">Oracle OTN (ojdbc старых версий), Elastic License, SSPL, BUSL</td>
+<td data-label="Риск при использовании как библиотеки">Читать текст; часто запрещают предоставление как сервис</td>
 </tr>
 </tbody>
 </table>
@@ -2696,7 +2696,7 @@ mvn clean verify artifact:compare
 <h2 id="12-скорость-сборки">12. Скорость сборки</h2>
 <h3 id="121-распределение-времени-сборки">12.1 Распределение времени сборки</h3>
 <p>Распределение на типичном Spring Boot-проекте среднего размера (25 модулей, 200 тыс. строк):</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Этап</th>
@@ -2706,39 +2706,39 @@ mvn clean verify artifact:compare
 </thead>
 <tbody>
 <tr>
-<td>Разрешение зависимостей</td>
-<td>5–30 %</td>
-<td>Холодный кеш, медленный/далёкий Nexus, SNAPSHOT с <code>updatePolicy=always</code>, диапазоны версий</td>
+<td data-label="Этап">Разрешение зависимостей</td>
+<td data-label="Доля">5–30 %</td>
+<td data-label="Что влияет">Холодный кеш, медленный/далёкий Nexus, SNAPSHOT с <code>updatePolicy=always</code>, диапазоны версий</td>
 </tr>
 <tr>
-<td>Компиляция Java</td>
-<td>10–20 %</td>
-<td>Размер модуля, annotation processors (Lombok, MapStruct, Hibernate metamodel), <code>-Werror</code></td>
+<td data-label="Этап">Компиляция Java</td>
+<td data-label="Доля">10–20 %</td>
+<td data-label="Что влияет">Размер модуля, annotation processors (Lombok, MapStruct, Hibernate metamodel), <code>-Werror</code></td>
 </tr>
 <tr>
-<td>Компиляция Kotlin</td>
-<td>15–35 %</td>
-<td>Kotlin компилируется существенно медленнее Java; kapt особенно дорог (KSP быстрее)</td>
+<td data-label="Этап">Компиляция Kotlin</td>
+<td data-label="Доля">15–35 %</td>
+<td data-label="Что влияет">Kotlin компилируется существенно медленнее Java; kapt особенно дорог (KSP быстрее)</td>
 </tr>
 <tr>
-<td>Юнит-тесты</td>
-<td>15–30 %</td>
-<td>Количество, форки JVM, старт Spring-контекста</td>
+<td data-label="Этап">Юнит-тесты</td>
+<td data-label="Доля">15–30 %</td>
+<td data-label="Что влияет">Количество, форки JVM, старт Spring-контекста</td>
 </tr>
 <tr>
-<td>Интеграционные тесты</td>
-<td>20–60 %</td>
-<td>Testcontainers (старт контейнеров), количество разных Spring-контекстов</td>
+<td data-label="Этап">Интеграционные тесты</td>
+<td data-label="Доля">20–60 %</td>
+<td data-label="Что влияет">Testcontainers (старт контейнеров), количество разных Spring-контекстов</td>
 </tr>
 <tr>
-<td>Упаковка</td>
-<td>3–10 %</td>
-<td>Fat-jar, shading, генерация образа</td>
+<td data-label="Этап">Упаковка</td>
+<td data-label="Доля">3–10 %</td>
+<td data-label="Что влияет">Fat-jar, shading, генерация образа</td>
 </tr>
 <tr>
-<td>Прочие плагины</td>
-<td>5–20 %</td>
-<td>Spotless, Checkstyle, SpotBugs, JaCoCo, генерация OpenAPI, license-check</td>
+<td data-label="Этап">Прочие плагины</td>
+<td data-label="Доля">5–20 %</td>
+<td data-label="Что влияет">Spotless, Checkstyle, SpotBugs, JaCoCo, генерация OpenAPI, license-check</td>
 </tr>
 </tbody>
 </table>
@@ -2835,7 +2835,7 @@ grep -E <span class="s1">'Downloading|Downloaded'</span> build.log <span class="
 
 <p>Этот скрипт — упрощение: он не учитывает, что изменение в корневом POM или в <code>build-logic</code> затрагивает всё. Полноценное решение — инструменты для монорепо.</p>
 <h3 id="124-монорепозиторий-и-полирепозиторий">12.4 Монорепозиторий и полирепозиторий</h3>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аспект</th>
@@ -2845,34 +2845,34 @@ grep -E <span class="s1">'Downloading|Downloaded'</span> build.log <span class="
 </thead>
 <tbody>
 <tr>
-<td>Атомарное изменение через несколько модулей</td>
-<td>Один PR</td>
-<td>N PR + координация версий</td>
+<td data-label="Аспект">Атомарное изменение через несколько модулей</td>
+<td data-label="Монорепо">Один PR</td>
+<td data-label="Полирепо">N PR + координация версий</td>
 </tr>
 <tr>
-<td>Время сборки</td>
-<td>Растёт со всем репозиторием, если не резать</td>
-<td>Ограничено одним сервисом</td>
+<td data-label="Аспект">Время сборки</td>
+<td data-label="Монорепо">Растёт со всем репозиторием, если не резать</td>
+<td data-label="Полирепо">Ограничено одним сервисом</td>
 </tr>
 <tr>
-<td>Версионирование внутренних библиотек</td>
-<td>Не нужно (всё из исходников)</td>
-<td>Нужно, со всеми проблемами раздела 10</td>
+<td data-label="Аспект">Версионирование внутренних библиотек</td>
+<td data-label="Монорепо">Не нужно (всё из исходников)</td>
+<td data-label="Полирепо">Нужно, со всеми проблемами раздела 10</td>
 </tr>
 <tr>
-<td>«Кто владеет»</td>
-<td>Требует CODEOWNERS и дисциплины</td>
-<td>Естественно</td>
+<td data-label="Аспект">«Кто владеет»</td>
+<td data-label="Монорепо">Требует CODEOWNERS и дисциплины</td>
+<td data-label="Полирепо">Естественно</td>
 </tr>
 <tr>
-<td>Инструментарий</td>
-<td>Требует сборки «только изменённого», иначе невыносимо</td>
-<td>Стандартный</td>
+<td data-label="Аспект">Инструментарий</td>
+<td data-label="Монорепо">Требует сборки «только изменённого», иначе невыносимо</td>
+<td data-label="Полирепо">Стандартный</td>
 </tr>
 <tr>
-<td>Согласованность версий внешних зависимостей</td>
-<td>Автоматическая</td>
-<td>Нужен BOM и его продвижение</td>
+<td data-label="Аспект">Согласованность версий внешних зависимостей</td>
+<td data-label="Монорепо">Автоматическая</td>
+<td data-label="Полирепо">Нужен BOM и его продвижение</td>
 </tr>
 </tbody>
 </table>
@@ -3522,7 +3522,7 @@ grep -E <span class="s1">'Downloading|Downloaded'</span> build.log <span class="
 </code></pre></div>
 
 <h3 id="135-размещение-общих-настроек-сборки">13.5 Размещение общих настроек сборки</h3>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что</th>
@@ -3532,44 +3532,44 @@ grep -E <span class="s1">'Downloading|Downloaded'</span> build.log <span class="
 </thead>
 <tbody>
 <tr>
-<td>Версии внешних зависимостей</td>
-<td><code>dependencyManagement</code> в parent + импорт BOM</td>
-<td><code>platform()</code> + version catalog</td>
+<td data-label="Что">Версии внешних зависимостей</td>
+<td data-label="Maven"><code>dependencyManagement</code> в parent + импорт BOM</td>
+<td data-label="Gradle"><code>platform()</code> + version catalog</td>
 </tr>
 <tr>
-<td>Версии плагинов</td>
-<td><code>pluginManagement</code> в parent</td>
-<td><code>build-logic</code> + version catalog <code>[plugins]</code></td>
+<td data-label="Что">Версии плагинов</td>
+<td data-label="Maven"><code>pluginManagement</code> в parent</td>
+<td data-label="Gradle"><code>build-logic</code> + version catalog <code>[plugins]</code></td>
 </tr>
 <tr>
-<td>Конфигурация плагинов</td>
-<td><code>pluginManagement</code> в parent</td>
-<td>convention-плагин в <code>build-logic</code></td>
+<td data-label="Что">Конфигурация плагинов</td>
+<td data-label="Maven"><code>pluginManagement</code> в parent</td>
+<td data-label="Gradle">convention-плагин в <code>build-logic</code></td>
 </tr>
 <tr>
-<td>Координаты (чтобы не дублировать строки)</td>
-<td>свойства <code>${...}</code></td>
-<td><code>libs.versions.toml</code></td>
+<td data-label="Что">Координаты (чтобы не дублировать строки)</td>
+<td data-label="Maven">свойства <code>${...}</code></td>
+<td data-label="Gradle"><code>libs.versions.toml</code></td>
 </tr>
 <tr>
-<td>Репозитории и учётки</td>
-<td><code>~/.m2/settings.xml</code> / CI-файл</td>
-<td><code>settings.gradle.kts</code> + <code>~/.gradle/gradle.properties</code></td>
+<td data-label="Что">Репозитории и учётки</td>
+<td data-label="Maven"><code>~/.m2/settings.xml</code> / CI-файл</td>
+<td data-label="Gradle"><code>settings.gradle.kts</code> + <code>~/.gradle/gradle.properties</code></td>
 </tr>
 <tr>
-<td>Флаги запуска</td>
-<td><code>.mvn/maven.config</code>, <code>.mvn/jvm.config</code></td>
-<td><code>gradle.properties</code></td>
+<td data-label="Что">Флаги запуска</td>
+<td data-label="Maven"><code>.mvn/maven.config</code>, <code>.mvn/jvm.config</code></td>
+<td data-label="Gradle"><code>gradle.properties</code></td>
 </tr>
 <tr>
-<td>Версия сборщика</td>
-<td><code>.mvn/wrapper/maven-wrapper.properties</code></td>
-<td><code>gradle/wrapper/gradle-wrapper.properties</code></td>
+<td data-label="Что">Версия сборщика</td>
+<td data-label="Maven"><code>.mvn/wrapper/maven-wrapper.properties</code></td>
+<td data-label="Gradle"><code>gradle/wrapper/gradle-wrapper.properties</code></td>
 </tr>
 <tr>
-<td>Версия JDK</td>
-<td><code>maven.compiler.release</code> + toolchains</td>
-<td><code>java.toolchain</code></td>
+<td data-label="Что">Версия JDK</td>
+<td data-label="Maven"><code>maven.compiler.release</code> + toolchains</td>
+<td data-label="Gradle"><code>java.toolchain</code></td>
 </tr>
 </tbody>
 </table>
@@ -4187,7 +4187,7 @@ Configuration cache entry stored.
 </code></pre></div>
 
 <p><strong>Запуск.</strong> Набор команд, которыми получены все выводы этой главы, с проверкой результата:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Задача</th>
@@ -4197,34 +4197,34 @@ Configuration cache entry stored.
 </thead>
 <tbody>
 <tr>
-<td>Кто победил в конфликте</td>
-<td><code>mvn dependency:tree -Dverbose -Dincludes=org.apache.commons:commons-lang3</code></td>
-<td>строки <code>omitted for conflict with ...</code></td>
+<td data-label="Задача">Кто победил в конфликте</td>
+<td data-label="Команда"><code>mvn dependency:tree -Dverbose -Dincludes=org.apache.commons:commons-lang3</code></td>
+<td data-label="Что проверить в выводе">строки <code>omitted for conflict with ...</code></td>
 </tr>
 <tr>
-<td>Что реально в области</td>
-<td><code>mvn dependency:build-classpath -DincludeScope=runtime -Dmdep.outputFile=cp.txt</code></td>
-<td>число файлов (параметр <code>mdep.includeScope</code> ошибочный, 4.1)</td>
+<td data-label="Задача">Что реально в области</td>
+<td data-label="Команда"><code>mvn dependency:build-classpath -DincludeScope=runtime -Dmdep.outputFile=cp.txt</code></td>
+<td data-label="Что проверить в выводе">число файлов (параметр <code>mdep.includeScope</code> ошибочный, 4.1)</td>
 </tr>
 <tr>
-<td>Что объявлено лишнего</td>
-<td><code>mvn dependency:analyze</code></td>
-<td>«unused» требует ручной проверки (4.3)</td>
+<td data-label="Задача">Что объявлено лишнего</td>
+<td data-label="Команда"><code>mvn dependency:analyze</code></td>
+<td data-label="Что проверить в выводе">«unused» требует ручной проверки (4.3)</td>
 </tr>
 <tr>
-<td>Что реально собирает Maven</td>
-<td><code>mvn help:effective-pom -Doutput=eff.xml</code></td>
-<td>версии плагинов (2.4)</td>
+<td data-label="Задача">Что реально собирает Maven</td>
+<td data-label="Команда"><code>mvn help:effective-pom -Doutput=eff.xml</code></td>
+<td data-label="Что проверить в выводе">версии плагинов (2.4)</td>
 </tr>
 <tr>
-<td>Что привязано к фазам</td>
-<td><code>mvn help:describe -Dcmd=package</code></td>
-<td>пустые фазы интеграционных тестов (3.2)</td>
+<td data-label="Задача">Что привязано к фазам</td>
+<td data-label="Команда"><code>mvn help:describe -Dcmd=package</code></td>
+<td data-label="Что проверить в выводе">пустые фазы интеграционных тестов (3.2)</td>
 </tr>
 <tr>
-<td>Почему процессор молчит</td>
-<td><code>-XprintRounds</code> в <code>compilerArgs</code></td>
-<td>число раундов и <code>generated-sources</code> (16.4)</td>
+<td data-label="Задача">Почему процессор молчит</td>
+<td data-label="Команда"><code>-XprintRounds</code> в <code>compilerArgs</code></td>
+<td data-label="Что проверить в выводе">число раундов и <code>generated-sources</code> (16.4)</td>
 </tr>
 </tbody>
 </table>
@@ -4524,5 +4524,5 @@ Kotlin делает классы и методы <code>final</code> по умо�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-задачи-системы-сборки">1. Задачи системы сборки</a></li><li><a href="#2-maven-модель-проекта">2. Maven: модель проекта</a></li><li><a href="#3-maven-жизненный-цикл-и-плагины">3. Maven: жизненный цикл и плагины</a></li><li><a href="#4-maven-зависимости">4. Maven: зависимости</a></li><li><a href="#5-maven-многомодульность-и-инструментарий">5. Maven: многомодульность и инструментарий</a></li><li><a href="#6-gradle-модель-выполнения">6. Gradle: модель выполнения</a></li><li><a href="#7-gradle-зависимости-и-структура">7. Gradle: зависимости и структура</a></li><li><a href="#8-сравнение-maven-и-gradle">8. Сравнение Maven и Gradle</a></li><li><a href="#9-конфликты-зависимостей-на-практике">9. Конфликты зависимостей на практике</a></li><li><a href="#10-версионирование-и-бинарная-совместимость">10. Версионирование и бинарная совместимость</a></li><li><a href="#11-репозитории-и-цепочка-поставки">11. Репозитории и цепочка поставки</a></li><li><a href="#12-скорость-сборки">12. Скорость сборки</a></li><li><a href="#13-сборка-spring-проекта">13. Сборка Spring-проекта</a></li><li><a href="#14-сборка-kotlin-проектов">14. Сборка Kotlin-проектов</a></li><li><a href="#15-jdk-для-сборки-toolchains">15. JDK для сборки: toolchains</a></li><li><a href="#16-процессоры-аннотаций-в-сборке">16. Процессоры аннотаций в сборке</a></li><li><a href="#17-разобранные-инциденты">17. Разобранные инциденты</a></li><li><a href="#18-грабли-и-антипаттерны">18. Грабли и антипаттерны</a></li><li><a href="#19-диагностика">19. Диагностика</a></li><li><a href="#20-вопросы-на-интервью">20. Вопросы на интервью</a></li><li><a href="#21-попробовать-руками">21. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

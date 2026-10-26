@@ -3,7 +3,7 @@
 <title>8. Многопоточность — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Многопоточность">
 <a class="skip" href="#content">К тексту</a>
@@ -708,7 +708,7 @@ volatile      i++                  2,332,560 (ожидалось 4,000,000)
 <h3 id="26-способы-безопасной-публикации">2.6 Способы безопасной публикации</h3>
 <p>Способ безопасной публикации — это конкретная связь happens-before, по которой состояние объекта доходит до читателя, и обходится каждый способ по-своему. Книга «Java Concurrency in Practice» (Гётц и др., далее JCIP; гл. 3.5, в русском издании с. 92–93) перечисляет четыре канонических способа, и к ним стоит относиться как к чеклисту на код-ревью: если не применён ни один, публикация небезопасна. Ниже они сведены в таблицу, а после неё разобраны пятый способ, которым на практике пользуются чаще всего, и особый случай фактически неизменяемых объектов.</p>
 <p>В таблице для каждого способа указано, как он выглядит в коде, какая именно связь happens-before возникает и во что он обходится; последняя колонка важнее всего, когда выбираешь между ними:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Способ</th>
@@ -719,28 +719,28 @@ volatile      i++                  2,332,560 (ожидалось 4,000,000)
 </thead>
 <tbody>
 <tr>
-<td><strong>1. Статический инициализатор</strong></td>
-<td><code>static final Config C = load();</code></td>
-<td>гарантия загрузчика классов: инициализация класса happens-before любого использования</td>
-<td>ленивость только «по первому обращению к классу»; исключение → <code>ExceptionInInitializerError</code></td>
+<td data-label="Способ"><strong>1. Статический инициализатор</strong></td>
+<td data-label="Как выглядит"><code>static final Config C = load();</code></td>
+<td data-label="Что даёт HB">гарантия загрузчика классов: инициализация класса happens-before любого использования</td>
+<td data-label="Издержки">ленивость только «по первому обращению к классу»; исключение → <code>ExceptionInInitializerError</code></td>
 </tr>
 <tr>
-<td><strong>2. <code>volatile</code> / <code>AtomicReference</code></strong></td>
-<td><code>volatile Config c; c = new Config(...)</code></td>
-<td>volatile write → volatile read</td>
-<td>барьер на записи; на чтении бесплатно на x86</td>
+<td data-label="Способ"><strong>2. <code>volatile</code> / <code>AtomicReference</code></strong></td>
+<td data-label="Как выглядит"><code>volatile Config c; c = new Config(...)</code></td>
+<td data-label="Что даёт HB">volatile write → volatile read</td>
+<td data-label="Издержки">барьер на записи; на чтении бесплатно на x86</td>
 </tr>
 <tr>
-<td><strong>3. <code>final</code>-поле корректно сконструированного объекта</strong></td>
-<td><code>record Snapshot(Map&lt;K,V&gt; data) {}</code></td>
-<td>freeze в конце конструктора</td>
-<td>требует, чтобы <code>this</code> не утёк, и чтобы достижимое состояние не менялось после</td>
+<td data-label="Способ"><strong>3. <code>final</code>-поле корректно сконструированного объекта</strong></td>
+<td data-label="Как выглядит"><code>record Snapshot(Map&lt;K,V&gt; data) {}</code></td>
+<td data-label="Что даёт HB">freeze в конце конструктора</td>
+<td data-label="Издержки">требует, чтобы <code>this</code> не утёк, и чтобы достижимое состояние не менялось после</td>
 </tr>
 <tr>
-<td><strong>4. Публикация под локом</strong></td>
-<td>запись и чтение под одним монитором</td>
-<td>unlock → lock</td>
-<td>сериализация всех читателей</td>
+<td data-label="Способ"><strong>4. Публикация под локом</strong></td>
+<td data-label="Как выглядит">запись и чтение под одним монитором</td>
+<td data-label="Что даёт HB">unlock → lock</td>
+<td data-label="Издержки">сериализация всех читателей</td>
 </tr>
 </tbody>
 </table>
@@ -1072,7 +1072,7 @@ T1 завершил pop, вернул A; стек: [B C ]  &lt;-- узел B у�
 <h3 id="34-longadder-striped64-и-разнесение-конкуренции-по-ячейкам">3.4 LongAdder, Striped64 и разнесение конкуренции по ячейкам</h3>
 <p>Счётчик метрик «запросов к антифроду» увеличивают все 16 потоков обработки, а читают раз в десять секунд. Если сделать его <code>AtomicLong</code>, каждый поток раз за разом делает CAS на одной и той же переменной, и ядра передают друг другу одну кэш-линию. Решение этой проблемы — <code>LongAdder</code>: счётчик, который вместо одной переменной держит набор ячеек, так что разные потоки прибавляют к разным ячейкам, а сумма собирается только при чтении. Борьбу многих потоков за одну кэш-линию называют конкуренцией за неё (<em>contention</em>). Ниже на замере видно, насколько она дорога, затем разобрано устройство базового класса <code>Striped64</code>, цена такой схемы при чтении, смысл аннотации <code>@Contended</code> на ячейках и обобщение в виде <code>LongAccumulator</code>.</p>
 <p>Замер простой, без JMH (глава 45), поэтому смотрите на порядок величин, а не на цифры. На AMD Ryzen 7 8700G (16 логических процессоров) с Temurin 21.0.10 пять миллионов прибавлений на поток дали такую картину, где время указано на одну операцию, посчитанную по общему времени всех потоков:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">Потоков</th>
@@ -1082,14 +1082,14 @@ T1 завершил pop, вернул A; стек: [B C ]  &lt;-- узел B у�
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td>около 1,7 нс</td>
-<td>около 2,1 нс</td>
+<td data-label="Потоков" class="num">1</td>
+<td data-label="AtomicLong.incrementAndGet()">около 1,7 нс</td>
+<td data-label="LongAdder.increment()">около 2,1 нс</td>
 </tr>
 <tr>
-<td class="num">16</td>
-<td>около 9,3 нс</td>
-<td>0,2–0,5 нс</td>
+<td data-label="Потоков" class="num">16</td>
+<td data-label="AtomicLong.incrementAndGet()">около 9,3 нс</td>
+<td data-label="LongAdder.increment()">0,2–0,5 нс</td>
 </tr>
 </tbody>
 </table>
@@ -1173,7 +1173,7 @@ sum() = 145000000, AtomicLong = 145000000
 <h3 id="35-varhandle-и-режимы-доступа">3.5 VarHandle и режимы доступа</h3>
 <p><code>VarHandle</code> (JDK 9, JEP 193) — это типобезопасный указатель на поле, элемент массива или участок байтового буфера, через который можно выполнять атомарные операции; он заменил для этой цели внутренний класс <code>Unsafe</code>. Главная его ценность не в самом CAS, а в режимах доступа, которые слабее volatile. Нужны они там, где полная volatile-семантика избыточна, а её барьеры заметны по цене. Ниже разберём четыре режима и их гарантии, пример, где хватает режима opaque, и честную оговорку о том, кому всё это вообще нужно.</p>
 <p>Получают <code>VarHandle</code> через <code>MethodHandles.lookup().findVarHandle(Owner.class, "field", int.class)</code> и обычно кладут в <code>static final</code>-поле: тогда JIT встраивает вызовы и превращает их в прямые инструкции. Явные <strong>режимы доступа</strong> перечислены в таблице (<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/invoke/VarHandle.html">VarHandle javadoc, Java 21</a>). Режимы идут от самого слабого к самому сильному, и каждый следующий включает гарантии предыдущего, поэтому читать таблицу стоит сверху вниз:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Режим</th>
@@ -1183,24 +1183,24 @@ sum() = 145000000, AtomicLong = 145000000
 </thead>
 <tbody>
 <tr>
-<td><strong>Plain</strong></td>
-<td><code>get</code>/<code>set</code></td>
-<td>Битовая атомарность только для ссылок и ≤32-битных примитивов; никакого межпоточного порядка. Эквивалент обычного поля.</td>
+<td data-label="Режим"><strong>Plain</strong></td>
+<td data-label="Методы"><code>get</code>/<code>set</code></td>
+<td data-label="Гарантии">Битовая атомарность только для ссылок и ≤32-битных примитивов; никакого межпоточного порядка. Эквивалент обычного поля.</td>
 </tr>
 <tr>
-<td><strong>Opaque</strong></td>
-<td><code>getOpaque</code>/<code>setOpaque</code></td>
-<td>Битовая атомарность для всех типов (включая <code>long</code>), когерентность <em>по этой переменной</em> (чтения не «откатываются» назад), прогресс — запись когда-нибудь станет видна. Никакого порядка относительно других переменных.</td>
+<td data-label="Режим"><strong>Opaque</strong></td>
+<td data-label="Методы"><code>getOpaque</code>/<code>setOpaque</code></td>
+<td data-label="Гарантии">Битовая атомарность для всех типов (включая <code>long</code>), когерентность <em>по этой переменной</em> (чтения не «откатываются» назад), прогресс — запись когда-нибудь станет видна. Никакого порядка относительно других переменных.</td>
 </tr>
 <tr>
-<td><strong>Acquire/Release</strong></td>
-<td><code>getAcquire</code>/<code>setRelease</code>, <code>compareAndExchangeAcquire</code>…</td>
-<td>Opaque + чтение-acquire и всё после него упорядочены после парной записи-release и всего до неё. Это «volatile без total order»: ровно то, что нужно для публикации.</td>
+<td data-label="Режим"><strong>Acquire/Release</strong></td>
+<td data-label="Методы"><code>getAcquire</code>/<code>setRelease</code>, <code>compareAndExchangeAcquire</code>…</td>
+<td data-label="Гарантии">Opaque + чтение-acquire и всё после него упорядочены после парной записи-release и всего до неё. Это «volatile без total order»: ровно то, что нужно для публикации.</td>
 </tr>
 <tr>
-<td><strong>Volatile</strong></td>
-<td><code>getVolatile</code>/<code>setVolatile</code>, <code>compareAndSet</code>, <code>getAndAdd</code>…</td>
-<td>Acquire/Release + все volatile-операции полностью упорядочены между собой. Семантика ключевого слова <code>volatile</code>.</td>
+<td data-label="Режим"><strong>Volatile</strong></td>
+<td data-label="Методы"><code>getVolatile</code>/<code>setVolatile</code>, <code>compareAndSet</code>, <code>getAndAdd</code>…</td>
+<td data-label="Гарантии">Acquire/Release + все volatile-операции полностью упорядочены между собой. Семантика ключевого слова <code>volatile</code>.</td>
 </tr>
 </tbody>
 </table>
@@ -1869,7 +1869,7 @@ lockInterruptibly: прервано, InterruptedException
 
 <p>У <code>StampedLock</code> есть ограничения, и каждое оборачивается граблями. Он нереентерабелен: повторный <code>writeLock()</code> из потока, который уже держит запись, вешает поток (проверено: <code>tryWriteLock()</code> при занятой записи вернул <code>0</code>, то есть отказ). У него нет <code>Condition</code>. Штамп можно освободить из другого потока, потому что у блокировки нет владельца, и это усложняет отладку. В оптимистичной секции нельзя делать ничего с побочными эффектами и нельзя разыменовывать прочитанные ссылки до <code>validate</code>, потому что объект мог оказаться в несогласованном состоянии. Javadoc прямо называет <code>StampedLock</code> внутренней утилитой для построения потокобезопасных компонентов, а не прикладным инструментом.</p>
 <p>Таблица сводит четыре вида блокировок по критериям, которые решают выбор. Жирным выделены ограничения <code>StampedLock</code>, о которых чаще всего забывают, а последняя строка говорит, где каждый вид уместен:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Критерий</th>
@@ -1881,46 +1881,46 @@ lockInterruptibly: прервано, InterruptedException
 </thead>
 <tbody>
 <tr>
-<td>Реентерабельность</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
-<td><strong>нет</strong></td>
+<td data-label="Критерий">Реентерабельность</td>
+<td data-label="synchronized">да</td>
+<td data-label="ReentrantLock">да</td>
+<td data-label="ReentrantReadWriteLock">да</td>
+<td data-label="StampedLock"><strong>нет</strong></td>
 </tr>
 <tr>
-<td>Таймаут / tryLock</td>
-<td>нет</td>
-<td>да</td>
-<td>да</td>
-<td>да</td>
+<td data-label="Критерий">Таймаут / tryLock</td>
+<td data-label="synchronized">нет</td>
+<td data-label="ReentrantLock">да</td>
+<td data-label="ReentrantReadWriteLock">да</td>
+<td data-label="StampedLock">да</td>
 </tr>
 <tr>
-<td>Несколько условий</td>
-<td>нет (один wait set)</td>
-<td>да</td>
-<td>да (только write)</td>
-<td><strong>нет</strong></td>
+<td data-label="Критерий">Несколько условий</td>
+<td data-label="synchronized">нет (один wait set)</td>
+<td data-label="ReentrantLock">да</td>
+<td data-label="ReentrantReadWriteLock">да (только write)</td>
+<td data-label="StampedLock"><strong>нет</strong></td>
 </tr>
 <tr>
-<td>Читатели параллельно</td>
-<td>нет</td>
-<td>нет</td>
-<td>да, с CAS на общем состоянии</td>
-<td>да, optimistic без записи в память</td>
+<td data-label="Критерий">Читатели параллельно</td>
+<td data-label="synchronized">нет</td>
+<td data-label="ReentrantLock">нет</td>
+<td data-label="ReentrantReadWriteLock">да, с CAS на общем состоянии</td>
+<td data-label="StampedLock">да, optimistic без записи в память</td>
 </tr>
 <tr>
-<td>Пиннинг virtual threads (JDK 21)</td>
-<td>да</td>
-<td>нет</td>
-<td>нет</td>
-<td>нет</td>
+<td data-label="Критерий">Пиннинг virtual threads (JDK 21)</td>
+<td data-label="synchronized">да</td>
+<td data-label="ReentrantLock">нет</td>
+<td data-label="ReentrantReadWriteLock">нет</td>
+<td data-label="StampedLock">нет</td>
 </tr>
 <tr>
-<td>Где уместен</td>
-<td>простые критические секции</td>
-<td>нужны tryLock/Condition/прерывание</td>
-<td>чтения длинные и частые, записи редкие</td>
-<td>очень частые короткие чтения, инфраструктурный код</td>
+<td data-label="Критерий">Где уместен</td>
+<td data-label="synchronized">простые критические секции</td>
+<td data-label="ReentrantLock">нужны tryLock/Condition/прерывание</td>
+<td data-label="ReentrantReadWriteLock">чтения длинные и частые, записи редкие</td>
+<td data-label="StampedLock">очень частые короткие чтения, инфраструктурный код</td>
 </tr>
 </tbody>
 </table>
@@ -2039,7 +2039,7 @@ StampedLock, optimistic read: 179 мс
 <h3 id="46-mark-word-lock-stack-и-тяжёлая-блокировка">4.6 Mark word, lock stack и тяжёлая блокировка</h3>
 <p>Инфляция блокировки (<em>lock inflation</em>) — это переход монитора из лёгкого режима в тяжёлый, с нативной структурой <code>ObjectMonitor</code>. Разбирать её по шагам полезно потому, что именно этим объясняются состояния потоков в thread dump и неожиданные эффекты вроде влияния <code>hashCode()</code> на блокировку. Ниже разберём раскладку битов mark word, шаги захвата монитора (<code>monitorenter</code>) в JDK 23+, устройство <code>ObjectMonitor</code> и разницу между entry set и wait set, затем дефляцию и, наконец, то, почему удалили biased locking.</p>
 <p>Mark word занимает первые 64 бита заголовка объекта: младшие биты (тег) кодируют состояние, а остальные биты заняты разным содержимым в зависимости от этого состояния. Таблица показывает раскладку для 64-битного HotSpot со схемой LM_LIGHTWEIGHT, которая действует по умолчанию с JDK 23; смотреть в ней стоит на то, что именно лежит в оставшихся битах в каждом состоянии:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Состояние</th>
@@ -2049,24 +2049,24 @@ StampedLock, optimistic read: 179 мс
 </thead>
 <tbody>
 <tr>
-<td>Unlocked (normal)</td>
-<td class="num"><code>01</code></td>
-<td>identity hash (31 бит, если вычислен), возраст GC (4 бита), unused</td>
+<td data-label="Состояние">Unlocked (normal)</td>
+<td data-label="Младшие биты" class="num"><code>01</code></td>
+<td data-label="Что в остальных битах">identity hash (31 бит, если вычислен), возраст GC (4 бита), unused</td>
 </tr>
 <tr>
-<td>Locked (lightweight)</td>
-<td class="num"><code>00</code></td>
-<td>в LM_LIGHTWEIGHT — ничего полезного: факт «залочено», владельца ищут по lock stack; в старом LM_LEGACY — указатель на lock record в стеке владельца</td>
+<td data-label="Состояние">Locked (lightweight)</td>
+<td data-label="Младшие биты" class="num"><code>00</code></td>
+<td data-label="Что в остальных битах">в LM_LIGHTWEIGHT — ничего полезного: факт «залочено», владельца ищут по lock stack; в старом LM_LEGACY — указатель на lock record в стеке владельца</td>
 </tr>
 <tr>
-<td>Inflated (monitor)</td>
-<td class="num"><code>10</code></td>
-<td>указатель на нативный <code>ObjectMonitor</code></td>
+<td data-label="Состояние">Inflated (monitor)</td>
+<td data-label="Младшие биты" class="num"><code>10</code></td>
+<td data-label="Что в остальных битах">указатель на нативный <code>ObjectMonitor</code></td>
 </tr>
 <tr>
-<td>Marked for GC</td>
-<td class="num"><code>11</code></td>
-<td>forwarding pointer (используется сборщиком при перемещении)</td>
+<td data-label="Состояние">Marked for GC</td>
+<td data-label="Младшие биты" class="num"><code>11</code></td>
+<td data-label="Что в остальных битах">forwarding pointer (используется сборщиком при перемещении)</td>
 </tr>
 </tbody>
 </table>
@@ -2144,7 +2144,7 @@ StampedLock, optimistic read: 179 мс
 <p>Участники регистрируются (<code>register</code>) и снимаются с учёта (<code>arriveAndDeregister</code>) прямо на ходу. <code>arriveAndAwaitAdvance()</code> отмечает прибытие и ждёт остальных в текущей фазе, а <code>arrive()</code> лишь отмечается и не ждёт. Переопределяемый метод <code>onAdvance(phase, parties)</code> решает, завершать ли фазер, и для завершения возвращает <code>true</code>. Фазеры можно выстраивать в дерево, чтобы при тысячах участников потоки не боролись за один общий счётчик.</p>
 <p><code>Phaser</code> оправдан в двух ситуациях. Первая — многофазный конвейер (<em>pipeline</em>), где число рабочих потоков меняется между фазами: часть закончила и ушла, добавились новые. Вторая — барьер, который ждёт не всех, а только подмножество участников. В остальных случаях он избыточен, и <code>CountDownLatch</code> читается проще.</p>
 <p>Таблица сводит синхронизаторы по четырём признакам, которые определяют выбор. Обратите внимание на колонку «Владелец»: ни у одного из них владельца нет, и именно этим они отличаются от блокировок. В последней строке стоит <code>Exchanger</code> — синхронизатор, в котором два потока встречаются и обмениваются объектами.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Синхронизатор</th>
@@ -2156,39 +2156,39 @@ StampedLock, optimistic read: 179 мс
 </thead>
 <tbody>
 <tr>
-<td><code>Semaphore</code></td>
-<td>да</td>
-<td>любые</td>
-<td>нет</td>
-<td>ограничить параллелизм (bulkhead)</td>
+<td data-label="Синхронизатор"><code>Semaphore</code></td>
+<td data-label="Многоразовый">да</td>
+<td data-label="Участники">любые</td>
+<td data-label="Владелец">нет</td>
+<td data-label="Типовой сценарий">ограничить параллелизм (bulkhead)</td>
 </tr>
 <tr>
-<td><code>CountDownLatch</code></td>
-<td><strong>нет</strong></td>
-<td>любые</td>
-<td>нет</td>
-<td>дождаться N событий один раз</td>
+<td data-label="Синхронизатор"><code>CountDownLatch</code></td>
+<td data-label="Многоразовый"><strong>нет</strong></td>
+<td data-label="Участники">любые</td>
+<td data-label="Владелец">нет</td>
+<td data-label="Типовой сценарий">дождаться N событий один раз</td>
 </tr>
 <tr>
-<td><code>CyclicBarrier</code></td>
-<td>да</td>
-<td>фиксированные N</td>
-<td>нет</td>
-<td>синхронизация фаз между N воркерами</td>
+<td data-label="Синхронизатор"><code>CyclicBarrier</code></td>
+<td data-label="Многоразовый">да</td>
+<td data-label="Участники">фиксированные N</td>
+<td data-label="Владелец">нет</td>
+<td data-label="Типовой сценарий">синхронизация фаз между N воркерами</td>
 </tr>
 <tr>
-<td><code>Phaser</code></td>
-<td>да</td>
-<td>динамические</td>
-<td>нет</td>
-<td>многофазные конвейеры с меняющимся составом</td>
+<td data-label="Синхронизатор"><code>Phaser</code></td>
+<td data-label="Многоразовый">да</td>
+<td data-label="Участники">динамические</td>
+<td data-label="Владелец">нет</td>
+<td data-label="Типовой сценарий">многофазные конвейеры с меняющимся составом</td>
 </tr>
 <tr>
-<td><code>Exchanger</code></td>
-<td>да</td>
-<td>ровно 2</td>
-<td>нет</td>
-<td>обмен буферами producer ↔ consumer</td>
+<td data-label="Синхронизатор"><code>Exchanger</code></td>
+<td data-label="Многоразовый">да</td>
+<td data-label="Участники">ровно 2</td>
+<td data-label="Владелец">нет</td>
+<td data-label="Типовой сценарий">обмен буферами producer ↔ consumer</td>
 </tr>
 </tbody>
 </table>
@@ -2207,7 +2207,7 @@ StampedLock, optimistic read: 179 мс
 <h3 id="55-реализация-штатных-синхронизаторов-на-aqs">5.5 Реализация штатных синхронизаторов на AQS</h3>
 <p>Реализация синхронизатора на AQS сводится к тому, чтобы описать одно правило: что значит «захватить» в терминах поля <code>state</code>. Очередь, усыпление, пробуждение, таймауты и прерывания уже написаны в базовом классе. Лучше всего это видно, если сравнить, как штатные синхронизаторы JDK распоряжаются одним и тем же полем <code>int state</code>. Ниже такое сравнение сведено в таблицу, за ней идут выводы, которые из неё следуют, и путь захвата в современной реализации.</p>
 <p>В таблице для каждого синхронизатора указано, что означает <code>state</code>, в каком режиме он работает и при каком условии захват удаётся; последняя колонка и показывает, насколько разными бывают эти условия:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Синхронизатор</th>
@@ -2218,34 +2218,34 @@ StampedLock, optimistic read: 179 мс
 </thead>
 <tbody>
 <tr>
-<td><code>ReentrantLock</code></td>
-<td>глубина рекурсии; 0 = свободен</td>
-<td>exclusive</td>
-<td><code>state == 0</code> и CAS удался, либо владелец — текущий поток (тогда <code>state++</code>)</td>
+<td data-label="Синхронизатор"><code>ReentrantLock</code></td>
+<td data-label="Смысл state">глубина рекурсии; 0 = свободен</td>
+<td data-label="Режим">exclusive</td>
+<td data-label="tryAcquire возвращает true, когда"><code>state == 0</code> и CAS удался, либо владелец — текущий поток (тогда <code>state++</code>)</td>
 </tr>
 <tr>
-<td><code>Semaphore</code></td>
-<td>число свободных разрешений</td>
-<td>shared</td>
-<td><code>state - acquires &gt;= 0</code> и CAS удался</td>
+<td data-label="Синхронизатор"><code>Semaphore</code></td>
+<td data-label="Смысл state">число свободных разрешений</td>
+<td data-label="Режим">shared</td>
+<td data-label="tryAcquire возвращает true, когда"><code>state - acquires &gt;= 0</code> и CAS удался</td>
 </tr>
 <tr>
-<td><code>CountDownLatch</code></td>
-<td>остаток счётчика</td>
-<td>shared</td>
-<td><code>state == 0</code> (то есть <code>tryAcquireShared</code> возвращает 1, когда счётчик обнулён)</td>
+<td data-label="Синхронизатор"><code>CountDownLatch</code></td>
+<td data-label="Смысл state">остаток счётчика</td>
+<td data-label="Режим">shared</td>
+<td data-label="tryAcquire возвращает true, когда"><code>state == 0</code> (то есть <code>tryAcquireShared</code> возвращает 1, когда счётчик обнулён)</td>
 </tr>
 <tr>
-<td><code>ReentrantReadWriteLock</code></td>
-<td>старшие 16 бит — число читателей, младшие 16 — рекурсия писателя</td>
-<td>оба</td>
-<td>для писателя: нет читателей и нет чужого писателя; для читателя: нет писателя (и в fair-режиме нет предшественников)</td>
+<td data-label="Синхронизатор"><code>ReentrantReadWriteLock</code></td>
+<td data-label="Смысл state">старшие 16 бит — число читателей, младшие 16 — рекурсия писателя</td>
+<td data-label="Режим">оба</td>
+<td data-label="tryAcquire возвращает true, когда">для писателя: нет читателей и нет чужого писателя; для читателя: нет писателя (и в fair-режиме нет предшественников)</td>
 </tr>
 <tr>
-<td><code>ThreadPoolExecutor.Worker</code></td>
-<td>0 = не запущен, 1 = выполняет задачу</td>
-<td>exclusive, нереентерабельный</td>
-<td>CAS 0→1; нужен, чтобы <code>shutdownNow</code> не прерывал поток, который не выполняет задачу</td>
+<td data-label="Синхронизатор"><code>ThreadPoolExecutor.Worker</code></td>
+<td data-label="Смысл state">0 = не запущен, 1 = выполняет задачу</td>
+<td data-label="Режим">exclusive, нереентерабельный</td>
+<td data-label="tryAcquire возвращает true, когда">CAS 0→1; нужен, чтобы <code>shutdownNow</code> не прерывал поток, который не выполняет задачу</td>
 </tr>
 </tbody>
 </table>
@@ -2342,7 +2342,7 @@ StampedLock, optimistic read: 179 мс
 <p>Порядок «ядро, очередь, максимум, отказ» легко проверить. Пул из двух потоков с максимумом четыре и очередью <code>ArrayBlockingQueue(2)</code>, в который подряд отправляют семь долгих задач, ведёт себя на Temurin 21.0.10 так: задачи 1 и 2 создают потоки (в пуле 1, затем 2), задачи 3 и 4 попадают в очередь (потоков по-прежнему 2, в очереди 1 и 2), задачи 5 и 6 уже не помещаются в очередь, и пул создаёт третий и четвёртый потоки, а задача 7 отклонена. Новые потоки появляются только после заполнения очереди, а не раньше.</p>
 <p>Отсюда следует неочевидный факт: <strong>с неограниченной очередью <code>maximumPoolSize</code> не имеет значения</strong>. Очередь принимает задачу всегда, шаг 3 не наступает никогда, и пул не вырастет больше <code>corePoolSize</code>. Тот же запуск с <code>core=2, max=64</code> и <code>LinkedBlockingQueue()</code> без границы после семи задач показал два потока и пять задач в очереди. Это объясняет историю из начала подраздела: «core 8, max 64, очередь без границы» превращается в пул из восьми потоков и бесконечную очередь.</p>
 <p>Три стратегии очередей описаны в javadoc. В таблице они сведены вместе с поведением пула и областью применения; для продакшена обычно подходит только последняя строка:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Очередь</th>
@@ -2352,19 +2352,19 @@ StampedLock, optimistic read: 179 мс
 </thead>
 <tbody>
 <tr>
-<td><code>SynchronousQueue</code> (direct handoff)</td>
-<td>нет буфера; задача либо сразу берётся свободным потоком, либо создаётся новый; при <code>max</code> — отказ</td>
-<td>пул с ограничением по числу потоков, отказ вместо ожидания</td>
+<td data-label="Очередь"><code>SynchronousQueue</code> (direct handoff)</td>
+<td data-label="Поведение">нет буфера; задача либо сразу берётся свободным потоком, либо создаётся новый; при <code>max</code> — отказ</td>
+<td data-label="Когда">пул с ограничением по числу потоков, отказ вместо ожидания</td>
 </tr>
 <tr>
-<td><code>LinkedBlockingQueue()</code> без capacity (unbounded)</td>
-<td>все задачи копятся, потоков ровно <code>core</code></td>
-<td>сглаживание всплесков, когда потребитель гарантированно быстрее в среднем; <strong>риск OOM</strong> при постоянном превышении</td>
+<td data-label="Очередь"><code>LinkedBlockingQueue()</code> без capacity (unbounded)</td>
+<td data-label="Поведение">все задачи копятся, потоков ровно <code>core</code></td>
+<td data-label="Когда">сглаживание всплесков, когда потребитель гарантированно быстрее в среднем; <strong>риск OOM</strong> при постоянном превышении</td>
 </tr>
 <tr>
-<td><code>ArrayBlockingQueue(n)</code> / <code>LinkedBlockingQueue(n)</code> (bounded)</td>
-<td>буфер на <code>n</code>, дальше рост до <code>max</code>, дальше отказ</td>
-<td>продакшен по умолчанию: ограниченная память, явный отказ, наблюдаемая глубина очереди</td>
+<td data-label="Очередь"><code>ArrayBlockingQueue(n)</code> / <code>LinkedBlockingQueue(n)</code> (bounded)</td>
+<td data-label="Поведение">буфер на <code>n</code>, дальше рост до <code>max</code>, дальше отказ</td>
+<td data-label="Когда">продакшен по умолчанию: ограниченная память, явный отказ, наблюдаемая глубина очереди</td>
 </tr>
 </tbody>
 </table>
@@ -2472,7 +2472,7 @@ newCachedThreadPool():  core=0, max=2147483647, очередь SynchronousQueue,
 <p>Но формула остаётся отправной точкой, потому что для I/O-bound пула реальный лимит обычно задаёт не CPU, а <strong>ресурс, которого пул ждёт</strong>: пул JDBC-соединений (у HikariCP по умолчанию 10), лимит соединений к внешнему API или ограничение частоты запросов (<em>rate limit</em>). Это видно на опыте. Тысяча задач, каждая из которых берёт одно из 10 «соединений» (семафор на 10 разрешений) и держит его 50 мс, в пуле из 10 потоков и в пуле из 200 потоков выполняется за одно и то же время, около 6,2 с (Temurin 21.0.10, четыре прогона дали 6224, 6241, 6230 и 6276 мс). Сто девяносто лишних потоков только стоят в очереди за соединением, каждый со своим стеком и таймаутом. Поэтому лучше взять 10–20 потоков и явный отказ при переполнении очереди.</p>
 <p>Проверить расчёт помогает закон Литтла (<em>Little's law</em>): <code>L = λ × W</code>, то есть среднее число задач в системе равно интенсивности их поступления, умноженной на среднее время обслуживания. Если вы получаете 500 запросов в секунду при 100 мс на запрос, в системе одновременно находится около 50 запросов. Значит, пул на 200 потоков просто не заполнится, а пул на 20 начнёт копить очередь.</p>
 <p>Для CPU-bound пулов важно, сколько ядер видит JVM в контейнере. С JDK 10 <code>Runtime.availableProcessors()</code> учитывает квоту CPU из cgroup (механизма Linux, которым контейнерам ограничивают ресурсы) с округлением вверх, поэтому пул «по числу ядер» в поде с лимитом 2 CPU получит 2 потока (глава 46, <code>46-docker-jvm.md</code>). Запуск это подтвердил (Temurin 21.0.12 в контейнере <code>eclipse-temurin:21-jdk</code>, Docker Desktop с 16 vCPU, запуск 2026-10-22), и таблица ниже показывает заодно, как дробная квота округляется вверх и что общий пул получает на один поток меньше, но не меньше одного:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Лимит контейнера</th>
@@ -2482,29 +2482,29 @@ newCachedThreadPool():  core=0, max=2147483647, очередь SynchronousQueue,
 </thead>
 <tbody>
 <tr>
-<td>без лимита</td>
-<td class="num">16</td>
-<td class="num">15</td>
+<td data-label="Лимит контейнера">без лимита</td>
+<td data-label="availableProcessors()" class="num">16</td>
+<td data-label="commonPool().getParallelism()" class="num">15</td>
 </tr>
 <tr>
-<td><code>--cpus=1</code></td>
-<td class="num">1</td>
-<td class="num">1</td>
+<td data-label="Лимит контейнера"><code>--cpus=1</code></td>
+<td data-label="availableProcessors()" class="num">1</td>
+<td data-label="commonPool().getParallelism()" class="num">1</td>
 </tr>
 <tr>
-<td><code>--cpus=1.5</code></td>
-<td class="num">2</td>
-<td class="num">1</td>
+<td data-label="Лимит контейнера"><code>--cpus=1.5</code></td>
+<td data-label="availableProcessors()" class="num">2</td>
+<td data-label="commonPool().getParallelism()" class="num">1</td>
 </tr>
 <tr>
-<td><code>--cpus=2</code></td>
-<td class="num">2</td>
-<td class="num">1</td>
+<td data-label="Лимит контейнера"><code>--cpus=2</code></td>
+<td data-label="availableProcessors()" class="num">2</td>
+<td data-label="commonPool().getParallelism()" class="num">1</td>
 </tr>
 <tr>
-<td><code>--cpus=2.5</code></td>
-<td class="num">3</td>
-<td class="num">2</td>
+<td data-label="Лимит контейнера"><code>--cpus=2.5</code></td>
+<td data-label="availableProcessors()" class="num">3</td>
+<td data-label="commonPool().getParallelism()" class="num">2</td>
 </tr>
 </tbody>
 </table>
@@ -2719,7 +2719,7 @@ newCachedThreadPool():  core=0, max=2147483647, очередь SynchronousQueue,
 <p>Ключевой здесь последний пункт. Вы не контролируете, кто ещё пользуется common pool, будь то библиотека отображения, SDK облачного провайдера или генератор отчётов. Поэтому common pool оказывается ресурсом с <strong>непредсказуемым списком потребителей</strong> и без какой-либо изоляции: в нём нет отдельных очередей, приоритетов и квот.</p>
 <p><strong>Как одна медленная задача тормозит всё.</strong> Сценарий разворачивается так. Поток обработки отчёта запускает <code>payments.parallelStream().map(this::enrichViaHttp).toList()</code> на 200 элементов, каждый с HTTP-вызовом на 300 мс, и все 15 воркеров common pool оказываются заблокированы в <code>socketRead0</code>. Если в этот момент любой другой компонент вызывает <code>CompletableFuture.supplyAsync(...)</code> без executor'а, его задача встаёт в очередь common pool и не начнётся, пока не освободится воркер. Задержка операций, которые сами по себе занимают микросекунды, подскакивает до сотен миллисекунд. В мониторинге это выглядит как «деградировал весь сервис», а не как «тормозит отчёт», и именно поэтому причину ищут не там.</p>
 <p><strong>Системные свойства.</strong> Common pool настраивается четырьмя свойствами, и их список взят из javadoc <code>ForkJoinPool</code> для Java 21. В таблице стоит обратить внимание на последнюю строку: лимит компенсационных потоков по умолчанию велик, и именно он определяет, сколько платформенных потоков пул может завести при блокировках (6.4.5).</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Свойство</th>
@@ -2729,24 +2729,24 @@ newCachedThreadPool():  core=0, max=2147483647, очередь SynchronousQueue,
 </thead>
 <tbody>
 <tr>
-<td><code>java.util.concurrent.ForkJoinPool.common.parallelism</code></td>
-<td>уровень параллелизма, неотрицательное целое</td>
-<td><code>availableProcessors() − 1</code>, минимум 1</td>
+<td data-label="Свойство"><code>java.util.concurrent.ForkJoinPool.common.parallelism</code></td>
+<td data-label="Что задаёт">уровень параллелизма, неотрицательное целое</td>
+<td data-label="По умолчанию"><code>availableProcessors() − 1</code>, минимум 1</td>
 </tr>
 <tr>
-<td><code>java.util.concurrent.ForkJoinPool.common.threadFactory</code></td>
-<td>имя класса <code>ForkJoinWorkerThreadFactory</code></td>
-<td>внутренняя фабрика</td>
+<td data-label="Свойство"><code>java.util.concurrent.ForkJoinPool.common.threadFactory</code></td>
+<td data-label="Что задаёт">имя класса <code>ForkJoinWorkerThreadFactory</code></td>
+<td data-label="По умолчанию">внутренняя фабрика</td>
 </tr>
 <tr>
-<td><code>java.util.concurrent.ForkJoinPool.common.exceptionHandler</code></td>
-<td>имя класса <code>Thread.UncaughtExceptionHandler</code></td>
-<td>нет</td>
+<td data-label="Свойство"><code>java.util.concurrent.ForkJoinPool.common.exceptionHandler</code></td>
+<td data-label="Что задаёт">имя класса <code>Thread.UncaughtExceptionHandler</code></td>
+<td data-label="По умолчанию">нет</td>
 </tr>
 <tr>
-<td><code>java.util.concurrent.ForkJoinPool.common.maximumSpares</code></td>
-<td>максимум компенсационных потоков сверх parallelism</td>
-<td><strong>256</strong></td>
+<td data-label="Свойство"><code>java.util.concurrent.ForkJoinPool.common.maximumSpares</code></td>
+<td data-label="Что задаёт">максимум компенсационных потоков сверх parallelism</td>
+<td data-label="По умолчанию"><strong>256</strong></td>
 </tr>
 </tbody>
 </table>
@@ -2855,7 +2855,7 @@ newCachedThreadPool():  core=0, max=2147483647, очередь SynchronousQueue,
 <p><strong>Почему блокировка внутри виртуального потока ведёт себя иначе.</strong> В платформенном воркере FJP блокирующий вызов держит <strong>поток ОС</strong>, и пул может его разве что компенсировать (6.4.5). В виртуальном потоке блокирующий вызов через ввод-вывод JDK (сокеты, <code>LockSupport.park</code>, <code>BlockingQueue</code>) <strong>снимает</strong> виртуальный поток с носителя: стек копируется в кучу, а носитель берёт следующую задачу, так что не нужны ни компенсационные потоки, ни голодание пула. Именно поэтому порядок ответов в 6.4.5 заканчивается виртуальными потоками, а не <code>ManagedBlocker</code>. Исключение составляют блокировки, которые JDK снимать не умеет: нативные вызовы, в том числе в некоторых JDBC-драйверах с нативной частью, и <code>Object.wait()</code> в старых версиях. Подробнее о виртуальных потоках рассказывает глава 02 (<code>02-modern-java.md</code>).</p>
 <h4>6.4.8 Выбор пула по типу задачи</h4>
 <p>Выбор пула — это решение, какой исполнитель поставить под конкретную нагрузку, и зависит оно от двух вещей: чем заняты задачи (вычисления, блокирующий ввод-вывод или смесь) и как пул поведёт себя при перегрузке. Таблица ниже сводит все рассмотренные варианты по этим признакам и добавляет, как диагностировать каждый. Читать её стоит по строкам, и особенно внимательно — колонку «Что при перегрузке», потому что именно она определяет характер будущего инцидента.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Пул</th>
@@ -2869,58 +2869,58 @@ newCachedThreadPool():  core=0, max=2147483647, очередь SynchronousQueue,
 </thead>
 <tbody>
 <tr>
-<td><code>newFixedThreadPool(n)</code></td>
-<td>подходит, <code>n</code> ≈ числу ядер</td>
-<td>подходит, но <code>n</code> считается по формуле <code>N_cpu × U × (1 + W/C)</code> и упирается в пул соединений</td>
-<td>плохо: I/O-задачи занимают потоки, CPU-задачи стоят</td>
-<td>точный: ровно <code>n</code> потоков</td>
-<td><strong>очередь растёт неограниченно → OOM</strong> (по умолчанию — <code>LinkedBlockingQueue()</code>)</td>
-<td><code>getQueue().size()</code>, <code>getActiveCount()</code>, имена <code>pool-N-thread-M</code> в дампе</td>
+<td data-label="Пул"><code>newFixedThreadPool(n)</code></td>
+<td data-label="CPU-bound">подходит, <code>n</code> ≈ числу ядер</td>
+<td data-label="Блокирующий I/O">подходит, но <code>n</code> считается по формуле <code>N_cpu × U × (1 + W/C)</code> и упирается в пул соединений</td>
+<td data-label="Смешанная нагрузка">плохо: I/O-задачи занимают потоки, CPU-задачи стоят</td>
+<td data-label="Контроль параллелизма">точный: ровно <code>n</code> потоков</td>
+<td data-label="Что при перегрузке"><strong>очередь растёт неограниченно → OOM</strong> (по умолчанию — <code>LinkedBlockingQueue()</code>)</td>
+<td data-label="Как диагностировать"><code>getQueue().size()</code>, <code>getActiveCount()</code>, имена <code>pool-N-thread-M</code> в дампе</td>
 </tr>
 <tr>
-<td><code>newCachedThreadPool()</code></td>
-<td>нет: создаст больше потоков, чем ядер</td>
-<td>опасен</td>
-<td>опасен</td>
-<td>нет вообще (<code>max = Integer.MAX_VALUE</code>)</td>
-<td><strong><code>OutOfMemoryError: unable to create native thread</code></strong> или деградация узла</td>
-<td>взрывной рост числа потоков в <code>jcmd Thread.print</code>, NMT-раздел Thread</td>
+<td data-label="Пул"><code>newCachedThreadPool()</code></td>
+<td data-label="CPU-bound">нет: создаст больше потоков, чем ядер</td>
+<td data-label="Блокирующий I/O">опасен</td>
+<td data-label="Смешанная нагрузка">опасен</td>
+<td data-label="Контроль параллелизма">нет вообще (<code>max = Integer.MAX_VALUE</code>)</td>
+<td data-label="Что при перегрузке"><strong><code>OutOfMemoryError: unable to create native thread</code></strong> или деградация узла</td>
+<td data-label="Как диагностировать">взрывной рост числа потоков в <code>jcmd Thread.print</code>, NMT-раздел Thread</td>
 </tr>
 <tr>
-<td><code>newScheduledThreadPool(n)</code></td>
-<td>для периодических CPU-задач</td>
-<td>плохо: длинная задача сдвигает расписание остальных</td>
-<td>плохо</td>
-<td><code>n</code>, но <code>max</code> игнорируется</td>
-<td>задачи копятся в <code>DelayedWorkQueue</code>, расписание «уезжает»</td>
-<td><code>getQueue().size()</code>, отставание фактического времени запуска от планового</td>
+<td data-label="Пул"><code>newScheduledThreadPool(n)</code></td>
+<td data-label="CPU-bound">для периодических CPU-задач</td>
+<td data-label="Блокирующий I/O">плохо: длинная задача сдвигает расписание остальных</td>
+<td data-label="Смешанная нагрузка">плохо</td>
+<td data-label="Контроль параллелизма"><code>n</code>, но <code>max</code> игнорируется</td>
+<td data-label="Что при перегрузке">задачи копятся в <code>DelayedWorkQueue</code>, расписание «уезжает»</td>
+<td data-label="Как диагностировать"><code>getQueue().size()</code>, отставание фактического времени запуска от планового</td>
 </tr>
 <tr>
-<td><code>ForkJoinPool.commonPool()</code></td>
-<td><strong>основной сценарий</strong>: divide-and-conquer над данными в памяти</td>
-<td><strong>категорически нет</strong></td>
-<td>нет</td>
-<td><code>availableProcessors() − 1</code>, общий на JVM</td>
-<td>все воркеры заняты → <strong>деградирует всё приложение</strong>, включая чужой код</td>
-<td><code>ForkJoinPool.commonPool().getActiveThreadCount()</code>, <code>getQueuedTaskCount()</code>, <code>commonPool-worker-N</code> в дампе</td>
+<td data-label="Пул"><code>ForkJoinPool.commonPool()</code></td>
+<td data-label="CPU-bound"><strong>основной сценарий</strong>: divide-and-conquer над данными в памяти</td>
+<td data-label="Блокирующий I/O"><strong>категорически нет</strong></td>
+<td data-label="Смешанная нагрузка">нет</td>
+<td data-label="Контроль параллелизма"><code>availableProcessors() − 1</code>, общий на JVM</td>
+<td data-label="Что при перегрузке">все воркеры заняты → <strong>деградирует всё приложение</strong>, включая чужой код</td>
+<td data-label="Как диагностировать"><code>ForkJoinPool.commonPool().getActiveThreadCount()</code>, <code>getQueuedTaskCount()</code>, <code>commonPool-worker-N</code> в дампе</td>
 </tr>
 <tr>
-<td>Собственный <code>ForkJoinPool</code></td>
-<td>да, с изоляцией</td>
-<td>нет (кроме <code>ManagedBlocker</code> в узких случаях)</td>
-<td>нет</td>
-<td>точный, свой parallelism</td>
-<td>задачи копятся в деках и в очередях отправки; компенсационные потоки до <code>maximumSpares</code></td>
-<td>свои имена потоков + <code>getStealCount()</code>, <code>getQueuedSubmissionCount()</code></td>
+<td data-label="Пул">Собственный <code>ForkJoinPool</code></td>
+<td data-label="CPU-bound">да, с изоляцией</td>
+<td data-label="Блокирующий I/O">нет (кроме <code>ManagedBlocker</code> в узких случаях)</td>
+<td data-label="Смешанная нагрузка">нет</td>
+<td data-label="Контроль параллелизма">точный, свой parallelism</td>
+<td data-label="Что при перегрузке">задачи копятся в деках и в очередях отправки; компенсационные потоки до <code>maximumSpares</code></td>
+<td data-label="Как диагностировать">свои имена потоков + <code>getStealCount()</code>, <code>getQueuedSubmissionCount()</code></td>
 </tr>
 <tr>
-<td><code>newVirtualThreadPerTaskExecutor()</code></td>
-<td><strong>нет выигрыша</strong>: carrier-пул всё равно по числу ядер</td>
-<td><strong>основной сценарий</strong></td>
-<td>да</td>
-<td><strong>нет</strong>: поток на задачу; ограничивать семафором или пулом соединений</td>
-<td>неограниченное число виртуальных потоков → рост кучи под их стеки, давление на downstream</td>
-<td><code>jcmd &lt;pid&gt; Thread.dump_to_file -format=json</code>, <code>jcmd &lt;pid&gt; Thread.vthread_summary</code></td>
+<td data-label="Пул"><code>newVirtualThreadPerTaskExecutor()</code></td>
+<td data-label="CPU-bound"><strong>нет выигрыша</strong>: carrier-пул всё равно по числу ядер</td>
+<td data-label="Блокирующий I/O"><strong>основной сценарий</strong></td>
+<td data-label="Смешанная нагрузка">да</td>
+<td data-label="Контроль параллелизма"><strong>нет</strong>: поток на задачу; ограничивать семафором или пулом соединений</td>
+<td data-label="Что при перегрузке">неограниченное число виртуальных потоков → рост кучи под их стеки, давление на downstream</td>
+<td data-label="Как диагностировать"><code>jcmd &lt;pid&gt; Thread.dump_to_file -format=json</code>, <code>jcmd &lt;pid&gt; Thread.vthread_summary</code></td>
 </tr>
 </tbody>
 </table>
@@ -2992,7 +2992,7 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 <h3 id="65-параметры-threadpoolexecutor-как-единая-система">6.5 Параметры <code>ThreadPoolExecutor</code> как единая система</h3>
 <p>Параметры <code>ThreadPoolExecutor</code> — это семь аргументов его конструктора, и настраивать их по одному нельзя: они работают вместе как конечный автомат, и значение одного решает, имеет ли смысл другой. Ниже для каждого параметра указано, что он делает и с чем взаимодействует, затем ещё раз разобрана главная неочевидность — недостижимый <code>maximumPoolSize</code>. После этого сравним очереди по тому, что сломается первым, перечислим политики отказа и покажем конфигурацию пула, пригодную для продакшена.</p>
 <p>Параметры конструктора разобраны в таблице по одному (<code>unit</code> — просто единица измерения для <code>keepAliveTime</code>, поэтому отдельной строки у него нет). Главная колонка в ней — последняя, где указано, от чего зависит эффект каждого параметра:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Параметр</th>
@@ -3002,41 +3002,41 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td><code>corePoolSize</code></td>
-<td>до этого числа потоки создаются на каждую задачу, даже если есть простаивающие</td>
-<td>с <code>allowCoreThreadTimeOut</code>: иначе core-потоки живут вечно; с <code>prestartAllCoreThreads()</code> — прогрев</td>
+<td data-label="Параметр"><code>corePoolSize</code></td>
+<td data-label="Что делает">до этого числа потоки создаются на каждую задачу, даже если есть простаивающие</td>
+<td data-label="С чем взаимодействует">с <code>allowCoreThreadTimeOut</code>: иначе core-потоки живут вечно; с <code>prestartAllCoreThreads()</code> — прогрев</td>
 </tr>
 <tr>
-<td><code>maximumPoolSize</code></td>
-<td>верхняя граница числа потоков</td>
-<td><strong>достижим только если очередь может отказать</strong> — с unbounded-очередью параметр мёртв</td>
+<td data-label="Параметр"><code>maximumPoolSize</code></td>
+<td data-label="Что делает">верхняя граница числа потоков</td>
+<td data-label="С чем взаимодействует"><strong>достижим только если очередь может отказать</strong> — с unbounded-очередью параметр мёртв</td>
 </tr>
 <tr>
-<td><code>keepAliveTime</code></td>
-<td>сколько простаивает поток сверх core перед завершением</td>
-<td>с <code>allowCoreThreadTimeOut(true)</code> распространяется и на core</td>
+<td data-label="Параметр"><code>keepAliveTime</code></td>
+<td data-label="Что делает">сколько простаивает поток сверх core перед завершением</td>
+<td data-label="С чем взаимодействует">с <code>allowCoreThreadTimeOut(true)</code> распространяется и на core</td>
 </tr>
 <tr>
-<td><code>workQueue</code></td>
-<td>буфер между отправителем и воркерами</td>
-<td>определяет, наступит ли вообще шаг «создать поток сверх core» и шаг «отказ»</td>
+<td data-label="Параметр"><code>workQueue</code></td>
+<td data-label="Что делает">буфер между отправителем и воркерами</td>
+<td data-label="С чем взаимодействует">определяет, наступит ли вообще шаг «создать поток сверх core» и шаг «отказ»</td>
 </tr>
 <tr>
-<td><code>threadFactory</code></td>
-<td>имя, приоритет, daemon-флаг, <code>UncaughtExceptionHandler</code></td>
-<td>с диагностикой: безымянный пул нечитаем в дампе</td>
+<td data-label="Параметр"><code>threadFactory</code></td>
+<td data-label="Что делает">имя, приоритет, daemon-флаг, <code>UncaughtExceptionHandler</code></td>
+<td data-label="С чем взаимодействует">с диагностикой: безымянный пул нечитаем в дампе</td>
 </tr>
 <tr>
-<td><code>handler</code></td>
-<td>что делать при отказе</td>
-<td>с backpressure: <code>CallerRunsPolicy</code> тормозит отправителя</td>
+<td data-label="Параметр"><code>handler</code></td>
+<td data-label="Что делает">что делать при отказе</td>
+<td data-label="С чем взаимодействует">с backpressure: <code>CallerRunsPolicy</code> тормозит отправителя</td>
 </tr>
 </tbody>
 </table>
 <p>Главную неочевидность стоит повторить, потому что она обходится дороже всех остальных: <strong>с неограниченной очередью <code>maximumPoolSize</code> не достигается никогда</strong>. <code>execute()</code> сначала заполняет core, потом кладёт задачи в очередь и только тогда, когда очередь отказала, растит пул до max. <code>LinkedBlockingQueue</code> без ёмкости не отказывает никогда, поэтому третий шаг недостижим, и конфигурация «core 8, max 200, LinkedBlockingQueue» на деле даёт пул из 8 потоков с бесконечной очередью и ложным ощущением запаса. Проверить это можно в две строки: отправьте 1000 медленных задач и напечатайте <code>getPoolSize()</code>.</p>
 <p>Из того же порядка вытекает второе следствие: <strong>пул растёт «через очередь», а не «по нагрузке»</strong>. С <code>ArrayBlockingQueue(1000)</code> при core 8 девятая задача не создаст девятый поток, а встанет в очередь и будет ждать там, пока очередь не заполнится на всю тысячу. Если нужно, чтобы пул рос <em>до</em> того, как накопится очередь, стандартный <code>ThreadPoolExecutor</code> так не умеет. Типовых приёмов два: очередь, которая возвращает <code>false</code> из <code>offer</code>, пока пул не вырос, как делает Tomcat в своём <code>TaskQueue</code>, либо <code>SynchronousQueue</code> плюс <code>CallerRunsPolicy</code>.</p>
 <p>Выбирая очередь, вы на самом деле выбираете, что сломается первым. Таблица ниже показывает для каждой очереди поведение под перегрузкой, главный риск и место, где она уместна:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Очередь</th>
@@ -3047,40 +3047,40 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td><code>SynchronousQueue</code></td>
-<td>мгновенный рост до <code>max</code>, дальше отказ</td>
-<td>взрывной рост числа потоков при большом <code>max</code></td>
-<td>пул с жёстким лимитом потоков и fail-fast</td>
+<td data-label="Очередь"><code>SynchronousQueue</code></td>
+<td data-label="Что происходит под перегрузкой">мгновенный рост до <code>max</code>, дальше отказ</td>
+<td data-label="Риск">взрывной рост числа потоков при большом <code>max</code></td>
+<td data-label="Где уместна">пул с жёстким лимитом потоков и fail-fast</td>
 </tr>
 <tr>
-<td><code>LinkedBlockingQueue()</code> (unbounded)</td>
-<td>очередь растёт, латентность растёт, потоков всегда <code>core</code></td>
-<td>OOM и «задачи выполняются через 40 минут»</td>
-<td>только для потока задач, который заведомо конечен</td>
+<td data-label="Очередь"><code>LinkedBlockingQueue()</code> (unbounded)</td>
+<td data-label="Что происходит под перегрузкой">очередь растёт, латентность растёт, потоков всегда <code>core</code></td>
+<td data-label="Риск">OOM и «задачи выполняются через 40 минут»</td>
+<td data-label="Где уместна">только для потока задач, который заведомо конечен</td>
 </tr>
 <tr>
-<td><code>LinkedBlockingQueue(n)</code></td>
-<td>буфер n, затем рост до max, затем отказ</td>
-<td>два лока (head/tail) — лучше при многих отправителях</td>
-<td>выбор по умолчанию для I/O-пулов в продакшене</td>
+<td data-label="Очередь"><code>LinkedBlockingQueue(n)</code></td>
+<td data-label="Что происходит под перегрузкой">буфер n, затем рост до max, затем отказ</td>
+<td data-label="Риск">два лока (head/tail) — лучше при многих отправителях</td>
+<td data-label="Где уместна">выбор по умолчанию для I/O-пулов в продакшене</td>
 </tr>
 <tr>
-<td><code>ArrayBlockingQueue(n)</code></td>
-<td>то же, но один лок и заранее выделенный массив</td>
-<td>отправители конкурируют за одну блокировку</td>
-<td>предсказуемая память, умеренный параллелизм</td>
+<td data-label="Очередь"><code>ArrayBlockingQueue(n)</code></td>
+<td data-label="Что происходит под перегрузкой">то же, но один лок и заранее выделенный массив</td>
+<td data-label="Риск">отправители конкурируют за одну блокировку</td>
+<td data-label="Где уместна">предсказуемая память, умеренный параллелизм</td>
 </tr>
 <tr>
-<td><code>PriorityBlockingQueue</code></td>
-<td>неограниченна; низкоприоритетные задачи голодают</td>
-<td>OOM + starvation</td>
-<td>когда приоритеты действительно есть и есть защита от голодания</td>
+<td data-label="Очередь"><code>PriorityBlockingQueue</code></td>
+<td data-label="Что происходит под перегрузкой">неограниченна; низкоприоритетные задачи голодают</td>
+<td data-label="Риск">OOM + starvation</td>
+<td data-label="Где уместна">когда приоритеты действительно есть и есть защита от голодания</td>
 </tr>
 <tr>
-<td><code>DelayedWorkQueue</code> (внутри <code>ScheduledThreadPoolExecutor</code>)</td>
-<td>неограниченна, <code>max</code> игнорируется</td>
-<td>накопление отложенных задач</td>
-<td>только планировщик</td>
+<td data-label="Очередь"><code>DelayedWorkQueue</code> (внутри <code>ScheduledThreadPoolExecutor</code>)</td>
+<td data-label="Что происходит под перегрузкой">неограниченна, <code>max</code> игнорируется</td>
+<td data-label="Риск">накопление отложенных задач</td>
+<td data-label="Где уместна">только планировщик</td>
 </tr>
 </tbody>
 </table>
@@ -3122,7 +3122,7 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 </blockquote>
 <p><strong>Именование потоков</strong> нужно вовсе не для красоты. В thread dump на 600 потоков имя остаётся единственным способом понять, какой пул исчерпан: <code>pool-3-thread-17</code> не говорит ничего, а <code>payments-io-17</code> говорит всё. То же относится к логам (<code>%thread</code> в паттерне Logback), к метрикам, которые Micrometer помечает тегом с именем пула, к <code>top -H</code>/<code>jcmd Thread.print</code> и к профилировщику. Правило поэтому такое: у каждого пула есть префикс, совпадающий с именем бина или предметной функцией. В Spring его задают через <code>setThreadNamePrefix("payments-io-")</code>, а в чистой Java — через <code>Thread.ofPlatform().name("payments-io-", 0).factory()</code>.</p>
 <p><strong>Мониторинг пула.</strong> Чтобы поймать исчерпание за минуты до инцидента, достаточно метрик из таблицы ниже, и все их экспортирует <code>ExecutorServiceMetrics</code>/<code>ThreadPoolTaskExecutor</code> через Micrometer (подробнее — глава 51, <code>51-observability.md</code>). В последней колонке указан порог, на который стоит ставить оповещение:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Метрика</th>
@@ -3132,29 +3132,29 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td><code>executor.active</code></td>
-<td>сколько потоков сейчас выполняют задачи</td>
-<td><code>active == poolSize</code> дольше 1 минуты</td>
+<td data-label="Метрика"><code>executor.active</code></td>
+<td data-label="Что означает рост">сколько потоков сейчас выполняют задачи</td>
+<td data-label="Оповещение"><code>active == poolSize</code> дольше 1 минуты</td>
 </tr>
 <tr>
-<td><code>executor.queued</code> (и <code>executor.queue.remaining</code>)</td>
-<td>глубина очереди</td>
-<td>очередь &gt; 50 % ёмкости</td>
+<td data-label="Метрика"><code>executor.queued</code> (и <code>executor.queue.remaining</code>)</td>
+<td data-label="Что означает рост">глубина очереди</td>
+<td data-label="Оповещение">очередь &gt; 50 % ёмкости</td>
 </tr>
 <tr>
-<td><code>executor.pool.size</code></td>
-<td>фактическое число потоков</td>
-<td>достигнут <code>max</code></td>
+<td data-label="Метрика"><code>executor.pool.size</code></td>
+<td data-label="Что означает рост">фактическое число потоков</td>
+<td data-label="Оповещение">достигнут <code>max</code></td>
 </tr>
 <tr>
-<td>счётчик отказов (свой, в handler)</td>
-<td>задачи теряются</td>
-<td>любое ненулевое значение</td>
+<td data-label="Метрика">счётчик отказов (свой, в handler)</td>
+<td data-label="Что означает рост">задачи теряются</td>
+<td data-label="Оповещение">любое ненулевое значение</td>
 </tr>
 <tr>
-<td><code>executor.completed</code> / <code>executor.seconds</code></td>
-<td>пропускная способность и время задачи</td>
-<td>падение throughput при росте очереди</td>
+<td data-label="Метрика"><code>executor.completed</code> / <code>executor.seconds</code></td>
+<td data-label="Что означает рост">пропускная способность и время задачи</td>
+<td data-label="Оповещение">падение throughput при росте очереди</td>
 </tr>
 </tbody>
 </table>
@@ -3164,7 +3164,7 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 <h3 id="71-композиция-completablefuture">7.1 Композиция <code>CompletableFuture</code></h3>
 <p>Композиция (<em>composition</em>) <code>CompletableFuture</code> — это построение цепочки асинхронных шагов, в которой каждый следующий шаг запускается, когда готов результат предыдущего. Сам <code>CompletableFuture&lt;T&gt;</code> (JDK 8) реализует два интерфейса: <code>Future</code>, то есть результат, который можно дождаться через блокирующий <code>get()</code>, и <code>CompletionStage</code>, то есть стадию вычисления, к которой можно <em>присоединить</em> обработчики. Ниже перечислены ключевые операторы композиции, разобрано правило, по которому выбирается поток для обработчика, и показан пример, где все эти правила соблюдены.</p>
 <p>У каждого оператора из таблицы есть вариант <code>*Async(…, executor)</code>, а в правой колонке указан аналог из функционального программирования или из JavaScript, по которому оператор проще запомнить:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Оператор</th>
@@ -3174,34 +3174,34 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td><code>thenApply(fn)</code></td>
-<td>преобразовать результат</td>
-<td><code>map</code></td>
+<td data-label="Оператор"><code>thenApply(fn)</code></td>
+<td data-label="Семантика">преобразовать результат</td>
+<td data-label="Аналог"><code>map</code></td>
 </tr>
 <tr>
-<td><code>thenCompose(fn → CF)</code></td>
-<td>цепочка асинхронных шагов, без вложенности <code>CF&lt;CF&lt;T&gt;&gt;</code></td>
-<td><code>flatMap</code></td>
+<td data-label="Оператор"><code>thenCompose(fn → CF)</code></td>
+<td data-label="Семантика">цепочка асинхронных шагов, без вложенности <code>CF&lt;CF&lt;T&gt;&gt;</code></td>
+<td data-label="Аналог"><code>flatMap</code></td>
 </tr>
 <tr>
-<td><code>thenCombine(other, bifn)</code></td>
-<td>дождаться двух и объединить</td>
-<td><code>zip</code></td>
+<td data-label="Оператор"><code>thenCombine(other, bifn)</code></td>
+<td data-label="Семантика">дождаться двух и объединить</td>
+<td data-label="Аналог"><code>zip</code></td>
 </tr>
 <tr>
-<td><code>thenAccept</code>/<code>thenRun</code></td>
-<td>побочный эффект без результата</td>
-<td>—</td>
+<td data-label="Оператор"><code>thenAccept</code>/<code>thenRun</code></td>
+<td data-label="Семантика">побочный эффект без результата</td>
+<td data-label="Аналог">—</td>
 </tr>
 <tr>
-<td><code>allOf(cfs…)</code></td>
-<td><code>CF&lt;Void&gt;</code>, завершается, когда все; результаты собирать через <code>join()</code> каждого</td>
-<td><code>Promise.all</code></td>
+<td data-label="Оператор"><code>allOf(cfs…)</code></td>
+<td data-label="Семантика"><code>CF&lt;Void&gt;</code>, завершается, когда все; результаты собирать через <code>join()</code> каждого</td>
+<td data-label="Аналог"><code>Promise.all</code></td>
 </tr>
 <tr>
-<td><code>anyOf(cfs…)</code></td>
-<td><code>CF&lt;Object&gt;</code>, первый завершившийся (включая исключением)</td>
-<td><code>Promise.race</code></td>
+<td data-label="Оператор"><code>anyOf(cfs…)</code></td>
+<td data-label="Семантика"><code>CF&lt;Object&gt;</code>, первый завершившийся (включая исключением)</td>
+<td data-label="Аналог"><code>Promise.race</code></td>
 </tr>
 </tbody>
 </table>
@@ -3235,7 +3235,7 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 <h3 id="74-future-completablefuture-и-virtual-threads">7.4 Future, CompletableFuture и virtual threads</h3>
 <p><code>Future</code>, <code>CompletableFuture</code> и виртуальные потоки с обычным блокирующим кодом — это три модели, которые решают одну задачу: выполнить работу в другом потоке и получить результат. С JDK 21 выбор между ними изменился, потому что блокирующее ожидание стало дешёвым. Ниже модели сравниваются по тому, как получить результат, как скомпоновать вызовы, что происходит с исключениями, отменой и стеком, а затем сказано, какое место остаётся за <code>CompletableFuture</code>.</p>
 <p>Таблицу стоит читать по строкам, сравнивая колонки между собой; особенно показательны строки про исключения и отладку, где виртуальные потоки возвращают обычную трассировку стека:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -3246,40 +3246,40 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td>Получить результат</td>
-<td><code>get()</code> блокирует платформенный поток</td>
-<td><code>thenApply</code>/<code>join</code>; композиция без блокировки</td>
-<td>обычный вызов; блокировка дешёвая (поток отмонтируется)</td>
+<td data-label="">Получить результат</td>
+<td data-label="Future (из ExecutorService.submit)"><code>get()</code> блокирует платформенный поток</td>
+<td data-label="CompletableFuture"><code>thenApply</code>/<code>join</code>; композиция без блокировки</td>
+<td data-label="Virtual thread + блокирующий код">обычный вызов; блокировка дешёвая (поток отмонтируется)</td>
 </tr>
 <tr>
-<td>Композиция</td>
-<td>вручную, через блокировки</td>
-<td>богатая, но код «переворачивается» в callback-стиль</td>
-<td>линейный код, <code>try/catch</code>, циклы</td>
+<td data-label="">Композиция</td>
+<td data-label="Future (из ExecutorService.submit)">вручную, через блокировки</td>
+<td data-label="CompletableFuture">богатая, но код «переворачивается» в callback-стиль</td>
+<td data-label="Virtual thread + блокирующий код">линейный код, <code>try/catch</code>, циклы</td>
 </tr>
 <tr>
-<td>Исключения</td>
-<td><code>ExecutionException</code> при <code>get</code></td>
-<td><code>CompletionException</code>, обёртки, легко потерять</td>
-<td>обычные исключения, трассировка стека целая</td>
+<td data-label="">Исключения</td>
+<td data-label="Future (из ExecutorService.submit)"><code>ExecutionException</code> при <code>get</code></td>
+<td data-label="CompletableFuture"><code>CompletionException</code>, обёртки, легко потерять</td>
+<td data-label="Virtual thread + блокирующий код">обычные исключения, трассировка стека целая</td>
 </tr>
 <tr>
-<td>Отмена</td>
-<td><code>cancel(true)</code> = interrupt</td>
-<td>завершение исключением, без interrupt</td>
-<td><code>interrupt()</code> работает как обычно; <code>StructuredTaskScope</code> отменяет поддерево</td>
+<td data-label="">Отмена</td>
+<td data-label="Future (из ExecutorService.submit)"><code>cancel(true)</code> = interrupt</td>
+<td data-label="CompletableFuture">завершение исключением, без interrupt</td>
+<td data-label="Virtual thread + блокирующий код"><code>interrupt()</code> работает как обычно; <code>StructuredTaskScope</code> отменяет поддерево</td>
 </tr>
 <tr>
-<td>Отладка / стек</td>
-<td>стек в месте <code>get</code></td>
-<td>обрывки стеков, «откуда пришёл вызов» не видно</td>
-<td>полный стек в thread dump</td>
+<td data-label="">Отладка / стек</td>
+<td data-label="Future (из ExecutorService.submit)">стек в месте <code>get</code></td>
+<td data-label="CompletableFuture">обрывки стеков, «откуда пришёл вызов» не видно</td>
+<td data-label="Virtual thread + блокирующий код">полный стек в thread dump</td>
 </tr>
 <tr>
-<td>Где уместен</td>
-<td>простой fire-and-wait</td>
-<td>fan-out на много сервисов с агрегацией, неблокирующие клиенты</td>
-<td>всё, что раньше делали на пулах I/O-потоков</td>
+<td data-label="">Где уместен</td>
+<td data-label="Future (из ExecutorService.submit)">простой fire-and-wait</td>
+<td data-label="CompletableFuture">fan-out на много сервисов с агрегацией, неблокирующие клиенты</td>
+<td data-label="Virtual thread + блокирующий код">всё, что раньше делали на пулах I/O-потоков</td>
 </tr>
 </tbody>
 </table>
@@ -3291,7 +3291,7 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 <h3 id="75-комбинаторы-и-выбор-executorа">7.5 Комбинаторы и выбор executor'а</h3>
 <p>Комбинатор (<em>combinator</em>) — это метод <code>CompletableFuture</code>, который строит новую стадию из одной или нескольких существующих. Ошибки с комбинаторами бывают двух видов: взять не тот оператор или не заметить, в каком потоке он выполнится. Ниже сначала разобраны три оператора, которые путают чаще всего, затем дан полный набор, сгруппированный по числу входов, и три варианта выбора потока исполнения, а в конце — грабли с циклом событий.</p>
 <p>Три самых путаемых оператора отличаются типом функции, которую принимают, и в последней колонке таблицы указана ошибка, которую с каждым из них делают на практике:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Оператор</th>
@@ -3302,27 +3302,27 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td><code>thenApply</code></td>
-<td><code>T -&gt; U</code></td>
-<td>синхронное преобразование результата</td>
-<td>положить внутрь блокирующий вызов</td>
+<td data-label="Оператор"><code>thenApply</code></td>
+<td data-label="Сигнатура функции"><code>T -&gt; U</code></td>
+<td data-label="Когда брать">синхронное преобразование результата</td>
+<td data-label="Типовая ошибка">положить внутрь блокирующий вызов</td>
 </tr>
 <tr>
-<td><code>thenCompose</code></td>
-<td><code>T -&gt; CompletionStage&lt;U&gt;</code></td>
-<td>следующий асинхронный шаг зависит от результата</td>
-<td>взять <code>thenApply</code> и получить <code>CF&lt;CF&lt;U&gt;&gt;</code>, затем <code>join()</code> внутри</td>
+<td data-label="Оператор"><code>thenCompose</code></td>
+<td data-label="Сигнатура функции"><code>T -&gt; CompletionStage&lt;U&gt;</code></td>
+<td data-label="Когда брать">следующий асинхронный шаг зависит от результата</td>
+<td data-label="Типовая ошибка">взять <code>thenApply</code> и получить <code>CF&lt;CF&lt;U&gt;&gt;</code>, затем <code>join()</code> внутри</td>
 </tr>
 <tr>
-<td><code>thenCombine</code></td>
-<td><code>(T, U) -&gt; V</code></td>
-<td>две независимые ветки, нужны обе</td>
-<td>сделать последовательно через <code>thenCompose</code> и потерять параллелизм</td>
+<td data-label="Оператор"><code>thenCombine</code></td>
+<td data-label="Сигнатура функции"><code>(T, U) -&gt; V</code></td>
+<td data-label="Когда брать">две независимые ветки, нужны обе</td>
+<td data-label="Типовая ошибка">сделать последовательно через <code>thenCompose</code> и потерять параллелизм</td>
 </tr>
 </tbody>
 </table>
 <p>Полный набор комбинаторов удобнее всего держать в голове, сгруппировав по числу входов, как в таблице ниже:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Группа</th>
@@ -3332,39 +3332,39 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td>Один вход, с результатом</td>
-<td><code>thenApply</code>, <code>thenCompose</code>, <code>handle</code>, <code>exceptionally</code>, <code>exceptionallyCompose</code></td>
-<td><code>CF&lt;U&gt;</code></td>
+<td data-label="Группа">Один вход, с результатом</td>
+<td data-label="Операторы"><code>thenApply</code>, <code>thenCompose</code>, <code>handle</code>, <code>exceptionally</code>, <code>exceptionallyCompose</code></td>
+<td data-label="Результат"><code>CF&lt;U&gt;</code></td>
 </tr>
 <tr>
-<td>Один вход, без результата</td>
-<td><code>thenAccept</code>, <code>thenRun</code>, <code>whenComplete</code> (сохраняет значение)</td>
-<td><code>CF&lt;Void&gt;</code> / <code>CF&lt;T&gt;</code></td>
+<td data-label="Группа">Один вход, без результата</td>
+<td data-label="Операторы"><code>thenAccept</code>, <code>thenRun</code>, <code>whenComplete</code> (сохраняет значение)</td>
+<td data-label="Результат"><code>CF&lt;Void&gt;</code> / <code>CF&lt;T&gt;</code></td>
 </tr>
 <tr>
-<td>Два входа, оба нужны</td>
-<td><code>thenCombine</code>, <code>thenAcceptBoth</code>, <code>runAfterBoth</code></td>
-<td>ждёт обоих</td>
+<td data-label="Группа">Два входа, оба нужны</td>
+<td data-label="Операторы"><code>thenCombine</code>, <code>thenAcceptBoth</code>, <code>runAfterBoth</code></td>
+<td data-label="Результат">ждёт обоих</td>
 </tr>
 <tr>
-<td>Два входа, любой</td>
-<td><code>applyToEither</code>, <code>acceptEither</code>, <code>runAfterEither</code></td>
-<td>первый успешный или первое исключение</td>
+<td data-label="Группа">Два входа, любой</td>
+<td data-label="Операторы"><code>applyToEither</code>, <code>acceptEither</code>, <code>runAfterEither</code></td>
+<td data-label="Результат">первый успешный или первое исключение</td>
 </tr>
 <tr>
-<td>Много входов</td>
-<td><code>allOf(CF...)</code> → <code>CF&lt;Void&gt;</code>, <code>anyOf(CF...)</code> → <code>CF&lt;Object&gt;</code></td>
-<td>см. 7.7</td>
+<td data-label="Группа">Много входов</td>
+<td data-label="Операторы"><code>allOf(CF...)</code> → <code>CF&lt;Void&gt;</code>, <code>anyOf(CF...)</code> → <code>CF&lt;Object&gt;</code></td>
+<td data-label="Результат">см. 7.7</td>
 </tr>
 <tr>
-<td>Создание</td>
-<td><code>supplyAsync</code>, <code>runAsync</code>, <code>completedFuture</code>, <code>failedFuture</code>, <code>new CompletableFuture&lt;&gt;()</code> + <code>complete</code></td>
-<td>—</td>
+<td data-label="Группа">Создание</td>
+<td data-label="Операторы"><code>supplyAsync</code>, <code>runAsync</code>, <code>completedFuture</code>, <code>failedFuture</code>, <code>new CompletableFuture&lt;&gt;()</code> + <code>complete</code></td>
+<td data-label="Результат">—</td>
 </tr>
 <tr>
-<td>Время</td>
-<td><code>orTimeout</code>, <code>completeOnTimeout</code>, <code>delayedExecutor</code></td>
-<td>—</td>
+<td data-label="Группа">Время</td>
+<td data-label="Операторы"><code>orTimeout</code>, <code>completeOnTimeout</code>, <code>delayedExecutor</code></td>
+<td data-label="Результат">—</td>
 </tr>
 </tbody>
 </table>
@@ -3389,7 +3389,7 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 
 <p>Все три комментария проверены запуском на Temurin 21.0.10: <code>exceptionally</code> и <code>handle</code> дали стадии, завершённые значением <code>-1</code>, а стадия после <code>whenComplete</code> осталась упавшей, и её <code>join()</code> бросил то же исключение.</p>
 <p>На интервью проверяют именно различия, сведённые в таблицу ниже. Главная колонка в ней последняя, потому что она говорит, дойдёт ли ошибка до следующего обработчика:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Оператор</th>
@@ -3400,28 +3400,28 @@ jcmd &lt;pid&gt; Thread.print <span class="p">|</span> grep -A5 <span class="s1"
 </thead>
 <tbody>
 <tr>
-<td><code>exceptionally(fn)</code></td>
-<td>только при ошибке</td>
-<td>да, подменяет значением</td>
-<td>поглощено</td>
+<td data-label="Оператор"><code>exceptionally(fn)</code></td>
+<td data-label="Вызывается">только при ошибке</td>
+<td data-label="Может изменить результат">да, подменяет значением</td>
+<td data-label="Что с исключением дальше">поглощено</td>
 </tr>
 <tr>
-<td><code>handle(bifn)</code></td>
-<td>всегда</td>
-<td>да, в обе стороны</td>
-<td>поглощено (если функция не бросит)</td>
+<td data-label="Оператор"><code>handle(bifn)</code></td>
+<td data-label="Вызывается">всегда</td>
+<td data-label="Может изменить результат">да, в обе стороны</td>
+<td data-label="Что с исключением дальше">поглощено (если функция не бросит)</td>
 </tr>
 <tr>
-<td><code>whenComplete(bicons)</code></td>
-<td>всегда</td>
-<td>нет</td>
-<td>пробрасывается; если бросит сам обработчик, его исключение заменит результат только при успешной исходной стадии, а при упавшей останется исходное исключение</td>
+<td data-label="Оператор"><code>whenComplete(bicons)</code></td>
+<td data-label="Вызывается">всегда</td>
+<td data-label="Может изменить результат">нет</td>
+<td data-label="Что с исключением дальше">пробрасывается; если бросит сам обработчик, его исключение заменит результат только при успешной исходной стадии, а при упавшей останется исходное исключение</td>
 </tr>
 <tr>
-<td><code>exceptionallyCompose(fn)</code></td>
-<td>только при ошибке</td>
-<td>да, асинхронным fallback'ом</td>
-<td>поглощено</td>
+<td data-label="Оператор"><code>exceptionallyCompose(fn)</code></td>
+<td data-label="Вызывается">только при ошибке</td>
+<td data-label="Может изменить результат">да, асинхронным fallback'ом</td>
+<td data-label="Что с исключением дальше">поглощено</td>
 </tr>
 </tbody>
 </table>
@@ -3789,7 +3789,7 @@ thenApply(x -&gt; x + 1) после:  CompletionException &lt;- NullPointerExcep
 <h3 id="91-producerconsumer-и-work-queue">9.1 Producer–consumer и work queue</h3>
 <p>«Производитель — потребитель» (<em>producer-consumer</em>) — это схема, в которой одни потоки (производители) кладут задачи в общую очередь <code>BlockingQueue</code>, а другие (потребители) их оттуда забирают; саму очередь в этой роли называют очередью работ (<em>work queue</em>). Схема развязывает темп поступления работы и темп её обработки: например, слушатель Kafka принимает события о платежах быстрее, чем их успевает проверить антифрод, и очередь сглаживает разницу. Выбор реализации очереди здесь означает выбор поведения при переполнении. Ниже реализации сравниваются по наличию границы и особенностям, затем объяснено, почему ограниченная очередь даёт противодавление, и показан пример с явной обработкой переполнения.</p>
 <p>В таблице главное — колонка «Граница»: у всех очередей без границы переполнение обернётся ростом памяти, а не отказом.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Очередь</th>
@@ -3799,34 +3799,34 @@ thenApply(x -&gt; x + 1) после:  CompletionException &lt;- NullPointerExcep
 </thead>
 <tbody>
 <tr>
-<td><code>ArrayBlockingQueue</code></td>
-<td>фиксированная</td>
-<td>один лок на put/take, предсказуемая память, опция fairness</td>
+<td data-label="Очередь"><code>ArrayBlockingQueue</code></td>
+<td data-label="Граница">фиксированная</td>
+<td data-label="Особенности">один лок на put/take, предсказуемая память, опция fairness</td>
 </tr>
 <tr>
-<td><code>LinkedBlockingQueue</code></td>
-<td>опционально</td>
-<td>два лока (голова/хвост) — выше throughput при многих производителях и потребителях; без границы — риск OOM</td>
+<td data-label="Очередь"><code>LinkedBlockingQueue</code></td>
+<td data-label="Граница">опционально</td>
+<td data-label="Особенности">два лока (голова/хвост) — выше throughput при многих производителях и потребителях; без границы — риск OOM</td>
 </tr>
 <tr>
-<td><code>LinkedTransferQueue</code></td>
-<td>нет</td>
-<td><code>transfer()</code> ждёт, пока потребитель заберёт; hand-off семантика</td>
+<td data-label="Очередь"><code>LinkedTransferQueue</code></td>
+<td data-label="Граница">нет</td>
+<td data-label="Особенности"><code>transfer()</code> ждёт, пока потребитель заберёт; hand-off семантика</td>
 </tr>
 <tr>
-<td><code>SynchronousQueue</code></td>
-<td>0</td>
-<td>чистый hand-off, основа <code>newCachedThreadPool</code></td>
+<td data-label="Очередь"><code>SynchronousQueue</code></td>
+<td data-label="Граница">0</td>
+<td data-label="Особенности">чистый hand-off, основа <code>newCachedThreadPool</code></td>
 </tr>
 <tr>
-<td><code>PriorityBlockingQueue</code></td>
-<td>нет</td>
-<td>порядок по <code>Comparator</code>, <code>O(log n)</code> на операцию</td>
+<td data-label="Очередь"><code>PriorityBlockingQueue</code></td>
+<td data-label="Граница">нет</td>
+<td data-label="Особенности">порядок по <code>Comparator</code>, <code>O(log n)</code> на операцию</td>
 </tr>
 <tr>
-<td><code>DelayQueue</code></td>
-<td>нет</td>
-<td>элементы доступны после истечения задержки — основа повторных попыток и TTL</td>
+<td data-label="Очередь"><code>DelayQueue</code></td>
+<td data-label="Граница">нет</td>
+<td data-label="Особенности">элементы доступны после истечения задержки — основа повторных попыток и TTL</td>
 </tr>
 </tbody>
 </table>
@@ -4079,7 +4079,7 @@ Found 1 deadlock.
 <p>Симптомы здесь разнообразны и на гонку не похожи: перемешанные куски выписок разных клиентов, <code>ArrayIndexOutOfBoundsException</code> внутри <code>StringBuilder.append</code>, потому что внутренний массив расширялся в двух потоках одновременно, пустые ответы. Правило поэтому такое: <strong>у singleton-бина изменяемых полей не бывает</strong>, и всё, что меняется в рамках запроса, живёт в локальных переменных и параметрах. Если состояние действительно нужно на всё приложение, это должна быть потокобезопасная структура (<code>ConcurrentHashMap</code>, <code>LongAdder</code>, кэш Caffeine) или явная синхронизация, и это должно быть видно из имени и документации класса.</p>
 <h3 id="102-потокобезопасность-simpledateformat-objectmapper-и-других-классов">10.2 Потокобезопасность <code>SimpleDateFormat</code>, <code>ObjectMapper</code> и других классов</h3>
 <p>Потокобезопасный класс — это класс, экземпляр которого можно без внешней синхронизации вызывать из нескольких потоков одновременно. Вопрос «можно ли держать этот объект в поле бина и вызывать из разных потоков» задают про одни и те же классы, и ответ для каждого из них стоит знать наизусть. Таблица ниже сводит самые частые из них. Главная колонка в ней — «Нюанс»: для многих классов ответ «да» верен только при условии, и нарушение этого условия даёт самые неприятные сбои.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Класс</th>
@@ -4089,49 +4089,49 @@ Found 1 deadlock.
 </thead>
 <tbody>
 <tr>
-<td><code>SimpleDateFormat</code></td>
-<td><strong>нет</strong></td>
-<td>внутреннее поле <code>Calendar</code>; при гонке даёт не исключение, а <em>неправильную дату</em> — самый опасный вид сбоя. Замена: <code>DateTimeFormatter</code> (immutable)</td>
+<td data-label="Класс"><code>SimpleDateFormat</code></td>
+<td data-label="Потокобезопасен"><strong>нет</strong></td>
+<td data-label="Нюанс">внутреннее поле <code>Calendar</code>; при гонке даёт не исключение, а <em>неправильную дату</em> — самый опасный вид сбоя. Замена: <code>DateTimeFormatter</code> (immutable)</td>
 </tr>
 <tr>
-<td><code>DateTimeFormatter</code></td>
-<td>да</td>
-<td>immutable; можно <code>static final</code></td>
+<td data-label="Класс"><code>DateTimeFormatter</code></td>
+<td data-label="Потокобезопасен">да</td>
+<td data-label="Нюанс">immutable; можно <code>static final</code></td>
 </tr>
 <tr>
-<td><code>ObjectMapper</code> (Jackson)</td>
-<td>да, <strong>после конфигурации</strong></td>
-<td>чтение/запись потокобезопасны; вызов <code>configure(...)</code>, <code>registerModule(...)</code>, <code>setDateFormat(...)</code> после начала использования — гонка. Конфигурируйте в <code>@Bean</code> и больше не трогайте; для локальных настроек — <code>mapper.reader()/.writer()</code> (immutable) или <code>copy()</code></td>
+<td data-label="Класс"><code>ObjectMapper</code> (Jackson)</td>
+<td data-label="Потокобезопасен">да, <strong>после конфигурации</strong></td>
+<td data-label="Нюанс">чтение/запись потокобезопасны; вызов <code>configure(...)</code>, <code>registerModule(...)</code>, <code>setDateFormat(...)</code> после начала использования — гонка. Конфигурируйте в <code>@Bean</code> и больше не трогайте; для локальных настроек — <code>mapper.reader()/.writer()</code> (immutable) или <code>copy()</code></td>
 </tr>
 <tr>
-<td><code>ObjectReader</code> / <code>ObjectWriter</code></td>
-<td>да</td>
-<td>immutable-цепочки — предпочтительный способ «настроить под случай»</td>
+<td data-label="Класс"><code>ObjectReader</code> / <code>ObjectWriter</code></td>
+<td data-label="Потокобезопасен">да</td>
+<td data-label="Нюанс">immutable-цепочки — предпочтительный способ «настроить под случай»</td>
 </tr>
 <tr>
-<td><code>Random</code></td>
-<td>да, но с борьбой за seed</td>
-<td>все потоки бьют в один <code>AtomicLong</code> seed. В многопоточном коде — <code>ThreadLocalRandom.current()</code></td>
+<td data-label="Класс"><code>Random</code></td>
+<td data-label="Потокобезопасен">да, но с борьбой за seed</td>
+<td data-label="Нюанс">все потоки бьют в один <code>AtomicLong</code> seed. В многопоточном коде — <code>ThreadLocalRandom.current()</code></td>
 </tr>
 <tr>
-<td><code>SecureRandom</code></td>
-<td>да</td>
-<td>сам класс не берёт монитор, если провайдер объявил атрибут <code>ThreadSafe=true</code>, а так объявлены все реализации провайдера SUN; но DRBG и SHA1PRNG синхронизированы внутри, поэтому в горячем пути потоки конкурируют за них, видно как <code>BLOCKED</code> в дампе</td>
+<td data-label="Класс"><code>SecureRandom</code></td>
+<td data-label="Потокобезопасен">да</td>
+<td data-label="Нюанс">сам класс не берёт монитор, если провайдер объявил атрибут <code>ThreadSafe=true</code>, а так объявлены все реализации провайдера SUN; но DRBG и SHA1PRNG синхронизированы внутри, поэтому в горячем пути потоки конкурируют за них, видно как <code>BLOCKED</code> в дампе</td>
 </tr>
 <tr>
-<td><code>RestTemplate</code> / <code>WebClient</code> / <code>JdbcTemplate</code></td>
-<td>да</td>
-<td>после конфигурации; создавать на каждый запрос — утечка пулов соединений</td>
+<td data-label="Класс"><code>RestTemplate</code> / <code>WebClient</code> / <code>JdbcTemplate</code></td>
+<td data-label="Потокобезопасен">да</td>
+<td data-label="Нюанс">после конфигурации; создавать на каждый запрос — утечка пулов соединений</td>
 </tr>
 <tr>
-<td><code>java.sql.Connection</code>, <code>EntityManager</code>, <code>Session</code></td>
-<td><strong>нет</strong></td>
-<td>привязаны к потоку/транзакции; передача в другой поток — гарантированная порча данных</td>
+<td data-label="Класс"><code>java.sql.Connection</code>, <code>EntityManager</code>, <code>Session</code></td>
+<td data-label="Потокобезопасен"><strong>нет</strong></td>
+<td data-label="Нюанс">привязаны к потоку/транзакции; передача в другой поток — гарантированная порча данных</td>
 </tr>
 <tr>
-<td><code>SimpleDateFormat</code> в <code>ThreadLocal</code></td>
-<td>«да»</td>
-<td>работает, но это костыль 2008 года; <code>DateTimeFormatter</code> не требует ничего</td>
+<td data-label="Класс"><code>SimpleDateFormat</code> в <code>ThreadLocal</code></td>
+<td data-label="Потокобезопасен">«да»</td>
+<td data-label="Нюанс">работает, но это костыль 2008 года; <code>DateTimeFormatter</code> не требует ничего</td>
 </tr>
 </tbody>
 </table>
@@ -4494,7 +4494,7 @@ jfr summary /tmp/locks.jfr
 </code></pre></div>
 
 <p>К этой главе относятся события из таблицы ниже. Последняя колонка важна потому, что ожидания короче порога в запись не попадают вовсе:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Событие</th>
@@ -4504,44 +4504,44 @@ jfr summary /tmp/locks.jfr
 </thead>
 <tbody>
 <tr>
-<td><code>jdk.JavaMonitorEnter</code></td>
-<td>вход в <code>synchronized</code> с ожиданием: длительность, класс монитора, адрес, поток-владелец (<code>previousOwner</code>)</td>
-<td>20 мс в <code>default</code>, 10 мс в <code>profile</code></td>
+<td data-label="Событие"><code>jdk.JavaMonitorEnter</code></td>
+<td data-label="Что показывает">вход в <code>synchronized</code> с ожиданием: длительность, класс монитора, адрес, поток-владелец (<code>previousOwner</code>)</td>
+<td data-label="Порог по умолчанию">20 мс в <code>default</code>, 10 мс в <code>profile</code></td>
 </tr>
 <tr>
-<td><code>jdk.JavaMonitorWait</code></td>
-<td><code>Object.wait()</code></td>
-<td>20 мс</td>
+<td data-label="Событие"><code>jdk.JavaMonitorWait</code></td>
+<td data-label="Что показывает"><code>Object.wait()</code></td>
+<td data-label="Порог по умолчанию">20 мс</td>
 </tr>
 <tr>
-<td><code>jdk.ThreadPark</code></td>
-<td><code>LockSupport.park</code> — все <code>j.u.c</code>-локи, очереди, <code>CompletableFuture.get</code>; поле <code>parkedClass</code> — класс blocker'а</td>
-<td>20 мс</td>
+<td data-label="Событие"><code>jdk.ThreadPark</code></td>
+<td data-label="Что показывает"><code>LockSupport.park</code> — все <code>j.u.c</code>-локи, очереди, <code>CompletableFuture.get</code>; поле <code>parkedClass</code> — класс blocker'а</td>
+<td data-label="Порог по умолчанию">20 мс</td>
 </tr>
 <tr>
-<td><code>jdk.ThreadSleep</code></td>
-<td><code>Thread.sleep</code></td>
-<td>20 мс</td>
+<td data-label="Событие"><code>jdk.ThreadSleep</code></td>
+<td data-label="Что показывает"><code>Thread.sleep</code></td>
+<td data-label="Порог по умолчанию">20 мс</td>
 </tr>
 <tr>
-<td><code>jdk.JavaMonitorInflate</code></td>
-<td>монитор стал тяжёлым — косвенный признак конкуренции за монитор</td>
-<td>выкл. в default</td>
+<td data-label="Событие"><code>jdk.JavaMonitorInflate</code></td>
+<td data-label="Что показывает">монитор стал тяжёлым — косвенный признак конкуренции за монитор</td>
+<td data-label="Порог по умолчанию">выкл. в default</td>
 </tr>
 <tr>
-<td><code>jdk.ThreadStart</code>/<code>jdk.ThreadEnd</code></td>
-<td>создание потоков — ловит <code>newCachedThreadPool</code> и <code>SimpleAsyncTaskExecutor</code></td>
-<td>—</td>
+<td data-label="Событие"><code>jdk.ThreadStart</code>/<code>jdk.ThreadEnd</code></td>
+<td data-label="Что показывает">создание потоков — ловит <code>newCachedThreadPool</code> и <code>SimpleAsyncTaskExecutor</code></td>
+<td data-label="Порог по умолчанию">—</td>
 </tr>
 <tr>
-<td><code>jdk.ExecutionSample</code></td>
-<td>стеки работающих потоков (профилировщик CPU)</td>
-<td>10–20 мс</td>
+<td data-label="Событие"><code>jdk.ExecutionSample</code></td>
+<td data-label="Что показывает">стеки работающих потоков (профилировщик CPU)</td>
+<td data-label="Порог по умолчанию">10–20 мс</td>
 </tr>
 <tr>
-<td><code>jdk.VirtualThreadPinned</code></td>
-<td>пиннинг виртуального потока</td>
-<td>20 мс</td>
+<td data-label="Событие"><code>jdk.VirtualThreadPinned</code></td>
+<td data-label="Что показывает">пиннинг виртуального потока</td>
+<td data-label="Порог по умолчанию">20 мс</td>
 </tr>
 </tbody>
 </table>
@@ -5015,5 +5015,5 @@ grep -o <span class="s1">'^"[^"]*"'</span> td.txt <span class="p">|</span> sed <
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-java-memory-model">1. Java Memory Model</a></li><li><a href="#2-volatile-final-и-safe-publication">2. volatile, final и safe publication</a></li><li><a href="#3-атомики-cas-и-varhandle">3. Атомики, CAS и VarHandle</a></li><li><a href="#4-блокировки">4. Блокировки</a></li><li><a href="#5-синхронизаторы-и-aqs">5. Синхронизаторы и AQS</a></li><li><a href="#6-executors-и-forkjoinpool">6. Executors и ForkJoinPool</a></li><li><a href="#7-completablefuture-и-модель-асинхронности">7. CompletableFuture и модель асинхронности</a></li><li><a href="#8-threadlocal-и-контекст">8. ThreadLocal и контекст</a></li><li><a href="#9-паттерны-и-liveness">9. Паттерны и liveness</a></li><li><a href="#10-ошибки-многопоточности-в-spring-приложениях">10. Ошибки многопоточности в Spring-приложениях</a></li><li><a href="#11-разобранные-инциденты">11. Разобранные инциденты</a></li><li><a href="#12-грабли-и-антипаттерны">12. Грабли и антипаттерны</a></li><li><a href="#13-диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники-2">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

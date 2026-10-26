@@ -3,7 +3,7 @@
 <title>72. Математика, битовые операции и вероятность — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Математика, битовые операции и вероятность">
 <a class="skip" href="#content">К тексту</a>
@@ -223,7 +223,7 @@
 <p>Множества из маленьких элементов в JDK тоже хранятся битами. <code>EnumSet</code> для перечисления до 64 значений создаёт <code>RegularEnumSet</code>, внутри которого одно поле <code>long elements</code>, и операции <code>contains</code>, <code>add</code>, <code>retainAll</code> — это AND и OR над этим полем; для больших перечислений используется массив <code>long[]</code>.<sup id="fnref3:a71-7"><a class="footnote-ref" href="#fn:a71-7">7</a></sup> <code>BitSet</code> хранит биты в массиве <code>long[] words</code> и подходит для множеств из миллионов элементов: он занимает бит на элемент, тогда как <code>boolean[]</code> — байт. Поэтому права доступа, флаги платёжного документа и признаки антифрода в рабочем коде лучше держать в <code>EnumSet</code>, а не в <code>int</code> с ручными масками: читаемость выше, а цена та же.<sup id="fnref13:a71-2"><a class="footnote-ref" href="#fn:a71-2">2</a></sup></p>
 <h3 id="23-опыт-три-способа-посчитать-единицы">2.3 Опыт: три способа посчитать единицы</h3>
 <p>Разница между способами подсчёта единичных бит видна на секундомере, и её стоит измерить один раз, чтобы не гадать. Опыт <code>S2x</code> считает единицы в 2²⁴ случайных <code>int</code>, по четыре прохода, четырьмя способами: проверкой всех 32 битов по одному, циклом Кернигана <code>n &amp;= n − 1</code> (итераций столько, сколько единиц), формулой из «Hacker's Delight» и вызовом <code>Integer.bitCount</code>.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Способ</th>
@@ -232,20 +232,20 @@
 </thead>
 <tbody>
 <tr>
-<td>по одному из 32 битов</td>
-<td class="num">945 мс</td>
+<td data-label="Способ">по одному из 32 битов</td>
+<td data-label="Время на 6,7·10⁷ чисел" class="num">945 мс</td>
 </tr>
 <tr>
-<td>цикл Кернигана</td>
-<td class="num">650 мс</td>
+<td data-label="Способ">цикл Кернигана</td>
+<td data-label="Время на 6,7·10⁷ чисел" class="num">650 мс</td>
 </tr>
 <tr>
-<td>формула Hacker's Delight</td>
-<td class="num">117 мс</td>
+<td data-label="Способ">формула Hacker's Delight</td>
+<td data-label="Время на 6,7·10⁷ чисел" class="num">117 мс</td>
 </tr>
 <tr>
-<td><code>Integer.bitCount</code></td>
-<td class="num">114 мс</td>
+<td data-label="Способ"><code>Integer.bitCount</code></td>
+<td data-label="Время на 6,7·10⁷ чисел" class="num">114 мс</td>
 </tr>
 </tbody>
 </table>
@@ -642,7 +642,7 @@
 <h3 id="33-перемешивание-хеша-и-опыт-с-ключами-float">3.3 Перемешивание хеша и опыт с ключами <code>Float</code></h3>
 <p><code>HashMap</code> не использует <code>hashCode()</code> ключа напрямую: метод <code>hash</code> вычисляет <code>h ^ (h &gt;&gt;&gt; 16)</code>, то есть смешивает старшую половину хеша с младшей.<sup id="fnref4:a71-9"><a class="footnote-ref" href="#fn:a71-9">9</a></sup> Комментарий в исходнике объясняет причину: при маскировании степенью двойки наборы хешей, которые различаются только битами выше маски, всегда сталкиваются, и известный пример — ключи <code>Float</code> с последовательными целыми значениями в небольших таблицах. Авторы сознательно выбрали самое дешёвое перемешивание: большинство хешей и так распределены прилично, а длинные цепочки <code>HashMap</code> с Java 8 превращает в деревья (глава 03, раздел 3.3).</p>
 <p>Пример из комментария легко проверить. Опыт <code>S3x</code> раскладывает по таблице на 2048 корзин (такую выберет <code>HashMap</code> для тысячи ключей после одного удвоения) семь наборов из тысячи ключей и сравнивает распределение без перемешивания и с ним.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ключи</th>
@@ -652,39 +652,39 @@
 </thead>
 <tbody>
 <tr>
-<td><code>Integer</code> 0…999</td>
-<td class="num">1000, 1</td>
-<td class="num">1000, 1</td>
+<td data-label="Ключи"><code>Integer</code> 0…999</td>
+<td data-label="Без перемешивания: занято корзин, длиннейшая цепочка" class="num">1000, 1</td>
+<td data-label="С перемешиванием" class="num">1000, 1</td>
 </tr>
 <tr>
-<td><code>Integer</code> <code>i &lt;&lt; 16</code></td>
-<td class="num">1, 1000</td>
-<td class="num">1000, 1</td>
+<td data-label="Ключи"><code>Integer</code> <code>i &lt;&lt; 16</code></td>
+<td data-label="Без перемешивания: занято корзин, длиннейшая цепочка" class="num">1, 1000</td>
+<td data-label="С перемешиванием" class="num">1000, 1</td>
 </tr>
 <tr>
-<td><code>Float</code> 0.0…999.0</td>
-<td class="num">1, 1000</td>
-<td class="num">505, 4</td>
+<td data-label="Ключи"><code>Float</code> 0.0…999.0</td>
+<td data-label="Без перемешивания: занято корзин, длиннейшая цепочка" class="num">1, 1000</td>
+<td data-label="С перемешиванием" class="num">505, 4</td>
 </tr>
 <tr>
-<td><code>Double</code> 0.0…999.0</td>
-<td class="num">1, 1000</td>
-<td class="num">111, 32</td>
+<td data-label="Ключи"><code>Double</code> 0.0…999.0</td>
+<td data-label="Без перемешивания: занято корзин, длиннейшая цепочка" class="num">1, 1000</td>
+<td data-label="С перемешиванием" class="num">111, 32</td>
 </tr>
 <tr>
-<td><code>Double</code> суммы <code>100.0 · i</code></td>
-<td class="num">32, 132</td>
-<td class="num">770, 3</td>
+<td data-label="Ключи"><code>Double</code> суммы <code>100.0 · i</code></td>
+<td data-label="Без перемешивания: занято корзин, длиннейшая цепочка" class="num">32, 132</td>
+<td data-label="С перемешиванием" class="num">770, 3</td>
 </tr>
 <tr>
-<td><code>Long</code> с шагом 10⁶</td>
-<td class="num">64, 28</td>
-<td class="num">830, 3</td>
+<td data-label="Ключи"><code>Long</code> с шагом 10⁶</td>
+<td data-label="Без перемешивания: занято корзин, длиннейшая цепочка" class="num">64, 28</td>
+<td data-label="С перемешиванием" class="num">830, 3</td>
 </tr>
 <tr>
-<td><code>String</code> <code>"A" + i</code></td>
-<td class="num">663, 3</td>
-<td class="num">660, 3</td>
+<td data-label="Ключи"><code>String</code> <code>"A" + i</code></td>
+<td data-label="Без перемешивания: занято корзин, длиннейшая цепочка" class="num">663, 3</td>
+<td data-label="С перемешиванием" class="num">660, 3</td>
 </tr>
 </tbody>
 </table>
@@ -1008,7 +1008,7 @@
 <p>Произведение двух вычетов меньше <code>m²</code>, и оно помещается в <code>long</code>, только если <code>(m − 1)² ≤ 2⁶³ − 1</code>, то есть при <code>m ≤ 3 037 000 500</code>. Модуль <code>10⁹ + 7</code> проходит с запасом, и для него <code>a * b % m</code> — правильный и самый быстрый код. Для модулей порядка 10¹⁸, которые нужны в проверке простоты 64-битных чисел (раздел 6) и в хешах с большим модулем, произведение переполняется, и у задачи есть четыре решения с очень разной ценой.</p>
 <p>Первое — <code>BigInteger</code>: верно всегда, но каждая операция создаёт объекты. Второе — умножение удвоением, тот же приём, что быстрое возведение в степень, только со сложением вместо умножения: <code>a·b = Σ a·2ⁱ</code> по единичным битам <code>b</code>, и каждое удвоение и сложение делается по модулю. Сложение по модулю тоже переполняется при <code>m</code> около 2⁶³, поэтому его пишут через сравнение: если <code>a ≥ m − b</code>, результат <code>a − (m − b)</code>, иначе <code>a + b</code>; ни одно промежуточное значение не выходит за <code>m</code>. Третье — 128-битное произведение: <code>Math.multiplyHigh</code> и <code>Math.unsignedMultiplyHigh</code> (с Java 18) возвращают старшие 64 бита произведения, но в JDK нет деления 128-битного числа на 64-битное, и остаток всё равно приходится считать отдельно. Четвёртое — умножение Монтгомери, которое обходится без деления вовсе (задача 5.12).</p>
 <p>Разница в цене измерена опытом <code>S5x</code>: двести тысяч возведений в степень с 62-битным показателем.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Способ</th>
@@ -1017,20 +1017,20 @@
 </thead>
 <tbody>
 <tr>
-<td><code>long</code> по модулю <code>10⁹ + 7</code></td>
-<td class="num">0,24 мкс</td>
+<td data-label="Способ"><code>long</code> по модулю <code>10⁹ + 7</code></td>
+<td data-label="Время одного возведения в степень" class="num">0,24 мкс</td>
 </tr>
 <tr>
-<td>удвоение по модулю около 2⁶²</td>
-<td class="num">28 мкс</td>
+<td data-label="Способ">удвоение по модулю около 2⁶²</td>
+<td data-label="Время одного возведения в степень" class="num">28 мкс</td>
 </tr>
 <tr>
-<td><code>BigInteger.modPow</code></td>
-<td class="num">1,65 мкс</td>
+<td data-label="Способ"><code>BigInteger.modPow</code></td>
+<td data-label="Время одного возведения в степень" class="num">1,65 мкс</td>
 </tr>
 <tr>
-<td>Монтгомери на <code>unsignedMultiplyHigh</code></td>
-<td class="num">0,28 мкс</td>
+<td data-label="Способ">Монтгомери на <code>unsignedMultiplyHigh</code></td>
+<td data-label="Время одного возведения в степень" class="num">0,28 мкс</td>
 </tr>
 </tbody>
 </table>
@@ -3318,7 +3318,7 @@
 <p><strong>Что спросят дальше.</strong> «Проще?» — случайная сетка с шагом текущего лучшего расстояния и хеш-таблица ячеек даёт ожидаемое O(n) (алгоритм Рабина). «Ближайшая пара на сфере?» — та же схема после перевода в трёхмерные координаты на единичной сфере, где хорда монотонна по отношению к дуге.</p>
 <h2 id="12-что-из-этого-встречается-в-бэкенде">12. Что из этого встречается в бэкенде</h2>
 <p>Большая часть математики главы в рабочем коде спрятана в библиотеках: <code>Math.floorMod</code>, <code>BigInteger.modPow</code>, <code>Collections.shuffle</code>, <code>ThreadLocalRandom</code>, PostGIS. Своя реализация нужна там, где библиотечная не даёт нужной гарантии (точного правила округления, отсутствия коллизий, скорости на миллионах вызовов), и там, где без понимания устройства нельзя выбрать правильный инструмент. Таблица сводит, что из главы встречается в сервисах, что — на собеседованиях и чем это заменяют.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>приём</th>
@@ -3329,76 +3329,76 @@
 </thead>
 <tbody>
 <tr>
-<td>переполнение и <code>*Exact</code></td>
-<td>постоянно</td>
-<td>часто</td>
-<td>денежные суммы, размеры буферов, перевод единиц; <code>TimeUnit</code>, <code>Math.multiplyExact</code> (раздел 1)</td>
+<td data-label="приём">переполнение и <code>*Exact</code></td>
+<td data-label="в коде сервиса">постоянно</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют">денежные суммы, размеры буферов, перевод единиц; <code>TimeUnit</code>, <code>Math.multiplyExact</code> (раздел 1)</td>
 </tr>
 <tr>
-<td><code>floorMod</code> и <code>&gt;&gt;&gt;</code></td>
-<td>регулярно</td>
-<td>часто</td>
-<td>номер шарда по хешу, кольцевые буферы, беззнаковые CRC и адреса (разделы 1.3–1.4)</td>
+<td data-label="приём"><code>floorMod</code> и <code>&gt;&gt;&gt;</code></td>
+<td data-label="в коде сервиса">регулярно</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют">номер шарда по хешу, кольцевые буферы, беззнаковые CRC и адреса (разделы 1.3–1.4)</td>
 </tr>
 <tr>
-<td>битовые маски</td>
-<td>регулярно</td>
-<td>часто</td>
-<td>флаги и права — лучше через <code>EnumSet</code>, большие множества — <code>BitSet</code> (раздел 2)</td>
+<td data-label="приём">битовые маски</td>
+<td data-label="в коде сервиса">регулярно</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют">флаги и права — лучше через <code>EnumSet</code>, большие множества — <code>BitSet</code> (раздел 2)</td>
 </tr>
 <tr>
-<td>степени двойки и перемешивание хеша</td>
-<td>неявно, внутри <code>HashMap</code></td>
-<td>часто</td>
-<td>ёмкость через <code>HashMap.newHashMap(n)</code>, ключи без <code>Float</code> и <code>Double</code> (раздел 3)</td>
+<td data-label="приём">степени двойки и перемешивание хеша</td>
+<td data-label="в коде сервиса">неявно, внутри <code>HashMap</code></td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют">ёмкость через <code>HashMap.newHashMap(n)</code>, ключи без <code>Float</code> и <code>Double</code> (раздел 3)</td>
 </tr>
 <tr>
-<td>НОД, дроби, наклоны</td>
-<td>редко</td>
-<td>средне</td>
-<td>сокращение долей и ставок, нормализация наклонов и периодов (раздел 4)</td>
+<td data-label="приём">НОД, дроби, наклоны</td>
+<td data-label="в коде сервиса">редко</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="где встречается или чем заменяют">сокращение долей и ставок, нормализация наклонов и периодов (раздел 4)</td>
 </tr>
 <tr>
-<td>арифметика по модулю</td>
-<td>регулярно, в хешах и ключах</td>
-<td>часто</td>
-<td>полиномиальные хеши, контрольные разряды (глава 71), RSA через <code>java.security</code> (раздел 5)</td>
+<td data-label="приём">арифметика по модулю</td>
+<td data-label="в коде сервиса">регулярно, в хешах и ключах</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют">полиномиальные хеши, контрольные разряды (глава 71), RSA через <code>java.security</code> (раздел 5)</td>
 </tr>
 <tr>
-<td>простые и Миллер — Рабин</td>
-<td>редко</td>
-<td>средне</td>
-<td><code>BigInteger.isProbablePrime</code>, генерация ключей — <code>KeyPairGenerator</code> (раздел 6)</td>
+<td data-label="приём">простые и Миллер — Рабин</td>
+<td data-label="в коде сервиса">редко</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="где встречается или чем заменяют"><code>BigInteger.isProbablePrime</code>, генерация ключей — <code>KeyPairGenerator</code> (раздел 6)</td>
 </tr>
 <tr>
-<td>комбинаторика по модулю</td>
-<td>почти никогда</td>
-<td>часто</td>
-<td>оценка числа вариантов для тестов и перебора (раздел 7)</td>
+<td data-label="приём">комбинаторика по модулю</td>
+<td data-label="в коде сервиса">почти никогда</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют">оценка числа вариантов для тестов и перебора (раздел 7)</td>
 </tr>
 <tr>
-<td>денежная арифметика</td>
-<td>постоянно</td>
-<td>средне</td>
-<td><code>Money</code> с <code>allocate</code>, банковское округление, график платежей (раздел 8, глава 04)</td>
+<td data-label="приём">денежная арифметика</td>
+<td data-label="в коде сервиса">постоянно</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="где встречается или чем заменяют"><code>Money</code> с <code>allocate</code>, банковское округление, график платежей (раздел 8, глава 04)</td>
 </tr>
 <tr>
-<td>перемешивание и выборки</td>
-<td>регулярно</td>
-<td>часто</td>
-<td><code>Collections.shuffle</code>, выборка записей из потока, A/B-распределение (раздел 9)</td>
+<td data-label="приём">перемешивание и выборки</td>
+<td data-label="в коде сервиса">регулярно</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют"><code>Collections.shuffle</code>, выборка записей из потока, A/B-распределение (раздел 9)</td>
 </tr>
 <tr>
-<td>вероятностные оценки</td>
-<td>при проектировании</td>
-<td>часто</td>
-<td>размер идентификаторов, нагрузка на шарды, ёмкость (раздел 10, глава 36)</td>
+<td data-label="приём">вероятностные оценки</td>
+<td data-label="в коде сервиса">при проектировании</td>
+<td data-label="на собеседовании">часто</td>
+<td data-label="где встречается или чем заменяют">размер идентификаторов, нагрузка на шарды, ёмкость (раздел 10, глава 36)</td>
 </tr>
 <tr>
-<td>геометрия</td>
-<td>в геосервисах</td>
-<td>средне</td>
-<td>PostGIS, Redis GEO, S2/H3; свой код — для геозон на целых координатах (раздел 11)</td>
+<td data-label="приём">геометрия</td>
+<td data-label="в коде сервиса">в геосервисах</td>
+<td data-label="на собеседовании">средне</td>
+<td data-label="где встречается или чем заменяют">PostGIS, Redis GEO, S2/H3; свой код — для геозон на целых координатах (раздел 11)</td>
 </tr>
 </tbody>
 </table>
@@ -3734,5 +3734,5 @@
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-целые-числа-в-jvm">1. Целые числа в JVM</a></li><li><a href="#2-битовые-операции">2. Битовые операции</a></li><li><a href="#3-степени-двойки-и-ёмкость-hashmap">3. Степени двойки и ёмкость HashMap</a></li><li><a href="#4-наибольший-общий-делитель-и-наименьшее-общее-кратное">4. Наибольший общий делитель и наименьшее общее кратное</a></li><li><a href="#5-арифметика-по-модулю">5. Арифметика по модулю</a></li><li><a href="#6-простые-числа">6. Простые числа</a></li><li><a href="#7-комбинаторика">7. Комбинаторика</a></li><li><a href="#8-арифметика-денег">8. Арифметика денег</a></li><li><a href="#9-случайность-генераторы-перемешивание-выборки">9. Случайность: генераторы, перемешивание, выборки</a></li><li><a href="#10-вероятностные-оценки">10. Вероятностные оценки</a></li><li><a href="#11-геометрия-на-целых-координатах">11. Геометрия на целых координатах</a></li><li><a href="#12-что-из-этого-встречается-в-бэкенде">12. Что из этого встречается в бэкенде</a></li><li><a href="#13-грабли-и-антипаттерны">13. Грабли и антипаттерны</a></li><li><a href="#14-диагностика-отладка-решения">14. Диагностика: отладка решения</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

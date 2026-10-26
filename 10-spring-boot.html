@@ -3,7 +3,7 @@
 <title>10. Spring Boot — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Spring Boot">
 <a class="skip" href="#content">К тексту</a>
@@ -142,7 +142,7 @@ com.acme.config.SecretsEnvironmentPostProcessor
 </blockquote>
 <h3 id="23-выбор-типа-приложения">2.3 Выбор типа приложения</h3>
 <p>Тип приложения (<em>web application type</em>) — это решение, которое <code>SpringApplication</code> принимает ещё в конструкторе: запускает ли он сервлетное веб-приложение, реактивное веб-приложение или приложение вовсе без веба. От этого решения зависит класс контекста и то, какой сервер поднимется. Принимает его <code>WebApplicationType.deduceFromClasspath()</code>, и устроено оно как простая проверка того, какие классы есть в classpath. В таблице условия идут в том порядке, в котором их проверяют, поэтому результат определяет первая подходящая строка:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Условие</th>
@@ -152,19 +152,19 @@ com.acme.config.SecretsEnvironmentPostProcessor
 </thead>
 <tbody>
 <tr>
-<td>есть <code>DispatcherHandler</code>, нет <code>DispatcherServlet</code> и нет <code>ServletContainer</code></td>
-<td><code>REACTIVE</code></td>
-<td><code>AnnotationConfigReactiveWebServerApplicationContext</code></td>
+<td data-label="Условие">есть <code>DispatcherHandler</code>, нет <code>DispatcherServlet</code> и нет <code>ServletContainer</code></td>
+<td data-label="Результат"><code>REACTIVE</code></td>
+<td data-label="Класс контекста (сервлетный стек)"><code>AnnotationConfigReactiveWebServerApplicationContext</code></td>
 </tr>
 <tr>
-<td>нет <code>Servlet</code> или нет <code>ConfigurableWebApplicationContext</code></td>
-<td><code>NONE</code></td>
-<td><code>AnnotationConfigApplicationContext</code></td>
+<td data-label="Условие">нет <code>Servlet</code> или нет <code>ConfigurableWebApplicationContext</code></td>
+<td data-label="Результат"><code>NONE</code></td>
+<td data-label="Класс контекста (сервлетный стек)"><code>AnnotationConfigApplicationContext</code></td>
 </tr>
 <tr>
-<td>иначе</td>
-<td><code>SERVLET</code></td>
-<td><code>AnnotationConfigServletWebServerApplicationContext</code></td>
+<td data-label="Условие">иначе</td>
+<td data-label="Результат"><code>SERVLET</code></td>
+<td data-label="Класс контекста (сервлетный стек)"><code>AnnotationConfigServletWebServerApplicationContext</code></td>
 </tr>
 </tbody>
 </table>
@@ -196,7 +196,7 @@ com.acme.config.SecretsEnvironmentPostProcessor
 <p><strong><code>SpringApplicationRunListeners</code> — это не <code>ApplicationListener</code>.</strong> За этим именем стоит отдельный интерфейс <code>SpringApplicationRunListener</code>, экземпляры которого загружаются из <code>spring.factories</code> в конструкторе <code>SpringApplication</code>. В стандартной поставке у этого интерфейса всего одна реализация, <code>EventPublishingRunListener</code>. Она держит собственный <code>SimpleApplicationEventMulticaster</code>, рассыльщик событий, и публикует события <strong>до того, как появился <code>ApplicationContext</code></strong>: <code>ApplicationStartingEvent</code> и <code>ApplicationEnvironmentPreparedEvent</code> через контекст публиковать физически некуда, потому что его ещё нет.</p>
 <p>Из этого следует главное ограничение: слушателя этих двух событий нельзя объявить <code>@Component</code>. Его регистрируют в <code>spring.factories</code> под ключом <code>org.springframework.context.ApplicationListener</code> или программно через <code>app.addListeners(...)</code>. На этом ошибаются чаще всего те, кто пытается «сделать что-то самым первым»: бин-слушатель <code>ApplicationStartingEvent</code> никогда не сработает, потому что в момент события контейнера Spring ещё не существует.</p>
 <p>Начиная с <code>ApplicationPreparedEvent</code> рассылку берёт на себя контекст, и слушатели-бины начинают получать события. В таблице ниже собрана полная цепочка событий вместе с теми, что не попали в схему 2.2 (<a href="https://docs.spring.io/spring-boot/reference/features/spring-application.html">Spring Application</a>). Главное в ней — последняя колонка: по ней видно, с какого события слушатель может быть обычным бином.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">#</th>
@@ -207,70 +207,70 @@ com.acme.config.SecretsEnvironmentPostProcessor
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td><code>ApplicationStartingEvent</code></td>
-<td>сразу после регистрации слушателей и инициализаторов</td>
-<td>нет</td>
+<td data-label="#" class="num">1</td>
+<td data-label="Событие"><code>ApplicationStartingEvent</code></td>
+<td data-label="Момент">сразу после регистрации слушателей и инициализаторов</td>
+<td data-label="Можно ли поймать @Component-бином">нет</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td><code>ApplicationEnvironmentPreparedEvent</code></td>
-<td><code>Environment</code> готов, контекста нет</td>
-<td>нет</td>
+<td data-label="#" class="num">2</td>
+<td data-label="Событие"><code>ApplicationEnvironmentPreparedEvent</code></td>
+<td data-label="Момент"><code>Environment</code> готов, контекста нет</td>
+<td data-label="Можно ли поймать @Component-бином">нет</td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td><code>ApplicationContextInitializedEvent</code></td>
-<td>контекст создан, инициализаторы применены, BeanDefinition ещё не загружены</td>
-<td>нет (бинов ещё нет)</td>
+<td data-label="#" class="num">3</td>
+<td data-label="Событие"><code>ApplicationContextInitializedEvent</code></td>
+<td data-label="Момент">контекст создан, инициализаторы применены, BeanDefinition ещё не загружены</td>
+<td data-label="Можно ли поймать @Component-бином">нет (бинов ещё нет)</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td><code>ApplicationPreparedEvent</code></td>
-<td>BeanDefinition загружены, <code>refresh()</code> ещё не начат</td>
-<td>да, но бин ещё не создан — слушатель должен быть зарегистрирован иначе</td>
+<td data-label="#" class="num">4</td>
+<td data-label="Событие"><code>ApplicationPreparedEvent</code></td>
+<td data-label="Момент">BeanDefinition загружены, <code>refresh()</code> ещё не начат</td>
+<td data-label="Можно ли поймать @Component-бином">да, но бин ещё не создан — слушатель должен быть зарегистрирован иначе</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td><code>ContextRefreshedEvent</code></td>
-<td>стандартное событие Framework в конце <code>refresh()</code></td>
-<td>да</td>
+<td data-label="#" class="num">5</td>
+<td data-label="Событие"><code>ContextRefreshedEvent</code></td>
+<td data-label="Момент">стандартное событие Framework в конце <code>refresh()</code></td>
+<td data-label="Можно ли поймать @Component-бином">да</td>
 </tr>
 <tr>
-<td class="num">6</td>
-<td><code>WebServerInitializedEvent</code> (<code>ServletWebServerInitializedEvent</code> / <code>ReactiveWebServerInitializedEvent</code>)</td>
-<td>веб-сервер поднят, порт известен</td>
-<td>да — единственный надёжный способ узнать реальный порт при <code>server.port=0</code></td>
+<td data-label="#" class="num">6</td>
+<td data-label="Событие"><code>WebServerInitializedEvent</code> (<code>ServletWebServerInitializedEvent</code> / <code>ReactiveWebServerInitializedEvent</code>)</td>
+<td data-label="Момент">веб-сервер поднят, порт известен</td>
+<td data-label="Можно ли поймать @Component-бином">да — единственный надёжный способ узнать реальный порт при <code>server.port=0</code></td>
 </tr>
 <tr>
-<td class="num">7</td>
-<td><code>ApplicationStartedEvent</code></td>
-<td>после <code>refresh()</code>, до исполнителей</td>
-<td>да</td>
+<td data-label="#" class="num">7</td>
+<td data-label="Событие"><code>ApplicationStartedEvent</code></td>
+<td data-label="Момент">после <code>refresh()</code>, до исполнителей</td>
+<td data-label="Можно ли поймать @Component-бином">да</td>
 </tr>
 <tr>
-<td class="num">8</td>
-<td><code>AvailabilityChangeEvent(LivenessState.CORRECT)</code></td>
-<td>сразу за ним</td>
-<td>да</td>
+<td data-label="#" class="num">8</td>
+<td data-label="Событие"><code>AvailabilityChangeEvent(LivenessState.CORRECT)</code></td>
+<td data-label="Момент">сразу за ним</td>
+<td data-label="Можно ли поймать @Component-бином">да</td>
 </tr>
 <tr>
-<td class="num">9</td>
-<td><code>ApplicationReadyEvent</code></td>
-<td>после всех исполнителей</td>
-<td>да</td>
+<td data-label="#" class="num">9</td>
+<td data-label="Событие"><code>ApplicationReadyEvent</code></td>
+<td data-label="Момент">после всех исполнителей</td>
+<td data-label="Можно ли поймать @Component-бином">да</td>
 </tr>
 <tr>
-<td class="num">10</td>
-<td><code>AvailabilityChangeEvent(ReadinessState.ACCEPTING_TRAFFIC)</code></td>
-<td>сразу за ним</td>
-<td>да</td>
+<td data-label="#" class="num">10</td>
+<td data-label="Событие"><code>AvailabilityChangeEvent(ReadinessState.ACCEPTING_TRAFFIC)</code></td>
+<td data-label="Момент">сразу за ним</td>
+<td data-label="Можно ли поймать @Component-бином">да</td>
 </tr>
 <tr>
-<td class="num">—</td>
-<td><code>ApplicationFailedEvent</code></td>
-<td>если старт упал на любом шаге</td>
-<td>да, если контекст успел создаться</td>
+<td data-label="#" class="num">—</td>
+<td data-label="Событие"><code>ApplicationFailedEvent</code></td>
+<td data-label="Момент">если старт упал на любом шаге</td>
+<td data-label="Можно ли поймать @Component-бином">да, если контекст успел создаться</td>
 </tr>
 </tbody>
 </table>
@@ -355,7 +355,7 @@ com.acme.config.SecretsEnvironmentPostProcessor
 </code></pre></div>
 
 <p>Чтобы прочитать такой вывод, достаточно знать, какому этапу старта соответствует каждое имя шага. Таблица ниже сопоставляет имя шага с этапом и называет, что обычно делают, если шаг оказался долгим:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Шаг</th>
@@ -365,40 +365,40 @@ com.acme.config.SecretsEnvironmentPostProcessor
 </thead>
 <tbody>
 <tr>
-<td><code>spring.boot.application.environment-prepared</code></td>
-<td>чтение config data</td>
-<td>много <code>spring.config.import</code>, медленный Vault/сеть, большие configtree</td>
+<td data-label="Шаг"><code>spring.boot.application.environment-prepared</code></td>
+<td data-label="Что означает">чтение config data</td>
+<td data-label="Что делать, если он долгий">много <code>spring.config.import</code>, медленный Vault/сеть, большие configtree</td>
 </tr>
 <tr>
-<td><code>spring.context.config-classes.parse</code></td>
-<td>разбор <code>@Configuration</code> и автоконфигураций; тег <code>classCount</code></td>
-<td>подключить <code>spring-boot-autoconfigure-processor</code> в свои модули, убрать лишние стартеры, <code>spring.autoconfigure.exclude</code></td>
+<td data-label="Шаг"><code>spring.context.config-classes.parse</code></td>
+<td data-label="Что означает">разбор <code>@Configuration</code> и автоконфигураций; тег <code>classCount</code></td>
+<td data-label="Что делать, если он долгий">подключить <code>spring-boot-autoconfigure-processor</code> в свои модули, убрать лишние стартеры, <code>spring.autoconfigure.exclude</code></td>
 </tr>
 <tr>
-<td><code>spring.context.component-scan</code> (тег <code>packages</code>)</td>
-<td>сканирование пакетов</td>
-<td>сузить <code>scanBasePackages</code>, не сканировать <code>com</code> или <code>ru</code> целиком</td>
+<td data-label="Шаг"><code>spring.context.component-scan</code> (тег <code>packages</code>)</td>
+<td data-label="Что означает">сканирование пакетов</td>
+<td data-label="Что делать, если он долгий">сузить <code>scanBasePackages</code>, не сканировать <code>com</code> или <code>ru</code> целиком</td>
 </tr>
 <tr>
-<td><code>spring.beans.instantiate</code> (тег <code>beanName</code>)</td>
-<td>создание конкретного бина</td>
-<td>смотреть на этот бин точечно</td>
+<td data-label="Шаг"><code>spring.beans.instantiate</code> (тег <code>beanName</code>)</td>
+<td data-label="Что означает">создание конкретного бина</td>
+<td data-label="Что делать, если он долгий">смотреть на этот бин точечно</td>
 </tr>
 <tr>
-<td><code>spring.context.beans.post-process</code></td>
-<td>все <code>BeanPostProcessor</code></td>
-<td>тяжёлый AOP, много прокси</td>
+<td data-label="Шаг"><code>spring.context.beans.post-process</code></td>
+<td data-label="Что означает">все <code>BeanPostProcessor</code></td>
+<td data-label="Что делать, если он долгий">тяжёлый AOP, много прокси</td>
 </tr>
 <tr>
-<td><code>spring.context.beandef-registry.post-process</code></td>
-<td><code>BeanDefinitionRegistryPostProcessor</code></td>
-<td>генерация BeanDefinition (Spring Data репозитории)</td>
+<td data-label="Шаг"><code>spring.context.beandef-registry.post-process</code></td>
+<td data-label="Что означает"><code>BeanDefinitionRegistryPostProcessor</code></td>
+<td data-label="Что делать, если он долгий">генерация BeanDefinition (Spring Data репозитории)</td>
 </tr>
 </tbody>
 </table>
 <p>В примере выше 38 из 87 секунд занял Liquibase, то есть миграции схемы базы на старте, а ещё 21 секунда ушла на <code>entityManagerFactory</code>, где Hibernate сканирует сущности и проверяет схему. Такое распределение типично: <strong>в 80 % случаев старт тормозит не Spring, а то, что Spring запускает.</strong></p>
 <p><strong>Шаг 4. Типовые причины и что с ними делать.</strong> В таблице собраны причины, которые встречаются чаще всего, вместе с тем, как каждая выглядит в <code>/actuator/startup</code>; по второй колонке удобно сопоставлять таблицу со своим выводом:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Причина</th>
@@ -408,39 +408,39 @@ com.acme.config.SecretsEnvironmentPostProcessor
 </thead>
 <tbody>
 <tr>
-<td>Миграции БД на старте (Liquibase/Flyway)</td>
-<td><code>spring.beans.instantiate</code> с <code>beanName=liquibase</code>/<code>flywayInitializer</code></td>
-<td>вынести миграции в отдельную job/init-container; <code>spring.liquibase.enabled=false</code> во время выполнения пода (глава 19, <code>19-schema-design-migrations.md</code>)</td>
+<td data-label="Причина">Миграции БД на старте (Liquibase/Flyway)</td>
+<td data-label="Симптом в /actuator/startup"><code>spring.beans.instantiate</code> с <code>beanName=liquibase</code>/<code>flywayInitializer</code></td>
+<td data-label="Лечение">вынести миграции в отдельную job/init-container; <code>spring.liquibase.enabled=false</code> во время выполнения пода (глава 19, <code>19-schema-design-migrations.md</code>)</td>
 </tr>
 <tr>
-<td>Hibernate <code>hbm2ddl.auto=validate</code> на широкой схеме</td>
-<td><code>entityManagerFactory</code></td>
-<td><code>spring.jpa.hibernate.ddl-auto=none</code> в проде; <code>spring.jpa.properties.hibernate.temp.use_jdbc_metadata_defaults=false</code></td>
+<td data-label="Причина">Hibernate <code>hbm2ddl.auto=validate</code> на широкой схеме</td>
+<td data-label="Симптом в /actuator/startup"><code>entityManagerFactory</code></td>
+<td data-label="Лечение"><code>spring.jpa.hibernate.ddl-auto=none</code> в проде; <code>spring.jpa.properties.hibernate.temp.use_jdbc_metadata_defaults=false</code></td>
 </tr>
 <tr>
-<td>Сканирование слишком широкого пакета</td>
-<td><code>spring.context.component-scan</code> с <code>packages=com</code></td>
-<td><code>@SpringBootApplication(scanBasePackages = "com.acme.orders")</code></td>
+<td data-label="Причина">Сканирование слишком широкого пакета</td>
+<td data-label="Симптом в /actuator/startup"><code>spring.context.component-scan</code> с <code>packages=com</code></td>
+<td data-label="Лечение"><code>@SpringBootApplication(scanBasePackages = "com.acme.orders")</code></td>
 </tr>
 <tr>
-<td>Ожидание внешней системы в конструкторе бина</td>
-<td><code>spring.beans.instantiate</code> с именем клиента</td>
-<td>ленивое подключение, таймаут, <code>@Lazy</code> на клиенте</td>
+<td data-label="Причина">Ожидание внешней системы в конструкторе бина</td>
+<td data-label="Симптом в /actuator/startup"><code>spring.beans.instantiate</code> с именем клиента</td>
+<td data-label="Лечение">ленивое подключение, таймаут, <code>@Lazy</code> на клиенте</td>
 </tr>
 <tr>
-<td><code>@PostConstruct</code>, качающий справочник</td>
-<td>тот же шаг</td>
-<td>перенести в <code>ApplicationRunner</code> (не блокирует открытие порта, но блокирует readiness — что честно)</td>
+<td data-label="Причина"><code>@PostConstruct</code>, качающий справочник</td>
+<td data-label="Симптом в /actuator/startup">тот же шаг</td>
+<td data-label="Лечение">перенести в <code>ApplicationRunner</code> (не блокирует открытие порта, но блокирует readiness — что честно)</td>
 </tr>
 <tr>
-<td>Сотни лишних автоконфигураций</td>
-<td><code>config-classes.parse</code> с <code>classCount</code> &gt; 400</td>
-<td>аудит стартеров: <code>mvn dependency:tree</code>, убрать неиспользуемые</td>
+<td data-label="Причина">Сотни лишних автоконфигураций</td>
+<td data-label="Симптом в /actuator/startup"><code>config-classes.parse</code> с <code>classCount</code> &gt; 400</td>
+<td data-label="Лечение">аудит стартеров: <code>mvn dependency:tree</code>, убрать неиспользуемые</td>
 </tr>
 <tr>
-<td>Прогрев JIT/загрузка классов</td>
-<td>большая разница между «Started in» и «process running for»</td>
-<td>CDS/AppCDS, CRaC, AOT (глава 46)</td>
+<td data-label="Причина">Прогрев JIT/загрузка классов</td>
+<td data-label="Симптом в /actuator/startup">большая разница между «Started in» и «process running for»</td>
+<td data-label="Лечение">CDS/AppCDS, CRaC, AOT (глава 46)</td>
 </tr>
 </tbody>
 </table>
@@ -530,7 +530,7 @@ com.acme.autoconfigure.AcmeAutoConfiguration$Inner
 <h3 id="34-условные-аннотации-автоконфигурации">3.4 Условные аннотации автоконфигурации</h3>
 <p>Условные аннотации автоконфигурации (<code>@ConditionalOnClass</code>, <code>@ConditionalOnProperty</code>, <code>@ConditionalOnMissingBean</code> и другие) решают, регистрировать ли класс конфигурации или отдельный бин, и именно из-за них бин из стартера то появляется, то молча пропадает. Пример такой. Команда подключила внутренний стартер с клиентом для сервиса лимитов и ждёт, что <code>RetryTemplate</code> появится в контексте сам. Приложение стартует, но бина нет, и в логе тишина. В стартере бин объявлен под <code>@ConditionalOnProperty</code> с <code>havingValue = "true"</code>, а в конфигурации приложения свойства <code>acme.retry.enabled</code> нет вовсе. Тот же код в проверочном запуске на Boot 4.1.1 даёт три разных результата. Свойства нет, <code>matchIfMissing</code> не задан: бина нет. Свойства нет, задан <code>matchIfMissing = true</code>: бин есть. Свойство <code>acme.retry.enabled=false</code> при <code>matchIfMissing = true</code>: бина снова нет. Эту ловушку и закрывают условия, которым посвящён подраздел.</p>
 <p>Условие (<code>@Conditional</code> и его специализации в Boot) — это предикат, от которого зависит, будет ли зарегистрирован класс конфигурации или отдельный <code>@Bean</code>-метод. Набор готовых условий в Boot широкий, и знать его стоит целиком: для большинства задач нужное условие уже есть, и писать своё не придётся. Ниже сначала таблица всех условий с типичным применением, затем рассказ о том, как Boot ускоряет самые частые из них, и отдельно об атрибуте <code>matchIfMissing</code>.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аннотация</th>
@@ -540,84 +540,84 @@ com.acme.autoconfigure.AcmeAutoConfiguration$Inner
 </thead>
 <tbody>
 <tr>
-<td><code>@ConditionalOnClass</code></td>
-<td>класс присутствует в classpath</td>
-<td>«включаться только если библиотека подключена»</td>
+<td data-label="Аннотация"><code>@ConditionalOnClass</code></td>
+<td data-label="Что проверяет">класс присутствует в classpath</td>
+<td data-label="Типичное применение">«включаться только если библиотека подключена»</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnMissingClass</code></td>
-<td>класса нет</td>
-<td>выбор между двумя реализациями</td>
+<td data-label="Аннотация"><code>@ConditionalOnMissingClass</code></td>
+<td data-label="Что проверяет">класса нет</td>
+<td data-label="Типичное применение">выбор между двумя реализациями</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnBean</code></td>
-<td>есть BeanDefinition типа/имени</td>
-<td>«настраивать только если есть <code>DataSource</code>»</td>
+<td data-label="Аннотация"><code>@ConditionalOnBean</code></td>
+<td data-label="Что проверяет">есть BeanDefinition типа/имени</td>
+<td data-label="Типичное применение">«настраивать только если есть <code>DataSource</code>»</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnMissingBean</code></td>
-<td>нет BeanDefinition типа/имени</td>
-<td>отступить, если пользователь объявил своё</td>
+<td data-label="Аннотация"><code>@ConditionalOnMissingBean</code></td>
+<td data-label="Что проверяет">нет BeanDefinition типа/имени</td>
+<td data-label="Типичное применение">отступить, если пользователь объявил своё</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnSingleCandidate</code></td>
-<td>ровно один кандидат или есть <code>@Primary</code></td>
-<td>работа при нескольких <code>DataSource</code></td>
+<td data-label="Аннотация"><code>@ConditionalOnSingleCandidate</code></td>
+<td data-label="Что проверяет">ровно один кандидат или есть <code>@Primary</code></td>
+<td data-label="Типичное применение">работа при нескольких <code>DataSource</code></td>
 </tr>
 <tr>
-<td><code>@ConditionalOnProperty</code></td>
-<td>свойство задано/равно значению</td>
-<td>явные feature-флаги</td>
+<td data-label="Аннотация"><code>@ConditionalOnProperty</code></td>
+<td data-label="Что проверяет">свойство задано/равно значению</td>
+<td data-label="Типичное применение">явные feature-флаги</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnBooleanProperty</code></td>
-<td>булево свойство (3.5+)</td>
-<td>то же, но без строковых сравнений</td>
+<td data-label="Аннотация"><code>@ConditionalOnBooleanProperty</code></td>
+<td data-label="Что проверяет">булево свойство (3.5+)</td>
+<td data-label="Типичное применение">то же, но без строковых сравнений</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnResource</code></td>
-<td>ресурс есть в classpath</td>
-<td>наличие конфиг-файла</td>
+<td data-label="Аннотация"><code>@ConditionalOnResource</code></td>
+<td data-label="Что проверяет">ресурс есть в classpath</td>
+<td data-label="Типичное применение">наличие конфиг-файла</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnWebApplication</code></td>
-<td>тип приложения (<code>ANY</code>/<code>SERVLET</code>/<code>REACTIVE</code>)</td>
-<td>web-специфичные бины</td>
+<td data-label="Аннотация"><code>@ConditionalOnWebApplication</code></td>
+<td data-label="Что проверяет">тип приложения (<code>ANY</code>/<code>SERVLET</code>/<code>REACTIVE</code>)</td>
+<td data-label="Типичное применение">web-специфичные бины</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnNotWebApplication</code></td>
-<td>не веб</td>
-<td>batch/CLI</td>
+<td data-label="Аннотация"><code>@ConditionalOnNotWebApplication</code></td>
+<td data-label="Что проверяет">не веб</td>
+<td data-label="Типичное применение">batch/CLI</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnWarDeployment</code> / <code>@ConditionalOnNotWarDeployment</code></td>
-<td>war во внешнем сервлет-контейнере или нет</td>
-<td>management-порт</td>
+<td data-label="Аннотация"><code>@ConditionalOnWarDeployment</code> / <code>@ConditionalOnNotWarDeployment</code></td>
+<td data-label="Что проверяет">war во внешнем сервлет-контейнере или нет</td>
+<td data-label="Типичное применение">management-порт</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnExpression</code></td>
-<td>SpEL</td>
-<td>сложные комбинации</td>
+<td data-label="Аннотация"><code>@ConditionalOnExpression</code></td>
+<td data-label="Что проверяет">SpEL</td>
+<td data-label="Типичное применение">сложные комбинации</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnCloudPlatform</code></td>
-<td>обнаруженная платформа (<code>KUBERNETES</code>, <code>CLOUD_FOUNDRY</code>, <code>HEROKU</code>, <code>NOMAD</code>, <code>AZURE_APP_SERVICE</code>)</td>
-<td>probes в k8s</td>
+<td data-label="Аннотация"><code>@ConditionalOnCloudPlatform</code></td>
+<td data-label="Что проверяет">обнаруженная платформа (<code>KUBERNETES</code>, <code>CLOUD_FOUNDRY</code>, <code>HEROKU</code>, <code>NOMAD</code>, <code>AZURE_APP_SERVICE</code>)</td>
+<td data-label="Типичное применение">probes в k8s</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnJava</code></td>
-<td>версия JVM (<code>range = EQUAL_OR_NEWER</code>)</td>
-<td>фичи, требующие новой Java</td>
+<td data-label="Аннотация"><code>@ConditionalOnJava</code></td>
+<td data-label="Что проверяет">версия JVM (<code>range = EQUAL_OR_NEWER</code>)</td>
+<td data-label="Типичное применение">фичи, требующие новой Java</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnJndi</code></td>
-<td>доступность JNDI</td>
-<td>старые серверы приложений</td>
+<td data-label="Аннотация"><code>@ConditionalOnJndi</code></td>
+<td data-label="Что проверяет">доступность JNDI</td>
+<td data-label="Типичное применение">старые серверы приложений</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnAvailableEndpoint</code></td>
-<td>эндпоинт Actuator доступен</td>
-<td>регистрация web-обвязки эндпоинта</td>
+<td data-label="Аннотация"><code>@ConditionalOnAvailableEndpoint</code></td>
+<td data-label="Что проверяет">эндпоинт Actuator доступен</td>
+<td data-label="Типичное применение">регистрация web-обвязки эндпоинта</td>
 </tr>
 </tbody>
 </table>
@@ -918,7 +918,7 @@ Unconditional classes:
 <p><strong><code>Exclusions</code></strong> перечисляет то, что выключено явно через <code>exclude</code>/<code>excludeName</code>/<code>spring.autoconfigure.exclude</code>. Если вы подозреваете, что «кто-то выключил автоконфигурацию», пустая секция сразу снимает эту гипотезу.</p>
 <p><strong><code>Unconditional classes</code></strong> содержит автоконфигурации без единого условия, которые применяются всегда: <code>ConfigurationPropertiesAutoConfiguration</code>, <code>LifecycleAutoConfiguration</code>, <code>PropertyPlaceholderAutoConfiguration</code>, <code>SslAutoConfiguration</code> и подобные. Если ваша автоконфигурация неожиданно оказалась здесь, значит, вы забыли <code>@ConditionalOnClass</code>, и ваш модуль ломает приложения, где вашей библиотеки нет.</p>
 <p>Проблему в отчёте ищут по формулировкам причин, поэтому их стоит знать в лицо. В таблице слева строка, которую вы увидите в отчёте, справа — что она означает:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Строка в отчёте</th>
@@ -927,32 +927,32 @@ Unconditional classes:
 </thead>
 <tbody>
 <tr>
-<td><code>did not find required class 'X' (OnClassCondition)</code></td>
-<td>нет зависимости в classpath</td>
+<td data-label="Строка в отчёте"><code>did not find required class 'X' (OnClassCondition)</code></td>
+<td data-label="Что произошло">нет зависимости в classpath</td>
 </tr>
 <tr>
-<td><code>found beans of type 'X' xBean (OnBeanCondition)</code> рядом с <code>@ConditionalOnMissingBean</code></td>
-<td>ваш бин перебил автоконфигурацию</td>
+<td data-label="Строка в отчёте"><code>found beans of type 'X' xBean (OnBeanCondition)</code> рядом с <code>@ConditionalOnMissingBean</code></td>
+<td data-label="Что произошло">ваш бин перебил автоконфигурацию</td>
 </tr>
 <tr>
-<td><code>did not find any beans of type 'X' (OnBeanCondition)</code></td>
-<td><code>@ConditionalOnBean</code> не нашёл зависимость — возможно, проблема порядка</td>
+<td data-label="Строка в отчёте"><code>did not find any beans of type 'X' (OnBeanCondition)</code></td>
+<td data-label="Что произошло"><code>@ConditionalOnBean</code> не нашёл зависимость — возможно, проблема порядка</td>
 </tr>
 <tr>
-<td><code>@ConditionalOnProperty (acme.enabled) did not find property 'enabled'</code></td>
-<td>нет свойства и нет <code>matchIfMissing</code></td>
+<td data-label="Строка в отчёте"><code>@ConditionalOnProperty (acme.enabled) did not find property 'enabled'</code></td>
+<td data-label="Что произошло">нет свойства и нет <code>matchIfMissing</code></td>
 </tr>
 <tr>
-<td><code>@ConditionalOnProperty (acme.enabled=true) found different value in property 'enabled'</code></td>
-<td>свойство есть, но значение другое</td>
+<td data-label="Строка в отчёте"><code>@ConditionalOnProperty (acme.enabled=true) found different value in property 'enabled'</code></td>
+<td data-label="Что произошло">свойство есть, но значение другое</td>
 </tr>
 <tr>
-<td><code>found 'session' scope (OnWebApplicationCondition)</code></td>
-<td>приложение определено как веб</td>
+<td data-label="Строка в отчёте"><code>found 'session' scope (OnWebApplicationCondition)</code></td>
+<td data-label="Что произошло">приложение определено как веб</td>
 </tr>
 <tr>
-<td><code>automatic cache type</code> / <code>@ConditionalOnSingleCandidate</code></td>
-<td>несколько кандидатов, нет <code>@Primary</code></td>
+<td data-label="Строка в отчёте"><code>automatic cache type</code> / <code>@ConditionalOnSingleCandidate</code></td>
+<td data-label="Что произошло">несколько кандидатов, нет <code>@Primary</code></td>
 </tr>
 </tbody>
 </table>
@@ -1273,7 +1273,7 @@ com.acme.autoconfigure.AcmeConfigurationFailureAnalyzer
 
 <p>Этих пяти тестов хватает, чтобы проверить все пять режимов, ради которых стартер и пишется: он работает по умолчанию, отступает перед пользовательским бином, выключается флагом, безвреден без библиотеки и падает на неверной конфигурации.</p>
 <p>Чаще всего в таких тестах используются методы из таблицы ниже. Обратите внимание на разницу между первыми двумя строками: от неё зависит, проверяет ли тест порядок автоконфигураций.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Метод</th>
@@ -1282,36 +1282,36 @@ com.acme.autoconfigure.AcmeConfigurationFailureAnalyzer
 </thead>
 <tbody>
 <tr>
-<td><code>withConfiguration(AutoConfigurations.of(...))</code></td>
-<td>добавить автоконфигурации <strong>с учётом их порядка</strong></td>
+<td data-label="Метод"><code>withConfiguration(AutoConfigurations.of(...))</code></td>
+<td data-label="Назначение">добавить автоконфигурации <strong>с учётом их порядка</strong></td>
 </tr>
 <tr>
-<td><code>withUserConfiguration(...)</code></td>
-<td>добавить «пользовательские» <code>@Configuration</code> (обрабатываются раньше автоконфигураций)</td>
+<td data-label="Метод"><code>withUserConfiguration(...)</code></td>
+<td data-label="Назначение">добавить «пользовательские» <code>@Configuration</code> (обрабатываются раньше автоконфигураций)</td>
 </tr>
 <tr>
-<td><code>withPropertyValues(...)</code></td>
-<td>свойства в <code>Environment</code></td>
+<td data-label="Метод"><code>withPropertyValues(...)</code></td>
+<td data-label="Назначение">свойства в <code>Environment</code></td>
 </tr>
 <tr>
-<td><code>withSystemProperties(...)</code></td>
-<td>системные свойства (<code>null</code> значение — удалить)</td>
+<td data-label="Метод"><code>withSystemProperties(...)</code></td>
+<td data-label="Назначение">системные свойства (<code>null</code> значение — удалить)</td>
 </tr>
 <tr>
-<td><code>withClassLoader(new FilteredClassLoader(X.class))</code></td>
-<td>смоделировать отсутствие класса/пакета</td>
+<td data-label="Метод"><code>withClassLoader(new FilteredClassLoader(X.class))</code></td>
+<td data-label="Назначение">смоделировать отсутствие класса/пакета</td>
 </tr>
 <tr>
-<td><code>withBean(Class, Supplier)</code></td>
-<td>добавить готовый бин</td>
+<td data-label="Метод"><code>withBean(Class, Supplier)</code></td>
+<td data-label="Назначение">добавить готовый бин</td>
 </tr>
 <tr>
-<td><code>withInitializer(...)</code></td>
-<td><code>ApplicationContextInitializer</code></td>
+<td data-label="Метод"><code>withInitializer(...)</code></td>
+<td data-label="Назначение"><code>ApplicationContextInitializer</code></td>
 </tr>
 <tr>
-<td><code>run(context -&gt; ...)</code></td>
-<td>запустить; контекст закрывается после лямбды</td>
+<td data-label="Метод"><code>run(context -&gt; ...)</code></td>
+<td data-label="Назначение">запустить; контекст закрывается после лямбды</td>
 </tr>
 </tbody>
 </table>
@@ -1929,7 +1929,7 @@ ru.bank.limits.autoconfigure.LimitsConfigurationFailureAnalyzer
 <h3 id="46-версионирование-bom-и-документирование">4.6 Версионирование, BOM и документирование</h3>
 <p>Версионирование, BOM и документирование — это то, что нужно стартеру, чтобы пережить несколько версий Boot и два десятка потребителей. Стартер живёт дольше, чем любое отдельное приложение, которое его подключило, и поэтому к нему предъявляются требования, которых у обычного кода нет. Надо решить, как выпускать версии под разные ветки Boot, как согласовать версии нескольких внутренних стартеров между собой и что описать, чтобы потребители не писали с вопросами в платформенную команду. Ниже разберём эти три вопроса по очереди.</p>
 <p><strong>Версионирование.</strong> От версии Boot стартер зависит жёстче, чем обычная библиотека, потому что опирается на пакеты автоконфигураций, имена свойств и API условий, а они меняются между мажорными версиями. Для банка работает такая схема веток:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Ветка стартера</th>
@@ -1939,19 +1939,19 @@ ru.bank.limits.autoconfigure.LimitsConfigurationFailureAnalyzer
 </thead>
 <tbody>
 <tr>
-<td><code>1.x</code></td>
-<td>Boot 2.7</td>
-<td>только критические багфиксы, security</td>
+<td data-label="Ветка стартера"><code>1.x</code></td>
+<td data-label="Целевой Boot">Boot 2.7</td>
+<td data-label="Что в ней делается">только критические багфиксы, security</td>
 </tr>
 <tr>
-<td><code>2.x</code></td>
-<td>Boot 3.3–3.5</td>
-<td>активная разработка</td>
+<td data-label="Ветка стартера"><code>2.x</code></td>
+<td data-label="Целевой Boot">Boot 3.3–3.5</td>
+<td data-label="Что в ней делается">активная разработка</td>
 </tr>
 <tr>
-<td><code>3.x</code></td>
-<td>Boot 4.0+</td>
-<td>новые фичи, пакеты автоконфигураций Boot 4</td>
+<td data-label="Ветка стартера"><code>3.x</code></td>
+<td data-label="Целевой Boot">Boot 4.0+</td>
+<td data-label="Что в ней делается">новые фичи, пакеты автоконфигураций Boot 4</td>
 </tr>
 </tbody>
 </table>
@@ -2029,7 +2029,7 @@ ru.bank.limits.autoconfigure.LimitsConfigurationFailureAnalyzer
 <p>В образе платёжного сервиса таймаут шлюза записан в <code>application.yaml</code> как <code>1000</code>. На стенде его переопределяют переменной окружения, а при разборе инцидента оператор запускает контейнер ещё и с аргументом <code>--gateway.timeout</code>. Какое из значений в итоге увидит бин? Чтобы не гадать, проверим на простейшем приложении Spring Boot 4.1.1 с одним ключом <code>acme.timeout</code>. Файл <code>application.properties</code> в classpath даёт <code>1000-classpath</code>. Добавляем переменную окружения <code>ACME_TIMEOUT=3000-env</code>, и бин получает значение из окружения. Добавляем системное свойство <code>-Dacme.timeout=4000-sysprop</code>, и оно перекрывает переменную окружения. Добавляем аргумент командной строки <code>--acme.timeout=5000-arg</code>, и побеждает он. Так проявляется порядок источников свойств.</p>
 <p>Порядок источников свойств — это правило, по которому Boot решает, какое значение получит бин, если свойство задано в нескольких местах: источник с более высоким приоритетом перекрывает все, что ниже. На интервью этот порядок спрашивают дословно, а в проде от него зависит, например, какой таймаут платёжного шлюза реально действует. Ниже сначала список источников из документации, затем два наблюдения, которые важнее самого списка, и отдельная лестница внутри config data — файлов конфигурации приложения.</p>
 <p>Источники перечислены <strong>от низшего приоритета к высшему</strong>, то есть каждый следующий перекрывает все предыдущие (<a href="https://docs.spring.io/spring-boot/reference/features/external-config.html">Externalized Configuration</a>):</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th class="num">#</th>
@@ -2038,64 +2038,64 @@ ru.bank.limits.autoconfigure.LimitsConfigurationFailureAnalyzer
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td>Default properties (<code>SpringApplication.setDefaultProperties(Map)</code>)</td>
+<td data-label="#" class="num">1</td>
+<td data-label="Источник">Default properties (<code>SpringApplication.setDefaultProperties(Map)</code>)</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td><code>@PropertySource</code> на <code>@Configuration</code>-классах</td>
+<td data-label="#" class="num">2</td>
+<td data-label="Источник"><code>@PropertySource</code> на <code>@Configuration</code>-классах</td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td><strong>Config data</strong> — <code>application.properties</code> / <code>application.yaml</code> и всё, что пришло через <code>spring.config.import</code></td>
+<td data-label="#" class="num">3</td>
+<td data-label="Источник"><strong>Config data</strong> — <code>application.properties</code> / <code>application.yaml</code> и всё, что пришло через <code>spring.config.import</code></td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td><code>RandomValuePropertySource</code> (только <code>random.*</code>)</td>
+<td data-label="#" class="num">4</td>
+<td data-label="Источник"><code>RandomValuePropertySource</code> (только <code>random.*</code>)</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td>Переменные окружения ОС</td>
+<td data-label="#" class="num">5</td>
+<td data-label="Источник">Переменные окружения ОС</td>
 </tr>
 <tr>
-<td class="num">6</td>
-<td>Системные свойства Java (<code>System.getProperties()</code>)</td>
+<td data-label="#" class="num">6</td>
+<td data-label="Источник">Системные свойства Java (<code>System.getProperties()</code>)</td>
 </tr>
 <tr>
-<td class="num">7</td>
-<td>JNDI-атрибуты из <code>java:comp/env</code></td>
+<td data-label="#" class="num">7</td>
+<td data-label="Источник">JNDI-атрибуты из <code>java:comp/env</code></td>
 </tr>
 <tr>
-<td class="num">8</td>
-<td>Init-параметры <code>ServletContext</code></td>
+<td data-label="#" class="num">8</td>
+<td data-label="Источник">Init-параметры <code>ServletContext</code></td>
 </tr>
 <tr>
-<td class="num">9</td>
-<td>Init-параметры <code>ServletConfig</code></td>
+<td data-label="#" class="num">9</td>
+<td data-label="Источник">Init-параметры <code>ServletConfig</code></td>
 </tr>
 <tr>
-<td class="num">10</td>
-<td><code>SPRING_APPLICATION_JSON</code> (JSON в переменной окружения или системном свойстве)</td>
+<td data-label="#" class="num">10</td>
+<td data-label="Источник"><code>SPRING_APPLICATION_JSON</code> (JSON в переменной окружения или системном свойстве)</td>
 </tr>
 <tr>
-<td class="num">11</td>
-<td>Аргументы командной строки</td>
+<td data-label="#" class="num">11</td>
+<td data-label="Источник">Аргументы командной строки</td>
 </tr>
 <tr>
-<td class="num">12</td>
-<td><code>properties</code> в <code>@SpringBootTest</code></td>
+<td data-label="#" class="num">12</td>
+<td data-label="Источник"><code>properties</code> в <code>@SpringBootTest</code></td>
 </tr>
 <tr>
-<td class="num">13</td>
-<td><code>@DynamicPropertySource</code> в тестах</td>
+<td data-label="#" class="num">13</td>
+<td data-label="Источник"><code>@DynamicPropertySource</code> в тестах</td>
 </tr>
 <tr>
-<td class="num">14</td>
-<td><code>@TestPropertySource</code> в тестах</td>
+<td data-label="#" class="num">14</td>
+<td data-label="Источник"><code>@TestPropertySource</code> в тестах</td>
 </tr>
 <tr>
-<td class="num">15</td>
-<td>Devtools-настройки в <code>$HOME/.config/spring-boot</code></td>
+<td data-label="#" class="num">15</td>
+<td data-label="Источник">Devtools-настройки в <code>$HOME/.config/spring-boot</code></td>
 </tr>
 </tbody>
 </table>
@@ -2219,7 +2219,7 @@ ACME_CLIENT_READ_TIMEOUT      # переменная окружения
 <p><strong>В обратную сторону relaxed binding не действует.</strong> В <code>@Value("${acme.client.readTimeout}")</code> и в плейсхолдерах <code>${...}</code> внутри property-файлов надо писать <strong>канонический</strong> kebab-case: <code>${acme.client.read-timeout}</code>. Документация оговаривает это прямо, и этим же объясняется, почему <code>@Value</code> с camelCase «то работает, то нет»: он работает только тогда, когда свойство задано ровно в таком виде. С каноническим именем картина обратная: <code>@Value("${acme.client.read-timeout}")</code> подхватит и <code>acme.client.readTimeout</code> из файла свойств, и переменную окружения <code>ACME_CLIENT_READTIMEOUT</code>.</p>
 <h3 id="54-value-и-configurationproperties">5.4 <code>@Value</code> и <code>@ConfigurationProperties</code></h3>
 <p><code>@Value</code> и <code>@ConfigurationProperties</code> — это два способа прочитать свойство в Boot: точечно, одно значение в одно поле, или группой, целым объектом по префиксу. Выбор между ними определяет, будут ли работать relaxed binding, валидация, метаданные для IDE и видимость в Actuator. Ниже таблица различий, практическое правило выбора, способы активировать <code>@ConfigurationProperties</code> и ловушка с двумя бинами одного класса свойств.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2229,44 +2229,44 @@ ACME_CLIENT_READ_TIMEOUT      # переменная окружения
 </thead>
 <tbody>
 <tr>
-<td>Relaxed binding</td>
-<td>ограниченно: только при каноническом kebab-case в <code>@Value</code> (см. 5.3)</td>
-<td>да</td>
+<td data-label="">Relaxed binding</td>
+<td data-label="@Value">ограниченно: только при каноническом kebab-case в <code>@Value</code> (см. 5.3)</td>
+<td data-label="@ConfigurationProperties">да</td>
 </tr>
 <tr>
-<td>Связывание вложенных структур, коллекций, Map</td>
-<td>нет</td>
-<td>да</td>
+<td data-label="">Связывание вложенных структур, коллекций, Map</td>
+<td data-label="@Value">нет</td>
+<td data-label="@ConfigurationProperties">да</td>
 </tr>
 <tr>
-<td>Валидация Bean Validation</td>
-<td>нет</td>
-<td>да (<code>@Validated</code>)</td>
+<td data-label="">Валидация Bean Validation</td>
+<td data-label="@Value">нет</td>
+<td data-label="@ConfigurationProperties">да (<code>@Validated</code>)</td>
 </tr>
 <tr>
-<td>Метаданные для IDE</td>
-<td>нет</td>
-<td>да</td>
+<td data-label="">Метаданные для IDE</td>
+<td data-label="@Value">нет</td>
+<td data-label="@ConfigurationProperties">да</td>
 </tr>
 <tr>
-<td>Конвертация <code>Duration</code>/<code>DataSize</code></td>
-<td>частично (через <code>ConversionService</code>)</td>
-<td>да, с <code>@DurationUnit</code>/<code>@DataSizeUnit</code></td>
+<td data-label="">Конвертация <code>Duration</code>/<code>DataSize</code></td>
+<td data-label="@Value">частично (через <code>ConversionService</code>)</td>
+<td data-label="@ConfigurationProperties">да, с <code>@DurationUnit</code>/<code>@DataSizeUnit</code></td>
 </tr>
 <tr>
-<td>SpEL</td>
-<td>да (<code>#{...}</code>)</td>
-<td>нет</td>
+<td data-label="">SpEL</td>
+<td data-label="@Value">да (<code>#{...}</code>)</td>
+<td data-label="@ConfigurationProperties">нет</td>
 </tr>
 <tr>
-<td>Виден в <code>/actuator/configprops</code></td>
-<td>нет</td>
-<td>да</td>
+<td data-label="">Виден в <code>/actuator/configprops</code></td>
+<td data-label="@Value">нет</td>
+<td data-label="@ConfigurationProperties">да</td>
 </tr>
 <tr>
-<td>Fail-fast при опечатке</td>
-<td>только если нет значения по умолчанию</td>
-<td>да, при валидации</td>
+<td data-label="">Fail-fast при опечатке</td>
+<td data-label="@Value">только если нет значения по умолчанию</td>
+<td data-label="@ConfigurationProperties">да, при валидации</td>
 </tr>
 </tbody>
 </table>
@@ -2304,7 +2304,7 @@ ACME_CLIENT_READ_TIMEOUT      # переменная окружения
 </code></pre></div>
 
 <p>Документы в YAML разделяются строкой <code>---</code>, а в properties-файлах — строкой <code>#---</code> (или <code>!---</code>). Условий активации у документа два:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Свойство</th>
@@ -2313,12 +2313,12 @@ ACME_CLIENT_READ_TIMEOUT      # переменная окружения
 </thead>
 <tbody>
 <tr>
-<td><code>spring.config.activate.on-profile</code></td>
-<td>профильное выражение; поддерживает <code>\|</code> (или), <code>&amp;</code> (и), <code>!</code> (не), скобки</td>
+<td data-label="Свойство"><code>spring.config.activate.on-profile</code></td>
+<td data-label="Смысл">профильное выражение; поддерживает <code>\|</code> (или), <code>&amp;</code> (и), <code>!</code> (не), скобки</td>
 </tr>
 <tr>
-<td><code>spring.config.activate.on-cloud-platform</code></td>
-<td>обнаруженная <code>CloudPlatform</code></td>
+<td data-label="Свойство"><code>spring.config.activate.on-cloud-platform</code></td>
+<td data-label="Смысл">обнаруженная <code>CloudPlatform</code></td>
 </tr>
 </tbody>
 </table>
@@ -2384,7 +2384,7 @@ ACME_CLIENT_READ_TIMEOUT      # переменная окружения
 </blockquote>
 <h3 id="58-приоритеты-источников-свойств-15-уровней">5.8 Приоритеты источников свойств: 15 уровней</h3>
 <p>Приоритеты источников свойств — это та же лестница из 5.1, развёрнутая до реального порядка в <code>Environment</code>. Таблица в 5.1 дословно повторяет список из документации (<a href="https://docs.spring.io/spring-boot/reference/features/external-config.html">Externalized Configuration</a>), и в нём ровно 15 позиций. Реальная лестница, однако, длиннее: позиция 3, config data, сама разворачивается в четыре уровня, а часть источников добавляется динамически. Ниже та же лестница в развёрнутом виде, по-прежнему от низшего приоритета к высшему. В третьей колонке указано, кто добавляет источник, и по ней видно, почему порядок добавления не совпадает с приоритетом. После таблицы разобраны четыре места, которые удивляют чаще всего.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -2394,99 +2394,99 @@ ACME_CLIENT_READ_TIMEOUT      # переменная окружения
 </thead>
 <tbody>
 <tr>
-<td>1</td>
-<td><code>SpringApplication.setDefaultProperties(Map)</code></td>
-<td>ваш код в <code>main</code></td>
+<td data-label="Уровень">1</td>
+<td data-label="Источник"><code>SpringApplication.setDefaultProperties(Map)</code></td>
+<td data-label="Кто добавляет">ваш код в <code>main</code></td>
 </tr>
 <tr>
-<td>2</td>
-<td><code>@PropertySource</code> на <code>@Configuration</code></td>
-<td>загружается при разборе конфигураций — <strong>позже</strong> config data, но с более низким приоритетом</td>
+<td data-label="Уровень">2</td>
+<td data-label="Источник"><code>@PropertySource</code> на <code>@Configuration</code></td>
+<td data-label="Кто добавляет">загружается при разборе конфигураций — <strong>позже</strong> config data, но с более низким приоритетом</td>
 </tr>
 <tr>
-<td>3a</td>
-<td><code>application.properties</code>/<code>.yaml</code> внутри jar</td>
-<td><code>ConfigDataEnvironmentPostProcessor</code></td>
+<td data-label="Уровень">3a</td>
+<td data-label="Источник"><code>application.properties</code>/<code>.yaml</code> внутри jar</td>
+<td data-label="Кто добавляет"><code>ConfigDataEnvironmentPostProcessor</code></td>
 </tr>
 <tr>
-<td>3b</td>
-<td><code>application-{profile}</code> внутри jar</td>
-<td>он же</td>
+<td data-label="Уровень">3b</td>
+<td data-label="Источник"><code>application-{profile}</code> внутри jar</td>
+<td data-label="Кто добавляет">он же</td>
 </tr>
 <tr>
-<td>3c</td>
-<td><code>application.properties</code>/<code>.yaml</code> снаружи jar (<code>./</code>, <code>./config/</code>, <code>./config/*/</code>)</td>
-<td>он же</td>
+<td data-label="Уровень">3c</td>
+<td data-label="Источник"><code>application.properties</code>/<code>.yaml</code> снаружи jar (<code>./</code>, <code>./config/</code>, <code>./config/*/</code>)</td>
+<td data-label="Кто добавляет">он же</td>
 </tr>
 <tr>
-<td>3d</td>
-<td><code>application-{profile}</code> снаружи jar</td>
-<td>он же</td>
+<td data-label="Уровень">3d</td>
+<td data-label="Источник"><code>application-{profile}</code> снаружи jar</td>
+<td data-label="Кто добавляет">он же</td>
 </tr>
 <tr>
-<td>3e</td>
-<td>всё, что пришло через <code>spring.config.import</code> из документа</td>
-<td>вставляется <strong>сразу после</strong> импортировавшего документа, с приоритетом выше него</td>
+<td data-label="Уровень">3e</td>
+<td data-label="Источник">всё, что пришло через <code>spring.config.import</code> из документа</td>
+<td data-label="Кто добавляет">вставляется <strong>сразу после</strong> импортировавшего документа, с приоритетом выше него</td>
 </tr>
 <tr>
-<td>4</td>
-<td><code>RandomValuePropertySource</code> (<code>random.int</code>, <code>random.uuid</code>, <code>random.long</code>, <code>random.value</code>)</td>
-<td>автоматически</td>
+<td data-label="Уровень">4</td>
+<td data-label="Источник"><code>RandomValuePropertySource</code> (<code>random.int</code>, <code>random.uuid</code>, <code>random.long</code>, <code>random.value</code>)</td>
+<td data-label="Кто добавляет">автоматически</td>
 </tr>
 <tr>
-<td>5</td>
-<td>переменные окружения ОС (<code>SystemEnvironmentPropertySource</code>)</td>
-<td><code>StandardEnvironment</code></td>
+<td data-label="Уровень">5</td>
+<td data-label="Источник">переменные окружения ОС (<code>SystemEnvironmentPropertySource</code>)</td>
+<td data-label="Кто добавляет"><code>StandardEnvironment</code></td>
 </tr>
 <tr>
-<td>6</td>
-<td>системные свойства JVM (<code>-D</code>)</td>
-<td><code>StandardEnvironment</code></td>
+<td data-label="Уровень">6</td>
+<td data-label="Источник">системные свойства JVM (<code>-D</code>)</td>
+<td data-label="Кто добавляет"><code>StandardEnvironment</code></td>
 </tr>
 <tr>
-<td>7</td>
-<td>JNDI <code>java:comp/env</code></td>
-<td>только в war в сервлет-контейнере</td>
+<td data-label="Уровень">7</td>
+<td data-label="Источник">JNDI <code>java:comp/env</code></td>
+<td data-label="Кто добавляет">только в war в сервлет-контейнере</td>
 </tr>
 <tr>
-<td>8</td>
-<td>init-параметры <code>ServletContext</code></td>
-<td>war</td>
+<td data-label="Уровень">8</td>
+<td data-label="Источник">init-параметры <code>ServletContext</code></td>
+<td data-label="Кто добавляет">war</td>
 </tr>
 <tr>
-<td>9</td>
-<td>init-параметры <code>ServletConfig</code></td>
-<td>war</td>
+<td data-label="Уровень">9</td>
+<td data-label="Источник">init-параметры <code>ServletConfig</code></td>
+<td data-label="Кто добавляет">war</td>
 </tr>
 <tr>
-<td>10</td>
-<td><code>SPRING_APPLICATION_JSON</code></td>
-<td><code>SpringApplicationJsonEnvironmentPostProcessor</code></td>
+<td data-label="Уровень">10</td>
+<td data-label="Источник"><code>SPRING_APPLICATION_JSON</code></td>
+<td data-label="Кто добавляет"><code>SpringApplicationJsonEnvironmentPostProcessor</code></td>
 </tr>
 <tr>
-<td>11</td>
-<td>аргументы командной строки (<code>--key=value</code>)</td>
-<td><code>SimpleCommandLinePropertySource</code></td>
+<td data-label="Уровень">11</td>
+<td data-label="Источник">аргументы командной строки (<code>--key=value</code>)</td>
+<td data-label="Кто добавляет"><code>SimpleCommandLinePropertySource</code></td>
 </tr>
 <tr>
-<td>12</td>
-<td><code>properties</code> в <code>@SpringBootTest</code> и слайсах</td>
-<td>только тесты</td>
+<td data-label="Уровень">12</td>
+<td data-label="Источник"><code>properties</code> в <code>@SpringBootTest</code> и слайсах</td>
+<td data-label="Кто добавляет">только тесты</td>
 </tr>
 <tr>
-<td>13</td>
-<td><code>@DynamicPropertySource</code></td>
-<td>только тесты</td>
+<td data-label="Уровень">13</td>
+<td data-label="Источник"><code>@DynamicPropertySource</code></td>
+<td data-label="Кто добавляет">только тесты</td>
 </tr>
 <tr>
-<td>14</td>
-<td><code>@TestPropertySource</code></td>
-<td>только тесты</td>
+<td data-label="Уровень">14</td>
+<td data-label="Источник"><code>@TestPropertySource</code></td>
+<td data-label="Кто добавляет">только тесты</td>
 </tr>
 <tr>
-<td>15</td>
-<td><code>$HOME/.config/spring-boot/spring-boot-devtools.properties</code></td>
-<td>только с devtools</td>
+<td data-label="Уровень">15</td>
+<td data-label="Источник"><code>$HOME/.config/spring-boot/spring-boot-devtools.properties</code></td>
+<td data-label="Кто добавляет">только с devtools</td>
 </tr>
 </tbody>
 </table>
@@ -2524,7 +2524,7 @@ ACME_CLIENT_READ_TIMEOUT      # переменная окружения
 <h3 id="510-кастомные-конвертеры-и-типы">5.10 Кастомные конвертеры и типы</h3>
 <p>Конвертер (<em>converter</em>) — это объект, который превращает строковое значение свойства в тип, нужный коду: <code>Duration</code>, <code>DataSize</code>, денежную сумму или БИК. Значения свойств приходят в Boot строками, и конвертирует их Boot через <code>ApplicationConversionService</code> — отдельный <code>ConversionService</code>, не тот, которым MVC пользуется для параметров запроса. Если об этом забыть, собственный конвертер молча не применится. Ниже таблица встроенных типов, ловушка с <code>Period</code>, способы зарегистрировать свой конвертер, приёмы, которые делают сообщения валидации читаемыми, и строка <code>Origin</code>, по которой видно, откуда пришло значение.</p>
 <p>В <code>ApplicationConversionService</code> из коробки зарегистрированы конвертеры для таких типов:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип</th>
@@ -2534,44 +2534,44 @@ ACME_CLIENT_READ_TIMEOUT      # переменная окружения
 </thead>
 <tbody>
 <tr>
-<td><code>Duration</code></td>
-<td><code>30s</code>, <code>10m</code>, <code>2h</code>, <code>1d</code>, <code>PT30S</code>, <code>500ms</code>, <code>100us</code>, <code>10ns</code></td>
-<td><code>@DurationUnit(ChronoUnit.SECONDS)</code> для значений без суффикса; <code>@DurationFormat</code></td>
+<td data-label="Тип"><code>Duration</code></td>
+<td data-label="Формат"><code>30s</code>, <code>10m</code>, <code>2h</code>, <code>1d</code>, <code>PT30S</code>, <code>500ms</code>, <code>100us</code>, <code>10ns</code></td>
+<td data-label="Аннотация-модификатор"><code>@DurationUnit(ChronoUnit.SECONDS)</code> для значений без суффикса; <code>@DurationFormat</code></td>
 </tr>
 <tr>
-<td><code>Period</code></td>
-<td><code>1y</code>, <code>2m</code> (месяцы!), <code>15d</code>, <code>3w</code>, <code>P1Y2M</code></td>
-<td><code>@PeriodUnit</code></td>
+<td data-label="Тип"><code>Period</code></td>
+<td data-label="Формат"><code>1y</code>, <code>2m</code> (месяцы!), <code>15d</code>, <code>3w</code>, <code>P1Y2M</code></td>
+<td data-label="Аннотация-модификатор"><code>@PeriodUnit</code></td>
 </tr>
 <tr>
-<td><code>DataSize</code></td>
-<td><code>10MB</code>, <code>512KB</code>, <code>2GB</code>, <code>1024B</code></td>
-<td><code>@DataSizeUnit(DataUnit.MEGABYTES)</code></td>
+<td data-label="Тип"><code>DataSize</code></td>
+<td data-label="Формат"><code>10MB</code>, <code>512KB</code>, <code>2GB</code>, <code>1024B</code></td>
+<td data-label="Аннотация-модификатор"><code>@DataSizeUnit(DataUnit.MEGABYTES)</code></td>
 </tr>
 <tr>
-<td><code>Charset</code>, <code>Locale</code>, <code>TimeZone</code>, <code>Currency</code></td>
-<td>стандартные обозначения</td>
-<td>—</td>
+<td data-label="Тип"><code>Charset</code>, <code>Locale</code>, <code>TimeZone</code>, <code>Currency</code></td>
+<td data-label="Формат">стандартные обозначения</td>
+<td data-label="Аннотация-модификатор">—</td>
 </tr>
 <tr>
-<td><code>InetAddress</code>, <code>File</code>, <code>Path</code>, <code>Resource</code></td>
-<td>строка</td>
-<td>—</td>
+<td data-label="Тип"><code>InetAddress</code>, <code>File</code>, <code>Path</code>, <code>Resource</code></td>
+<td data-label="Формат">строка</td>
+<td data-label="Аннотация-модификатор">—</td>
 </tr>
 <tr>
-<td>enum</td>
-<td>relaxed: <code>read-only</code> → <code>READ_ONLY</code>, регистр и дефисы игнорируются</td>
-<td>—</td>
+<td data-label="Тип">enum</td>
+<td data-label="Формат">relaxed: <code>read-only</code> → <code>READ_ONLY</code>, регистр и дефисы игнорируются</td>
+<td data-label="Аннотация-модификатор">—</td>
 </tr>
 <tr>
-<td><code>List</code>/<code>Set</code></td>
-<td>запятая либо индексы</td>
-<td>—</td>
+<td data-label="Тип"><code>List</code>/<code>Set</code></td>
+<td data-label="Формат">запятая либо индексы</td>
+<td data-label="Аннотация-модификатор">—</td>
 </tr>
 <tr>
-<td><code>Map</code></td>
-<td>точечная вложенность либо <code>[key]</code></td>
-<td>—</td>
+<td data-label="Тип"><code>Map</code></td>
+<td data-label="Формат">точечная вложенность либо <code>[key]</code></td>
+<td data-label="Аннотация-модификатор">—</td>
 </tr>
 </tbody>
 </table>
@@ -2817,7 +2817,7 @@ Binding to target ru.bank.limits.autoconfigure.LimitsProperties failed:
 <p>Группы доступны по адресам <code>/actuator/health/liveness</code>, <code>/actuator/health/readiness</code> и <code>/actuator/health/deep</code>.</p>
 <p><code>management.endpoint.health.probes.enabled</code> включается <strong>автоматически</strong>, если Boot обнаружил Kubernetes (по переменным окружения <code>KUBERNETES_SERVICE_HOST</code> и т. п.) или Cloud Foundry, а в остальных случаях его включают явно. <code>management.endpoint.health.probes.add-additional-paths=true</code> дополнительно публикует <code>/livez</code> и <code>/readyz</code> <strong>на основном порту</strong>. Это решает проблему, когда management вынесен на отдельный порт, а пробы хочется держать на основном.</p>
 <p><strong>Смысловая граница, которую нарушают чаще всего.</strong> Liveness и readiness отвечают на разные вопросы, и k8s реагирует на них по-разному, поэтому и включать в них надо разное. В таблице это сведено в четыре строки:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -2827,24 +2827,24 @@ Binding to target ru.bank.limits.autoconfigure.LimitsProperties failed:
 </thead>
 <tbody>
 <tr>
-<td>Вопрос</td>
-<td>«процесс сломан безвозвратно?»</td>
-<td>«можно ли слать трафик прямо сейчас?»</td>
+<td data-label="">Вопрос</td>
+<td data-label="Liveness">«процесс сломан безвозвратно?»</td>
+<td data-label="Readiness">«можно ли слать трафик прямо сейчас?»</td>
 </tr>
 <tr>
-<td>Реакция k8s</td>
-<td><strong>убить и перезапустить контейнер</strong></td>
-<td>убрать под из Endpoints Service</td>
+<td data-label="">Реакция k8s</td>
+<td data-label="Liveness"><strong>убить и перезапустить контейнер</strong></td>
+<td data-label="Readiness">убрать под из Endpoints Service</td>
 </tr>
 <tr>
-<td>Что включать</td>
-<td>только внутреннее состояние: <code>livenessState</code>, поломанный локальный кеш, застрявший внутренний воркер</td>
-<td>готовность принять запрос: <code>readinessState</code>, критичные зависимости — и то с оговорками</td>
+<td data-label="">Что включать</td>
+<td data-label="Liveness">только внутреннее состояние: <code>livenessState</code>, поломанный локальный кеш, застрявший внутренний воркер</td>
+<td data-label="Readiness">готовность принять запрос: <code>readinessState</code>, критичные зависимости — и то с оговорками</td>
 </tr>
 <tr>
-<td>Что <strong>нельзя</strong> включать</td>
-<td>БД, Kafka, Redis, внешние HTTP-сервисы</td>
-<td>внешние некритичные сервисы</td>
+<td data-label="">Что <strong>нельзя</strong> включать</td>
+<td data-label="Liveness">БД, Kafka, Redis, внешние HTTP-сервисы</td>
+<td data-label="Readiness">внешние некритичные сервисы</td>
 </tr>
 </tbody>
 </table>
@@ -2998,7 +2998,7 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 <h3 id="66-таблица-эндпоинтов-и-их-безопасность">6.6 Таблица эндпоинтов и их безопасность</h3>
 <p>Таблица эндпоинтов и их безопасности — это сводка, по которой удобнее всего решать, какие эндпоинты открывать: для каждого сразу видно и то, что он показывает, и то, что он даёт злоумышленнику. Ниже такая таблица по полному списку встроенных эндпоинтов, затем рабочий продовый набор для Kubernetes и разбор того, почему exposure и access надо настраивать независимо друг от друга.</p>
 <p>В таблице собраны все встроенные эндпоинты (<a href="https://docs.spring.io/spring-boot/reference/actuator/endpoints.html">Actuator Endpoints</a>). Колонка «наружу» отвечает на вопрос, можно ли выставлять эндпоинт на публичный порт или Ingress без аутентификации. Колонка «внутрь» — можно ли держать его за периметром для мониторинга и дежурного. Последняя колонка объясняет, почему ответ именно такой, а сокращение CVE (<em>Common Vulnerabilities and Exposures</em>) в ней означает публичный реестр известных уязвимостей:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>ID</th>
@@ -3010,165 +3010,165 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </thead>
 <tbody>
 <tr>
-<td><code>health</code></td>
-<td>статус, с деталями по настройке</td>
-<td>да (без деталей)</td>
-<td>да</td>
-<td>при <code>show-details: always</code> — имена БД, хосты, версии</td>
+<td data-label="ID"><code>health</code></td>
+<td data-label="Что показывает">статус, с деталями по настройке</td>
+<td data-label="Наружу">да (без деталей)</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">при <code>show-details: always</code> — имена БД, хосты, версии</td>
 </tr>
 <tr>
-<td><code>info</code></td>
-<td>произвольная информация</td>
-<td>да, если контролируете содержимое</td>
-<td>да</td>
-<td>версию сборки и коммит (помогает подобрать CVE)</td>
+<td data-label="ID"><code>info</code></td>
+<td data-label="Что показывает">произвольная информация</td>
+<td data-label="Наружу">да, если контролируете содержимое</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">версию сборки и коммит (помогает подобрать CVE)</td>
 </tr>
 <tr>
-<td><code>prometheus</code></td>
-<td>метрики в текстовом формате</td>
-<td>нет</td>
-<td>да</td>
-<td>профиль нагрузки, имена эндпоинтов, размеры очередей</td>
+<td data-label="ID"><code>prometheus</code></td>
+<td data-label="Что показывает">метрики в текстовом формате</td>
+<td data-label="Наружу">нет</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">профиль нагрузки, имена эндпоинтов, размеры очередей</td>
 </tr>
 <tr>
-<td><code>metrics</code></td>
-<td>навигация по метрикам</td>
-<td>нет</td>
-<td>да</td>
-<td>то же</td>
+<td data-label="ID"><code>metrics</code></td>
+<td data-label="Что показывает">навигация по метрикам</td>
+<td data-label="Наружу">нет</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">то же</td>
 </tr>
 <tr>
-<td><code>conditions</code></td>
-<td>отчёт условий</td>
-<td>нет</td>
-<td>да</td>
-<td>полный список библиотек и их версий по именам автоконфигураций</td>
+<td data-label="ID"><code>conditions</code></td>
+<td data-label="Что показывает">отчёт условий</td>
+<td data-label="Наружу">нет</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">полный список библиотек и их версий по именам автоконфигураций</td>
 </tr>
 <tr>
-<td><code>configprops</code></td>
-<td>все <code>@ConfigurationProperties</code></td>
-<td><strong>нет</strong></td>
-<td>да, за ролью</td>
-<td>конфигурацию целиком; при <code>show-values</code> — секреты</td>
+<td data-label="ID"><code>configprops</code></td>
+<td data-label="Что показывает">все <code>@ConfigurationProperties</code></td>
+<td data-label="Наружу"><strong>нет</strong></td>
+<td data-label="Внутрь">да, за ролью</td>
+<td data-label="Что даёт злоумышленнику">конфигурацию целиком; при <code>show-values</code> — секреты</td>
 </tr>
 <tr>
-<td><code>env</code></td>
-<td>все источники свойств</td>
-<td><strong>нет</strong></td>
-<td>да, за ролью</td>
-<td>то же плюс переменные окружения процесса</td>
+<td data-label="ID"><code>env</code></td>
+<td data-label="Что показывает">все источники свойств</td>
+<td data-label="Наружу"><strong>нет</strong></td>
+<td data-label="Внутрь">да, за ролью</td>
+<td data-label="Что даёт злоумышленнику">то же плюс переменные окружения процесса</td>
 </tr>
 <tr>
-<td><code>beans</code></td>
-<td>все бины и зависимости</td>
-<td>нет</td>
-<td>да</td>
-<td>карту приложения: какие интеграции есть, какие фреймворки</td>
+<td data-label="ID"><code>beans</code></td>
+<td data-label="Что показывает">все бины и зависимости</td>
+<td data-label="Наружу">нет</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">карту приложения: какие интеграции есть, какие фреймворки</td>
 </tr>
 <tr>
-<td><code>mappings</code></td>
-<td>все <code>@RequestMapping</code></td>
-<td><strong>нет</strong></td>
-<td>да</td>
-<td>полный список URL, включая внутренние и админские</td>
+<td data-label="ID"><code>mappings</code></td>
+<td data-label="Что показывает">все <code>@RequestMapping</code></td>
+<td data-label="Наружу"><strong>нет</strong></td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">полный список URL, включая внутренние и админские</td>
 </tr>
 <tr>
-<td><code>loggers</code></td>
-<td>уровни логов, чтение и <strong>запись</strong></td>
-<td><strong>нет</strong></td>
-<td>да, за ролью на запись</td>
-<td><code>TRACE</code> на весь root → лавина логов, забитый диск, DoS; в логах окажутся тела запросов и SQL с данными</td>
+<td data-label="ID"><code>loggers</code></td>
+<td data-label="Что показывает">уровни логов, чтение и <strong>запись</strong></td>
+<td data-label="Наружу"><strong>нет</strong></td>
+<td data-label="Внутрь">да, за ролью на запись</td>
+<td data-label="Что даёт злоумышленнику"><code>TRACE</code> на весь root → лавина логов, забитый диск, DoS; в логах окажутся тела запросов и SQL с данными</td>
 </tr>
 <tr>
-<td><code>threaddump</code></td>
-<td>дамп потоков</td>
-<td><strong>нет</strong></td>
-<td>да</td>
-<td>структуру кода, имена внутренних классов, иногда данные в именах потоков; каждый вызов — safepoint-пауза</td>
+<td data-label="ID"><code>threaddump</code></td>
+<td data-label="Что показывает">дамп потоков</td>
+<td data-label="Наружу"><strong>нет</strong></td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">структуру кода, имена внутренних классов, иногда данные в именах потоков; каждый вызов — safepoint-пауза</td>
 </tr>
 <tr>
-<td><code>heapdump</code></td>
-<td>файл дампа кучи</td>
-<td><strong>нет, никогда</strong></td>
-<td>только вручную</td>
-<td><strong>всё</strong>: пароли, токены, ПДн, содержимое кешей. Плюс пауза на секунды и гигабайты трафика</td>
+<td data-label="ID"><code>heapdump</code></td>
+<td data-label="Что показывает">файл дампа кучи</td>
+<td data-label="Наружу"><strong>нет, никогда</strong></td>
+<td data-label="Внутрь">только вручную</td>
+<td data-label="Что даёт злоумышленнику"><strong>всё</strong>: пароли, токены, ПДн, содержимое кешей. Плюс пауза на секунды и гигабайты трафика</td>
 </tr>
 <tr>
-<td><code>shutdown</code></td>
-<td>останов приложения</td>
-<td><strong>нет, никогда</strong></td>
-<td>нет</td>
-<td>тривиальный DoS одним POST</td>
+<td data-label="ID"><code>shutdown</code></td>
+<td data-label="Что показывает">останов приложения</td>
+<td data-label="Наружу"><strong>нет, никогда</strong></td>
+<td data-label="Внутрь">нет</td>
+<td data-label="Что даёт злоумышленнику">тривиальный DoS одним POST</td>
 </tr>
 <tr>
-<td><code>httpexchanges</code></td>
-<td>последние 100 HTTP-обменов</td>
-<td><strong>нет</strong></td>
-<td>осторожно</td>
-<td>заголовки и URL чужих запросов — фактически частичный перехват трафика</td>
+<td data-label="ID"><code>httpexchanges</code></td>
+<td data-label="Что показывает">последние 100 HTTP-обменов</td>
+<td data-label="Наружу"><strong>нет</strong></td>
+<td data-label="Внутрь">осторожно</td>
+<td data-label="Что даёт злоумышленнику">заголовки и URL чужих запросов — фактически частичный перехват трафика</td>
 </tr>
 <tr>
-<td><code>auditevents</code></td>
-<td>события аутентификации Spring Security</td>
-<td>нет</td>
-<td>да</td>
-<td>имена пользователей, попытки входа</td>
+<td data-label="ID"><code>auditevents</code></td>
+<td data-label="Что показывает">события аутентификации Spring Security</td>
+<td data-label="Наружу">нет</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">имена пользователей, попытки входа</td>
 </tr>
 <tr>
-<td><code>sessions</code></td>
-<td>сессии Spring Session, <strong>удаление</strong></td>
-<td><strong>нет</strong></td>
-<td>нет</td>
-<td>чужие session id → захват сессии</td>
+<td data-label="ID"><code>sessions</code></td>
+<td data-label="Что показывает">сессии Spring Session, <strong>удаление</strong></td>
+<td data-label="Наружу"><strong>нет</strong></td>
+<td data-label="Внутрь">нет</td>
+<td data-label="Что даёт злоумышленнику">чужие session id → захват сессии</td>
 </tr>
 <tr>
-<td><code>caches</code></td>
-<td>список кешей, <strong>очистка</strong></td>
-<td>нет</td>
-<td>да, чтение</td>
-<td>очистка кеша → лавина на БД</td>
+<td data-label="ID"><code>caches</code></td>
+<td data-label="Что показывает">список кешей, <strong>очистка</strong></td>
+<td data-label="Наружу">нет</td>
+<td data-label="Внутрь">да, чтение</td>
+<td data-label="Что даёт злоумышленнику">очистка кеша → лавина на БД</td>
 </tr>
 <tr>
-<td><code>scheduledtasks</code></td>
-<td>список <code>@Scheduled</code></td>
-<td>нет</td>
-<td>да</td>
-<td>расписание фоновых работ (когда система наиболее уязвима)</td>
+<td data-label="ID"><code>scheduledtasks</code></td>
+<td data-label="Что показывает">список <code>@Scheduled</code></td>
+<td data-label="Наружу">нет</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">расписание фоновых работ (когда система наиболее уязвима)</td>
 </tr>
 <tr>
-<td><code>startup</code></td>
-<td>шаги старта</td>
-<td>нет</td>
-<td>да</td>
-<td>безобиден; <code>POST</code> очищает буфер шагов</td>
+<td data-label="ID"><code>startup</code></td>
+<td data-label="Что показывает">шаги старта</td>
+<td data-label="Наружу">нет</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">безобиден; <code>POST</code> очищает буфер шагов</td>
 </tr>
 <tr>
-<td><code>flyway</code> / <code>liquibase</code></td>
-<td>применённые миграции</td>
-<td>нет</td>
-<td>да</td>
-<td>структуру схемы БД</td>
+<td data-label="ID"><code>flyway</code> / <code>liquibase</code></td>
+<td data-label="Что показывает">применённые миграции</td>
+<td data-label="Наружу">нет</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">структуру схемы БД</td>
 </tr>
 <tr>
-<td><code>quartz</code></td>
-<td>задания Quartz</td>
-<td>нет</td>
-<td>да</td>
-<td>расписание</td>
+<td data-label="ID"><code>quartz</code></td>
+<td data-label="Что показывает">задания Quartz</td>
+<td data-label="Наружу">нет</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">расписание</td>
 </tr>
 <tr>
-<td><code>integrationgraph</code></td>
-<td>граф Spring Integration</td>
-<td>нет</td>
-<td>да</td>
-<td>архитектуру потоков</td>
+<td data-label="ID"><code>integrationgraph</code></td>
+<td data-label="Что показывает">граф Spring Integration</td>
+<td data-label="Наружу">нет</td>
+<td data-label="Внутрь">да</td>
+<td data-label="Что даёт злоумышленнику">архитектуру потоков</td>
 </tr>
 <tr>
-<td><code>logfile</code></td>
-<td>содержимое лог-файла</td>
-<td><strong>нет, никогда</strong></td>
-<td>нет</td>
-<td>логи целиком, со всем, что в них попало</td>
+<td data-label="ID"><code>logfile</code></td>
+<td data-label="Что показывает">содержимое лог-файла</td>
+<td data-label="Наружу"><strong>нет, никогда</strong></td>
+<td data-label="Внутрь">нет</td>
+<td data-label="Что даёт злоумышленнику">логи целиком, со всем, что в них попало</td>
 </tr>
 </tbody>
 </table>
@@ -3319,7 +3319,7 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 <p>Встроенный сервер (<em>embedded server</em>) — это веб-сервер, который живёт внутри процесса приложения и стартует вместе с контекстом, а не принимает war-архив извне, как отдельно установленный Tomcat. От его настройки зависят три вещи, которые в проде заметнее всего: как сервис ведёт себя под перегрузкой, теряет ли он запросы при выкате новой версии и что происходит с потоками, когда включены виртуальные потоки. Раздел сначала разбирает выбор сервера и четыре параметра Tomcat, которые действительно определяют поведение под нагрузкой. Затем мы перейдём к корректной остановке и её стыковке с Kubernetes и закончим тем, что именно переключает флаг виртуальных потоков.</p>
 <h3 id="71-выбор-сервера">7.1 Выбор сервера</h3>
 <p>Выбор сервера — это решение о том, какой из встроенных серверов обслуживает HTTP-запросы приложения, и принимается оно набором зависимостей в сборке, а не свойством в конфигурации. Boot 4 поддерживает три встроенных сервера: Tomcat, Jetty и Reactor Netty. Undertow, который был четвёртым вариантом в ветках 2.x и 3.x, в Boot 4.0 убран вместе со стартером <code>spring-boot-starter-undertow</code> и свойствами <code>server.undertow.*</code>: Boot 4 требует Servlet 6.1, а Undertow с этой версией пока несовместим (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide">4.0 Migration Guide</a>). Если сервис на Boot 3 работает на Undertow, то при апгрейде его придётся перевести на Tomcat или Jetty. Ниже таблица вариантов с их особенностями, способ сменить сервер и совет о том, когда это вообще стоит делать.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Сервер</th>
@@ -3330,28 +3330,28 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </thead>
 <tbody>
 <tr>
-<td>Tomcat</td>
-<td>Servlet</td>
-<td><code>spring-boot-starter-tomcat</code> (в <code>-web</code> по умолчанию)</td>
-<td>эталон совместимости, Servlet 6.1 в Boot 4 (Tomcat 11)</td>
+<td data-label="Сервер">Tomcat</td>
+<td data-label="Стек">Servlet</td>
+<td data-label="Стартер"><code>spring-boot-starter-tomcat</code> (в <code>-web</code> по умолчанию)</td>
+<td data-label="Особенности">эталон совместимости, Servlet 6.1 в Boot 4 (Tomcat 11)</td>
 </tr>
 <tr>
-<td>Jetty</td>
-<td>Servlet</td>
-<td><code>spring-boot-starter-jetty</code></td>
-<td>гибкая настройка, virtual threads, Jetty 12.1 в Boot 4</td>
+<td data-label="Сервер">Jetty</td>
+<td data-label="Стек">Servlet</td>
+<td data-label="Стартер"><code>spring-boot-starter-jetty</code></td>
+<td data-label="Особенности">гибкая настройка, virtual threads, Jetty 12.1 в Boot 4</td>
 </tr>
 <tr>
-<td>Undertow</td>
-<td>Servlet</td>
-<td><code>spring-boot-starter-undertow</code> (только до Boot 3.x)</td>
-<td>XNIO, меньше памяти на соединение; развитие замедлилось; в Boot 4 не поддерживается</td>
+<td data-label="Сервер">Undertow</td>
+<td data-label="Стек">Servlet</td>
+<td data-label="Стартер"><code>spring-boot-starter-undertow</code> (только до Boot 3.x)</td>
+<td data-label="Особенности">XNIO, меньше памяти на соединение; развитие замедлилось; в Boot 4 не поддерживается</td>
 </tr>
 <tr>
-<td>Reactor Netty</td>
-<td>Reactive</td>
-<td><code>spring-boot-starter-webflux</code> (по умолчанию)</td>
-<td>event loop, для WebFlux</td>
+<td data-label="Сервер">Reactor Netty</td>
+<td data-label="Стек">Reactive</td>
+<td data-label="Стартер"><code>spring-boot-starter-webflux</code> (по умолчанию)</td>
+<td data-label="Особенности">event loop, для WebFlux</td>
 </tr>
 </tbody>
 </table>
@@ -3537,7 +3537,7 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </code></pre></div>
 
 <p>Перечень того, что переключает этот флаг, любят спрашивать на интервью, потому что большинство помнит только про Tomcat. Полный перечень собран в таблице:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Компонент</th>
@@ -3546,36 +3546,36 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </thead>
 <tbody>
 <tr>
-<td>Tomcat / Jetty</td>
-<td><code>protocolHandler.setExecutor(Executors.newVirtualThreadPerTaskExecutor())</code> — каждый запрос на своём виртуальном потоке, пул <code>threads.max</code> не применяется</td>
+<td data-label="Компонент">Tomcat / Jetty</td>
+<td data-label="Что происходит при spring.threads.virtual.enabled=true"><code>protocolHandler.setExecutor(Executors.newVirtualThreadPerTaskExecutor())</code> — каждый запрос на своём виртуальном потоке, пул <code>threads.max</code> не применяется</td>
 </tr>
 <tr>
-<td><code>@Async</code> (<code>applicationTaskExecutor</code>)</td>
-<td><code>SimpleAsyncTaskExecutor</code> с <code>virtualThreads=true</code> вместо <code>ThreadPoolTaskExecutor</code></td>
+<td data-label="Компонент"><code>@Async</code> (<code>applicationTaskExecutor</code>)</td>
+<td data-label="Что происходит при spring.threads.virtual.enabled=true"><code>SimpleAsyncTaskExecutor</code> с <code>virtualThreads=true</code> вместо <code>ThreadPoolTaskExecutor</code></td>
 </tr>
 <tr>
-<td><code>@Scheduled</code> (<code>taskScheduler</code>)</td>
-<td><code>SimpleAsyncTaskScheduler</code> на виртуальных потоках</td>
+<td data-label="Компонент"><code>@Scheduled</code> (<code>taskScheduler</code>)</td>
+<td data-label="Что происходит при spring.threads.virtual.enabled=true"><code>SimpleAsyncTaskScheduler</code> на виртуальных потоках</td>
 </tr>
 <tr>
-<td>Spring Kafka, RabbitMQ listener containers</td>
-<td>автоконфигурируется executor на виртуальных потоках</td>
+<td data-label="Компонент">Spring Kafka, RabbitMQ listener containers</td>
+<td data-label="Что происходит при spring.threads.virtual.enabled=true">автоконфигурируется executor на виртуальных потоках</td>
 </tr>
 <tr>
-<td>Spring Data Redis</td>
-<td><code>ClusterCommandExecutor</code> использует виртуальные потоки</td>
+<td data-label="Компонент">Spring Data Redis</td>
+<td data-label="Что происходит при spring.threads.virtual.enabled=true"><code>ClusterCommandExecutor</code> использует виртуальные потоки</td>
 </tr>
 <tr>
-<td>Spring for Apache Pulsar</td>
-<td><code>VirtualThreadTaskExecutor</code></td>
+<td data-label="Компонент">Spring for Apache Pulsar</td>
+<td data-label="Что происходит при spring.threads.virtual.enabled=true"><code>VirtualThreadTaskExecutor</code></td>
 </tr>
 <tr>
-<td>WebFlux, блокирующие участки</td>
-<td>используется <code>applicationTaskExecutor</code>, то есть виртуальные потоки</td>
+<td data-label="Компонент">WebFlux, блокирующие участки</td>
+<td data-label="Что происходит при spring.threads.virtual.enabled=true">используется <code>applicationTaskExecutor</code>, то есть виртуальные потоки</td>
 </tr>
 <tr>
-<td>Reactor Netty (WebFlux), event loop</td>
-<td><strong>не переключается</strong> — остаётся платформенным, и это правильно</td>
+<td data-label="Компонент">Reactor Netty (WebFlux), event loop</td>
+<td data-label="Что происходит при spring.threads.virtual.enabled=true"><strong>не переключается</strong> — остаётся платформенным, и это правильно</td>
 </tr>
 </tbody>
 </table>
@@ -3606,7 +3606,7 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </code></pre></div>
 
 <p>Главный атрибут аннотации — <code>webEnvironment</code>, и от него зависит, стартует ли настоящий сервер:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Значение</th>
@@ -3615,20 +3615,20 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </thead>
 <tbody>
 <tr>
-<td><code>MOCK</code> (по умолчанию)</td>
-<td>web-контекст с mock-окружением, <strong>сервер не стартует</strong>; работает с <code>@AutoConfigureMockMvc</code></td>
+<td data-label="Значение"><code>MOCK</code> (по умолчанию)</td>
+<td data-label="Поведение">web-контекст с mock-окружением, <strong>сервер не стартует</strong>; работает с <code>@AutoConfigureMockMvc</code></td>
 </tr>
 <tr>
-<td><code>RANDOM_PORT</code></td>
-<td>реальный сервер на случайном порту; порт доступен через <code>@LocalServerPort</code></td>
+<td data-label="Значение"><code>RANDOM_PORT</code></td>
+<td data-label="Поведение">реальный сервер на случайном порту; порт доступен через <code>@LocalServerPort</code></td>
 </tr>
 <tr>
-<td><code>DEFINED_PORT</code></td>
-<td>реальный сервер на <code>server.port</code> (или 8080) — избегайте, конфликты портов в CI</td>
+<td data-label="Значение"><code>DEFINED_PORT</code></td>
+<td data-label="Поведение">реальный сервер на <code>server.port</code> (или 8080) — избегайте, конфликты портов в CI</td>
 </tr>
 <tr>
-<td><code>NONE</code></td>
-<td>контекст без web-окружения</td>
+<td data-label="Значение"><code>NONE</code></td>
+<td data-label="Поведение">контекст без web-окружения</td>
 </tr>
 </tbody>
 </table>
@@ -3637,7 +3637,7 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 <p>Из дополнительных атрибутов полезны четыре. <code>properties = {"acme.client.enabled=false"}</code> задаёт свойства, <code>args = "--app.mode=batch"</code> — аргументы командной строки, <code>classes = {...}</code> перечисляет конфигурации явно вместо поиска, а <code>useMainMethod = UseMainMethod.WHEN_AVAILABLE</code> вызывает <code>main</code>, чтобы применились кастомизации <code>SpringApplication</code>.</p>
 <h3 id="82-слайсы">8.2 Слайсы</h3>
 <p>Тестовый слайс (<em>test slice</em>) — это ограниченный набор автоконфигураций плюс <code>TypeExcludeFilter</code>, который отсекает лишние компоненты при сканировании. Слайс нужен, чтобы проверить один слой приложения — веб, JPA, JSON — и не платить за подъём всего остального. Ниже таблица слайсов с тем, что каждый поднимает и чего не поднимает, два нюанса <code>@DataJpaTest</code>, на которых спотыкаются постоянно, и правило для <code>@WebMvcTest</code>.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Аннотация</th>
@@ -3647,49 +3647,49 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </thead>
 <tbody>
 <tr>
-<td><code>@WebMvcTest</code></td>
-<td><code>DispatcherServlet</code>, <code>@Controller</code>, <code>@ControllerAdvice</code>, <code>WebMvcConfigurer</code>, <code>Converter</code>, <code>Filter</code>, <code>HandlerInterceptor</code>, Jackson</td>
-<td><code>@Service</code>, <code>@Repository</code>, <code>@Component</code>, <code>DataSource</code></td>
+<td data-label="Аннотация"><code>@WebMvcTest</code></td>
+<td data-label="Что поднимается"><code>DispatcherServlet</code>, <code>@Controller</code>, <code>@ControllerAdvice</code>, <code>WebMvcConfigurer</code>, <code>Converter</code>, <code>Filter</code>, <code>HandlerInterceptor</code>, Jackson</td>
+<td data-label="Что не поднимается"><code>@Service</code>, <code>@Repository</code>, <code>@Component</code>, <code>DataSource</code></td>
 </tr>
 <tr>
-<td><code>@WebFluxTest</code></td>
-<td>то же для WebFlux, <code>WebTestClient</code></td>
-<td>аналогично</td>
+<td data-label="Аннотация"><code>@WebFluxTest</code></td>
+<td data-label="Что поднимается">то же для WebFlux, <code>WebTestClient</code></td>
+<td data-label="Что не поднимается">аналогично</td>
 </tr>
 <tr>
-<td><code>@DataJpaTest</code></td>
-<td>JPA, <code>TestEntityManager</code>, <code>@Entity</code>, репозитории, <code>DataSource</code>; <strong>транзакция с откатом</strong> на каждый тест</td>
-<td>контроллеры, сервисы</td>
+<td data-label="Аннотация"><code>@DataJpaTest</code></td>
+<td data-label="Что поднимается">JPA, <code>TestEntityManager</code>, <code>@Entity</code>, репозитории, <code>DataSource</code>; <strong>транзакция с откатом</strong> на каждый тест</td>
+<td data-label="Что не поднимается">контроллеры, сервисы</td>
 </tr>
 <tr>
-<td><code>@JdbcTest</code></td>
-<td><code>DataSource</code>, <code>JdbcTemplate</code>, транзакция с откатом</td>
-<td>JPA</td>
+<td data-label="Аннотация"><code>@JdbcTest</code></td>
+<td data-label="Что поднимается"><code>DataSource</code>, <code>JdbcTemplate</code>, транзакция с откатом</td>
+<td data-label="Что не поднимается">JPA</td>
 </tr>
 <tr>
-<td><code>@DataJdbcTest</code></td>
-<td>Spring Data JDBC</td>
-<td>JPA</td>
+<td data-label="Аннотация"><code>@DataJdbcTest</code></td>
+<td data-label="Что поднимается">Spring Data JDBC</td>
+<td data-label="Что не поднимается">JPA</td>
 </tr>
 <tr>
-<td><code>@JsonTest</code></td>
-<td>Jackson/Gson/JSON-B, <code>JacksonTester</code>, <code>JsonContentAssert</code></td>
-<td>всё остальное</td>
+<td data-label="Аннотация"><code>@JsonTest</code></td>
+<td data-label="Что поднимается">Jackson/Gson/JSON-B, <code>JacksonTester</code>, <code>JsonContentAssert</code></td>
+<td data-label="Что не поднимается">всё остальное</td>
 </tr>
 <tr>
-<td><code>@RestClientTest</code></td>
-<td><code>RestTemplateBuilder</code>/<code>RestClient.Builder</code> + <code>MockRestServiceServer</code></td>
-<td>сервер</td>
+<td data-label="Аннотация"><code>@RestClientTest</code></td>
+<td data-label="Что поднимается"><code>RestTemplateBuilder</code>/<code>RestClient.Builder</code> + <code>MockRestServiceServer</code></td>
+<td data-label="Что не поднимается">сервер</td>
 </tr>
 <tr>
-<td><code>@DataRedisTest</code>, <code>@DataMongoTest</code>, <code>@DataCassandraTest</code></td>
-<td>соответствующие модули Spring Data</td>
-<td>—</td>
+<td data-label="Аннотация"><code>@DataRedisTest</code>, <code>@DataMongoTest</code>, <code>@DataCassandraTest</code></td>
+<td data-label="Что поднимается">соответствующие модули Spring Data</td>
+<td data-label="Что не поднимается">—</td>
 </tr>
 <tr>
-<td><code>@JmsTest</code>, <code>@GraphQlTest</code>, <code>@WebServiceClientTest</code></td>
-<td>профильная инфраструктура</td>
-<td>—</td>
+<td data-label="Аннотация"><code>@JmsTest</code>, <code>@GraphQlTest</code>, <code>@WebServiceClientTest</code></td>
+<td data-label="Что поднимается">профильная инфраструктура</td>
+<td data-label="Что не поднимается">—</td>
 </tr>
 </tbody>
 </table>
@@ -3929,7 +3929,7 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 <p><code>withReuse(true)</code> вместе с <code>testcontainers.reuse.enable=true</code> в <code>~/.testcontainers.properties</code> позволяет контейнеру пережить даже перезапуск JVM, и локально он остаётся поднятым между прогонами. В CI reuse обычно выключают, чтобы грязное состояние не переходило из сборки в сборку. Подробности про сам Testcontainers — в главе 43 (<code>43-testing.md</code>).</p>
 <p>С синглтон-контейнером в базовом классе связана тонкость, которая пугает зря. <code>@DynamicPropertySource</code> <strong>сам по себе</strong> входит в <code>contextCustomizers</code>, но ключ считается по классу-объявителю и набору свойств, а не по значениям. Поэтому один базовый класс с одним <code>@DynamicPropertySource</code> вносит в ключ один и тот же вклад у всех наследников, и синглтон-контейнер в базовом классе кеш не дробит.</p>
 <p><strong>Бюджет.</strong> Практическую планку стоит зафиксировать в проекте явно, например такую:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Категория</th>
@@ -3939,24 +3939,24 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </thead>
 <tbody>
 <tr>
-<td>Юнит-тесты (без Spring)</td>
-<td>&lt; 30 с на модуль</td>
-<td>выносить в отдельный Maven-профиль</td>
+<td data-label="Категория">Юнит-тесты (без Spring)</td>
+<td data-label="Целевое время">&lt; 30 с на модуль</td>
+<td data-label="Что делать при превышении">выносить в отдельный Maven-профиль</td>
 </tr>
 <tr>
-<td>Слайсы (<code>@WebMvcTest</code>, <code>@DataJpaTest</code>)</td>
-<td>&lt; 2 мин</td>
-<td>считать контексты, унифицировать</td>
+<td data-label="Категория">Слайсы (<code>@WebMvcTest</code>, <code>@DataJpaTest</code>)</td>
+<td data-label="Целевое время">&lt; 2 мин</td>
+<td data-label="Что делать при превышении">считать контексты, унифицировать</td>
 </tr>
 <tr>
-<td>Интеграционные (<code>@SpringBootTest</code>)</td>
-<td>&lt; 5 мин</td>
-<td>сводить к 1–3 контекстам, параллелить</td>
+<td data-label="Категория">Интеграционные (<code>@SpringBootTest</code>)</td>
+<td data-label="Целевое время">&lt; 5 мин</td>
+<td data-label="Что делать при превышении">сводить к 1–3 контекстам, параллелить</td>
 </tr>
 <tr>
-<td>Весь прогон в CI</td>
-<td>&lt; 10 мин</td>
-<td>параллельный запуск JUnit (<code>junit.jupiter.execution.parallel.enabled</code>)</td>
+<td data-label="Категория">Весь прогон в CI</td>
+<td data-label="Целевое время">&lt; 10 мин</td>
+<td data-label="Что делать при превышении">параллельный запуск JUnit (<code>junit.jupiter.execution.parallel.enabled</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -3964,7 +3964,7 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 <h3 id="88-ограничения-тестовых-слайсов">8.8 Ограничения тестовых слайсов</h3>
 <p>Ограничения тестовых слайсов — это всё, что не работает в слайсе, хотя работает в приложении. Причина у них одна: слайс — это фиксированный список автоконфигураций из файлов <code>META-INF/spring/…&lt;AutoConfigureAnnotation&gt;.imports</code> внутри <code>spring-boot-test-autoconfigure</code>. Файлы названы не по аннотации слайса, а по аннотациям <code>@AutoConfigure…</code>, которыми она мета-аннотирована. Например, <code>@WebMvcTest</code> подтягивает <code>org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc.imports</code> (в Boot 3.5.0 там 13 автоконфигураций), <code>org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc.imports</code> и списки других своих <code>@AutoConfigure…</code>-аннотаций. Всё, чего нет в этих списках, <strong>не применяется</strong>, даже если библиотека лежит в classpath. Ниже типовые случаи «почему в слайсе не работает» с причинами и лечением, то, что не поднимается в <code>@DataJpaTest</code>, и собственный слайс для корпоративного стартера.</p>
 <p>Чаще всего в <code>@WebMvcTest</code> не работает следующее:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Что не работает в <code>@WebMvcTest</code></th>
@@ -3974,34 +3974,34 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </thead>
 <tbody>
 <tr>
-<td><code>@Service</code>, <code>@Repository</code>, <code>@Component</code></td>
-<td>отфильтрованы <code>TypeExcludeFilter</code></td>
-<td><code>@MockitoBean</code> или <code>@Import</code> конкретного класса</td>
+<td data-label="Что не работает в @WebMvcTest"><code>@Service</code>, <code>@Repository</code>, <code>@Component</code></td>
+<td data-label="Причина">отфильтрованы <code>TypeExcludeFilter</code></td>
+<td data-label="Лечение"><code>@MockitoBean</code> или <code>@Import</code> конкретного класса</td>
 </tr>
 <tr>
-<td>Spring Security с вашей <code>SecurityFilterChain</code></td>
-<td>конфигурация безопасности — обычный <code>@Configuration</code>, а не автоконфигурация</td>
-<td><code>@Import(SecurityConfig.class)</code></td>
+<td data-label="Что не работает в @WebMvcTest">Spring Security с вашей <code>SecurityFilterChain</code></td>
+<td data-label="Причина">конфигурация безопасности — обычный <code>@Configuration</code>, а не автоконфигурация</td>
+<td data-label="Лечение"><code>@Import(SecurityConfig.class)</code></td>
 </tr>
 <tr>
-<td>Кастомный <code>ObjectMapper</code> из вашего <code>@Configuration</code></td>
-<td>то же</td>
-<td><code>@Import</code></td>
+<td data-label="Что не работает в @WebMvcTest">Кастомный <code>ObjectMapper</code> из вашего <code>@Configuration</code></td>
+<td data-label="Причина">то же</td>
+<td data-label="Лечение"><code>@Import</code></td>
 </tr>
 <tr>
-<td><code>@ConfigurationProperties</code>-бины</td>
-<td><code>ConfigurationPropertiesAutoConfiguration</code> есть, но ваш класс свойств находится сканированием, которого нет</td>
-<td><code>@EnableConfigurationProperties(MyProps.class)</code></td>
+<td data-label="Что не работает в @WebMvcTest"><code>@ConfigurationProperties</code>-бины</td>
+<td data-label="Причина"><code>ConfigurationPropertiesAutoConfiguration</code> есть, но ваш класс свойств находится сканированием, которого нет</td>
+<td data-label="Лечение"><code>@EnableConfigurationProperties(MyProps.class)</code></td>
 </tr>
 <tr>
-<td><code>RestClient</code>/<code>RestTemplate</code>-бины приложения</td>
-<td>не автоконфигурация</td>
-<td><code>@Import</code> или <code>@MockitoBean</code></td>
+<td data-label="Что не работает в @WebMvcTest"><code>RestClient</code>/<code>RestTemplate</code>-бины приложения</td>
+<td data-label="Причина">не автоконфигурация</td>
+<td data-label="Лечение"><code>@Import</code> или <code>@MockitoBean</code></td>
 </tr>
 <tr>
-<td>Валидация методов (<code>@Validated</code> на сервисе)</td>
-<td>сервисов нет</td>
-<td>не лечится, это не задача слайса</td>
+<td data-label="Что не работает в @WebMvcTest">Валидация методов (<code>@Validated</code> на сервисе)</td>
+<td data-label="Причина">сервисов нет</td>
+<td data-label="Лечение">не лечится, это не задача слайса</td>
 </tr>
 </tbody>
 </table>
@@ -4138,7 +4138,7 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 <p>Для банка из этого следует, что апгрейд должен быть непрерывным процессом, а не разовым проектом. Ветка живёт год, и если вы обновляетесь раз в два года, то гарантированно сидите на версии без патчей безопасности. Рабочая схема такая: патч-версию обновлять автоматически (Renovate/Dependabot), минорную — раз в полгода в плановом спринте, а мажорную — отдельной инициативой со своим бюджетом.</p>
 <h3 id="102-boot-2-3-чек-лист">10.2 Boot 2 → 3: чек-лист</h3>
 <p>Переход с Boot 2 на Boot 3 — это самый тяжёлый апгрейд в истории Boot, потому что вместе с ним меняются минимальная версия Java и пакеты Jakarta EE, то есть имена всех классов корпоративной Java: сервлетов, JPA, валидации. Ниже чек-лист изменений, которые затрагивают почти любой сервис, а за ним порядок работ, который экономит недели. В таблице упоминается OpenRewrite — инструмент автоматического рефакторинга по готовым рецептам (подробно в 10.7).</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Что</th>
@@ -4147,44 +4147,44 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </thead>
 <tbody>
 <tr>
-<td><strong>Java</strong></td>
-<td>минимум 17 (Boot 3.0), Java 8/11 не поддерживаются</td>
+<td data-label="Что"><strong>Java</strong></td>
+<td data-label="Детали">минимум 17 (Boot 3.0), Java 8/11 не поддерживаются</td>
 </tr>
 <tr>
-<td><strong>Jakarta EE 9+</strong></td>
-<td>пакеты <code>javax.*</code> → <code>jakarta.*</code>: <code>javax.persistence</code> → <code>jakarta.persistence</code>, <code>javax.servlet</code> → <code>jakarta.servlet</code>, <code>javax.validation</code> → <code>jakarta.validation</code>, <code>javax.annotation</code> → <code>jakarta.annotation</code>. Автоматизируется рецептами OpenRewrite (<code>UpgradeSpringBoot_3_0</code>)</td>
+<td data-label="Что"><strong>Jakarta EE 9+</strong></td>
+<td data-label="Детали">пакеты <code>javax.*</code> → <code>jakarta.*</code>: <code>javax.persistence</code> → <code>jakarta.persistence</code>, <code>javax.servlet</code> → <code>jakarta.servlet</code>, <code>javax.validation</code> → <code>jakarta.validation</code>, <code>javax.annotation</code> → <code>jakarta.annotation</code>. Автоматизируется рецептами OpenRewrite (<code>UpgradeSpringBoot_3_0</code>)</td>
 </tr>
 <tr>
-<td><strong>Автоконфигурации</strong></td>
-<td>ключ <code>EnableAutoConfiguration</code> в <code>spring.factories</code> <strong>не читается</strong>; нужен <code>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</code></td>
+<td data-label="Что"><strong>Автоконфигурации</strong></td>
+<td data-label="Детали">ключ <code>EnableAutoConfiguration</code> в <code>spring.factories</code> <strong>не читается</strong>; нужен <code>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</code></td>
 </tr>
 <tr>
-<td><strong>Trailing slash</strong></td>
-<td><code>setUseTrailingSlashMatch</code> по умолчанию <code>false</code>: <code>/api/orders/</code> теперь 404, а не совпадение с <code>/api/orders</code></td>
+<td data-label="Что"><strong>Trailing slash</strong></td>
+<td data-label="Детали"><code>setUseTrailingSlashMatch</code> по умолчанию <code>false</code>: <code>/api/orders/</code> теперь 404, а не совпадение с <code>/api/orders</code></td>
 </tr>
 <tr>
-<td><strong>Actuator</strong></td>
-<td><code>httptrace</code> → <code>httpexchanges</code>; по JMX по умолчанию выставлен только <code>health</code>; санитизация <code>env</code>/<code>configprops</code> по умолчанию</td>
+<td data-label="Что"><strong>Actuator</strong></td>
+<td data-label="Детали"><code>httptrace</code> → <code>httpexchanges</code>; по JMX по умолчанию выставлен только <code>health</code>; санитизация <code>env</code>/<code>configprops</code> по умолчанию</td>
 </tr>
 <tr>
-<td><strong>Метрики</strong></td>
-<td><code>management.metrics.export.&lt;product&gt;.*</code> → <code>management.&lt;product&gt;.metrics.export.*</code></td>
+<td data-label="Что"><strong>Метрики</strong></td>
+<td data-label="Детали"><code>management.metrics.export.&lt;product&gt;.*</code> → <code>management.&lt;product&gt;.metrics.export.*</code></td>
 </tr>
 <tr>
-<td><strong>Трассировка</strong></td>
-<td>Spring Cloud Sleuth снят; замена — Micrometer Observation API + Micrometer Tracing (bridge на Brave или OpenTelemetry)</td>
+<td data-label="Что"><strong>Трассировка</strong></td>
+<td data-label="Детали">Spring Cloud Sleuth снят; замена — Micrometer Observation API + Micrometer Tracing (bridge на Brave или OpenTelemetry)</td>
 </tr>
 <tr>
-<td><strong><code>@ConstructorBinding</code></strong></td>
-<td>переехала в <code>...properties.bind</code>, ставится на конструктор, не на класс</td>
+<td data-label="Что"><strong><code>@ConstructorBinding</code></strong></td>
+<td data-label="Детали">переехала в <code>...properties.bind</code>, ставится на конструктор, не на класс</td>
 </tr>
 <tr>
-<td><strong>Hibernate</strong></td>
-<td>6.1: другой генератор идентификаторов по умолчанию, изменения в наименовании, <code>hibernate.dialect</code> чаще не нужен (глава 12, <code>12-spring-data-jpa-hibernate.md</code>)</td>
+<td data-label="Что"><strong>Hibernate</strong></td>
+<td data-label="Детали">6.1: другой генератор идентификаторов по умолчанию, изменения в наименовании, <code>hibernate.dialect</code> чаще не нужен (глава 12, <code>12-spring-data-jpa-hibernate.md</code>)</td>
 </tr>
 <tr>
-<td><strong>Зависимости</strong></td>
-<td>Apache HttpClient 4 удалён (<code>httpclient5</code>), MySQL-драйвер → <code>com.mysql:mysql-connector-j</code>, Flyway 9</td>
+<td data-label="Что"><strong>Зависимости</strong></td>
+<td data-label="Детали">Apache HttpClient 4 удалён (<code>httpclient5</code>), MySQL-драйвер → <code>com.mysql:mysql-connector-j</code>, Flyway 9</td>
 </tr>
 </tbody>
 </table>
@@ -4222,7 +4222,7 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </blockquote>
 <h3 id="105-сводная-таблица-изменений">10.5 Сводная таблица изменений</h3>
 <p>Сводная таблица изменений собирает в одном месте всё крупное, что менялось от Boot 2.7 до 4.x, чтобы перед апгрейдом можно было пройти по одному списку, а не по трём release notes. Самая важная колонка в ней — «ломается молча»: изменения, отмеченные в ней, не дают ошибки компиляции и обнаруживаются только во время выполнения или на ревью. Их и надо проверять в первую очередь.</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тема</th>
@@ -4233,143 +4233,143 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </thead>
 <tbody>
 <tr>
-<td>Java</td>
-<td>8 / 11 / 17</td>
-<td>17+ (3.x), 17–26 (4.1)</td>
-<td>нет</td>
+<td data-label="Тема">Java</td>
+<td data-label="Было (Boot 2.x)">8 / 11 / 17</td>
+<td data-label="Стало (3.x / 4.x)">17+ (3.x), 17–26 (4.1)</td>
+<td data-label="Ломается молча">нет</td>
 </tr>
 <tr>
-<td>EE-пакеты</td>
-<td><code>javax.*</code></td>
-<td><code>jakarta.*</code></td>
-<td>нет (ошибка компиляции)</td>
+<td data-label="Тема">EE-пакеты</td>
+<td data-label="Было (Boot 2.x)"><code>javax.*</code></td>
+<td data-label="Стало (3.x / 4.x)"><code>jakarta.*</code></td>
+<td data-label="Ломается молча">нет (ошибка компиляции)</td>
 </tr>
 <tr>
-<td>Регистрация автоконфигураций</td>
-<td><code>spring.factories</code>, ключ <code>EnableAutoConfiguration</code></td>
-<td><code>META-INF/spring/…AutoConfiguration.imports</code></td>
-<td><strong>да</strong> — стартер просто перестаёт работать</td>
+<td data-label="Тема">Регистрация автоконфигураций</td>
+<td data-label="Было (Boot 2.x)"><code>spring.factories</code>, ключ <code>EnableAutoConfiguration</code></td>
+<td data-label="Стало (3.x / 4.x)"><code>META-INF/spring/…AutoConfiguration.imports</code></td>
+<td data-label="Ломается молча"><strong>да</strong> — стартер просто перестаёт работать</td>
 </tr>
 <tr>
-<td>Аннотация автоконфигурации</td>
-<td><code>@Configuration</code></td>
-<td><code>@AutoConfiguration</code></td>
-<td>частично</td>
+<td data-label="Тема">Аннотация автоконфигурации</td>
+<td data-label="Было (Boot 2.x)"><code>@Configuration</code></td>
+<td data-label="Стало (3.x / 4.x)"><code>@AutoConfiguration</code></td>
+<td data-label="Ломается молча">частично</td>
 </tr>
 <tr>
-<td><code>@ConstructorBinding</code></td>
-<td>на классе, пакет <code>…context.properties</code></td>
-<td>на конструкторе, пакет <code>…properties.bind</code></td>
-<td>нет</td>
+<td data-label="Тема"><code>@ConstructorBinding</code></td>
+<td data-label="Было (Boot 2.x)">на классе, пакет <code>…context.properties</code></td>
+<td data-label="Стало (3.x / 4.x)">на конструкторе, пакет <code>…properties.bind</code></td>
+<td data-label="Ломается молча">нет</td>
 </tr>
 <tr>
-<td>Trailing slash</td>
-<td><code>/api/orders/</code> = <code>/api/orders</code></td>
-<td>404</td>
-<td><strong>да</strong> — клиенты получают 404</td>
+<td data-label="Тема">Trailing slash</td>
+<td data-label="Было (Boot 2.x)"><code>/api/orders/</code> = <code>/api/orders</code></td>
+<td data-label="Стало (3.x / 4.x)">404</td>
+<td data-label="Ломается молча"><strong>да</strong> — клиенты получают 404</td>
 </tr>
 <tr>
-<td>Actuator trace</td>
-<td><code>httptrace</code></td>
-<td><code>httpexchanges</code> + бин <code>HttpExchangeRepository</code></td>
-<td><strong>да</strong> — эндпоинт исчезает</td>
+<td data-label="Тема">Actuator trace</td>
+<td data-label="Было (Boot 2.x)"><code>httptrace</code></td>
+<td data-label="Стало (3.x / 4.x)"><code>httpexchanges</code> + бин <code>HttpExchangeRepository</code></td>
+<td data-label="Ломается молча"><strong>да</strong> — эндпоинт исчезает</td>
 </tr>
 <tr>
-<td>Санитизация <code>env</code>/<code>configprops</code></td>
-<td>по regex-списку ключей</td>
-<td>по умолчанию всё (<code>show-values: never</code>)</td>
-<td>нет (становится безопаснее)</td>
+<td data-label="Тема">Санитизация <code>env</code>/<code>configprops</code></td>
+<td data-label="Было (Boot 2.x)">по regex-списку ключей</td>
+<td data-label="Стало (3.x / 4.x)">по умолчанию всё (<code>show-values: never</code>)</td>
+<td data-label="Ломается молча">нет (становится безопаснее)</td>
 </tr>
 <tr>
-<td>Свойства метрик</td>
-<td><code>management.metrics.export.&lt;p&gt;.*</code></td>
-<td><code>management.&lt;p&gt;.metrics.export.*</code></td>
-<td><strong>да</strong> — экспорт молча отключается</td>
+<td data-label="Тема">Свойства метрик</td>
+<td data-label="Было (Boot 2.x)"><code>management.metrics.export.&lt;p&gt;.*</code></td>
+<td data-label="Стало (3.x / 4.x)"><code>management.&lt;p&gt;.metrics.export.*</code></td>
+<td data-label="Ломается молча"><strong>да</strong> — экспорт молча отключается</td>
 </tr>
 <tr>
-<td>Трассировка</td>
-<td>Spring Cloud Sleuth</td>
-<td>Micrometer Observation + Micrometer Tracing</td>
-<td>нет (Sleuth не собирается)</td>
+<td data-label="Тема">Трассировка</td>
+<td data-label="Было (Boot 2.x)">Spring Cloud Sleuth</td>
+<td data-label="Стало (3.x / 4.x)">Micrometer Observation + Micrometer Tracing</td>
+<td data-label="Ломается молча">нет (Sleuth не собирается)</td>
 </tr>
 <tr>
-<td>Включение эндпоинтов</td>
-<td><code>management.endpoint.&lt;id&gt;.enabled</code></td>
-<td><code>management.endpoint.&lt;id&gt;.access</code> (3.4+)</td>
-<td><strong>да</strong> — старое свойство игнорируется</td>
+<td data-label="Тема">Включение эндпоинтов</td>
+<td data-label="Было (Boot 2.x)"><code>management.endpoint.&lt;id&gt;.enabled</code></td>
+<td data-label="Стало (3.x / 4.x)"><code>management.endpoint.&lt;id&gt;.access</code> (3.4+)</td>
+<td data-label="Ломается молча"><strong>да</strong> — старое свойство игнорируется</td>
 </tr>
 <tr>
-<td>Заглушки в тестах</td>
-<td><code>@MockBean</code>/<code>@SpyBean</code></td>
-<td><code>@MockitoBean</code>/<code>@MockitoSpyBean</code> (3.4+)</td>
-<td>нет (deprecated с предупреждением)</td>
+<td data-label="Тема">Заглушки в тестах</td>
+<td data-label="Было (Boot 2.x)"><code>@MockBean</code>/<code>@SpyBean</code></td>
+<td data-label="Стало (3.x / 4.x)"><code>@MockitoBean</code>/<code>@MockitoSpyBean</code> (3.4+)</td>
+<td data-label="Ломается молча">нет (deprecated с предупреждением)</td>
 </tr>
 <tr>
-<td>Graceful shutdown</td>
-<td><code>immediate</code> по умолчанию</td>
-<td><code>graceful</code> по умолчанию (3.4+)</td>
-<td>нет (становится лучше)</td>
+<td data-label="Тема">Graceful shutdown</td>
+<td data-label="Было (Boot 2.x)"><code>immediate</code> по умолчанию</td>
+<td data-label="Стало (3.x / 4.x)"><code>graceful</code> по умолчанию (3.4+)</td>
+<td data-label="Ломается молча">нет (становится лучше)</td>
 </tr>
 <tr>
-<td><code>heapdump</code></td>
-<td>доступен при экспозиции</td>
-<td><code>access=none</code> (3.5+)</td>
-<td>нет</td>
+<td data-label="Тема"><code>heapdump</code></td>
+<td data-label="Было (Boot 2.x)">доступен при экспозиции</td>
+<td data-label="Стало (3.x / 4.x)"><code>access=none</code> (3.5+)</td>
+<td data-label="Ломается молча">нет</td>
 </tr>
 <tr>
-<td>Имя бина исполнителя</td>
-<td><code>taskExecutor</code></td>
-<td><code>applicationTaskExecutor</code> (3.5+)</td>
-<td><strong>да</strong> — <code>@Qualifier("taskExecutor")</code> перестаёт находить бин</td>
+<td data-label="Тема">Имя бина исполнителя</td>
+<td data-label="Было (Boot 2.x)"><code>taskExecutor</code></td>
+<td data-label="Стало (3.x / 4.x)"><code>applicationTaskExecutor</code> (3.5+)</td>
+<td data-label="Ломается молча"><strong>да</strong> — <code>@Qualifier("taskExecutor")</code> перестаёт находить бин</td>
 </tr>
 <tr>
-<td>Имена профилей</td>
-<td>любые</td>
-<td>только буквы, цифры, <code>-</code>, <code>_</code> (3.5+)</td>
-<td>нет (падает на старте)</td>
+<td data-label="Тема">Имена профилей</td>
+<td data-label="Было (Boot 2.x)">любые</td>
+<td data-label="Стало (3.x / 4.x)">только буквы, цифры, <code>-</code>, <code>_</code> (3.5+)</td>
+<td data-label="Ломается молча">нет (падает на старте)</td>
 </tr>
 <tr>
-<td>Boolean-свойства <code>.enabled</code></td>
-<td>часть условий считала включённым всё, кроме <code>false</code></td>
-<td>строго <code>true</code>/<code>false</code> (3.5+)</td>
-<td><strong>да</strong> — конфиг со значением вроде <code>yes</code> или <code>1</code> надо проверить: Release Notes 3.5 требуют <code>true</code>/<code>false</code> и не описывают, что станет с другими значениями</td>
+<td data-label="Тема">Boolean-свойства <code>.enabled</code></td>
+<td data-label="Было (Boot 2.x)">часть условий считала включённым всё, кроме <code>false</code></td>
+<td data-label="Стало (3.x / 4.x)">строго <code>true</code>/<code>false</code> (3.5+)</td>
+<td data-label="Ломается молча"><strong>да</strong> — конфиг со значением вроде <code>yes</code> или <code>1</code> надо проверить: Release Notes 3.5 требуют <code>true</code>/<code>false</code> и не описывают, что станет с другими значениями</td>
 </tr>
 <tr>
-<td>Пакеты автоконфигураций</td>
-<td><code>org.springframework.boot.autoconfigure.&lt;tech&gt;</code></td>
-<td><code>org.springframework.boot.&lt;tech&gt;.autoconfigure</code> (4.0)</td>
-<td><strong>да</strong> для строковых ссылок</td>
+<td data-label="Тема">Пакеты автоконфигураций</td>
+<td data-label="Было (Boot 2.x)"><code>org.springframework.boot.autoconfigure.&lt;tech&gt;</code></td>
+<td data-label="Стало (3.x / 4.x)"><code>org.springframework.boot.&lt;tech&gt;.autoconfigure</code> (4.0)</td>
+<td data-label="Ломается молча"><strong>да</strong> для строковых ссылок</td>
 </tr>
 <tr>
-<td><code>EnvironmentPostProcessor</code></td>
-<td><code>org.springframework.boot.env.*</code></td>
-<td><code>org.springframework.boot.*</code> (4.0)</td>
-<td>нет (deprecated)</td>
+<td data-label="Тема"><code>EnvironmentPostProcessor</code></td>
+<td data-label="Было (Boot 2.x)"><code>org.springframework.boot.env.*</code></td>
+<td data-label="Стало (3.x / 4.x)"><code>org.springframework.boot.*</code> (4.0)</td>
+<td data-label="Ломается молча">нет (deprecated)</td>
 </tr>
 <tr>
-<td><code>EndpointRequest</code></td>
-<td><code>…actuate.autoconfigure.security.servlet</code></td>
-<td><code>…boot.security.autoconfigure.actuate.web.servlet</code> (4.0)</td>
-<td>нет (ошибка компиляции)</td>
+<td data-label="Тема"><code>EndpointRequest</code></td>
+<td data-label="Было (Boot 2.x)"><code>…actuate.autoconfigure.security.servlet</code></td>
+<td data-label="Стало (3.x / 4.x)"><code>…boot.security.autoconfigure.actuate.web.servlet</code> (4.0)</td>
+<td data-label="Ломается молча">нет (ошибка компиляции)</td>
 </tr>
 <tr>
-<td>Jackson</td>
-<td>2.x</td>
-<td>Jackson 3 основной, 2.x deprecated (4.0)</td>
-<td><strong>да</strong> — сериализация по умолчанию ведёт себя иначе</td>
+<td data-label="Тема">Jackson</td>
+<td data-label="Было (Boot 2.x)">2.x</td>
+<td data-label="Стало (3.x / 4.x)">Jackson 3 основной, 2.x deprecated (4.0)</td>
+<td data-label="Ломается молча"><strong>да</strong> — сериализация по умолчанию ведёт себя иначе</td>
 </tr>
 <tr>
-<td>Наследование автоконфигураций</td>
-<td>публичные члены доступны</td>
-<td>публичных членов нет, кроме констант (4.0)</td>
-<td>нет (ошибка компиляции)</td>
+<td data-label="Тема">Наследование автоконфигураций</td>
+<td data-label="Было (Boot 2.x)">публичные члены доступны</td>
+<td data-label="Стало (3.x / 4.x)">публичных членов нет, кроме констант (4.0)</td>
+<td data-label="Ломается молча">нет (ошибка компиляции)</td>
 </tr>
 </tbody>
 </table>
 <h3 id="106-jakarta-миграция-и-несовместимые-библиотеки">10.6 Jakarta-миграция и несовместимые библиотеки</h3>
 <p>Jakarta-миграция — это переход кода и зависимостей с пакетов <code>javax.*</code> на <code>jakarta.*</code>, которого требует Boot 3. Переименование в собственном коде — механическая часть работы, и её делает OpenRewrite. Настоящая проблема в другом: <strong>сторонняя библиотека, скомпилированная против <code>javax</code>, с <code>jakarta</code> не заработает</strong>, потому что это разные типы, а не разные имена одного типа. Ниже типовые ситуации с такими библиотеками и то, как превратить молчаливую проблему в ошибку сборки.</p>
 <p>С библиотеками, которые не перешли на Jakarta, встречаются такие ситуации:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -4378,24 +4378,24 @@ LivenessState.BROKEN: liveness HTTP 503 {"status":"DOWN"}
 </thead>
 <tbody>
 <tr>
-<td>Библиотека выпустила jakarta-версию (обычно с новым major или классификатором <code>jakarta</code>)</td>
-<td>обновиться; проверить, что старая версия не приходит транзитивно (<code>dependency:tree</code>)</td>
+<td data-label="Ситуация">Библиотека выпустила jakarta-версию (обычно с новым major или классификатором <code>jakarta</code>)</td>
+<td data-label="Решение">обновиться; проверить, что старая версия не приходит транзитивно (<code>dependency:tree</code>)</td>
 </tr>
 <tr>
-<td>Библиотека жива, но jakarta-версии нет</td>
-<td>открыть issue, временно — <code>eclipse-transformer</code> или <code>jakartaee-migration</code> от Apache: инструмент переписывает байткод jar'а, результат публикуется во внутренний Nexus</td>
+<td data-label="Ситуация">Библиотека жива, но jakarta-версии нет</td>
+<td data-label="Решение">открыть issue, временно — <code>eclipse-transformer</code> или <code>jakartaee-migration</code> от Apache: инструмент переписывает байткод jar'а, результат публикуется во внутренний Nexus</td>
 </tr>
 <tr>
-<td>Библиотека мертва (внутренняя, автор уволился)</td>
-<td>трансформировать байткод и взять на поддержку, либо переписать нужную часть — обычно это 200 строк из 20 000</td>
+<td data-label="Ситуация">Библиотека мертва (внутренняя, автор уволился)</td>
+<td data-label="Решение">трансформировать байткод и взять на поддержку, либо переписать нужную часть — обычно это 200 строк из 20 000</td>
 </tr>
 <tr>
-<td>Библиотека — внутренний общий модуль банка</td>
-<td>самый частый и самый болезненный случай: миграция каскадом, начинать надо с листьев дерева зависимостей</td>
+<td data-label="Ситуация">Библиотека — внутренний общий модуль банка</td>
+<td data-label="Решение">самый частый и самый болезненный случай: миграция каскадом, начинать надо с листьев дерева зависимостей</td>
 </tr>
 <tr>
-<td>В classpath оказались обе версии (<code>javax.servlet-api</code> и <code>jakarta.servlet-api</code>)</td>
-<td><code>NoSuchMethodError</code>/<code>ClassNotFoundException</code> во время выполнения; лечится <code>&lt;exclusions&gt;</code> и <code>maven-enforcer-plugin</code> с <code>bannedDependencies</code></td>
+<td data-label="Ситуация">В classpath оказались обе версии (<code>javax.servlet-api</code> и <code>jakarta.servlet-api</code>)</td>
+<td data-label="Решение"><code>NoSuchMethodError</code>/<code>ClassNotFoundException</code> во время выполнения; лечится <code>&lt;exclusions&gt;</code> и <code>maven-enforcer-plugin</code> с <code>bannedDependencies</code></td>
 </tr>
 </tbody>
 </table>
@@ -4943,5 +4943,5 @@ java -Djarmode<span class="o">=</span>tools -jar app.jar list-layers   <span cla
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-возможности-boot-поверх-framework-и-их-издержки">1. Возможности Boot поверх Framework и их издержки</a></li><li><a href="#2-springbootapplication-и-этапы-springapplicationrun">2. @SpringBootApplication и этапы SpringApplication.run</a></li><li><a href="#3-устройство-автоконфигурации">3. Устройство автоконфигурации</a></li><li><a href="#4-стартеры-устройство-и-разработка">4. Стартеры: устройство и разработка</a></li><li><a href="#5-внешняя-конфигурация-externalized-configuration">5. Внешняя конфигурация (externalized configuration)</a></li><li><a href="#6-actuator">6. Actuator</a></li><li><a href="#7-embedded-servers-graceful-shutdown-виртуальные-потоки">7. Embedded servers, graceful shutdown, виртуальные потоки</a></li><li><a href="#8-тестирование-в-boot">8. Тестирование в Boot</a></li><li><a href="#9-логирование-и-devtools">9. Логирование и DevTools</a></li><li><a href="#10-версии-поддержка-и-миграция">10. Версии, поддержка и миграция</a></li><li><a href="#11-разобранные-инциденты">11. Разобранные инциденты</a></li><li><a href="#12-грабли-и-антипаттерны">12. Грабли и антипаттерны</a></li><li><a href="#13-диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

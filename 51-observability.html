@@ -3,7 +3,7 @@
 <title>51. Observability — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ccd8b2772a">
+<link rel="preload" href="fonts/lora-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/plex-cyr.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=f41e2dc7d2">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Observability">
 <a class="skip" href="#content">К тексту</a>
@@ -481,7 +481,7 @@
 <p>Особое внимание обратите на <code>includeMdcKeyName</code>. По умолчанию кодировщик выгружает <strong>весь</strong> MDC, и если туда что-то положила библиотека (а Hibernate, Spring Security и клиенты БД это делают), оно тоже уедет в хранилище. Белый список ключей обходится дешевле и заодно безопаснее.</p>
 <h3 id="23-обязательные-поля-записи-лога">2.3 Обязательные поля записи лога</h3>
 <p>Структурный лог полезен ровно настолько, насколько согласован набор его полей: если в одном сервисе нет версии, а в другом время записано без часового пояса, запросы по всей системе перестают работать. В таблице ниже собран минимальный контракт на строку лога в распределённой системе; для каждого поля указано, зачем оно нужно и какую ошибку с ним совершают чаще всего:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Поле</th>
@@ -491,49 +491,49 @@
 </thead>
 <tbody>
 <tr>
-<td><code>@timestamp</code></td>
-<td>ISO-8601 <strong>с часовым поясом или в UTC</strong>, миллисекунды минимум</td>
-<td>локальное время без зоны; после перевода часов события идут не по порядку</td>
+<td data-label="Поле"><code>@timestamp</code></td>
+<td data-label="Зачем">ISO-8601 <strong>с часовым поясом или в UTC</strong>, миллисекунды минимум</td>
+<td data-label="Типичная ошибка">локальное время без зоны; после перевода часов события идут не по порядку</td>
 </tr>
 <tr>
-<td><code>level</code></td>
-<td>фильтрация и оповещения</td>
-<td>уровень как часть message</td>
+<td data-label="Поле"><code>level</code></td>
+<td data-label="Зачем">фильтрация и оповещения</td>
+<td data-label="Типичная ошибка">уровень как часть message</td>
 </tr>
 <tr>
-<td><code>logger</code></td>
-<td>какой класс</td>
-<td>пишут только <code>message</code></td>
+<td data-label="Поле"><code>logger</code></td>
+<td data-label="Зачем">какой класс</td>
+<td data-label="Типичная ошибка">пишут только <code>message</code></td>
 </tr>
 <tr>
-<td><code>thread</code></td>
-<td>корреляция в многопоточке, поиск залипших пулов</td>
-<td>выбрасывают «для экономии»</td>
+<td data-label="Поле"><code>thread</code></td>
+<td data-label="Зачем">корреляция в многопоточке, поиск залипших пулов</td>
+<td data-label="Типичная ошибка">выбрасывают «для экономии»</td>
 </tr>
 <tr>
-<td><code>message</code></td>
-<td>человекочитаемый текст</td>
-<td>конкатенация значений в текст вместо отдельных полей</td>
+<td data-label="Поле"><code>message</code></td>
+<td data-label="Зачем">человекочитаемый текст</td>
+<td data-label="Типичная ошибка">конкатенация значений в текст вместо отдельных полей</td>
 </tr>
 <tr>
-<td><code>trace_id</code>, <code>span_id</code></td>
-<td>связь с трассой</td>
-<td>нет вообще — главная беда</td>
+<td data-label="Поле"><code>trace_id</code>, <code>span_id</code></td>
+<td data-label="Зачем">связь с трассой</td>
+<td data-label="Типичная ошибка">нет вообще — главная беда</td>
 </tr>
 <tr>
-<td><code>service</code>, <code>version</code>, <code>env</code></td>
-<td>различить экземпляры и релизы</td>
-<td>version нет, и невозможно сказать, ошибки только у нового релиза или у всех</td>
+<td data-label="Поле"><code>service</code>, <code>version</code>, <code>env</code></td>
+<td data-label="Зачем">различить экземпляры и релизы</td>
+<td data-label="Типичная ошибка">version нет, и невозможно сказать, ошибки только у нового релиза или у всех</td>
 </tr>
 <tr>
-<td><code>host</code>/<code>pod</code></td>
-<td>найти конкретный экземпляр</td>
-<td>обычно добавляет агент/оператор — проверьте, что добавляет</td>
+<td data-label="Поле"><code>host</code>/<code>pod</code></td>
+<td data-label="Зачем">найти конкретный экземпляр</td>
+<td data-label="Типичная ошибка">обычно добавляет агент/оператор — проверьте, что добавляет</td>
 </tr>
 <tr>
-<td><code>error.type</code>, <code>error.stack_trace</code></td>
-<td>отдельными полями, не внутри message</td>
-<td>трассировка стека склеена в message → нельзя сгруппировать по типу исключения</td>
+<td data-label="Поле"><code>error.type</code>, <code>error.stack_trace</code></td>
+<td data-label="Зачем">отдельными полями, не внутри message</td>
+<td data-label="Типичная ошибка">трассировка стека склеена в message → нельзя сгруппировать по типу исключения</td>
 </tr>
 </tbody>
 </table>
@@ -592,7 +592,7 @@
 </blockquote>
 <h3 id="25-уровни-логирования">2.5 Уровни логирования</h3>
 <p>Уровень записи лога принято понимать как степень интересности сообщения, но на деле уровень — это <strong>контракт с дежурным</strong>: он говорит, кто и как должен отреагировать на запись. От того, насколько этот контракт соблюдается, зависит, будет ли оповещение по ошибкам что-то значить. В таблице ниже приведена рабочая семантика уровней, а после неё — три самые массовые ошибки, которые эту семантику ломают:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Уровень</th>
@@ -603,34 +603,34 @@
 </thead>
 <tbody>
 <tr>
-<td><code>ERROR</code></td>
-<td>Система не смогла сделать то, что должна была, и <strong>это требует действия человека</strong></td>
-<td>дежурный (возможно, через оповещение)</td>
-<td>не удалось записать в БД после всех повторных попыток; отвалился обязательный внешний сервис; невосстановимая ошибка потребителя</td>
+<td data-label="Уровень"><code>ERROR</code></td>
+<td data-label="Смысл">Система не смогла сделать то, что должна была, и <strong>это требует действия человека</strong></td>
+<td data-label="Кто реагирует">дежурный (возможно, через оповещение)</td>
+<td data-label="Примеры">не удалось записать в БД после всех повторных попыток; отвалился обязательный внешний сервис; невосстановимая ошибка потребителя</td>
 </tr>
 <tr>
-<td><code>WARN</code></td>
-<td>Что-то пошло не по основному пути, но система справилась</td>
-<td>посмотреть при разборе</td>
-<td>сработал повтор запроса; circuit breaker открылся; деградировали на кэш</td>
+<td data-label="Уровень"><code>WARN</code></td>
+<td data-label="Смысл">Что-то пошло не по основному пути, но система справилась</td>
+<td data-label="Кто реагирует">посмотреть при разборе</td>
+<td data-label="Примеры">сработал повтор запроса; circuit breaker открылся; деградировали на кэш</td>
 </tr>
 <tr>
-<td><code>INFO</code></td>
-<td>Значимое бизнес-событие или событие жизненного цикла</td>
-<td>никто, читается при расследовании</td>
-<td>«платёж авторизован», «потребитель подписался», «конфиг загружен»</td>
+<td data-label="Уровень"><code>INFO</code></td>
+<td data-label="Смысл">Значимое бизнес-событие или событие жизненного цикла</td>
+<td data-label="Кто реагирует">никто, читается при расследовании</td>
+<td data-label="Примеры">«платёж авторизован», «потребитель подписался», «конфиг загружен»</td>
 </tr>
 <tr>
-<td><code>DEBUG</code></td>
-<td>Детали для отладки конкретной проблемы</td>
-<td>включается точечно во время выполнения</td>
-<td>тело запроса (замаскированное), решение роутера</td>
+<td data-label="Уровень"><code>DEBUG</code></td>
+<td data-label="Смысл">Детали для отладки конкретной проблемы</td>
+<td data-label="Кто реагирует">включается точечно во время выполнения</td>
+<td data-label="Примеры">тело запроса (замаскированное), решение роутера</td>
 </tr>
 <tr>
-<td><code>TRACE</code></td>
-<td>Совсем подробно, обычно библиотечное</td>
-<td>почти никогда</td>
-<td>wire-логи HTTP-клиента</td>
+<td data-label="Уровень"><code>TRACE</code></td>
+<td data-label="Смысл">Совсем подробно, обычно библиотечное</td>
+<td data-label="Кто реагирует">почти никогда</td>
+<td data-label="Примеры">wire-логи HTTP-клиента</td>
 </tr>
 </tbody>
 </table>
@@ -726,7 +726,7 @@ curl -X POST localhost:8080/actuator/loggers/com.bank.payments.acquirer <span cl
 </blockquote>
 <h3 id="29-агрегация-логов-elkopensearch-и-loki">2.9 Агрегация логов: ELK/OpenSearch и Loki</h3>
 <p>Агрегатор логов собирает записи со всех подов в одно хранилище и даёт по ним искать, и два самых распространённых варианта — Elasticsearch/OpenSearch и Grafana Loki — по-разному отвечают на вопрос, за что вы платите: за индекс по всем полям или за перебор по дешёвому объектному хранилищу. В таблице ниже они сравнены по тому, что индексируется, как идёт поиск, сколько стоит терабайт и в чём главный риск каждого:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -736,39 +736,39 @@ curl -X POST localhost:8080/actuator/loggers/com.bank.payments.acquirer <span cl
 </thead>
 <tbody>
 <tr>
-<td>Что индексируется</td>
-<td>все поля документа (инвертированный индекс)</td>
-<td><strong>только метки</strong> потока (<code>app</code>, <code>env</code>, <code>pod</code>, <code>level</code>)</td>
+<td data-label="">Что индексируется</td>
+<td data-label="Elasticsearch / OpenSearch">все поля документа (инвертированный индекс)</td>
+<td data-label="Grafana Loki"><strong>только метки</strong> потока (<code>app</code>, <code>env</code>, <code>pod</code>, <code>level</code>)</td>
 </tr>
 <tr>
-<td>Как ищется по телу</td>
-<td>мгновенно, по индексу</td>
-<td>перебором (grep) по порциям, попавшим в выбранные метки и окно</td>
+<td data-label="">Как ищется по телу</td>
+<td data-label="Elasticsearch / OpenSearch">мгновенно, по индексу</td>
+<td data-label="Grafana Loki">перебором (grep) по порциям, попавшим в выбранные метки и окно</td>
 </tr>
 <tr>
-<td>Хранилище</td>
-<td>диски узлов (hot/warm/cold), реплики</td>
-<td>объектное хранилище (S3/GCS/MinIO) + индекс меток</td>
+<td data-label="">Хранилище</td>
+<td data-label="Elasticsearch / OpenSearch">диски узлов (hot/warm/cold), реплики</td>
+<td data-label="Grafana Loki">объектное хранилище (S3/GCS/MinIO) + индекс меток</td>
 </tr>
 <tr>
-<td>Цена на ТБ</td>
-<td>высокая (индекс + <code>_source</code> + реплики + RAM под кластер)</td>
-<td>существенно ниже (сжатые порции в объектном хранилище)</td>
+<td data-label="">Цена на ТБ</td>
+<td data-label="Elasticsearch / OpenSearch">высокая (индекс + <code>_source</code> + реплики + RAM под кластер)</td>
+<td data-label="Grafana Loki">существенно ниже (сжатые порции в объектном хранилище)</td>
 </tr>
 <tr>
-<td>Язык</td>
-<td>Query DSL / KQL / Lucene</td>
-<td>LogQL (селектор меток + фильтры + агрегации)</td>
+<td data-label="">Язык</td>
+<td data-label="Elasticsearch / OpenSearch">Query DSL / KQL / Lucene</td>
+<td data-label="Grafana Loki">LogQL (селектор меток + фильтры + агрегации)</td>
 </tr>
 <tr>
-<td>Аналитика по логам</td>
-<td>сильная (агрегации, ML-задания)</td>
-<td>базовая (<code>rate</code>, <code>sum by</code>, <code>unwrap</code>, метрики из логов)</td>
+<td data-label="">Аналитика по логам</td>
+<td data-label="Elasticsearch / OpenSearch">сильная (агрегации, ML-задания)</td>
+<td data-label="Grafana Loki">базовая (<code>rate</code>, <code>sum by</code>, <code>unwrap</code>, метрики из логов)</td>
 </tr>
 <tr>
-<td>Главный риск</td>
-<td>стоимость и операционная сложность кластера</td>
-<td>взрыв кардинальности меток → тысячи мелких потоков и деградация</td>
+<td data-label="">Главный риск</td>
+<td data-label="Elasticsearch / OpenSearch">стоимость и операционная сложность кластера</td>
+<td data-label="Grafana Loki">взрыв кардинальности меток → тысячи мелких потоков и деградация</td>
 </tr>
 </tbody>
 </table>
@@ -827,7 +827,7 @@ curl -X POST localhost:8080/actuator/loggers/com.bank.payments.acquirer <span cl
 <p>Ключом здесь служит <strong>класс</strong> ошибки (<code>acquirer-a:connect-timeout</code>), а не её текст: тексты различаются адресами и идентификаторами, и дедупликация по ним не сработает.</p>
 <p>У подавления есть важная оговорка: применяется оно к <strong>логам</strong>, но не к метрикам. Счётчик <code>acquirer_errors_total{reason="connect_timeout"}</code> увеличивается на каждый отказ, и именно он показывает точный масштаб проблемы, а значит, и оповещение строится по нему. Логи после подавления отвечают на вопрос, как выглядит одна такая ошибка, а не сколько их было. Так сигналы и должны делить роли: считают метрики, а разбираются по логам.</p>
 <p><strong>Полный стек или только сообщение.</strong> Трассировка стека занимает 30–80 строк по 80–120 байт, то есть 3–8 КБ на событие, и при 500 отказах в секунду только стеки дают 1,5–4 МБ/с. Поэтому решать, писать ли стек, нужно по ситуации, и таблица ниже сводит это практическое правило к четырём случаям:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Ситуация</th>
@@ -836,20 +836,20 @@ curl -X POST localhost:8080/actuator/loggers/com.bank.payments.acquirer <span cl
 </thead>
 <tbody>
 <tr>
-<td>Ожидаемый бизнес-отказ (недостаточно средств, неверный код)</td>
-<td>INFO, без исключения вообще, исход — в поле и в счётчик</td>
+<td data-label="Ситуация">Ожидаемый бизнес-отказ (недостаточно средств, неверный код)</td>
+<td data-label="Что логировать">INFO, без исключения вообще, исход — в поле и в счётчик</td>
 </tr>
 <tr>
-<td>Ожидаемая техническая ошибка с известной причиной (<code>SocketTimeoutException</code> к партнёру)</td>
-<td>WARN, класс + сообщение + адрес, <strong>без стека</strong> — стек всегда одинаковый и бесполезный</td>
+<td data-label="Ситуация">Ожидаемая техническая ошибка с известной причиной (<code>SocketTimeoutException</code> к партнёру)</td>
+<td data-label="Что логировать">WARN, класс + сообщение + адрес, <strong>без стека</strong> — стек всегда одинаковый и бесполезный</td>
 </tr>
 <tr>
-<td>Неожиданное исключение (<code>NullPointerException</code>, <code>IllegalStateException</code>, ошибка десериализации)</td>
-<td>ERROR с полным стеком: здесь стек и есть вся информация</td>
+<td data-label="Ситуация">Неожиданное исключение (<code>NullPointerException</code>, <code>IllegalStateException</code>, ошибка десериализации)</td>
+<td data-label="Что логировать">ERROR с полным стеком: здесь стек и есть вся информация</td>
 </tr>
 <tr>
-<td>Исключение, обёрнутое несколько раз</td>
-<td><code>rootCauseFirst=true</code> плюс <code>maxDepthPerThrowable</code> — первопричина в начале, длина ограничена</td>
+<td data-label="Ситуация">Исключение, обёрнутое несколько раз</td>
+<td data-label="Что логировать"><code>rootCauseFirst=true</code> плюс <code>maxDepthPerThrowable</code> — первопричина в начале, длина ограничена</td>
 </tr>
 </tbody>
 </table>
@@ -993,7 +993,7 @@ acquirer_call_seconds_count 59001
 <p><strong>Histogram</strong>, напротив, считает только количество наблюдений по бакетам и экспортирует сырые счётчики, а квантиль вычисляется уже <strong>в запросе</strong>, функцией <code>histogram_quantile()</code>.</p>
 <p>Практическое следствие прямо сформулировано в документации Prometheus: квантили summary <strong>нельзя агрегировать между экземплярами</strong>, потому что каждый хост вычисляет их независимо (<a href="https://prometheus.io/docs/concepts/metric_types/">Prometheus, Metric types</a>). Это фундаментальное ограничение, а не просто неудобство: p99 от десяти экземпляров <strong>не</strong> равен ни среднему, ни максимуму их p99. Если каждый из 10 подов отдаёт свой p99, а вы берёте от них <code>avg(...)</code>, получится число, которое не соответствует никакой реальной величине, и правильного способа собрать общий p99 из десяти готовых p99 не существует. Гистограммы же складываются тривиально, через <code>sum by (le) (...)</code>, потому что счётчики в бакетах аддитивны. В Micrometer действует та же логика: <code>publishPercentileHistogram</code> даёт агрегируемые бакеты, а <code>publishPercentiles</code> — клиентские значения, которые «невозможно агрегировать по тегам» (<a href="https://docs.micrometer.io/micrometer/reference/concepts/histogram-quantiles.html">Micrometer, Histograms and percentiles</a>).</p>
 <p>Таблица ниже сводит различия двух типов; главная строка в ней — вторая, про агрегацию:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1003,34 +1003,34 @@ acquirer_call_seconds_count 59001
 </thead>
 <tbody>
 <tr>
-<td>Где считается квантиль</td>
-<td>в запросе (<code>histogram_quantile</code>)</td>
-<td>в приложении</td>
+<td data-label="">Где считается квантиль</td>
+<td data-label="Histogram">в запросе (<code>histogram_quantile</code>)</td>
+<td data-label="Summary">в приложении</td>
 </tr>
 <tr>
-<td>Агрегируется по экземплярам/тегам</td>
-<td><strong>да</strong></td>
-<td><strong>нет</strong></td>
+<td data-label="">Агрегируется по экземплярам/тегам</td>
+<td data-label="Histogram"><strong>да</strong></td>
+<td data-label="Summary"><strong>нет</strong></td>
 </tr>
 <tr>
-<td>Точность</td>
-<td>зависит от бакетов (интерполяция внутри бакета)</td>
-<td>выше для заданных квантилей</td>
+<td data-label="">Точность</td>
+<td data-label="Histogram">зависит от бакетов (интерполяция внутри бакета)</td>
+<td data-label="Summary">выше для заданных квантилей</td>
 </tr>
 <tr>
-<td>Стоимость по рядам</td>
-<td>1 ряд на бакет + <code>_sum</code> + <code>_count</code></td>
-<td>1 ряд на квантиль + <code>_sum</code> + <code>_count</code></td>
+<td data-label="">Стоимость по рядам</td>
+<td data-label="Histogram">1 ряд на бакет + <code>_sum</code> + <code>_count</code></td>
+<td data-label="Summary">1 ряд на квантиль + <code>_sum</code> + <code>_count</code></td>
 </tr>
 <tr>
-<td>Можно ли задать квантиль постфактум</td>
-<td>да, любой</td>
-<td>нет, только заранее заданные</td>
+<td data-label="">Можно ли задать квантиль постфактум</td>
+<td data-label="Histogram">да, любой</td>
+<td data-label="Summary">нет, только заранее заданные</td>
 </tr>
 <tr>
-<td>Стоимость CPU в приложении</td>
-<td>низкая (инкремент счётчиков)</td>
-<td>выше (структура для оценки квантилей)</td>
+<td data-label="">Стоимость CPU в приложении</td>
+<td data-label="Histogram">низкая (инкремент счётчиков)</td>
+<td data-label="Summary">выше (структура для оценки квантилей)</td>
 </tr>
 </tbody>
 </table>
@@ -1093,7 +1093,7 @@ acquirer_call_seconds_count 59001
 <p>Prometheus хранит каждый уникальный ряд в памяти — метаданные, последние отсчёты, индекс — и на диске. Один ряд в рабочем режиме занимает порядка нескольких килобайт RSS, так что миллион рядов требует гигабайтов, а на десяти миллионах Prometheus падает по OOM. Мониторинг вы при этом теряете <strong>ровно в тот момент</strong>, когда он нужнее всего, потому что взрыв кардинальности обычно вызван инцидентом.</p>
 <p>Считается кардинальность как произведение количеств уникальных значений всех тегов метрики. Метрика с тегами <code>method</code> (5) × <code>uri</code> (40) × <code>status</code> (12) × <code>pod</code> (20) даёт 48 000 рядов, а если это гистограмма с 30 бакетами — 1,4 миллиона, и всё это с одной метрики.</p>
 <p>Таблица ниже перечисляет, <strong>что категорически нельзя класть в теги</strong>, почему и куда эти данные деть вместо этого:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Нельзя</th>
@@ -1103,34 +1103,34 @@ acquirer_call_seconds_count 59001
 </thead>
 <tbody>
 <tr>
-<td><code>user_id</code>, <code>account_id</code>, <code>card_id</code></td>
-<td>неограниченный рост</td>
-<td>атрибут в трассе/логе</td>
+<td data-label="Нельзя"><code>user_id</code>, <code>account_id</code>, <code>card_id</code></td>
+<td data-label="Почему">неограниченный рост</td>
+<td data-label="Что вместо">атрибут в трассе/логе</td>
 </tr>
 <tr>
-<td><code>trace_id</code>, <code>request_id</code></td>
-<td>уникален у каждого запроса — худший случай</td>
-<td>exemplar</td>
+<td data-label="Нельзя"><code>trace_id</code>, <code>request_id</code></td>
+<td data-label="Почему">уникален у каждого запроса — худший случай</td>
+<td data-label="Что вместо">exemplar</td>
 </tr>
 <tr>
-<td>URL с path-параметрами (<code>/api/orders/8812</code>)</td>
-<td>ряд на каждое поручение</td>
-<td>шаблон пути <code>/api/orders/{id}</code></td>
+<td data-label="Нельзя">URL с path-параметрами (<code>/api/orders/8812</code>)</td>
+<td data-label="Почему">ряд на каждое поручение</td>
+<td data-label="Что вместо">шаблон пути <code>/api/orders/{id}</code></td>
 </tr>
 <tr>
-<td>текст сообщения об ошибке</td>
-<td>«Connection to 10.2.3.44:5432 refused» — новый ряд на каждый IP</td>
-<td>класс ошибки: <code>error=connection_refused</code></td>
+<td data-label="Нельзя">текст сообщения об ошибке</td>
+<td data-label="Почему">«Connection to 10.2.3.44:5432 refused» — новый ряд на каждый IP</td>
+<td data-label="Что вместо">класс ошибки: <code>error=connection_refused</code></td>
 </tr>
 <tr>
-<td>timestamp, версия сборки с хешем коммита</td>
-<td>растёт с каждым деплоем</td>
-<td><code>version</code> семантическая</td>
+<td data-label="Нельзя">timestamp, версия сборки с хешем коммита</td>
+<td data-label="Почему">растёт с каждым деплоем</td>
+<td data-label="Что вместо"><code>version</code> семантическая</td>
 </tr>
 <tr>
-<td>email, телефон</td>
-<td>и кардинальность, и ПДн</td>
-<td>хеш в логе, не в метрике</td>
+<td data-label="Нельзя">email, телефон</td>
+<td data-label="Почему">и кардинальность, и ПДн</td>
+<td data-label="Что вместо">хеш в логе, не в метрике</td>
 </tr>
 </tbody>
 </table>
@@ -1184,7 +1184,7 @@ acquirer_call_seconds_count 59001
 - <strong>Errors</strong> — количество отказов ресурса.</p>
 <p><strong>Four golden signals</strong> из Google SRE включают latency, traffic, errors и <strong>saturation</strong> (<a href="https://sre.google/sre-book/monitoring-distributed-systems/">SRE Book, Monitoring Distributed Systems</a>), то есть по сути это RED плюс saturation. В книге есть важное уточнение: latency <strong>успешных</strong> и <strong>неуспешных</strong> запросов надо считать отдельно, потому что быстрая 500-ка снижает общий p99 и тем самым маскирует проблему.</p>
 <p>Из этих рамок складывается сводный минимум для типичного Spring Boot сервиса. В таблице ниже для каждой категории указаны конкретные метрики и то, на какой вопрос они отвечают:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Категория</th>
@@ -1194,44 +1194,44 @@ acquirer_call_seconds_count 59001
 </thead>
 <tbody>
 <tr>
-<td>HTTP-сервер</td>
-<td><code>http_server_requests_seconds</code> (count/bucket/sum) по <code>uri</code>, <code>method</code>, <code>status</code>, <code>outcome</code></td>
-<td>RED целиком из одной метрики</td>
+<td data-label="Категория">HTTP-сервер</td>
+<td data-label="Метрики"><code>http_server_requests_seconds</code> (count/bucket/sum) по <code>uri</code>, <code>method</code>, <code>status</code>, <code>outcome</code></td>
+<td data-label="Почему именно они">RED целиком из одной метрики</td>
 </tr>
 <tr>
-<td>HTTP-клиенты</td>
-<td><code>http_client_requests_seconds</code> по <code>client_name</code>, <code>uri</code>, <code>status</code></td>
-<td>локализация «тормозит не мы, а партнёр»</td>
+<td data-label="Категория">HTTP-клиенты</td>
+<td data-label="Метрики"><code>http_client_requests_seconds</code> по <code>client_name</code>, <code>uri</code>, <code>status</code></td>
+<td data-label="Почему именно они">локализация «тормозит не мы, а партнёр»</td>
 </tr>
 <tr>
-<td>JVM</td>
-<td><code>jvm_memory_used_bytes</code>, <code>jvm_gc_pause_seconds</code>, <code>jvm_threads_live</code>, <code>jvm_threads_states</code>, <code>process_cpu_usage</code>, <code>jvm_classes_loaded</code></td>
-<td>первый ответ на «почему тормозит» (детали GC — гл. 07)</td>
+<td data-label="Категория">JVM</td>
+<td data-label="Метрики"><code>jvm_memory_used_bytes</code>, <code>jvm_gc_pause_seconds</code>, <code>jvm_threads_live</code>, <code>jvm_threads_states</code>, <code>process_cpu_usage</code>, <code>jvm_classes_loaded</code></td>
+<td data-label="Почему именно они">первый ответ на «почему тормозит» (детали GC — гл. 07)</td>
 </tr>
 <tr>
-<td>Пул БД</td>
-<td><code>hikaricp_connections_active</code>, <code>_idle</code>, <code>_pending</code>, <code>_timeout_total</code>, <code>hikaricp_connections_acquire_seconds</code></td>
-<td>см. ниже</td>
+<td data-label="Категория">Пул БД</td>
+<td data-label="Метрики"><code>hikaricp_connections_active</code>, <code>_idle</code>, <code>_pending</code>, <code>_timeout_total</code>, <code>hikaricp_connections_acquire_seconds</code></td>
+<td data-label="Почему именно они">см. ниже</td>
 </tr>
 <tr>
-<td>Kafka</td>
-<td>лаг потребителя, <code>kafka_consumer_fetch_manager_*</code></td>
-<td>детали — гл. 29 (<code>29-kafka-internals.md</code>)</td>
+<td data-label="Категория">Kafka</td>
+<td data-label="Метрики">лаг потребителя, <code>kafka_consumer_fetch_manager_*</code></td>
+<td data-label="Почему именно они">детали — гл. 29 (<code>29-kafka-internals.md</code>)</td>
 </tr>
 <tr>
-<td>Resilience4j</td>
-<td>состояния breaker, доля отказов</td>
-<td>детали — гл. 35 (<code>35-resilience.md</code>)</td>
+<td data-label="Категория">Resilience4j</td>
+<td data-label="Метрики">состояния breaker, доля отказов</td>
+<td data-label="Почему именно они">детали — гл. 35 (<code>35-resilience.md</code>)</td>
 </tr>
 <tr>
-<td>Кэш</td>
-<td>hit ratio, размер, evictions</td>
-<td>гл. 23 (<code>23-caching.md</code>)</td>
+<td data-label="Категория">Кэш</td>
+<td data-label="Метрики">hit ratio, размер, evictions</td>
+<td data-label="Почему именно они">гл. 23 (<code>23-caching.md</code>)</td>
 </tr>
 <tr>
-<td>Бизнес</td>
-<td><code>payments_total{outcome}</code>, <code>payment_amount_total</code>, «успешных платежей в минуту»</td>
-<td>см. ниже</td>
+<td data-label="Категория">Бизнес</td>
+<td data-label="Метрики"><code>payments_total{outcome}</code>, <code>payment_amount_total</code>, «успешных платежей в минуту»</td>
+<td data-label="Почему именно они">см. ниже</td>
 </tr>
 </tbody>
 </table>
@@ -1628,7 +1628,7 @@ acquirer_call_seconds_count 59001
 <p><strong>3. Outbox.</strong> При паттерне transactional outbox (гл. 31, <code>31-integration-patterns-consistency.md</code>) <code>traceparent</code> нужно сохранять <strong>в строку outbox-таблицы</strong> и восстанавливать, когда релей отправляет сообщение. Иначе трасса рвётся на самом интересном месте — между «записали в БД» и «отправили в Kafka».</p>
 <h3 id="57-бэкенды-трассировки-и-чтение-диаграммы-waterfall">5.7 Бэкенды трассировки и чтение диаграммы waterfall</h3>
 <p>Бэкенд трассировки хранит спаны и собирает из них трассы, а waterfall — это его основная диаграмма, на которой видно, какая операция сколько заняла и что во что вложено. Бэкенды различаются прежде всего тем, что они индексируют, и от этого зависят и цена, и способ, которым вы находите нужную трассу. Таблица ниже сравнивает три распространённых бэкенда, а после неё разобрано, как читать waterfall и как по нему найти N+1:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th></th>
@@ -1639,34 +1639,34 @@ acquirer_call_seconds_count 59001
 </thead>
 <tbody>
 <tr>
-<td>Хранилище</td>
-<td>Cassandra/Elasticsearch/Badger</td>
-<td>объектное (S3/GCS)</td>
-<td>ES/Cassandra/MySQL</td>
+<td data-label="">Хранилище</td>
+<td data-label="Jaeger">Cassandra/Elasticsearch/Badger</td>
+<td data-label="Grafana Tempo">объектное (S3/GCS)</td>
+<td data-label="Zipkin">ES/Cassandra/MySQL</td>
 </tr>
 <tr>
-<td>Индексация</td>
-<td>по service/operation/tags</td>
-<td><strong>только по trace_id</strong> (+ TraceQL по метаданным)</td>
-<td>по тегам</td>
+<td data-label="">Индексация</td>
+<td data-label="Jaeger">по service/operation/tags</td>
+<td data-label="Grafana Tempo"><strong>только по trace_id</strong> (+ TraceQL по метаданным)</td>
+<td data-label="Zipkin">по тегам</td>
 </tr>
 <tr>
-<td>Стоимость</td>
-<td>выше (индекс)</td>
-<td>низкая</td>
-<td>средняя</td>
+<td data-label="">Стоимость</td>
+<td data-label="Jaeger">выше (индекс)</td>
+<td data-label="Grafana Tempo">низкая</td>
+<td data-label="Zipkin">средняя</td>
 </tr>
 <tr>
-<td>Поиск по атрибутам</td>
-<td>да</td>
-<td>TraceQL, но эффективнее при известном trace_id</td>
-<td>да</td>
+<td data-label="">Поиск по атрибутам</td>
+<td data-label="Jaeger">да</td>
+<td data-label="Grafana Tempo">TraceQL, но эффективнее при известном trace_id</td>
+<td data-label="Zipkin">да</td>
 </tr>
 <tr>
-<td>Типовой сценарий</td>
-<td>самостоятельный поиск трасс</td>
-<td>«пришли из метрики/лога по trace_id»</td>
-<td>старые системы</td>
+<td data-label="">Типовой сценарий</td>
+<td data-label="Jaeger">самостоятельный поиск трасс</td>
+<td data-label="Grafana Tempo">«пришли из метрики/лога по trace_id»</td>
+<td data-label="Zipkin">старые системы</td>
 </tr>
 </tbody>
 </table>
@@ -1912,7 +1912,7 @@ acquirer_call_seconds_count 59001
 
 <p>Ключевые слова здесь — «хороших с точки зрения пользователя». «Аптайм пода 99,99 %» не годится в SLI, потому что под может быть жив и при этом отвечать 500 на все запросы. «Утилизация CPU 40 %» тоже не SLI, потому что пользователю она безразлична: CPU не влияет на пользователя напрямую, это ресурсная метрика, и нужна она для диагностики, а не для SLO.</p>
 <p>На практике используют пять типов SLI, и таблица ниже показывает формулу каждого и то, для каких систем он подходит:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Тип</th>
@@ -1922,29 +1922,29 @@ acquirer_call_seconds_count 59001
 </thead>
 <tbody>
 <tr>
-<td><strong>Availability</strong></td>
-<td>успешные / все корректные запросы</td>
-<td>синхронные API</td>
+<td data-label="Тип"><strong>Availability</strong></td>
+<td data-label="Формула">успешные / все корректные запросы</td>
+<td data-label="Для чего">синхронные API</td>
 </tr>
 <tr>
-<td><strong>Latency</strong></td>
-<td>запросы быстрее порога / все успешные</td>
-<td>синхронные API</td>
+<td data-label="Тип"><strong>Latency</strong></td>
+<td data-label="Формула">запросы быстрее порога / все успешные</td>
+<td data-label="Для чего">синхронные API</td>
 </tr>
 <tr>
-<td><strong>Freshness</strong></td>
-<td>данные свежее X / все чтения</td>
-<td>кэши, реплики, отчёты</td>
+<td data-label="Тип"><strong>Freshness</strong></td>
+<td data-label="Формула">данные свежее X / все чтения</td>
+<td data-label="Для чего">кэши, реплики, отчёты</td>
 </tr>
 <tr>
-<td><strong>Correctness</strong></td>
-<td>корректные записи / все записи</td>
-<td>конвейеры, сверки</td>
+<td data-label="Тип"><strong>Correctness</strong></td>
+<td data-label="Формула">корректные записи / все записи</td>
+<td data-label="Для чего">конвейеры, сверки</td>
 </tr>
 <tr>
-<td><strong>Throughput / completeness</strong></td>
-<td>обработано / поступило</td>
-<td>пакеты, потребители</td>
+<td data-label="Тип"><strong>Throughput / completeness</strong></td>
+<td data-label="Формула">обработано / поступило</td>
+<td data-label="Для чего">пакеты, потребители</td>
 </tr>
 </tbody>
 </table>
@@ -1967,7 +1967,7 @@ acquirer_call_seconds_count 59001
 <li>Каждая девятка стоит дороже предыдущей, примерно кратно, и требует отказаться от части скорости изменений, а 100 % означает «не разворачивать вообще».</li>
 </ol>
 <p>Таблица ниже переводит каждую девятку в допустимую недоступность за 30 дней и показывает, что это значит для команды:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">SLO</th>
@@ -1977,34 +1977,34 @@ acquirer_call_seconds_count 59001
 </thead>
 <tbody>
 <tr>
-<td class="num">99 %</td>
-<td>7 ч 12 мин</td>
-<td>«двухчасовой инцидент раз в месяц — норма»</td>
+<td data-label="SLO" class="num">99 %</td>
+<td data-label="Допустимая недоступность за 30 дней">7 ч 12 мин</td>
+<td data-label="Что это значит">«двухчасовой инцидент раз в месяц — норма»</td>
 </tr>
 <tr>
-<td class="num">99,5 %</td>
-<td>3 ч 36 мин</td>
-<td></td>
+<td data-label="SLO" class="num">99,5 %</td>
+<td data-label="Допустимая недоступность за 30 дней">3 ч 36 мин</td>
+<td data-label="Что это значит"></td>
 </tr>
 <tr>
-<td class="num">99,9 %</td>
-<td><strong>43 мин 12 с</strong></td>
-<td>реалистично для хорошей команды с ручным реагированием</td>
+<td data-label="SLO" class="num">99,9 %</td>
+<td data-label="Допустимая недоступность за 30 дней"><strong>43 мин 12 с</strong></td>
+<td data-label="Что это значит">реалистично для хорошей команды с ручным реагированием</td>
 </tr>
 <tr>
-<td class="num">99,95 %</td>
-<td>21 мин 36 с</td>
-<td>нужен автоматический откат</td>
+<td data-label="SLO" class="num">99,95 %</td>
+<td data-label="Допустимая недоступность за 30 дней">21 мин 36 с</td>
+<td data-label="Что это значит">нужен автоматический откат</td>
 </tr>
 <tr>
-<td class="num">99,99 %</td>
-<td><strong>4 мин 19 с</strong></td>
-<td>нужна автоматика, мультизональность, никакого ручного реагирования</td>
+<td data-label="SLO" class="num">99,99 %</td>
+<td data-label="Допустимая недоступность за 30 дней"><strong>4 мин 19 с</strong></td>
+<td data-label="Что это значит">нужна автоматика, мультизональность, никакого ручного реагирования</td>
 </tr>
 <tr>
-<td class="num">99,999 %</td>
-<td>26 с</td>
-<td>вы не успеете даже прочитать оповещение</td>
+<td data-label="SLO" class="num">99,999 %</td>
+<td data-label="Допустимая недоступность за 30 дней">26 с</td>
+<td data-label="Что это значит">вы не успеете даже прочитать оповещение</td>
 </tr>
 </tbody>
 </table>
@@ -2055,7 +2055,7 @@ acquirer_call_seconds_count 59001
 <p>Burn rate alerting — это способ ставить оповещения не на мгновенный уровень ошибок, а на скорость, с которой сгорает error budget. Нужен он потому, что наивное оповещение «error rate &gt; 1 % за 5 минут» плох в обе стороны: при медленной деградации он молчит, хотя 0,5 % ошибок в течение целого месяца исчерпают бюджет 99,9 % пятикратно, а при коротком всплеске, который бюджету безразличен, шумит. Ниже разобрано, что такое burn rate, как устроены многооконные оповещения, как их реализовать в Prometheus и где они ломаются.</p>
 <p><strong>Burn rate</strong> показывает, во сколько раз быстрее нормы тратится бюджет. Burn rate 1 означает, что к концу окна бюджет израсходуется ровно, а burn rate 14,4 — что весь месячный бюджет сгорит за 2 дня.</p>
 <p>Google SRE Workbook рекомендует <strong>многооконный многоуровневое</strong> оповещение. Длинное окно определяет серьёзность, а короткое (примерно 1/12 длинного) проверяет, что бюджет сгорает <strong>прямо сейчас</strong>, и это резко сокращает время, за которое оповещение сбрасывается после окончания проблемы (<a href="https://sre.google/workbook/alerting-on-slos/">SRE Workbook, Alerting on SLOs</a>). В таблице ниже три уровня серьёзности с окнами, порогами burn rate и долей бюджета, которая успевает сгореть до срабатывания:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Серьёзность</th>
@@ -2067,25 +2067,25 @@ acquirer_call_seconds_count 59001
 </thead>
 <tbody>
 <tr>
-<td><strong>Page</strong> (будить)</td>
-<td>1 час</td>
-<td>5 минут</td>
-<td class="num">14,4</td>
-<td class="num">2 %</td>
+<td data-label="Серьёзность"><strong>Page</strong> (будить)</td>
+<td data-label="Длинное окно">1 час</td>
+<td data-label="Короткое окно">5 минут</td>
+<td data-label="Burn rate" class="num">14,4</td>
+<td data-label="Сожжено бюджета" class="num">2 %</td>
 </tr>
 <tr>
-<td><strong>Page</strong></td>
-<td>6 часов</td>
-<td>30 минут</td>
-<td class="num">6</td>
-<td class="num">5 %</td>
+<td data-label="Серьёзность"><strong>Page</strong></td>
+<td data-label="Длинное окно">6 часов</td>
+<td data-label="Короткое окно">30 минут</td>
+<td data-label="Burn rate" class="num">6</td>
+<td data-label="Сожжено бюджета" class="num">5 %</td>
 </tr>
 <tr>
-<td><strong>Ticket</strong> (задача)</td>
-<td>3 дня</td>
-<td>6 часов</td>
-<td class="num">1</td>
-<td class="num">10 %</td>
+<td data-label="Серьёзность"><strong>Ticket</strong> (задача)</td>
+<td data-label="Длинное окно">3 дня</td>
+<td data-label="Короткое окно">6 часов</td>
+<td data-label="Burn rate" class="num">1</td>
+<td data-label="Сожжено бюджета" class="num">10 %</td>
 </tr>
 </tbody>
 </table>
@@ -2145,7 +2145,7 @@ acquirer_call_seconds_count 59001
 <p>Оповещение решает, когда система должна позвать человека, а постмортем — что команда вынесет из инцидента, после того как его починили. Обе практики легко испортить: оповещения на всё подряд приучают дежурного игнорировать уведомления, а постмортемы с поиском виноватых приучают команду скрывать ошибки, и в обоих случаях вы теряете информацию ровно тогда, когда она нужнее всего. В этом разделе мы разберём, почему оповещать надо на симптом, каким должен быть actionable-оповещение и его runbook, как бороться с alert fatigue, как устроить дежурство и эскалацию, как писать постмортем без обвинений, какие механизмы защищают правило от дребезга и что разработчик должен заложить в оповещение, чтобы его можно было разобрать ночью.</p>
 <h3 id="71-оповещения-на-симптомы">7.1 Оповещения на симптомы</h3>
 <p>Центральный принцип оповещения сформулирован в SRE-книге: пейджить надо по <strong>симптомам</strong>, то есть по тому, что сломано для пользователя, а не по гипотезам о причинах (<a href="https://sre.google/sre-book/monitoring-distributed-systems/">SRE Book, Monitoring Distributed Systems</a>). Разницу проще всего увидеть на парах: в левой колонке таблицы ниже стоят типичные оповещения на причину, а в правой — симптомы, которые на самом деле хотели поймать:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Оповещение на причину (плохо)</th>
@@ -2154,24 +2154,24 @@ acquirer_call_seconds_count 59001
 </thead>
 <tbody>
 <tr>
-<td>CPU &gt; 80 %</td>
-<td>p99 latency &gt; SLO</td>
+<td data-label="Оповещение на причину (плохо)">CPU &gt; 80 %</td>
+<td data-label="Оповещение на симптом (хорошо)">p99 latency &gt; SLO</td>
 </tr>
 <tr>
-<td>Свободная память &lt; 20 %</td>
-<td>error rate сжигает бюджет</td>
+<td data-label="Оповещение на причину (плохо)">Свободная память &lt; 20 %</td>
+<td data-label="Оповещение на симптом (хорошо)">error rate сжигает бюджет</td>
 </tr>
 <tr>
-<td>Число потоков &gt; 500</td>
-<td>доля успешных платежей упала на 30 % к неделе назад</td>
+<td data-label="Оповещение на причину (плохо)">Число потоков &gt; 500</td>
+<td data-label="Оповещение на симптом (хорошо)">доля успешных платежей упала на 30 % к неделе назад</td>
 </tr>
 <tr>
-<td>Перезапустился под</td>
-<td>сервис недоступен снаружи (<code>probe_success == 0</code>)</td>
+<td data-label="Оповещение на причину (плохо)">Перезапустился под</td>
+<td data-label="Оповещение на симптом (хорошо)">сервис недоступен снаружи (<code>probe_success == 0</code>)</td>
 </tr>
 <tr>
-<td>Лаг потребителя &gt; 1000</td>
-<td>задержка обработки события &gt; 5 минут (это симптом: клиент не видит статус)</td>
+<td data-label="Оповещение на причину (плохо)">Лаг потребителя &gt; 1000</td>
+<td data-label="Оповещение на симптом (хорошо)">задержка обработки события &gt; 5 минут (это симптом: клиент не видит статус)</td>
 </tr>
 </tbody>
 </table>
@@ -2228,7 +2228,7 @@ acquirer_call_seconds_count 59001
 <p>Runbook пишут <strong>в момент создания оповещения</strong>, а не «потом». Оповещение без runbook по сути только будит человека, чтобы сообщить ему, что вы сами не знаете, что делать.</p>
 <h3 id="73-усталость-от-оповещений-alert-fatigue">7.3 Усталость от оповещений (alert fatigue)</h3>
 <p>Alert fatigue — это состояние, при котором уведомлений так много и они так часто оказываются пустыми, что люди перестают на них реагировать. Узнают его по характерным признакам: канал оповещений в Slack с 200 сообщениями в день, которые никто не читает, почтовое правило, отправляющее оповещения сразу в архив, и фраза «а, этот всегда горит». Ниже в таблице собраны типовые причины вместе с лечением, а после неё — гигиена, которая не даёт оповещениям снова расплодиться, и метрики качества самого оповещения:</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Причина</th>
@@ -2237,28 +2237,28 @@ acquirer_call_seconds_count 59001
 </thead>
 <tbody>
 <tr>
-<td>Оповещения на причины</td>
-<td>перевести на симптомы (7.1)</td>
+<td data-label="Причина">Оповещения на причины</td>
+<td data-label="Лечение">перевести на симптомы (7.1)</td>
 </tr>
 <tr>
-<td>Порог подобран «на глаз»</td>
-<td>считать по SLO и burn rate (6.4)</td>
+<td data-label="Причина">Порог подобран «на глаз»</td>
+<td data-label="Лечение">считать по SLO и burn rate (6.4)</td>
 </tr>
 <tr>
-<td>Нет <code>for:</code> — оповещение мигает на одиночных всплесках</td>
-<td><code>for: 5m</code> и многооконная схема</td>
+<td data-label="Причина">Нет <code>for:</code> — оповещение мигает на одиночных всплесках</td>
+<td data-label="Лечение"><code>for: 5m</code> и многооконная схема</td>
 </tr>
 <tr>
-<td>Одна проблема → 40 уведомлений</td>
-<td>группировка в Alertmanager (<code>group_by</code>), ингибиция (<code>inhibit_rules</code>: при «весь кластер лёг» не слать оповещения по каждому сервису)</td>
+<td data-label="Причина">Одна проблема → 40 уведомлений</td>
+<td data-label="Лечение">группировка в Alertmanager (<code>group_by</code>), ингибиция (<code>inhibit_rules</code>: при «весь кластер лёг» не слать оповещения по каждому сервису)</td>
 </tr>
 <tr>
-<td>Оповещения без владельца</td>
-<td>метка <code>team</code> и маршрутизация по ней; безвладельные — удалить</td>
+<td data-label="Причина">Оповещения без владельца</td>
+<td data-label="Лечение">метка <code>team</code> и маршрутизация по ней; безвладельные — удалить</td>
 </tr>
 <tr>
-<td>Вечно красное оповещение</td>
-<td>либо чинить, либо удалять. «Временно заглушить на месяц» = удалить, но с самообманом</td>
+<td data-label="Причина">Вечно красное оповещение</td>
+<td data-label="Лечение">либо чинить, либо удалять. «Временно заглушить на месяц» = удалить, но с самообманом</td>
 </tr>
 </tbody>
 </table>
@@ -2386,7 +2386,7 @@ kubectl <span class="nb">exec</span> -it payment-api-7d9f-abc -- <span class="se
 <p>Окупается и автоматизация — <strong>дамп по оповещению</strong>. Alertmanager вызывает webhook, тот запускает Job, который снимает <code>JFR.dump</code> со всех подов сервиса и складывает файлы в S3 под именем инцидента. К тому моменту, когда дежурный открыл ноутбук, профиль уже собран, и это ровно те 10 минут, которые обычно теряются. Для этого нужны сервис-аккаунт с правом <code>pods/exec</code>, лимит на частоту, чтобы флапающее оповещение не устроило шторм дампов, и ретенция на бакете.</p>
 <h3 id="82-события-jfr-при-типовых-симптомах">8.2 События JFR при типовых симптомах</h3>
 <p>JFR — это не только CPU-профиль: его ценность в том, что в одном файле лежат события разной природы на общей временной шкале, и по симптому можно сразу понять, какие события открывать. Таблица ниже сопоставляет типовые симптомы с событиями JFR и тем, на что в них смотреть, а после неё разобраны два случая, которые в таблицу не укладываются:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Симптом</th>
@@ -2396,34 +2396,34 @@ kubectl <span class="nb">exec</span> -it payment-api-7d9f-abc -- <span class="se
 </thead>
 <tbody>
 <tr>
-<td>p99 растёт, CPU высокий</td>
-<td><code>jdk.ExecutionSample</code></td>
-<td>горячие стеки; сравнить с окном «до»</td>
+<td data-label="Симптом">p99 растёт, CPU высокий</td>
+<td data-label="События JFR"><code>jdk.ExecutionSample</code></td>
+<td data-label="На что смотреть">горячие стеки; сравнить с окном «до»</td>
 </tr>
 <tr>
-<td>p99 растёт, CPU низкий</td>
-<td><code>jdk.ThreadPark</code>, <code>jdk.JavaMonitorEnter</code>, <code>jdk.SocketRead</code></td>
-<td>ожидание: лок, пул, внешний вызов</td>
+<td data-label="Симптом">p99 растёт, CPU низкий</td>
+<td data-label="События JFR"><code>jdk.ThreadPark</code>, <code>jdk.JavaMonitorEnter</code>, <code>jdk.SocketRead</code></td>
+<td data-label="На что смотреть">ожидание: лок, пул, внешний вызов</td>
 </tr>
 <tr>
-<td>пилообразный heap, паузы</td>
-<td><code>jdk.GCPhasePause</code>, <code>jdk.GarbageCollection</code>, <code>jdk.OldObjectSample</code></td>
-<td>длительность пауз, живой набор после full GC</td>
+<td data-label="Симптом">пилообразный heap, паузы</td>
+<td data-label="События JFR"><code>jdk.GCPhasePause</code>, <code>jdk.GarbageCollection</code>, <code>jdk.OldObjectSample</code></td>
+<td data-label="На что смотреть">длительность пауз, живой набор после full GC</td>
 </tr>
 <tr>
-<td>всплески выделений памяти</td>
-<td><code>jdk.ObjectAllocationSample</code></td>
-<td>кто выделяет; часто — логирование и сериализация</td>
+<td data-label="Симптом">всплески выделений памяти</td>
+<td data-label="События JFR"><code>jdk.ObjectAllocationSample</code></td>
+<td data-label="На что смотреть">кто выделяет; часто — логирование и сериализация</td>
 </tr>
 <tr>
-<td>«залипло, ничего не происходит»</td>
-<td><code>jdk.ThreadDump</code> (периодические), <code>jdk.JavaMonitorEnter</code></td>
-<td>взаимоблокировка, ожидание на одном мониторе</td>
+<td data-label="Симптом">«залипло, ничего не происходит»</td>
+<td data-label="События JFR"><code>jdk.ThreadDump</code> (периодические), <code>jdk.JavaMonitorEnter</code></td>
+<td data-label="На что смотреть">взаимоблокировка, ожидание на одном мониторе</td>
 </tr>
 <tr>
-<td>тормоза на виртуальных потоках</td>
-<td><code>jdk.VirtualThreadPinned</code> (порог 20 мс)</td>
-<td>пиннинг на <code>synchronized</code>/нативных кадрах (гл. 08)</td>
+<td data-label="Симптом">тормоза на виртуальных потоках</td>
+<td data-label="События JFR"><code>jdk.VirtualThreadPinned</code> (порог 20 мс)</td>
+<td data-label="На что смотреть">пиннинг на <code>synchronized</code>/нативных кадрах (гл. 08)</td>
 </tr>
 </tbody>
 </table>
@@ -2469,7 +2469,7 @@ asprof -d <span class="m">60</span> -e wall -t -f /tmp/wall.html <span class="m"
 <p>Если свести всё к одной фразе, liveness говорит о процессе, readiness — о трафике, и совпадать они не должны.</p>
 <h3 id="92-чеклист-на-первые-пять-минут-после-деплоя">9.2 Чеклист на первые пять минут после деплоя</h3>
 <p>Первые минуты после деплоя решают, откатывать ли релиз, пока он не задел большую часть клиентов, и решать это надо не по ощущениям, а по списку с заранее заданными порогами. Чеклист ниже выполняется всегда и в этом порядке, критерии отката в нём записаны явно, а держать его стоит в runbook сервиса. В таблице для каждого шага указано, куда смотреть и что считать красным флагом:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th class="num">#</th>
@@ -2480,64 +2480,64 @@ asprof -d <span class="m">60</span> -e wall -t -f /tmp/wall.html <span class="m"
 </thead>
 <tbody>
 <tr>
-<td class="num">1</td>
-<td>Поды</td>
-<td><code>kubectl get pods -w</code>, все Ready, рестартов 0</td>
-<td>CrashLoopBackOff, OOMKilled, рестарты &gt; 0</td>
+<td data-label="#" class="num">1</td>
+<td data-label="Шаг">Поды</td>
+<td data-label="Что смотреть"><code>kubectl get pods -w</code>, все Ready, рестартов 0</td>
+<td data-label="Красный флаг">CrashLoopBackOff, OOMKilled, рестарты &gt; 0</td>
 </tr>
 <tr>
-<td class="num">2</td>
-<td>Версия</td>
-<td>метка <code>version</code> в метриках, <code>/actuator/info</code></td>
-<td>часть подов на старой версии дольше 5 минут</td>
+<td data-label="#" class="num">2</td>
+<td data-label="Шаг">Версия</td>
+<td data-label="Что смотреть">метка <code>version</code> в метриках, <code>/actuator/info</code></td>
+<td data-label="Красный флаг">часть подов на старой версии дольше 5 минут</td>
 </tr>
 <tr>
-<td class="num">3</td>
-<td>Health</td>
-<td>readiness зелёный на всех подах</td>
-<td>флапающий readiness</td>
+<td data-label="#" class="num">3</td>
+<td data-label="Шаг">Health</td>
+<td data-label="Что смотреть">readiness зелёный на всех подах</td>
+<td data-label="Красный флаг">флапающий readiness</td>
 </tr>
 <tr>
-<td class="num">4</td>
-<td>Error rate</td>
-<td><code>sum by (version) (rate(...{status=~"5.."}[2m]))</code></td>
-<td>у новой версии заметно выше, чем у старой</td>
+<td data-label="#" class="num">4</td>
+<td data-label="Шаг">Error rate</td>
+<td data-label="Что смотреть"><code>sum by (version) (rate(...{status=~"5.."}[2m]))</code></td>
+<td data-label="Красный флаг">у новой версии заметно выше, чем у старой</td>
 </tr>
 <tr>
-<td class="num">5</td>
-<td>Latency</td>
-<td>p99 по версиям</td>
-<td>рост p99 &gt; 30 % относительно старой версии</td>
+<td data-label="#" class="num">5</td>
+<td data-label="Шаг">Latency</td>
+<td data-label="Что смотреть">p99 по версиям</td>
+<td data-label="Красный флаг">рост p99 &gt; 30 % относительно старой версии</td>
 </tr>
 <tr>
-<td class="num">6</td>
-<td>Saturation</td>
-<td><code>hikaricp_connections_pending</code>, CPU throttling, heap after GC</td>
-<td>pending &gt; 0, throttling растёт, heap не падает после GC</td>
+<td data-label="#" class="num">6</td>
+<td data-label="Шаг">Saturation</td>
+<td data-label="Что смотреть"><code>hikaricp_connections_pending</code>, CPU throttling, heap after GC</td>
+<td data-label="Красный флаг">pending &gt; 0, throttling растёт, heap не падает после GC</td>
 </tr>
 <tr>
-<td class="num">7</td>
-<td>Лаг Kafka</td>
-<td>лаг групп потребителей сервиса</td>
-<td>лаг монотонно растёт 3 минуты подряд</td>
+<td data-label="#" class="num">7</td>
+<td data-label="Шаг">Лаг Kafka</td>
+<td data-label="Что смотреть">лаг групп потребителей сервиса</td>
+<td data-label="Красный флаг">лаг монотонно растёт 3 минуты подряд</td>
 </tr>
 <tr>
-<td class="num">8</td>
-<td>Логи</td>
-<td>новые типы ошибок: <code>topk(10, ...)</code> по <code>error.type</code> за 5 минут</td>
-<td>появился класс исключения, которого не было</td>
+<td data-label="#" class="num">8</td>
+<td data-label="Шаг">Логи</td>
+<td data-label="Что смотреть">новые типы ошибок: <code>topk(10, ...)</code> по <code>error.type</code> за 5 минут</td>
+<td data-label="Красный флаг">появился класс исключения, которого не было</td>
 </tr>
 <tr>
-<td class="num">9</td>
-<td>Бизнес-метрика</td>
-<td>платежи в минуту против <code>offset 1w</code></td>
-<td>падение &gt; 10 % без объяснения</td>
+<td data-label="#" class="num">9</td>
+<td data-label="Шаг">Бизнес-метрика</td>
+<td data-label="Что смотреть">платежи в минуту против <code>offset 1w</code></td>
+<td data-label="Красный флаг">падение &gt; 10 % без объяснения</td>
 </tr>
 <tr>
-<td class="num">10</td>
-<td>Решение</td>
-<td>откат или продолжаем</td>
-<td>любой красный флаг из 4/5/7/9 → откат</td>
+<td data-label="#" class="num">10</td>
+<td data-label="Шаг">Решение</td>
+<td data-label="Что смотреть">откат или продолжаем</td>
+<td data-label="Красный флаг">любой красный флаг из 4/5/7/9 → откат</td>
 </tr>
 </tbody>
 </table>
@@ -2618,7 +2618,7 @@ asprof -d <span class="m">60</span> -e wall -t -f /tmp/wall.html <span class="m"
 <li><strong>Откат как эксперимент.</strong> Если первые три проверки за пять минут не дали ответа, откатывайте. Откат — самый быстрый способ проверить гипотезу «виноват релиз», и он дешевле 40 минут дискуссии, а если после отката ничего не изменилось, вы получили ценную информацию за небольшую цену.</li>
 </ol>
 <p><strong>Минуты 4–5: то, что проявляется не сразу.</strong> Есть класс регрессий, которые в первые пять минут не видны в принципе, и о них надо знать заранее. Таблица ниже показывает для каждой, когда она проявится и какой ранний индикатор доступен уже сразу после деплоя:</p>
-<table>
+<table class="rt">
 <thead>
 <tr>
 <th>Регрессия</th>
@@ -2628,34 +2628,34 @@ asprof -d <span class="m">60</span> -e wall -t -f /tmp/wall.html <span class="m"
 </thead>
 <tbody>
 <tr>
-<td>Утечка памяти</td>
-<td>часы</td>
-<td>нижняя огибающая <code>jvm_gc_live_data_size_bytes</code> после первых полных сборок</td>
+<td data-label="Регрессия">Утечка памяти</td>
+<td data-label="Когда проявится">часы</td>
+<td data-label="Ранний индикатор, доступный сразу">нижняя огибающая <code>jvm_gc_live_data_size_bytes</code> после первых полных сборок</td>
 </tr>
 <tr>
-<td>Утечка соединений/дескрипторов</td>
-<td>десятки минут</td>
-<td><code>hikaricp_connections_active</code> не возвращается к базовому уровню между всплесками</td>
+<td data-label="Регрессия">Утечка соединений/дескрипторов</td>
+<td data-label="Когда проявится">десятки минут</td>
+<td data-label="Ранний индикатор, доступный сразу"><code>hikaricp_connections_active</code> не возвращается к базовому уровню между всплесками</td>
 </tr>
 <tr>
-<td>Деградация на холодном кэше</td>
-<td>после инвалидации/следующего деплоя</td>
-<td>hit ratio кэша не вышел на прежний уровень</td>
+<td data-label="Регрессия">Деградация на холодном кэше</td>
+<td data-label="Когда проявится">после инвалидации/следующего деплоя</td>
+<td data-label="Ранний индикатор, доступный сразу">hit ratio кэша не вышел на прежний уровень</td>
 </tr>
 <tr>
-<td>Медленная миграция БД</td>
-<td>при росте объёма</td>
-<td>план запроса и время самых частых запросов (гл. 17)</td>
+<td data-label="Регрессия">Медленная миграция БД</td>
+<td data-label="Когда проявится">при росте объёма</td>
+<td data-label="Ранний индикатор, доступный сразу">план запроса и время самых частых запросов (гл. 17)</td>
 </tr>
 <tr>
-<td>Рост кардинальности метрик</td>
-<td>часы, до падения Prometheus</td>
-<td><code>scrape_samples_scraped</code> по вашей цели сразу после деплоя</td>
+<td data-label="Регрессия">Рост кардинальности метрик</td>
+<td data-label="Когда проявится">часы, до падения Prometheus</td>
+<td data-label="Ранний индикатор, доступный сразу"><code>scrape_samples_scraped</code> по вашей цели сразу после деплоя</td>
 </tr>
 <tr>
-<td>Новый шумный лог</td>
-<td>сутки, до заполнения диска</td>
-<td>объём логов сервиса в байт/с сразу после деплоя</td>
+<td data-label="Регрессия">Новый шумный лог</td>
+<td data-label="Когда проявится">сутки, до заполнения диска</td>
+<td data-label="Ранний индикатор, доступный сразу">объём логов сервиса в байт/с сразу после деплоя</td>
 </tr>
 </tbody>
 </table>
@@ -2851,7 +2851,7 @@ kubectl <span class="nb">exec</span> payment-api-7d9f-xyz -- jcmd <span class="m
 <p>Пункт 8 важнее всех остальных вместе взятых. Инструментация, которую до прода ни разу никто не открыл, примерно в половине случаев не работает: не тот <code>job</code>, метрика не экспортируется, тег не заполнен, спан не закрывается.</p>
 <h3 id="114-проверка-инструментации-на-код-ревью">11.4 Проверка инструментации на код-ревью</h3>
 <p>Код-ревью — дешёвое место, где ловятся дорогие ошибки observability: неудачный тег или стек на каждый бизнес-отказ проще отклонить в диффе, чем потом разбирать как инцидент. Общая техника ревью разобрана в гл. 44 (<code>44-code-review-quality.md</code>), а таблица ниже даёт список вопросов, специфичный для этой главы: в левой колонке то, что проверяющий видит в диффе, в правой — что он должен спросить.</p>
-<table>
+<table class="rt rt-2">
 <thead>
 <tr>
 <th>Что видим в диффе</th>
@@ -2860,48 +2860,48 @@ kubectl <span class="nb">exec</span> payment-api-7d9f-xyz -- jcmd <span class="m
 </thead>
 <tbody>
 <tr>
-<td>Новый тег/атрибут метрики</td>
-<td>Сколько уникальных значений в худшем случае? Не идентификатор ли это?</td>
+<td data-label="Что видим в диффе">Новый тег/атрибут метрики</td>
+<td data-label="Вопрос проверяющего">Сколько уникальных значений в худшем случае? Не идентификатор ли это?</td>
 </tr>
 <tr>
-<td><code>log.error(...)</code></td>
-<td>Это требует действия человека ночью? Если нет — <code>WARN</code>/<code>INFO</code> плюс счётчик</td>
+<td data-label="Что видим в диффе"><code>log.error(...)</code></td>
+<td data-label="Вопрос проверяющего">Это требует действия человека ночью? Если нет — <code>WARN</code>/<code>INFO</code> плюс счётчик</td>
 </tr>
 <tr>
-<td><code>log.info</code> в цикле или на каждый шаг</td>
-<td>Сколько строк в секунду это даст на пике?</td>
+<td data-label="Что видим в диффе"><code>log.info</code> в цикле или на каждый шаг</td>
+<td data-label="Вопрос проверяющего">Сколько строк в секунду это даст на пике?</td>
 </tr>
 <tr>
-<td>Логирование объекта целиком (<code>{}</code>, <code>obj</code>)</td>
-<td>Что в <code>toString()</code>? Нет ли там PAN, телефона, токена?</td>
+<td data-label="Что видим в диффе">Логирование объекта целиком (<code>{}</code>, <code>obj</code>)</td>
+<td data-label="Вопрос проверяющего">Что в <code>toString()</code>? Нет ли там PAN, телефона, токена?</td>
 </tr>
 <tr>
-<td>Новый <code>ExecutorService</code> / <code>@Async</code></td>
-<td>Переносится ли контекст (OTel + MDC)? Есть ли <code>TaskDecorator</code>?</td>
+<td data-label="Что видим в диффе">Новый <code>ExecutorService</code> / <code>@Async</code></td>
+<td data-label="Вопрос проверяющего">Переносится ли контекст (OTel + MDC)? Есть ли <code>TaskDecorator</code>?</td>
 </tr>
 <tr>
-<td><code>catch (Exception e) { log.error("error", e); }</code></td>
-<td>Полный стек на каждый бизнес-отказ? Что будет при 1000/с?</td>
+<td data-label="Что видим в диффе"><code>catch (Exception e) { log.error("error", e); }</code></td>
+<td data-label="Вопрос проверяющего">Полный стек на каждый бизнес-отказ? Что будет при 1000/с?</td>
 </tr>
 <tr>
-<td>Новый внешний вызов</td>
-<td>Есть ли таймаут, метрика клиента, спан? Попадёт ли URL с id в тег?</td>
+<td data-label="Что видим в диффе">Новый внешний вызов</td>
+<td data-label="Вопрос проверяющего">Есть ли таймаут, метрика клиента, спан? Попадёт ли URL с id в тег?</td>
 </tr>
 <tr>
-<td>Новый эндпоинт</td>
-<td>Шаблон пути в метрике (<code>{id}</code>), а не сырой путь?</td>
+<td data-label="Что видим в диффе">Новый эндпоинт</td>
+<td data-label="Вопрос проверяющего">Шаблон пути в метрике (<code>{id}</code>), а не сырой путь?</td>
 </tr>
 <tr>
-<td>Ручной <code>Span</code>/<code>Observation</code></td>
-<td>Есть ли <code>finally { span.end() }</code> и закрытие <code>Scope</code>?</td>
+<td data-label="Что видим в диффе">Ручной <code>Span</code>/<code>Observation</code></td>
+<td data-label="Вопрос проверяющего">Есть ли <code>finally { span.end() }</code> и закрытие <code>Scope</code>?</td>
 </tr>
 <tr>
-<td>Изменение имени метрики</td>
-<td>Кто ещё на неё ссылается — дашборды, правила, recording rules?</td>
+<td data-label="Что видим в диффе">Изменение имени метрики</td>
+<td data-label="Вопрос проверяющего">Кто ещё на неё ссылается — дашборды, правила, recording rules?</td>
 </tr>
 <tr>
-<td>Новая зависимость с своим пулом</td>
-<td>Экспортирует ли она метрики? Видны ли её очереди?</td>
+<td data-label="Что видим в диффе">Новая зависимость с своим пулом</td>
+<td data-label="Вопрос проверяющего">Экспортирует ли она метрики? Видны ли её очереди?</td>
 </tr>
 </tbody>
 </table>
@@ -3324,5 +3324,5 @@ sum by (app) (rate({namespace="payments"} | json | level="ERROR" [5m]))
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-мониторинг-и-наблюдаемость-observability">1. Мониторинг и наблюдаемость (observability)</a></li><li><a href="#2-структурное-логирование">2. Структурное логирование</a></li><li><a href="#3-метрики">3. Метрики</a></li><li><a href="#4-язык-запросов-promql">4. Язык запросов PromQL</a></li><li><a href="#5-трассировка">5. Трассировка</a></li><li><a href="#6-sli-slo-и-бюджет-ошибок">6. SLI, SLO и бюджет ошибок</a></li><li><a href="#7-оповещение-и-постмортемы">7. Оповещение и постмортемы</a></li><li><a href="#8-профилирование-в-проде">8. Профилирование в проде</a></li><li><a href="#9-наблюдаемость-в-эксплуатации">9. Наблюдаемость в эксплуатации</a></li><li><a href="#10-сквозной-разбор-инцидента-по-сигналам">10. Сквозной разбор инцидента по сигналам</a></li><li><a href="#11-стоимость-сигналов-и-дисциплина-инструментации">11. Стоимость сигналов и дисциплина инструментации</a></li><li><a href="#12-разобранные-инциденты">12. Разобранные инциденты</a></li><li><a href="#13-грабли-и-антипаттерны">13. Грабли и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=1a1f5ef868"></script>
+<script src="app.js?v=8767e2e1fe"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>
