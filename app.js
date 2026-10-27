@@ -582,12 +582,14 @@
 (function(){
   var root=document.documentElement, reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
+  var PC=['#3d6fa8','#c2593a','#6b8e23','#7b4fc4','#12949f','#d9456a','#b8860b','#a8324a','#2b9fd0','#4e8f6e','#9a6a32','#5560c8'], RN={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8,IX:9,X:10,XI:11,XII:12};
 
-  // меню книги: группы-части сворачиваются, как панель задач «Проводника»; открыта часть текущей главы
+  // картотека: разделители частей своей краски, сворачиваются; часть текущей главы открыта
   var side=document.getElementById('side');
   if(side){
     var shut={}; try{shut=JSON.parse(ls('jbb-parts')||'{}')||{};}catch(e){}
     side.querySelectorAll('.part').forEach(function(p){
+      var m=/Часть\s+([IVX]+)/.exec(p.textContent||''); if(m&&RN[m[1]]) p.style.setProperty('--pc',PC[RN[m[1]]-1]);
       var ul=p.nextElementSibling; if(!ul||ul.tagName!=='UL')return;
       var key=(p.textContent||'').trim(), cur=!!ul.querySelector('a.cur');
       p.setAttribute('role','button'); p.setAttribute('tabindex','0');
@@ -599,15 +601,17 @@
       p.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();tog();}});
     });
   }
-
-  // краска частей: I…XII — синяя, оранжевая, зелёная, фиолетовая, бирюзовая, коралловая, золотая, красная, небесная, салатовая, мандариновая, индиго
-  var PC=['#2f7de1','#f07c12','#2f9a27','#8a4fd8','#12a3b8','#e04a6a','#c9930a','#d0402b','#2aa7e0','#5aa81c','#ff7a2e','#5b6ee1'];
-  var RN={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8,IX:9,X:10,XI:11,XII:12};
-  if(side) side.querySelectorAll('.part').forEach(function(p,i){p.style.setProperty('--pc',PC[i%PC.length]);});
+  // краска части текущей главы — по этикетке части
   var tag=document.querySelector('.meta .part-tag'), m=tag&&/Часть\s+([IVX]+)/.exec(tag.textContent||'');
-  if(m&&RN[m[1]]) root.style.setProperty('--pc',PC[(RN[m[1]]-1)%PC.length]);
+  if(m&&RN[m[1]]) root.style.setProperty('--pc',PC[RN[m[1]]-1]);
 
-  // жёлтый баллон «Скопировано» над кнопкой копирования кода
+  // номер раздела — во вкладку разделителя (якорь заголовка не меняется)
+  document.querySelectorAll('.prose h2, .prose h3').forEach(function(h){
+    var t=h.firstChild; if(!t||t.nodeType!==3)return; var r=/^(\d+(?:\.\d+)*)\.?\s+/.exec(t.nodeValue); if(!r)return;
+    t.nodeValue=t.nodeValue.slice(r[0].length); var b=document.createElement('span'); b.className='h-no'; b.textContent=r[1]; h.insertBefore(b,h.firstChild);
+  });
+
+  // «Скопировано» — жёлтый баллон над кнопкой
   document.addEventListener('click',function(e){
     var b=e.target.closest&&e.target.closest('.hl-copy'); if(!b)return;
     setTimeout(function(){
@@ -615,11 +619,11 @@
       d.className='aero-balloon'; d.textContent='Скопировано';
       d.style.left=Math.max(8,r.left-6)+'px'; d.style.top=(r.top-40)+'px';
       document.body.appendChild(d);
-      setTimeout(function(){d.classList.add('out');setTimeout(function(){d.remove();},260);},1300);
+      setTimeout(function(){d.classList.add('out');setTimeout(function(){d.remove();},240);},1300);
     },0);
   });
 
-  // смена темы через View Transitions: перехватываем нажатие и повторяем его внутри перехода
+  // смена темы через View Transitions: нажатие повторяется внутри перехода
   var tb=document.getElementById('theme'), inner=false;
   if(tb&&document.startViewTransition&&!reduce){
     tb.addEventListener('click',function(e){
@@ -630,18 +634,12 @@
     },true);
   }
 
-  // вспышка заголовка, к которому пришли по ссылке внутри страницы или из поиска
+  // маркер по заголовку, к которому пришли
   function flash(){var id=decodeURIComponent(location.hash.slice(1)); if(!id)return; var h=document.getElementById(id);
     if(!h||!/^H[23]$/.test(h.tagName))return; h.classList.remove('aero-flash'); void h.offsetWidth; h.classList.add('aero-flash');}
   window.addEventListener('hashchange',flash);
 
-  // номер раздела — в отдельный ярлык (якорь заголовка не меняется)
-  document.querySelectorAll('.prose h2, .prose h3').forEach(function(h){
-    var t=h.firstChild; if(!t||t.nodeType!==3)return; var m=/^(\d+(?:\.\d+)*)\.?\s+/.exec(t.nodeValue); if(!m)return;
-    t.nodeValue=t.nodeValue.slice(m[0].length); var b=document.createElement('span'); b.className='h-no'; b.textContent=m[1]; h.insertBefore(b,h.firstChild);
-  });
-
-  // «прочитано»: зелёная галочка в конце главы, когда читатель до неё дошёл
+  // штамп «дочитано»
   var nav=document.querySelector('.prose .nav');
   if(nav&&'IntersectionObserver' in window){
     var done=document.createElement('div'); done.className='aero-done'; done.innerHTML='<i aria-hidden="true">✓</i><span>Глава дочитана до конца</span>';
