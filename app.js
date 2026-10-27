@@ -641,6 +641,37 @@
     },true);
   }
 
+  // полоса «Содержание главы»: тонкая, прилипает под строкой заголовка, когда оглавление в тексте ушло вверх;
+  // показывает текущий раздел, по нажатию раскрывает список разделов. Место в потоке не занимает — ничего не прыгает.
+  var tbIO=null;
+  function tocbar(){
+    var old=document.querySelector('.xp-tocbar'); if(old)old.remove(); if(tbIO){tbIO.disconnect();tbIO=null;}
+    var toc=document.getElementById('chapter-toc'), top=document.querySelector('.topbar'), list=toc&&toc.querySelector('.toc-list ol');
+    if(!toc||!top||!list)return;
+    root.style.setProperty('--xp-tbh',top.offsetHeight+'px');
+    var bar=document.createElement('div'); bar.className='xp-tocbar';
+    bar.innerHTML='<div class="xp-tocbar-in"><button type="button" class="xp-tocbar-btn" aria-expanded="false"><span class="xp-tocbar-l">Содержание главы</span><span class="xp-tocbar-cur"></span><i aria-hidden="true"></i></button><nav class="xp-tocbar-list" hidden></nav></div>';
+    var nav=bar.querySelector('nav'), btn=bar.querySelector('button'), cur=bar.querySelector('.xp-tocbar-cur');
+    nav.appendChild(list.cloneNode(true));
+    function open(o){nav.hidden=!o; btn.setAttribute('aria-expanded',String(o)); bar.classList.toggle('open',o);}
+    btn.addEventListener('click',function(){open(nav.hidden);});
+    nav.addEventListener('click',function(e){if(e.target.closest('a'))open(false);});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')open(false);});
+    top.parentNode.insertBefore(bar,top.nextSibling);
+    var src=document.getElementById('toc-cur');
+    function sync(){var s=src?src.textContent.trim():''; cur.textContent=s;
+      nav.querySelectorAll('a').forEach(function(a){a.classList.toggle('on',!!s&&a.textContent.trim()===s);});}
+    if(src)new MutationObserver(sync).observe(src,{childList:true,characterData:true,subtree:true}); sync();
+    if('IntersectionObserver' in window){
+      tbIO=new IntersectionObserver(function(es){es.forEach(function(x){var gone=!x.isIntersecting&&x.boundingClientRect.top<0; bar.classList.toggle('on',gone); if(!gone)open(false);});});
+      tbIO.observe(toc);
+    } else bar.classList.add('on');
+  }
+  tocbar();
+  var docEl=document.querySelector('.doc');
+  if(docEl)new MutationObserver(function(){tocbar();}).observe(docEl,{childList:true});
+  window.addEventListener('resize',function(){var tp=document.querySelector('.topbar'); if(tp)root.style.setProperty('--xp-tbh',tp.offsetHeight+'px');});
+
   // маркер по заголовку, к которому пришли по ссылке
   function flash(){var id=decodeURIComponent(location.hash.slice(1)); if(!id)return; var h=document.getElementById(id);
     if(!h||!/^H[23]$/.test(h.tagName))return; h.classList.remove('xp-flash'); void h.offsetWidth; h.classList.add('xp-flash');}
