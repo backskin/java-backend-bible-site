@@ -495,6 +495,11 @@
         document.title=nd.title;
         document.body.setAttribute('data-title',nd.body.getAttribute('data-title')||'');
         doc.innerHTML=ndoc.innerHTML; curPath=u.pathname;
+        // фото-шапка стоит выше всего, вне .doc: меняем её вместе с главой (или убираем, если у новой страницы её нет)
+        var oh=document.querySelector('.xp-hero'), nh=nd.querySelector('.xp-hero');
+        var past=!oh||window.scrollY>=oh.offsetHeight;   // читатель уже ниже фото — не дёргаем экран обратно к нему
+        if(oh&&nh)oh.replaceWith(document.importNode(nh,true)); else if(oh)oh.remove();
+        else if(nh){var lay=document.querySelector('.layout'); if(lay)lay.parentNode.insertBefore(document.importNode(nh,true),lay);}
         var res=document.getElementById('res'); if(res)res.classList.remove('on');
         var oc=document.querySelector('.topbar .crumb'), nc=nd.querySelector('.topbar .crumb'); if(oc&&nc)oc.innerHTML=nc.innerHTML;
         if(sd){ var name=u.pathname.split('/').pop();
@@ -503,7 +508,8 @@
             var r=a.getBoundingClientRect(),s=sd.getBoundingClientRect(); if(r.top<s.top||r.bottom>s.bottom) sd.scrollTop+=r.top-s.top-sd.clientHeight/2; }); }
         close(); ghide();
         var t=u.hash&&document.getElementById(decodeURIComponent(u.hash.slice(1)));
-        if(t)t.scrollIntoView(); else window.scrollTo(0,0);
+        var h2=document.querySelector('.xp-hero');
+        if(t)t.scrollIntoView(); else window.scrollTo(0,past&&h2?h2.offsetHeight:0);
         initPage(); vars();
         document.body.classList.remove('is-loading');
       };
