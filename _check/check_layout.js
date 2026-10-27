@@ -34,7 +34,10 @@ window.__layout = function () {
   if (W <= 640) document.querySelectorAll('.topbar button,.topbar a,.btn,.toc-toggle,.nav a,.go-main').forEach(e => {
     if (!vis(e)) return; const r = e.getBoundingClientRect(); if (r.height < 24) out.push(`мелкая кнопка: ${name(e)} «${e.textContent.trim().slice(0, 20)}» высота ${Math.round(r.height)}`); });
   // 5. контраст
-  const parse = c => { const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
+  const parse = c => {
+    const s = c.match(/color\(srgb ([^)]+)\)/);   // color-mix() браузер отдаёт как color(srgb r g b / a), доли 0..1
+    if (s) { const p = s[1].split(/[ \/]+/).filter(Boolean).map(Number); return { r: p[0] * 255, g: p[1] * 255, b: p[2] * 255, a: p.length > 3 ? p[3] : 1 }; }
+    const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
   const lum = ({ r, g, b }) => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); };
   const blend = (t, b) => ({ r: t.r * t.a + b.r * (1 - t.a), g: t.g * t.a + b.g * (1 - t.a), b: t.b * t.a + b.b * (1 - t.a), a: 1 });
   const bgOf = el => { const L = []; let grad = false; for (let e = el; e; e = e.parentElement) { const s = getComputedStyle(e);
