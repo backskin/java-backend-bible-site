@@ -578,3 +578,62 @@
 
   initPage(); warm();
 })();
+
+(function(){
+  var root=document.documentElement, reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
+
+  // меню книги: группы-части сворачиваются, как панель задач «Проводника»; открыта часть текущей главы
+  var side=document.getElementById('side');
+  if(side){
+    var shut={}; try{shut=JSON.parse(ls('jbb-parts')||'{}')||{};}catch(e){}
+    side.querySelectorAll('.part').forEach(function(p){
+      var ul=p.nextElementSibling; if(!ul||ul.tagName!=='UL')return;
+      var key=(p.textContent||'').trim(), cur=!!ul.querySelector('a.cur');
+      p.setAttribute('role','button'); p.setAttribute('tabindex','0');
+      if(shut[key]&&!cur) p.classList.add('shut');
+      p.setAttribute('aria-expanded',p.classList.contains('shut')?'false':'true');
+      function tog(){p.classList.toggle('shut');var s=p.classList.contains('shut');p.setAttribute('aria-expanded',s?'false':'true');
+        if(s)shut[key]=1;else delete shut[key];ls('jbb-parts',JSON.stringify(shut));}
+      p.addEventListener('click',tog);
+      p.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();tog();}});
+    });
+  }
+
+  // жёлтый баллон «Скопировано» над кнопкой копирования кода
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('.hl-copy'); if(!b)return;
+    setTimeout(function(){
+      var r=b.getBoundingClientRect(), d=document.createElement('div');
+      d.className='aero-balloon'; d.textContent='Скопировано';
+      d.style.left=Math.max(8,r.left-6)+'px'; d.style.top=(r.top-40)+'px';
+      document.body.appendChild(d);
+      setTimeout(function(){d.classList.add('out');setTimeout(function(){d.remove();},260);},1300);
+    },0);
+  });
+
+  // смена темы через View Transitions: перехватываем нажатие и повторяем его внутри перехода
+  var tb=document.getElementById('theme'), inner=false;
+  if(tb&&document.startViewTransition&&!reduce){
+    tb.addEventListener('click',function(e){
+      if(inner)return; e.stopImmediatePropagation(); e.preventDefault();
+      root.classList.add('aero-theme');
+      var t=document.startViewTransition(function(){inner=true;tb.click();inner=false;});
+      t.finished.then(function(){root.classList.remove('aero-theme');});
+    },true);
+  }
+
+  // вспышка заголовка, к которому пришли по ссылке внутри страницы или из поиска
+  function flash(){var id=decodeURIComponent(location.hash.slice(1)); if(!id)return; var h=document.getElementById(id);
+    if(!h||!/^H[23]$/.test(h.tagName))return; h.classList.remove('aero-flash'); void h.offsetWidth; h.classList.add('aero-flash');}
+  window.addEventListener('hashchange',flash);
+
+  // «прочитано»: зелёная галочка в конце главы, когда читатель до неё дошёл
+  var nav=document.querySelector('.prose .nav');
+  if(nav&&'IntersectionObserver' in window){
+    var done=document.createElement('div'); done.className='aero-done'; done.innerHTML='<i aria-hidden="true">✓</i><span>Глава дочитана до конца</span>';
+    nav.parentNode.insertBefore(done,nav);
+    var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){done.classList.add('on');io.disconnect();}});},{threshold:.6});
+    io.observe(done);
+  }
+})();
