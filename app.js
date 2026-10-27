@@ -600,6 +600,13 @@
     });
   }
 
+  // краска частей: I…XII — синяя, оранжевая, зелёная, фиолетовая, бирюзовая, коралловая, золотая, красная, небесная, салатовая, мандариновая, индиго
+  var PC=['#2f7de1','#f07c12','#2f9a27','#8a4fd8','#12a3b8','#e04a6a','#c9930a','#d0402b','#2aa7e0','#5aa81c','#ff7a2e','#5b6ee1'];
+  var RN={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8,IX:9,X:10,XI:11,XII:12};
+  if(side) side.querySelectorAll('.part').forEach(function(p,i){p.style.setProperty('--pc',PC[i%PC.length]);});
+  var tag=document.querySelector('.meta .part-tag'), m=tag&&/Часть\s+([IVX]+)/.exec(tag.textContent||'');
+  if(m&&RN[m[1]]) root.style.setProperty('--pc',PC[(RN[m[1]]-1)%PC.length]);
+
   // жёлтый баллон «Скопировано» над кнопкой копирования кода
   document.addEventListener('click',function(e){
     var b=e.target.closest&&e.target.closest('.hl-copy'); if(!b)return;
