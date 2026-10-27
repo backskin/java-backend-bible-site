@@ -3,7 +3,7 @@
 <title>56. Git на практике — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=c47d485cd4">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ae99b741a6">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Git на практике">
 <a class="skip" href="#content">К тексту</a>
@@ -88,7 +88,7 @@ feat<span class="o">(</span>pay<span class="o">)</span>: скелет плате
 
 <p>Это весь коммит целиком — текстовый объект из нескольких строк. Никакого «diff» внутри нет и никогда не было.</p>
 <blockquote class="cb-hood">
-<p>🔧 <strong>Под капотом.</strong> Формат коммита: заголовочные строки <code>tree</code>, <code>ноль или больше</code> строк <code>parent</code>, <code>author</code>, <code>committer</code>, опционально <code>gpgsig</code>/<code>gpgsig-sha256</code>, <code>encoding</code>, <code>mergetag</code>; затем пустая строка и сообщение. Время автора и коммиттера хранится как <strong>unix timestamp плюс текстовое смещение</strong> (<code>1772435700 +0300</code>). Часовой пояс как таковой (<code>Europe/Moscow</code>) не сохраняется — только смещение на момент коммита. Поэтому сортировка по дате в Git всегда сортировка по UTC-моменту, а отображение — по сохранённому смещению. Именно это ломает наивные скрипты, которые парсят дату регулярными выражениями.</p>
+<p><strong><span class="ic">🔧</span> Под капотом.</strong> Формат коммита: заголовочные строки <code>tree</code>, <code>ноль или больше</code> строк <code>parent</code>, <code>author</code>, <code>committer</code>, опционально <code>gpgsig</code>/<code>gpgsig-sha256</code>, <code>encoding</code>, <code>mergetag</code>; затем пустая строка и сообщение. Время автора и коммиттера хранится как <strong>unix timestamp плюс текстовое смещение</strong> (<code>1772435700 +0300</code>). Часовой пояс как таковой (<code>Europe/Moscow</code>) не сохраняется — только смещение на момент коммита. Поэтому сортировка по дате в Git всегда сортировка по UTC-моменту, а отображение — по сохранённому смещению. Именно это ломает наивные скрипты, которые парсят дату регулярными выражениями.</p>
 </blockquote>
 <h3 id="12-автор-и-коммиттер">1.2 Автор и коммиттер</h3>
 <p>Строки <code>author</code> и <code>committer</code> — самая недооценённая часть объекта. <code>author</code> — кто написал изменение, <code>committer</code> — кто в последний раз создал этот объект коммита. При обычном <code>git commit</code> они совпадают. Они расходятся в трёх ситуациях:</p>
@@ -129,7 +129,7 @@ git log --format<span class="o">=</span><span class="s1">'%h | a:%an %ad | c:%cn
 
 <p>Совпадает с записью в tree. Это и есть контент-адресация: хеш — функция только от содержимого, никакой связи с путём, датой и историей.</p>
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> Пустые каталоги Git не хранит — просто потому, что нет объекта, который бы их описывал. Запись в tree обязана ссылаться на blob или tree, а пустого каталога в этой модели не существует. Отсюда вековая практика с <code>.gitkeep</code>. Разработчики регулярно теряют на этом полчаса, пытаясь понять, почему после клонирования нет <code>logs/</code> и приложение падает на старте. Правильное лечение — создавать каталог в коде или в <code>Dockerfile</code>, а не хранить его в Git.</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> Пустые каталоги Git не хранит — просто потому, что нет объекта, который бы их описывал. Запись в tree обязана ссылаться на blob или tree, а пустого каталога в этой модели не существует. Отсюда вековая практика с <code>.gitkeep</code>. Разработчики регулярно теряют на этом полчаса, пытаясь понять, почему после клонирования нет <code>logs/</code> и приложение падает на старте. Правильное лечение — создавать каталог в коде или в <code>Dockerfile</code>, а не хранить его в Git.</p>
 </blockquote>
 <h3 id="14-снимки-и-дельты-в-хранилище-git">1.4 Снимки и дельты в хранилище Git</h3>
 <p>Логическая модель Git — <strong>снимки</strong>. Каждый коммит указывает на полный tree, описывающий всё дерево проекта целиком в этот момент. Никаких «изменений относительно предыдущего» в модели нет: diff вычисляется на лету при запросе, сравнением двух деревьев.</p>
@@ -158,7 +158,7 @@ size: <span class="m">893</span> bytes
 <li><code>git gc --auto</code> вызывается неявно после многих операций и срабатывает, когда loose-объектов «примерно больше» <code>gc.auto</code> (<strong>по умолчанию 6700</strong>) или пакетов больше <code>gc.autoPackLimit</code> (<strong>50</strong>).</li>
 </ul>
 <blockquote class="cb-num">
-<p>📊 <strong>Цифры.</strong> Значения по умолчанию gc (Git 2.55): <code>gc.auto=6700</code>, <code>gc.autoPackLimit=50</code>, <code>gc.pruneExpire=2.weeks.ago</code>, <code>gc.reflogExpire=90 days</code>, <code>gc.reflogExpireUnreachable=30 days</code>, <code>gc.bigPackThreshold=0</code> (выключено). Источник — <code>Documentation/config/gc.adoc</code>, проверено 2026-09-22.</p>
+<p><strong><span class="ic">📊</span> Цифры.</strong> Значения по умолчанию gc (Git 2.55): <code>gc.auto=6700</code>, <code>gc.autoPackLimit=50</code>, <code>gc.pruneExpire=2.weeks.ago</code>, <code>gc.reflogExpire=90 days</code>, <code>gc.reflogExpireUnreachable=30 days</code>, <code>gc.bigPackThreshold=0</code> (выключено). Источник — <code>Documentation/config/gc.adoc</code>, проверено 2026-09-22.</p>
 </blockquote>
 <p>Практическое следствие: <strong>недостижимый объект живёт минимум две недели</strong>, а запись в reflog — 90 дней (30 для недостижимых). Это ваш запас времени на восстановление после любой аварии. Не «Git потерял коммит», а «у вас есть 14–90 дней, чтобы его найти».</p>
 <h3 id="15-sha-1-sha-256-и-миграция-хеш-функции">1.5 SHA-1, SHA-256 и миграция хеш-функции</h3>
@@ -251,7 +251,7 @@ d75fb0bacf9e7063dc1f9a39abfd66a6f3c60e8c
 
 <p>Это и есть <strong>detached HEAD</strong>: вы стоите на коммите, а не на ветке. Коммиты в этом состоянии создаются нормально, но на них не указывает ни одна ветка — стоит переключиться, и они станут недостижимыми (найти можно через reflog, см. раздел 5). Detached HEAD — не ошибка, это штатный режим: в нём работают <code>bisect</code>, <code>rebase</code>, CI-исполнители (клонируют и делают checkout по SHA).</p>
 <blockquote class="cb-hood">
-<p>🔧 <strong>Под капотом.</strong> <code>packed-refs</code>. Когда ссылок становятся тысячи (типично для репозитория с многолетней историей релизных тегов), Git упаковывает их в один файл <code>.git/packed-refs</code> — текстовый список «хеш пробел имя». Отдельные файлы в <code>refs/</code> при этом удаляются. Поэтому <code>cat .git/refs/heads/release/2026.03</code> может вернуть «нет такого файла», хотя ветка существует. Никогда не читайте ссылки из файловой системы в скриптах — используйте <code>git rev-parse</code> и <code>git for-each-ref</code>, они знают про оба хранилища. В свежих версиях Git есть и альтернативный бэкенд ссылок — <strong>reftable</strong> (<code>git init --ref-format=reftable</code>), бинарный формат, рассчитанный на репозитории с сотнями тысяч ссылок; в банковских монорепо он уже осмыслен, но по умолчанию не включён.</p>
+<p><strong><span class="ic">🔧</span> Под капотом.</strong> <code>packed-refs</code>. Когда ссылок становятся тысячи (типично для репозитория с многолетней историей релизных тегов), Git упаковывает их в один файл <code>.git/packed-refs</code> — текстовый список «хеш пробел имя». Отдельные файлы в <code>refs/</code> при этом удаляются. Поэтому <code>cat .git/refs/heads/release/2026.03</code> может вернуть «нет такого файла», хотя ветка существует. Никогда не читайте ссылки из файловой системы в скриптах — используйте <code>git rev-parse</code> и <code>git for-each-ref</code>, они знают про оба хранилища. В свежих версиях Git есть и альтернативный бэкенд ссылок — <strong>reftable</strong> (<code>git init --ref-format=reftable</code>), бинарный формат, рассчитанный на репозитории с сотнями тысяч ссылок; в банковских монорепо он уже осмыслен, но по умолчанию не включён.</p>
 </blockquote>
 <p><code>git rev-parse</code> — универсальный разрешитель имён. Он понимает всё, что вы пишете в командах:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>git rev-parse HEAD               <span class="c1"># хеш текущего коммита</span>
@@ -373,7 +373,7 @@ git rev-parse --verify -q refs/heads/foo  <span class="c1"># есть ли та�
 </table>
 <p>Эта таблица закрывает 90 % вопросов «а что эта команда сделает». <code>git status</code> — просто два diff'а: HEAD↔индекс («Changes to be committed») и индекс↔worktree («Changes not staged»).</p>
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> Индекс хранит stat-метаданные, и Git считает файл неизменённым, если совпали mtime и размер. При работе через сетевые/шаренные тома, в контейнерах с пробросом каталога и при переводе часов это ломается: <code>git status</code> показывает изменения там, где их нет, либо не показывает там, где они есть. Лечение — <code>git update-index --refresh</code>, в тяжёлых случаях — <code>git status</code> после <code>touch</code> файлов; для Windows-репозиториев помогает <code>core.fscache</code>, для macOS/Linux — <code>core.untrackedCache</code> и <code>feature.manyFiles</code>.</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> Индекс хранит stat-метаданные, и Git считает файл неизменённым, если совпали mtime и размер. При работе через сетевые/шаренные тома, в контейнерах с пробросом каталога и при переводе часов это ломается: <code>git status</code> показывает изменения там, где их нет, либо не показывает там, где они есть. Лечение — <code>git update-index --refresh</code>, в тяжёлых случаях — <code>git status</code> после <code>touch</code> файлов; для Windows-репозиториев помогает <code>core.fscache</code>, для macOS/Linux — <code>core.untrackedCache</code> и <code>feature.manyFiles</code>.</p>
 </blockquote>
 <h3 id="18-пример-создание-коммита-низкоуровневыми-командами">1.8 Пример: создание коммита низкоуровневыми командами</h3>
 <p>Чтобы модель окончательно перестала быть абстракцией, соберём коммит низкоуровневыми командами, вообще не вызывая <code>git add</code>/<code>git commit</code>:</p>
@@ -523,7 +523,7 @@ d8d1ce0945557638c07a9a6f757cd707013e4705
 <li>а два человека, поправившие разные методы одного класса, не конфликтуют — и это чаще всего правильно, но иногда даёт <strong>семантический конфликт</strong>: Git слил текст, а код не компилируется. Git не понимает Java. Компиляция и тесты после merge — не формальность.</li>
 </ul>
 <blockquote class="cb-hood">
-<p>🔧 <strong>Под капотом. Несколько merge base.</strong> Если ветки сливали туда-сюда, общих предков может быть несколько (criss-cross merge). Стратегия <code>ort</code> (как и старая <code>recursive</code>) в этом случае <strong>рекурсивно сливает сами merge base</strong> между собой, получает виртуальную базу и уже с ней делает three-way. Отсюда название recursive. Практическое следствие: в запутанной истории конфликты могут выглядеть «взявшимися из ниоткуда» — это разрешение виртуальной базы. <code>git merge-base --all</code> покажет, что баз действительно несколько.</p>
+<p><strong><span class="ic">🔧</span> Под капотом. Несколько merge base.</strong> Если ветки сливали туда-сюда, общих предков может быть несколько (criss-cross merge). Стратегия <code>ort</code> (как и старая <code>recursive</code>) в этом случае <strong>рекурсивно сливает сами merge base</strong> между собой, получает виртуальную базу и уже с ней делает three-way. Отсюда название recursive. Практическое следствие: в запутанной истории конфликты могут выглядеть «взявшимися из ниоткуда» — это разрешение виртуальной базы. <code>git merge-base --all</code> покажет, что баз действительно несколько.</p>
 </blockquote>
 <h3 id="24-стратегии-слияния-ort-опции--x-и--s">2.4 Стратегии слияния: <code>ort</code>, опции <code>-X</code> и <code>-s</code></h3>
 <p>С Git <strong>2.34</strong> стратегией по умолчанию является <strong><code>ort</code></strong> («Ostensibly Recursive's Twin») — полная переписка <code>recursive</code> без зависимости от индекса как рабочей структуры. Это видно прямо в выводе:</p>
@@ -649,7 +649,7 @@ git merge --abort                 <span class="c1"># вернуться в со�
 </code></pre></div>
 
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> <code>--ours</code>/<code>--theirs</code> во время <strong>rebase</strong> означают противоположное интуиции. При rebase Git прикладывает <em>ваши</em> коммиты поверх <em>чужой</em> ветки, поэтому «ours» — это ветка, на которую вы ребейзитесь (upstream), а «theirs» — ваши собственные изменения. Люди регулярно выбрасывают свою работу, автоматически набрав <code>--ours</code>. Проверяйте стадии через <code>git diff --base --ours</code> прежде, чем рубить.</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> <code>--ours</code>/<code>--theirs</code> во время <strong>rebase</strong> означают противоположное интуиции. При rebase Git прикладывает <em>ваши</em> коммиты поверх <em>чужой</em> ветки, поэтому «ours» — это ветка, на которую вы ребейзитесь (upstream), а «theirs» — ваши собственные изменения. Люди регулярно выбрасывают свою работу, автоматически набрав <code>--ours</code>. Проверяйте стадии через <code>git diff --base --ours</code> прежде, чем рубить.</p>
 </blockquote>
 <p>Ещё один важный момент: <strong>пустое разрешение — это разрешение</strong>. Если вы вырезали оба варианта и сделали <code>git add</code>, Git радостно примет это. Ни одна проверка не скажет «ты потерял код». Единственная защита — <code>git diff HEAD</code> после разрешения и обязательная компиляция/тесты.</p>
 <p>Для сложных конфликтов удобен <code>git mergetool</code> (настраивается <code>merge.tool</code>), но в IDEA встроенный трёхпанельный распознаватель обычно лучше — см. главу 57 (<code>57-intellij-idea.md</code>).</p>
@@ -710,7 +710,7 @@ UU z.txt           <span class="c1"># но файл всё ещё помечен
 </ul>
 <p>Управление кэшем: <code>git rerere forget &lt;path&gt;</code> — забыть разрешение для файла в текущем конфликте (когда записали неверно); <code>git rerere gc</code> — чистка (сроки <code>gc.rerereResolved</code>, по умолчанию 60 дней, и <code>gc.rerereUnresolved</code>, 15 дней — ⚠️ значения по памяти, точную формулировку смотрите в <code>git help config</code>).</p>
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> <code>rerere</code> тихо применяет старое разрешение в новом контексте. Если фичу переписали, а конфликт текстуально совпал — вы получите разрешение «из прошлой жизни» и не заметите, потому что merge пройдёт без вопросов. Правило: при включённом <code>rerere</code> <strong>обязательно</strong> смотреть <code>git diff HEAD</code> перед коммитом слияния и гонять тесты. Второе правило: <code>rerere</code> — локальный кэш, он не шарится с командой; «у меня слилось чисто, а в CI конфликт» — типичное последствие.</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> <code>rerere</code> тихо применяет старое разрешение в новом контексте. Если фичу переписали, а конфликт текстуально совпал — вы получите разрешение «из прошлой жизни» и не заметите, потому что merge пройдёт без вопросов. Правило: при включённом <code>rerere</code> <strong>обязательно</strong> смотреть <code>git diff HEAD</code> перед коммитом слияния и гонять тесты. Второе правило: <code>rerere</code> — локальный кэш, он не шарится с командой; «у меня слилось чисто, а в CI конфликт» — типичное последствие.</p>
 </blockquote>
 <h3 id="27-слияние-без-рабочего-дерева-merge-tree">2.7 Слияние без рабочего дерева: <code>merge-tree</code></h3>
 <p>Отдельно стоит знать про <code>git merge-tree --write-tree &lt;branch1&gt; &lt;branch2&gt;</code> (режим появился в 2.38): он вычисляет результат слияния <strong>в памяти</strong>, печатает хеш получившегося дерева и список конфликтов, ничего не трогая в рабочем каталоге. Это то, чем хостинги считают «Can be merged automatically» и чем удобно делать предварительную проверку в CI («упадёт ли merge в main») без checkout:</p>
@@ -752,7 +752,7 @@ D и E никуда не делись — они недостижимы по в�
 <li><strong>Промежуточные коммиты могут не собираться.</strong> Rebase гарантирует корректность только конечного состояния: патчи применяются к новому контексту, и промежуточный коммит может оказаться несобираемым. Это ломает <code>bisect</code>, если не проверять сборку через <code>--exec</code> (см. 3.5).</li>
 </ul>
 <blockquote class="cb-hood">
-<p>🔧 <strong>Под капотом.</strong> Начиная с Git <strong>2.26</strong> по умолчанию используется «merge backend» вместо старого «apply backend» (<code>git am</code>-подход через текстовые патчи). Merge backend применяет каждый коммит как трёхстороннее слияние, поэтому: понимает переименования, работает с <code>rerere</code>, умеет <code>--rebase-merges</code> и <code>--update-refs</code>, честно сообщает конфликты. Старое поведение — <code>--apply</code>; его единственное преимущество — некоторые опции <code>git apply</code> (<code>--ignore-whitespace</code>, <code>-C&lt;n&gt;</code>).</p>
+<p><strong><span class="ic">🔧</span> Под капотом.</strong> Начиная с Git <strong>2.26</strong> по умолчанию используется «merge backend» вместо старого «apply backend» (<code>git am</code>-подход через текстовые патчи). Merge backend применяет каждый коммит как трёхстороннее слияние, поэтому: понимает переименования, работает с <code>rerere</code>, умеет <code>--rebase-merges</code> и <code>--update-refs</code>, честно сообщает конфликты. Старое поведение — <code>--apply</code>; его единственное преимущество — некоторые опции <code>git apply</code> (<code>--ignore-whitespace</code>, <code>-C&lt;n&gt;</code>).</p>
 </blockquote>
 <h3 id="32-переписывание-истории-публичных-веток">3.2 Переписывание истории публичных веток</h3>
 <p>Классическая формулировка: <strong>не переписывайте историю, которую уже видел кто-то другой</strong>. Причина не в этике, а в механике: у коллеги в его <code>refs/remotes/origin/feature</code> лежат старые объекты, и его Git не знает, что D' — это D. Любой <code>git pull</code> (который merge) склеит обе версии, и в истории окажутся оба набора коммитов, а <code>git log</code> покажет каждое изменение дважды.</p>
@@ -913,7 +913,7 @@ git rebase --edit-todo  <span class="c1"># переписать оставший
 </code></pre></div>
 
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> <code>--skip</code> — не «пропустить конфликт», а <strong>выбросить коммит целиком</strong>. Люди жмут его, чтобы «проскочить», и теряют изменения. Если конфликт пустой (изменение уже есть в upstream), Git сам скажет об этом и предложит <code>--skip</code> — вот тогда он уместен.</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> <code>--skip</code> — не «пропустить конфликт», а <strong>выбросить коммит целиком</strong>. Люди жмут его, чтобы «проскочить», и теряют изменения. Если конфликт пустой (изменение уже есть в upstream), Git сам скажет об этом и предложит <code>--skip</code> — вот тогда он уместен.</p>
 </blockquote>
 <p>Если rebase уже <strong>завершился</strong>, а результат плохой:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>git reset --hard ORIG_HEAD          <span class="c1"># ORIG_HEAD ставится перед rebase/merge/reset</span>
@@ -1162,7 +1162,7 @@ git restore --patch &lt;file&gt;              <span class="c1"># интерак�
 
 <p>Разница с <code>git checkout -- &lt;file&gt;</code> не в поведении, а в однозначности: <code>restore</code> никогда не переключит ветку и не создаст detached HEAD, а <code>--staged</code>/<code>--worktree</code> явно называют, какое из трёх деревьев меняется. В командах, где есть junior'ы, замена <code>checkout</code> на <code>switch</code>/<code>restore</code> в инструкциях снимает целый класс инцидентов.</p>
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> <code>git restore &lt;file&gt;</code> <strong>безвозвратно</strong> затирает несохранённые правки — как и <code>checkout --</code>. Никакой reflog не поможет: содержимое не было ни в индексе, ни в объектах. Единственная страховка — Local History в IDEA (глава 57, <code>57-intellij-idea.md</code>) или <code>git stash</code> вместо «просто откачу».</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> <code>git restore &lt;file&gt;</code> <strong>безвозвратно</strong> затирает несохранённые правки — как и <code>checkout --</code>. Никакой reflog не поможет: содержимое не было ни в индексе, ни в объектах. Единственная страховка — Local History в IDEA (глава 57, <code>57-intellij-idea.md</code>) или <code>git stash</code> вместо «просто откачу».</p>
 </blockquote>
 <h3 id="53-команда-clean">5.3 Команда <code>clean</code></h3>
 <p><code>git clean</code> удаляет <strong>неотслеживаемые</strong> файлы. Никакой Git-механизм их не восстановит — их никогда не было в базе.</p>
@@ -1441,7 +1441,7 @@ git stash clear                   <span class="c1"># удалить всё — �
 </code></pre></div>
 
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> <code>git stash</code> без <code>-u</code> не прячет <strong>новые</strong> файлы. Вы прячете изменения, переключаетесь, собираете — и новый класс, который вы создали, но не добавляли, едет с вами и ломает сборку на другой ветке. Второе: <code>git stash pop</code> при конфликте применяет изменения, но <strong>не удаляет</strong> запись из стека — люди потом применяют её второй раз. Третье: stash — худшее место для хранения работы дольше часа. Ветка с коммитом <code>wip</code> стоит тех же трёх секунд и не теряется.</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> <code>git stash</code> без <code>-u</code> не прячет <strong>новые</strong> файлы. Вы прячете изменения, переключаетесь, собираете — и новый класс, который вы создали, но не добавляли, едет с вами и ломает сборку на другой ветке. Второе: <code>git stash pop</code> при конфликте применяет изменения, но <strong>не удаляет</strong> запись из стека — люди потом применяют её второй раз. Третье: stash — худшее место для хранения работы дольше часа. Ветка с коммитом <code>wip</code> стоит тех же трёх секунд и не теряется.</p>
 </blockquote>
 <h3 id="510-worktree-несколько-рабочих-деревьев-на-один-репозиторий">5.10 <code>worktree</code>: несколько рабочих деревьев на один репозиторий</h3>
 <p><code>git worktree</code> даёт второе (третье, десятое) рабочее дерево, разделяющее одну базу объектов:</p>
@@ -1661,7 +1661,7 @@ awk -v <span class="nv">n</span><span class="o">=</span><span class="s2">"</span
 <li><code>git bisect terms --term-old=fast --term-new=slow</code> — переименовать good/bad, когда «плохое» не является поломкой.</li>
 </ul>
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> Bisect ломается на трёх вещах: (1) shallow clone — история обрезана, <code>git bisect</code> не увидит <code>good</code> (см. 11.4); (2) коммиты, которые не собираются, — лечится кодом 125; (3) внешнее состояние: схема БД, кэш Gradle, версия зависимости из snapshot-репозитория. Перед bisect'ом фиксируйте окружение: <code>--offline</code>, локальный Testcontainers, откат миграций в скрипте.</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> Bisect ломается на трёх вещах: (1) shallow clone — история обрезана, <code>git bisect</code> не увидит <code>good</code> (см. 11.4); (2) коммиты, которые не собираются, — лечится кодом 125; (3) внешнее состояние: схема БД, кэш Gradle, версия зависимости из snapshot-репозитория. Перед bisect'ом фиксируйте окружение: <code>--offline</code>, локальный Testcontainers, откат миграций в скрипте.</p>
 </blockquote>
 <h3 id="67-shortlog-и-describe">6.7 <code>shortlog</code> и <code>describe</code></h3>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>git shortlog -sne v1.4.0..v1.5.0          <span class="c1"># кто сколько коммитов, по авторам</span>
@@ -1693,7 +1693,7 @@ v1.0.0-3-g58ae193-dirty  <span class="c1"># --dirty: в рабочем дере�
 </code></pre></div>
 
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> <code>git describe</code> в CI регулярно возвращает «fatal: no names found» или неверную версию, потому что исполнитель клонировал с <code>--depth=1</code> и <strong>без тегов</strong>. В GitLab это лечится <code>GIT_DEPTH: 0</code> и <code>git fetch --tags</code>; подробности — глава 54 (<code>54-cicd-platforms.md</code>).</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> <code>git describe</code> в CI регулярно возвращает «fatal: no names found» или неверную версию, потому что исполнитель клонировал с <code>--depth=1</code> и <strong>без тегов</strong>. В GitLab это лечится <code>GIT_DEPTH: 0</code> и <code>git fetch --tags</code>; подробности — глава 54 (<code>54-cicd-platforms.md</code>).</p>
 </blockquote>
 <hr>
 <h2 id="7-работа-с-удалёнными-репозиториями">7. Работа с удалёнными репозиториями</h2>
@@ -1776,7 +1776,7 @@ git branch -vv                       <span class="c1"># увидеть прив�
 </code></pre></div>
 
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> «Ahead 3, behind 7» считается относительно <strong>вашей локальной копии</strong> <code>origin/main</code>, то есть относительно последнего <code>fetch</code>. Если вы не делали fetch три дня, <code>git status</code> показывает трёхдневной давности правду и уверенно врёт. Отсюда привычка: <code>git fetch</code> перед любым разговором о состоянии ветки. Автоматизировать можно через <code>git maintenance start</code> (раздел 11.2), который заводит фоновый prefetch.</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> «Ahead 3, behind 7» считается относительно <strong>вашей локальной копии</strong> <code>origin/main</code>, то есть относительно последнего <code>fetch</code>. Если вы не делали fetch три дня, <code>git status</code> показывает трёхдневной давности правду и уверенно врёт. Отсюда привычка: <code>git fetch</code> перед любым разговором о состоянии ветки. Автоматизировать можно через <code>git maintenance start</code> (раздел 11.2), который заводит фоновый prefetch.</p>
 </blockquote>
 <h3 id="74---force-with-lease-и---force-if-includes">7.4 <code>--force-with-lease</code> и <code>--force-if-includes</code></h3>
 <p><code>git push --force</code> означает «поставь ветку на сервере в это значение, что бы там ни было». Если коллега за эти пять минут запушил свои коммиты — они исчезают из ветки (объекты остаются, но ссылки нет).</p>
@@ -2287,7 +2287,7 @@ heapdump*
 </ul>
 <p><code>.gitattributes</code> с <code>* text=auto</code> — <strong>репозиторная</strong> настройка, которая говорит: «в базе объектов всегда LF; при checkout — по платформе/<code>core.eol</code>». Она главнее и не зависит от того, что каждый разработчик настроил у себя.</p>
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> Когда я создавал тестовый репозиторий для этой главы, Git честно предупреждал на каждом <code>add</code>: <code>warning: in the working copy of 'settings.gradle', LF will be replaced by CRLF the next time Git touches it</code>. Это сигнал того, что нормализация работает: <strong>в репозитории LF, в рабочем дереве CRLF</strong>. Опасно другое — когда файлы <strong>уже лежат в базе с CRLF</strong>. Тогда любое добавление <code>text=auto</code> превращает следующий коммит в «изменены все строки всех файлов»: катастрофа для blame, ревью и всех открытых веток.</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> Когда я создавал тестовый репозиторий для этой главы, Git честно предупреждал на каждом <code>add</code>: <code>warning: in the working copy of 'settings.gradle', LF will be replaced by CRLF the next time Git touches it</code>. Это сигнал того, что нормализация работает: <strong>в репозитории LF, в рабочем дереве CRLF</strong>. Опасно другое — когда файлы <strong>уже лежат в базе с CRLF</strong>. Тогда любое добавление <code>text=auto</code> превращает следующий коммит в «изменены все строки всех файлов»: катастрофа для blame, ревью и всех открытых веток.</p>
 </blockquote>
 <p>Правильная последовательность внедрения нормализации:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># 1. добавили .gitattributes с * text=auto — отдельным коммитом</span>
@@ -2405,7 +2405,7 @@ git config core.hooksPath .githooks
 </code></pre></div>
 
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> <code>core.hooksPath</code> <strong>отключает</strong> <code>.git/hooks</code> целиком — если у вас там лежали локальные хуки (или их положил Git LFS!), они перестанут работать. Git LFS ставит <code>post-checkout</code>, <code>post-commit</code>, <code>post-merge</code>, <code>pre-push</code>; при переезде на <code>core.hooksPath</code> их надо перенести (<code>git lfs install --force</code> после настройки).</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> <code>core.hooksPath</code> <strong>отключает</strong> <code>.git/hooks</code> целиком — если у вас там лежали локальные хуки (или их положил Git LFS!), они перестанут работать. Git LFS ставит <code>post-checkout</code>, <code>post-commit</code>, <code>post-merge</code>, <code>pre-push</code>; при переезде на <code>core.hooksPath</code> их надо перенести (<code>git lfs install --force</code> после настройки).</p>
 </blockquote>
 <p><strong>2. pre-commit framework</strong> (<code>pre-commit.com</code>, Python) — декларативный <code>.pre-commit-config.yaml</code>, автоматическая установка инструментов в изолированные окружения, большой набор готовых хуков (включая <code>detect-private-key</code>, <code>check-merge-conflict</code>, <code>gitleaks</code>). Плюс: единая конфигурация, работает и в CI (<code>pre-commit run --all-files</code>). Минус: требует Python на машине разработчика — в закрытом контуре это иногда проблема.</p>
 <p><strong>3. lefthook / husky</strong> — <code>lefthook</code> (Go, один бинарник, YAML-конфиг, умеет параллельный запуск и фильтрацию по <code>glob</code>) в Java-командах удобнее, чем <code>husky</code> (требует Node.js и <code>package.json</code>).</p>
@@ -2592,7 +2592,7 @@ git prune --expire<span class="o">=</span>now      <span class="c1"># удали
 </code></pre></div>
 
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> <code>git gc --prune=now</code> после <code>reset --hard</code> немедленно уничтожает возможность восстановления через <code>fsck</code>. Никогда не запускайте её «чтобы почистить», пока разбираетесь с аварией. И помните, что многие команды вызывают <code>gc --auto</code> неявно.</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> <code>git gc --prune=now</code> после <code>reset --hard</code> немедленно уничтожает возможность восстановления через <code>fsck</code>. Никогда не запускайте её «чтобы почистить», пока разбираетесь с аварией. И помните, что многие команды вызывают <code>gc --auto</code> неявно.</p>
 </blockquote>
 <p><code>git maintenance</code> (появился в <strong>2.30</strong>) — современная замена «раз в месяц запускать gc»:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>git maintenance register              <span class="c1"># добавить репозиторий в список обслуживаемых</span>
@@ -2645,7 +2645,7 @@ git sparse-checkout disable                <span class="c1"># вернуть в�
 </code></pre></div>
 
 <blockquote class="cb-warn">
-<p>⚠️ <strong>Грабли.</strong> Файлы вне конуса <strong>не исчезают из индекса</strong>, они помечаются флагом <code>skip-worktree</code>. Инструменты, читающие файловую систему напрямую (Gradle с <code>includeBuild</code>, IDE-индексация, скрипты с <code>find</code>), увидят «отсутствующие» модули и упадут. И сборка, требующая весь реактор Maven (<code>-am</code>, <code>-amd</code>), при sparse-checkout не соберётся. Перед внедрением проверьте, что ваша сборка умеет работать с частичным деревом.</p>
+<p><strong><span class="ic">⚠️</span> Грабли.</strong> Файлы вне конуса <strong>не исчезают из индекса</strong>, они помечаются флагом <code>skip-worktree</code>. Инструменты, читающие файловую систему напрямую (Gradle с <code>includeBuild</code>, IDE-индексация, скрипты с <code>find</code>), увидят «отсутствующие» модули и упадут. И сборка, требующая весь реактор Maven (<code>-am</code>, <code>-amd</code>), при sparse-checkout не соберётся. Перед внедрением проверьте, что ваша сборка умеет работать с частичным деревом.</p>
 </blockquote>
 <h3 id="115-неглубокий-клон-shallow-clone-в-ci">11.5 Неглубокий клон (shallow clone) в CI</h3>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>git clone --depth<span class="o">=</span><span class="m">1</span> &lt;url&gt;                  <span class="c1"># только последний коммит</span>
@@ -3503,5 +3503,5 @@ git ls-remote origin                 <span class="c1"># что реально н
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-модель-данных-git">1. Модель данных Git</a></li><li><a href="#2-ветки-и-слияние">2. Ветки и слияние</a></li><li><a href="#3-rebase-и-merge">3. Rebase и merge</a></li><li><a href="#4-cherry-pick-и-перенос-изменений">4. Cherry-pick и перенос изменений</a></li><li><a href="#5-отмена-и-восстановление-изменений">5. Отмена и восстановление изменений</a></li><li><a href="#6-инструменты-исследования-истории">6. Инструменты исследования истории</a></li><li><a href="#7-работа-с-удалёнными-репозиториями">7. Работа с удалёнными репозиториями</a></li><li><a href="#8-стратегии-ветвления">8. Стратегии ветвления</a></li><li><a href="#9-соглашения-о-коммитах-и-настройки-репозитория">9. Соглашения о коммитах и настройки репозитория</a></li><li><a href="#10-хуки-и-автоматизация">10. Хуки и автоматизация</a></li><li><a href="#11-большие-и-сложные-репозитории">11. Большие и сложные репозитории</a></li><li><a href="#12-разобранные-инциденты">12. Разобранные инциденты</a></li><li><a href="#13-грабли-и-антипаттерны">13. Грабли и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=ec195dc218"></script>
+<script src="app.js?v=c1d6f60b10"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>
