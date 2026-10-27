@@ -3,7 +3,7 @@
 <title>29. Apache Kafka изнутри — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Apache Kafka изнутри">
 <a class="skip" href="#content">К тексту</a>
@@ -3909,9 +3909,11 @@ acks=all + enable.idempotence=true                856 742 зап./с            
 
 <p>Когда слушатель работает в транзакции контейнера, смещения фиксируются <strong>внутри</strong> Kafka-транзакции через <code>sendOffsetsToTransaction</code>, и это как раз и есть read-process-write EOS.</p>
 <p><code>ChainedTransactionManager</code>, объединяющий, например, <code>JpaTransactionManager</code> и <code>KafkaTransactionManager</code>, <strong>распределённую транзакцию не обеспечивает</strong>. Он всего лишь фиксирует менеджеры по очереди в обратном порядке. Между фиксацией БД и фиксацией Kafka остаётся окно, и если приложение упадёт в нём, БД окажется зафиксирована, а Kafka откачена. Такую схему называют «best effort 1PC» — однофазная фиксация по принципу «как получится». В Spring её давно пометили как deprecated именно из-за иллюзии атомарности, которую она создаёт.</p>
-<p>Правильных ответов на задачу «изменить БД и отправить событие атомарно» два:
-- <strong>Transactional Outbox</strong>, то есть запись события в той же транзакции БД и отдельная доставка (глава 31);
-- либо порядок «сначала Kafka, потом БД» с идемпотентной обработкой на стороне БД.</p>
+<p>Правильных ответов на задачу «изменить БД и отправить событие атомарно» два:</p>
+<ul>
+<li><strong>Transactional Outbox</strong>, то есть запись события в той же транзакции БД и отдельная доставка (глава 31);</li>
+<li>либо порядок «сначала Kafka, потом БД» с идемпотентной обработкой на стороне БД.</li>
+</ul>
 <h3 id="117-паузавозобновление-интерсепторы-тестирование">11.7 Пауза/возобновление, интерсепторы, тестирование</h3>
 <p>Пауза, интерсепторы и тестовая инфраструктура — это три прикладных инструмента Spring Kafka сверх приёма и отправки, которые нужны почти в каждом сервисе. Пауза и интерсепторы позволяют управлять потреблением без перезапуска, а тестовая инфраструктура — проверить поведение до выката. Коротко разберём каждый; подробности про интерсепторы и тестирование будут в разделах 11.10 и 11.11.</p>
 <p>Поставить контейнер на паузу и снять с неё можно через <code>KafkaListenerEndpointRegistry</code> по идентификатору слушателя:</p>

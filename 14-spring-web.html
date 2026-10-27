@@ -3,7 +3,7 @@
 <title>14. Spring Web: MVC и WebFlux — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Spring Web: MVC и WebFlux">
 <a class="skip" href="#content">К тексту</a>
@@ -654,10 +654,12 @@
 </tbody>
 </table>
 <p>Отсюда практическое правило: <strong>с сырыми байтами и заголовками работает фильтр, решения по метаданным обработчика принимает интерцептор, а бизнес-логика вокруг вызова — дело AOP</strong>.</p>
-<p>Вот какие задачи обычно решают на каждом уровне:
-- На уровне фильтра кладут корреляционный идентификатор в MDC, читают и кэшируют тело для аудита (<code>ContentCachingRequestWrapper</code>), включают gzip, обрабатывают CORS, ограничивают размер запроса и ставят <code>ForwardedHeaderFilter</code>, когда сервис работает за балансировщиком.
-- Интерцептор подходит для rate limiting по аннотации на методе, для замера времени с тегом «имя обработчика», для проверки <code>@RequiresFeatureFlag</code> и для заголовков кэширования, которые зависят от типа ресурса.
-- AOP отвечает за транзакции, кэш, повторные попытки и аудит доменных операций — то есть за всё, что к HTTP отношения не имеет.</p>
+<p>Вот какие задачи обычно решают на каждом уровне:</p>
+<ul>
+<li>На уровне фильтра кладут корреляционный идентификатор в MDC, читают и кэшируют тело для аудита (<code>ContentCachingRequestWrapper</code>), включают gzip, обрабатывают CORS, ограничивают размер запроса и ставят <code>ForwardedHeaderFilter</code>, когда сервис работает за балансировщиком.</li>
+<li>Интерцептор подходит для rate limiting по аннотации на методе, для замера времени с тегом «имя обработчика», для проверки <code>@RequiresFeatureFlag</code> и для заголовков кэширования, которые зависят от типа ресурса.</li>
+<li>AOP отвечает за транзакции, кэш, повторные попытки и аудит доменных операций — то есть за всё, что к HTTP отношения не имеет.</li>
+</ul>
 <h3 id="32-onceperrequestfilter-и-filter">3.2 <code>OncePerRequestFilter</code> и <code>Filter</code></h3>
 <p><code>OncePerRequestFilter</code> гарантирует, что фильтр выполнится ровно один раз на запрос в рамках REQUEST-диспатча. Это важно, потому что Servlet-контейнер может пройти по цепочке фильтров несколько раз: на FORWARD, на INCLUDE, на ERROR-диспатче (<code>/error</code>) и на ASYNC-диспатче, когда асинхронный результат готов и запрос возвращается в контейнер. Наивный <code>Filter</code> с <code>MDC.put()</code>/<code>MDC.clear()</code> при ASYNC-диспатче очистит MDC раньше, чем отработает вторая половина запроса.</p>
 <p>Здесь надо знать два метода: <code>shouldNotFilterAsyncDispatch()</code>, который по умолчанию возвращает <code>true</code>, то есть фильтр повторно на ASYNC не выполняется, и <code>shouldNotFilterErrorDispatch()</code>, тоже по умолчанию <code>true</code>. Если ваш фильтр кладёт значения в MDC, для асинхронных эндпоинтов первый метод должен возвращать <code>false</code>, иначе логи второй половины запроса потеряют <code>traceId</code>. Так выглядит фильтр корреляционного идентификатора, в котором это учтено:</p>
@@ -3313,10 +3315,12 @@ curl -s localhost:8080/actuator/beans <span class="p">|</span> jq -r <span class
 </code></pre></div>
 
 <p>Backpressure в HTTP реализуется через управление TCP-окном. Если клиент не читает, буфер сокета заполняется, Netty перестаёт запрашивать элементы у <code>Flux</code>, и <code>request(n)</code> не доходит до источника. Это настоящий сквозной backpressure, но только если источник его уважает, как R2DBC или Kafka-потребитель с реактивным API. Источник вроде «подписки на in-memory Sink с <code>Sinks.many().multicast()</code>» переполнится, и что произойдёт дальше, определяет выбранная стратегия (<code>onBackpressureBuffer</code>/<code>Drop</code>/<code>Latest</code>/<code>Error</code>); подробно стратегии разобраны в главе 11.</p>
-<p>Медиатипы для стрима ведут себя по-разному:
-- <code>text/event-stream</code> — это SSE, текстовый протокол с полями <code>data:</code>/<code>event:</code>/<code>id:</code>, который браузер читает через <code>EventSource</code> и к которому сам переподключается.
-- <code>application/x-ndjson</code> отдаёт по JSON-объекту на строку, удобнее для взаимодействия сервер-сервер, но автоматического переподключения не даёт.
-- <code>application/json</code> на <code>Flux</code> — <strong>не стрим</strong>: элементы собираются в массив, и ответ уходит целиком. Если «вернули Flux, а данные пришли одним куском», это частая ошибка, и смотреть надо на <code>produces</code>.</p>
+<p>Медиатипы для стрима ведут себя по-разному:</p>
+<ul>
+<li><code>text/event-stream</code> — это SSE, текстовый протокол с полями <code>data:</code>/<code>event:</code>/<code>id:</code>, который браузер читает через <code>EventSource</code> и к которому сам переподключается.</li>
+<li><code>application/x-ndjson</code> отдаёт по JSON-объекту на строку, удобнее для взаимодействия сервер-сервер, но автоматического переподключения не даёт.</li>
+<li><code>application/json</code> на <code>Flux</code> — <strong>не стрим</strong>: элементы собираются в массив, и ответ уходит целиком. Если «вернули Flux, а данные пришли одним куском», это частая ошибка, и смотреть надо на <code>produces</code>.</li>
+</ul>
 <h3 id="105-ошибки-в-webflux">10.5 Ошибки в WebFlux</h3>
 <p>Ошибки в WebFlux обрабатываются на трёх уровнях, которые различаются тем, насколько глубоко в цепочке они стоят: оператором прямо в реактивной цепочке, через <code>@ExceptionHandler</code> для контроллеров и через <code>ErrorWebExceptionHandler</code> как последний рубеж для всего остального. Уровни эти соответствуют тому, что уже разобрано для MVC в разделе 4, и граница между вторым и третьим проходит там же. Ниже все три уровня показаны в одном листинге, по возрастанию «глубины»:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// 1. Оператором — локально</span>

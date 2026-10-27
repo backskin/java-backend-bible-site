@@ -3,7 +3,7 @@
 <title>13. Spring Security — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Spring Security">
 <a class="skip" href="#content">К тексту</a>
@@ -20,12 +20,14 @@
 <p><strong>Зачем это знать.</strong> Между вашим <code>@RestController</code> и интернетом стоит только Spring Security, и устроен он так, что «работает» в трёх режимах — правильно, небезопасно и никак, — а снаружи все три выглядят одинаково. Поэтому типичный инцидент в финтехе начинается не со взлома криптографии, а с мелочи: <code>permitAll()</code> оказался на строку шире задуманного, у JWT забыли проверить <code>aud</code>, роли из токена не попали в <code>GrantedAuthority</code>, а <code>@PreAuthorize</code> повесили на метод, который вызывается изнутри того же бина. На интервью эту тему любят именно за то, что она сразу отделяет человека, скопировавшего конфиг из статьи, от того, кто понимает порядок фильтров, разницу между 401 и 403 и то, где живёт <code>SecurityContext</code>, когда работа уходит в другой поток. К тому же Spring Security 6 и 7 сломали половину привычных рецептов (<code>WebSecurityConfigurerAdapter</code> удалён, а контекст больше не сохраняется сам), так что знать, «как было», и не знать, «как стало», сегодня даже вреднее, чем не знать ничего.</p>
 </blockquote>
 <p>Базой в тексте служит <strong>Spring Security 7.x</strong>, который идёт вместе со Spring Boot 4.x и Spring Framework 7, на Java 21; на сентябрь 2026 актуальна версия 7.1.1 (<a href="https://docs.spring.io/spring-security/reference/whats-new.html">What's New</a>). Ветка 6.x при этом не исчезла из текста: многие приложения ещё работают на Spring Security 6.5 со Spring Boot 3.5, а часть механизмов (явное сохранение контекста, <code>AuthorizationManager</code>, XOR-кодирование CSRF-токена) появилась именно в 6.0 и без этой истории непонятна. Поэтому там, где поведение 6.x и 7.x расходится или где речь идёт о миграции, версия указана явно, а если она не указана, описано поведение 7.x.</p>
-<p>Несколько соседних тем в этой главе затронуты только там, где без них не обойтись, а подробно разобраны в других местах книги:
-- OAuth2/OIDC как <strong>протоколы</strong> (flows, PKCE, device code, refresh rotation, revocation), OWASP Top 10, Keycloak как продукт и управление секретами — глава 42 (<code>42-appsec-oauth-keycloak.md</code>).
-- Криптография, JWS/JWE/JWK, <code>alg: none</code>, key confusion, X.509 и mTLS — главы 40 (<code>40-cryptography.md</code>) и 41 (<code>41-pki-signatures.md</code>).
-- Сервлетные фильтры, <code>DispatcherServlet</code>, <code>@ControllerAdvice</code> и <code>ProblemDetail</code> — глава 14 (<code>14-spring-web.md</code>).
-- Прокси, AOP и self-invocation в общем виде — глава 09 (<code>09-spring-core.md</code>).
-- Reactor, <code>Context</code>, <code>publishOn</code>/<code>subscribeOn</code> — глава 11 (<code>11-reactive.md</code>).</p>
+<p>Несколько соседних тем в этой главе затронуты только там, где без них не обойтись, а подробно разобраны в других местах книги:</p>
+<ul>
+<li>OAuth2/OIDC как <strong>протоколы</strong> (flows, PKCE, device code, refresh rotation, revocation), OWASP Top 10, Keycloak как продукт и управление секретами — глава 42 (<code>42-appsec-oauth-keycloak.md</code>).</li>
+<li>Криптография, JWS/JWE/JWK, <code>alg: none</code>, key confusion, X.509 и mTLS — главы 40 (<code>40-cryptography.md</code>) и 41 (<code>41-pki-signatures.md</code>).</li>
+<li>Сервлетные фильтры, <code>DispatcherServlet</code>, <code>@ControllerAdvice</code> и <code>ProblemDetail</code> — глава 14 (<code>14-spring-web.md</code>).</li>
+<li>Прокси, AOP и self-invocation в общем виде — глава 09 (<code>09-spring-core.md</code>).</li>
+<li>Reactor, <code>Context</code>, <code>publishOn</code>/<code>subscribeOn</code> — глава 11 (<code>11-reactive.md</code>).</li>
+</ul>
 <h2 id="1-архитектура-от-сервлет-фильтра-до-authorizationfilter">1. Архитектура: от сервлет-фильтра до <code>AuthorizationFilter</code></h2>
 <p>В сервлетном стеке Spring Security встраивается в обработку запроса как обычный сервлет-фильтр, но за этим фильтром стоит целая упорядоченная цепочка собственных фильтров, каждый из которых отвечает за одну фазу: защиту от эксплойтов, аутентификацию, трансляцию исключений, авторизацию. Понимать эту цепочку нужно потому, что почти любая загадка в эксплуатации — неожиданный 401, 403 вместо 401, запрос, который не доходит до контроллера, — объясняется тем, какой фильтр на каком шаге принял решение. Ниже разобраны три уровня косвенности, через которые контейнер добирается до фильтров Security, полный порядок этих фильтров и последствия его нарушения, а в конце — способы увидеть фактическую цепочку во время выполнения и отладить запрос, который до контроллера не дошёл.</p>
 <h3 id="11-уровни-делегирования-между-контейнером-и-фильтрами">1.1 Уровни делегирования между контейнером и фильтрами</h3>
@@ -2695,9 +2697,11 @@ policy = REJECT            выполнено 2, отклонено 4 (Invocatio
 
 <p>Общий кеш (Redis/Caffeine на весь под) снижает нагрузку на IdP, когда экземпляров много. Предусмотрена и защита от DoS: если атакующий шлёт токены со случайными <code>kid</code>, наивная реализация ходила бы в JWKS на каждый такой токен, но Nimbus ограничивает частоту обновления.</p>
 <h3 id="73-валидаторы-iss-exp-aud">7.3 Валидаторы: <code>iss</code>, <code>exp</code>, <code>aud</code></h3>
-<p>Подпись доказывает только то, что токен выпустил ваш IdP, но не то, что он ещё действует и выпущен именно для вашего сервиса, — за это отвечают валидаторы claims. Главная практическая деталь этого подраздела в том, что одна из самых важных проверок по умолчанию выключена. Набор по умолчанию, который даёт <code>JwtValidators.createDefaultWithIssuer(issuer)</code>, состоит из двух валидаторов:
-- <code>JwtTimestampValidator</code> проверяет <code>exp</code> и <code>nbf</code> с <strong>допуском на расхождение часов (clock skew) в 60 секунд</strong>;
-- <code>JwtIssuerValidator</code> проверяет, что <code>iss</code> совпадает с настроенным.</p>
+<p>Подпись доказывает только то, что токен выпустил ваш IdP, но не то, что он ещё действует и выпущен именно для вашего сервиса, — за это отвечают валидаторы claims. Главная практическая деталь этого подраздела в том, что одна из самых важных проверок по умолчанию выключена. Набор по умолчанию, который даёт <code>JwtValidators.createDefaultWithIssuer(issuer)</code>, состоит из двух валидаторов:</p>
+<ul>
+<li><code>JwtTimestampValidator</code> проверяет <code>exp</code> и <code>nbf</code> с <strong>допуском на расхождение часов (clock skew) в 60 секунд</strong>;</li>
+<li><code>JwtIssuerValidator</code> проверяет, что <code>iss</code> совпадает с настроенным.</li>
+</ul>
 <p><strong><code>aud</code> по умолчанию не проверяется.</strong> Проверка включается свойством <code>spring.security.oauth2.resourceserver.jwt.audiences</code> или явным валидатором, и это важнейшая практическая деталь: без неё ваш сервис примет токен, выданный для <em>другого</em> сервиса того же realm'а. В микросервисной архитектуре с общим IdP это значит, что скомпрометированный токен «сервиса отчётов» открывает доступ к «сервису платежей». RFC 9068 прямо требует, чтобы resource server проверял, что <code>aud</code> содержит тот идентификатор, который он ожидает для себя (<a href="https://www.rfc-editor.org/rfc/rfc9068.html">RFC 9068</a>). Явный валидатор собирается так:</p>
 <div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Bean</span>
 <span class="n">JwtDecoder</span> <span class="nf">jwtDecoder</span><span class="p">(</span><span class="nd">@Value</span><span class="p">(</span><span class="s">"${idp.issuer}"</span><span class="p">)</span> <span class="n">String</span> <span class="n">issuer</span><span class="p">)</span> <span class="p">{</span>
@@ -3143,9 +3147,11 @@ T+N+ε    kid=B в кеше, всё работает; простоя нет
 <h3 id="82-oauth2authorizedclientmanager">8.2 <code>OAuth2AuthorizedClientManager</code></h3>
 <p><code>OAuth2AuthorizedClientManager</code> — это абстракция с одной обязанностью: «дай мне действующий токен для регистрации X и принципала Y». Всё, что для этого нужно — получить токен впервые, обновить протухший, сохранить результат, — он делает сам, и прикладной код обращается только к нему. Ниже разобрано, из чего он состоит, где хранит токены и как его собрать для сервисного сценария.</p>
 <p>Внутри менеджера работает цепочка <code>OAuth2AuthorizedClientProvider</code>: <code>authorization_code</code>, <code>refresh_token</code>, <code>client_credentials</code>, <code>jwt-bearer</code> и расширения (<a href="https://docs.spring.io/spring-security/reference/servlet/oauth2/client/authorized-clients.html">Authorized Clients</a>).</p>
-<p>Хранилище авторизованных клиентов бывает двух видов, и различаются они тем, привязаны ли к запросу:
-- <code>OAuth2AuthorizedClientRepository</code> привязано к <code>HttpServletRequest</code>/сессии и служит для пользовательских токенов (по умолчанию это <code>HttpSessionOAuth2AuthorizedClientRepository</code>);
-- <code>OAuth2AuthorizedClientService</code> глобально, работает вне контекста запроса и служит для сервисных токенов (<code>InMemoryOAuth2AuthorizedClientService</code>, есть и JDBC-реализация).</p>
+<p>Хранилище авторизованных клиентов бывает двух видов, и различаются они тем, привязаны ли к запросу:</p>
+<ul>
+<li><code>OAuth2AuthorizedClientRepository</code> привязано к <code>HttpServletRequest</code>/сессии и служит для пользовательских токенов (по умолчанию это <code>HttpSessionOAuth2AuthorizedClientRepository</code>);</li>
+<li><code>OAuth2AuthorizedClientService</code> глобально, работает вне контекста запроса и служит для сервисных токенов (<code>InMemoryOAuth2AuthorizedClientService</code>, есть и JDBC-реализация).</li>
+</ul>
 <p>Для чисто сервисного сценария, например <code>client_credentials</code> в фоновом job'е, где HTTP-запроса нет вовсе, менеджер собирают так:</p>
 <div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Bean</span>
 <span class="n">OAuth2AuthorizedClientManager</span> <span class="nf">authorizedClientManager</span><span class="p">(</span>
@@ -3600,9 +3606,11 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 <p><strong><span class="ic">❓</span> Спрашивали на интервью. Почему POST возвращает 403, хотя пользователь вошёл?</strong> Самая частая причина: нет CSRF-токена (или он выдан до входа и устарел). Признак: GET работает, POST отвечает 403. В запуске так вели себя запросы без токена и с токеном из формы входа до аутентификации.<sup id="fnref5:s13-csrf"><a class="footnote-ref" href="#fn:s13-csrf">14</a></sup></p>
 </blockquote>
 <h3 id="92-хранилище-токена-и-breach">9.2 Хранилище токена и BREACH</h3>
-<p>CSRF-токен нужно где-то хранить между запросами и как-то передавать клиенту, и от выбора этого «где» и «как» зависит, будет ли защита работать с SPA и устоит ли она против атаки BREACH. Именно эти детали чаще всего ломаются при миграции с 5 на 6. Реализаций <code>CsrfTokenRepository</code> две:
-- <code>HttpSessionCsrfTokenRepository</code> (по умолчанию) хранит токен в сессии;
-- <code>CookieCsrfTokenRepository</code> хранит токен в cookie <code>XSRF-TOKEN</code> и ожидает его обратно в заголовке <code>X-XSRF-TOKEN</code>. Для SPA нужен <code>withHttpOnlyFalse()</code>, чтобы JS мог этот токен прочитать.</p>
+<p>CSRF-токен нужно где-то хранить между запросами и как-то передавать клиенту, и от выбора этого «где» и «как» зависит, будет ли защита работать с SPA и устоит ли она против атаки BREACH. Именно эти детали чаще всего ломаются при миграции с 5 на 6. Реализаций <code>CsrfTokenRepository</code> две:</p>
+<ul>
+<li><code>HttpSessionCsrfTokenRepository</code> (по умолчанию) хранит токен в сессии;</li>
+<li><code>CookieCsrfTokenRepository</code> хранит токен в cookie <code>XSRF-TOKEN</code> и ожидает его обратно в заголовке <code>X-XSRF-TOKEN</code>. Для SPA нужен <code>withHttpOnlyFalse()</code>, чтобы JS мог этот токен прочитать.</li>
+</ul>
 <p>Cookie-вариант безопасен, потому что работает по схеме <strong>double submit</strong>: атакующий с другого домена может заставить браузер отправить cookie, но не может прочитать её значение и продублировать его в заголовке.</p>
 <p>В Spring Security 6 по умолчанию стал использоваться <code>XorCsrfTokenRequestAttributeHandler</code>, который защищает от <strong>BREACH</strong>. BREACH — атака на сжатие HTTPS-трафика: если секрет присутствует в теле ответа в неизменном виде, его можно посимвольно восстановить по размеру сжатого ответа. Xor-обработчик каждый раз подмешивает случайную соль, так что видимое значение токена меняется от запроса к запросу, а при проверке разворачивается обратно (<a href="https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html">CSRF</a>).</p>
 <blockquote class="cb-warn">
@@ -3816,10 +3824,12 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 </code></pre></div>
 
 <p>Spring Session подменяет <code>HttpSession</code> собственной реализацией через <code>SessionRepositoryFilter</code>, который стоит <strong>перед</strong> <code>springSecurityFilterChain</code> (порядок <code>SessionRepositoryFilter.DEFAULT_ORDER = Integer.MIN_VALUE + 50</code>). Дальше Spring Security работает с этой сессией как с обычной и даже не знает, что она лежит в Redis.</p>
-<p>О цене стоит знать три вещи:
-- <code>repository-type: indexed</code> заводит в Redis дополнительные структуры для поиска сессий по принципалу; для concurrent control он нужен, но каждая запись обходится дороже;
-- по умолчанию используется JDK-сериализация. <code>SecurityContext</code> в неё помещается, но при апгрейде Spring Security классы меняются, и старые сессии перестают десериализоваться. Для zero-downtime лучше JSON (<code>GenericJackson2JsonRedisSerializer</code> + <code>SecurityJackson2Modules</code>), хотя настроить его заметно сложнее;
-- каждый запрос к защищённому ресурсу читает сессию из Redis, так что 10 000 RPS дают 10 000 обращений; отложенная загрузка контекста в 6.x отчасти помогает.</p>
+<p>О цене стоит знать три вещи:</p>
+<ul>
+<li><code>repository-type: indexed</code> заводит в Redis дополнительные структуры для поиска сессий по принципалу; для concurrent control он нужен, но каждая запись обходится дороже;</li>
+<li>по умолчанию используется JDK-сериализация. <code>SecurityContext</code> в неё помещается, но при апгрейде Spring Security классы меняются, и старые сессии перестают десериализоваться. Для zero-downtime лучше JSON (<code>GenericJackson2JsonRedisSerializer</code> + <code>SecurityJackson2Modules</code>), хотя настроить его заметно сложнее;</li>
+<li>каждый запрос к защищённому ресурсу читает сессию из Redis, так что 10 000 RPS дают 10 000 обращений; отложенная загрузка контекста в 6.x отчасти помогает.</li>
+</ul>
 <h3 id="105-stateless--и-stateful-сессии">10.5 Stateless- и stateful-сессии</h3>
 <p>Выбор между серверной сессией и JWT обычно подают как выбор между «старым» и «современным», хотя на деле это обмен одних свойств на другие, и главный из них — возможность мгновенно отозвать доступ. Таблица ниже сравнивает оба подхода по тем свойствам, которые влияют на решение:</p>
 <table class="rt">
@@ -4008,11 +4018,13 @@ cookie до входа:   JSESSIONID=A41F577...;  после входа: не м
 <span class="p">}</span>
 </code></pre></div>
 
-<p>У этих аннотаций есть нюансы, на которых тесты часто врут:
-- <code>@WithMockUser(roles = "USER")</code> создаёт authority <code>ROLE_USER</code>, добавляя префикс, а <code>@WithMockUser(authorities = "USER")</code> — ровно <code>USER</code>. Перепутать их легко, и если тест проверяет только 403, он будет зелёным в обоих случаях.
-- <code>@WithMockUser</code> ставит <code>UsernamePasswordAuthenticationToken</code> с <code>principal</code> типа <code>User</code>. Если контроллер объявляет <code>@AuthenticationPrincipal Jwt</code>, параметр придёт <code>null</code>, и нужен <code>jwt()</code>-постпроцессор (о нём ниже).
-- <code>@WithUserDetails("alice")</code> загружает пользователя через настоящий <code>UserDetailsService</code>. Это ближе к реальности, но требует контекста с этим бином и данных в БД.
-- <code>@WithAnonymousUser</code> задаёт анонима явно.</p>
+<p>У этих аннотаций есть нюансы, на которых тесты часто врут:</p>
+<ul>
+<li><code>@WithMockUser(roles = "USER")</code> создаёт authority <code>ROLE_USER</code>, добавляя префикс, а <code>@WithMockUser(authorities = "USER")</code> — ровно <code>USER</code>. Перепутать их легко, и если тест проверяет только 403, он будет зелёным в обоих случаях.</li>
+<li><code>@WithMockUser</code> ставит <code>UsernamePasswordAuthenticationToken</code> с <code>principal</code> типа <code>User</code>. Если контроллер объявляет <code>@AuthenticationPrincipal Jwt</code>, параметр придёт <code>null</code>, и нужен <code>jwt()</code>-постпроцессор (о нём ниже).</li>
+<li><code>@WithUserDetails("alice")</code> загружает пользователя через настоящий <code>UserDetailsService</code>. Это ближе к реальности, но требует контекста с этим бином и данных в БД.</li>
+<li><code>@WithAnonymousUser</code> задаёт анонима явно.</li>
+</ul>
 <p>Когда нужен нестандартный <code>Authentication</code>, пишут собственную аннотацию через <code>@WithSecurityContext</code>. В примере ниже она собирает <code>Jwt</code> с ролями в том же месте, где их кладёт Keycloak:</p>
 <div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Retention</span><span class="p">(</span><span class="n">RetentionPolicy</span><span class="p">.</span><span class="na">RUNTIME</span><span class="p">)</span>
 <span class="nd">@WithSecurityContext</span><span class="p">(</span><span class="n">factory</span> <span class="o">=</span> <span class="n">WithKeycloakUserSecurityContextFactory</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
@@ -4596,11 +4608,13 @@ Tests run: 10, Failures: 0, Errors: 0
 <p><code>AuthorizationGrantedEvent</code> публикуется <strong>на каждое положительное решение</strong>, то есть при <code>authorizeHttpRequests</code> на каждый запрос, а при method security — на каждый вызов метода. Если слушать его без фильтрации, вы гарантированно получите накладные расходы и терабайты логов, поэтому слушать нужно <code>AuthorizationDeniedEvent</code>.</p>
 <p>Spring Boot Actuator превращает часть этих событий в <code>AuditEvent</code> и отдаёт их через <code>/actuator/auditevents</code> (включается через <code>management.endpoints.web.exposure.include</code>), а <code>InMemoryAuditEventRepository</code> хранит последние 4000 событий. Для отладки этого хватает, для аудита — нет: настоящий аудит безопасности пишут в отдельный поток (Kafka-топик, отдельную таблицу) с гарантиями сохранности.</p>
 <h3 id="132-метрики-и-трассировка">13.2 Метрики и трассировка</h3>
-<p>Метрики безопасности нужны, чтобы увидеть проблему раньше, чем о ней сообщат клиенты: брутфорс, сломанный после деплоя отображение ролей, ротацию ключей или «протекающие» сессии. Полезный минимум в Micrometer (глава 51) состоит из четырёх метрик, а после них разобрана трассировка через Micrometer Observation и её цена:
-- счётчик неудачных аутентификаций с тегом причины, резкий рост которого означает брутфорс или сломанный клиент;
-- счётчик 401/403 по эндпоинтам, потому что рост 403 после деплоя часто означает сломанное отображение ролей;
-- время <code>JwtDecoder.decode</code> и число обращений к JWKS, где всплеск второго указывает на ротацию ключей или атаку случайными <code>kid</code>;
-- <code>tomcat.sessions.active</code>, который выдаёт ситуацию «stateless, но сессии растут».</p>
+<p>Метрики безопасности нужны, чтобы увидеть проблему раньше, чем о ней сообщат клиенты: брутфорс, сломанный после деплоя отображение ролей, ротацию ключей или «протекающие» сессии. Полезный минимум в Micrometer (глава 51) состоит из четырёх метрик, а после них разобрана трассировка через Micrometer Observation и её цена:</p>
+<ul>
+<li>счётчик неудачных аутентификаций с тегом причины, резкий рост которого означает брутфорс или сломанный клиент;</li>
+<li>счётчик 401/403 по эндпоинтам, потому что рост 403 после деплоя часто означает сломанное отображение ролей;</li>
+<li>время <code>JwtDecoder.decode</code> и число обращений к JWKS, где всплеск второго указывает на ротацию ключей или атаку случайными <code>kid</code>;</li>
+<li><code>tomcat.sessions.active</code>, который выдаёт ситуацию «stateless, но сессии растут».</li>
+</ul>
 <p>В Spring Security 6.x observability интегрирована с Micrometer Observation: цепочка фильтров и аутентификация трассируются как <code>spring.security.filterchains</code>, <code>spring.security.authentications</code> и <code>spring.security.authorizations</code>. Включается это самим наличием бина <code>ObservationRegistry</code>, и при большом RPS накладные расходы получаются заметными; отключается он свойством <code>management.observations.enable.spring.security=false</code>.</p>
 <h3 id="133-данные-запрещённые-к-логированию">13.3 Данные, запрещённые к логированию</h3>
 <p>Логи — самое частое место утечки учётных данных, и на аудитах это находят регулярно, поэтому список запретов стоит проговорить явно. Он короткий, и за каждым пунктом стоит конкретный класс инцидентов, а после списка описано, как защититься от утечки механически, не полагаясь на внимательность:</p>
@@ -4679,10 +4693,12 @@ Tests run: 10, Failures: 0, Errors: 0
 <p>Работает такой порядок миграции: сначала подняться на Spring Security <strong>5.8</strong>, включить там подготовительные флаги (<code>requireExplicitSave(true)</code>, замена DSL), убедиться, что всё зелёное, и только потом переходить на 6.x. Ту же схему документация рекомендует и для перехода 6 → 7: сначала 6.5 с включёнными «будущими» значениями по умолчанию, потом 7.0 (<a href="https://docs.spring.io/spring-security/reference/migration/index.html">Migration</a>).</p>
 <h3 id="142-нововведения-6365">14.2 Нововведения 6.3–6.5</h3>
 <p>Минорные версии 6.3–6.5 принесли несколько возможностей, которые заметно меняют прикладной код, — авторизацию на уровне возвращаемого объекта, маскирование вместо исключения, passkeys, — а 6.5 стала мостом к 7.0. Сначала о датах, потому что по ним удобно сверять, что доступно в вашей версии Boot. Даты GA проверены по анонсам в блоге Spring: <strong>6.3.0 — 21.05.2024</strong> (<a href="https://spring.io/blog/2024/05/21/spring-security-6-3-0-goes-ga/">анонс</a>), <strong>6.4.0 — 19.11.2024</strong> (<a href="https://spring.io/blog/2024/11/19/spring-security-6-4-goes-ga/">анонс</a>), <strong>6.5.0 — 19.05.2025</strong> (<a href="https://spring.io/blog/2025/05/19/spring-security-6-5-0-is-out/">анонс</a>), <strong>7.0.0 — 17.11.2025</strong> (вместе с 6.5.7 и 6.4.13, <a href="https://spring.io/blog/2025/11/17/spring-security-releases/">анонс</a>). Ветка 6.5 продолжает получать патчи параллельно с 7.x, и на март 2026 версии 6.5.9 и 7.0.4 вышли в одном релизном окне. Соответствие с Boot такое: 6.3 ↔ Boot 3.3, 6.4 ↔ Boot 3.4, 6.5 ↔ Boot 3.5, 7.0 ↔ Boot 4.0, 7.1 ↔ Boot 4.1.</p>
-<p>Содержательно по версиям:
-- <strong>6.3</strong> принесла <code>@AuthorizeReturnObject</code> и <code>AuthorizationProxyFactory</code> (авторизацию на уровне возвращаемого объекта и его геттеров), <code>@HandleAuthorizationDenied</code> с <code>MethodAuthorizationDeniedHandler</code> (маскированное значение вместо исключения), passkeys/WebAuthn (превью), Token Exchange grant (RFC 8693) и улучшения <code>OAuth2ClientHttpRequestInterceptor</code> для <code>RestClient</code>.
-- <strong>6.4</strong> добавила one-time token login (<code>oneTimeTokenLogin</code>), стабилизировала WebAuthn/passkeys и подготовила почву для <code>AuthorizationManagerFactory</code>. Пресета CSRF <code>.spa()</code> в ней ещё нет: по исходнику <code>CsrfConfigurer</code> он появился только в 7.0.
-- <strong>6.5</strong> — последний релиз ветки 6.x, и главная её роль — служить «мостом» в 7.0: в ней можно заранее включить будущие значения по умолчанию и получить предупреждения о том, что сломается (<a href="https://docs.spring.io/spring-security/reference/migration/index.html">Migration</a>). Для этого в 6.5 появился <code>PathPatternRequestMatcher</code>, а <code>MvcRequestMatcher</code> и <code>AntPathRequestMatcher</code> помечены <code>@Deprecated(forRemoval = true)</code>; там же появился <code>SecurityContextHolderThreadLocalAccessor</code> для <code>context-propagation</code> (§4.10).</p>
+<p>Содержательно по версиям:</p>
+<ul>
+<li><strong>6.3</strong> принесла <code>@AuthorizeReturnObject</code> и <code>AuthorizationProxyFactory</code> (авторизацию на уровне возвращаемого объекта и его геттеров), <code>@HandleAuthorizationDenied</code> с <code>MethodAuthorizationDeniedHandler</code> (маскированное значение вместо исключения), passkeys/WebAuthn (превью), Token Exchange grant (RFC 8693) и улучшения <code>OAuth2ClientHttpRequestInterceptor</code> для <code>RestClient</code>.</li>
+<li><strong>6.4</strong> добавила one-time token login (<code>oneTimeTokenLogin</code>), стабилизировала WebAuthn/passkeys и подготовила почву для <code>AuthorizationManagerFactory</code>. Пресета CSRF <code>.spa()</code> в ней ещё нет: по исходнику <code>CsrfConfigurer</code> он появился только в 7.0.</li>
+<li><strong>6.5</strong> — последний релиз ветки 6.x, и главная её роль — служить «мостом» в 7.0: в ней можно заранее включить будущие значения по умолчанию и получить предупреждения о том, что сломается (<a href="https://docs.spring.io/spring-security/reference/migration/index.html">Migration</a>). Для этого в 6.5 появился <code>PathPatternRequestMatcher</code>, а <code>MvcRequestMatcher</code> и <code>AntPathRequestMatcher</code> помечены <code>@Deprecated(forRemoval = true)</code>; там же появился <code>SecurityContextHolderThreadLocalAccessor</code> для <code>context-propagation</code> (§4.10).</li>
+</ul>
 <h3 id="143-spring-security-7x-со-spring-boot-4x">14.3 Spring Security 7.x (со Spring Boot 4.x)</h3>
 <p>Spring Security 7 идёт вместе со Spring Boot 4.x, и на сентябрь 2026 актуальна версия 7.1.1 (<a href="https://docs.spring.io/spring-security/reference/whats-new.html">What's New</a>). Для прикладного кода в ней важны две группы изменений: удаление всего, что в 6.x было deprecated, и новые возможности авторизации, включая встроенную многофакторность. Значимое по пунктам:</p>
 <ul>

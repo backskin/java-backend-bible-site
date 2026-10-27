@@ -3,7 +3,7 @@
 <title>48. Kubernetes изнутри: устройство оркестратора — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Kubernetes изнутри: устройство оркестратора">
 <a class="skip" href="#content">К тексту</a>
@@ -1476,18 +1476,22 @@ kubectl top nodes <span class="p">;</span> kubectl top pods -A --sort-by<span cl
 <li>Зарезервированных системных классов два: <code>system-cluster-critical</code> (2 000 000 000) и <code>system-node-critical</code> (2 000 001 000). Указывать их можно только в <code>kube-system</code>, если это ограничение не снято.</li>
 </ol>
 <p>Отдельно стоит сказать о том, чего preemption <strong>не делает</strong>: он не нарушает <code>PodDisruptionBudget</code>… вернее, старается не нарушать, и эта оговорка важна. Планировщик <strong>учитывает PDB как предпочтение</strong> при выборе жертв: если можно выбрать жертв, не нарушая PDB, он так и сделает, а если нельзя, всё равно вытеснит. Жёстко PDB соблюдает только API <code>Eviction</code> (то есть <code>kubectl drain</code>), но не preemption, и отсюда регулярные разочарования в духе «у меня же стоял PDB».</p>
-<p>Защититься от чужого вытеснения можно тремя способами:
-- поднять <strong>свой</strong> приоритет — это единственная настоящая защита;
-- поставить <code>preemptionPolicy: Never</code> у агрессивных классов, и тогда высокоприоритетный под будет ждать в очереди, но никого не выселит;
-- отделить критичные нагрузки таинтами и выделенными узлами.</p>
+<p>Защититься от чужого вытеснения можно тремя способами:</p>
+<ul>
+<li>поднять <strong>свой</strong> приоритет — это единственная настоящая защита;</li>
+<li>поставить <code>preemptionPolicy: Never</code> у агрессивных классов, и тогда высокоприоритетный под будет ждать в очереди, но никого не выселит;</li>
+<li>отделить критичные нагрузки таинтами и выделенными узлами.</li>
+</ul>
 <p><strong>Priority inversion в очереди.</strong> Высокоприоритетный под встаёт в начало очереди (<code>QueueSort</code> сортирует по приоритету, затем по времени). Но scheduling-циклы последовательны, поэтому долгий «затык» на одном неразмещаемом поде задерживает всех остальных. Для этого и существуют механизм <code>nominatedNodeName</code> и backoff-очередь: неразмещаемые поды переезжают в <code>unschedulableQ</code> и возвращаются в активную очередь либо по backoff (от 1 с до 10 с по умолчанию), либо когда случается событие, способное изменить вердикт (добавилась узел, удалился под, изменился PVC).</p>
 <h3 id="46-разбалансировка-кластера-и-descheduler">4.6 Разбалансировка кластера и descheduler</h3>
 <p>Разбалансировка кластера — это постепенный дрейф, при котором поды распределены по узлам всё хуже, хотя каждое отдельное решение планировщика в момент принятия было правильным. Происходит это потому, что планировщик принимает решение <strong>один раз</strong> и никогда его не пересматривает: под, вчера поставленный на свободный тогда узел, останется на нём, даже если сегодня узел перегружен, а соседний пуст. Ниже разберём причины дрейфа, descheduler, который с ним борется, его стратегии и то, как не устроить с его помощью бесконечный переезд подов.</p>
-<p>Дрейф обычно вызывают четыре причины:
-- добавили узлы: новые поды пойдут туда, а старые останутся на месте;
-- изменили taints или labels: уже размещённые поды не переедут (за исключением <code>NoExecute</code>);
-- поды разного размера приходят и уходят, и возникает фрагментация: суммарно свободно 20 CPU, но ни на одном узле нет четырёх подряд;
-- один Deployment отмасштабировался и оставил перекос по зонам.</p>
+<p>Дрейф обычно вызывают четыре причины:</p>
+<ul>
+<li>добавили узлы: новые поды пойдут туда, а старые останутся на месте;</li>
+<li>изменили taints или labels: уже размещённые поды не переедут (за исключением <code>NoExecute</code>);</li>
+<li>поды разного размера приходят и уходят, и возникает фрагментация: суммарно свободно 20 CPU, но ни на одном узле нет четырёх подряд;</li>
+<li>один Deployment отмасштабировался и оставил перекос по зонам.</li>
+</ul>
 <p><strong>Descheduler</strong> (<a href="https://github.com/kubernetes-sigs/descheduler">github.com/kubernetes-sigs/descheduler</a>) — отдельный компонент (CronJob или Deployment), который по набору стратегий <strong>выселяет</strong> поды, чтобы планировщик разместил их заново. Сам он ничего не размещает, а только создаёт для этого возможность.</p>
 <p>Основных стратегий у него несколько: <code>RemoveDuplicates</code> (несколько реплик одного RS на одном узле), <code>LowNodeUtilization</code> / <code>HighNodeUtilization</code> (перебалансировка по загрузке, причём по <strong>фактическому</strong> потреблению или по requests, это настраивается), <code>RemovePodsViolatingInterPodAntiAffinity</code>, <code>RemovePodsViolatingNodeAffinity</code>, <code>RemovePodsViolatingTopologySpreadConstraint</code>, <code>RemovePodsHavingTooManyRestarts</code> и <code>PodLifeTime</code> (выселять поды старше N — грубый способ бороться с утечками).</p>
 <p>Descheduler выселяет поды через Eviction API и потому, в отличие от preemption, <strong>соблюдает PDB</strong>. Это его главное достоинство и повод предпочесть его самописным скриптам с <code>kubectl delete pod</code>.</p>
@@ -2022,20 +2026,26 @@ journalctl -u kubelet -n <span class="m">200</span> --no-pager
 <h3 id="62-механизм-rolling-update-в-deployment">6.2 Механизм rolling update в Deployment</h3>
 <p>Rolling update — стратегия, при которой Deployment постепенно заменяет поды старой версии подами новой, не опуская число доступных реплик ниже заданного порога. Это одна из тех вещей, которые «все знают», но мало кто может объяснить точно, а от точного понимания зависит, переживёт ли сервис неудачный выкат. Ниже механика разобрана по шагам на примере: хеш шаблона, вычисление окон, сам цикл, понятие доступности, дедлайн прогресса, история ревизий, откат и стратегия <code>Recreate</code>.</p>
 <p>Допустим, у нас есть Deployment <code>payments</code> с <code>replicas: 4</code> и <code>strategy.rollingUpdate: {maxSurge: 25%, maxUnavailable: 25%}</code> (это значения по умолчанию).</p>
-<p><strong>Шаг 0. Хеш шаблона.</strong> Контроллер берёт <code>spec.template</code>, считает от него хеш (FNV, затем кодирование в «безопасный» алфавит без легко путаемых символов) и получает, например, <code>7d4b8c6f9</code>. Этот хеш попадает в два места:
-- в имя ReplicaSet: <code>payments-7d4b8c6f9</code>;
-- в метку <code>pod-template-hash: 7d4b8c6f9</code> на RS, в его селектор и в шаблон пода.</p>
+<p><strong>Шаг 0. Хеш шаблона.</strong> Контроллер берёт <code>spec.template</code>, считает от него хеш (FNV, затем кодирование в «безопасный» алфавит без легко путаемых символов) и получает, например, <code>7d4b8c6f9</code>. Этот хеш попадает в два места:</p>
+<ul>
+<li>в имя ReplicaSet: <code>payments-7d4b8c6f9</code>;</li>
+<li>в метку <code>pod-template-hash: 7d4b8c6f9</code> на RS, в его селектор и в шаблон пода.</li>
+</ul>
 <p>Поэтому <strong>имя ReplicaSet меняется при каждом изменении шаблона</strong>, и поэтому же RS с тем же шаблоном используется повторно: если откатить образ обратно, старый RS с тем же хешем просто снова масштабируется вверх, и новый не создаётся.</p>
 <p>Добавить <code>pod-template-hash</code> в селектор — ключевой трюк. Без него селекторы старого и нового RS совпадали бы, и каждый считал бы поды другого своими, а хеш делает множества подов непересекающимися.</p>
-<p><strong>Шаг 1. Вычисление окон.</strong> Из процентов контроллер получает абсолютные числа:
-- <code>maxSurge: 25%</code> от 4 → округление <strong>вверх</strong> → 1. Максимум подов всего: 4 + 1 = 5.
-- <code>maxUnavailable: 25%</code> от 4 → округление <strong>вниз</strong> → 1. Минимум доступных: 4 − 1 = 3.</p>
+<p><strong>Шаг 1. Вычисление окон.</strong> Из процентов контроллер получает абсолютные числа:</p>
+<ul>
+<li><code>maxSurge: 25%</code> от 4 → округление <strong>вверх</strong> → 1. Максимум подов всего: 4 + 1 = 5.</li>
+<li><code>maxUnavailable: 25%</code> от 4 → округление <strong>вниз</strong> → 1. Минимум доступных: 4 − 1 = 3.</li>
+</ul>
 <p>Округляют в разные стороны не случайно: так при малом числе реплик деплой всё же сдвинется с места. При <code>replicas: 1</code> и значениях по умолчанию получается <code>maxSurge=1, maxUnavailable=0</code>, то есть сначала поднимется новый под и только потом умрёт старый. А вот <code>maxUnavailable: 1, maxSurge: 0</code> при одной реплике означает полный простой.</p>
-<p><strong>Шаг 2. Цикл.</strong> На каждом проходе reconcile контроллер делает четыре вещи:
-1. считает <code>availableReplicas</code> по всем RS;
-2. если новый RS можно увеличить, не превысив <code>replicas + maxSurge</code>, увеличивает его (scale up);
-3. если старый RS можно уменьшить, не опустив число доступных ниже <code>replicas − maxUnavailable</code>, уменьшает его (scale down);
-4. ждёт событий от подов и повторяет.</p>
+<p><strong>Шаг 2. Цикл.</strong> На каждом проходе reconcile контроллер делает четыре вещи:</p>
+<ol>
+<li>считает <code>availableReplicas</code> по всем RS;</li>
+<li>если новый RS можно увеличить, не превысив <code>replicas + maxSurge</code>, увеличивает его (scale up);</li>
+<li>если старый RS можно уменьшить, не опустив число доступных ниже <code>replicas − maxUnavailable</code>, уменьшает его (scale down);</li>
+<li>ждёт событий от подов и повторяет.</li>
+</ol>
 <p>В нашем примере это выглядит так: 4 старых → создаём 1 новый (всего 5) → новый стал Ready (доступно 5) → убираем 1 старый (4: 3 старых + 1 новый) → создаём новый (5) → ... и так далее.</p>
 <p><strong>Что значит «доступен».</strong> Доступен не тот под, что Ready, а тот, что <strong>пробыл в Ready дольше <code>minReadySeconds</code></strong> (по умолчанию 0). Это поле — ваш главный инструмент против ситуации «деплой прошёл, всё упало»: поставьте 10–30 с, и контроллер не станет убивать следующий старый под, пока новый не проживёт это время. Без него под, который проходит readiness за 2 секунды и падает на 5-й, каскадом переведёт в неработоспособное состояние все реплики.</p>
 <p><strong><code>progressDeadlineSeconds</code></strong> (по умолчанию 600 с). Если за это время выкат не продвинулся, контроллер выставляет condition <code>Progressing=False, reason=ProgressDeadlineExceeded</code>. Заметьте, что <strong>деплой при этом автоматически не откатывается</strong>: контроллер только ставит отметку. Автоотката в Kubernetes нет, это задача CI/CD (гл. 53) или Argo Rollouts.</p>
@@ -2786,14 +2796,16 @@ kubectl patch mutatingwebhookconfiguration istio-sidecar-injector <span class="s
 </code></pre></div>
 
 <p>Поды, созданные после шага 1 без sidecar, потом нужно перезапустить, иначе часть сервисов останется вне mesh.</p>
-<p><strong>Профилактика.</strong> Мер семь, и первые четыре закрывают саму причину:
-1. Обязательный <code>namespaceSelector</code> с <code>kubernetes.io/metadata.name NotIn [kube-system, istio-system, &lt;namespace webhook&gt;]</code>.
-2. <code>matchConditions</code> на CEL, исключающие системных пользователей.
-3. Anti-affinity <code>requiredDuringScheduling</code> по <code>kubernetes.io/hostname</code> для webhook вместе с <code>topologySpreadConstraints</code> по зонам.
-4. <code>priorityClassName: system-cluster-critical</code>.
-5. <code>timeoutSeconds: 3</code>, а не 10.
-6. Оповещения на <code>apiserver_admission_webhook_rejection_count</code> и на p99 <code>apiserver_admission_webhook_admission_duration_seconds</code>.
-7. Регулярные учения: «убей webhook и замерь время восстановления».</p>
+<p><strong>Профилактика.</strong> Мер семь, и первые четыре закрывают саму причину:</p>
+<ol>
+<li>Обязательный <code>namespaceSelector</code> с <code>kubernetes.io/metadata.name NotIn [kube-system, istio-system, &lt;namespace webhook&gt;]</code>.</li>
+<li><code>matchConditions</code> на CEL, исключающие системных пользователей.</li>
+<li>Anti-affinity <code>requiredDuringScheduling</code> по <code>kubernetes.io/hostname</code> для webhook вместе с <code>topologySpreadConstraints</code> по зонам.</li>
+<li><code>priorityClassName: system-cluster-critical</code>.</li>
+<li><code>timeoutSeconds: 3</code>, а не 10.</li>
+<li>Оповещения на <code>apiserver_admission_webhook_rejection_count</code> и на p99 <code>apiserver_admission_webhook_admission_duration_seconds</code>.</li>
+<li>Регулярные учения: «убей webhook и замерь время восстановления».</li>
+</ol>
 <h3 id="92-namespace-висит-в-terminating-четвёртые-сутки">9.2 Namespace висит в Terminating четвёртые сутки</h3>
 <p>Здесь на практике разыгрывается сценарий из раздела 3.8: namespace не удаляется, потому что namespace-контроллер не может убедиться, что внутри пусто, и причина прячется в cluster-scoped объекте, о котором все забыли. Главный урок истории в том, что правильная диагностика обходится без опасного снятия финализатора с самого namespace.</p>
 <p><strong>Симптом.</strong> <code>kubectl delete namespace team-analytics</code> вернулся мгновенно, но namespace до сих пор в <code>Terminating</code>. Пересоздать его нельзя (<code>namespaces "team-analytics" already exists</code>), и из-за этого падает Terraform.</p>
@@ -2888,11 +2900,13 @@ kubectl patch volumeattachment csi-abc... --type<span class="o">=</span>merge -p
 <span class="c1"># 4. В облаке — force detach тома через консоль/CLI, если он всё ещё числится attached.</span>
 </code></pre></div>
 
-<p><strong>Профилактика.</strong> Мер четыре:
-- <strong>Non-graceful node shutdown</strong>: пометить мёртвого узел taint'ом <code>node.kubernetes.io/out-of-service=nodeshutdown:NoExecute</code>. Это официальный механизм, который сообщает контроллерам, что узел не вернётся, и они сразу, без ожидания, делают force-detach и пересоздают поды.
-- Автоматизация: node-problem-detector и контроллер, который ставит этот taint, когда облачный API подтвердил смерть экземпляра.
-- Для однорепличных Deployment с RWO — <code>strategy: Recreate</code>, иначе <code>Multi-Attach error</code> появится и при обычном обновлении.
-- Мониторинг: оповещение на <code>VolumeAttachment</code>, который дольше 5 минут остаётся подключённым к узлу в состоянии <code>NotReady</code>.</p>
+<p><strong>Профилактика.</strong> Мер четыре:</p>
+<ul>
+<li><strong>Non-graceful node shutdown</strong>: пометить мёртвого узел taint'ом <code>node.kubernetes.io/out-of-service=nodeshutdown:NoExecute</code>. Это официальный механизм, который сообщает контроллерам, что узел не вернётся, и они сразу, без ожидания, делают force-detach и пересоздают поды.</li>
+<li>Автоматизация: node-problem-detector и контроллер, который ставит этот taint, когда облачный API подтвердил смерть экземпляра.</li>
+<li>Для однорепличных Deployment с RWO — <code>strategy: Recreate</code>, иначе <code>Multi-Attach error</code> появится и при обычном обновлении.</li>
+<li>Мониторинг: оповещение на <code>VolumeAttachment</code>, который дольше 5 минут остаётся подключённым к узлу в состоянии <code>NotReady</code>.</li>
+</ul>
 <h3 id="95-массовое-выселение-при-node-pressure-по-диску">9.5 Массовое выселение при node pressure по диску</h3>
 <p>Эта история показывает механизм из раздела 5.6 в худшем его проявлении: один под, пишущий логи в файл, переполняет диск узла, а kubelet выселяет совсем других соседей, и выселение каскадом перекидывается на соседние узлы. Корень проблемы здесь в том, что ресурс, который кончился, никто не ограничивал.</p>
 <p><strong>Симптом.</strong> 40 подов в разных namespace внезапно получили статус <code>Evicted</code> с сообщением <code>The node was low on resource: ephemeral-storage</code>, а через десять минут к ним добавились ещё 30. Часть подов пересоздалась на других узлах и точно так же уронила их, так что выселение пошло по кластеру по принципу домино.</p>
@@ -2920,13 +2934,15 @@ kubectl get pods -A --field-selector status.phase<span class="o">=</span>Failed 
   <span class="p">|</span> xargs -n2 sh -c <span class="s1">'kubectl delete pod -n $0 $1'</span>
 </code></pre></div>
 
-<p><strong>Профилактика.</strong> Мер шесть, и первые две устраняют саму причину:
-1. <strong>Логи пишутся только в stdout/stderr</strong> (см. гл. 52), а ротацией занимается среда выполнения (<code>containerLogMaxSize</code>, по умолчанию 10Mi, и <code>containerLogMaxFiles</code>, по умолчанию 5).
-2. <code>resources.requests/limits</code> по <code>ephemeral-storage</code> на каждом поде, и тогда выселят <strong>именно того</strong>, кто превысил лимит, а не случайных соседей.
-3. <code>emptyDir.sizeLimit</code> для всех emptyDir.
-4. <code>LimitRange</code> со значением по умолчанию для ephemeral-storage в каждом namespace.
-5. Оповещение на <code>kubelet_volume_stats_available_bytes</code> и <code>node_filesystem_avail_bytes</code> с порогом выше, чем у kubelet (например, 20 %), чтобы успеть отреагировать до выселения.
-6. Отдельные диски под <code>nodefs</code> и <code>imagefs</code>, чтобы скачиваемые образы не съедали место, нужное томам.</p>
+<p><strong>Профилактика.</strong> Мер шесть, и первые две устраняют саму причину:</p>
+<ol>
+<li><strong>Логи пишутся только в stdout/stderr</strong> (см. гл. 52), а ротацией занимается среда выполнения (<code>containerLogMaxSize</code>, по умолчанию 10Mi, и <code>containerLogMaxFiles</code>, по умолчанию 5).</li>
+<li><code>resources.requests/limits</code> по <code>ephemeral-storage</code> на каждом поде, и тогда выселят <strong>именно того</strong>, кто превысил лимит, а не случайных соседей.</li>
+<li><code>emptyDir.sizeLimit</code> для всех emptyDir.</li>
+<li><code>LimitRange</code> со значением по умолчанию для ephemeral-storage в каждом namespace.</li>
+<li>Оповещение на <code>kubelet_volume_stats_available_bytes</code> и <code>node_filesystem_avail_bytes</code> с порогом выше, чем у kubelet (например, 20 %), чтобы успеть отреагировать до выселения.</li>
+<li>Отдельные диски под <code>nodefs</code> и <code>imagefs</code>, чтобы скачиваемые образы не съедали место, нужное томам.</li>
+</ol>
 <h3 id="96-рост-базы-etcd-замедлил-api">9.6 Рост базы etcd замедлил API</h3>
 <p>Здесь на практике видно, о чём шла речь в разделе 3.2: база etcd разрастается из-за мусорных объектов и отсутствия дефрагментации, и страдает от этого весь API, хотя ни один компонент формально не сломан. Мусор при этом производили вполне обычные настройки по умолчанию и один неудачный оператор.</p>
 <p><strong>Симптом.</strong> <code>kubectl get pods</code> отвечает 5–10 секунд, в логах контроллеров появляются таймауты, а время от времени — <code>etcdserver: request timed out</code>. Выкатки проходят, но медленно.</p>
@@ -2967,13 +2983,15 @@ kubectl get rs -A -o json <span class="p">|</span> jq -r <span class="s1">'.item
   <span class="p">|</span> xargs -n2 sh -c <span class="s1">'kubectl delete rs -n $0 $1 --wait=false'</span>
 </code></pre></div>
 
-<p><strong>Профилактика.</strong> Мер шесть:
-1. <code>revisionHistoryLimit: 3</code> в шаблоне всех Deployment, а соблюдение проверяет политика Kyverno.
-2. <code>ttlSecondsAfterFinished</code> на всех Job.
-3. <code>--event-ttl</code> (по умолчанию 1 час), а для больших кластеров — <strong>отдельный etcd под events</strong>, как прямо рекомендует документация по большим кластерам.
-4. Регулярная дефрагментация по расписанию, по одному узлу.
-5. Оповещения: <code>etcd_mvcc_db_total_size_in_bytes</code> &gt; 70 % квоты; разница между <code>..._in_bytes</code> и <code>..._in_use_in_bytes</code> &gt; 2×; p99 <code>etcd_disk_wal_fsync_duration_seconds</code> &gt; 25 мс; рост <code>etcd_server_leader_changes_seen_total</code>.
-6. Ограничения для операторов: свой <code>FlowSchema</code> и ревью <code>rescheduleAfter</code>.</p>
+<p><strong>Профилактика.</strong> Мер шесть:</p>
+<ol>
+<li><code>revisionHistoryLimit: 3</code> в шаблоне всех Deployment, а соблюдение проверяет политика Kyverno.</li>
+<li><code>ttlSecondsAfterFinished</code> на всех Job.</li>
+<li><code>--event-ttl</code> (по умолчанию 1 час), а для больших кластеров — <strong>отдельный etcd под events</strong>, как прямо рекомендует документация по большим кластерам.</li>
+<li>Регулярная дефрагментация по расписанию, по одному узлу.</li>
+<li>Оповещения: <code>etcd_mvcc_db_total_size_in_bytes</code> &gt; 70 % квоты; разница между <code>..._in_bytes</code> и <code>..._in_use_in_bytes</code> &gt; 2×; p99 <code>etcd_disk_wal_fsync_duration_seconds</code> &gt; 25 мс; рост <code>etcd_server_leader_changes_seen_total</code>.</li>
+<li>Ограничения для операторов: свой <code>FlowSchema</code> и ревью <code>rescheduleAfter</code>.</li>
+</ol>
 <h3 id="97-изменение-через-kubectl-edit-откатилось">9.7 Изменение через <code>kubectl edit</code> откатилось</h3>
 <p>Этот инцидент — живая иллюстрация раздела 2.7: ручная ночная правка встречается с утренним client-side <code>apply</code> из GitOps, и откатывается только половина изменений. Ничего не сломалось в техническом смысле, но состояние кластера перестало соответствовать и git, и тому, что задумал дежурный, а это опаснее явной ошибки.</p>
 <p><strong>Симптом.</strong> Ночью дежурный через <code>kubectl edit deployment</code> поднял <code>replicas</code> с 3 до 12 и добавил <code>JAVA_TOOL_OPTIONS</code>. К утру реплик снова 3, а переменная на месте, и выглядит это так, будто «кластер сам откатил половину изменений».</p>
@@ -2989,11 +3007,13 @@ kubectl get hpa -n payments   <span class="c1"># HPA нет</span>
 
 <p><strong>Причина.</strong> В 06:30 Argo CD выполнил обычный <strong>client-side</strong> <code>apply</code> манифеста из git, и дальше сработал three-way merge (2.7). Поле <code>replicas</code> есть и в <code>last-applied</code> (3), и в <code>desired</code> (3), поэтому его перезаписали в 3. А <code>env.JAVA_TOOL_OPTIONS</code> нет ни в <code>last-applied</code>, ни в <code>desired</code>, и по правилу «не моё, не трогаю» переменная сохранилась. Получился ровно тот частичный откат, о котором говорится в 2.7: часть правок жива, часть нет, и состояние не соответствует ни git, ни намерению дежурного.</p>
 <p><strong>Лечение немедленное</strong> — внести изменение в git и дать GitOps его раскатать. Ручные правки в GitOps-кластере живут до следующей синхронизации, и так задумано.</p>
-<p><strong>Профилактика.</strong> Мер четыре:
-1. <strong>Перейти на Server-Side Apply.</strong> Argo CD это умеет (<code>syncOptions: [ServerSideApply=true]</code>), и тогда ручная правка через <code>kubectl edit</code> создаст поле, принадлежащее менеджеру <code>kubectl-edit</code>, а следующий apply от Argo даст <strong>явный конфликт</strong>, а не тихий частичный откат.
-2. Если <code>replicas</code> управляет HPA, <strong>поле нужно совсем убрать из манифеста в git</strong>. Тогда им владеет HPA, и ни один apply его не тронет.
-3. Запретить ручные правки политикой: правило Kyverno, отвергающее <code>UPDATE</code> на Deployment от пользователей вне списка сервис-аккаунтов CI (с явным аварийным выходом (escape hatch) для инцидентов и с аудитом).
-4. Организационная мера: любая аварийная ручная правка в тот же день сопровождается PR, иначе она исчезнет, и никто не поймёт почему.</p>
+<p><strong>Профилактика.</strong> Мер четыре:</p>
+<ol>
+<li><strong>Перейти на Server-Side Apply.</strong> Argo CD это умеет (<code>syncOptions: [ServerSideApply=true]</code>), и тогда ручная правка через <code>kubectl edit</code> создаст поле, принадлежащее менеджеру <code>kubectl-edit</code>, а следующий apply от Argo даст <strong>явный конфликт</strong>, а не тихий частичный откат.</li>
+<li>Если <code>replicas</code> управляет HPA, <strong>поле нужно совсем убрать из манифеста в git</strong>. Тогда им владеет HPA, и ни один apply его не тронет.</li>
+<li>Запретить ручные правки политикой: правило Kyverno, отвергающее <code>UPDATE</code> на Deployment от пользователей вне списка сервис-аккаунтов CI (с явным аварийным выходом (escape hatch) для инцидентов и с аудитом).</li>
+<li>Организационная мера: любая аварийная ручная правка в тот же день сопровождается PR, иначе она исчезнет, и никто не поймёт почему.</li>
+</ol>
 <h3 id="98-токен-serviceaccount-перестал-приниматься">9.8 Токен ServiceAccount перестал приниматься</h3>
 <p>Последняя история связана с разделом 2.2: приложение один раз читает токен ServiceAccount при старте, а projected-токен живёт ограниченное время, и сервис отваливается от API ровно через час после каждого рестарта. Особенно коварна она тем, что код годами работал без ошибок и сломался без единого изменения в нём.</p>
 <p><strong>Симптом.</strong> Java-сервис, который читает ConfigMap через клиент fabric8, работает ровно час после старта, а потом начинает получать 401 на каждый запрос к API. Рестарт пода чинит его ровно на час.</p>
@@ -3034,12 +3054,14 @@ kubectl <span class="nb">exec</span> config-watcher-xyz -- <span class="se">\</s
 <span class="p">}</span>
 </code></pre></div>
 
-<p><strong>Профилактика.</strong> Мер пять:
-1. Всегда пользоваться официальным клиентом (fabric8 или официальным java-client), а не собирать HTTP-запросы руками.
-2. Проверить версию клиента, потому что очень старые версии fabric8 тоже кешировали токен.
-3. Явно задавать <code>serviceAccountToken</code> через <code>projected</code>-том с нужной аудиторией, если сервис обращается не к API Kubernetes, а во внешнюю систему с OIDC-федерацией.
-4. Не создавать вечные токены (<code>kubectl create token --duration=8760h</code> или Secret типа <code>kubernetes.io/service-account-token</code>) «чтобы не мучиться»: это ровно та долгоживущая учётка, которую потом невозможно отозвать.
-5. Оповещение на <code>apiserver_request_total{code="401"}</code> с разбивкой по <code>useragent</code>.</p>
+<p><strong>Профилактика.</strong> Мер пять:</p>
+<ol>
+<li>Всегда пользоваться официальным клиентом (fabric8 или официальным java-client), а не собирать HTTP-запросы руками.</li>
+<li>Проверить версию клиента, потому что очень старые версии fabric8 тоже кешировали токен.</li>
+<li>Явно задавать <code>serviceAccountToken</code> через <code>projected</code>-том с нужной аудиторией, если сервис обращается не к API Kubernetes, а во внешнюю систему с OIDC-федерацией.</li>
+<li>Не создавать вечные токены (<code>kubectl create token --duration=8760h</code> или Secret типа <code>kubernetes.io/service-account-token</code>) «чтобы не мучиться»: это ровно та долгоживущая учётка, которую потом невозможно отозвать.</li>
+<li>Оповещение на <code>apiserver_request_total{code="401"}</code> с разбивкой по <code>useragent</code>.</li>
+</ol>
 <hr>
 <h2 id="10-грабли-и-антипаттерны">10. Грабли и антипаттерны</h2>
 <p>Ниже собраны типовые ошибки, о которых шла речь по ходу главы, в виде одного списка для быстрой проверки своего кластера или своего оператора. Каждый пункт построен одинаково: жирным названа ошибка, затем описан симптом, по которому её узнают, и сказано, как её лечить, а там, где причина неочевидна, она названа отдельно. Подробный разбор механики почти для каждого пункта есть в соответствующем разделе выше.</p>

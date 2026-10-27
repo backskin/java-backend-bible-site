@@ -3,7 +3,7 @@
 <title>51. Observability — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Observability">
 <a class="skip" href="#content">К тексту</a>
@@ -1174,14 +1174,18 @@ acquirer_call_seconds_count 59001
 </blockquote>
 <h3 id="36-наборы-метрик-red-use-golden-signals">3.6 Наборы метрик: RED, USE, golden signals</h3>
 <p>На вопрос, что вообще измерять, отвечают три рамки — RED, USE и four golden signals, — и они друг с другом не конкурируют, потому что описывают разные объекты: сервис, который обслуживает запросы, и ресурс, который этот сервис потребляет. Ниже разобрана каждая рамка, затем сводный минимум метрик для Spring Boot сервиса и два наблюдения, которые чаще всего упускают: ранний индикатор пула соединений и то, почему бизнес-метрики честнее технических.</p>
-<p><strong>RED описывает сервисы</strong>, то есть то, что обслуживает запросы:
-- <strong>Rate</strong> — число запросов в секунду;
-- <strong>Errors</strong> — доля или количество неуспешных запросов;
-- <strong>Duration</strong> — распределение времени ответа.</p>
-<p><strong>USE описывает ресурсы</strong> — CPU, диск, пул соединений, очередь, память:
-- <strong>Utilization</strong> — доля времени, когда ресурс занят;
-- <strong>Saturation</strong> — сколько работы ждёт в очереди (это самый ранний индикатор);
-- <strong>Errors</strong> — количество отказов ресурса.</p>
+<p><strong>RED описывает сервисы</strong>, то есть то, что обслуживает запросы:</p>
+<ul>
+<li><strong>Rate</strong> — число запросов в секунду;</li>
+<li><strong>Errors</strong> — доля или количество неуспешных запросов;</li>
+<li><strong>Duration</strong> — распределение времени ответа.</li>
+</ul>
+<p><strong>USE описывает ресурсы</strong> — CPU, диск, пул соединений, очередь, память:</p>
+<ul>
+<li><strong>Utilization</strong> — доля времени, когда ресурс занят;</li>
+<li><strong>Saturation</strong> — сколько работы ждёт в очереди (это самый ранний индикатор);</li>
+<li><strong>Errors</strong> — количество отказов ресурса.</li>
+</ul>
 <p><strong>Four golden signals</strong> из Google SRE включают latency, traffic, errors и <strong>saturation</strong> (<a href="https://sre.google/sre-book/monitoring-distributed-systems/">SRE Book, Monitoring Distributed Systems</a>), то есть по сути это RED плюс saturation. В книге есть важное уточнение: latency <strong>успешных</strong> и <strong>неуспешных</strong> запросов надо считать отдельно, потому что быстрая 500-ка снижает общий p99 и тем самым маскирует проблему.</p>
 <p>Из этих рамок складывается сводный минимум для типичного Spring Boot сервиса. В таблице ниже для каждой категории указаны конкретные метрики и то, на какой вопрос они отвечают:</p>
 <table class="rt">
@@ -1457,9 +1461,11 @@ acquirer_call_seconds_count 59001
 
 <p>Спецификация задаёт точные правила: версия занимает 2 hex-символа (сейчас <code>00</code>, значение <code>ff</code> запрещено); trace-id — 32 hex-символа, и все нули некорректны; parent-id — 16 hex-символов, и все нули тоже некорректны; trace-flags — 2 hex-символа, из которых определён только младший бит <code>sampled</code> (<code>01</code> означает, что трасса засемплирована).</p>
 <p><code>tracestate</code> несёт вендор-специфичные пары: до 32 пар, ключ и значение до 256 символов, причём вендорам предписано пропускать суммарно не меньше 512 символов. Используют его, например, чтобы согласовать решение о выборке между разными системами трассировки.</p>
-<p>Из этого стандарта вытекают два практических следствия:
-- <strong>Промежуточные компоненты обязаны пропускать заголовки.</strong> API Gateway, nginx, WAF, корпоративная шина — если кто-то из них режет неизвестные заголовки, трасса рвётся ровно там. Поэтому при жалобе «трасса обрывается на входе» это проверяют первым делом.
-- Старые системы часто используют B3 от Zipkin (<code>X-B3-TraceId</code>, <code>X-B3-SpanId</code>, <code>X-B3-Sampled</code>). OpenTelemetry умеет работать с обоими форматами: <code>OTEL_PROPAGATORS=tracecontext,baggage,b3multi</code>. При миграции включают оба, но учтите, что составной пропагатор OTel вызывает входящие в него пропагаторы по порядку и на чтении, и на записи, так что в исходящий запрос уходят оба формата (<a href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md">OTel, Propagators API</a>). Раздельно задать приём и отправку позволяет Micrometer Tracing: <code>management.tracing.propagation.consume</code> по умолчанию принимает все поддерживаемые форматы, а <code>management.tracing.propagation.produce</code> по умолчанию отправляет только W3C.</p>
+<p>Из этого стандарта вытекают два практических следствия:</p>
+<ul>
+<li><strong>Промежуточные компоненты обязаны пропускать заголовки.</strong> API Gateway, nginx, WAF, корпоративная шина — если кто-то из них режет неизвестные заголовки, трасса рвётся ровно там. Поэтому при жалобе «трасса обрывается на входе» это проверяют первым делом.</li>
+<li>Старые системы часто используют B3 от Zipkin (<code>X-B3-TraceId</code>, <code>X-B3-SpanId</code>, <code>X-B3-Sampled</code>). OpenTelemetry умеет работать с обоими форматами: <code>OTEL_PROPAGATORS=tracecontext,baggage,b3multi</code>. При миграции включают оба, но учтите, что составной пропагатор OTel вызывает входящие в него пропагаторы по порядку и на чтении, и на записи, так что в исходящий запрос уходят оба формата (<a href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md">OTel, Propagators API</a>). Раздельно задать приём и отправку позволяет Micrometer Tracing: <code>management.tracing.propagation.consume</code> по умолчанию принимает все поддерживаемые форматы, а <code>management.tracing.propagation.produce</code> по умолчанию отправляет только W3C.</li>
+</ul>
 <p><strong>Baggage</strong> передаётся отдельным заголовком (<code>baggage: tenant=acme,tier=gold</code>) и переносит пользовательские пары по всей цепочке вызовов. Штука это мощная и опасная сразу по трём причинам:</p>
 <ol>
 <li><strong>Всё, что лежит в baggage, уезжает во все сервисы цепочки</strong>, в том числе в сторонние, если вы вызываете их напрямую. Персональные данные и секреты в baggage означают утечку через сеть.</li>

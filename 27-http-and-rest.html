@@ -3,7 +3,7 @@
 <title>27. HTTP и REST — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="HTTP и REST">
 <a class="skip" href="#content">К тексту</a>
@@ -1717,23 +1717,27 @@ Accept: application/vnd.bank.v3+json  -&gt; 406
 </blockquote>
 <h3 id="72-что-такое-breaking-change">7.2 Что такое breaking change</h3>
 <p>Несовместимое, или ломающее, изменение (<em>breaking change</em>) — это изменение, после которого корректно написанный существующий клиент перестаёт работать. Вопрос о том, что именно сюда относится, важнее выбора способа версионирования: большая часть поломок у интеграторов случается не при выходе новой версии, а при «безобидной» правке старой. Ниже дан полный список для REST/JSON — сначала того, что ломает, затем того, что не ломает, — и отдельно разобрана тонкость с перечислениями (enum).</p>
-<p><strong>Ломает (нужна мажорная версия, или изменение недопустимо):</strong>
-- удаление поля из ответа или его переименование;
-- удаление эндпоинта, метода или значения enum, которое сервер раньше возвращал;
-- сужение типа: <code>string</code> → <code>integer</code>, более строгий формат, уменьшение <code>maxLength</code>;
-- новый <strong>обязательный</strong> параметр запроса или обязательное поле в теле;
-- изменение семантики поля при том же имени и типе (было «сумма в рублях», стало «в копейках») — самое коварное, потому что сравнение схем его не видит;
-- изменение HTTP-кода для существующего сценария (200 → 204, 400 → 422);
-- изменение <strong>кода ошибки</strong> (<code>code</code>), потому что клиенты на него завязались;
-- изменение порядка, если он был задокументирован как гарантированный;
-- ужесточение валидации (раньше принимали, теперь 400);
-- изменение значения параметра по умолчанию (было <code>limit=100</code>, стало <code>limit=20</code>).</p>
-<p><strong>Не ломает (если клиент читает терпимо, см. 7.3):</strong>
-- добавление нового поля в ответ;
-- добавление <strong>опционального</strong> параметра или поля запроса;
-- добавление нового эндпоинта;
-- добавление нового значения enum <strong>в запросе</strong> (сервер стал принимать больше);
-- ослабление валидации.</p>
+<p><strong>Ломает (нужна мажорная версия, или изменение недопустимо):</strong></p>
+<ul>
+<li>удаление поля из ответа или его переименование;</li>
+<li>удаление эндпоинта, метода или значения enum, которое сервер раньше возвращал;</li>
+<li>сужение типа: <code>string</code> → <code>integer</code>, более строгий формат, уменьшение <code>maxLength</code>;</li>
+<li>новый <strong>обязательный</strong> параметр запроса или обязательное поле в теле;</li>
+<li>изменение семантики поля при том же имени и типе (было «сумма в рублях», стало «в копейках») — самое коварное, потому что сравнение схем его не видит;</li>
+<li>изменение HTTP-кода для существующего сценария (200 → 204, 400 → 422);</li>
+<li>изменение <strong>кода ошибки</strong> (<code>code</code>), потому что клиенты на него завязались;</li>
+<li>изменение порядка, если он был задокументирован как гарантированный;</li>
+<li>ужесточение валидации (раньше принимали, теперь 400);</li>
+<li>изменение значения параметра по умолчанию (было <code>limit=100</code>, стало <code>limit=20</code>).</li>
+</ul>
+<p><strong>Не ломает (если клиент читает терпимо, см. 7.3):</strong></p>
+<ul>
+<li>добавление нового поля в ответ;</li>
+<li>добавление <strong>опционального</strong> параметра или поля запроса;</li>
+<li>добавление нового эндпоинта;</li>
+<li>добавление нового значения enum <strong>в запросе</strong> (сервер стал принимать больше);</li>
+<li>ослабление валидации.</li>
+</ul>
 <p>С enum есть тонкость: новое значение <strong>в ответе</strong> формально не ломает схему, но ломает клиентов, у которых <code>switch</code> без <code>default</code> или строгий десериализатор Jackson (<code>FAIL_ON_UNKNOWN_ENUM</code>). Такой клиент встречает незнакомое значение и падает. Поэтому в правилах проектирования расширение enum в ответе лучше считать полуломающим изменением, объявлять о нём заранее и требовать от клиентов обработки неизвестных значений.</p>
 <p>Запуск из подраздела 4.2, блок про несовместимые изменения (потребитель на Jackson 2.18.3, у которого неизвестные поля запрещены по умолчанию, и «терпимый» с отключённым запретом):</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>=== 7.2 что считается несовместимым изменением: потребитель на Jackson 2.18.3, строгий и терпимый

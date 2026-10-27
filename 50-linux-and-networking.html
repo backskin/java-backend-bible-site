@@ -3,7 +3,7 @@
 <title>50. Linux и сеть для бэкенд-разработчика — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Linux и сеть для бэкенд-разработчика">
 <a class="skip" href="#content">К тексту</a>
@@ -692,16 +692,20 @@ cat /sys/kernel/mm/transparent_hugepage/defrag
 <span class="c1"># always defer defer+madvise [madvise] never</span>
 </code></pre></div>
 
-<p><code>enabled</code>:
-- <code>always</code> — THP для всей анонимной памяти системы;
-- <code>madvise</code> — только там, где приложение явно попросило <code>madvise(MADV_HUGEPAGE)</code>;
-- <code>never</code> — выключено.</p>
-<p><code>defrag</code> — что делать, когда свободной непрерывной 2-мегабайтной области нет:
-- <code>always</code> — «Applications requesting THP will pause during allocation failures while the kernel reclaims pages and compacts memory immediately» — то есть <strong>приложение синхронно ждёт дефрагментации</strong>;
-- <code>defer</code> — отдать работу фоновым <code>kswapd</code>/<code>kcompactd</code>, приложению сразу выдать обычные страницы;
-- <code>defer+madvise</code> — синхронно только для явно попросивших;
-- <code>madvise</code> — прямая уплотнение только для <code>MADV_HUGEPAGE</code>-регионов (частое значение по умолчанию современных дистрибутивов);
-- <code>never</code> — никакой уплотнения.</p>
+<p><code>enabled</code>:</p>
+<ul>
+<li><code>always</code> — THP для всей анонимной памяти системы;</li>
+<li><code>madvise</code> — только там, где приложение явно попросило <code>madvise(MADV_HUGEPAGE)</code>;</li>
+<li><code>never</code> — выключено.</li>
+</ul>
+<p><code>defrag</code> — что делать, когда свободной непрерывной 2-мегабайтной области нет:</p>
+<ul>
+<li><code>always</code> — «Applications requesting THP will pause during allocation failures while the kernel reclaims pages and compacts memory immediately» — то есть <strong>приложение синхронно ждёт дефрагментации</strong>;</li>
+<li><code>defer</code> — отдать работу фоновым <code>kswapd</code>/<code>kcompactd</code>, приложению сразу выдать обычные страницы;</li>
+<li><code>defer+madvise</code> — синхронно только для явно попросивших;</li>
+<li><code>madvise</code> — прямая уплотнение только для <code>MADV_HUGEPAGE</code>-регионов (частое значение по умолчанию современных дистрибутивов);</li>
+<li><code>never</code> — никакой уплотнения.</li>
+</ul>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Грабли — историческая и до сих пор живая.</strong> Комбинация <code>enabled=always</code> + <code>defrag=always</code> даёт <strong>непредсказуемые паузы в приложении</strong>: поток пытается выделить память, ядро уходит в синхронную дефрагментацию, поток стоит. На фрагментированной памяти это десятки и сотни миллисекунд, попадающих в 99.9-перцентиль запроса. Именно из-за этого MongoDB, Redis, Elasticsearch, Couchbase и Oracle годами рекомендовали в документации выключать THP полностью. Для JVM ситуация мягче (heap выделяется большими кусками на старте, а не по мере работы), но всплески latency при THP=always наблюдаются.</p>
 <p>Практическая рекомендация: <code>enabled=madvise</code>, <code>defrag=madvise</code> или <code>defer+madvise</code> — и включать huge pages для heap явно через <code>-XX:+UseTransparentHugePages</code> (JVM тогда делает <code>madvise(MADV_HUGEPAGE)</code> на heap-регионе). В паре с <code>-XX:+AlwaysPreTouch</code> это даёт выигрыш без пауз во время выполнения.</p>
@@ -2289,10 +2293,12 @@ sysctl net.ipv4.tcp_keepalive_probes   <span class="c1"># 9    — скольк�
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>BDP = полоса × RTT
 </code></pre></div>
 
-<p>Примеры:
-- LAN: 10 Гбит/с × 0.2 мс = 250 КБ;
-- между дата-центрами внутри региона: 1 Гбит/с × 5 мс = 625 КБ;
-- трансатлантика: 1 Гбит/с × 80 мс = 10 МБ.</p>
+<p>Примеры:</p>
+<ul>
+<li>LAN: 10 Гбит/с × 0.2 мс = 250 КБ;</li>
+<li>между дата-центрами внутри региона: 1 Гбит/с × 5 мс = 625 КБ;</li>
+<li>трансатлантика: 1 Гбит/с × 80 мс = 10 МБ.</li>
+</ul>
 <p>Если буфер приёма меньше BDP, канал недогружен независимо от его ширины. Классический случай: репликация БД между регионами идёт со скоростью 30 Мбит/с при канале 1 Гбит/с — потому что окно упёрлось в буфер размера по умолчанию.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Автотюнинг буферов: min default max (в байтах)</span>
 sysctl net.ipv4.tcp_rmem     <span class="c1"># 4096  131072  6291456</span>

@@ -3,7 +3,7 @@
 <title>40. Криптография для бэкенд-разработчика — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Криптография для бэкенд-разработчика">
 <a class="skip" href="#content">К тексту</a>
@@ -955,11 +955,13 @@ jshell -q <span class="s">&lt;&lt;'JSH'</span>
 <span class="n">PasswordEncoder</span> <span class="n">encoder</span> <span class="o">=</span> <span class="n">PasswordEncoderFactories</span><span class="p">.</span><span class="na">createDelegatingPasswordEncoder</span><span class="p">();</span>
 </code></pre></div>
 
-<p>На живой системе миграция проходит в четыре шага.
-1. Одним UPDATE проставить всем существующим хешам префикс старого алгоритма (<code>{MD5}</code> или свой id).
-2. Включить <code>DelegatingPasswordEncoder</code> с <code>idForEncode = argon2</code>.
-3. В обработчике успешного логина проверять формат: если хеш старый, перехешировать введённый пароль новым алгоритмом и обновить строку. Пароль в этот момент у вас в руках, и другого окна, когда это возможно, не будет.
-4. Через N месяцев принудительно сбросить пароль тем аккаунтам, которые так и не вошли.</p>
+<p>На живой системе миграция проходит в четыре шага.</p>
+<ol>
+<li>Одним UPDATE проставить всем существующим хешам префикс старого алгоритма (<code>{MD5}</code> или свой id).</li>
+<li>Включить <code>DelegatingPasswordEncoder</code> с <code>idForEncode = argon2</code>.</li>
+<li>В обработчике успешного логина проверять формат: если хеш старый, перехешировать введённый пароль новым алгоритмом и обновить строку. Пароль в этот момент у вас в руках, и другого окна, когда это возможно, не будет.</li>
+<li>Через N месяцев принудительно сбросить пароль тем аккаунтам, которые так и не вошли.</li>
+</ol>
 <p>Если сброс недопустим вовсе, шаги 1–3 можно заменить <strong>обёрткой</strong> старого хеша: хранить <code>argon2(md5(password))</code> и помечать формат как составной. Тогда мигрируют все записи сразу и без участия пользователей, но платить за это приходится вечной зависимостью от слабого внутреннего слоя — коллизия MD5 даст вход, хотя найти её при неизвестном пароле нереально. Как <code>PasswordEncoder</code> настраивается в цепочке аутентификации, разобрано в главе 13 (<code>13-spring-security.md</code>).</p>
 <h3 id="37-сравнение-секретов-и-атаки-по-времени-timing-attacks">3.7 Сравнение секретов и атаки по времени (timing attacks)</h3>
 <p>Атака по времени (<em>timing attack</em>) извлекает секрет, измеряя, сколько сервер тратит на его проверку, и в бэкенде её почти всегда открывает обычное сравнение массивов или строк. Защищаются от неё сравнением за постоянное время, которое в JDK уже есть; ниже разберём, почему <code>equals</code> для секретов опасен, что гарантирует <code>MessageDigest.isEqual</code> и насколько атака реальна через сеть.</p>

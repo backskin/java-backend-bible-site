@@ -3,7 +3,7 @@
 <title>54. CI/CD на практике: GitLab, Bitbucket, Jenkins — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="CI/CD на практике: GitLab, Bitbucket, Jenkins">
 <a class="skip" href="#content">К тексту</a>
@@ -153,15 +153,17 @@
 
 <p>В файле двадцать строк, и он заведомо неоптимален: собирает проект трижды, не кеширует <code>~/.m2</code> и не использует DAG. Так и задумано, и это осознанное решение, а не недоработка.</p>
 <p>Сразу строить идеальный конвейер <strong>не надо</strong> по трём причинам. Во-первых, вы ещё не знаете, где у этого проекта болит, и оптимизировать кеш до того, как измерили время сборки, означает гадать. Во-вторых, сложный конвейер, написанный в первый день, не понимает никто в команде, и через месяц вы сами окажетесь в их числе. В-третьих, в конвейере, который ни разу не запускался, в среднем сидят три ошибки, и чем он больше, тем дольше тянется цикл «поправил, запушил, подождал, упало в другом месте». Начинать стоит с того, что заведомо работает, и наращивать конвейер по одному изменению за раз.</p>
-<p>На практике хорошо себя показал такой порядок наращивания:
-1. Сначала добиться, чтобы три стадии работали и MR был зелёным.
-2. Добавить кеш <code>~/.m2</code> с ключом по <code>pom.xml</code>, что обычно срезает 40–60 % времени.
-3. Слить <code>build</code> и <code>package</code> в одно задание, потому что <code>mvn package</code> и так компилирует проект.
-4. Добавить <code>needs</code> и разложить тесты по параллельным заданиям, чтобы они не ждали друг друга.
-5. Добавить сборку образа и его пуш в registry проекта.
-6. Добавить автоматический деплой в staging по слиянию в <code>main</code>.
-7. Добавить ручной деплой в prod с гейтом, описанным в чеклисте выше.
-8. И только после этого подключать сканеры, quality gates и review apps.</p>
+<p>На практике хорошо себя показал такой порядок наращивания:</p>
+<ol>
+<li>Сначала добиться, чтобы три стадии работали и MR был зелёным.</li>
+<li>Добавить кеш <code>~/.m2</code> с ключом по <code>pom.xml</code>, что обычно срезает 40–60 % времени.</li>
+<li>Слить <code>build</code> и <code>package</code> в одно задание, потому что <code>mvn package</code> и так компилирует проект.</li>
+<li>Добавить <code>needs</code> и разложить тесты по параллельным заданиям, чтобы они не ждали друг друга.</li>
+<li>Добавить сборку образа и его пуш в registry проекта.</li>
+<li>Добавить автоматический деплой в staging по слиянию в <code>main</code>.</li>
+<li>Добавить ручной деплой в prod с гейтом, описанным в чеклисте выше.</li>
+<li>И только после этого подключать сканеры, quality gates и review apps.</li>
+</ol>
 <h3 id="15-диагностика-унаследованного-ci">1.5 Диагностика унаследованного CI</h3>
 <p>Если конвейер в проекте уже есть и он плохой, первое желание — переписать его, но делать этого сразу не стоит: сначала нужно измерить, что именно в нём плохо. Ниже собраны девять вопросов, ответы на которые стоит получить в первый же день, и для каждого сказано, где этот ответ взять.</p>
 <p><strong>1. Сколько идёт конвейер?</strong> В GitLab медиану и распределение за период показывает Analytics → CI/CD Analytics, а можно запросить API <code>GET /projects/:id/pipelines?per_page=100</code> и посмотреть поле <code>duration</code>. Смотреть нужно не на среднее, а на p50 и p95, причём отдельно для MR-конвейеров и для <code>main</code>.</p>
@@ -2814,11 +2816,13 @@ docker run -d --name bb-runner --restart always <span class="se">\</span>
 <p><strong>Multibranch Pipeline</strong> сканирует репозиторий, находит ветки и PR с <code>Jenkinsfile</code> и создаёт на каждую из них задание. Так Jenkins переходит от модели «задания настроены в UI» к модели «конвейер — часть репозитория», и для любого проекта, который не хочет стать снежинкой, этот шаг обязателен.</p>
 <p><strong>Organization Folder</strong> идёт ещё дальше: сканирует всю группу GitLab, организацию GitHub или проект Bitbucket и создаёт multibranch-задание на каждый репозиторий, где есть <code>Jenkinsfile</code>. Новый сервис появляется в Jenkins сам, без участия администратора.</p>
 <p>От следующих настроек зависит, будет ли такая схема жизнеспособной.</p>
-<p><strong>Behaviours (стратегии обнаружения).</strong>
-- «Discover branches» предлагает варианты «Exclude branches that are also filed as PRs» (обычно правильный, потому что иначе ветка PR собирается дважды), «Only branches that are also filed as PRs» и «All branches».
-- «Discover pull requests from origin» задаёт, что именно собирать: «Merging the pull request with the current target branch revision» (аналог merged results pipeline, рекомендуется), «The current pull request revision» или обе версии.
-- «Discover pull requests from forks» — <strong>опаснейшая настройка</strong>, потому что собрать PR из форка значит выполнить чужой код на ваших агентах с вашими credentials. Для приватных репозиториев её отключают, а для публичных включают только с ручным подтверждением доверенным пользователем.
-- «Filter by name (with regular expression)» позволяет не сканировать сотни мёртвых веток, например с выражением <code>^(main|develop|release/.*|feature/.*)$</code>.</p>
+<p><strong>Behaviours (стратегии обнаружения).</strong></p>
+<ul>
+<li>«Discover branches» предлагает варианты «Exclude branches that are also filed as PRs» (обычно правильный, потому что иначе ветка PR собирается дважды), «Only branches that are also filed as PRs» и «All branches».</li>
+<li>«Discover pull requests from origin» задаёт, что именно собирать: «Merging the pull request with the current target branch revision» (аналог merged results pipeline, рекомендуется), «The current pull request revision» или обе версии.</li>
+<li>«Discover pull requests from forks» — <strong>опаснейшая настройка</strong>, потому что собрать PR из форка значит выполнить чужой код на ваших агентах с вашими credentials. Для приватных репозиториев её отключают, а для публичных включают только с ручным подтверждением доверенным пользователем.</li>
+<li>«Filter by name (with regular expression)» позволяет не сканировать сотни мёртвых веток, например с выражением <code>^(main|develop|release/.*|feature/.*)$</code>.</li>
+</ul>
 <p><strong>Orphaned Item Strategy</strong> определяет, сколько дней и сколько штук хранить задания удалённых веток. Если её не настроить, Jenkins годами копит мусор, а разумные значения — 7 дней и 20 штук.</p>
 <p><strong>Webhooks против опроса: почему опрос вреден.</strong></p>
 <p>Опрос (<code>pollSCM('H/5 * * * *')</code> или «Periodically if not otherwise run») означает, что Jenkins каждые N минут делает <code>git ls-remote</code> по <strong>каждой</strong> отслеживаемой ветке <strong>каждого</strong> репозитория. Посчитаем: 80 репозиториев × 15 веток × каждые 2 минуты дают 36 000 обращений к GitLab в час, и у этого три следствия:</p>

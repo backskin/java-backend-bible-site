@@ -3,7 +3,7 @@
 <title>38. Роль архитектора приложения — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Роль архитектора приложения">
 <a class="skip" href="#content">К тексту</a>
@@ -2426,10 +2426,12 @@ Spring Framework 7 (<span class="sb">`org.springframework.resilience`</span>: <s
 </tr>
 </tbody>
 </table>
-<p>Чтобы увидеть, что даёт PERT, сравните результат с двумя наивными подходами:
-- <strong>Сумма M</strong> = 24 дня. Вероятность уложиться в этот срок заметно ниже 50 %, и такое обещание обычно срывается.
-- <strong>Сумма P</strong> = 50 дней. Это оценка «на всё плохое сразу», а вероятность того, что все восемь задач одновременно пойдут по худшему сценарию, ничтожна (при независимости — порядка 10⁻⁸). Такой срок не защитить в переговорах, и он ещё и вреден (закон Паркинсона, 5.9).
-- <strong>PERT E + σ = 29 дней</strong> — обязательство, которое можно обосновать: «медиана 26,5; с вероятностью около 85 % уложимся в 29; если сбудутся риски по обратным вызовам и приёмке — до 34».</p>
+<p>Чтобы увидеть, что даёт PERT, сравните результат с двумя наивными подходами:</p>
+<ul>
+<li><strong>Сумма M</strong> = 24 дня. Вероятность уложиться в этот срок заметно ниже 50 %, и такое обещание обычно срывается.</li>
+<li><strong>Сумма P</strong> = 50 дней. Это оценка «на всё плохое сразу», а вероятность того, что все восемь задач одновременно пойдут по худшему сценарию, ничтожна (при независимости — порядка 10⁻⁸). Такой срок не защитить в переговорах, и он ещё и вреден (закон Паркинсона, 5.9).</li>
+<li><strong>PERT E + σ = 29 дней</strong> — обязательство, которое можно обосновать: «медиана 26,5; с вероятностью около 85 % уложимся в 29; если сбудутся риски по обратным вызовам и приёмке — до 34».</li>
+</ul>
 <p>У метода есть два ограничения, о которых нужно помнить.</p>
 <p><strong>Предостережение 1: независимость — сильное допущение.</strong> Если все восемь задач делает один человек и он заболеет, задержатся все. Если провайдер окажется хуже ожиданий, поплывут задачи 1, 2, 5 и 6 одновременно. Коррелированные риски <strong>не</strong> усредняются, поэтому их выносят в отдельный реестр рисков с собственной оценкой влияния, а не размазывают по σ. Практическое правило: если у двух задач сильная корреляция по общей причине, объедините их в одну строку с общим P.</p>
 <p><strong>Предостережение 2: P должен быть реалистичным.</strong> Люди ставят P = 1,5 × M, потому что «ну не может же быть настолько плохо». Проверьте по логу, какой была худшая из выполненных задач такого типа: если она хуже вашего P, то P занижен. Хорошая проверка звучит так: «P — это значение, которое я превышу не чаще чем в одном случае из десяти».</p>
@@ -3179,10 +3181,12 @@ Spring Framework 7 (<span class="sb">`org.springframework.resilience`</span>: <s
 <h3 id="73-работа-с-аналитиками">7.3 Работа с аналитиками</h3>
 <p>Аналитик приносит требования, а архитектор отвечает за то, чтобы в них хватало информации для проектирования. Пробел почти всегда обнаруживается в одних и тех же местах — в нефункциональной части и в исключениях, — поэтому вопросы стоит задавать по заранее готовому списку. Ниже приведён такой список, сгруппированный по темам, и два приёма, которые экономят недели переписки.</p>
 <p><strong>Вопросы, которые надо задавать по каждому требованию:</strong></p>
-<p><em>Про объём и нагрузку:</em>
-1. Сколько таких операций в день и сколько в пике — в час и в минуту?
-2. Какой прогноз роста нагрузки на ближайший год?
-3. Сколько данных накопится за год и за пять лет (регуляторный срок)?</p>
+<p><em>Про объём и нагрузку:</em></p>
+<ol>
+<li>Сколько таких операций в день и сколько в пике — в час и в минуту?</li>
+<li>Какой прогноз роста нагрузки на ближайший год?</li>
+<li>Сколько данных накопится за год и за пять лет (регуляторный срок)?</li>
+</ol>
 <p><em>Про поведение:</em>
 4. Что происходит, если внешняя система недоступна: отклоняем, копим или проводим без проверки?
 5. Что делать при дубле запроса? (Почти всегда ответ «такого не будет» — неверный.)

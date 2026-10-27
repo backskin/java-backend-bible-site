@@ -3,7 +3,7 @@
 <title>4. Время, деньги и текст — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Время, деньги и текст">
 <a class="skip" href="#content">К тексту</a>
@@ -203,10 +203,12 @@
 </code></pre></div>
 
 <p><code>SimpleDateFormat</code> наследуется от <code>DateFormat</code>, у которого есть <strong>поле <code>protected Calendar calendar</code></strong>, то есть общее изменяемое состояние. Метод <code>format()</code> сначала делает <code>calendar.setTime(date)</code>, а потом читает из календаря поля, поэтому если в него одновременно вошли два потока, один перезаписывает календарь другого. С методом <code>parse()</code> дело обстоит ещё хуже, потому что он использует <code>calendar</code> как накопитель уже разобранных полей.</p>
-<p>Гонка проявляется тремя способами, и перечислены они в порядке возрастания коварства:
-1. Первый исход — <code>NumberFormatException: multiple points</code> или <code>ArrayIndexOutOfBoundsException</code> изнутри <code>DigitList</code>, и это ещё везение, потому что баг хотя бы виден.
-2. Второй — <code>ParseException: Unparseable date</code> на строке, которая заведомо корректна; под нагрузкой это случается примерно раз в тысячу вызовов.
-3. Третий — <strong>молча неправильная дата.</strong> Поток A разобрал год 2024, поток B в этот момент записал в тот же календарь год 2019, поток A дочитал остальные поля и получил 2019-й, и никакого исключения при этом не возникло. Это худший исход, и встречается он на самом деле.</p>
+<p>Гонка проявляется тремя способами, и перечислены они в порядке возрастания коварства:</p>
+<ol>
+<li>Первый исход — <code>NumberFormatException: multiple points</code> или <code>ArrayIndexOutOfBoundsException</code> изнутри <code>DigitList</code>, и это ещё везение, потому что баг хотя бы виден.</li>
+<li>Второй — <code>ParseException: Unparseable date</code> на строке, которая заведомо корректна; под нагрузкой это случается примерно раз в тысячу вызовов.</li>
+<li>Третий — <strong>молча неправильная дата.</strong> Поток A разобрал год 2024, поток B в этот момент записал в тот же календарь год 2019, поток A дочитал остальные поля и получил 2019-й, и никакого исключения при этом не возникло. Это худший исход, и встречается он на самом деле.</li>
+</ol>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Грабли (разобранный инцидент).</strong> Сервис выгрузки в АБС разбирал дату валютирования из входного файла через статический <code>SimpleDateFormat</code>, и пока файлы обрабатывались в один поток, всё работало 4 года. Когда включили параллельную обработку файлов на пуле из 8 потоков, раз в несколько тысяч записей дата валютирования стала уезжать на другой год, причём ровно на тот, который в этот момент разбирал соседний поток. Заметили это через два месяца, когда в отчёте по остаткам появились проводки, датированные 2019 годом. Поиск <code>grep -rn "static.*SimpleDateFormat" src/</code> нашёл в проекте 11 таких мест, и все их заменили на <code>DateTimeFormatter</code>, который по контракту иммутабелен и потокобезопасен. Чтобы ошибка не вернулась, нужно правило статического анализа: у SpotBugs есть детектор <code>STCAL_STATIC_SIMPLE_DATE_FORMAT_INSTANCE</code>, и его стоит включить в quality gate.</p>
 </blockquote>
@@ -311,10 +313,12 @@
 <li><strong>Заказчик спрашивает, во сколько по UTC прошла операция.</strong> Ответить нечего, потому что в колонке лежит гражданское время неизвестно какой зоны.</li>
 </ul>
 <p>Всё дело в том, что <code>LocalDateTime</code> не содержит сведений о том, где на шкале находится значение. Для события это потеря данных, и восстановить их постфактум нельзя. На ревью это удобно сформулировать так: <em>«<code>LocalDateTime</code> в колонке события — это <code>Instant</code> с потерянным часовым поясом»</em>.</p>
-<p>Оправданных применений у <code>LocalDateTime</code> всего три:
-- гражданское время, которое сознательно не привязано к моменту, например «будильник на 07:00 каждый день, где бы я ни был»;
-- локальная часть <code>ZonedDateTime</code>, которая хранится рядом с <code>ZoneId</code> в отдельной колонке;
-- промежуточные вычисления внутри одного метода.</p>
+<p>Оправданных применений у <code>LocalDateTime</code> всего три:</p>
+<ul>
+<li>гражданское время, которое сознательно не привязано к моменту, например «будильник на 07:00 каждый день, где бы я ни был»;</li>
+<li>локальная часть <code>ZonedDateTime</code>, которая хранится рядом с <code>ZoneId</code> в отдельной колонке;</li>
+<li>промежуточные вычисления внутри одного метода.</li>
+</ul>
 <h3 id="24-zoneddatetime-для-будущих-событий">2.4 <code>ZonedDateTime</code> для будущих событий</h3>
 <p>Кажется, что момент на шкале — универсальный способ сохранить ответ на вопрос «когда». Для прошлого так и есть, но для будущего нет, потому что между сохранением и наступлением события правила пояса могут измениться, и тогда сохранённый момент перестанет совпадать с тем, чего хотел пользователь. Ниже разобран такой сценарий, схема таблицы, которая его выдерживает, и граница, за которой всё-таки нужен <code>Instant</code>.</p>
 <p>Допустим, 15 января 2024 года пользователь создаёт встречу «14 июля 2024, 10:00, Europe/Lisbon», и вы переводите её в <code>Instant</code>: получается <code>2024-07-14T09:00:00Z</code>, потому что летом Лиссабон живёт на <code>+01:00</code>. Значение записано, а в марте португальский парламент отменяет летнее время. Пример гипотетический, но законодательное обсуждение такой отмены в ЕС действительно шло. Выходит tzdata 2024c, вы обновляете JDK, и теперь <code>2024-07-14T09:00:00Z</code> в Лиссабоне означает <strong>09:00 утра</strong>, а не 10:00. Встреча уехала на час, а данных, чтобы это исправить, у вас нет: пользователь хотел «в 10 утра по местному», а вы сохранили производную величину.</p>
@@ -360,10 +364,12 @@
 <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">zdt</span><span class="p">.</span><span class="na">plusMonths</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>   <span class="c1">// 2024-04-01T12:00+02:00[Europe/Berlin] — правильно</span>
 </code></pre></div>
 
-<p>Уместен <code>OffsetDateTime</code> в трёх случаях:
-- <strong>При обмене по сети</strong>, когда полезно знать, в каком смещении находился отправитель, например для аудита или для записи вида «клиент прислал в 09:00 по своему времени». Именно об этом RFC 3339.
-- <strong>При отображении JDBC на <code>timestamptz</code></strong>, потому что спецификация JDBC 4.2 рекомендует <code>OffsetDateTime</code> для <code>TIMESTAMP WITH TIME ZONE</code>. Из PostgreSQL на выходе вы всегда получите смещение сессии, обычно <code>+00</code> при <code>user.timezone=UTC</code>, поскольку зону отправителя база не хранит.
-- <strong>При сортировке и сравнении</strong>, когда исходное представление нужно сохранить.</p>
+<p>Уместен <code>OffsetDateTime</code> в трёх случаях:</p>
+<ul>
+<li><strong>При обмене по сети</strong>, когда полезно знать, в каком смещении находился отправитель, например для аудита или для записи вида «клиент прислал в 09:00 по своему времени». Именно об этом RFC 3339.</li>
+<li><strong>При отображении JDBC на <code>timestamptz</code></strong>, потому что спецификация JDBC 4.2 рекомендует <code>OffsetDateTime</code> для <code>TIMESTAMP WITH TIME ZONE</code>. Из PostgreSQL на выходе вы всегда получите смещение сессии, обычно <code>+00</code> при <code>user.timezone=UTC</code>, поскольку зону отправителя база не хранит.</li>
+<li><strong>При сортировке и сравнении</strong>, когда исходное представление нужно сохранить.</li>
+</ul>
 <p>А вот для вычислений в гражданском времени он не годится, и там нужен <code>ZonedDateTime</code>.</p>
 <blockquote class="cb-hood">
 <p><strong><span class="ic">🔧</span> Под капотом.</strong> <code>OffsetDateTime.equals</code> сравнивает <strong>и</strong> локальную часть, <strong>и</strong> смещение, поэтому <code>2024-01-01T12:00+01:00</code> и <code>2024-01-01T11:00Z</code> обозначают один и тот же момент, но <strong>не равны по equals</strong>. Чтобы сравнить моменты, используйте <code>isEqual()</code> или <code>compareTo()</code>, который сначала сравнивает по моменту, а при равенстве по локальной дате-времени, либо приводите значения к <code>Instant</code>. Та же ловушка есть у <code>ZonedDateTime.equals</code>: он сравнивает ещё и <code>ZoneId</code>, так что <code>...+03:00[Europe/Moscow]</code> не равен по equals <code>...+03:00[Europe/Istanbul]</code>.</p>
@@ -935,10 +941,12 @@ noClasses().that().resideInAPackage("..domain..")
 <blockquote class="cb-num">
 <p><strong><span class="ic">📊</span> Цифры.</strong> Форматирование <code>Instant</code> через <code>DateTimeFormatter.ISO_INSTANT</code> занимает сотни наносекунд на вызов, а разбор ISO-строки — порядка 1 мкс. <code>Instant.toString()</code> работает быстрее произвольного форматтера, потому что у него специализированная реализация. <code>SimpleDateFormat.format</code> в <code>synchronized</code>-блоке, когда за блокировку борется много потоков, деградирует на порядки. Что касается выделений памяти, каждый <code>format()</code> создаёт <code>StringBuilder</code> и результирующую строку, и в горячем цикле логирования на миллионах событий это заметно в профиле выделений памяти.</p>
 </blockquote>
-<p>Если форматирование времени действительно попало в топ профиля, вариантов три:
-- кешировать уже отформатированную секунду и дописывать к ней миллисекунды вручную, как это делает Logback в <code>CachingDateFormatter</code>;
-- отдавать epoch-миллисекунды вместо строки там, где потребитель машинный;
-- не форматировать вовсе, а писать структурный лог с <code>Instant</code> и оставлять форматирование сериализатору.</p>
+<p>Если форматирование времени действительно попало в топ профиля, вариантов три:</p>
+<ul>
+<li>кешировать уже отформатированную секунду и дописывать к ней миллисекунды вручную, как это делает Logback в <code>CachingDateFormatter</code>;</li>
+<li>отдавать epoch-миллисекунды вместо строки там, где потребитель машинный;</li>
+<li>не форматировать вовсе, а писать структурный лог с <code>Instant</code> и оставлять форматирование сериализатору.</li>
+</ul>
 <hr>
 <h2 id="5-время-в-системе-бд-api-планировщики-монотонность">5. Время в системе: БД, API, планировщики, монотонность</h2>
 <p>До сих пор речь шла о типах внутри одной JVM, а в настоящей системе время ещё и пересекает границы: его пишут в базу, отдают в API, сравнивают между серверами, по нему запускают задачи и меряют таймауты. На каждой такой границе модель из первого раздела может сломаться незаметно, например когда колонка молча отбрасывает смещение или драйвер пересчитывает значение по поясу JVM. Этот раздел проходит по границам по порядку: типы PostgreSQL и JDBC-отображение, формат времени в API, сортировка событий с разных машин, планировщики в ночь перехода, бизнес-календари с cut-off, монотонное время для таймаутов и, наконец, часовые пояса в логах.</p>
@@ -1142,10 +1150,12 @@ noClasses().that().resideInAPackage("..domain..")
 <h3 id="54-сортировка-событий-с-разных-серверов">5.4 Сортировка событий с разных серверов</h3>
 <p>Часто встречается уверенность, что достаточно поставить timestamp в каждое сообщение и упорядочить события по нему, но это не работает. Часы разных машин никогда не идут точно в ногу, и ниже мы разберём, насколько велико расхождение, какие следствия из него вытекают для порядка, для циклов ожидания и для разрешения конфликтов и чем пользоваться вместо wall clock.</p>
 <p>В хорошей сети NTP держит рассинхронизацию в пределах единиц миллисекунд, в плохой в пределах десятков и сотен миллисекунд, а при сбое NTP или в момент старта VM расхождение может достигать секунд. К этому добавляется smearing в дни високосных секунд (раздел 1.5) и виртуализация, потому что на перегруженном гипервизоре гостевые часы дрейфуют.</p>
-<p>Из этого вытекают три следствия:
-- <strong>Два события, случившиеся на разных машинах в пределах секунды, по wall clock достоверно упорядочить нельзя.</strong>
-- Timestamp может <strong>уменьшаться</strong> между последовательными вызовами <code>System.currentTimeMillis()</code> даже на одной машине, если NTP сдвинул часы назад (<code>ntpd</code> в режиме step). Поэтому код вида <code>while (currentTimeMillis() &lt; deadline)</code> может зависнуть или, наоборот, мгновенно завершиться.
-- Правило «последняя запись побеждает» (LWW) по wall clock разрешает конфликты так, что данные теряются непредсказуемо.</p>
+<p>Из этого вытекают три следствия:</p>
+<ul>
+<li><strong>Два события, случившиеся на разных машинах в пределах секунды, по wall clock достоверно упорядочить нельзя.</strong></li>
+<li>Timestamp может <strong>уменьшаться</strong> между последовательными вызовами <code>System.currentTimeMillis()</code> даже на одной машине, если NTP сдвинул часы назад (<code>ntpd</code> в режиме step). Поэтому код вида <code>while (currentTimeMillis() &lt; deadline)</code> может зависнуть или, наоборот, мгновенно завершиться.</li>
+<li>Правило «последняя запись побеждает» (LWW) по wall clock разрешает конфликты так, что данные теряются непредсказуемо.</li>
+</ul>
 <p>Для порядка поэтому используют другие инструменты: логические часы (Lamport, векторные), монотонные счётчики, смещения Kafka и последовательности БД, подробно разобранные в главе 34 (<code>34-distributed-systems.md</code>). Timestamp же оставьте для человека и для грубой фильтрации по диапазону.</p>
 <h3 id="55-планировщики-и-dst-пропуск-и-двойной-запуск">5.5 Планировщики и DST: пропуск и двойной запуск</h3>
 <p>Повторяющийся будильник iPhone, который осенью 2010 года зазвонил на час позже (подраздел 1.4), был планировщиком в самом чистом виде: правило «каждый день в 07:00 по местному времени» и момент следующего срабатывания, вычисленный из него. Ровно так же устроены начисление процентов в 02:30, выгрузка реестра в процессинг в 03:00 и рассылка выписок в 06:00, только ошибаются они не в будильнике одного человека, а в балансах тысяч клиентов. Поэтому разговор о планировщиках начинается с того же вопроса, что и разговор о будильнике: что происходит с правилом в ночь, когда смещение пояса меняется.</p>
@@ -2157,15 +2167,19 @@ ArithmeticException: Rounding necessary
 </tbody>
 </table>
 <p>К этому добавляется то, что <code>BigDecimal</code> иммутабелен, и каждая операция создаёт новый объект, поэтому в горячем цикле он давит на молодое поколение (см. главу 07).</p>
-<p>Важна эта цена в двух случаях:
-- <strong>В риск-движках, ценообразовании и расчёте маржи в реальном времени</strong>, где на один запрос приходятся миллионы арифметических операций. Там считают на <code>long</code> в минорных единицах или на <code>double</code> с последующей выверкой, а <code>BigDecimal</code> используют только на границах.
-- <strong>В пакетной обработке миллионов строк</strong>, где переписывание горячего цикла с <code>BigDecimal</code> на <code>long</code> даёт кратное ускорение.</p>
+<p>Важна эта цена в двух случаях:</p>
+<ul>
+<li><strong>В риск-движках, ценообразовании и расчёте маржи в реальном времени</strong>, где на один запрос приходятся миллионы арифметических операций. Там считают на <code>long</code> в минорных единицах или на <code>double</code> с последующей выверкой, а <code>BigDecimal</code> используют только на границах.</li>
+<li><strong>В пакетной обработке миллионов строк</strong>, где переписывание горячего цикла с <code>BigDecimal</code> на <code>long</code> даёт кратное ускорение.</li>
+</ul>
 <p>В остальных 99 % бэкенда она неважна: один платёж — это десятки операций <code>BigDecimal</code>, и на фоне сетевого round-trip к БД длиной в сотни микросекунд их не различить. <strong>Не оптимизируйте <code>BigDecimal</code>, пока профиль не показал его в топе</strong> (методика описана в главе 45).</p>
-<p>Если же оптимизировать всё-таки нужно, помогают такие приёмы:
-- использовать <code>BigDecimal.valueOf(long, int)</code> вместо <code>new BigDecimal(String)</code>;
-- держать scale стабильным, потому что операции с одинаковым scale дешевле, им не нужно выравнивание;
-- не вызывать <code>setScale</code> в цикле, а округлять один раз в конце;
-- суммировать через <code>Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)</code> или <code>stream.reduce(BigDecimal.ZERO, BigDecimal::add)</code>, а для больших потоков следить, чтобы у всех <code>BigDecimal</code> был одинаковый scale.</p>
+<p>Если же оптимизировать всё-таки нужно, помогают такие приёмы:</p>
+<ul>
+<li>использовать <code>BigDecimal.valueOf(long, int)</code> вместо <code>new BigDecimal(String)</code>;</li>
+<li>держать scale стабильным, потому что операции с одинаковым scale дешевле, им не нужно выравнивание;</li>
+<li>не вызывать <code>setScale</code> в цикле, а округлять один раз в конце;</li>
+<li>суммировать через <code>Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)</code> или <code>stream.reduce(BigDecimal.ZERO, BigDecimal::add)</code>, а для больших потоков следить, чтобы у всех <code>BigDecimal</code> был одинаковый scale.</li>
+</ul>
 <hr>
 <h2 id="8-модель-денег-минорные-единицы-value-object-мультивалютность">8. Модель денег: минорные единицы, Value Object, мультивалютность</h2>
 <p><code>BigDecimal</code> решает задачу точной арифметики, но деньги — это не просто число, а число вместе с валютой, правилами округления и инвариантами вроде «сумма частей равна целому». Если эти правила не выражены в типе, каждый разработчик реализует их по-своему, и в результате копейки теряются при делении платежа, курс применяется не в ту сторону, а в JSON сумма приезжает как <code>double</code>. В этом разделе мы сравним хранение в минорных единицах с <code>BigDecimal</code>, построим <code>Money</code> как Value Object, научимся делить деньги без потери копейки, оценим JSR-354, разберём мультивалютность и курсы, округление в цепочке вычислений, хранение в БД и JSON и закончим правилами сверки.</p>
@@ -2590,11 +2604,13 @@ XXX: IllegalArgumentException: Псевдовалюта: XXX
 
 <p>Последний пример показывает, чем <code>allocate</code> лучше независимого округления долей: подраздел 8.6 разбирает на этой же сумме, как два раздельных <code>HALF_UP</code> дают в сумме 1000,11 при платеже 1000,10.</p>
 <p>Кому достаётся лишняя копейка, решает бизнес. Её можно отдать первому в списке, последнему, случайному получателю, что делают ради «справедливости» при массовых начислениях, или тому, у кого наибольшая дробная часть. Последний вариант называют методом наибольших остатков (методом Гамильтона): он даёт наименьшее суммарное отклонение долей от идеальных, хотя и требует сортировки. Какой бы вариант вы ни выбрали, зафиксируйте его в коде и в документации, иначе при следующем рефакторинге он изменится, и сверка «поедет».</p>
-<p>Операция нужна в четырёх типичных местах:
-- при разбиении платежа между несколькими получателями, например на маркетплейсе между продавцом, площадкой и эквайером;
-- при разнесении скидки по позициям чека, чтобы НДС по каждой позиции считался корректно;
-- при распределении начисленных процентов между совладельцами счёта;
-- при разбиении общей комиссии на составляющие в фискальном чеке, где расхождение в копейку приводит к тому, что налоговая отбивает чек.</p>
+<p>Операция нужна в четырёх типичных местах:</p>
+<ul>
+<li>при разбиении платежа между несколькими получателями, например на маркетплейсе между продавцом, площадкой и эквайером;</li>
+<li>при разнесении скидки по позициям чека, чтобы НДС по каждой позиции считался корректно;</li>
+<li>при распределении начисленных процентов между совладельцами счёта;</li>
+<li>при разбиении общей комиссии на составляющие в фискальном чеке, где расхождение в копейку приводит к тому, что налоговая отбивает чек.</li>
+</ul>
 <p>Все примеры подраздела можно запустить одним классом. Он целиком вставляется в пустой проект IntelliJ IDEA (JDK 21, зависимостей нет); <code>Money</code> в нём упрощён до минорных единиц и валюты, а старая ошибочная версия оставлена, чтобы показать разницу.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kn">import</span> <span class="nn">java.math.BigDecimal</span><span class="p">;</span>
 <span class="kn">import</span> <span class="nn">java.util.ArrayList</span><span class="p">;</span>
@@ -2766,10 +2782,12 @@ ArithmeticException: long overflow
 
 <p>Раз <code>base</code>/<code>quote</code> типизированы, применить курс не к той валюте становится невозможно.</p>
 <p><strong>2. Кросс-курсы.</strong> Если известны USD/RUB и EUR/USD, то EUR/RUB = EUR/USD × USD/RUB, но здесь есть три оговорки. Во-первых, обратный курс равен <code>1/rate</code>, и <code>inverse().inverse()</code> <strong>исходного курса не вернёт</strong> из-за округления, поэтому храните оба направления или всегда считайте от канонического. Во-вторых, в цепочке из двух-трёх конверсий ошибка накапливается, поэтому промежуточную точность держат высокой, 12–18 знаков, и округляют только в конце. В-третьих, реальные кросс-курсы на рынке учитывают спред bid/ask, так что «кросс из двух мидов» отличается от котируемого кросса.</p>
-<p><strong>3. Время фиксации курса.</strong> Курс — это значение на определённый момент, и сделка, проведённая по вчерашнему курсу, окажется либо ошибкой, либо сознательным правилом вроде «по курсу ЦБ на дату операции». Типовых политик три:
-- курс ЦБ на дату операции, который обновляется раз в рабочий день и публикуется накануне;
-- курс на момент авторизации; для карточных операций это курс платёжной системы на дату клиринга, а она может отличаться от даты авторизации на 1–3 дня;
-- курс на момент расчёта, то есть на дату расчётов (T+2).</p>
+<p><strong>3. Время фиксации курса.</strong> Курс — это значение на определённый момент, и сделка, проведённая по вчерашнему курсу, окажется либо ошибкой, либо сознательным правилом вроде «по курсу ЦБ на дату операции». Типовых политик три:</p>
+<ul>
+<li>курс ЦБ на дату операции, который обновляется раз в рабочий день и публикуется накануне;</li>
+<li>курс на момент авторизации; для карточных операций это курс платёжной системы на дату клиринга, а она может отличаться от даты авторизации на 1–3 дня;</li>
+<li>курс на момент расчёта, то есть на дату расчётов (T+2).</li>
+</ul>
 <p><strong>Ключевое правило здесь такое: использованный курс сохраняется в записи операции.</strong> Сохранять нужно не ссылку на справочник, который обновится, а само значение, его источник и <code>asOf</code>. Иначе пересчитать операцию задним числом будет невозможно, а вопросы «почему у меня списалось на 40 рублей больше» приходят через месяцы. Таблица для этого может выглядеть так:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">create</span> <span class="k">table</span> <span class="n">fx_conversion</span> <span class="p">(</span>
     <span class="n">id</span>              <span class="nb">bigint</span> <span class="k">primary</span> <span class="k">key</span><span class="p">,</span>
@@ -2975,11 +2993,13 @@ ArithmeticException: long overflow
 <p><strong>Отдельного внимания заслуживает <code>NaN</code>.</strong> <code>numeric</code> в PostgreSQL поддерживает значение <code>NaN</code>, но, в отличие от IEEE 754, считает <code>NaN = NaN</code> истиной и <code>NaN</code> большим любого обычного числа: так числа можно сортировать и строить по ним индексы деревьев. В денежную колонку <code>NaN</code> попадать не должен, и первым приходит в голову <code>check (amount = amount)</code>, но он не сработает как раз потому, что <code>NaN = NaN</code> в PostgreSQL истинно. Поэтому используйте <code>check (amount &lt;&gt; 'NaN'::numeric)</code>. Документация PostgreSQL 15 при этом замечает, что бесконечность (<code>Infinity</code>) можно хранить только в <code>numeric</code> без модификаторов, поэтому <code>numeric(19,4)</code> её отвергает. Запуском на PostgreSQL 15.5 проверено: <code>numeric(19,4)</code> принимает <code>NaN</code> и отвергает <code>Infinity</code> (ошибка <code>numeric field overflow</code>).</p>
 <p>Есть и ещё одно различие, о котором мало кто знает: <strong><code>round()</code> для <code>numeric</code> округляет ничьи от нуля (HALF_UP), а <code>double precision</code> на большинстве платформ к ближайшему чётному (HALF_EVEN)</strong>. Документация PostgreSQL формулирует это так: тип <code>numeric</code> округляет ничьи от нуля, а <code>real</code> и <code>double precision</code> на большинстве машин округляют к ближайшему чётному. Запрос <code>select round(-2.5::numeric), round(-2.5::double precision)</code> даёт <code>-3</code> и <code>-2</code> (проверено запуском на PostgreSQL 15.5). Если часть расчёта выполняется в БД, а часть в Java, режимы округления нужно согласовать явно.</p>
 <p>Тип <code>money</code> стоит упомянуть отдельно, потому что он выглядит как готовое решение. В документации сказано, что число знаков после запятой определяется настройкой <code>lc_monetary</code> базы, а деление <code>money</code> на целое число усекает дробную часть к нулю. Оба свойства превращают тип в источник скрытых расхождений, поэтому для денег в банковском сервисе выбирают <code>numeric</code>.</p>
-<p><strong>В JSON деньги передают строкой</strong>, и это главное правило раздела. Спецификация JSON (RFC 8259) не задаёт точность чисел и прямо предупреждает об интероперабельности: надёжно можно рассчитывать лишь на диапазон и точность IEEE 754 binary64, а на практике большинство парсеров превращают JSON-число в <code>double</code>.
-- В JavaScript <code>JSON.parse("{\"a\": 0.1}")</code> даёт <code>Number</code>, то есть <code>double</code>: <code>100.10</code> превращается в <code>100.1</code>, а целое <code>9007199254740993</code>, большее 2⁵³, становится <code>9007199254740992</code> (проверено в Node.js).
-- В Python <code>json.loads</code> возвращает для дробных чисел <code>float</code> (<code>100.10</code> теряет конечный ноль), хотя это можно переопределить через <code>parse_float=Decimal</code>; целые числа Python хранит точно.
-- В Go <code>encoding/json</code> при разборе в <code>interface{}</code> даёт <code>float64</code>.
-- В Java/Jackson значение в типизированное поле <code>BigDecimal</code> придёт корректно, но в <code>Object</code> или <code>JsonNode</code> без <code>USE_BIG_DECIMAL_FOR_FLOATS</code> окажется <code>Double</code> (проверено на Jackson 2.18.3).</p>
+<p><strong>В JSON деньги передают строкой</strong>, и это главное правило раздела. Спецификация JSON (RFC 8259) не задаёт точность чисел и прямо предупреждает об интероперабельности: надёжно можно рассчитывать лишь на диапазон и точность IEEE 754 binary64, а на практике большинство парсеров превращают JSON-число в <code>double</code>.</p>
+<ul>
+<li>В JavaScript <code>JSON.parse("{\"a\": 0.1}")</code> даёт <code>Number</code>, то есть <code>double</code>: <code>100.10</code> превращается в <code>100.1</code>, а целое <code>9007199254740993</code>, большее 2⁵³, становится <code>9007199254740992</code> (проверено в Node.js).</li>
+<li>В Python <code>json.loads</code> возвращает для дробных чисел <code>float</code> (<code>100.10</code> теряет конечный ноль), хотя это можно переопределить через <code>parse_float=Decimal</code>; целые числа Python хранит точно.</li>
+<li>В Go <code>encoding/json</code> при разборе в <code>interface{}</code> даёт <code>float64</code>.</li>
+<li>В Java/Jackson значение в типизированное поле <code>BigDecimal</code> придёт корректно, но в <code>Object</code> или <code>JsonNode</code> без <code>USE_BIG_DECIMAL_FOR_FLOATS</code> окажется <code>Double</code> (проверено на Jackson 2.18.3).</li>
+</ul>
 <p>Выходит, что даже если вы аккуратно сериализовали <code>BigDecimal</code> как число, потребитель может потерять точность, и вы об этом не узнаете. Строка же проходит через любой парсер без изменений:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="p">{</span> <span class="nt">"amount"</span><span class="p">:</span> <span class="s2">"1234.56"</span><span class="p">,</span> <span class="nt">"currency"</span><span class="p">:</span> <span class="s2">"RUB"</span> <span class="p">}</span>
 </code></pre></div>
@@ -2994,11 +3014,13 @@ ArithmeticException: long overflow
 <p>Результат при этом <code>{"amount":"1234.56","currency":"RUB"}</code>, но есть подвох: <code>ToStringSerializer</code> вызывает <code>toString()</code>, а не <code>toPlainString()</code>, и сумма <code>1E+3</code> (например, после <code>stripTrailingZeros</code>, подраздел 7.6) уйдёт в JSON как <code>"1E+3"</code>. Если сумма всегда создаётся через <code>Money</code>, у неё нормальный scale валюты, и подвоха нет; для остальных случаев можно использовать <code>@JsonFormat(shape = JsonFormat.Shape.STRING)</code> вместе с включённым <code>JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN</code>, и тогда <code>1E+3</code> превратится в <code>"1000"</code> (проверено). Тот же флаг нужен и тем, кто всё же пишет сумму числом: без него <code>BigDecimal("1E+3")</code> попадёт в JSON как <code>1E+3</code>.</p>
 <p>Можно включить запись строкой и глобально, через <code>JsonMapper.builder().enable(JsonWriteFeature.WRITE_NUMBERS_AS_STRINGS)</code>, но тогда в строки превратятся все числа, включая счётчики (<code>{"n":"5"}</code>), поэтому лучше настраивать точечно. Подробности настройки Jackson собраны в главе 14, а общие правила проектирования HTTP-контрактов в главе 27.</p>
 <p><strong>На входе</strong> обязательно включайте <code>DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS</code>, чтобы нетипизированный разбор не терял точность. Для <code>JsonNode</code> этого мало: при чтении дерева Jackson 2.18 по умолчанию отбрасывает конечные нули (<code>0.10</code> превращается в <code>0.1</code>), а чтобы сохранить scale, нужна фабрика <code>JsonNodeFactory.withExactBigDecimals(true)</code>, которая в 2.18 помечена устаревшей.</p>
-<p><strong>В protobuf decimal-типа нет</strong>, и деньги в нём передают одним из четырёх способов:
-1. <code>string amount</code>, как в JSON: просто и надёжно.
-2. <code>int64 units</code> + <code>int32 nanos</code> по модели Google (<code>google.type.Money</code> с полями <code>currency_code</code>, <code>units</code>, <code>nanos</code>, где nanos лежат в диапазоне ±999 999 999, а знаки units и nanos должны совпадать). Это компактно и точно до 9 знаков. Точнее, по комментарию в <code>money.proto</code>, если <code>units</code> положительно, <code>nanos</code> неотрицательно, если <code>units</code> отрицательно, <code>nanos</code> неположительно, а при нулевом <code>units</code> <code>nanos</code> может быть любого знака.
-3. <code>int64</code> минорных единиц вместе с кодом валюты, что компактнее всего, но требует знать exponent валюты.
-4. <code>double</code>, и это ответ «нет».</p>
+<p><strong>В protobuf decimal-типа нет</strong>, и деньги в нём передают одним из четырёх способов:</p>
+<ol>
+<li><code>string amount</code>, как в JSON: просто и надёжно.</li>
+<li><code>int64 units</code> + <code>int32 nanos</code> по модели Google (<code>google.type.Money</code> с полями <code>currency_code</code>, <code>units</code>, <code>nanos</code>, где nanos лежат в диапазоне ±999 999 999, а знаки units и nanos должны совпадать). Это компактно и точно до 9 знаков. Точнее, по комментарию в <code>money.proto</code>, если <code>units</code> положительно, <code>nanos</code> неотрицательно, если <code>units</code> отрицательно, <code>nanos</code> неположительно, а при нулевом <code>units</code> <code>nanos</code> может быть любого знака.</li>
+<li><code>int64</code> минорных единиц вместе с кодом валюты, что компактнее всего, но требует знать exponent валюты.</li>
+<li><code>double</code>, и это ответ «нет».</li>
+</ol>
 <p>Для gRPC-контрактов хороший выбор по умолчанию — <code>google.type.Money</code>, потому что он стандартен и чужие команды понимают его без объяснений (см. главу 28).</p>
 <p>Свойства <code>numeric</code> из подраздела проверены на настоящем PostgreSQL 15.5 (запускался локально без Docker, во встроенной сборке). Скрипт ниже выполняется в любом клиенте (<code>psql</code>, DBeaver, консоль IntelliJ IDEA) на пустой базе:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">create</span> <span class="k">table</span> <span class="n">posting</span> <span class="p">(</span><span class="n">id</span> <span class="nb">bigint</span> <span class="k">primary</span> <span class="k">key</span><span class="p">,</span> <span class="n">amount</span> <span class="nb">numeric</span><span class="p">(</span><span class="mi">19</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span> <span class="k">not</span> <span class="k">null</span><span class="p">,</span> <span class="n">currency</span> <span class="nb">char</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">not</span> <span class="k">null</span><span class="p">);</span>
@@ -3235,11 +3257,13 @@ ToStringSerializer, сумма 1E+3:    {"amount":"1E+3","currency":"RUB"}
 <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="na">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">8</span><span class="p">));</span>   <span class="c1">// "Привет \uD83D"  — половина эмодзи</span>
 </code></pre></div>
 
-<p>В результате получается строка с непарным суррогатом, и дальше с ней происходит следующее:
-- При записи в UTF-8 непарный суррогат <strong>не кодируется</strong>: <code>String.getBytes(UTF_8)</code> молча заменит его на <code>?</code> (0x3F). <code>CharsetEncoder</code> с <code>CodingErrorAction.REPORT</code> бросит <code>MalformedInputException</code>, но по умолчанию действует REPLACE.
-- PostgreSQL с <code>client_encoding=UTF8</code> такую последовательность отвергнет (<code>invalid byte sequence for encoding "UTF8"</code>), если драйвер вообще её пропустит.
-- MySQL с кодировкой <code>utf8</code> (не <code>utf8mb4</code>) 4-байтовых последовательностей не умеет вовсе и либо обрежет строку по первому эмодзи, либо упадёт.
-- В JSON непарный суррогат сериализуется как <code>\uD83D</code>; по букве RFC 8259 это корректный JSON, но многие парсеры на нём падают.</p>
+<p>В результате получается строка с непарным суррогатом, и дальше с ней происходит следующее:</p>
+<ul>
+<li>При записи в UTF-8 непарный суррогат <strong>не кодируется</strong>: <code>String.getBytes(UTF_8)</code> молча заменит его на <code>?</code> (0x3F). <code>CharsetEncoder</code> с <code>CodingErrorAction.REPORT</code> бросит <code>MalformedInputException</code>, но по умолчанию действует REPLACE.</li>
+<li>PostgreSQL с <code>client_encoding=UTF8</code> такую последовательность отвергнет (<code>invalid byte sequence for encoding "UTF8"</code>), если драйвер вообще её пропустит.</li>
+<li>MySQL с кодировкой <code>utf8</code> (не <code>utf8mb4</code>) 4-байтовых последовательностей не умеет вовсе и либо обрежет строку по первому эмодзи, либо упадёт.</li>
+<li>В JSON непарный суррогат сериализуется как <code>\uD83D</code>; по букве RFC 8259 это корректный JSON, но многие парсеры на нём падают.</li>
+</ul>
 <p><strong>Правильно обрезать по кодовым точкам, а ещё лучше по графемам</strong>, и обе функции укладываются в несколько строк:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">static</span> <span class="n">String</span> <span class="nf">truncateByCodePoints</span><span class="p">(</span><span class="n">String</span> <span class="n">s</span><span class="p">,</span> <span class="kt">int</span> <span class="n">maxCodePoints</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="na">codePointCount</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="na">length</span><span class="p">())</span> <span class="o">&lt;=</span> <span class="n">maxCodePoints</span><span class="p">)</span> <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
@@ -3564,15 +3588,19 @@ ToStringSerializer, сумма 1E+3:    {"amount":"1E+3","currency":"RUB"}
 Content-Type: text/csv; charset=windows-1251
 </code></pre></div>
 
-<p>Здесь есть несколько нюансов:
-- Для <code>application/json</code> charset <strong>не нужен</strong>: RFC 8259 фиксирует, что JSON по сети передаётся в UTF-8, и параметр <code>charset</code> для этого media type не определён. Многие клиенты его игнорируют, некоторые ругаются, а отдавать <code>application/json</code> без charset корректно.
-- Для <code>text/*</code> без charset исторически подразумевался ISO-8859-1 (RFC 2616), но RFC 7231/9110 это правило убрали, и теперь значение по умолчанию определяется media type. На практике поэтому <strong>для text/* charset всегда указывают</strong>.
-- Имена файлов в <code>Content-Disposition</code> требуют отдельного кодирования: параметр <code>filename</code> допускает только ASCII, а для не-ASCII нужен <code>filename*</code> в формате RFC 5987/8187, например <code>Content-Disposition: attachment; filename="report.csv"; filename*=UTF-8''%D0%9E%D1%82%D1%87%D1%91%D1%82.csv</code>. Без этого русские имена файлов приезжают битыми.
-- В URL-параметрах percent-encoding применяется к <strong>байтам</strong>, а кодировку этих байтов стандарт URI не задаёт, так что де-факто это UTF-8. <code>URLEncoder.encode(s, StandardCharsets.UTF_8)</code> вызывайте обязательно с явным charset, потому что перегрузка без него deprecated.</p>
+<p>Здесь есть несколько нюансов:</p>
+<ul>
+<li>Для <code>application/json</code> charset <strong>не нужен</strong>: RFC 8259 фиксирует, что JSON по сети передаётся в UTF-8, и параметр <code>charset</code> для этого media type не определён. Многие клиенты его игнорируют, некоторые ругаются, а отдавать <code>application/json</code> без charset корректно.</li>
+<li>Для <code>text/*</code> без charset исторически подразумевался ISO-8859-1 (RFC 2616), но RFC 7231/9110 это правило убрали, и теперь значение по умолчанию определяется media type. На практике поэтому <strong>для text/* charset всегда указывают</strong>.</li>
+<li>Имена файлов в <code>Content-Disposition</code> требуют отдельного кодирования: параметр <code>filename</code> допускает только ASCII, а для не-ASCII нужен <code>filename*</code> в формате RFC 5987/8187, например <code>Content-Disposition: attachment; filename="report.csv"; filename*=UTF-8''%D0%9E%D1%82%D1%87%D1%91%D1%82.csv</code>. Без этого русские имена файлов приезжают битыми.</li>
+<li>В URL-параметрах percent-encoding применяется к <strong>байтам</strong>, а кодировку этих байтов стандарт URI не задаёт, так что де-факто это UTF-8. <code>URLEncoder.encode(s, StandardCharsets.UTF_8)</code> вызывайте обязательно с явным charset, потому что перегрузка без него deprecated.</li>
+</ul>
 <p>Spring Boot по умолчанию ставит UTF-8 для ответов (<code>server.servlet.encoding.charset=UTF-8</code>), а <code>force=true</code> включает её принудительно и для запросов.</p>
-<p><strong>В PostgreSQL</strong> кодировкой управляют две настройки:
-- <code>SERVER_ENCODING</code> — кодировка хранения, которая задаётся при <code>CREATE DATABASE</code> и потом <strong>не меняется</strong>. Она должна быть <code>UTF8</code>, а база в <code>SQL_ASCII</code> означает отсутствие кодировки вовсе: сервер не проверяет и не конвертирует байты, и рано или поздно в одной колонке оказывается смесь кодировок.
-- <code>client_encoding</code> — кодировка соединения, между которой и серверной сервер конвертирует данные. pgJDBC всегда ставит UTF8.</p>
+<p><strong>В PostgreSQL</strong> кодировкой управляют две настройки:</p>
+<ul>
+<li><code>SERVER_ENCODING</code> — кодировка хранения, которая задаётся при <code>CREATE DATABASE</code> и потом <strong>не меняется</strong>. Она должна быть <code>UTF8</code>, а база в <code>SQL_ASCII</code> означает отсутствие кодировки вовсе: сервер не проверяет и не конвертирует байты, и рано или поздно в одной колонке оказывается смесь кодировок.</li>
+<li><code>client_encoding</code> — кодировка соединения, между которой и серверной сервер конвертирует данные. pgJDBC всегда ставит UTF8.</li>
+</ul>
 <p>Проверить обе можно тремя запросами:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">show</span> <span class="n">server_encoding</span><span class="p">;</span>   <span class="c1">-- UTF8</span>
 <span class="k">show</span> <span class="n">client_encoding</span><span class="p">;</span>   <span class="c1">-- UTF8</span>
@@ -3652,10 +3680,12 @@ Content-Type: text/csv; charset=windows-1251
 <li>получателем платежа, который визуально совпадает с легитимным;</li>
 <li>обходом блок-листов, например записью <code>Иванов</code> с латинской <code>B</code> и другими латинскими буквами вместо кириллических.</li>
 </ul>
-<p>Защищаться от этого можно тремя способами:
-1. <strong>Ограничить набор разрешённых скриптов.</strong> Для логина разрешить только <code>[a-z0-9_.-]</code>, а для ФИО только один скрипт на строку, проверяя это через <code>Character.UnicodeScript.of(cp)</code>.
-2. <strong>Использовать skeleton-алгоритм</strong> из <a href="https://www.unicode.org/reports/tr39/">UTS #39 (Unicode Security Mechanisms)</a>, который приводит строку к «скелету» по таблице confusables; он реализован в ICU4J (<code>SpoofChecker</code>).
-3. <strong>Нормализовать строку и применять case folding</strong> перед сравнением идентификаторов.</p>
+<p>Защищаться от этого можно тремя способами:</p>
+<ol>
+<li><strong>Ограничить набор разрешённых скриптов.</strong> Для логина разрешить только <code>[a-z0-9_.-]</code>, а для ФИО только один скрипт на строку, проверяя это через <code>Character.UnicodeScript.of(cp)</code>.</li>
+<li><strong>Использовать skeleton-алгоритм</strong> из <a href="https://www.unicode.org/reports/tr39/">UTS #39 (Unicode Security Mechanisms)</a>, который приводит строку к «скелету» по таблице confusables; он реализован в ICU4J (<code>SpoofChecker</code>).</li>
+<li><strong>Нормализовать строку и применять case folding</strong> перед сравнением идентификаторов.</li>
+</ol>
 <p>Проверка на один скрипт укладывается в несколько строк:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">isSingleScript</span><span class="p">(</span><span class="n">String</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">Set</span><span class="o">&lt;</span><span class="n">Character</span><span class="p">.</span><span class="na">UnicodeScript</span><span class="o">&gt;</span> <span class="n">scripts</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="na">codePoints</span><span class="p">()</span>
@@ -3669,10 +3699,12 @@ Content-Type: text/csv; charset=windows-1251
 <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">isSingleScript</span><span class="p">(</span><span class="s">"Ivаnov"</span><span class="p">));</span>    <span class="c1">// false — кириллическая 'а'</span>
 </code></pre></div>
 
-<p><strong>Невидимые символы</strong> — это zero-width space (U+200B), zero-width joiner (U+200D), zero-width non-joiner (U+200C), soft hyphen (U+00AD), метки left-to-right/right-to-left (U+200E/U+200F) и override (U+202D/U+202E). Опасны они тремя свойствами:
-- они ломают точное сравнение, потому что строка «выглядит» правильно, но не равна ожидаемой;
-- они позволяют обойти фильтры: <code>adm​in</code> проходит блок-лист на <code>admin</code>;
-- <strong>RTL override меняет визуальный порядок</strong>, так что имя файла <code>report‮gnp.exe</code> отображается как <code>reportexe.png</code>, и это старый приём маскировки исполняемых файлов. В 2021 году ту же технику описали как атаку Trojan Source на исходный код: комментарий с RLO визуально переставляет код, и рецензент видит не то, что видит компилятор.</p>
+<p><strong>Невидимые символы</strong> — это zero-width space (U+200B), zero-width joiner (U+200D), zero-width non-joiner (U+200C), soft hyphen (U+00AD), метки left-to-right/right-to-left (U+200E/U+200F) и override (U+202D/U+202E). Опасны они тремя свойствами:</p>
+<ul>
+<li>они ломают точное сравнение, потому что строка «выглядит» правильно, но не равна ожидаемой;</li>
+<li>они позволяют обойти фильтры: <code>adm​in</code> проходит блок-лист на <code>admin</code>;</li>
+<li><strong>RTL override меняет визуальный порядок</strong>, так что имя файла <code>report‮gnp.exe</code> отображается как <code>reportexe.png</code>, и это старый приём маскировки исполняемых файлов. В 2021 году ту же технику описали как атаку Trojan Source на исходный код: комментарий с RLO визуально переставляет код, и рецензент видит не то, что видит компилятор.</li>
+</ul>
 <p>Отфильтровать такие символы можно регулярным выражением по категориям Unicode:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Pattern</span> <span class="n">INVISIBLE</span> <span class="o">=</span>
     <span class="n">Pattern</span><span class="p">.</span><span class="na">compile</span><span class="p">(</span><span class="s">"[\\p{Cf}\\p{Cc}&amp;&amp;[^\\n\\r\\t]]"</span><span class="p">);</span>   <span class="c1">// format + control, кроме переводов строк</span>
@@ -3922,11 +3954,13 @@ Content-Type: text/csv; charset=windows-1251
 <span class="n">String</span> <span class="n">msg</span> <span class="o">=</span> <span class="n">MessageFormat</span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="s">"payment.rejected"</span><span class="p">),</span> <span class="n">id</span><span class="p">,</span> <span class="n">reason</span><span class="p">);</span>
 </code></pre></div>
 
-<p>У <code>ResourceBundle</code> четыре известные грабли:
-- <strong>Кодировка.</strong> До JDK 9 <code>.properties</code> читались как ISO-8859-1, и русский текст приходилось экранировать (<code>П</code>) через <code>native2ascii</code>. <strong>Начиная с JDK 9 по умолчанию используется UTF-8</strong> с откатом на ISO-8859-1 при ошибке декодирования, и управляет этим <code>java.util.PropertyResourceBundle.encoding</code>. Если вы видите в ресурсах <code>З...</code>, это наследие старых версий, и такие файлы можно переводить в UTF-8.
-- <strong>Кеширование.</strong> <code>ResourceBundle</code> кеширует загруженные бандлы, поэтому для горячей перезагрузки нужен <code>clearCache()</code>.
-- <strong>Откат на локаль JVM по умолчанию (fallback).</strong> Если бандла для <code>fr</code> нет, будет взят бандл для <code>Locale.getDefault()</code>, а не базовый, и в итоге французский пользователь видит русский текст. Лечится это через <code>ResourceBundle.Control.getNoFallbackControl(FORMAT_DEFAULT)</code> или явную базовую локаль.
-- <strong>Одинарные кавычки в <code>MessageFormat</code>.</strong> Апостроф в <code>MessageFormat</code> служит экранирующим символом, так что строка <code>Don't {0}</code> напечатает <code>Dont {0}</code> (!), и одинарную кавычку приходится удваивать: <code>Don''t {0}</code>. Это стабильно ломает переводы на французский и итальянский.</p>
+<p>У <code>ResourceBundle</code> четыре известные грабли:</p>
+<ul>
+<li><strong>Кодировка.</strong> До JDK 9 <code>.properties</code> читались как ISO-8859-1, и русский текст приходилось экранировать (<code>П</code>) через <code>native2ascii</code>. <strong>Начиная с JDK 9 по умолчанию используется UTF-8</strong> с откатом на ISO-8859-1 при ошибке декодирования, и управляет этим <code>java.util.PropertyResourceBundle.encoding</code>. Если вы видите в ресурсах <code>З...</code>, это наследие старых версий, и такие файлы можно переводить в UTF-8.</li>
+<li><strong>Кеширование.</strong> <code>ResourceBundle</code> кеширует загруженные бандлы, поэтому для горячей перезагрузки нужен <code>clearCache()</code>.</li>
+<li><strong>Откат на локаль JVM по умолчанию (fallback).</strong> Если бандла для <code>fr</code> нет, будет взят бандл для <code>Locale.getDefault()</code>, а не базовый, и в итоге французский пользователь видит русский текст. Лечится это через <code>ResourceBundle.Control.getNoFallbackControl(FORMAT_DEFAULT)</code> или явную базовую локаль.</li>
+<li><strong>Одинарные кавычки в <code>MessageFormat</code>.</strong> Апостроф в <code>MessageFormat</code> служит экранирующим символом, так что строка <code>Don't {0}</code> напечатает <code>Dont {0}</code> (!), и одинарную кавычку приходится удваивать: <code>Don''t {0}</code>. Это стабильно ломает переводы на французский и итальянский.</li>
+</ul>
 <p><strong>Плюрализация</strong>, то есть выбор формы слова по числу, в английском обходится двумя формами (1 item / 2 items), а в русском их <strong>три</strong>, как видно из таблицы:</p>
 <table class="rt">
 <thead>

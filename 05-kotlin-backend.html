@@ -3,7 +3,7 @@
 <title>5. Kotlin для бэкенда — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Kotlin для бэкенда">
 <a class="skip" href="#content">К тексту</a>
@@ -1162,10 +1162,12 @@ Captured --Refund(amountMinor=4000)--&gt; Refunded(amountMinor=4000)
 </code></pre></div>
 
 <p>Java видит <code>java.util.List</code>, то есть интерфейс с методом <code>add</code>. Сработает ли <code>add</code>, зависит от того, что лежит под капотом: с <code>ArrayList</code>, который получается из <code>map</code>, <code>filter</code> и <code>toMutableList</code>, он сработает; с <code>Arrays$ArrayList</code>, который получается из <code>listOf(a, b, c)</code>, <code>add</code> бросит <code>UnsupportedOperationException</code>, хотя <code>set</code> пройдёт; а с <code>EmptyList</code>/<code>Collections.singletonList</code> будет исключение. Выходит, что поведение зависит от того, как список был построен, и меняется при рефакторинге Kotlin-кода, которого Java-потребитель не видит.</p>
-<p>Защититься от этого можно на трёх уровнях, которые различаются ценой:
-1. <code>toList()</code> на выходе даёт копию, но выделяет её на каждый вызов геттера, что дорого в цикле;
-2. <code>Collections.unmodifiableList(...)</code> или <code>java.util.List.copyOf(...)</code> дают обёртку или копию с честным <code>UnsupportedOperationException</code>;
-3. <code>kotlinx.collections.immutable</code> <code>PersistentList</code> даёт настоящую неизменяемость со структурным разделением, но из Java это опять <code>java.util.List</code> с исключениями на мутацию.</p>
+<p>Защититься от этого можно на трёх уровнях, которые различаются ценой:</p>
+<ol>
+<li><code>toList()</code> на выходе даёт копию, но выделяет её на каждый вызов геттера, что дорого в цикле;</li>
+<li><code>Collections.unmodifiableList(...)</code> или <code>java.util.List.copyOf(...)</code> дают обёртку или копию с честным <code>UnsupportedOperationException</code>;</li>
+<li><code>kotlinx.collections.immutable</code> <code>PersistentList</code> даёт настоящую неизменяемость со структурным разделением, но из Java это опять <code>java.util.List</code> с исключениями на мутацию.</li>
+</ol>
 <p>У проблемы есть и обратная сторона. Java-метод, принимающий <code>List&lt;T&gt;</code>, в Kotlin имеет тип <code>(Mutable)List&lt;T&gt;!</code>, и вы можете передать туда результат <code>listOf()</code>, а если Java-код внутри вызовет <code>add</code>, вы получите <code>UnsupportedOperationException</code> в чужом коде. Поэтому передавайте <code>ArrayList(list)</code>, если у Java-метода есть хоть намёк на мутацию, например если он называется <code>fill</code>, <code>collectInto</code> или <code>addAll</code>.</p>
 <h3 id="158-unit-nothing-и-kotlin-dsl-из-java">15.8 <code>Unit</code>, <code>Nothing</code> и Kotlin-DSL из Java</h3>
 <p>Последние три особенности границы связаны с типами, которых в Java нет, и с DSL, который из Java почти невозможно использовать. <code>Unit</code> — это настоящий объект-синглтон: в позиции возврата обычной функции компилятор ставит <code>void</code>, но в generic-позиции <code>Unit</code> остаётся классом. Отсюда правило: <strong>не объявляйте generic-API с <code>Unit</code>, если его будет вызывать Java</strong>.</p>

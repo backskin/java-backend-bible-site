@@ -3,7 +3,7 @@
 <title>32. Паттерны проектирования и архитектура приложения — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Паттерны проектирования и архитектура приложения">
 <a class="skip" href="#content">К тексту</a>
@@ -2925,10 +2925,12 @@ operator.summary(): Петров Пётр Петрович (1100 123456)   ← �
 <p><strong>YAGNI.</strong> Не реализуйте то, что «понадобится потом». Догадка обходится дорого: код написан, покрыт тестами, задокументирован и поддерживается, а в 70 % случаев требование приходит в другом виде. Особенно это касается конфигурируемости, ведь каждый новый флаг в <code>application.yml</code> означает две ветки поведения, и обе надо тестировать.</p>
 <p><strong>DRY и её опасность.</strong> DRY (Hunt &amp; Thomas) формулируется как «каждый элемент знания должен иметь единственное, непротиворечивое представление в системе», и речь в нём о <strong>знании</strong>, а не о <strong>тексте</strong>. Два одинаковых куска кода, выражающих разные бизнес-правила, обязаны оставаться дублями, потому что меняются они независимо.</p>
 <p>Санди Метц сформулировала это так: «duplication is far cheaper than the wrong abstraction» (RailsConf 2014). Её описание того, как рождается неправильная абстракция, стоит запомнить целиком. Дублирование извлекают в абстракцию, затем приходит требование, которое почти подходит, следующий программист добавляет параметр и <code>if</code>, приходит ещё одно требование и ещё один параметр, код становится нечитаемым, и «самый быстрый путь вперёд — назад», то есть заинлайнить абстракцию и убрать условия (<a href="https://sandimetz.com/blog/2016/1/20/the-wrong-abstraction">The Wrong Abstraction, 20.01.2016</a>).</p>
-<p>Удержаться от преждевременного обобщения помогают три практических ограничителя:
-- <strong>Правило трёх:</strong> дублируйте дважды, а обобщайте на третьем повторении, потому что к этому моменту видно, что у кусков общего на самом деле.
-- <strong>AHA (Avoid Hasty Abstractions):</strong> «prefer duplication over the wrong abstraction»; оптимизируйте код под изменение, а не под минимум строк (<a href="https://kentcdodds.com/blog/aha-programming">AHA Programming, 22.06.2020</a>).
-- <strong>Способ отличить одно от другого:</strong> спросите себя, изменится ли это правило во всех местах одновременно, если оно изменится, и если ответ «нет», дублирование законно.</p>
+<p>Удержаться от преждевременного обобщения помогают три практических ограничителя:</p>
+<ul>
+<li><strong>Правило трёх:</strong> дублируйте дважды, а обобщайте на третьем повторении, потому что к этому моменту видно, что у кусков общего на самом деле.</li>
+<li><strong>AHA (Avoid Hasty Abstractions):</strong> «prefer duplication over the wrong abstraction»; оптимизируйте код под изменение, а не под минимум строк (<a href="https://kentcdodds.com/blog/aha-programming">AHA Programming, 22.06.2020</a>).</li>
+<li><strong>Способ отличить одно от другого:</strong> спросите себя, изменится ли это правило во всех местах одновременно, если оно изменится, и если ответ «нет», дублирование законно.</li>
+</ul>
 <p>Самый вредный вид DRY в enterprise — «общая библиотека» между микросервисами с DTO и утилитами. Она превращает независимые сервисы в распределённый монолит, потому что релиз библиотеки требует релиза всех потребителей (глава 33).</p>
 <p><strong>Связность (cohesion) и связанность (coupling).</strong> К этим базовым метрикам сводятся SRP, ISP и большая часть OCP. Высокая связность означает, что элементы модуля работают с одними данными и меняются вместе, а низкая связанность — что модуль знает о соседях минимум. Обе можно измерить: LCOM4 (это умеет SonarQube), число входящих и исходящих зависимостей пакета, доля коммитов, которые затрагивают несколько модулей одновременно.</p>
 <p><strong>Закон Деметры</strong> («не разговаривай с незнакомцами»): метод может вызывать методы только своих полей, параметров, созданных им объектов и самого себя. Нарушение выглядит как <code>order.getCustomer().getAddress().getCity().getName()</code>, то есть «train wreck». Вред тут не эстетический: вы жёстко зафиксировали четыре уровня структуры, и любое изменение на этом пути ломает вызывающего, а лечится это методом <code>order.deliveryCityName()</code>. Исключение — Fluent API и builder'ы (<code>HttpRequest.newBuilder().uri(...).timeout(...)</code>), которые нарушают закон формально, но не по существу, потому что возвращают тот же объект.</p>
@@ -3781,10 +3783,12 @@ operator.summary(): Петров Пётр Петрович (1100 123456)   ← �
 </code></pre></div>
 
 <p>Сервис при этом становится тонким, и это верный признак: он координирует, а не считает.</p>
-<p><strong>Где проверять инварианты.</strong> Уровней три, и путать их нельзя:
-- <strong>синтаксис входных данных</strong> проверяет Bean Validation на DTO (<code>@NotNull</code>, <code>@Size</code>, <code>@Pattern</code>) прямо на границе;
-- <strong>инварианты агрегата</strong> проверяются в конструкторе и методах доменного объекта всегда, независимо от того, откуда пришли данные;
-- <strong>межагрегатные правила и уникальность</strong> проверяет сервис с транзакцией или БД (<code>UNIQUE</code>, <code>CHECK</code>), потому что один объект их гарантировать не может.</p>
+<p><strong>Где проверять инварианты.</strong> Уровней три, и путать их нельзя:</p>
+<ul>
+<li><strong>синтаксис входных данных</strong> проверяет Bean Validation на DTO (<code>@NotNull</code>, <code>@Size</code>, <code>@Pattern</code>) прямо на границе;</li>
+<li><strong>инварианты агрегата</strong> проверяются в конструкторе и методах доменного объекта всегда, независимо от того, откуда пришли данные;</li>
+<li><strong>межагрегатные правила и уникальность</strong> проверяет сервис с транзакцией или БД (<code>UNIQUE</code>, <code>CHECK</code>), потому что один объект их гарантировать не может.</li>
+</ul>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Грабли.</strong> Богатая модель конфликтует с JPA: Hibernate требует конструктор без аргументов (можно <code>protected</code>), не любит <code>final</code>-поля, а лениво инициализируемый прокси преподносит сюрпризы при <code>equals</code> по полям. Практических компромиссов два: отдельная доменная модель и отдельные entity с преобразователем (дорого, но чисто) либо entity с приватными сеттерами и доменными методами (дёшево и слегка грязно). В 80 % проектов второй вариант честнее.</p>
 </blockquote>

@@ -3,7 +3,7 @@
 <title>21. Oracle и унаследованные корпоративные системы — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Oracle и унаследованные корпоративные системы">
 <a class="skip" href="#content">К тексту</a>
@@ -130,11 +130,13 @@
 <h3 id="21-структура-sga">2.1 Структура SGA</h3>
 <p>SGA (System Global Area) — разделяемая память экземпляра, к которой обращаются все серверные и фоновые процессы. Именно в ней лежат кеш блоков данных и общий для всего экземпляра кеш планов, а делится она на несколько компонентов с разным назначением (<a href="https://docs.oracle.com/en/database/oracle/oracle-database/23/cncpt/memory-architecture.html">Database Concepts, Memory Architecture</a>), и ниже они перечислены от самого важного для разработчика к служебным.</p>
 <p><strong>Database buffer cache</strong> кеширует блоки данных и служит прямым аналогом <code>shared_buffers</code>. Вытесняет он блоки LRU-подобным алгоритмом, но не чистым LRU, потому что учитывает touch count и использует двухсписочную схему. Кеш делится на пулы: <code>DEFAULT</code>, <code>KEEP</code> для мелких справочников, которые всегда должны оставаться в памяти, и <code>RECYCLE</code> для блоков, которые читаются один раз и больше не нужны. Дополнительно можно завести пулы под нестандартные размеры блоков (<code>DB_16K_CACHE_SIZE</code> и т. п.). В PostgreSQL аналогов <code>KEEP</code> и <code>RECYCLE</code> нет совсем: там один буферный пул с clock-sweep.</p>
-<p><strong>Shared pool</strong> — самая «оракловая» часть SGA, и полного эквивалента в PostgreSQL у неё нет. Внутри него живут четыре области:
-- <strong>Library cache</strong> хранит разобранные SQL и PL/SQL: планы выполнения, скомпилированный код пакетов и зависимости объектов. Этот кеш планов <strong>общий на весь экземпляр</strong>, тогда как в PostgreSQL кеш планов приватный и живёт на уровне сессии или prepared statement.
-- <strong>Data dictionary cache</strong> (row cache) кеширует метаданные: описания таблиц, колонок, привилегий и пользователей.
-- <strong>Server result cache</strong> хранит уже <strong>результаты</strong> запросов и детерминированных PL/SQL-функций (<code>/*+ RESULT_CACHE */</code>) и сам сбрасывает их, когда меняются зависимые объекты. В PostgreSQL такого механизма нет в принципе.
-- <strong>Reserved pool</strong> отводится под непрерывные куски больше 5 КБ, чтобы крупные выделения памяти не фрагментировали пул.</p>
+<p><strong>Shared pool</strong> — самая «оракловая» часть SGA, и полного эквивалента в PostgreSQL у неё нет. Внутри него живут четыре области:</p>
+<ul>
+<li><strong>Library cache</strong> хранит разобранные SQL и PL/SQL: планы выполнения, скомпилированный код пакетов и зависимости объектов. Этот кеш планов <strong>общий на весь экземпляр</strong>, тогда как в PostgreSQL кеш планов приватный и живёт на уровне сессии или prepared statement.</li>
+<li><strong>Data dictionary cache</strong> (row cache) кеширует метаданные: описания таблиц, колонок, привилегий и пользователей.</li>
+<li><strong>Server result cache</strong> хранит уже <strong>результаты</strong> запросов и детерминированных PL/SQL-функций (<code>/*+ RESULT_CACHE */</code>) и сам сбрасывает их, когда меняются зависимые объекты. В PostgreSQL такого механизма нет в принципе.</li>
+<li><strong>Reserved pool</strong> отводится под непрерывные куски больше 5 КБ, чтобы крупные выделения памяти не фрагментировали пул.</li>
+</ul>
 <p><strong>Redo log buffer</strong> — циклический буфер записей redo, размер которого задаёт <code>LOG_BUFFER</code>. Это единственный компонент SGA, память для которого выделяется <strong>не</strong> гранулами, а его аналог в PostgreSQL — <code>wal_buffers</code>.</p>
 <p><strong>Large pool</strong> — необязательная область для крупных выделений памяти: UGA при shared server и Oracle XA, буферы сообщений параллельного выполнения и I/O-буферы RMAN. LRU в ней нет, и память освобождается тогда, когда сессия сама её отпустила.</p>
 <p><strong>Java pool</strong> отводится под JVM внутри БД (<code>JAVA_POOL_SIZE</code>), и если в базе нет Java stored procedures, его можно сделать минимальным.</p>
@@ -581,10 +583,12 @@ PostgreSQL: все версии лежат в самой таблице, сни�
 </code></pre></div>
 
 <p>Важно, что ошибку получает <strong>читатель</strong>, а не писатель, и получает её <strong>посреди выполнения</strong>, успев отработать, может быть, сорок минут. Отчёт падает на 95 %-м проценте, и именно по этому симптому <code>ORA-01555</code> в банках узнают в лицо.</p>
-<p><strong>Условий возникновения три, и нужны все одновременно:</strong>
-1. долгий запрос (или долгая транзакция с согласованностью на уровне транзакции, transaction-level consistency);
-2. активная запись других сессий в те же самые блоки;
-3. нехватка undo: либо мал <code>UNDO_RETENTION</code>, либо мал сам undo tablespace, либо запись идёт так интенсивно, что undo проворачивается быстрее, чем истекает retention.</p>
+<p><strong>Условий возникновения три, и нужны все одновременно:</strong></p>
+<ol>
+<li>долгий запрос (или долгая транзакция с согласованностью на уровне транзакции, transaction-level consistency);</li>
+<li>активная запись других сессий в те же самые блоки;</li>
+<li>нехватка undo: либо мал <code>UNDO_RETENTION</code>, либо мал сам undo tablespace, либо запись идёт так интенсивно, что undo проворачивается быстрее, чем истекает retention.</li>
+</ol>
 <p><strong>Лечение и профилактика.</strong> Начинать стоит с диагностики: первые запросы ниже показывают текущие параметры undo и распределение его экстентов по состояниям, а последний — сколько undo реально требуется самому длинному запросу.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- посмотреть текущее состояние</span>
 <span class="k">SHOW</span> <span class="k">PARAMETER</span> <span class="n">undo</span><span class="p">;</span>                      <span class="c1">-- UNDO_TABLESPACE, UNDO_RETENTION, UNDO_MANAGEMENT</span>
@@ -1155,13 +1159,15 @@ SELECT ADD_MONTHS(DATE '2026-01-31', 1), LAST_DAY(DATE '2026-02-10') FROM dual -
  <span class="k">ORDER</span> <span class="n">SIBLINGS</span> <span class="k">BY</span> <span class="n">last_name</span><span class="p">;</span>
 </code></pre></div>
 
-<p>В этом запросе есть несколько вещей, которых в рекурсивном CTE «из коробки» нет:
-- <strong><code>LEVEL</code></strong> даёт глубину автоматически;
-- <strong><code>SYS_CONNECT_BY_PATH</code></strong> собирает путь от корня в строку;
-- <strong><code>CONNECT_BY_ROOT</code></strong> возвращает значение колонки в корне поддерева;
-- <strong><code>CONNECT_BY_ISLEAF</code></strong> показывает, лист ли это, и для этого ему приходится заглядывать на уровень вперёд;
-- <strong><code>ORDER SIBLINGS BY</code></strong> сортирует внутри уровня, сохраняя структуру дерева;
-- <strong><code>NOCYCLE</code></strong> + <strong><code>CONNECT_BY_ISCYCLE</code></strong> защищают от циклов (в стандартном CTE для этого служит <code>CYCLE ... SET ... USING</code>, который появился в PostgreSQL 14).</p>
+<p>В этом запросе есть несколько вещей, которых в рекурсивном CTE «из коробки» нет:</p>
+<ul>
+<li><strong><code>LEVEL</code></strong> даёт глубину автоматически;</li>
+<li><strong><code>SYS_CONNECT_BY_PATH</code></strong> собирает путь от корня в строку;</li>
+<li><strong><code>CONNECT_BY_ROOT</code></strong> возвращает значение колонки в корне поддерева;</li>
+<li><strong><code>CONNECT_BY_ISLEAF</code></strong> показывает, лист ли это, и для этого ему приходится заглядывать на уровень вперёд;</li>
+<li><strong><code>ORDER SIBLINGS BY</code></strong> сортирует внутри уровня, сохраняя структуру дерева;</li>
+<li><strong><code>NOCYCLE</code></strong> + <strong><code>CONNECT_BY_ISCYCLE</code></strong> защищают от циклов (в стандартном CTE для этого служит <code>CYCLE ... SET ... USING</code>, который появился в PostgreSQL 14).</li>
+</ul>
 <p>Тот же обход можно записать и рекурсивным CTE, который Oracle тоже поддерживает с 11.2, и в новом коде этот вариант предпочтительнее:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">WITH</span> <span class="n">tree</span> <span class="p">(</span><span class="n">employee_id</span><span class="p">,</span> <span class="n">manager_id</span><span class="p">,</span> <span class="n">last_name</span><span class="p">,</span> <span class="n">lvl</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="k">AS</span> <span class="p">(</span>
   <span class="k">SELECT</span> <span class="n">employee_id</span><span class="p">,</span> <span class="n">manager_id</span><span class="p">,</span> <span class="n">last_name</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
@@ -1206,16 +1212,18 @@ SELECT ADD_MONTHS(DATE '2026-01-31', 1), LAST_DAY(DATE '2026-02-10') FROM dual -
   <span class="k">FROM</span> <span class="k">transaction</span><span class="p">;</span>
 </code></pre></div>
 
-<p>Кое-что из аналитики есть только в Oracle и отсутствует в PostgreSQL:
-- <strong><code>KEEP (DENSE_RANK FIRST/LAST ORDER BY ...)</code></strong> — агрегат, который берёт значение из той строки, что оказывается первой по другому порядку:
+<p>Кое-что из аналитики есть только в Oracle и отсутствует в PostgreSQL:</p>
+<ul>
+<li><strong><code>KEEP (DENSE_RANK FIRST/LAST ORDER BY ...)</code></strong> — агрегат, который берёт значение из той строки, что оказывается первой по другому порядку:
   <code>sql
   SELECT account_id,
          MAX(balance) KEEP (DENSE_RANK LAST ORDER BY tx_date) AS last_balance
     FROM ledger GROUP BY account_id;</code>
-  В PostgreSQL то же самое делают через <code>DISTINCT ON</code> или через оконную функцию с фильтром.
-- <strong><code>MODEL</code>-клауза</strong> превращает SQL в электронную таблицу. Она встречается в финансовых расчётах и переписывается только вручную.
-- <strong><code>PIVOT</code> / <code>UNPIVOT</code></strong> (11g) в PostgreSQL заменяют <code>crosstab</code> из <code>tablefunc</code> или ручной <code>FILTER</code>.
-- <strong>Pattern matching <code>MATCH_RECOGNIZE</code></strong> (12c) распознаёт последовательности событий в потоке строк, и это вещь сильная, но совершенно непереносимая.</p>
+  В PostgreSQL то же самое делают через <code>DISTINCT ON</code> или через оконную функцию с фильтром.</li>
+<li><strong><code>MODEL</code>-клауза</strong> превращает SQL в электронную таблицу. Она встречается в финансовых расчётах и переписывается только вручную.</li>
+<li><strong><code>PIVOT</code> / <code>UNPIVOT</code></strong> (11g) в PostgreSQL заменяют <code>crosstab</code> из <code>tablefunc</code> или ручной <code>FILTER</code>.</li>
+<li><strong>Pattern matching <code>MATCH_RECOGNIZE</code></strong> (12c) распознаёт последовательности событий в потоке строк, и это вещь сильная, но совершенно непереносимая.</li>
+</ul>
 <p><strong>Запуск.</strong> <code>MERGE</code> с веткой <code>DELETE</code> и повторная строка в источнике (таблица <code>reg</code>: <code>e1</code>, <code>e2</code>, <code>e3</code>):</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>MERGE INTO reg t
 USING (SELECT 'e1' ext_id, 12 amount, 'DONE' status FROM dual
@@ -1263,10 +1271,12 @@ ORA-30926: The operation attempted to update the same row (rowid: 'AAAR6HAAYAAAA
 <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">payment2</span> <span class="p">(</span><span class="n">id</span> <span class="nb">NUMBER</span> <span class="k">DEFAULT</span> <span class="n">payment_seq</span><span class="p">.</span><span class="n">NEXTVAL</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span> <span class="p">...);</span>
 </code></pre></div>
 
-<p>У последовательности три свойства, которые важно понимать:
-- <strong><code>CACHE n</code></strong> задаёт, сколько значений экземпляр заранее резервирует в памяти (по умолчанию 20). Чем больше кеш, тем реже приходится обращаться к словарю, но при рестарте экземпляра <strong>зарезервированные значения теряются</strong>, и в нумерации появляются «дырки». В RAC кеш обязателен и должен быть большим, иначе последовательность становится точкой конкуренции за ресурс (<code>enq: SQ - contention</code>).
-- <strong><code>ORDER</code>/<code>NOORDER</code></strong> определяет, гарантирован ли глобальный порядок значений в RAC. <code>ORDER</code> убивает производительность, а в 18c+ появились <code>SCALABLE</code> последовательности, которые добавляют к значению префикс экземпляра и снимают эту конкуренцию.
-- Последовательности <strong>не транзакционны</strong>: <code>ROLLBACK</code> не возвращает выданное значение, как и в PostgreSQL.</p>
+<p>У последовательности три свойства, которые важно понимать:</p>
+<ul>
+<li><strong><code>CACHE n</code></strong> задаёт, сколько значений экземпляр заранее резервирует в памяти (по умолчанию 20). Чем больше кеш, тем реже приходится обращаться к словарю, но при рестарте экземпляра <strong>зарезервированные значения теряются</strong>, и в нумерации появляются «дырки». В RAC кеш обязателен и должен быть большим, иначе последовательность становится точкой конкуренции за ресурс (<code>enq: SQ - contention</code>).</li>
+<li><strong><code>ORDER</code>/<code>NOORDER</code></strong> определяет, гарантирован ли глобальный порядок значений в RAC. <code>ORDER</code> убивает производительность, а в 18c+ появились <code>SCALABLE</code> последовательности, которые добавляют к значению префикс экземпляра и снимают эту конкуренцию.</li>
+<li>Последовательности <strong>не транзакционны</strong>: <code>ROLLBACK</code> не возвращает выданное значение, как и в PostgreSQL.</li>
+</ul>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Грабли с Hibernate.</strong> По умолчанию <code>allocationSize</code> у <code>@SequenceGenerator</code> в JPA равен <strong>50</strong>, а у последовательности в Oracle <code>INCREMENT BY</code> обычно <strong>1</strong>. Начиная с 5.4 Hibernate сверяет шаги на старте и при несовпадении по умолчанию падает с <code>MappingException</code> (<code>hibernate.id.sequence.increment_size_mismatch_strategy = EXCEPTION</code>). Но если проверку ослабили до <code>LOG</code> или <code>NONE</code>, Hibernate с <code>PooledOptimizer</code> считает, что может раздать 50 значений на один вызов <code>NEXTVAL</code>, и получает коллизии с любым другим клиентом той же последовательности, будь то PL/SQL-код, другой сервис или ручной <code>INSERT</code>. Отсюда правило: <code>allocationSize</code> в аннотации <strong>обязан совпадать</strong> с <code>INCREMENT BY</code> в базе, как в примере ниже. Подробности разобраны в главе 12 (<code>12-spring-data-jpa-hibernate.md</code>).
 <code>java
@@ -1430,10 +1440,12 @@ CREATE SEQUENCE payment_seq START WITH 1 INCREMENT BY 50 CACHE 100;  -- совп
 <li>Бывает и наоборот: если первым пришёл <code>'DONE'</code>, в кеше окажется full table scan, и запросы по <code>'ERROR'</code> тоже пойдут full scan'ом вместо мгновенного доступа по индексу.</li>
 </ul>
 <p>Главное здесь то, что <strong>план в кеше зависит от того, какой запрос первым попал в базу после рестарта экземпляра или после инвалидации курсора</strong>. Отсюда и берутся жалобы «после перезапуска базы всё сломалось» и «после сбора статистики всё сломалось».</p>
-<p><strong>Adaptive Cursor Sharing (ACS)</strong>, появившийся в 11g, исправляет это лишь частично, и работает он в три шага:
-1. Оптимизатор помечает курсор как <strong>bind-sensitive</strong>, если в предикате участвует bind-переменная по колонке с гистограммой (или с range-предикатом).
-2. При каждом выполнении Oracle сравнивает фактическое число строк с оценкой, и если расхождение велико, курсор становится <strong>bind-aware</strong>.
-3. Для bind-aware курсора Oracle начинает строить <strong>несколько планов</strong> и выбирать между ними по диапазонам значений («selectivity cube»).</p>
+<p><strong>Adaptive Cursor Sharing (ACS)</strong>, появившийся в 11g, исправляет это лишь частично, и работает он в три шага:</p>
+<ol>
+<li>Оптимизатор помечает курсор как <strong>bind-sensitive</strong>, если в предикате участвует bind-переменная по колонке с гистограммой (или с range-предикатом).</li>
+<li>При каждом выполнении Oracle сравнивает фактическое число строк с оценкой, и если расхождение велико, курсор становится <strong>bind-aware</strong>.</li>
+<li>Для bind-aware курсора Oracle начинает строить <strong>несколько планов</strong> и выбирать между ними по диапазонам значений («selectivity cube»).</li>
+</ol>
 <p>Состояние курсора и его диапазоны показывают следующие запросы:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">SELECT</span> <span class="n">sql_id</span><span class="p">,</span> <span class="n">child_number</span><span class="p">,</span> <span class="n">is_bind_sensitive</span><span class="p">,</span> <span class="n">is_bind_aware</span><span class="p">,</span> <span class="n">is_shareable</span><span class="p">,</span>
        <span class="n">executions</span><span class="p">,</span> <span class="n">buffer_gets</span><span class="p">,</span> <span class="n">plan_hash_value</span>
@@ -1444,11 +1456,13 @@ CREATE SEQUENCE payment_seq START WITH 1 INCREMENT BY 50 CACHE 100;  -- совп
 </code></pre></div>
 
 <p>У ACS есть оговорки. Он «учится» на выполнениях, поэтому <strong>первое выполнение с плохим планом всё равно случится</strong>; при вытеснении курсора из кеша обучение сбрасывается; а на запросах с большим числом bind-переменных ACS работает плохо.</p>
-<p><strong>Что делать в проде</strong>, если конкретный запрос страдает от bind peeking:
-- Зафиксировать план через <strong>SQL Plan Baseline</strong> (см. 7.6).
-- Разделить запросы, то есть для «частого» значения писать литерал, а для остальных оставить bind (<code>WHERE status = 'DONE'</code> отдельным запросом). Раз текст разный, курсоры тоже разные, и у каждого свой план.
-- Подсказкой <code>/*+ BIND_AWARE */</code> сразу сделать курсор bind-aware.
-- Подсказкой <code>/*+ NO_BIND_AWARE */</code> или <code>/*+ OPT_PARAM('_optim_peek_user_binds' 'false') */</code> отключить peeking для этого запроса, и тогда план строится по средней селективности.</p>
+<p><strong>Что делать в проде</strong>, если конкретный запрос страдает от bind peeking:</p>
+<ul>
+<li>Зафиксировать план через <strong>SQL Plan Baseline</strong> (см. 7.6).</li>
+<li>Разделить запросы, то есть для «частого» значения писать литерал, а для остальных оставить bind (<code>WHERE status = 'DONE'</code> отдельным запросом). Раз текст разный, курсоры тоже разные, и у каждого свой план.</li>
+<li>Подсказкой <code>/*+ BIND_AWARE */</code> сразу сделать курсор bind-aware.</li>
+<li>Подсказкой <code>/*+ NO_BIND_AWARE */</code> или <code>/*+ OPT_PARAM('_optim_peek_user_binds' 'false') */</code> отключить peeking для этого запроса, и тогда план строится по средней селективности.</li>
+</ul>
 <blockquote>
 <p>💡 <strong>На интервью.</strong> «Bind peeking — это когда Oracle при первом hard parse подглядывает в значения bind-переменных, строит план под них, а потом использует этот план для всех остальных значений. На колонке с перекошенным распределением получается лотерея: план зависит от того, какое значение пришло первым после рестарта. Adaptive Cursor Sharing с 11g частично это исправляет, порождая несколько дочерних курсоров под разные диапазоны селективности, но учится он не мгновенно. Надёжнее всего лечит SQL Plan Baseline или разделение запросов по литералу для перекошенных значений. В PostgreSQL похожий механизм называется generic plan: первые пять выполнений подготовленного оператора планируются под конкретные параметры, потом средняя стоимость сравнивается с обобщённым планом, а управляет этим <code>plan_cache_mode</code>».</p>
 </blockquote>
@@ -1878,11 +1892,13 @@ SELECT plan_table_output FROM TABLE(DBMS_XPLAN.DISPLAY_CURSOR(format =&gt; 'ALLS
 </ul>
 <h3 id="82-bitmap-индексы">8.2 Bitmap-индексы</h3>
 <p><strong>Bitmap index</strong> хранит для каждого различного значения колонки битовую карту, где каждый бит соответствует строке (точнее, диапазону rowid). Для колонки «пол» таких карт будет две, а для колонки «регион» — 89. Такой индекс даёт огромный выигрыш в аналитике и становится катастрофой в OLTP, поэтому ниже сначала разобрано, чем он хорош, а потом — почему в транзакционную таблицу его ставить нельзя.</p>
-<p>Силён он по четырём причинам:
-- <strong>Условия комбинируются побитовыми операциями.</strong> Выражение <code>WHERE gender='M' AND region='77' AND status='ACTIVE'</code> сводится к AND трёх битовых карт, выполняется чрезвычайно быстро и работает даже на колонках с очень низкой селективностью, где B-tree бесполезен.
-- <strong>Он компактен:</strong> на колонке с 5 значениями bitmap в разы меньше B-tree.
-- <strong><code>COUNT(*)</code> и агрегаты по группам</strong> считаются прямо по битам (<code>BITMAP CONVERSION COUNT</code>).
-- Есть <strong>bitmap join index</strong>, то есть индекс на таблице фактов по колонке таблицы измерений, который в звёздной схеме убирает join из плана.</p>
+<p>Силён он по четырём причинам:</p>
+<ul>
+<li><strong>Условия комбинируются побитовыми операциями.</strong> Выражение <code>WHERE gender='M' AND region='77' AND status='ACTIVE'</code> сводится к AND трёх битовых карт, выполняется чрезвычайно быстро и работает даже на колонках с очень низкой селективностью, где B-tree бесполезен.</li>
+<li><strong>Он компактен:</strong> на колонке с 5 значениями bitmap в разы меньше B-tree.</li>
+<li><strong><code>COUNT(*)</code> и агрегаты по группам</strong> считаются прямо по битам (<code>BITMAP CONVERSION COUNT</code>).</li>
+<li>Есть <strong>bitmap join index</strong>, то есть индекс на таблице фактов по колонке таблицы измерений, который в звёздной схеме убирает join из плана.</li>
+</ul>
 <p>А вот почему его <strong>нельзя ставить в OLTP</strong>:</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Грабли.</strong> Изменение <strong>одной строки</strong> блокирует <strong>весь фрагмент битовой карты</strong>, а в нём потенциально <strong>тысячи строк</strong>. Поэтому два параллельных <code>UPDATE</code> разных строк с одинаковым значением индексированной колонки будут ждать друг друга (<code>enq: TX - row lock contention</code>), и при интенсивном DML bitmap-индекс превращает таблицу в однопоточную. Правило простое: <strong>bitmap годится только для DWH и витрин, куда пишет один загрузчик, а в OLTP ему не место никогда</strong>.</p>
@@ -2083,18 +2099,22 @@ SELECT plan_table_output FROM TABLE(DBMS_XPLAN.DISPLAY_CURSOR(format =&gt; 'ALLS
 <p>PL/SQL — процедурный язык Oracle, на котором внутри базы пишут пакеты, процедуры, функции и триггеры. В старых банковских системах на нём держится значительная часть бизнес-логики, поэтому Java-разработчику приходится и читать этот код, и вызывать его, и разбираться, почему после деплоя пакета посыпались ошибки. Раздел начинается с честного разговора о том, зачем логику вообще держат в базе, затем разбирает пакеты и их состояние, курсоры, массовые операции <code>BULK COLLECT</code> и <code>FORALL</code>, исключения, автономные транзакции, триггеры, встроенные пакеты, динамический SQL, отладку и тестирование и заканчивается вызовом PL/SQL из Java.</p>
 <h3 id="91-бизнес-логика-в-базе-доводы-за-и-против">9.1 Бизнес-логика в базе: доводы за и против</h3>
 <p>В старых банковских системах на Oracle значительная часть бизнес-логики живёт в PL/SQL: расчёт процентов, закрытие операционного дня, начисление комиссий, регуляторная отчётность. Спорить с этим фактом бессмысленно, а вот понимать аргументы обеих сторон полезно, потому что про это вас обязательно спросят. Ниже собраны доводы за и против, а в конце — практическая позиция, которую можно занять.</p>
-<p><strong>За PL/SQL:</strong>
-- <strong>Близость к данным.</strong> 50 миллионов строк обрабатываются без пересылки в JVM, а значит, без сетевых round-trip, без сериализации и без GC, и разница может достигать десятков раз.
-- <strong>Транзакционность из коробки.</strong> Логика и данные находятся в одной транзакции, и распределённые протоколы не нужны.
-- <strong>Единая точка контроля.</strong> Если к базе ходят шесть систем, включая Excel через ODBC и вендорскую АБС, проверки в пакетах остаются единственным местом, которое никто из них не обойдёт.
-- <strong>Скорость изменений в эксплуатации.</strong> Чтобы заменить тело пакета, достаточно одной команды, а деплой приложения не нужен. В банке, где релизный цикл длится квартал, этот аргумент решающий.
-- <strong>Зрелые инструменты для пакетов</strong>: <code>BULK COLLECT</code>/<code>FORALL</code>, секционирование, direct path, параллелизм.</p>
-<p><strong>Против PL/SQL:</strong>
-- <strong>Масштабируется только вертикально.</strong> Приложение можно размножить на двадцать подов, а базу нельзя, и CPU сервера БД — самый дорогой CPU в компании, потому что лицензию считают по ядрам.
-- <strong>Слабая инженерная инфраструктура.</strong> Юнит-тесты (utPLSQL) существуют, но их почти никто не пишет, статический анализ беден, версионировать код через файлы можно, но дисциплины обычно нет, а code review по diff'у тела пакета превращается в мучение.
-- <strong>Невидимость.</strong> Логику в триггерах и пакетах не видно из кода приложения: разработчик читает Java-сервис, видит <code>INSERT</code> и не знает, что триггер параллельно пишет в три другие таблицы и вызывает внешнюю систему.
-- <strong>Привязка к вендору.</strong> PL/SQL не переносится, и из-за пакетов миграция на PostgreSQL обходится в разы дороже.
-- <strong>Развёртывание не атомарно.</strong> DDL фиксирует, поэтому если применение пакета прервалось на середине, так на середине оно и останется.</p>
+<p><strong>За PL/SQL:</strong></p>
+<ul>
+<li><strong>Близость к данным.</strong> 50 миллионов строк обрабатываются без пересылки в JVM, а значит, без сетевых round-trip, без сериализации и без GC, и разница может достигать десятков раз.</li>
+<li><strong>Транзакционность из коробки.</strong> Логика и данные находятся в одной транзакции, и распределённые протоколы не нужны.</li>
+<li><strong>Единая точка контроля.</strong> Если к базе ходят шесть систем, включая Excel через ODBC и вендорскую АБС, проверки в пакетах остаются единственным местом, которое никто из них не обойдёт.</li>
+<li><strong>Скорость изменений в эксплуатации.</strong> Чтобы заменить тело пакета, достаточно одной команды, а деплой приложения не нужен. В банке, где релизный цикл длится квартал, этот аргумент решающий.</li>
+<li><strong>Зрелые инструменты для пакетов</strong>: <code>BULK COLLECT</code>/<code>FORALL</code>, секционирование, direct path, параллелизм.</li>
+</ul>
+<p><strong>Против PL/SQL:</strong></p>
+<ul>
+<li><strong>Масштабируется только вертикально.</strong> Приложение можно размножить на двадцать подов, а базу нельзя, и CPU сервера БД — самый дорогой CPU в компании, потому что лицензию считают по ядрам.</li>
+<li><strong>Слабая инженерная инфраструктура.</strong> Юнит-тесты (utPLSQL) существуют, но их почти никто не пишет, статический анализ беден, версионировать код через файлы можно, но дисциплины обычно нет, а code review по diff'у тела пакета превращается в мучение.</li>
+<li><strong>Невидимость.</strong> Логику в триггерах и пакетах не видно из кода приложения: разработчик читает Java-сервис, видит <code>INSERT</code> и не знает, что триггер параллельно пишет в три другие таблицы и вызывает внешнюю систему.</li>
+<li><strong>Привязка к вендору.</strong> PL/SQL не переносится, и из-за пакетов миграция на PostgreSQL обходится в разы дороже.</li>
+<li><strong>Развёртывание не атомарно.</strong> DDL фиксирует, поэтому если применение пакета прервалось на середине, так на середине оно и останется.</li>
+</ul>
 <p><strong>Практическая позиция.</strong> Работающий PL/SQL не стоит переписывать из идеологических соображений, а новую логику лучше писать в приложении. В PL/SQL имеет смысл оставлять то, в чём он объективно выигрывает: массовые преобразования данных, операции, которым нужен полный набор строк, и инварианты, которые обязаны соблюдаться независимо от клиента. И исходники пакетов обязательно нужно держать в git, а не только в базе.</p>
 <h3 id="92-блоки-пакеты-состояние">9.2 Блоки, пакеты, состояние</h3>
 <p>Код PL/SQL организован в блоки, а блоки — в пакеты, которые дают языку модульность и, заодно, состояние на уровне сессии. Именно это состояние доставляет больше всего хлопот при работе через пул соединений и при деплое, поэтому ниже после синтаксиса разобрано, где оно живёт, как его сбросить и откуда берётся <code>ORA-04068</code>.</p>
@@ -2339,11 +2359,13 @@ SELECT owner, name, type, line, text FROM all_source
 </code></pre></div>
 
 <p>Законное применение у автономных транзакций ровно одно: <strong>аудит и логирование, которые должны сохраниться даже тогда, когда основная транзакция откатится</strong>.</p>
-<p>Опасны они по четырём причинам:
-- <strong>Взаимоблокировка с самим собой.</strong> Если основная транзакция заблокировала строку, а автономная пытается её изменить, автономная будет ждать основную, а основная — автономную. Oracle даже не всегда распознаёт это как взаимоблокировка, и сессия просто виснет. Это классическая мина в триггерах.
-- <strong>Скрытый фиксация.</strong> Разработчик вызывает процедуру, не зная, что внутри стоит <code>PRAGMA AUTONOMOUS_TRANSACTION</code>, и потом удивляется, почему <code>ROLLBACK</code> ничего не откатил.
-- <strong>Отсутствие завершения.</strong> Если автономный блок завершился без <code>COMMIT</code>/<code>ROLLBACK</code>, он падает с <code>ORA-06519</code>.
-- <strong>Родитель не виден.</strong> Автономная транзакция не видит незафиксированных данных вызывающей, поэтому залогировать «значение поля после изменения» не получится, и его придётся передать параметром.</p>
+<p>Опасны они по четырём причинам:</p>
+<ul>
+<li><strong>Взаимоблокировка с самим собой.</strong> Если основная транзакция заблокировала строку, а автономная пытается её изменить, автономная будет ждать основную, а основная — автономную. Oracle даже не всегда распознаёт это как взаимоблокировка, и сессия просто виснет. Это классическая мина в триггерах.</li>
+<li><strong>Скрытый фиксация.</strong> Разработчик вызывает процедуру, не зная, что внутри стоит <code>PRAGMA AUTONOMOUS_TRANSACTION</code>, и потом удивляется, почему <code>ROLLBACK</code> ничего не откатил.</li>
+<li><strong>Отсутствие завершения.</strong> Если автономный блок завершился без <code>COMMIT</code>/<code>ROLLBACK</code>, он падает с <code>ORA-06519</code>.</li>
+<li><strong>Родитель не виден.</strong> Автономная транзакция не видит незафиксированных данных вызывающей, поэтому залогировать «значение поля после изменения» не получится, и его придётся передать параметром.</li>
+</ul>
 <p>Прямого аналога в PostgreSQL нет: автономные транзакции эмулируют через dblink или <code>pg_background</code> либо выносят аудит в отдельное соединение.</p>
 <h3 id="97-триггеры-и-их-недостатки">9.7 Триггеры и их недостатки</h3>
 <p>Триггер — PL/SQL-код, который база выполняет сама, когда в таблице происходит вставка, изменение или удаление, либо когда наступает системное событие вроде логина или DDL. Именно триггеры чаще всего прячут логику, о которой не знает никто из разработчиков приложения, поэтому их в унаследованной системе ищут первым делом. Ниже показан типичный триггер, перечислены виды триггеров и пять причин, по которым их не любят.</p>
@@ -2475,11 +2497,13 @@ BEGIN
   OPEN g_cur FOR l_sql;
 END;</code>
 Вызов с <code>p_name = ''' OR 1=1 --</code> отдаёт всю базу клиентов. Хуже того, если процедура объявлена с <strong>definer's rights</strong> (а так по умолчанию!), она выполняется с правами владельца схемы, и атакующий получает права <code>CORE_OWNER</code>.</p>
-<p><strong>Правила:</strong>
-1. В динамическом SQL всегда используйте <strong>bind-переменные</strong>: <code>USING p_name</code>.
-2. Имена объектов, которые забиндить нельзя, пропускайте через <code>DBMS_ASSERT</code>: <code>DBMS_ASSERT.SIMPLE_SQL_NAME(p_table)</code>, <code>SQL_OBJECT_NAME</code>, <code>ENQUOTE_LITERAL</code>.
-3. Публичные процедуры объявляйте с <strong><code>AUTHID CURRENT_USER</code></strong> (invoker's rights), если права владельца им не нужны.
-4. Не выдавайте <code>EXECUTE</code> на пакеты шире необходимого и не используйте роль <code>PUBLIC</code>.</p>
+<p><strong>Правила:</strong></p>
+<ol>
+<li>В динамическом SQL всегда используйте <strong>bind-переменные</strong>: <code>USING p_name</code>.</li>
+<li>Имена объектов, которые забиндить нельзя, пропускайте через <code>DBMS_ASSERT</code>: <code>DBMS_ASSERT.SIMPLE_SQL_NAME(p_table)</code>, <code>SQL_OBJECT_NAME</code>, <code>ENQUOTE_LITERAL</code>.</li>
+<li>Публичные процедуры объявляйте с <strong><code>AUTHID CURRENT_USER</code></strong> (invoker's rights), если права владельца им не нужны.</li>
+<li>Не выдавайте <code>EXECUTE</code> на пакеты шире необходимого и не используйте роль <code>PUBLIC</code>.</li>
+</ol>
 <p>Исправленная версия той же процедуры выглядит так:
 <code>sql
 CREATE OR REPLACE PROCEDURE find(p_name VARCHAR2, p_cur OUT SYS_REFCURSOR)
@@ -2622,9 +2646,11 @@ END;</code></p>
 <p>Большинство проблем, которые Java-разработчик видит на связке с Oracle, лежит не в SQL, а в том, как настроены драйвер и пул: выборка идёт минутами из-за fetch size по умолчанию, соединения зависают без таймаутов, курсоры утекают, а данные молча теряются при отображении типов. Всё это лечится несколькими строками конфигурации, если знать, какими именно. Раздел идёт от драйвера и строки подключения к fetch size, пакетам, отображению типов, кешу подготовленных операторов, пулам соединений и, наконец, к особенностям Hibernate на Oracle.</p>
 <h3 id="101-драйвер-и-подключение">10.1 Драйвер и подключение</h3>
 <p><strong>ojdbc</strong> — JDBC-драйвер Oracle, и от выбора его типа, версии и параметров подключения зависит, переживёт ли приложение обрыв сети и попадёт ли оно вообще в нужную PDB. Ниже разобраны типы драйвера и его артефакты, правило совместимости с сервером, форматы строки подключения, обязательные таймауты и метки сессии.</p>
-<p>Драйвер бывает двух типов:
-- <strong>Thin</strong> написан на чистой Java и ничего не требует на клиенте, поэтому использовать нужно его.
-- <strong>OCI (thick)</strong> служит обёрткой над нативными библиотеками Oracle Client и нужен только для экзотики: некоторых сценариев Transparent Application Failover, kerberos/wallet в старых версиях, Advanced Security. За собой он тянет установку Instant Client и переменные окружения.</p>
+<p>Драйвер бывает двух типов:</p>
+<ul>
+<li><strong>Thin</strong> написан на чистой Java и ничего не требует на клиенте, поэтому использовать нужно его.</li>
+<li><strong>OCI (thick)</strong> служит обёрткой над нативными библиотеками Oracle Client и нужен только для экзотики: некоторых сценариев Transparent Application Failover, kerberos/wallet в старых версиях, Advanced Security. За собой он тянет установку Instant Client и переменные окружения.</li>
+</ul>
 <p>Артефакты драйвера называются <code>ojdbc8</code> (Java 8), <code>ojdbc11</code> (Java 11+) и <code>ojdbc17</code> (для новых JDK). С февраля 2020 года Oracle публикует драйверы на <strong>Maven Central</strong> (группа <code>com.oracle.database.jdbc</code>), причём тогда же туда выложили и старые ветки, вплоть до <code>ojdbc6</code> 11.2.0.4, а до этого их приходилось вручную класть в корпоративный Nexus, и это до сих пор порождает вопросы вида «а почему сборка не идёт на новой машине».</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Не проверено.</strong> www.oracle.com не отдаёт содержимое автоматическим клиентам (403 при проверке 2026-09-21), поэтому точное соответствие «версия ojdbc ↔ версия БД», текущие номера артефактов и формулировки лицензии OTN/Free-Use по первичному источнику подтвердить не удалось. Перед выбором версии сверяйтесь со страницей JDBC Downloads и с Maven Central. Сам Maven Central на 2026-09-24 показывает последнюю версию <code>ojdbc8</code>, <code>ojdbc11</code> и <code>ojdbc17</code> 23.26.3.0.0, в POM <code>ojdbc8</code> описан как совместимый с JDK 8 и 11, <code>ojdbc11</code> — с JDK 11, 17, 19 и 21, <code>ojdbc17</code> — с JDK 17, 19 и 21, а лицензией указаны Oracle Free Use Terms and Conditions (FUTC).</p>
@@ -2675,10 +2701,12 @@ END;</code></p>
 <p>Fetch size задаёт, сколько строк драйвер забирает с сервера за один сетевой обмен, и в связке Oracle+Java это самая частая проблема и одновременно самая дешёвая в лечении. Значение по умолчанию у ojdbc очень маленькое, поэтому большая выборка превращается в тысячи round-trip. Ниже разобраны цифры, симптомы, способы задать fetch size и два исключения, при которых настройка не срабатывает.</p>
 <p>Документация говорит прямо: «There is no maximum prefetch setting. <strong>The default value is 10</strong>» (<a href="https://docs.oracle.com/en/database/oracle/oracle-database/23/jjdbc/performance-extensions.html">Performance Extensions</a>).</p>
 <p>Десять строк за раз означают, что выборка 100 000 строк требует <strong>10 000 сетевых round-trip</strong> между JVM и базой. При RTT 0,5 мс внутри дата-центра набегает 5 секунд чистого сетевого ожидания, а при RTT 2 мс (через межсетевой экран) — 20 секунд, хотя сам запрос может выполняться 200 мс.</p>
-<p>Узнают эту проблему по трём признакам:
-- в БД в топе ожиданий сессии стоит <code>SQL*Net message from client</code>, а счётчик <code>SQL*Net roundtrips to/from client</code> огромен;
-- в приложении поток висит в <code>socketRead</code>, а CPU на обеих сторонах почти не загружен;
-- время растёт линейно с числом строк, а не с объёмом данных.</p>
+<p>Узнают эту проблему по трём признакам:</p>
+<ul>
+<li>в БД в топе ожиданий сессии стоит <code>SQL*Net message from client</code>, а счётчик <code>SQL*Net roundtrips to/from client</code> огромен;</li>
+<li>в приложении поток висит в <code>socketRead</code>, а CPU на обеих сторонах почти не загружен;</li>
+<li>время растёт линейно с числом строк, а не с объёмом данных.</li>
+</ul>
 <p>Исправление занимает одну строку, и разница выглядит так:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// было: 42 секунды</span>
 <span class="k">try</span> <span class="p">(</span><span class="n">PreparedStatement</span> <span class="n">ps</span> <span class="o">=</span> <span class="n">c</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="n">sql</span><span class="p">);</span>
@@ -2691,13 +2719,17 @@ END;</code></p>
 <span class="p">}</span>
 </code></pre></div>
 
-<p>Задать fetch size можно тремя способами:
-1. <code>Statement.setFetchSize(n)</code> / <code>ResultSet.setFetchSize(n)</code> — стандартный JDBC API, который действует на конкретный оператор.
-2. <code>OracleConnection.setDefaultRowPrefetch(n)</code> или свойство <code>defaultRowPrefetch</code> задают значение сразу на всё соединение, и statement наследует его в момент создания, поэтому если поменять значение на соединении позже, на уже созданные statement это не повлияет.
-3. В Spring это <code>JdbcTemplate.setFetchSize(1000)</code>, в JPA — <code>@QueryHints(@QueryHint(name = "org.hibernate.fetchSize", value = "1000"))</code> или <code>spring.jpa.properties.hibernate.jdbc.fetch_size=1000</code>.</p>
-<p>Документация добавляет два предупреждения:
-- <strong>Не смешивайте</strong> JDBC 2.0 fetch size API и Oracle row-prefetching API: «You can use one or the other, but not both».
-- Если в выборке есть <code>LONG</code>, <code>LONG RAW</code> или LOB, которые читаются через data interface, драйвер <strong>принудительно ставит prefetch = 1</strong>, даже если вы эти колонки не читаете. Отсюда отдельный класс вопросов «почему у меня fetch size не работает», и решение здесь одно: убрать LOB из <code>SELECT</code> или читать его отдельным запросом по ключу.</p>
+<p>Задать fetch size можно тремя способами:</p>
+<ol>
+<li><code>Statement.setFetchSize(n)</code> / <code>ResultSet.setFetchSize(n)</code> — стандартный JDBC API, который действует на конкретный оператор.</li>
+<li><code>OracleConnection.setDefaultRowPrefetch(n)</code> или свойство <code>defaultRowPrefetch</code> задают значение сразу на всё соединение, и statement наследует его в момент создания, поэтому если поменять значение на соединении позже, на уже созданные statement это не повлияет.</li>
+<li>В Spring это <code>JdbcTemplate.setFetchSize(1000)</code>, в JPA — <code>@QueryHints(@QueryHint(name = "org.hibernate.fetchSize", value = "1000"))</code> или <code>spring.jpa.properties.hibernate.jdbc.fetch_size=1000</code>.</li>
+</ol>
+<p>Документация добавляет два предупреждения:</p>
+<ul>
+<li><strong>Не смешивайте</strong> JDBC 2.0 fetch size API и Oracle row-prefetching API: «You can use one or the other, but not both».</li>
+<li>Если в выборке есть <code>LONG</code>, <code>LONG RAW</code> или LOB, которые читаются через data interface, драйвер <strong>принудительно ставит prefetch = 1</strong>, даже если вы эти колонки не читаете. Отсюда отдельный класс вопросов «почему у меня fetch size не работает», и решение здесь одно: убрать LOB из <code>SELECT</code> или читать его отдельным запросом по ключу.</li>
+</ul>
 <p>Разумный размер fetch size лежит в диапазоне 100–1000, а больше 1000 обычно выигрыша не даёт, а память расходует, потому что драйвер держит в куче буфер на <code>fetchSize</code> строк, и выборка «всего подряд» с <code>fetchSize = 100000</code> закончится <code>OutOfMemoryError</code>.</p>
 <p>Сравнение с PostgreSQL здесь показательно. pgJDBC <strong>по умолчанию грузит весь результат в память</strong> (<code>defaultRowFetchSize = 0</code>), а курсорный режим включается, только когда одновременно выполнены три условия: autocommit = off, <code>TYPE_FORWARD_ONLY</code> и <code>setFetchSize &gt; 0</code> (FACTS.md). Выходит, что значения по умолчанию у двух драйверов ошибаются в противоположные стороны: Oracle по умолчанию <strong>медленный</strong>, а PostgreSQL по умолчанию <strong>прожорлив по памяти</strong>.</p>
 <h3 id="103-пакетные-операции-batch">10.3 Пакетные операции (batch)</h3>
@@ -2719,11 +2751,13 @@ END;</code></p>
 <span class="p">}</span>
 </code></pre></div>
 
-<p>Несколько деталей, о которых стоит знать:
-- Свойство <code>AccumulateBatchResult</code> по умолчанию равно <code>true</code>, и драйвер накапливает счётчики, когда сам сбрасывает пакет по частям.
-- Начиная с Oracle AI Database 26ai пакеты больше не разбиваются, если не задано <code>CONNECTION_PROPERTY_MAX_BATCH_MEMORY</code> (по умолчанию 0, то есть без лимита). В более старых версиях драйвер мог автоматически разбить большой пакет.
-- <code>executeBatch()</code> возвращает <code>int[]</code>, а при частичной неудаче нужно ловить <code>BatchUpdateException</code> и смотреть <code>getUpdateCounts()</code>.
-- В Hibernate пакетирование включают через <code>spring.jpa.properties.hibernate.jdbc.batch_size=50</code>, <code>order_inserts=true</code> и <code>order_updates=true</code>. Аналога <code>reWriteBatchedInserts</code> из pgJDBC в ojdbc нет, и он не нужен, потому что Oracle умеет настоящий array DML на уровне протокола.</p>
+<p>Несколько деталей, о которых стоит знать:</p>
+<ul>
+<li>Свойство <code>AccumulateBatchResult</code> по умолчанию равно <code>true</code>, и драйвер накапливает счётчики, когда сам сбрасывает пакет по частям.</li>
+<li>Начиная с Oracle AI Database 26ai пакеты больше не разбиваются, если не задано <code>CONNECTION_PROPERTY_MAX_BATCH_MEMORY</code> (по умолчанию 0, то есть без лимита). В более старых версиях драйвер мог автоматически разбить большой пакет.</li>
+<li><code>executeBatch()</code> возвращает <code>int[]</code>, а при частичной неудаче нужно ловить <code>BatchUpdateException</code> и смотреть <code>getUpdateCounts()</code>.</li>
+<li>В Hibernate пакетирование включают через <code>spring.jpa.properties.hibernate.jdbc.batch_size=50</code>, <code>order_inserts=true</code> и <code>order_updates=true</code>. Аналога <code>reWriteBatchedInserts</code> из pgJDBC в ojdbc нет, и он не нужен, потому что Oracle умеет настоящий array DML на уровне протокола.</li>
+</ul>
 <p>На массовой вставке пакет ускоряет работу от 5× до 20× по сравнению с построчной вставкой, в основном потому, что исчезают round-trip.</p>
 <p>Для очень больших загрузок у Oracle есть пути быстрее JDBC batch: <code>INSERT /*+ APPEND */ ... SELECT</code> (direct path поверх HWM, минимум redo при <code>NOLOGGING</code>), внешние таблицы (<code>ORGANIZATION EXTERNAL</code>) и <code>SQL*Loader</code>. По своей роли они прямо соответствуют <code>COPY</code> в PostgreSQL.</p>
 <h3 id="104-сопоставление-типов-и-потеря-данных">10.4 Сопоставление типов и потеря данных</h3>
@@ -2880,10 +2914,12 @@ END;</code></p>
         <span class="nt">oracle.jdbc.v$session.program</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payment-service</span>
 </code></pre></div>
 
-<p>В этой конфигурации важны три тонкости:
-- <strong><code>connection-test-query</code> не задавайте.</strong> ojdbc реализует <code>Connection.isValid()</code>, и Hikari пользуется им, а это дешевле, чем <code>SELECT 1 FROM DUAL</code>. Старые конфиги с <code>validationQuery: SELECT 1 FROM DUAL</code> остались со времён ojdbc6.
-- <strong><code>max-lifetime</code> должен быть меньше всех внешних таймаутов</strong>: <code>SQLNET.EXPIRE_TIME</code>, idle-таймаута профиля пользователя (<code>ALTER PROFILE ... IDLE_TIME</code>) и таймаута межсетевого экрана. Иначе пул будет раздавать мёртвые соединения, и вы получите <code>ORA-02396: exceeded maximum idle time</code>, <code>ORA-03113: end-of-file on communication channel</code> или <code>IO Error: Connection reset</code>.
-- <strong>Ресурсные профили Oracle</strong> — отдельная мина старых систем: на пользователе приложения могут стоять ограничения <code>SESSIONS_PER_USER</code>, <code>IDLE_TIME</code>, <code>CONNECT_TIME</code> или <code>CPU_PER_CALL</code>. Проверить это можно запросом <code>SELECT * FROM dba_profiles WHERE profile = (SELECT profile FROM dba_users WHERE username='BILLING_APP');</code></p>
+<p>В этой конфигурации важны три тонкости:</p>
+<ul>
+<li><strong><code>connection-test-query</code> не задавайте.</strong> ojdbc реализует <code>Connection.isValid()</code>, и Hikari пользуется им, а это дешевле, чем <code>SELECT 1 FROM DUAL</code>. Старые конфиги с <code>validationQuery: SELECT 1 FROM DUAL</code> остались со времён ojdbc6.</li>
+<li><strong><code>max-lifetime</code> должен быть меньше всех внешних таймаутов</strong>: <code>SQLNET.EXPIRE_TIME</code>, idle-таймаута профиля пользователя (<code>ALTER PROFILE ... IDLE_TIME</code>) и таймаута межсетевого экрана. Иначе пул будет раздавать мёртвые соединения, и вы получите <code>ORA-02396: exceeded maximum idle time</code>, <code>ORA-03113: end-of-file on communication channel</code> или <code>IO Error: Connection reset</code>.</li>
+<li><strong>Ресурсные профили Oracle</strong> — отдельная мина старых систем: на пользователе приложения могут стоять ограничения <code>SESSIONS_PER_USER</code>, <code>IDLE_TIME</code>, <code>CONNECT_TIME</code> или <code>CPU_PER_CALL</code>. Проверить это можно запросом <code>SELECT * FROM dba_profiles WHERE profile = (SELECT profile FROM dba_users WHERE username='BILLING_APP');</code></li>
+</ul>
 <p><strong>UCP</strong> (Universal Connection Pool) — пул от самого Oracle. Когда есть Hikari, он нужен ради <strong>интеграции с RAC</strong>: Fast Connection Failover (FCF) по событиям FAN, Runtime Load Balancing, который распределяет соединения по узлам согласно их реальной загрузке, и Application Continuity. Поэтому если у вас RAC и нужен прозрачный failover, берите UCP, а если база однонодовая или стоит Data Guard, Hikari проще и быстрее.</p>
 <p>Таблица ниже перечисляет типовые ORA-ошибки при разрыве соединения, которые нужно классифицировать как сигнал «пересоздать соединение»:</p>
 <table class="rt rt-2">
@@ -3344,11 +3380,13 @@ ora2pg -t TEST       -c config/ora2pg.conf               <span class="c1"># св
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Грабли, общие с Spring: откат только на unchecked.</strong> По умолчанию контейнер откатывает транзакцию при <code>RuntimeException</code>/<code>EJBException</code>, но <strong>не</strong> при checked-исключении. Чтобы checked-исключение вызывало откат, нужна аннотация <code>@ApplicationException(rollback = true)</code>, а в Spring то же самое лечится через <code>rollbackFor</code>. Общая с Spring и проблема <strong>self-invocation</strong>: вызов метода бина изнутри того же бина идёт мимо прокси и интерцептора, и <code>REQUIRES_NEW</code> не срабатывает.</p>
 </blockquote>
-<p><strong>Почему EJB проиграл Spring:</strong>
-- EJB 2.x (до 2006) требовал home- и remote-интерфейсов, дескрипторов на сотни строк XML и наследования от классов фреймворка, так что тестировать код вне контейнера было практически невозможно.
-- Spring дал POJO, DI и декларативные транзакции в обычном Tomcat, а тесты можно было писать на JUnit.
-- EJB 3.x (2006) исправил почти всё (аннотации, POJO, отсутствие обязательных интерфейсов), но было уже поздно, потому что экосистема успела уйти.
-- В итоге EJB 3.x технически вполне пригоден, но за пределами унаследованных систем его не выбирают.</p>
+<p><strong>Почему EJB проиграл Spring:</strong></p>
+<ul>
+<li>EJB 2.x (до 2006) требовал home- и remote-интерфейсов, дескрипторов на сотни строк XML и наследования от классов фреймворка, так что тестировать код вне контейнера было практически невозможно.</li>
+<li>Spring дал POJO, DI и декларативные транзакции в обычном Tomcat, а тесты можно было писать на JUnit.</li>
+<li>EJB 3.x (2006) исправил почти всё (аннотации, POJO, отсутствие обязательных интерфейсов), но было уже поздно, потому что экосистема успела уйти.</li>
+<li>В итоге EJB 3.x технически вполне пригоден, но за пределами унаследованных систем его не выбирают.</li>
+</ul>
 <p><strong>JCA</strong> (Jakarta Connectors) — стандарт адаптеров к внешним EIS: мейнфрейму CICS, IBM MQ, SAP. В банках <code>.rar</code>-адаптеры вполне реальны, и через них ходят к АБС и к платёжным системам. Адаптер даёт пулинг соединений, участие в XA и управление безопасностью «как у datasource». При миграции на Boot его обычно заменяют обычным клиентом с собственным пулом и теряют XA (чем это лечить, сказано выше).</p>
 <p><strong>JMX</strong> позволяет управлять сервером через MBeans для пулов, датасорсов и кешей, а стандартными инструментами для этого служат <code>jconsole</code>, <code>jmxterm</code> и <code>jboss-cli</code>. В WildFly часть операций доступна и через CLI, например так можно посмотреть состояние пула, HTTP-слушателя, транзакций и потоков:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>./jboss-cli.sh -c
@@ -3381,11 +3419,13 @@ ora2pg -t TEST       -c config/ora2pg.conf               <span class="c1"># св
 <p><strong>Шаг 3. EJB → Spring-бины.</strong> <code>@Stateless</code> превращается в <code>@Service</code>, <code>@TransactionAttribute(REQUIRED)</code> — в <code>@Transactional</code>, <code>@TransactionAttribute(REQUIRES_NEW)</code> — в <code>@Transactional(propagation = REQUIRES_NEW)</code>, <code>@Singleton</code> — в обычный бин, а <code>@Schedule</code> — в <code>@Scheduled</code>. <code>@Stateful</code> придётся проектировать заново, вынося состояние в БД или в Redis.</p>
 <p>Для больших EAR есть промежуточный вариант: поднять Spring-контекст <strong>внутри</strong> сервера приложений и постепенно переносить в него компоненты, оставив EJB-фасады тонкими адаптерами.</p>
 <p><strong>Шаг 4. JPA.</strong> <code>persistence.xml</code> заменяется на <code>@ConfigurationProperties</code>/<code>spring.jpa.*</code>. <code>@PersistenceContext</code> в EJB давал EntityManager с областью действия транзакции, и в Spring он работает ровно так же (<code>@PersistenceContext</code> поддерживается, либо можно перейти на репозитории Spring Data). Диалект, генераторы id и <code>allocationSize</code> настраиваются по разделу 10.7.</p>
-<p><strong>Шаг 5. JTA/XA → локальные транзакции + Saga/outbox.</strong> Это самый содержательный шаг, и решение зависит от того, что именно связывала XA-транзакция.
-- Если XA использовалась «на всякий случай» при <strong>одной</strong> БД и больше ничем, её просто убирают, и <code>DataSourceTransactionManager</code>/<code>JpaTransactionManager</code> оказывается достаточно.
-- Если XA действительно связывала БД и брокер, её заменяют на <strong>transactional outbox</strong>: сообщение пишется в таблицу в той же локальной транзакции, а отдельный процесс (или Debezium CDC) публикует его в брокер. Потребитель при этом обязан быть идемпотентным (глава 31).
-- Если XA связывала две БД, нужна Saga с компенсирующими операциями (главы 31 и 30).
-- Временный костыль тоже есть, но ненадёжный: <code>spring-boot-starter-jta-atomikos</code> (Atomikos-стартер) удалили в Boot 3.x, и JTA в Boot 3+/4 поддерживается через Narayana/Atomikos вручную либо при запуске внутри сервера приложений. Рассчитывать на это как на долгосрочное решение не стоит.</p>
+<p><strong>Шаг 5. JTA/XA → локальные транзакции + Saga/outbox.</strong> Это самый содержательный шаг, и решение зависит от того, что именно связывала XA-транзакция.</p>
+<ul>
+<li>Если XA использовалась «на всякий случай» при <strong>одной</strong> БД и больше ничем, её просто убирают, и <code>DataSourceTransactionManager</code>/<code>JpaTransactionManager</code> оказывается достаточно.</li>
+<li>Если XA действительно связывала БД и брокер, её заменяют на <strong>transactional outbox</strong>: сообщение пишется в таблицу в той же локальной транзакции, а отдельный процесс (или Debezium CDC) публикует его в брокер. Потребитель при этом обязан быть идемпотентным (глава 31).</li>
+<li>Если XA связывала две БД, нужна Saga с компенсирующими операциями (главы 31 и 30).</li>
+<li>Временный костыль тоже есть, но ненадёжный: <code>spring-boot-starter-jta-atomikos</code> (Atomikos-стартер) удалили в Boot 3.x, и JTA в Boot 3+/4 поддерживается через Narayana/Atomikos вручную либо при запуске внутри сервера приложений. Рассчитывать на это как на долгосрочное решение не стоит.</li>
+</ul>
 <p><strong>Шаг 6. MDB → <code>@JmsListener</code>.</strong> Слушатель переписывается почти механически, как показано ниже:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// было</span>
 <span class="nd">@MessageDriven</span><span class="p">(</span><span class="n">activationConfig</span> <span class="o">=</span> <span class="p">{</span>
@@ -3477,12 +3517,14 @@ ora2pg -t TEST       -c config/ora2pg.conf               <span class="c1"># св
 <h3 id="142-подготовка-к-изменениям">14.2 Подготовка к изменениям</h3>
 <p>Прежде чем менять унаследованную систему, нужно подготовить три вещи: тесты, которые зафиксируют текущее поведение, стратегию изменения схемы, от которой зависят другие системы, и способ убедиться, что функциональность, которую собираются отключить, действительно никому не нужна. Ниже разобрано каждое из трёх, а в конце — как документировать то, что удалось раскопать.</p>
 <p><strong>Характеризующие тесты.</strong> Перед любым изменением зафиксируйте текущее поведение тестом, не пытаясь понять, правильное оно или нет. Методика описана в главе 32 (<code>32-design-patterns-clean-architecture.md</code>, раздел 9 «Работа с унаследованным кодом»). Для Oracle это означает снимок входных данных, вызов процедуры и сверку выходной таблицы с эталоном, а сделать это выполнимым помогает Testcontainers с образом Oracle Free (раздел «Попробовать руками»).</p>
-<p><strong>Изменение схемы, на которую завязано пять систем.</strong> Единственная стратегия, которая здесь работает, — <strong>expand/contract</strong> (глава 19, <code>19-schema-design-migrations.md</code>):
-1. <em>Expand</em>: добавить новую колонку или таблицу, писать в обе, а читать из старой.
-2. Фоном перенести данные и сверить их.
-3. Переключить чтение на новую структуру, продолжая писать в обе.
-4. Подождать столько, сколько нужно, чтобы сохранялась возможность отката (в банке это недели).
-5. <em>Contract</em>: перестать писать в старую структуру, а затем удалить её.</p>
+<p><strong>Изменение схемы, на которую завязано пять систем.</strong> Единственная стратегия, которая здесь работает, — <strong>expand/contract</strong> (глава 19, <code>19-schema-design-migrations.md</code>):</p>
+<ol>
+<li><em>Expand</em>: добавить новую колонку или таблицу, писать в обе, а читать из старой.</li>
+<li>Фоном перенести данные и сверить их.</li>
+<li>Переключить чтение на новую структуру, продолжая писать в обе.</li>
+<li>Подождать столько, сколько нужно, чтобы сохранялась возможность отката (в банке это недели).</li>
+<li><em>Contract</em>: перестать писать в старую структуру, а затем удалить её.</li>
+</ol>
 <p>У Oracle здесь своя специфика: DDL фиксирует и берёт блокировки. Начиная с 11g (для <code>NOT NULL</code> со значением по умолчанию) и с 12c (в общем случае) <code>ALTER TABLE ADD COLUMN</code> со значением по умолчанию не переписывает таблицу, но всё равно требует эксклюзивной блокировки на словарь и <strong>сбрасывает все зависимые курсоры</strong>, вызывая шторм hard parse. Поэтому DDL выполняют в окно и с <code>DDL_LOCK_TIMEOUT</code>:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">ALTER</span> <span class="k">SESSION</span> <span class="k">SET</span> <span class="n">ddl_lock_timeout</span> <span class="o">=</span> <span class="mi">30</span><span class="p">;</span>   <span class="c1">-- ждать блокировку 30 с, а не падать мгновенно</span>
 <span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">payment</span> <span class="k">ADD</span> <span class="p">(</span><span class="n">channel</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span> <span class="k">DEFAULT</span> <span class="s1">'UNKNOWN'</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">);</span>

@@ -3,7 +3,7 @@
 <title>49. Service mesh и сетевое взаимодействие — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Service mesh и сетевое взаимодействие">
 <a class="skip" href="#content">К тексту</a>
@@ -172,10 +172,12 @@
 </blockquote>
 <h3 id="23-headless-сервис">2.3 Headless-сервис</h3>
 <p><code>clusterIP: None</code> — это Service без виртуального адреса. DNS-запрос к такому имени возвращает <strong>не один адрес, а список IP всех готовых подов</strong> (<a href="https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/">kubernetes.io, DNS for Services and Pods</a>). Никакого kube-proxy, никакого DNAT — клиент сам решает, к кому идти.</p>
-<p>Это основа для:
-- <strong>StatefulSet</strong> — стабильные DNS-имена подов <code>pod-0.svc.ns.svc.cluster.local</code> (нужно Kafka, PostgreSQL-кластерам, Cassandra);
-- <strong>клиентской балансировки</strong> — gRPC-клиент с <code>dns:///my-svc.ns.svc.cluster.local</code> разрешает headless-имя, получает N адресов и держит по соединению к каждому (см. § 5);
-- <strong>SRV-записей</strong> — <code>_grpc._tcp.my-svc.my-ns.svc.cluster.local</code> отдаёт порты и хосты.</p>
+<p>Это основа для:</p>
+<ul>
+<li><strong>StatefulSet</strong> — стабильные DNS-имена подов <code>pod-0.svc.ns.svc.cluster.local</code> (нужно Kafka, PostgreSQL-кластерам, Cassandra);</li>
+<li><strong>клиентской балансировки</strong> — gRPC-клиент с <code>dns:///my-svc.ns.svc.cluster.local</code> разрешает headless-имя, получает N адресов и держит по соединению к каждому (см. § 5);</li>
+<li><strong>SRV-записей</strong> — <code>_grpc._tcp.my-svc.my-ns.svc.cluster.local</code> отдаёт порты и хосты.</li>
+</ul>
 <p>Обратная сторона: <strong>headless + mesh — источник классических проблем</strong> (см. грабли № 14): у Envoy нет одного VIP, на который вешать listener, и конфигурация строится иначе.</p>
 <hr>
 <h2 id="3-dns-в-кластере-coredns-и-ndots5">3. DNS в кластере: CoreDNS и <code>ndots:5</code></h2>
@@ -422,10 +424,12 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 <p>Istio реализует Gateway API наравне со своими CRD, и для north-south трафика это сейчас предпочтительный путь: те же веса, что в <code>VirtualService</code>, но в стандартном API.</p>
 <h3 id="43-исходящий-трафик-egress">4.3 Исходящий трафик (egress)</h3>
 <p>По умолчанию под выходит в интернет через SNAT на IP узла: исходящий пакет с <code>10.244.1.7</code> маскарадится в адрес узла. Проблемы начинаются, когда партнёр требует <strong>белый список IP</strong>.</p>
-<p>Варианты:
-- <strong>NAT-шлюз облака со статическим IP</strong> — весь egress кластера через один или несколько адресов. Просто, но исчерпание SNAT-портов (≈64 000 на пару «адрес, протокол», а по факту меньше) при большом числе соединений к одному адресату превращается в загадочные <code>connection timed out</code>.
-- <strong>Выделенный пул узлов с публичными IP</strong> + <code>nodeSelector</code> для «исходящих» подов.
-- <strong>Egress-gateway</strong> — специальный под(ы), через который принудительно идёт весь внешний трафик; статический IP даётся только им, а NetworkPolicy запрещает остальным подам прямой выход. В Istio это штатный паттерн (§ 9.6): <code>ServiceEntry</code> описывает внешний хост, <code>VirtualService</code> заворачивает трафик к нему на <code>istio-egressgateway</code>, а тот терминирует/оригинирует TLS и выходит со своего адреса. Дополнительный бонус — <strong>точка наблюдения</strong>: весь внешний трафик виден в метриках и логах одного компонента.</p>
+<p>Варианты:</p>
+<ul>
+<li><strong>NAT-шлюз облака со статическим IP</strong> — весь egress кластера через один или несколько адресов. Просто, но исчерпание SNAT-портов (≈64 000 на пару «адрес, протокол», а по факту меньше) при большом числе соединений к одному адресату превращается в загадочные <code>connection timed out</code>.</li>
+<li><strong>Выделенный пул узлов с публичными IP</strong> + <code>nodeSelector</code> для «исходящих» подов.</li>
+<li><strong>Egress-gateway</strong> — специальный под(ы), через который принудительно идёт весь внешний трафик; статический IP даётся только им, а NetworkPolicy запрещает остальным подам прямой выход. В Istio это штатный паттерн (§ 9.6): <code>ServiceEntry</code> описывает внешний хост, <code>VirtualService</code> заворачивает трафик к нему на <code>istio-egressgateway</code>, а тот терминирует/оригинирует TLS и выходит со своего адреса. Дополнительный бонус — <strong>точка наблюдения</strong>: весь внешний трафик виден в метриках и логах одного компонента.</li>
+</ul>
 <hr>
 <h2 id="5-балансировка-на-уровнях-l4-и-l7">5. Балансировка на уровнях L4 и L7</h2>
 <h3 id="51-механизм-балансировки-l4-и-l7">5.1 Механизм балансировки L4 и L7</h3>
@@ -563,10 +567,12 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 </ul>
 <h3 id="64-ограничения-mesh">6.4 Ограничения mesh</h3>
 <p>Это самая ценная часть темы на интервью, потому что её обычно не проговаривают.</p>
-<p><strong>Mesh не знает семантику запроса.</strong> Прокси видит <code>POST /v1/transfers</code> и код ответа. Он <strong>не знает</strong>:
-- <strong>идемпотентен ли запрос</strong>. Настроив <code>retryOn: 5xx</code> на маршруте создания платежа, вы получите дубли платежей — прокси не в курсе, что повтор опасен. Идемпотентность — свойство вашего API (ключ идемпотентности, см. главу 27), и решение «можно ли повторять» принимает тот, кто знает контракт;
-- <strong>что считать ошибкой</strong>. Ваш сервис отдаёт <code>200 OK</code> с телом <code>{"status":"DECLINED"}</code> — для mesh это успех, для бизнеса отказ. И наоборот: <code>404</code> при проверке существования клиента — нормальный ответ, а не ошибка, но <code>outlier detection</code> может посчитать иначе (правда, он смотрит только 5xx — см. § 8.5);
-- <strong>что делать вместо</strong>. Fallback «если скоринг недоступен — считаем клиента среднерисковым и продолжаем» — это бизнес-решение. Прокси умеет только вернуть 503.</p>
+<p><strong>Mesh не знает семантику запроса.</strong> Прокси видит <code>POST /v1/transfers</code> и код ответа. Он <strong>не знает</strong>:</p>
+<ul>
+<li><strong>идемпотентен ли запрос</strong>. Настроив <code>retryOn: 5xx</code> на маршруте создания платежа, вы получите дубли платежей — прокси не в курсе, что повтор опасен. Идемпотентность — свойство вашего API (ключ идемпотентности, см. главу 27), и решение «можно ли повторять» принимает тот, кто знает контракт;</li>
+<li><strong>что считать ошибкой</strong>. Ваш сервис отдаёт <code>200 OK</code> с телом <code>{"status":"DECLINED"}</code> — для mesh это успех, для бизнеса отказ. И наоборот: <code>404</code> при проверке существования клиента — нормальный ответ, а не ошибка, но <code>outlier detection</code> может посчитать иначе (правда, он смотрит только 5xx — см. § 8.5);</li>
+<li><strong>что делать вместо</strong>. Fallback «если скоринг недоступен — считаем клиента среднерисковым и продолжаем» — это бизнес-решение. Прокси умеет только вернуть 503.</li>
+</ul>
 <p><strong>Mesh не заменяет авторизацию в приложении.</strong> <code>AuthorizationPolicy</code> отвечает на вопрос «какой сервис имеет право дёргать этот эндпоинт». Он не отвечает на вопрос «имеет ли <em>этот пользователь</em> право видеть <em>этот счёт</em>». Row-level и object-level авторизация — всегда в приложении (см. главу 13, <code>13-spring-security.md</code>). Broken Access Control — это A01 в OWASP Top 10:2025, и mesh закрывает из него ровно ноль на уровне объектов.</p>
 <p><strong>Mesh не проверяет данные.</strong> Схема запроса, бизнес-инварианты, ограничения БД — вне его компетенции.</p>
 <p><strong>Mesh не создаёт трассировку.</strong> Он может сгенерировать корневой span и добавить заголовки на входе, но <strong>связать входящий запрос с исходящим внутри вашего процесса он не в состоянии</strong> — это требует проброса заголовков в коде. Подробно в § 11.3; это самое частое заблуждение про mesh.</p>
@@ -634,10 +640,12 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 <p>До Kubernetes 1.29 контейнеры в поде стартовали параллельно и останавливались параллельно. Для sidecar-прокси это порождало две тяжёлые проблемы.</p>
 <p><strong>Проблема старта.</strong> Приложение стартует раньше Envoy, при инициализации лезет в БД или дёргает другой сервис — а iptables уже перенаправляет трафик на порт 15001, где никто не слушает. Результат: <code>Connection refused</code> на старте, Spring-контекст падает, под уходит в <code>CrashLoopBackOff</code>, <code>kubectl logs</code> показывает загадочное «не смог подключиться к Kafka», хотя Kafka жива. Особенно больно для Job и CronJob.</p>
 <p><strong>Проблема остановки.</strong> При завершении пода Envoy получал SIGTERM одновременно с приложением и часто умирал первым. Приложение, дорабатывающее запросы в graceful shutdown, внезапно теряло сеть. Для Job было ещё хуже: приложение завершалось, Envoy продолжал работать, под никогда не переходил в <code>Completed</code>, Job висел вечно.</p>
-<p>Обходные пути эпохи до 1.29:
-- <code>holdApplicationUntilProxyStarts: true</code> в конфигурации инжекции — Istio вставляет в Envoy <code>postStart</code>-хук, который блокирует запуск остальных контейнеров, пока прокси не готов;
-- <code>EXIT_ON_ZERO_ACTIVE_CONNECTIONS=true</code> — Envoy завершается, когда закрылись все активные соединения, а не сразу по SIGTERM;
-- для Job — <code>curl -X POST localhost:15020/quitquitquit</code> в конце скрипта.</p>
+<p>Обходные пути эпохи до 1.29:</p>
+<ul>
+<li><code>holdApplicationUntilProxyStarts: true</code> в конфигурации инжекции — Istio вставляет в Envoy <code>postStart</code>-хук, который блокирует запуск остальных контейнеров, пока прокси не готов;</li>
+<li><code>EXIT_ON_ZERO_ACTIVE_CONNECTIONS=true</code> — Envoy завершается, когда закрылись все активные соединения, а не сразу по SIGTERM;</li>
+<li>для Job — <code>curl -X POST localhost:15020/quitquitquit</code> в конце скрипта.</li>
+</ul>
 <p><strong>Native sidecars</strong> = <code>initContainers</code> с <code>restartPolicy: Always</code>. Доступны по умолчанию с Kubernetes <strong>1.29</strong>, GA (feature gate залочен) с <strong>1.33</strong> (<a href="https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/">kubernetes.io, Sidecar Containers</a>). Семантика ровно та, что нужна:</p>
 <ul>
 <li>стартуют <strong>до</strong> основных контейнеров, причём следующий init-контейнер ждёт прохождения <code>startupProbe</code> sidecar;</li>
@@ -1844,29 +1852,35 @@ kubectl patch virtualservice payments -n payments --type<span class="o">=</span>
 <li><strong>приложение повторяет всё остальное</strong> — таймауты, 503, доменные коды — и только для тех операций, про которые знает, что они идемпотентны (есть <code>Idempotency-Key</code>, глава 27).</li>
 <li><strong>retry budget</strong> на уровне mesh на случай ошибки: доля повторов ограничена, чтобы даже неправильная конфигурация не дала девятикратного усиления.</li>
 </ul>
-<p><strong>Профилактика.</strong>
-- Проверка в CI: линтер на <code>VirtualService</code>, требующий явного блока <code>retries</code> (нельзя молча получить значение по умолчанию).
-- Дашборд «усиление запросов»: отношение <code>reporter="destination"</code> к <code>reporter="source"</code> по каждой паре сервисов. Всё, что стабильно &gt; 1.1, — повод разбираться.
-- Учение раз в квартал: fault injection с <code>abort 50% / 503</code> на тестовом контуре и замер, во сколько раз вырастает нагрузка на бэкенд.</p>
+<p><strong>Профилактика.</strong></p>
+<ul>
+<li>Проверка в CI: линтер на <code>VirtualService</code>, требующий явного блока <code>retries</code> (нельзя молча получить значение по умолчанию).</li>
+<li>Дашборд «усиление запросов»: отношение <code>reporter="destination"</code> к <code>reporter="source"</code> по каждой паре сервисов. Всё, что стабильно &gt; 1.1, — повод разбираться.</li>
+<li>Учение раз в квартал: fault injection с <code>abort 50% / 503</code> на тестовом контуре и замер, во сколько раз вырастает нагрузка на бэкенд.</li>
+</ul>
 <h3 id="123-разделение-функций-между-кодом-и-mesh">12.3 Разделение функций между кодом и mesh</h3>
-<p><strong>В mesh:</strong>
-- mTLS и идентичность сервисов;
-- политики «кто с кем может говорить»;
-- L7-маршрутизация, веса, canary, зеркалирование;
-- <strong>базовые</strong> таймауты как страховочная сетка (глобальный потолок, чтобы ни один запрос не висел вечно);
-- outlier detection — mesh это делает лучше, потому что видит отдельные эндпоинты;
-- circuit breaking как load shedding (лимиты соединений и очередей);
-- RED-метрики и access-логи;
-- fault injection для учений.</p>
-<p><strong>В коде:</strong>
-- <strong>бизнес-fallback</strong>: отдать кешированное, деградированный ответ, значение по умолчанию;
-- <strong>идемпотентность</strong>: ключи, дедупликация, outbox;
-- <strong>доменные таймауты</strong>: «скоринг дольше 800 мс нам не нужен, дальше считаем клиента среднерисковым» — mesh не знает про 800 мс и не знает, что делать после;
-- <strong>классификация ошибок</strong>: что в вашем домене ошибка, а что нормальный отказ;
-- <strong>повторы с доменным знанием</strong> — только идемпотентное, с джиттером;
-- <strong>bulkhead по пулам</strong> внутри процесса (ограничить, сколько потоков занято вызовами к одному внешнему сервису);
-- <strong>объектная авторизация</strong>;
-- <strong>распространение контекста трассировки</strong>.</p>
+<p><strong>В mesh:</strong></p>
+<ul>
+<li>mTLS и идентичность сервисов;</li>
+<li>политики «кто с кем может говорить»;</li>
+<li>L7-маршрутизация, веса, canary, зеркалирование;</li>
+<li><strong>базовые</strong> таймауты как страховочная сетка (глобальный потолок, чтобы ни один запрос не висел вечно);</li>
+<li>outlier detection — mesh это делает лучше, потому что видит отдельные эндпоинты;</li>
+<li>circuit breaking как load shedding (лимиты соединений и очередей);</li>
+<li>RED-метрики и access-логи;</li>
+<li>fault injection для учений.</li>
+</ul>
+<p><strong>В коде:</strong></p>
+<ul>
+<li><strong>бизнес-fallback</strong>: отдать кешированное, деградированный ответ, значение по умолчанию;</li>
+<li><strong>идемпотентность</strong>: ключи, дедупликация, outbox;</li>
+<li><strong>доменные таймауты</strong>: «скоринг дольше 800 мс нам не нужен, дальше считаем клиента среднерисковым» — mesh не знает про 800 мс и не знает, что делать после;</li>
+<li><strong>классификация ошибок</strong>: что в вашем домене ошибка, а что нормальный отказ;</li>
+<li><strong>повторы с доменным знанием</strong> — только идемпотентное, с джиттером;</li>
+<li><strong>bulkhead по пулам</strong> внутри процесса (ограничить, сколько потоков занято вызовами к одному внешнему сервису);</li>
+<li><strong>объектная авторизация</strong>;</li>
+<li><strong>распространение контекста трассировки</strong>.</li>
+</ul>
 <p>Хорошая эвристика: <strong>если для правильного решения нужно знать, что означает этот запрос, — это код. Если достаточно знать, что это HTTP-запрос из A в B, — это mesh.</strong></p>
 <h3 id="124-когда-mesh-не-нужен">12.4 Когда mesh не нужен</h3>
 <p>Честный список признаков, при которых внедрение принесёт больше боли, чем пользы:</p>
@@ -2328,13 +2342,15 @@ istioctl proxy-status <span class="p">|</span> awk <span class="s1">'{print $NF}
 </tr>
 </tbody>
 </table>
-<p>Сокращённая шпаргалка «503 + флаг»:
-- <code>503 UF</code> → почти всегда <strong>mTLS</strong> или упавший вышестоящий сервис;
-- <code>503 UC</code> → порт/сеть/политика: соединение не установилось;
-- <code>503 UH</code> → нет готовых подов (или все выкинуты outlier detection);
-- <code>503 UO</code> → <strong>вы сами</strong> настроили слишком узкий connection pool;
-- <code>503 NC</code> / <code>404 NR</code> → ошибка <strong>конфигурации маршрутизации</strong>, а не runtime;
-- <code>403 UAEX</code> → <code>AuthorizationPolicy</code>.</p>
+<p>Сокращённая шпаргалка «503 + флаг»:</p>
+<ul>
+<li><code>503 UF</code> → почти всегда <strong>mTLS</strong> или упавший вышестоящий сервис;</li>
+<li><code>503 UC</code> → порт/сеть/политика: соединение не установилось;</li>
+<li><code>503 UH</code> → нет готовых подов (или все выкинуты outlier detection);</li>
+<li><code>503 UO</code> → <strong>вы сами</strong> настроили слишком узкий connection pool;</li>
+<li><code>503 NC</code> / <code>404 NR</code> → ошибка <strong>конфигурации маршрутизации</strong>, а не runtime;</li>
+<li><code>403 UAEX</code> → <code>AuthorizationPolicy</code>.</li>
+</ul>
 <h3 id="153-чеклист-запрос-не-доходит-до-сервиса">15.3 Чеклист «запрос не доходит до сервиса»</h3>
 <ol>
 <li><strong>Есть ли вообще sidecar?</strong>

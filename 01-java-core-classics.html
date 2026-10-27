@@ -3,7 +3,7 @@
 <title>1. Java Core: классика собеседований — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Java Core: классика собеседований">
 <a class="skip" href="#content">К тексту</a>
@@ -155,14 +155,16 @@
 </code></pre></div>
 
 <p>В его выводе на месте присваиваний окажутся обычные вызовы <code>invokestatic java/lang/Integer.valueOf:(I)Ljava/lang/Integer;</code> и <code>invokevirtual java/lang/Integer.intValue:()I</code>. Это ровно те же инструкции, которые появились бы, если бы вызовы были написаны руками.</p>
-<p>Мест, где компилятор вставляет упаковку или распаковку, немного, и их стоит помнить списком, потому что почти каждое хоть раз становилось причиной NPE или лишнего объекта:
-- присваивание примитива переменной ссылочного типа и обёртки переменной примитивного типа — преобразование при присваивании (<em>assignment conversion</em>, JLS §5.2);
-- передача аргумента в метод, у которого параметр объявлен обёрткой, а на вызове стоит примитив, или наоборот — преобразование при вызове метода (<em>method invocation conversion</em>, §5.3);
-- любые арифметические операции и сравнения над обёртками: операнды сначала распаковываются по правилам двуместного числового продвижения (<em>binary numeric promotion</em>, §5.6.2);
-- условие в <code>if</code> и <code>while</code>, а также условие тернарного оператора, где <code>Boolean</code> каждый раз распаковывается в <code>boolean</code>;
-- <code>switch</code> по обёртке, который тоже начинается с распаковки выражения;
-- коллекции и обобщения целиком: параметром типа может быть только ссылочный тип, поэтому <code>List&lt;Integer&gt;</code> физически не умеет хранить <code>int</code>;
-- цикл <code>for (int x : listOfIntegers)</code>, где распаковка происходит на каждой итерации без единого намёка в исходном тексте.</p>
+<p>Мест, где компилятор вставляет упаковку или распаковку, немного, и их стоит помнить списком, потому что почти каждое хоть раз становилось причиной NPE или лишнего объекта:</p>
+<ul>
+<li>присваивание примитива переменной ссылочного типа и обёртки переменной примитивного типа — преобразование при присваивании (<em>assignment conversion</em>, JLS §5.2);</li>
+<li>передача аргумента в метод, у которого параметр объявлен обёрткой, а на вызове стоит примитив, или наоборот — преобразование при вызове метода (<em>method invocation conversion</em>, §5.3);</li>
+<li>любые арифметические операции и сравнения над обёртками: операнды сначала распаковываются по правилам двуместного числового продвижения (<em>binary numeric promotion</em>, §5.6.2);</li>
+<li>условие в <code>if</code> и <code>while</code>, а также условие тернарного оператора, где <code>Boolean</code> каждый раз распаковывается в <code>boolean</code>;</li>
+<li><code>switch</code> по обёртке, который тоже начинается с распаковки выражения;</li>
+<li>коллекции и обобщения целиком: параметром типа может быть только ссылочный тип, поэтому <code>List&lt;Integer&gt;</code> физически не умеет хранить <code>int</code>;</li>
+<li>цикл <code>for (int x : listOfIntegers)</code>, где распаковка происходит на каждой итерации без единого намёка в исходном тексте.</li>
+</ul>
 <p>Упаковка в цикле замедляет код не на проценты, а в разы, потому что на каждой итерации создаётся новый объект. Классический пример — накопитель суммы, который по невнимательности объявлен обёрткой вместо примитива:</p>
 <div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BoxingCost</span> <span class="p">{</span>
     <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
@@ -357,10 +359,12 @@ Long 1000: false
 <li>вызывать через переменную-ссылку <strong>статический</strong> метод, потому что статический вызов не использует объект-получатель, и выражение <code>((Thread) null).currentThread()</code> спокойно отработает — на том же свойстве статического вызова построена ловушка в задаче 28;</li>
 <li>складывать со строкой: <code>null</code> превращается в текст, и <code>"x" + null</code> даёт строку <code>"xnull"</code>.</li>
 </ul>
-<p>Операции, которым нужен настоящий объект, на <code>null</code> заканчиваются исключением:
-- вызов любого метода экземпляра, чтение и запись поля, обращение к <code>.length</code> массива;
-- распаковка в примитив, о которой шла речь в 1.2;
-- синхронизация на <code>null</code>, бросок <code>throw null</code>, который сам даёт NPE, а также попытка использовать <code>null</code> ключом в <code>TreeMap</code> или элементом в <code>List.of</code>.</p>
+<p>Операции, которым нужен настоящий объект, на <code>null</code> заканчиваются исключением:</p>
+<ul>
+<li>вызов любого метода экземпляра, чтение и запись поля, обращение к <code>.length</code> массива;</li>
+<li>распаковка в примитив, о которой шла речь в 1.2;</li>
+<li>синхронизация на <code>null</code>, бросок <code>throw null</code>, который сам даёт NPE, а также попытка использовать <code>null</code> ключом в <code>TreeMap</code> или элементом в <code>List.of</code>.</li>
+</ul>
 <p><strong>Подробные сообщения NPE (JEP 358).</strong> До Java 14 всё сообщение об этой ошибке состояло из строки <code>java.lang.NullPointerException</code>. Если падала цепочка вида <code>a.getB().getC().getD()</code>, о том, какое звено оказалось пустым, приходилось догадываться по исходникам. Теперь JVM восстанавливает по байткоду, какая часть выражения дала <code>null</code>, и печатает это словами:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>Exception in thread "main" java.lang.NullPointerException:
     Cannot invoke "Payment.getPayer()" because the return value of
@@ -3271,11 +3275,13 @@ UncheckedIOException, причина: NoSuchFileException
 <p>Движение в ту же сторону продолжается. С Java 24 по JEP 472 началась подготовка к ограничению <strong>JNI</strong> (<em>Java Native Interface</em>, механизма вызова нативного кода), а <code>sun.misc.Unsafe</code> — внутренний класс для прямой работы с памятью — при доступе к памяти уже выдаёт предупреждение в JDK 25 и будет запрещён по умолчанию начиная с 26 (подробности в <code>FACTS.md</code>). Легальный путь к внутренностям теперь один: <code>VarHandle</code>, <code>MethodHandles</code> и FFM API (<em>Foreign Function &amp; Memory API</em>, штатный интерфейс к нативной памяти и функциям), о которых идёт речь в главе 02.</p>
 <h3 id="73-стоимость-рефлексии-и-способы-её-снизить">7.3 Стоимость рефлексии и способы её снизить</h3>
 <p>Стоимость рефлексии — это разница во времени между рефлексивным вызовом метода через <code>Method.invoke</code> и прямым вызовом того же метода. Знать, из чего она складывается, полезно не ради оптимизации собственного кода — рефлексию в прикладном коде пишут редко, — а ради понимания, почему фреймворки устроены так, как устроены, и почему запуск Spring-приложения измеряется секундами. Слагаемых четыре, и убираются они разными средствами: одно кэшированием, другое флагом доступа, два оставшихся — переходом на более современные механизмы вроде <code>MethodHandle</code> и <code>LambdaMetafactory</code>. Разберём сначала сами слагаемые и порядки величин, потом четыре приёма снижения цены в порядке возрастания сложности.</p>
-<p>Стоимость рефлексивного вызова складывается из четырёх частей:
-1. из поиска самого члена, потому что <code>getDeclaredMethod</code> обходит массивы объявлений и создаёт копии объектов <code>Method</code>;
-2. из проверки доступа, которая выполняется при каждом <code>invoke</code>, если предварительно не вызван <code>setAccessible(true)</code>;
-3. из упаковки всех аргументов в массив <code>Object[]</code> вместе с упаковкой примитивов в обёртки;
-4. и, наконец, из распаковки возвращаемого значения на стороне вызывающего.</p>
+<p>Стоимость рефлексивного вызова складывается из четырёх частей:</p>
+<ol>
+<li>из поиска самого члена, потому что <code>getDeclaredMethod</code> обходит массивы объявлений и создаёт копии объектов <code>Method</code>;</li>
+<li>из проверки доступа, которая выполняется при каждом <code>invoke</code>, если предварительно не вызван <code>setAccessible(true)</code>;</li>
+<li>из упаковки всех аргументов в массив <code>Object[]</code> вместе с упаковкой примитивов в обёртки;</li>
+<li>и, наконец, из распаковки возвращаемого значения на стороне вызывающего.</li>
+</ol>
 <p>Порядки величин такие: холодный рефлексивный вызов обходится в десятки раз дороже прямого. Но после того как HotSpot сгенерирует для метода байткод-посредник (<em>accessor</em>), а происходит это по достижении <code>sun.reflect.inflationThreshold</code>, по умолчанию после пятнадцати вызовов, разница падает до двух-четырёх раз, а при удачном встраивании почти исчезает. Так рефлексия работала до JDK 17 включительно. В JDK 18 по JEP 416 её переписали на дескрипторах методов (<em>method handles</em>) из пакета <code>java.lang.invoke</code>: нативный механизм теперь используется только в самом начале запуска JVM, а порога <code>sun.reflect.inflationThreshold</code> и генерации посредников больше нет. Старую реализацию в JDK 18 можно было вернуть свойством <code>-Djdk.reflect.useDirectMethodHandle=false</code>. ⚠️ В каком релизе это свойство перестало работать, JEP не называет, и отдельно это не проверялось. ⚠️ Конкретные множители сильно зависят и от версии JDK, и от сценария, поэтому мерить их надо на своём коде через JMH (глава 45).</p>
 <p>Снижают эту стоимость четырьмя способами, и первый из них покрывает большую часть случаев.</p>
 <p><strong>1. Кэшировать <code>Method</code> и <code>Field</code>.</strong> Вызов <code>getDeclaredMethod</code> обходится дороже самого <code>invoke</code>, потому что каждый раз возвращает свежую <strong>копию</strong> объекта <code>Method</code>. Поэтому кэшируют все фреймворки без исключения: Spring держит <code>ReflectionUtils</code> и кэши внутри <code>CachedIntrospectionResults</code>, Jackson — <code>BeanPropertyMap</code>, Hibernate — <code>PropertyAccess</code>.</p>
@@ -3591,17 +3597,21 @@ mvn compile <span class="o">&amp;&amp;</span> ls target/generated-sources/annota
 
 <p>Это классический инцидент в кластере. Новую версию сервиса выкатили на половину узлов, а сессии или кэш реплицируются между узлами Java-сериализацией, и половина узлов не может прочитать данные другой половины. То же происходит с Redis, если значения пишет <code>JdkSerializationRedisSerializer</code>, а именно его Spring Data Redis берёт для значений <strong>по умолчанию</strong> (см. <code>FACTS.md</code>, гл. 23).</p>
 <p>Явно объявленный <code>serialVersionUID</code> фиксирует совместимость: JVM перестаёт сравнивать структуру классов и верит объявленному числу. С этого момента изменения класса делятся на две группы.</p>
-<p><strong>Совместимыми</strong> считаются изменения, после которых старые байты по-прежнему читаются новым классом, и таких пять:
-- добавление нового поля, которое при чтении старых байтов получит значение по умолчанию, то есть <code>null</code> или <code>0</code>;
-- удаление существующего поля, потому что записанное для него значение из потока просто проигнорируется;
-- любые добавления, удаления и изменения методов и конструкторов, поскольку в поток они не попадают вовсе;
-- вставка новых классов в иерархию выше текущего;
-- изменение модификаторов доступа у полей.</p>
-<p><strong>Несовместимых</strong> изменений четыре, и каждое ломает чтение старых байтов:
-- смена типа у существующего поля;
-- превращение поля из статического в обычное и обратно, а также снятие или добавление <code>transient</code>, потому что для механизма это равносильно удалению и добавлению поля;
-- исчезновение <code>Serializable</code> из иерархии класса;
-- переименование самого класса или его пакета.</p>
+<p><strong>Совместимыми</strong> считаются изменения, после которых старые байты по-прежнему читаются новым классом, и таких пять:</p>
+<ul>
+<li>добавление нового поля, которое при чтении старых байтов получит значение по умолчанию, то есть <code>null</code> или <code>0</code>;</li>
+<li>удаление существующего поля, потому что записанное для него значение из потока просто проигнорируется;</li>
+<li>любые добавления, удаления и изменения методов и конструкторов, поскольку в поток они не попадают вовсе;</li>
+<li>вставка новых классов в иерархию выше текущего;</li>
+<li>изменение модификаторов доступа у полей.</li>
+</ul>
+<p><strong>Несовместимых</strong> изменений четыре, и каждое ломает чтение старых байтов:</p>
+<ul>
+<li>смена типа у существующего поля;</li>
+<li>превращение поля из статического в обычное и обратно, а также снятие или добавление <code>transient</code>, потому что для механизма это равносильно удалению и добавлению поля;</li>
+<li>исчезновение <code>Serializable</code> из иерархии класса;</li>
+<li>переименование самого класса или его пакета.</li>
+</ul>
 <p>Аннотация <code>@Serial</code>, появившаяся в Java 14, заставляет компилятор проверить, что помеченные ею поле или метод действительно относятся к механизму сериализации и имеют правильную сигнатуру; речь про <code>serialVersionUID</code>, <code>writeObject</code>, <code>readObject</code>, <code>readResolve</code> и <code>writeReplace</code>. Без неё опечатка в имени метода приводит к тому, что метод никогда не вызывается, и происходит это совершенно молча.</p>
 <h3 id="83-transient-writeobjectreadobject-readresolve">8.3 <code>transient</code>, <code>writeObject</code>/<code>readObject</code>, <code>readResolve</code></h3>
 <p>Сериализованная форма (<em>serialized form</em>) — это то, какие данные объекта и в каком виде попадают в поток. Механизм по умолчанию пишет все нетранзиентные поля подряд, и такая форма устраивает не всегда: часть полей не должна покидать процесс вовсе, часть представлена в памяти неэкономно, а часть требует проверки при чтении. На все три случая есть свои средства: ключевое слово <code>transient</code>, пара приватных методов <code>writeObject</code>/<code>readObject</code> с фиксированной сигнатурой, которые механизм вызывает рефлексией, и методы подмены объекта <code>readResolve</code> и <code>writeReplace</code>. Разберём их по порядку и сведём вместе в приёме serialization proxy, который снимает почти все претензии к механизму разом; в конце — о том, как сериализуются записи <code>record</code> и почему это единственное место, где сериализацию в JDK починили.</p>
@@ -3824,12 +3834,14 @@ mvn compile <span class="o">&amp;&amp;</span> ls target/generated-sources/annota
 </code></pre></div>
 
 <p><strong>Ответ:</strong> <code>true false true false true</code></p>
-<p><strong>Разбор.</strong>
-- <code>b</code> собирается из двух литералов, а это константное выражение времени компиляции, поэтому компилятор сворачивает его в готовый литерал <code>"java"</code> ещё до запуска, и во время выполнения переменная получает ту же ссылку из пула, что и <code>a</code>.
-- <code>c</code> выглядит почти так же, но <code>part</code> не объявлена <code>final</code>, поэтому выражение не считается константным, и конкатенация выполняется во время работы через <code>invokedynamic</code> и <code>StringConcatFactory</code>, а её результат — новый объект, которого в пуле нет.
-- <code>d</code> возвращает нас к первому случаю: <code>fpart</code> объявлена <code>final</code> и сразу инициализирована литералом, то есть считается <strong>constant variable</strong> в смысле JLS §4.12.4, поэтому выражение снова константное и снова сворачивается в литерал при компиляции.
-- <code>e</code> получает новый объект просто потому, что <code>new</code> создаёт его всегда, независимо от содержимого строки.
-- <code>f</code> — это результат <code>intern()</code>, который возвращает канонический экземпляр из пула, а там уже лежит <code>"java"</code> от литерала.</p>
+<p><strong>Разбор.</strong></p>
+<ul>
+<li><code>b</code> собирается из двух литералов, а это константное выражение времени компиляции, поэтому компилятор сворачивает его в готовый литерал <code>"java"</code> ещё до запуска, и во время выполнения переменная получает ту же ссылку из пула, что и <code>a</code>.</li>
+<li><code>c</code> выглядит почти так же, но <code>part</code> не объявлена <code>final</code>, поэтому выражение не считается константным, и конкатенация выполняется во время работы через <code>invokedynamic</code> и <code>StringConcatFactory</code>, а её результат — новый объект, которого в пуле нет.</li>
+<li><code>d</code> возвращает нас к первому случаю: <code>fpart</code> объявлена <code>final</code> и сразу инициализирована литералом, то есть считается <strong>constant variable</strong> в смысле JLS §4.12.4, поэтому выражение снова константное и снова сворачивается в литерал при компиляции.</li>
+<li><code>e</code> получает новый объект просто потому, что <code>new</code> создаёт его всегда, независимо от содержимого строки.</li>
+<li><code>f</code> — это результат <code>intern()</code>, который возвращает канонический экземпляр из пула, а там уже лежит <code>"java"</code> от литерала.</li>
+</ul>
 <h3 id="задача-4-порядок-инициализации-при-наследовании">Задача 4. Порядок инициализации при наследовании</h3>
 <p>В четвёртой задаче создаются два объекта класса <code>B</code>, унаследованного от <code>A</code>, и каждый шаг инициализации печатает метку; надо выписать всю последовательность меток. Статические блоки, инициализаторы полей экземпляра и тела конструкторов выполняются в строго определённом порядке (4.3), и важно не перепутать, где кончается родитель и начинается потомок. Классы в примере ещё не загружены, поэтому в ответ входит и инициализация самих классов, а не только экземпляров.</p>
 <div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">class</span> <span class="nc">A</span> <span class="p">{</span>
@@ -3903,11 +3915,13 @@ Derived: 42 derived
 </code></pre></div>
 
 <p><strong>Ответ:</strong> <code>long</code>, <code>Integer</code>, <code>long</code>, <code>varargs</code></p>
-<p><strong>Разбор.</strong> Фазы выбора в §15.12.2 идут строго по очереди: сначала строгая, где разрешено только расширение примитивов и ссылок, но запрещены упаковка и varargs; затем свободная, где добавляются упаковка и распаковка; и только потом фаза с varargs. Все неожиданности растут из одного правила: как только в очередной фазе нашёлся хотя бы один подходящий метод, компилятор останавливается, и до следующих фаз дело не доходит.
-- <code>g(5)</code> решается уже в первой фазе: преобразование <code>int → long</code> — это расширяющее преобразование примитива (<em>widening primitive conversion</em>), и строгая фаза его допускает. Упаковка не нужна, поэтому побеждает <code>long</code>, а фазы 2 и 3 даже не рассматриваются.
-- <code>g(Integer.valueOf(5))</code> тоже решается в первой фазе, хотя это менее очевидно. К <code>long</code> значение <code>Integer</code> без распаковки не приводится, зато к <code>g(Integer)</code> оно подходит без всяких преобразований. Вариант <code>g(Object...)</code>, к которому подошло бы <code>Integer → Object</code>, рассматривается только в третьей фазе и в сравнении не участвует. Побеждает <code>Integer</code>.
-- <code>g(5L)</code> решается в первой же фазе, потому что тип <code>long</code> подходит точно и без преобразований.
-- Вызову <code>g("a","b")</code> с двумя аргументами подходит только вариант с varargs, то есть третья фаза.</p>
+<p><strong>Разбор.</strong> Фазы выбора в §15.12.2 идут строго по очереди: сначала строгая, где разрешено только расширение примитивов и ссылок, но запрещены упаковка и varargs; затем свободная, где добавляются упаковка и распаковка; и только потом фаза с varargs. Все неожиданности растут из одного правила: как только в очередной фазе нашёлся хотя бы один подходящий метод, компилятор останавливается, и до следующих фаз дело не доходит.</p>
+<ul>
+<li><code>g(5)</code> решается уже в первой фазе: преобразование <code>int → long</code> — это расширяющее преобразование примитива (<em>widening primitive conversion</em>), и строгая фаза его допускает. Упаковка не нужна, поэтому побеждает <code>long</code>, а фазы 2 и 3 даже не рассматриваются.</li>
+<li><code>g(Integer.valueOf(5))</code> тоже решается в первой фазе, хотя это менее очевидно. К <code>long</code> значение <code>Integer</code> без распаковки не приводится, зато к <code>g(Integer)</code> оно подходит без всяких преобразований. Вариант <code>g(Object...)</code>, к которому подошло бы <code>Integer → Object</code>, рассматривается только в третьей фазе и в сравнении не участвует. Побеждает <code>Integer</code>.</li>
+<li><code>g(5L)</code> решается в первой же фазе, потому что тип <code>long</code> подходит точно и без преобразований.</li>
+<li>Вызову <code>g("a","b")</code> с двумя аргументами подходит только вариант с varargs, то есть третья фаза.</li>
+</ul>
 <p>Порядок фаз выбран не случайно. Раз расширение рассматривается раньше упаковки, а varargs — последним, появление упаковки в Java 5 не могло изменить выбор перегрузок в уже написанном коде: новые возможности рассматриваются только там, где старые не дали ни одного кандидата.</p>
 <h3 id="задача-8-return-в-finally">Задача 8. <code>return</code> в <code>finally</code></h3>
 <p>В восьмой задаче блок <code>try</code> бросает исключение или возвращает значение, а блок <code>finally</code> тоже выполняет <code>return</code>. Надо сказать, что вернут методы и куда девается исключение, брошенное в <code>try</code>. Спецификация отвечает на это однозначно, и её формулировку стоит запомнить дословно, потому что именно она объясняет потерянные ошибки в продакшене (6.4).</p>
@@ -4230,14 +4244,16 @@ true
 </code></pre></div>
 
 <p><strong>Ответ:</strong> <code>-2147483648</code>, <code>-2147483648</code>, <code>-2147483648</code>, <code>-1</code>, <code>2</code>, <code>-1294967296</code>, <code>1</code>, <code>-126</code>, <code>-1702967296</code></p>
-<p><strong>Разбор.</strong>
-- Переполнение <code>int</code> в Java происходит молча, так требует JLS §4.2.2: ни исключения, ни флага, который можно было бы проверить, не возникает.
-- <code>Math.abs(Integer.MIN_VALUE)</code> не может вернуть <code>2³¹</code>, потому что такое значение в <code>int</code> не помещается, и возвращает сам <code>MIN_VALUE</code>, то есть отрицательное число. Отсюда практическое правило: распределять по бакетам выражением <code>Math.abs(hash) % n</code> небезопасно, вместо него берут <code>Math.floorMod</code>.
-- Деление <code>MIN_VALUE / -1</code> — единственное деление во всей целочисленной арифметике, которое переполняется, и его результат снова <code>MIN_VALUE</code>.
-- Оператор <code>%</code> сохраняет знак <strong>делимого</strong>, а <code>floorMod</code> — знак делителя, поэтому для неотрицательного индекса нужен второй, а не первый.
-- Величина сдвига для <code>int</code> берётся по модулю 32, поэтому <code>1 &lt;&lt; 32</code> — то же самое, что <code>1 &lt;&lt; 0</code>, то есть единица, а не ноль, как подсказывает интуиция.
-- <code>(byte) 130</code> оставляет только младшие восемь бит, а число 130 в них уже не помещается со знаком, поэтому получается <code>-126</code>.
-- Последняя строка самая жизненная: справа стоят только <code>int</code>-литералы, поэтому вся арифметика выполняется в <code>int</code>, результат переполняется, и лишь затем испорченное значение расширяется до <code>long</code>. Писать надо либо <code>1000L * 60 * 60 * 24 * 30</code>, где первый же множитель переводит всё вычисление в <code>long</code>, либо через готовое <code>TimeUnit.DAYS.toMillis(30)</code> или <code>Duration.ofDays(30).toMillis()</code>.</p>
+<p><strong>Разбор.</strong></p>
+<ul>
+<li>Переполнение <code>int</code> в Java происходит молча, так требует JLS §4.2.2: ни исключения, ни флага, который можно было бы проверить, не возникает.</li>
+<li><code>Math.abs(Integer.MIN_VALUE)</code> не может вернуть <code>2³¹</code>, потому что такое значение в <code>int</code> не помещается, и возвращает сам <code>MIN_VALUE</code>, то есть отрицательное число. Отсюда практическое правило: распределять по бакетам выражением <code>Math.abs(hash) % n</code> небезопасно, вместо него берут <code>Math.floorMod</code>.</li>
+<li>Деление <code>MIN_VALUE / -1</code> — единственное деление во всей целочисленной арифметике, которое переполняется, и его результат снова <code>MIN_VALUE</code>.</li>
+<li>Оператор <code>%</code> сохраняет знак <strong>делимого</strong>, а <code>floorMod</code> — знак делителя, поэтому для неотрицательного индекса нужен второй, а не первый.</li>
+<li>Величина сдвига для <code>int</code> берётся по модулю 32, поэтому <code>1 &lt;&lt; 32</code> — то же самое, что <code>1 &lt;&lt; 0</code>, то есть единица, а не ноль, как подсказывает интуиция.</li>
+<li><code>(byte) 130</code> оставляет только младшие восемь бит, а число 130 в них уже не помещается со знаком, поэтому получается <code>-126</code>.</li>
+<li>Последняя строка самая жизненная: справа стоят только <code>int</code>-литералы, поэтому вся арифметика выполняется в <code>int</code>, результат переполняется, и лишь затем испорченное значение расширяется до <code>long</code>. Писать надо либо <code>1000L * 60 * 60 * 24 * 30</code>, где первый же множитель переводит всё вычисление в <code>long</code>, либо через готовое <code>TimeUnit.DAYS.toMillis(30)</code> или <code>Duration.ofDays(30).toMillis()</code>.</li>
+</ul>
 <h3 id="задача-23-тернарный-оператор-и-автораспаковка">Задача 23. Тернарный оператор и автораспаковка</h3>
 <p>В двадцать третьей задаче тернарный оператор выбирает между значением <code>Boolean</code> из <code>Map</code> и примитивом <code>false</code>, и в одном из двух случаев в <code>Map</code> лежит <code>null</code>. Тип всего выражения вычисляется по правилам спецификации, и из-за этого распаковка может произойти там, где её не ждут. Хороший ответ называет тип всего выражения, а уже из него выводит и результат, и исключение.</p>
 <div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">Boolean</span><span class="o">&gt;</span> <span class="n">flags</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
@@ -4805,16 +4821,18 @@ shutdown hook
 </code></pre></div>
 
 <p><strong>Checkstyle</strong> проверяет стиль и синтаксис исходников, и из его модулей к разобранным темам относятся <code>EqualsHashCode</code>, <code>CovariantEquals</code>, <code>IllegalCatch</code> (запрещает <code>catch (Exception|Throwable)</code>), а также <code>IllegalThrows</code>, <code>MissingSwitchDefault</code>, <code>FallThrough</code>, <code>MagicNumber</code> и <code>FinalLocalVariable</code>.</p>
-<p><strong>Инспекции IntelliJ IDEA</strong> — третий уровень и самый обманчивый. Перечисленные ниже проверки включены по умолчанию, но подсвечиваются жёлтым и потому годами игнорируются. Чтобы от них была польза, поднимите их уровень серьёзности (<em>severity</em>) до Error и положите общий профиль инспекций (<em>inspection profile</em>) прямо в репозиторий, иначе у каждого разработчика он будет свой. Проверять в первую очередь стоит следующее:
-- «Number objects are compared using <code>==</code>»;
-- «Auto-unboxing may cause NullPointerException»;
-- «<code>equals()</code> called on objects of unrelated types»;
-- «Non-static inner class in a static context / could be static»;
-- «Overridable method called during object construction»;
-- «<code>finally</code> block does not complete normally»;
-- «Call to <code>toUpperCase()</code>/<code>toLowerCase()</code> without locale»;
-- «Result of method call ignored»;
-- «Raw use of parameterized class».</p>
+<p><strong>Инспекции IntelliJ IDEA</strong> — третий уровень и самый обманчивый. Перечисленные ниже проверки включены по умолчанию, но подсвечиваются жёлтым и потому годами игнорируются. Чтобы от них была польза, поднимите их уровень серьёзности (<em>severity</em>) до Error и положите общий профиль инспекций (<em>inspection profile</em>) прямо в репозиторий, иначе у каждого разработчика он будет свой. Проверять в первую очередь стоит следующее:</p>
+<ul>
+<li>«Number objects are compared using <code>==</code>»;</li>
+<li>«Auto-unboxing may cause NullPointerException»;</li>
+<li>«<code>equals()</code> called on objects of unrelated types»;</li>
+<li>«Non-static inner class in a static context / could be static»;</li>
+<li>«Overridable method called during object construction»;</li>
+<li>«<code>finally</code> block does not complete normally»;</li>
+<li>«Call to <code>toUpperCase()</code>/<code>toLowerCase()</code> without locale»;</li>
+<li>«Result of method call ignored»;</li>
+<li>«Raw use of parameterized class».</li>
+</ul>
 <h3 id="116-диагностика-во-время-выполнения">11.6 Диагностика во время выполнения</h3>
 <p>Диагностика во время выполнения — это команды, которыми исследуют уже запущенное приложение, когда проверок до запуска недостаточно. Вопросы здесь такие: что на самом деле сгенерировал компилятор, сколько строк лежит в пуле, кто удерживает объект, который должен был собраться. Команды ниже отвечают на каждый из этих вопросов и сгруппированы по задачам, от дизассемблирования класса до гистограммы объектов в куче; <code>jcmd</code> — утилита JDK, которая отправляет диагностические команды запущенной JVM по её идентификатору процесса.</p>
 <div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Байткод: посмотреть, что реально сгенерировал компилятор</span>

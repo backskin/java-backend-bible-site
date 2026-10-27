@@ -3,7 +3,7 @@
 <title>19. Проектирование схем и миграции — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Проектирование схем и миграции">
 <a class="skip" href="#content">К тексту</a>
@@ -354,11 +354,13 @@
 <h3 id="35-jsonb-json-и-отдельные-колонки">3.5 <code>jsonb</code>, <code>json</code> и отдельные колонки</h3>
 <p>Документ в PostgreSQL можно хранить в <code>json</code> или <code>jsonb</code>, а можно разложить по обычным колонкам, и выбор между этими вариантами определяет, что база сможет гарантировать о данных и насколько быстро будет их искать. Ниже сначала разобрано, чем отличаются два JSON-типа, затем — когда <code>jsonb</code> уместен и когда нет, как его индексировать и как частично вернуть ограничения на содержимое.</p>
 <p><code>json</code> хранит текст как есть, со всеми пробелами, порядком ключей и дубликатами, разбирает его при каждом обращении и не индексируется. <code>jsonb</code> хранит уже разобранное бинарное дерево: порядок ключей в нём не сохраняется, дубликаты схлопываются (остаётся последний), вставка обходится чуть дороже, зато обработка существенно дешевле, и поддерживаются индексы GIN, btree и hash (<a href="https://www.postgresql.org/docs/17/datatype-json.html">PostgreSQL 17, JSON Types</a>). Поэтому в бэкенде для хранения всегда берут <code>jsonb</code>, а <code>json</code> имеет смысл разве что для сырого лога тела запроса, которое потом надо вернуть байт в байт.</p>
-<p><code>jsonb</code> уместен в нескольких узнаваемых случаях:
-- сырой payload входящего сообщения, который хранят для аудита того, что реально пришло;
-- разреженные атрибуты, по которым не строят аналитические отчёты;
-- версионируемые настройки и конфиги, которые читают целиком;
-- поля, структуру которых определяет внешняя система и меняет без вашего участия.</p>
+<p><code>jsonb</code> уместен в нескольких узнаваемых случаях:</p>
+<ul>
+<li>сырой payload входящего сообщения, который хранят для аудита того, что реально пришло;</li>
+<li>разреженные атрибуты, по которым не строят аналитические отчёты;</li>
+<li>версионируемые настройки и конфиги, которые читают целиком;</li>
+<li>поля, структуру которых определяет внешняя система и меняет без вашего участия.</li>
+</ul>
 <p>Неуместен он для всего, что участвует в <code>JOIN</code>, агрегации или сортировке, и для всего, на что нужно ограничение целостности. Схема, спрятанная внутри <code>jsonb</code>, — это технический долг под проценты: ограничений на неё нет, статистики по вложенным полям почти нет, и приложению приходится защищаться от документа любой формы.</p>
 <p>Индексируют <code>jsonb</code> тремя способами, и в примере ниже видно, чем они различаются: набором поддерживаемых операторов и размером индекса.</p>
 <div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- Полный GIN (jsonb_ops): поддерживает ?, ?|, ?&amp;, @&gt;, @?, @@, операторов больше, но индекс объёмнее</span>

@@ -3,7 +3,7 @@
 <title>Приложение B. Банк вопросов — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Приложение B. Банк вопросов">
 <a class="skip" href="#content">К тексту</a>
@@ -382,12 +382,14 @@
 </code></pre></div>
 
 <p><strong>Ответ:</strong> <code>true false true false true</code></p>
-<p><strong>Разбор.</strong>
-- <code>b</code> — конкатенация двух литералов, константное выражение времени компиляции, сворачивается в литерал <code>"java"</code> → та же ссылка из пула.
-- <code>c</code> — <code>part</code> не <code>final</code>, конкатенация выполняется во время выполнения через <code>invokedynamic</code>/<code>StringConcatFactory</code> → новый объект вне пула.
-- <code>d</code> — <code>fpart</code> объявлена <code>final</code> и инициализирована литералом, то есть является <strong>constant variable</strong> (JLS §4.12.4) → выражение снова константное → свёрнуто в литерал.
-- <code>e</code> — <code>new</code> всегда создаёт новый объект.
-- <code>f</code> — <code>intern()</code> возвращает канонический экземпляр из пула, а там уже лежит <code>"java"</code> от литерала.</p>
+<p><strong>Разбор.</strong></p>
+<ul>
+<li><code>b</code> — конкатенация двух литералов, константное выражение времени компиляции, сворачивается в литерал <code>"java"</code> → та же ссылка из пула.</li>
+<li><code>c</code> — <code>part</code> не <code>final</code>, конкатенация выполняется во время выполнения через <code>invokedynamic</code>/<code>StringConcatFactory</code> → новый объект вне пула.</li>
+<li><code>d</code> — <code>fpart</code> объявлена <code>final</code> и инициализирована литералом, то есть является <strong>constant variable</strong> (JLS §4.12.4) → выражение снова константное → свёрнуто в литерал.</li>
+<li><code>e</code> — <code>new</code> всегда создаёт новый объект.</li>
+<li><code>f</code> — <code>intern()</code> возвращает канонический экземпляр из пула, а там уже лежит <code>"java"</code> от литерала.</li>
+</ul>
 <p><strong>4. Порядок инициализации при наследовании</strong> (гл. 01)</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">class</span> <span class="nc">A</span> <span class="p">{</span>
     <span class="kd">static</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"SA "</span><span class="p">);</span> <span class="p">}</span>
@@ -456,11 +458,13 @@ Derived: 42 derived
 </code></pre></div>
 
 <p><strong>Ответ:</strong> <code>long</code>, <code>Integer</code>, <code>long</code>, <code>varargs</code></p>
-<p><strong>Разбор.</strong> Фазы применимости (§15.12.2): (1) строгая — без упаковки и varargs; (2) свободная — с упаковкой; (3) с varargs.
-- <code>g(5)</code>: фаза 1 — <code>int → long</code> это widening primitive conversion, упаковка не нужна → <code>long</code> побеждает, фазы 2 и 3 не рассматриваются.
-- <code>g(Integer.valueOf(5))</code>: фаза 1 — <code>Integer</code> не приводится к <code>long</code> без распаковки, но <code>Integer → Object</code> подходит… однако <code>Integer</code> применим к <code>g(Integer)</code> строго и он специфичнее → <code>Integer</code>. (Формально <code>g(Object...)</code> рассматривается только в фазе 3.)
-- <code>g(5L)</code>: <code>long</code> точно подходит в фазе 1.
-- <code>g("a","b")</code>: два аргумента — только varargs.</p>
+<p><strong>Разбор.</strong> Фазы применимости (§15.12.2): (1) строгая — без упаковки и varargs; (2) свободная — с упаковкой; (3) с varargs.</p>
+<ul>
+<li><code>g(5)</code>: фаза 1 — <code>int → long</code> это widening primitive conversion, упаковка не нужна → <code>long</code> побеждает, фазы 2 и 3 не рассматриваются.</li>
+<li><code>g(Integer.valueOf(5))</code>: фаза 1 — <code>Integer</code> не приводится к <code>long</code> без распаковки, но <code>Integer → Object</code> подходит… однако <code>Integer</code> применим к <code>g(Integer)</code> строго и он специфичнее → <code>Integer</code>. (Формально <code>g(Object...)</code> рассматривается только в фазе 3.)</li>
+<li><code>g(5L)</code>: <code>long</code> точно подходит в фазе 1.</li>
+<li><code>g("a","b")</code>: два аргумента — только varargs.</li>
+</ul>
 <p>Порядок «расширение → упаковка → varargs» гарантирует, что добавление упаковки в Java 5 не поменяло поведение существующего кода.</p>
 <p><strong>8. <code>return</code> в <code>finally</code></strong> (гл. 01)</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">static</span> <span class="kt">int</span> <span class="nf">f</span><span class="p">()</span> <span class="p">{</span>
@@ -583,11 +587,13 @@ suppressed: close failed: A
 </code></pre></div>
 
 <p><strong>Ответ:</strong> <code>null null null 1 1</code></p>
-<p><strong>Разбор.</strong> Запись положена в бакет, вычисленный по <code>hash(1)</code>. После мутации:
-- <code>map.get(k)</code> идёт в бакет <code>hash(2)</code> — там пусто;
-- <code>map.get(new Key(1))</code> идёт в правильный бакет, но лежащий там ключ теперь имеет <code>id == 2</code> и <code>equals</code> не проходит;
-- <code>map.get(new Key(2))</code> идёт в бакет <code>hash(2)</code> — пусто;
-- <code>remove</code> не находит запись по той же причине.</p>
+<p><strong>Разбор.</strong> Запись положена в бакет, вычисленный по <code>hash(1)</code>. После мутации:</p>
+<ul>
+<li><code>map.get(k)</code> идёт в бакет <code>hash(2)</code> — там пусто;</li>
+<li><code>map.get(new Key(1))</code> идёт в правильный бакет, но лежащий там ключ теперь имеет <code>id == 2</code> и <code>equals</code> не проходит;</li>
+<li><code>map.get(new Key(2))</code> идёт в бакет <code>hash(2)</code> — пусто;</li>
+<li><code>remove</code> не находит запись по той же причине.</li>
+</ul>
 <p>Запись существует (<code>size() == 1</code>), но <strong>недостижима и неудаляема</strong> — настоящая утечка памяти, видимая только в heap-дампе. Ключи <code>HashMap</code> обязаны быть неизменяемы по полям, участвующим в <code>equals</code>/<code>hashCode</code>.</p>
 <p><strong>13. <code>TreeSet</code> и рассогласованный <code>compareTo</code></strong> (гл. 01)</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">var</span> <span class="n">a</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="p">(</span><span class="s">"1.0"</span><span class="p">);</span>
@@ -765,13 +771,15 @@ true
 </code></pre></div>
 
 <p><strong>Ответ:</strong> <code>-2147483648</code>, <code>-2147483648</code>, <code>-2147483648</code>, <code>-1</code>, <code>2</code>, <code>-1294967296</code>, <code>1</code>, <code>-126</code>, <code>-1702967296</code></p>
-<p><strong>Разбор.</strong>
-- Переполнение <code>int</code> обёртывается молча (JLS §4.2.2) — ни исключения, ни флага.
-- <code>Math.abs(Integer.MIN_VALUE)</code> не может вернуть <code>2³¹</code> (не влезает) и возвращает сам <code>MIN_VALUE</code>. Отсюда правило: <code>Math.abs(hash) % n</code> небезопасен, нужен <code>Math.floorMod</code>.
-- <code>MIN_VALUE / -1</code> — единственное деление, которое переполняется.
-- <code>%</code> сохраняет знак <strong>делимого</strong>, <code>floorMod</code> — знак делителя.
-- Сдвиг берётся по модулю 32 для <code>int</code>: <code>1 &lt;&lt; 32</code> = <code>1 &lt;&lt; 0</code> = 1.
-- Последняя строка — самая реальная: вся арифметика справа выполняется в <code>int</code> (все литералы <code>int</code>), результат переполняется, и только потом расширяется до <code>long</code>. Нужно <code>1000L * 60 * 60 * 24 * 30</code> или <code>TimeUnit.DAYS.toMillis(30)</code> / <code>Duration.ofDays(30).toMillis()</code>.</p>
+<p><strong>Разбор.</strong></p>
+<ul>
+<li>Переполнение <code>int</code> обёртывается молча (JLS §4.2.2) — ни исключения, ни флага.</li>
+<li><code>Math.abs(Integer.MIN_VALUE)</code> не может вернуть <code>2³¹</code> (не влезает) и возвращает сам <code>MIN_VALUE</code>. Отсюда правило: <code>Math.abs(hash) % n</code> небезопасен, нужен <code>Math.floorMod</code>.</li>
+<li><code>MIN_VALUE / -1</code> — единственное деление, которое переполняется.</li>
+<li><code>%</code> сохраняет знак <strong>делимого</strong>, <code>floorMod</code> — знак делителя.</li>
+<li>Сдвиг берётся по модулю 32 для <code>int</code>: <code>1 &lt;&lt; 32</code> = <code>1 &lt;&lt; 0</code> = 1.</li>
+<li>Последняя строка — самая реальная: вся арифметика справа выполняется в <code>int</code> (все литералы <code>int</code>), результат переполняется, и только потом расширяется до <code>long</code>. Нужно <code>1000L * 60 * 60 * 24 * 30</code> или <code>TimeUnit.DAYS.toMillis(30)</code> / <code>Duration.ofDays(30).toMillis()</code>.</li>
+</ul>
 <p><strong>23. Тернарный оператор и автораспаковка</strong> (гл. 01)</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">Boolean</span><span class="o">&gt;</span> <span class="n">flags</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
 <span class="n">Boolean</span> <span class="n">enabled</span> <span class="o">=</span> <span class="n">flags</span><span class="p">.</span><span class="na">containsKey</span><span class="p">(</span><span class="s">"feature"</span><span class="p">)</span> <span class="o">?</span> <span class="n">flags</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">"feature"</span><span class="p">)</span> <span class="p">:</span> <span class="kc">false</span><span class="p">;</span>
@@ -806,12 +814,14 @@ true
 </code></pre></div>
 
 <p><strong>Ответ:</strong> <code>1.0</code>, <code>a</code>, <code>a</code>, <code>97</code>, <code>1.0</code>, <code>Double</code></p>
-<p><strong>Разбор.</strong> Тип тернарника вычисляется <strong>до</strong> выбора ветки (§15.25).
-- <code>1</code> и <code>2.0</code> → binary numeric promotion → <code>double</code> → печатается <code>1.0</code>.
-- <code>1</code> и <code>'a'</code>: <code>1</code> — константа, представимая в <code>char</code> → тип <code>char</code> → печатается <code>a</code> (взята вторая ветка, значение <code>'a'</code>).
-- <code>'a'</code> и <code>0</code>: <code>0</code> представим в <code>char</code> → тип <code>char</code> → <code>a</code>.
-- <code>'a'</code> и <code>65536</code>: не представим в <code>char</code> → продвижение до <code>int</code> → <code>97</code>.
-- Последний: <code>Integer</code> и <code>Double</code> — оба распаковываются, продвигаются до <code>double</code>, результат <strong>запаковывается обратно</strong> в <code>Double</code>. Поэтому <code>o</code> — это <code>Double(1.0)</code>, хотя выбрана ветка с <code>Integer</code>.</p>
+<p><strong>Разбор.</strong> Тип тернарника вычисляется <strong>до</strong> выбора ветки (§15.25).</p>
+<ul>
+<li><code>1</code> и <code>2.0</code> → binary numeric promotion → <code>double</code> → печатается <code>1.0</code>.</li>
+<li><code>1</code> и <code>'a'</code>: <code>1</code> — константа, представимая в <code>char</code> → тип <code>char</code> → печатается <code>a</code> (взята вторая ветка, значение <code>'a'</code>).</li>
+<li><code>'a'</code> и <code>0</code>: <code>0</code> представим в <code>char</code> → тип <code>char</code> → <code>a</code>.</li>
+<li><code>'a'</code> и <code>65536</code>: не представим в <code>char</code> → продвижение до <code>int</code> → <code>97</code>.</li>
+<li>Последний: <code>Integer</code> и <code>Double</code> — оба распаковываются, продвигаются до <code>double</code>, результат <strong>запаковывается обратно</strong> в <code>Double</code>. Поэтому <code>o</code> — это <code>Double(1.0)</code>, хотя выбрана ветка с <code>Integer</code>.</li>
+</ul>
 <p>Практический вывод: смешивать в тернарнике разные числовые типы — заявка на баг. Приводите явно.</p>
 <p><strong>25. <code>switch</code> и fall-through</strong> (гл. 01)</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kt">int</span> <span class="n">day</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>

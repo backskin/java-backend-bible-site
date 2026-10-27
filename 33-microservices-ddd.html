@@ -3,7 +3,7 @@
 <title>33. Микросервисы и DDD — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Микросервисы и DDD">
 <a class="skip" href="#content">К тексту</a>
@@ -3706,10 +3706,12 @@ SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further detail
 <p>Диагностика архитектуры — это набор измерений, по которым видно, окупается ли разбиение системы на сервисы и где границы проведены неудачно. Без чисел архитектурные споры вида «связанность высокая» — «нет, нормальная» бесплодны, поэтому всё, что описано в этом разделе, поддаётся измерению. Сначала идут отдельные измерения: карта зависимостей и циклы, приближённые метрики связанности и связности, совместные изменения по git-истории, длина цепочек по трассам, метрики DORA по сервисам и архитектурные тесты в конвейере. Затем их сводят два инструмента для практики: быстрый чек-лист здоровья из десяти вопросов и чеклисты по четырём типичным симптомам, по которым удобно идти во время разбора проблемы.</p>
 <h3 id="131-карта-зависимостей-и-циклы">13.1 Карта зависимостей и циклы</h3>
 <p>Карта зависимостей — это граф, который показывает, какие сервисы кого вызывают и на какие топики подписаны; первым делом по ней ищут циклы. Цикл означает, что ни одного из его участников нельзя выкатить или заменить независимо, поэтому главный вопрос звучит так: <strong>есть ли циклы между сервисами?</strong> Ниже перечислены источники данных для карты, простая проверка циклов и метрики графа, которые помогают найти самые рискованные сервисы.</p>
-<p>Данные для карты берут из трёх источников:
-- из трассировки (гл. 51), потому что она показывает реальные вызовы, а не декларации: в Jaeger/Tempo есть граф зависимостей сервисов (service dependency graph), а в Kiali — граф по mesh (гл. 49);
-- из статического анализа, то есть из того, кто чьи клиенты генерирует из OpenAPI/proto;
-- из Kafka, где видно, кто в какие топики пишет и из каких читает (<code>kafka-consumer-groups.sh --describe --all-groups</code>).</p>
+<p>Данные для карты берут из трёх источников:</p>
+<ul>
+<li>из трассировки (гл. 51), потому что она показывает реальные вызовы, а не декларации: в Jaeger/Tempo есть граф зависимостей сервисов (service dependency graph), а в Kiali — граф по mesh (гл. 49);</li>
+<li>из статического анализа, то есть из того, кто чьи клиенты генерирует из OpenAPI/proto;</li>
+<li>из Kafka, где видно, кто в какие топики пишет и из каких читает (<code>kafka-consumer-groups.sh --describe --all-groups</code>).</li>
+</ul>
 <p>Когда список рёбер собран, проверить его на циклы можно одной командой: утилита <code>tsort</code> выполняет топологическую сортировку и сообщает об ошибке, если граф содержит цикл.</p>
 <div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># deps.txt: строки вида "lending payments"</span>
 tsort deps.txt &gt;/dev/null <span class="o">||</span> <span class="nb">echo</span> <span class="s2">"Обнаружен цикл в зависимостях сервисов"</span>

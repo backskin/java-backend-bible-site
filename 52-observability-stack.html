@@ -3,7 +3,7 @@
 <title>52. Эксплуатация observability-стека — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Эксплуатация observability-стека">
 <a class="skip" href="#content">К тексту</a>
@@ -1424,10 +1424,12 @@ sum by (level) (
 </code></pre></div>
 
 <blockquote class="cb-warn">
-<p><strong><span class="ic">⚠️</span> Грабли: три самые частые причины того, что ServiceMonitor есть, а таргета нет.</strong>
-1. <strong>Метка на самом ServiceMonitor не подходит под <code>serviceMonitorSelector</code></strong> экземпляра Prometheus. В kube-prometheus-stack это обычно <code>release: &lt;имя-релиза-helm&gt;</code>, а проверить селектор можно так: <code>kubectl get prometheus -A -o jsonpath='{.items[*].spec.serviceMonitorSelector}'</code>.
-2. <strong><code>namespaceSelector</code> не разрешает ваш namespace.</strong> Оператор по умолчанию может быть ограничен списком namespace (<code>serviceMonitorNamespaceSelector</code>), и тогда ваш ServiceMonitor не будет виден в принципе.
-3. <strong><code>port</code> указан числом, а порт в Service не имеет имени.</strong> <code>endpoints[].port</code> ссылается на <strong>имя</strong> порта Service, и если порта с таким именем нет, эндпоинт молча не генерируется. Для номера существует <code>targetPort</code>, но использовать его не рекомендуется.</p>
+<p><strong><span class="ic">⚠️</span> Грабли: три самые частые причины того, что ServiceMonitor есть, а таргета нет.</strong></p>
+<ol>
+<li><strong>Метка на самом ServiceMonitor не подходит под <code>serviceMonitorSelector</code></strong> экземпляра Prometheus. В kube-prometheus-stack это обычно <code>release: &lt;имя-релиза-helm&gt;</code>, а проверить селектор можно так: <code>kubectl get prometheus -A -o jsonpath='{.items[*].spec.serviceMonitorSelector}'</code>.</li>
+<li><strong><code>namespaceSelector</code> не разрешает ваш namespace.</strong> Оператор по умолчанию может быть ограничен списком namespace (<code>serviceMonitorNamespaceSelector</code>), и тогда ваш ServiceMonitor не будет виден в принципе.</li>
+<li><strong><code>port</code> указан числом, а порт в Service не имеет имени.</strong> <code>endpoints[].port</code> ссылается на <strong>имя</strong> порта Service, и если порта с таким именем нет, эндпоинт молча не генерируется. Для номера существует <code>targetPort</code>, но использовать его не рекомендуется.</li>
+</ol>
 <p>Для отладки выполните <code>kubectl -n monitoring get secret prometheus-&lt;name&gt; -o jsonpath='{.data.prometheus\.yaml\.gz}' | base64 -d | gunzip | grep -A5 payment</code> и посмотрите, попал ли ваш job в сгенерированный конфиг. Если попал, а таргета нет, проблема в SD или в сети; если не попал, проблема в селекторах.</p>
 </blockquote>
 <h3 id="46-recording-rules">4.6 Recording rules</h3>

@@ -3,7 +3,7 @@
 <title>18. Транзакции, изоляция, блокировки — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Транзакции, изоляция, блокировки">
 <a class="skip" href="#content">К тексту</a>
@@ -1572,11 +1572,13 @@ READ COMMITTED + SELECT ... FOR UPDATE по всем строкам клиент
 <h3 id="33-snapshot-isolation-как-отдельный-уровень">3.3 Snapshot isolation как отдельный уровень</h3>
 <p>Snapshot isolation (изоляция снимками, SI) — это уровень изоляции, при котором транзакция читает все данные из снимка базы на момент своего начала, а при конфликте записей побеждает та транзакция, которая зафиксировалась первой. В стандарте такого уровня нет, но на деле на нём работают PostgreSQL, Oracle и отчасти InnoDB. Разберём, как он устроен, что запрещает и почему разные вендоры называют его по-разному; с этим связаны самые частые недоразумения при переезде между СУБД.</p>
 <p>Снимок (<em>snapshot</em>) — это состояние базы, в котором видны изменения всех транзакций, зафиксированных к определённому моменту, и не видно ничего, что зафиксировано позже. При SI транзакция читает из снимка, взятого на её старте, а при фиксации действует правило <strong>first-committer-wins</strong> («побеждает первый зафиксировавшийся»). Если другая транзакция изменила строку, которую пишем и мы, и зафиксировала это изменение после того, как был взят наш снимок, откатываемся мы.</p>
-<p>Из этого определения вытекают свойства SI:
-- читатели не блокируют писателей, а писатели не блокируют читателей, потому что читатель берёт нужную версию из снимка и не ждёт; именно этим SI обязан своей популярностью;
-- SI запрещает P0, P1, P2, P4 и A5A, а из фантомов запрещает только узкое прочтение A3: в таблице 4 статьи Беренсона и соавторов широкий феномен P3 для SI помечен как «иногда возможен», потому что write skew через вставку (раздел 2.12) — тоже фантом в широком смысле;
-- при этом SI допускает A5B (write skew) и read-only anomaly;
-- в стандарте ANSI этого уровня нет, и вендоры называют его по-разному: в PostgreSQL это <code>REPEATABLE READ</code>, в Oracle — <code>SERIALIZABLE</code>, в SQL Server — <code>SNAPSHOT</code> (отдельный явный уровень), а в MySQL/InnoDB ему приблизительно соответствует <code>REPEATABLE READ</code> для неблокирующих чтений.</p>
+<p>Из этого определения вытекают свойства SI:</p>
+<ul>
+<li>читатели не блокируют писателей, а писатели не блокируют читателей, потому что читатель берёт нужную версию из снимка и не ждёт; именно этим SI обязан своей популярностью;</li>
+<li>SI запрещает P0, P1, P2, P4 и A5A, а из фантомов запрещает только узкое прочтение A3: в таблице 4 статьи Беренсона и соавторов широкий феномен P3 для SI помечен как «иногда возможен», потому что write skew через вставку (раздел 2.12) — тоже фантом в широком смысле;</li>
+<li>при этом SI допускает A5B (write skew) и read-only anomaly;</li>
+<li>в стандарте ANSI этого уровня нет, и вендоры называют его по-разному: в PostgreSQL это <code>REPEATABLE READ</code>, в Oracle — <code>SERIALIZABLE</code>, в SQL Server — <code>SNAPSHOT</code> (отдельный явный уровень), а в MySQL/InnoDB ему приблизительно соответствует <code>REPEATABLE READ</code> для неблокирующих чтений.</li>
+</ul>
 <p>Путаница с названиями глубже, чем расхождение двух СУБД. Клеппман и Риккомини добавляют, что в IBM Db2 <code>REPEATABLE READ</code> означает сериализуемость, а <code>REPEATABLE READ</code> в MySQL — реализацию MVCC со свойствами слабее snapshot isolation. Причину они видят в истории: стандарт SQL опирается на определения уровней изоляции из System R 1975 года, когда snapshot isolation ещё не придумали, и PostgreSQL называет свой уровень SI именем <code>REPEATABLE READ</code>, потому что тот удовлетворяет требованиям стандарта. Вывод авторов звучит резко: «nobody really knows what repeatable read isolation means». Для собеседования из этого следует простое правило: говорить о конкретной СУБД и об аномалиях, которые допускает её уровень, потому что одно имя уровня ничего не гарантирует.<sup id="fnref:k18-names"><a class="footnote-ref" href="#fn:k18-names">10</a></sup></p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Грабли.</strong> Oracle-разработчик, перешедший на PostgreSQL, говорит «у нас всё на SERIALIZABLE» и имеет в виду snapshot isolation, а PostgreSQL-разработчик понимает под этим SSI и рассчитывает на защиту от write skew. Такое недоразумение порождает реальные ошибки при переезде, потому что Oracle <code>SERIALIZABLE</code> ≈ PostgreSQL <code>REPEATABLE READ</code>, а вовсе не <code>SERIALIZABLE</code>. При переезде Oracle→PostgreSQL код, который полагался на Oracle SERIALIZABLE, переводят либо на <code>REPEATABLE READ</code> (эквивалент), либо на <code>SERIALIZABLE</code>. Второй вариант — уже усиление гарантий, и оно требует повторять транзакции, упавшие с ошибкой сериализации.</p>
@@ -1647,10 +1649,12 @@ READ COMMITTED + SELECT ... FOR UPDATE по всем строкам клиент
 <blockquote>
 <p>«...such a target row might have already been updated (or deleted or locked) by another concurrent transaction... the would-be updater will wait for the first updating transaction to commit or roll back... If the first updater commits, the second updater will ignore the row if the first updater deleted it, otherwise it will attempt to apply its operation to the updated version of the row. <strong>The search condition of the command (the <code>WHERE</code> clause) is re-evaluated</strong> to see if the updated version of the row still matches the search condition.»</p>
 </blockquote>
-<p>Иначе говоря, <code>UPDATE</code> на <code>READ COMMITTED</code> проходит три шага:
-1. ищет строки по снимку, взятому в начале оператора;
-2. наткнувшись на строку с живым <code>xmax</code>, то есть на строку, которую сейчас меняет другая незавершённая транзакция, <strong>встаёт в ожидание</strong>, пока та транзакция не завершится;
-3. после её фиксации берёт <strong>новейшую</strong> версию строки, заново проверяет по ней <code>WHERE</code> и, если условие по-прежнему выполняется, применяет изменение к этой версии.</p>
+<p>Иначе говоря, <code>UPDATE</code> на <code>READ COMMITTED</code> проходит три шага:</p>
+<ol>
+<li>ищет строки по снимку, взятому в начале оператора;</li>
+<li>наткнувшись на строку с живым <code>xmax</code>, то есть на строку, которую сейчас меняет другая незавершённая транзакция, <strong>встаёт в ожидание</strong>, пока та транзакция не завершится;</li>
+<li>после её фиксации берёт <strong>новейшую</strong> версию строки, заново проверяет по ней <code>WHERE</code> и, если условие по-прежнему выполняется, применяет изменение к этой версии.</li>
+</ol>
 <p>Именно поэтому корректен канонический шаблон, в котором новое значение вычисляется из старого прямо в операторе:</p>
 <div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- Атомарно и безопасно на READ COMMITTED при любом числе параллельных транзакций</span>
 <span class="k">UPDATE</span> <span class="n">accounts</span> <span class="k">SET</span> <span class="n">balance</span> <span class="o">=</span> <span class="n">balance</span> <span class="o">+</span> <span class="mi">100</span> <span class="k">WHERE</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
@@ -1679,10 +1683,12 @@ READ COMMITTED + SELECT ... FOR UPDATE по всем строкам клиент
 <blockquote class="cb-hood">
 <p><strong><span class="ic">🔧</span> Под капотом.</strong> EvalPlanQual не ограничивается перепроверкой <code>WHERE</code>: он заново выполняет часть плана запроса на конкретной новой версии кортежа, отсюда и имя — «evaluate plan qualification», то есть «перевычислить условия плана». В сложных планах с соединением таблиц (join) это означает, что перечитывается не только целевая строка, но и связанные с ней. Из-за этого <code>UPDATE ... FROM</code> на <code>READ COMMITTED</code> может дать результат, который не воспроизводится ни при каком последовательном порядке, то есть аномалию сериализации.</p>
 </blockquote>
-<p><strong>Следствие для практики.</strong> На <code>READ COMMITTED</code> каждый отдельный оператор атомарен и видит согласованный срез, а вся транзакция целиком такого среза не видит. Поэтому действуют три правила:
-- всё, что укладывается в один оператор, пишите одним оператором (<code>UPDATE ... SET x = x + ?</code>, <code>INSERT ... ON CONFLICT DO UPDATE</code>, <code>WITH ... UPDATE ... RETURNING</code>);
-- всё, что требует согласованного чтения нескольких строк, требует и <code>REPEATABLE READ</code>;
-- всё, что читает одни строки и на основании прочитанного пишет другие, требует <code>SERIALIZABLE</code> или явной блокировки.</p>
+<p><strong>Следствие для практики.</strong> На <code>READ COMMITTED</code> каждый отдельный оператор атомарен и видит согласованный срез, а вся транзакция целиком такого среза не видит. Поэтому действуют три правила:</p>
+<ul>
+<li>всё, что укладывается в один оператор, пишите одним оператором (<code>UPDATE ... SET x = x + ?</code>, <code>INSERT ... ON CONFLICT DO UPDATE</code>, <code>WITH ... UPDATE ... RETURNING</code>);</li>
+<li>всё, что требует согласованного чтения нескольких строк, требует и <code>REPEATABLE READ</code>;</li>
+<li>всё, что читает одни строки и на основании прочитанного пишет другие, требует <code>SERIALIZABLE</code> или явной блокировки.</li>
+</ul>
 <p>Снимок на оператор проверен запуском из подраздела 1.2. Первая строка блока про снимки: на <code>READ COMMITTED</code> первое чтение дало 10, а второе в той же транзакции, после фиксации другой транзакции, дало 20. Именно так и описано выше: каждый оператор берёт новый снимок. Цена поведения видна в 2.4: шаблон «прочитать и записать по прочитанному» на этом уровне терял обновление (итог 50 вместо 20).<sup id="fnref:s18-42"><a class="footnote-ref" href="#fn:s18-42">11</a></sup></p>
 <blockquote class="cb-ask">
 <p><strong><span class="ic">❓</span> Спрашивали на интервью. Видит ли транзакция на <code>READ COMMITTED</code> чужие изменения посреди себя?</strong> Да, но только зафиксированные: каждый оператор получает новый снимок, и второй <code>SELECT</code> после чужой фиксации видит новое значение (в запуске 10, затем 20).<sup id="fnref2:s18-42"><a class="footnote-ref" href="#fn:s18-42">11</a></sup></p>
@@ -2078,9 +2084,11 @@ SQLSTATE: 40001
 </ul>
 <p>Именно next-key locking защищает InnoDB от фантомов на <code>REPEATABLE READ</code> при блокирующих чтениях, потому что в заблокированный промежуток никто не может вставить новую строку: «InnoDB uses next-key locks for searches and index scans, which prevents phantom rows». На <code>READ COMMITTED</code> гэп-локи отключаются: «gap locking is disabled for searches and index scans and is used only for foreign-key constraint checking and duplicate-key checking».</p>
 <p><code>READ UNCOMMITTED</code> в InnoDB <strong>есть</strong>, и причина в том, что страница изменяется на месте, а старые версии строк лежат отдельно, в undo-логе. Текущая страница уже содержит незафиксированные изменения, и прочитать её, не восстанавливая старую версию из undo, технически возможно. Это и есть грязное чтение: «a possible earlier version of a row might be used... This is also called a dirty read».</p>
-<p>Есть у InnoDB и ещё две особенности, о которых спрашивают:
-- <strong>Semi-consistent read</strong> («полусогласованное чтение»): если на <code>READ COMMITTED</code> при <code>UPDATE</code> строка заблокирована, «InnoDB performs a "semi-consistent" read, returning the latest committed version to MySQL so that MySQL can determine whether the row matches the <code>WHERE</code> condition». Если строка не подошла под условие, блокировка на неё не берётся, и ждать не приходится. На массовых <code>UPDATE</code> это заметно снижает число конфликтов.
-- <strong>SERIALIZABLE в InnoDB устроен не как SSI</strong>: «InnoDB implicitly converts all plain SELECT statements to SELECT ... FOR SHARE if autocommit is disabled». Иначе говоря, это честная двухфазная блокировка (2PL) с блокировками на чтение: читатели и писатели ждут друг друга, поэтому уровень обходится дорого и порождает настоящие взаимоблокировки, в отличие от неблокирующего SSI в PostgreSQL.</p>
+<p>Есть у InnoDB и ещё две особенности, о которых спрашивают:</p>
+<ul>
+<li><strong>Semi-consistent read</strong> («полусогласованное чтение»): если на <code>READ COMMITTED</code> при <code>UPDATE</code> строка заблокирована, «InnoDB performs a "semi-consistent" read, returning the latest committed version to MySQL so that MySQL can determine whether the row matches the <code>WHERE</code> condition». Если строка не подошла под условие, блокировка на неё не берётся, и ждать не приходится. На массовых <code>UPDATE</code> это заметно снижает число конфликтов.</li>
+<li><strong>SERIALIZABLE в InnoDB устроен не как SSI</strong>: «InnoDB implicitly converts all plain SELECT statements to SELECT ... FOR SHARE if autocommit is disabled». Иначе говоря, это честная двухфазная блокировка (2PL) с блокировками на чтение: читатели и писатели ждут друг друга, поэтому уровень обходится дорого и порождает настоящие взаимоблокировки, в отличие от неблокирующего SSI в PostgreSQL.</li>
+</ul>
 <h3 id="52-oracle">5.2 Oracle</h3>
 <p>Изоляция в Oracle, как и в PostgreSQL, построена на снимках, но набор уровней у неё беднее, а названия уровней расходятся с их смыслом. Коротко разберём, что Oracle поддерживает и чему его <code>SERIALIZABLE</code> соответствует в PostgreSQL. Для кода, который переезжает с Oracle на PostgreSQL, это соответствие важнее всего остального в подразделе.</p>
 <p>Oracle поддерживает <strong>только два</strong> уровня — <code>READ COMMITTED</code> (он действует по умолчанию) и <code>SERIALIZABLE</code> — и дополнительно режим <code>READ ONLY</code>, а <code>READ UNCOMMITTED</code> и <code>REPEATABLE READ</code> не поддерживает вовсе (<a href="https://docs.oracle.com/en/database/oracle/oracle-database/23/cncpt/data-concurrency-and-consistency.html">Oracle, Data Concurrency and Consistency</a>). При этом Oracle <code>SERIALIZABLE</code> на деле реализует snapshot isolation: «A transaction sees only changes committed at the time the transaction — not the query — began». Документация называет это согласованностью чтения на уровне транзакции (transaction-level read consistency), и это ровно то, что в PostgreSQL называется <code>REPEATABLE READ</code>. При конфликте записей Oracle возвращает <code>ORA-08177: can't serialize access for this transaction</code>, а транзакции только для чтения, по словам документации, «not susceptible to the ORA-08177 error».</p>
@@ -2570,9 +2578,11 @@ t=3..  Сессии D, E, F, ... — все запросы к таблице в�
 <p>Полезный приём — <strong><code>LOCK TABLE ... NOWAIT</code></strong> в начале служебной транзакции: с <code>NOWAIT</code> команда не встаёт в очередь, а сразу падает, если таблица занята. Лучше сразу упасть, чем встать в очередь и парализовать всех, кто окажется за вами.</p>
 <h3 id="64-пошаговый-разбор-очереди-ожидания">6.4 Пошаговый разбор очереди ожидания</h3>
 <p>Пошаговый разбор очереди ожидания — это описание того, как PostgreSQL хранит блокировку и решает, выдать её сразу или поставить процесс в очередь; механизм из 6.2 стоит разобрать на этом уровне, потому что именно он объясняет самые непонятные инциденты. Ниже описаны структура объекта блокировки и алгоритм её запроса, затем по шагам разобран типовой инцидент с отчётом и миграцией, приведён запрос, который находит корень очереди, и перечислены три меры, которые не дают попасть в такую ситуацию.</p>
-<p>Для каждого заблокированного объекта (структура <code>LOCK</code> в разделяемой памяти) PostgreSQL хранит две вещи:
-- маску удерживаемых режимов и счётчики по каждому режиму;
-- <strong>очередь ожидающих</strong> (<code>waitProcs</code>), то есть список процессов в порядке поступления запросов.</p>
+<p>Для каждого заблокированного объекта (структура <code>LOCK</code> в разделяемой памяти) PostgreSQL хранит две вещи:</p>
+<ul>
+<li>маску удерживаемых режимов и счётчики по каждому режиму;</li>
+<li><strong>очередь ожидающих</strong> (<code>waitProcs</code>), то есть список процессов в порядке поступления запросов.</li>
+</ul>
 <p>Запрос блокировки проходит по такому алгоритму (упрощённо, <code>LockAcquire</code> в <code>lock.c</code>):</p>
 <ol>
 <li>Сначала проверяется, не держит ли эта же транзакция нужный или более сильный режим. Если держит, счётчик просто увеличивается, и ожидания нет, потому что внутри транзакции блокировки повторно входимы (реентерабельны).</li>
@@ -2671,9 +2681,11 @@ FOR UPDATE    │     X     │   X   │       X       │   X
 <h3 id="72-хранение-строчной-блокировки">7.2 Хранение строчной блокировки</h3>
 <p>Строчная блокировка в PostgreSQL хранится не в памяти, а в самой строке на диске, и это решение определяет сразу несколько её свойств — от того, что <code>SELECT ... FOR UPDATE</code> пишет на диск, до отсутствия лимита на число заблокированных строк. Разберём, где именно хранится блокировка, два практических следствия из этого и то, как база справляется, когда строку делят несколько транзакций.</p>
 <p>Отдельной структуры в памяти для строчных блокировок <strong>нет</strong>: информация пишется в заголовок самой версии строки. Поле <code>xmax</code> получает XID блокирующей транзакции, а служебные биты заголовка (infomask) сообщают, удаление это или блокировка и какой она силы. Документация подтверждает следствие из этого: «PostgreSQL doesn't remember any information about modified rows in memory, so there is no limit on the number of rows locked at one time. However, locking a row might cause a disk write, e.g., <code>SELECT FOR UPDATE</code> modifies selected rows to mark them locked».</p>
-<p>Отсюда вытекают два практических следствия:
-1. <strong><code>SELECT ... FOR UPDATE</code> — это запись.</strong> Он изменяет страницы в буферном кэше (такие страницы называют грязными, <em>dirty</em>), пишет записи в WAL (хотя и меньше, чем полноценный <code>UPDATE</code>) и не работает на реплике, открытой только для чтения (<code>cannot execute SELECT FOR UPDATE in a read-only transaction</code>). Поэтому «просто заблокировать миллион строк» обходится в миллион записей и множество грязных страниц.
-2. <strong>Число заблокированных строк не ограничено</strong>, в отличие от табличных блокировок, которые упираются в <code>max_locks_per_transaction</code> (6.2).</p>
+<p>Отсюда вытекают два практических следствия:</p>
+<ol>
+<li><strong><code>SELECT ... FOR UPDATE</code> — это запись.</strong> Он изменяет страницы в буферном кэше (такие страницы называют грязными, <em>dirty</em>), пишет записи в WAL (хотя и меньше, чем полноценный <code>UPDATE</code>) и не работает на реплике, открытой только для чтения (<code>cannot execute SELECT FOR UPDATE in a read-only transaction</code>). Поэтому «просто заблокировать миллион строк» обходится в миллион записей и множество грязных страниц.</li>
+<li><strong>Число заблокированных строк не ограничено</strong>, в отличие от табличных блокировок, которые упираются в <code>max_locks_per_transaction</code> (6.2).</li>
+</ol>
 <blockquote class="cb-hood">
 <p><strong><span class="ic">🔧</span> Под капотом. Multixact.</strong> В <code>xmax</code> помещается только один XID, и возникает вопрос, что делать, если строку разделяемо заблокировали три транзакции. В этом случае PostgreSQL создаёт <strong>multixact ID</strong> — идентификатор группы транзакций — и кладёт его в <code>xmax</code>, выставив соответствующий бит infomask. Состав группы хранится в <code>pg_multixact/members</code> и <code>pg_multixact/offsets</code>; это SLRU-структуры, то есть файлы на диске с небольшим кэшем страниц в разделяемой памяти, вытесняемым по давности использования. Отсюда и эффекты, которые видят на боевых базах: ожидания <code>MultiXactOffsetSLRU</code> в pg_stat_activity, отдельный счётчик переполнения (wraparound) для multixact (<code>autovacuum_multixact_freeze_max_age</code>) и ошибка «multixact members limit exceeded». Её может вызвать интенсивное использование <code>FOR SHARE</code> или внешних ключей на горячих родительских строках; известный источник таких инцидентов — массовые <code>FOR KEY SHARE</code> от проверок FK на одну популярную строку-справочник. Подробно — в 7.7.</p>
 </blockquote>
@@ -2741,12 +2753,14 @@ SKIP LOCKED при одной занятой строке из 12: получе�
 <span class="n">RETURNING</span> <span class="n">t</span><span class="p">.</span><span class="n">id</span><span class="p">,</span> <span class="n">t</span><span class="p">.</span><span class="n">payload</span><span class="p">;</span>
 </code></pre></div>
 
-<p>Каждая строка этого оператора выбрана не случайно:
-- <code>ORDER BY run_after, id</code> задаёт детерминированный порядок захвата, без которого растёт шанс взаимоблокировок между воркерами (хотя <code>SKIP LOCKED</code> их почти исключает);
-- <code>LIMIT 50</code> задаёт размер пачки, и чем он больше, тем дольше держится транзакция;
-- <code>FOR UPDATE SKIP LOCKED</code> стоит внутри подзапроса, а не снаружи, чтобы блокировались ровно отобранные строки;
-- <code>RETURNING</code> отдаёт данные тем же оператором, без второго обмена с базой (round-trip);
-- <code>locked_until</code> страхует на случай смерти воркера: отдельный «реанимационный» <code>UPDATE</code> возвращает в <code>NEW</code> всё, у чего <code>locked_until &lt; now()</code> (7.8).</p>
+<p>Каждая строка этого оператора выбрана не случайно:</p>
+<ul>
+<li><code>ORDER BY run_after, id</code> задаёт детерминированный порядок захвата, без которого растёт шанс взаимоблокировок между воркерами (хотя <code>SKIP LOCKED</code> их почти исключает);</li>
+<li><code>LIMIT 50</code> задаёт размер пачки, и чем он больше, тем дольше держится транзакция;</li>
+<li><code>FOR UPDATE SKIP LOCKED</code> стоит внутри подзапроса, а не снаружи, чтобы блокировались ровно отобранные строки;</li>
+<li><code>RETURNING</code> отдаёт данные тем же оператором, без второго обмена с базой (round-trip);</li>
+<li><code>locked_until</code> страхует на случай смерти воркера: отдельный «реанимационный» <code>UPDATE</code> возвращает в <code>NEW</code> всё, у чего <code>locked_until &lt; now()</code> (7.8).</li>
+</ul>
 <p>На стороне Java тот же оператор выполняет репозиторий на Spring (<code>JdbcClient</code> из Spring Framework 6.1+). Обратите внимание, что транзакция в нём охватывает только захват:</p>
 <div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Repository</span>
 <span class="kd">public</span> <span class="kd">class</span> <span class="nc">OutboxTaskRepository</span> <span class="p">{</span>
@@ -2950,11 +2964,13 @@ SKIP LOCKED при одной занятой строке из 12: получе�
 </tbody>
 </table>
 <p><strong>Почему это реальная авария, а не экзотика.</strong> Хранилище members расходуется не по числу multixact, а по числу <strong>элементов</strong> в них. Проблему надёжно воспроизводит такой сценарий: есть горячая справочная строка (валюта, тариф, организация), на которую внешним ключом ссылаются миллионы дочерних строк. Каждый <code>INSERT</code> дочерней строки берёт <code>FOR KEY SHARE</code> на родителя, и при параллельных вставках на одной родительской строке копится multixact с десятками участников. При каждом новом участнике база создаёт <strong>новый</strong> multixact, потому что списки неизменяемы, и копирует в него всех прежних участников. В итоге members растут квадратично по числу транзакций, одновременно блокирующих одну строку.</p>
-<p>Симптомы нарастают в таком порядке:
-1. В <code>pg_stat_activity</code> появляется <code>wait_event = MultiXactOffsetSLRU</code> / <code>MultiXactMemberSLRU</code>, и растёт потребление CPU в бэкендах.
-2. В логах появляется <code>autovacuum: VACUUM ... (to prevent multixact wraparound)</code> на таблицах, которые, казалось бы, ничего такого требовать не должны.
-3. Появляется <code>WARNING: database "x" must be vacuumed within N transactions</code> с упоминанием multixact.
-4. Наконец, приходит <code>ERROR: multixact "members" limit exceeded</code>, и запись со строчными блокировками останавливается.</p>
+<p>Симптомы нарастают в таком порядке:</p>
+<ol>
+<li>В <code>pg_stat_activity</code> появляется <code>wait_event = MultiXactOffsetSLRU</code> / <code>MultiXactMemberSLRU</code>, и растёт потребление CPU в бэкендах.</li>
+<li>В логах появляется <code>autovacuum: VACUUM ... (to prevent multixact wraparound)</code> на таблицах, которые, казалось бы, ничего такого требовать не должны.</li>
+<li>Появляется <code>WARNING: database "x" must be vacuumed within N transactions</code> с упоминанием multixact.</li>
+<li>Наконец, приходит <code>ERROR: multixact "members" limit exceeded</code>, и запись со строчными блокировками останавливается.</li>
+</ol>
 <p><strong>Диагностика.</strong> Следующие запросы показывают возраст multixact по таблицам и по базам, а последняя строка напоминает, как посмотреть размер каталога members на диске:</p>
 <div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- Возраст multixact по таблицам: кто ближе всех к краю</span>
 <span class="k">SELECT</span> <span class="k">c</span><span class="p">.</span><span class="n">oid</span><span class="p">::</span><span class="n">regclass</span> <span class="k">AS</span> <span class="k">table_name</span><span class="p">,</span>
@@ -3293,10 +3309,12 @@ T1: UPDATE accounts SET balance = balance - 100 WHERE acctnum = 22222;   -- ЖД
 <h3 id="92-детектор-взаимоблокировок">9.2 Детектор взаимоблокировок</h3>
 <p>Детектор взаимоблокировок — это проверка, которую PostgreSQL выполняет над ожидающими процессами, чтобы найти цикл ожиданий и разорвать его откатом одной из транзакций. Запускается он не сразу, а с задержкой, и от этого зависят и задержка ответа при взаимоблокировке, и то, когда в логе появится сообщение об ожидании. Разберём, как устроена эта задержка, какие у неё практические следствия и каким кодом ошибки заканчивается взаимоблокировка.</p>
 <p>Детектор не запускается при каждом ожидании, потому что это дорого. Вместо этого процесс встаёт в ожидание, ждёт <code>deadlock_timeout</code> (<strong>по умолчанию 1s</strong>) и только после этого строит граф ожиданий и ищет в нём цикл. Документация объясняет это так: «The check for deadlock is relatively expensive, so the server doesn't run it every time it waits for a lock. We optimistically assume that deadlocks are not common in production applications and just wait on the lock for a while before checking for a deadlock» (<a href="https://www.postgresql.org/docs/current/runtime-config-locks.html">Lock Management</a>).</p>
-<p>Из этого вытекают три практических следствия:
-- <strong>взаимоблокировка всегда добавляет одной из транзакций не меньше <code>deadlock_timeout</code> секунды</strong> задержки, даже если цикл возник сразу;
-- уменьшать <code>deadlock_timeout</code>, скажем, до 200 мс разумно, только если взаимоблокировки частые и вы согласны платить за более частые проверки, но правильнее убрать саму причину;
-- <strong>тот же параметр управляет и <code>log_lock_waits</code></strong>: «When <code>log_lock_waits</code> is set, this parameter also determines the amount of time to wait before a log message is issued about the lock wait».</p>
+<p>Из этого вытекают три практических следствия:</p>
+<ul>
+<li><strong>взаимоблокировка всегда добавляет одной из транзакций не меньше <code>deadlock_timeout</code> секунды</strong> задержки, даже если цикл возник сразу;</li>
+<li>уменьшать <code>deadlock_timeout</code>, скажем, до 200 мс разумно, только если взаимоблокировки частые и вы согласны платить за более частые проверки, но правильнее убрать саму причину;</li>
+<li><strong>тот же параметр управляет и <code>log_lock_waits</code></strong>: «When <code>log_lock_waits</code> is set, this parameter also determines the amount of time to wait before a log message is issued about the lock wait».</li>
+</ul>
 <p>Взаимоблокировка заканчивается ошибкой <strong><code>40P01 deadlock_detected</code></strong> (<a href="https://www.postgresql.org/docs/current/errcodes-appendix.html">Error Codes</a>). Она относится к классу 40 (Transaction Rollback), как и <code>40001 serialization_failure</code>, и так же требует повторить транзакцию целиком.</p>
 <h3 id="93-сообщение-о-взаимоблокировке-в-логе">9.3 Сообщение о взаимоблокировке в логе</h3>
 <p>Сообщение о взаимоблокировке в логе PostgreSQL — это несколько строк, в которых база перечисляет участников цикла, то, чего каждый ждёт, и строку, на которой произошёл конфликт. Оно короткое, но в нём есть всё, чтобы понять, на чём столкнулись транзакции, если знать, куда смотреть. Ниже приведено типовое сообщение, разобрано, что означает каждая его часть, и перечислены настройки, без которых половины полезной информации в логе не окажется.</p>
@@ -3309,10 +3327,12 @@ HINT:  See server log for query details.
 CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </code></pre></div>
 
-<p>Читать его нужно так:
-- <code>ShareLock on transaction 8844</code> — <strong>не</strong> отдельный вид блокировки, которую вы брали, а способ, которым PostgreSQL ждёт чужую транзакцию: «When a process finds it necessary to wait specifically for another transaction to end, it does so by attempting to acquire share lock on the other transaction's ID» (<a href="https://www.postgresql.org/docs/current/view-pg-locks.html">pg_locks</a>). Если вы видите <code>ShareLock on transaction</code>, значит, конфликт произошёл по <strong>строке</strong>, а не по таблице.
-- <code>CONTEXT: while updating tuple (0,7) in relation "accounts"</code> прямо указывает, где искать: блок 0, кортеж 7 в таблице <code>accounts</code>. Этот адрес называется ctid, и найти по нему строку можно запросом <code>SELECT * FROM accounts WHERE ctid = '(0,7)'</code>.
-- Две строки <code>Process N:</code> показывают только <strong>последние</strong> операторы каждого процесса, а не все. Чтобы увидеть полный след, нужен <code>log_min_duration_statement</code> или трассировка в приложении.</p>
+<p>Читать его нужно так:</p>
+<ul>
+<li><code>ShareLock on transaction 8844</code> — <strong>не</strong> отдельный вид блокировки, которую вы брали, а способ, которым PostgreSQL ждёт чужую транзакцию: «When a process finds it necessary to wait specifically for another transaction to end, it does so by attempting to acquire share lock on the other transaction's ID» (<a href="https://www.postgresql.org/docs/current/view-pg-locks.html">pg_locks</a>). Если вы видите <code>ShareLock on transaction</code>, значит, конфликт произошёл по <strong>строке</strong>, а не по таблице.</li>
+<li><code>CONTEXT: while updating tuple (0,7) in relation "accounts"</code> прямо указывает, где искать: блок 0, кортеж 7 в таблице <code>accounts</code>. Этот адрес называется ctid, и найти по нему строку можно запросом <code>SELECT * FROM accounts WHERE ctid = '(0,7)'</code>.</li>
+<li>Две строки <code>Process N:</code> показывают только <strong>последние</strong> операторы каждого процесса, а не все. Чтобы увидеть полный след, нужен <code>log_min_duration_statement</code> или трассировка в приложении.</li>
+</ul>
 <p>Чтобы текст запросов вообще попал в лог, нужно <code>log_min_error_statement = error</code> (это значение по умолчанию) и желательно <code>log_line_prefix</code> с <code>%p %u %d %a</code> (pid, пользователь, база, application_name). Обязательно задайте <code>application_name</code> в JDBC-URL (<code>?ApplicationName=payments-api</code>): без него по логу взаимоблокировки непонятно, какой сервис виноват.</p>
 <h3 id="94-неочевидные-источники-взаимоблокировок">9.4 Неочевидные источники взаимоблокировок</h3>
 <p>Неочевидный источник взаимоблокировки — это механизм, который берёт блокировки за вас и в порядке, которого нет в вашем коде: внешние ключи, уникальные индексы, <code>REQUIRES_NEW</code> или массовый <code>UPDATE</code>. Взаимоблокировка в коде, где явно берутся блокировки в разном порядке, найти легко, а такие обычно становятся сюрпризом. Ниже перечислены эти четыре источника и то, как лечится каждый.</p>
@@ -3497,10 +3517,12 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 </tr>
 </tbody>
 </table>
-<p>Трёх вещей в логе <strong>нет</strong>, и добавлять их приходится самому:
-- предыдущих операторов транзакции, хотя именно они определяют порядок захвата. На время расследования включайте <code>log_min_duration_statement</code> либо передавайте из приложения идентификатор трассировки (<code>traceId</code>) в <code>application_name</code>;
-- значений параметров. В сообщения об ошибках их добавляет <code>log_parameter_max_length_on_error</code> (например, <code>= 1024</code>; по умолчанию <code>0</code>, то есть выключено), а <code>log_parameter_max_length</code> (по умолчанию <code>-1</code>, значения целиком) действует только на обычное логирование операторов через <code>log_statement</code> и <code>log_min_duration_statement</code>;
-- имени бизнес-операции, которое стоит динамически добавлять в <code>application_name</code>:</p>
+<p>Трёх вещей в логе <strong>нет</strong>, и добавлять их приходится самому:</p>
+<ul>
+<li>предыдущих операторов транзакции, хотя именно они определяют порядок захвата. На время расследования включайте <code>log_min_duration_statement</code> либо передавайте из приложения идентификатор трассировки (<code>traceId</code>) в <code>application_name</code>;</li>
+<li>значений параметров. В сообщения об ошибках их добавляет <code>log_parameter_max_length_on_error</code> (например, <code>= 1024</code>; по умолчанию <code>0</code>, то есть выключено), а <code>log_parameter_max_length</code> (по умолчанию <code>-1</code>, значения целиком) действует только на обычное логирование операторов через <code>log_statement</code> и <code>log_min_duration_statement</code>;</li>
+<li>имени бизнес-операции, которое стоит динамически добавлять в <code>application_name</code>:</li>
+</ul>
 <div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// Перед транзакцией, на том же соединении: имя операции попадёт в логи и pg_stat_activity</span>
 <span class="n">jdbc</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span><span class="s">"SET application_name = :name"</span><span class="p">).</span><span class="na">param</span><span class="p">(</span><span class="s">"name"</span><span class="p">,</span> <span class="s">"payments-api/transfer"</span><span class="p">).</span><span class="na">update</span><span class="p">();</span>
 </code></pre></div>
@@ -4003,11 +4025,13 @@ CONTEXT:  while updating tuple (0,7) in relation "accounts"
 <span class="p">}</span>
 </code></pre></div>
 
-<p>Работает это по четырём причинам:
-- <strong><code>INSERT ... ON CONFLICT DO NOTHING</code> атомарен</strong> и опирается на <code>UNIQUE</code>-индекс, а это единственная конструкция, которая корректна при любой параллельной нагрузке без всякой изоляции: из двух одновременных вставок одного ключа пройдёт только одна;
-- запись ключа и сама операция выполняются <strong>в одной транзакции</strong>, поэтому ситуация «выполнили, но не записали ключ» невозможна;
-- если параллельная попытка ещё идёт, её строка в <code>processed_requests</code> заблокирована, и второй вызов на <code>FOR UPDATE</code> дождётся её исхода;
-- <code>request_hash</code> ловит классическую ошибку клиента, когда тот же ключ приходит с другой суммой.</p>
+<p>Работает это по четырём причинам:</p>
+<ul>
+<li><strong><code>INSERT ... ON CONFLICT DO NOTHING</code> атомарен</strong> и опирается на <code>UNIQUE</code>-индекс, а это единственная конструкция, которая корректна при любой параллельной нагрузке без всякой изоляции: из двух одновременных вставок одного ключа пройдёт только одна;</li>
+<li>запись ключа и сама операция выполняются <strong>в одной транзакции</strong>, поэтому ситуация «выполнили, но не записали ключ» невозможна;</li>
+<li>если параллельная попытка ещё идёт, её строка в <code>processed_requests</code> заблокирована, и второй вызов на <code>FOR UPDATE</code> дождётся её исхода;</li>
+<li><code>request_hash</code> ловит классическую ошибку клиента, когда тот же ключ приходит с другой суммой.</li>
+</ul>
 <p>Не забудьте о <strong>чистке</strong>: <code>processed_requests</code> растёт бесконечно, поэтому заведите секционирование по дате или задание, которое пачками выполняет <code>DELETE FROM processed_requests WHERE created_at &lt; now() - interval '30 days'</code>. Срок хранения должен превышать самый дальний горизонт, на котором клиенты ещё повторяют запросы.</p>
 <blockquote>
 <p>💡 <strong>На интервью.</strong> «Транзакция гарантирует атомарность на сервере, но не решает проблему оборванного ответа: клиент не знает, зафиксировалась ли операция. Поэтому любая изменяющая операция, доступная снаружи, должна принимать <code>Idempotency-Key</code>. Реализуется это таблицей с PRIMARY KEY по ключу, <code>INSERT ... ON CONFLICT DO NOTHING</code> в той же транзакции, что и сама операция, и сохранённым ответом для повторных вызовов. Ограничение уникальности — единственное, что работает при любой параллельной нагрузке и на любом уровне изоляции».</p>
@@ -4643,10 +4667,12 @@ FOR UPDATE по пустой выборке               итого вывед�
 <p><strong>Симптом.</strong> В пиковый час записи начали падать с <code>ERROR: multixact "members" limit exceeded</code>. Читающие запросы работали, а <code>INSERT</code> в большинство таблиц не проходил, хотя место на диске было, а обычный возраст XID оставался в норме.</p>
 <p><strong>Диагностика.</strong> <code>du -sh $PGDATA/pg_multixact/members</code> показал десятки гигабайт, а запрос по <code>mxid_age(relminmxid)</code> выявил одну таблицу-виновника — справочник тарифных планов из 30 строк, на который внешним ключом ссылались все операции. Каждая вставка операции брала <code>FOR KEY SHARE</code> на одну из этих 30 строк. При сотнях параллельных транзакций на строку копились списки в десятки участников, а members росли лавинообразно.</p>
 <p><strong>Корневая причина.</strong> Внешний ключ на сверхгорячую справочную строку в сочетании с длинными транзакциями (список участников фиксируется, пока транзакции активны) и недостаточно агрессивной заморозкой (раздел 7.7).</p>
-<p><strong>Лечение.</strong> Аварийно выполнили <code>VACUUM (FREEZE)</code> на таблице справочника и на таблице операций, что сдвинуло <code>relminmxid</code> и освободило members за 20 минут. После этого сделали ещё три вещи:
-- <code>ALTER TABLE tariffs SET (autovacuum_multixact_freeze_max_age = 100000000);</code>
-- заменили внешний ключ на справочник на ограничение <code>NOT ENFORCED</code> (появилось в PostgreSQL 18) с ночной сверкой, потому что значения справочника не меняются годами, а именно проверка при вставке порождала <code>FOR KEY SHARE</code>. Вариант <code>NOT VALID</code> здесь не годится: он пропускает только проверку уже существующих строк, а новые вставки проверяет как обычно и по-прежнему блокирует родительскую строку;
-- сократили транзакции записи операций, вынеся HTTP-вызов наружу (раздел 14.2).</p>
+<p><strong>Лечение.</strong> Аварийно выполнили <code>VACUUM (FREEZE)</code> на таблице справочника и на таблице операций, что сдвинуло <code>relminmxid</code> и освободило members за 20 минут. После этого сделали ещё три вещи:</p>
+<ul>
+<li><code>ALTER TABLE tariffs SET (autovacuum_multixact_freeze_max_age = 100000000);</code></li>
+<li>заменили внешний ключ на справочник на ограничение <code>NOT ENFORCED</code> (появилось в PostgreSQL 18) с ночной сверкой, потому что значения справочника не меняются годами, а именно проверка при вставке порождала <code>FOR KEY SHARE</code>. Вариант <code>NOT VALID</code> здесь не годится: он пропускает только проверку уже существующих строк, а новые вставки проверяет как обычно и по-прежнему блокирует родительскую строку;</li>
+<li>сократили транзакции записи операций, вынеся HTTP-вызов наружу (раздел 14.2).</li>
+</ul>
 <p><strong>Как не допустить.</strong> Мониторить <code>mxid_age</code> наравне с <code>age(relfrozenxid)</code>, помнить правило «FK на справочник из десятка строк при десятках тысяч вставок в секунду порождает multixact» и проводить аудит <code>FOR SHARE</code> в коде.</p>
 <p>Все восемь историй сведены в таблицу ниже: для каждой указаны корневая причина и одно правило, которое бы её предотвратило, и правый столбец годится как готовый чек-лист для ревью.</p>
 <table class="rt">
@@ -4803,10 +4829,12 @@ FOR UPDATE по пустой выборке               итого вывед�
 <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">a</span><span class="p">.</span><span class="n">xact_start</span> <span class="n">NULLS</span> <span class="k">LAST</span><span class="p">;</span>
 </code></pre></div>
 
-<p>Читать результат нужно так:
-- <code>wait_event_type = 'Lock'</code> и непустой <code>blocked_by</code> означают, что сессия ждёт блокировку, а в <code>blocked_by</code> стоит тот, кого она ждёт.
-- <code>state = 'idle in transaction'</code> с большим <code>state_age</code> указывает на того самого держателя горизонта и блокировок.
-- <code>pg_blocking_pids</code> показывает и жёсткие, и мягкие блокировки (раздел 6.2), и поэтому видит «очередь за DDL», которую наивное соединение по <code>pg_locks</code> не покажет. Но у функции есть цена: «Frequent calls to this function could have some impact on database performance, because it needs exclusive access to the lock manager's shared state for a short time», так что вызывать её в цикле мониторинга по тысяче строк не стоит.</p>
+<p>Читать результат нужно так:</p>
+<ul>
+<li><code>wait_event_type = 'Lock'</code> и непустой <code>blocked_by</code> означают, что сессия ждёт блокировку, а в <code>blocked_by</code> стоит тот, кого она ждёт.</li>
+<li><code>state = 'idle in transaction'</code> с большим <code>state_age</code> указывает на того самого держателя горизонта и блокировок.</li>
+<li><code>pg_blocking_pids</code> показывает и жёсткие, и мягкие блокировки (раздел 6.2), и поэтому видит «очередь за DDL», которую наивное соединение по <code>pg_locks</code> не покажет. Но у функции есть цена: «Frequent calls to this function could have some impact on database performance, because it needs exclusive access to the lock manager's shared state for a short time», так что вызывать её в цикле мониторинга по тысяче строк не стоит.</li>
+</ul>
 <p>Корень цепочки ищут, рекурсивно раскрывая <code>pg_blocking_pids</code>, пока не дойдут до сессии с пустым массивом: она никого не ждёт и потому и есть виновник. Для аварийного вмешательства есть две функции: <code>SELECT pg_cancel_backend(pid)</code> мягко отменяет текущий запрос, а <code>SELECT pg_terminate_backend(pid)</code> завершает сессию целиком. Для зависшей сессии <code>idle in transaction</code> работает только вторая, потому что отменять в ней нечего: запроса нет, а транзакция открыта.</p>
 <h3 id="172-pglocks">17.2 <code>pg_locks</code></h3>
 <p>Представление <code>pg_locks</code> показывает все блокировки, которые сейчас взяты или ожидаются, и по нему видно, какого типа конфликт: по строке, по таблице, advisory-лок или предикатная метка SSI. Запрос ниже выбирает только ожидающие блокировки и сортирует их по времени начала ожидания, а после него перечислено, на какие колонки смотреть.</p>
@@ -4818,14 +4846,16 @@ FOR UPDATE по пустой выборке               итого вывед�
  <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">l</span><span class="p">.</span><span class="n">waitstart</span><span class="p">;</span>
 </code></pre></div>
 
-<p>Смотреть в результате стоит на несколько колонок:
-- <code>granted = false</code> означает, что «this process is currently waiting to acquire this lock, which implies that at least one other process is holding or waiting for a conflicting lock mode on the same lockable object»;
-- <code>waitstart</code> показывает, с какого момента длится ожидание (колонка есть начиная с PostgreSQL 14);
-- <code>locktype = 'transactionid'</code> — ожидание чужой транзакции, то есть конфликт по строке (9.3);
-- <code>locktype = 'relation'</code> вместе с <code>mode = 'AccessExclusiveLock'</code> — DDL в очереди;
-- <code>locktype = 'advisory'</code> — ваш прикладной мьютекс (раздел 8);
-- <code>mode = 'SIReadLock'</code> — предикатный лок SSI, который никого не блокирует, но объясняет, почему растёт потребление памяти менеджером блокировок;
-- <code>fastpath = true</code> — лок взят по быстрому пути, в обход общей таблицы (6.2).</p>
+<p>Смотреть в результате стоит на несколько колонок:</p>
+<ul>
+<li><code>granted = false</code> означает, что «this process is currently waiting to acquire this lock, which implies that at least one other process is holding or waiting for a conflicting lock mode on the same lockable object»;</li>
+<li><code>waitstart</code> показывает, с какого момента длится ожидание (колонка есть начиная с PostgreSQL 14);</li>
+<li><code>locktype = 'transactionid'</code> — ожидание чужой транзакции, то есть конфликт по строке (9.3);</li>
+<li><code>locktype = 'relation'</code> вместе с <code>mode = 'AccessExclusiveLock'</code> — DDL в очереди;</li>
+<li><code>locktype = 'advisory'</code> — ваш прикладной мьютекс (раздел 8);</li>
+<li><code>mode = 'SIReadLock'</code> — предикатный лок SSI, который никого не блокирует, но объясняет, почему растёт потребление памяти менеджером блокировок;</li>
+<li><code>fastpath = true</code> — лок взят по быстрому пути, в обход общей таблицы (6.2).</li>
+</ul>
 <h3 id="173-логи">17.3 Логи</h3>
 <p>Лог PostgreSQL — это единственный источник сведений о том, что происходило в прошлом: системные представления показывают только то, что происходит сейчас, а для разбора после инцидента нужны записанные ожидания блокировок и долгие запросы. Ниже приведены настройки, которые стоит включить в <code>postgresql.conf</code> или через <code>ALTER SYSTEM</code>, и описано, какие строки после этого появятся в логе.</p>
 <div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- в postgresql.conf или ALTER SYSTEM</span>

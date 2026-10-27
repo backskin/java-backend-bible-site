@@ -3,7 +3,7 @@
 <title>55. Сборка и зависимости — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=614309b865">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=8a1f0bf64a">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Сборка и зависимости">
 <a class="skip" href="#content">К тексту</a>
@@ -1130,11 +1130,13 @@ mvn -o verify
 </code></pre></div>
 
 <p>Типичная схема: CI пишет в удалённый кеш, разработчики только читают. Локальная сборка после <code>git pull</code> повторно использует результаты компиляции, посчитанные в CI — иногда это разница между 4 минутами и 30 секундами.</p>
-<p>Требования к таске, чтобы она кешировалась:
-- помечена <code>@CacheableTask</code> (или это встроенная таска, которая уже помечена);
-- <strong>все</strong> входы и выходы объявлены; ничего не читается и не пишется в обход;
-- выходы <strong>детерминированы</strong> по входам (нет timestamp, нет случайного порядка, нет абсолютных путей в результате);
-- входы-пути нормализованы: <code>@PathSensitive(PathSensitivity.RELATIVE)</code> для исходников, <code>@Classpath</code> для classpath (игнорирует порядок и timestamp внутри jar).</p>
+<p>Требования к таске, чтобы она кешировалась:</p>
+<ul>
+<li>помечена <code>@CacheableTask</code> (или это встроенная таска, которая уже помечена);</li>
+<li><strong>все</strong> входы и выходы объявлены; ничего не читается и не пишется в обход;</li>
+<li>выходы <strong>детерминированы</strong> по входам (нет timestamp, нет случайного порядка, нет абсолютных путей в результате);</li>
+<li>входы-пути нормализованы: <code>@PathSensitive(PathSensitivity.RELATIVE)</code> для исходников, <code>@Classpath</code> для classpath (игнорирует порядок и timestamp внутри jar).</li>
+</ul>
 <p>Не кешируются по умолчанию: <code>test</code> кешируется, <code>jar</code> кешируется, а вот <code>processResources</code> и <code>copy</code>-подобные — нет (копирование дешевле, чем поход в кеш). <code>compileJava</code> — кешируется.</p>
 <blockquote class="cb-num">
 <p><strong><span class="ic">📊</span> Цифры.</strong> Документация различает два кеша прямо: configuration cache хранит «the task graph, each task's configured state, and dependency information», build cache — «outputs and intermediate files of the build» (<a href="https://docs.gradle.org/current/userguide/configuration_cache.html">Configuration Cache</a>). Это ортогональные механизмы: первый экономит фазу конфигурации, второй — фазу выполнения.</p>

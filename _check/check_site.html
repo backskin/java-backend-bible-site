@@ -1,0 +1,32 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Проверка вёрстки</title>
+<!-- Стенд: python tools/check_site.py копирует его и check_layout.js в site/_check/ (папка в .gitignore).
+     Открыть http://localhost:8790/_check/check_site.html — страницы грузятся в iframe на всех ширинах в обеих темах,
+     результат пишется в window.__result и на страницу. -->
+<style>body{font:14px/1.45 Tahoma,sans-serif;margin:16px}pre{white-space:pre-wrap}iframe{position:absolute;left:-30000px;top:0;border:0}</style>
+<h1>Проверка вёрстки</h1>
+<pre id="log">идёт проверка…</pre>
+<script>
+const PAGES = (new URLSearchParams(location.search).get('pages') || 'index.html,13-spring-security.html,47-kubernetes-openshift.html,11-reactive.html,A-glossary.html,B-interview-bank.html,slang.html,prep-plan.html,vacancy-refresh.html,workshop.html,design.html').split(',');
+const WIDTHS = [360, 390, 430, 768, 1024, 1280, 1440, 1920];
+async function run() {
+  const res = {}; let total = 0;
+  const js = await (await fetch('check_layout.js?' + Date.now())).text();
+  for (const p of PAGES) for (const w of WIDTHS) for (const th of ['light', 'dark']) {
+    const f = document.createElement('iframe'); f.style.width = w + 'px'; f.style.height = '900px';
+    document.body.appendChild(f); f.src = '../' + p + '?chk=' + Date.now();
+    await new Promise(r => f.onload = r);
+    const d = f.contentDocument; d.documentElement.setAttribute('data-theme', th);
+    await new Promise(r => setTimeout(r, 350));
+    f.contentWindow.eval(js);
+    const r = f.contentWindow.__layout().filter(x => !/«✓»/.test(x));
+    if (r.length) { res[`${p} ${w} ${th}`] = r; total += r.length; }
+    f.remove();
+  }
+  window.__result = res;
+  document.getElementById('log').textContent = total ? JSON.stringify(res, null, 1) : 'замечаний нет';
+  return res;
+}
+window.__done = run();
+</script>
