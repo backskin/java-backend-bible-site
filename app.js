@@ -635,6 +635,12 @@
     if(!h||!/^H[23]$/.test(h.tagName))return; h.classList.remove('aero-flash'); void h.offsetWidth; h.classList.add('aero-flash');}
   window.addEventListener('hashchange',flash);
 
+  // номер раздела — в отдельный ярлык (якорь заголовка не меняется)
+  document.querySelectorAll('.prose h2, .prose h3').forEach(function(h){
+    var t=h.firstChild; if(!t||t.nodeType!==3)return; var m=/^(\d+(?:\.\d+)*)\.?\s+/.exec(t.nodeValue); if(!m)return;
+    t.nodeValue=t.nodeValue.slice(m[0].length); var b=document.createElement('span'); b.className='h-no'; b.textContent=m[1]; h.insertBefore(b,h.firstChild);
+  });
+
   // «прочитано»: зелёная галочка в конце главы, когда читатель до неё дошёл
   var nav=document.querySelector('.prose .nav');
   if(nav&&'IntersectionObserver' in window){
