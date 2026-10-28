@@ -885,16 +885,16 @@
   function modal(title,html,buttons){
     document.querySelectorAll('.xp-modal').forEach(function(m){m.remove();});
     var m=document.createElement('div');m.className='xp-modal';
-    m.innerHTML='<div class="xp-win" role="dialog" aria-modal="true" aria-labelledby="xpw-t"><div class="xp-win-t"><span id="xpw-t"></span><button type="button" class="xp-win-x" aria-label="Закрыть">×</button></div><div class="xp-win-b"></div><div class="xp-win-f"></div></div>';
-    m.querySelector('#xpw-t').textContent=title; m.querySelector('.xp-win-b').innerHTML=html;
-    var f=m.querySelector('.xp-win-f'),prev=document.activeElement,done=false;
+    m.innerHTML='<div class="xp-dlg" role="dialog" aria-modal="true" aria-labelledby="xpw-t"><div class="xp-dlg-t"><span id="xpw-t"></span><button type="button" class="xp-dlg-x" aria-label="Закрыть">×</button></div><div class="xp-dlg-b"></div><div class="xp-dlg-f"></div></div>';
+    m.querySelector('#xpw-t').textContent=title; m.querySelector('.xp-dlg-b').innerHTML=html;
+    var f=m.querySelector('.xp-dlg-f'),prev=document.activeElement,done=false;
     function close(){if(done)return;done=true;m.remove();document.removeEventListener('keydown',key,true);if(prev&&prev.focus)try{prev.focus();}catch(e){}}
     function key(e){if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();return;}
       if(e.key==='Tab'){var fs=m.querySelectorAll('button,a[href],input'),a=fs[0],z=fs[fs.length-1];   // фокус не уходит из окна
         if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus();}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus();}}}
     buttons.forEach(function(b){var el=document.createElement('button');el.type='button';el.textContent=b.t;if(b.cls)el.className=b.cls;
       el.addEventListener('click',function(){if(done)return;if(b.fn&&b.fn()===false)return;close();});f.appendChild(el);});
-    m.querySelector('.xp-win-x').addEventListener('click',close);
+    m.querySelector('.xp-dlg-x').addEventListener('click',close);
     m.addEventListener('click',function(e){if(e.target===m)close();});
     document.addEventListener('keydown',key,true);document.body.appendChild(m);
     var inp=m.querySelector('input');
