@@ -7,7 +7,7 @@
   var sState=typeof SEARCH!=='undefined'?2:0;
   function needIndex(){
     if(sState) return; sState=1;
-    var sc=document.createElement('script'); sc.src='search-index.js?v=bc7eb9228f';
+    var sc=document.createElement('script'); sc.src='search-index.js?v=ad2efd7e14';
     sc.onload=function(){ sState=2; run(); }; sc.onerror=function(){ sState=0; };
     document.head.appendChild(sc);
   }
@@ -166,7 +166,7 @@
     if(nav==='back_forward')return;
     var touched=false; ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){window.addEventListener(ev,function(){touched=true;},{passive:true,once:true});});
     function fix(){ if(touched)return;
-      if(location.hash){var t=document.getElementById(decodeURIComponent(location.hash.slice(1)));if(t){if(Math.abs(t.getBoundingClientRect().top-16)>2)t.scrollIntoView();return;}}
+      if(location.hash){var t=document.getElementById(decodeURIComponent(location.hash.slice(1)));if(t){if(Math.abs(t.getBoundingClientRect().top-16)>2)(window.jbbSettleTo||function(e){e.scrollIntoView();})(t);return;}}
       var top=window.jbbStartY||0;   // читатель был ниже фото-шапки на прошлой странице — начинаем под шапкой (site_xp)
       if(window.scrollY!==top)window.scrollTo(0,top); }
     fix();
@@ -183,6 +183,8 @@
     if(!P.heads||!P.heads.length)return;
     var y=(top&&getComputedStyle(top).position!=='fixed'?top.offsetHeight:0)+90, act=null;
     for(var i=0;i<P.heads.length;i++){if(P.heads[i].getBoundingClientRect().top<=y)act=P.heads[i];else break;}
+    // только что нажатый пункт оглавления держит отметку, пока страница встаёт на место (site_xp settleTo)
+    var hold=window.jbbSpyHold;if(hold&&Date.now()<hold.until&&P.heads.indexOf(hold.el)>=0)act=hold.el;
     if(act!==P.last){
       if(P.last&&P.links[P.last.id])P.links[P.last.id].forEach(function(a){a.classList.remove('on');});
       if(act&&P.links[act.id])P.links[act.id].forEach(function(a){a.classList.add('on');});
@@ -191,7 +193,9 @@
       if(P.page&&P.art) ls('jbb-last',JSON.stringify({u:P.page,t:document.body.getAttribute('data-title')||document.title,s:act?act.textContent:'',h:act?act.id:'',d:Date.now()}));
     }
   }
-  var ticking=false; window.addEventListener('scroll',function(){if(!ticking){ticking=true;requestAnimationFrame(function(){ticking=false;onScroll();});}},{passive:true});
+  // пересчёт по кадру; если кадра нет (фоновая вкладка), через 100 мс по таймеру — иначе флаг залипает и оглавление замирает
+  var ticking=false; window.addEventListener('scroll',function(){if(ticking)return;ticking=true;var done=false,run=function(){if(done)return;done=true;ticking=false;onScroll();};
+    requestAnimationFrame(run);setTimeout(run,100);},{passive:true});
 
   // режим чтения: прячем панели при прокрутке вниз, показываем при прокрутке вверх, у начала и конца страницы и по касанию текста
   (function(){
@@ -236,8 +240,10 @@
   }
   function initSpy(){
     P={art:document.querySelector('.prose'),page:(location.pathname.split('/').pop()||''),last:null,links:{},curT:document.getElementById('toc-cur')};
-    P.heads=P.art?[].slice.call(P.art.querySelectorAll('h2[id]')):[];
     document.querySelectorAll('.toc-list a, .rail a[href^="#"]').forEach(function(a){var id=a.getAttribute('href').slice(1);(P.links[id]=P.links[id]||[]).push(a);});
+    // текущим считается любой заголовок, у которого есть пункт в оглавлении (и раздел h2, и подраздел h3), —
+    // иначе нажатый подраздел через мгновение уступал отметку своему разделу
+    P.heads=P.art?[].slice.call(P.art.querySelectorAll('h2[id],h3[id]')).filter(function(h){return h.tagName==='H2'||P.links[h.id];}):[];
     onScroll();
   }
 
@@ -498,11 +504,11 @@
     var u; try{u=new URL(href,location.href);}catch(e){location.href=href;return;}
     if(u.origin!==location.origin){location.href=href;return;}
     if(samePage(u)&&!opts.pop){ // якорь на той же странице
-      if(u.hash){var t=document.getElementById(decodeURIComponent(u.hash.slice(1))); if(t){history.pushState(null,'',u.hash);t.scrollIntoView();return;}}
+      if(u.hash){var t=document.getElementById(decodeURIComponent(u.hash.slice(1))); if(t){history.pushState(null,'',u.hash);(window.jbbSettleTo||function(e){e.scrollIntoView();})(t);return;}}
     }
     var doc=document.querySelector('.doc');
     if(!doc||!/\.html$/.test(u.pathname)||FULL.test(u.pathname)){location.href=href;return;}
-    if(samePage(u)&&opts.pop){var t0=u.hash&&document.getElementById(decodeURIComponent(u.hash.slice(1))); if(t0)t0.scrollIntoView(); else window.scrollTo(0,0); return;}
+    if(samePage(u)&&opts.pop){var t0=u.hash&&document.getElementById(decodeURIComponent(u.hash.slice(1))); if(t0)(window.jbbSettleTo||function(e){e.scrollIntoView();})(t0); else window.scrollTo(0,0); return;}
     var my={}; busy=my;
     document.body.classList.add('is-loading');
     // нажатая глава в меню «вщёлкивается» сразу, не дожидаясь загрузки текста
@@ -548,7 +554,7 @@
         close(); ghide();
         var t=u.hash&&document.getElementById(decodeURIComponent(u.hash.slice(1)));
         var h2=document.querySelector('.xp-hero');
-        if(t)t.scrollIntoView(); else window.scrollTo(0,past&&h2?h2.offsetHeight:0);
+        if(t)(window.jbbSettleTo||function(e){e.scrollIntoView();})(t); else window.scrollTo(0,past&&h2?h2.offsetHeight:0);
         initPage(); vars();
         document.body.classList.remove('is-loading');
       };
@@ -657,23 +663,36 @@
     }
   })();
 
-  // переход к разделу: браузер прыгает по приблизительным высотам блоков (content-visibility), блоки над заголовком
-  // дорисовываются и сдвигают его вниз — виден хвост прошлого раздела, и оглавление отмечает прошлый. Уточняем
-  // положение несколько раз, пока разметка не устоится; если читатель сам взялся прокручивать — перестаём
-  function settleTo(el){
-    if(!el)return; var n=0,stop=false,off=function(){stop=true;};
-    ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){addEventListener(ev,off,{passive:true,once:true});});
-    var pr=document.querySelector('.prose'),top=el;while(pr&&top.parentElement&&top.parentElement!==pr)top=top.parentElement;
-    for(var e=top,i=0;e&&i<4;i++,e=e.previousElementSibling)e.style.contentVisibility='visible';   // будим блоки прямо над заголовком
-    (function again(){setTimeout(function(){if(stop)return;
-      var want=parseFloat(getComputedStyle(el).scrollMarginTop)||0,dy=el.getBoundingClientRect().top-want;
-      if(Math.abs(dy)>2)window.scrollBy(0,dy);
-      if(++n<8)again();else window.dispatchEvent(new Event('scroll'));},90);})();   // оглавление пересчитывает текущий раздел по итоговому месту
+  // переход к разделу внутри главы. Блоки текста рисуются лениво (content-visibility), и до отрисовки их высота
+  // приблизительная: если прыгнуть сразу, блоки над заголовком дорисуются и сдвинут его — экран дёргается, а оглавление
+  // переключает отметку туда-сюда. Поэтому сначала дорисовываем всё над целью (высоты становятся точными), потом
+  // один прыжок без анимации; отметку в оглавлении ставим сразу на нажатый пункт и полсекунды не пересчитываем
+  function wakeAbove(el){
+    var pr=document.querySelector('.prose');if(!pr||!pr.contains(el))return;
+    var top=el;while(top.parentElement&&top.parentElement!==pr)top=top.parentElement;
+    for(var e=pr.firstElementChild;e;e=e.nextElementSibling){if(e.style.contentVisibility!=='visible')e.style.contentVisibility='visible';if(e===top)break;}
+  }
+  function settleTo(el,how){
+    if(!el)return;
+    wakeAbove(el);
+    var want=parseFloat(getComputedStyle(el).scrollMarginTop)||0;
+    window.jbbSpyHold={el:el,until:Date.now()+700};
+    window.scrollTo({top:Math.max(0,el.getBoundingClientRect().top+window.scrollY-want),behavior:'instant'});
+    // одна проверка после того, как браузер дорисует строки у цели (шрифты, картинки): поправка только если сдвиг заметен
+    setTimeout(function(){var dy=el.getBoundingClientRect().top-want;if(Math.abs(dy)>2)window.scrollBy({top:dy,behavior:'instant'});
+      window.dispatchEvent(new Event('scroll'));},120);
   }
   window.jbbSettleTo=settleTo;
   addEventListener('hashchange',function(){var id=decodeURIComponent(location.hash.slice(1));if(id&&!/^bm-/.test(id))settleTo(document.getElementById(id));});
-  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a)return;
-    var id=decodeURIComponent(a.getAttribute('href').slice(1));if(id&&('#'+id)===decodeURIComponent(location.hash))setTimeout(function(){settleTo(document.getElementById(id));},0);});
+  document.addEventListener('click',function(e){
+    if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+    var a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a)return;
+    var id=decodeURIComponent(a.getAttribute('href').slice(1));if(!id||/^bm-/.test(id))return;
+    var el=document.getElementById(id);if(!el)return;
+    e.preventDefault();
+    if(('#'+id)!==decodeURIComponent(location.hash))history.pushState(null,'','#'+id);
+    settleTo(el);
+  });
 
   // подсказка к ссылке: через 250 мс после наведения — куда она ведёт (data-tip ставит сборка; внешний адрес — на месте)
   (function(){
