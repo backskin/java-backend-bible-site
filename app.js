@@ -690,152 +690,230 @@
 })();
 
 (function(){
-  // ---------- хранение: куки частями ----------
-  var NAME='jbb_bm', PART=3800, LIMIT=60, YEAR=60*60*24*365*10;
-  function getCookie(n){var m=document.cookie.match('(?:^|; )'+n+'=([^;]*)');return m?m[1]:null;}
-  function setCookie(n,v,age){document.cookie=n+'='+v+';path=/;max-age='+age+';SameSite=Lax';}
-  function load(){try{var n=+getCookie(NAME+'_n')||0,s='';for(var i=0;i<n;i++)s+=getCookie(NAME+'_'+i)||'';return s?JSON.parse(decodeURIComponent(s)):[];}catch(e){return [];}}
-  function save(list){var s=encodeURIComponent(JSON.stringify(list)),old=+getCookie(NAME+'_n')||0,n=Math.ceil(s.length/PART);
-    for(var i=0;i<n;i++)setCookie(NAME+'_'+i,s.slice(i*PART,(i+1)*PART),YEAR);
-    for(var j=n;j<old;j++)setCookie(NAME+'_'+j,'',0);
-    setCookie(NAME+'_n',String(n),n?YEAR:0);}
+  // ---------- хранение: localStorage ----------
+  var KEY='jbb-bookmarks-v1', LIMIT=500;
+  function valid(p){return p&&typeof p.u==='string'&&/^[\w.-]+\.html$/.test(p.u)&&typeof p.d==='number';}
+  function lsOK(){try{localStorage.setItem('jbb-ls-test','1');localStorage.removeItem('jbb-ls-test');return true;}catch(e){return false;}}
+  // перенос из кук первой версии (jbb_bm_0…: base64 от UTF-8 или encodeURIComponent) — один раз, затем куки удаляются
+  (function migrate(){try{
+    var get=function(n){var m=document.cookie.match('(?:^|; )'+n+'=([^;]*)');return m?m[1]:null;};
+    var n=+get('jbb_bm_n')||0;if(!n)return;var s='';for(var i=0;i<n;i++)s+=get('jbb_bm_'+i)||'';
+    var old=[];try{old=JSON.parse(decodeURIComponent(escape(atob(s))));}catch(e){try{old=JSON.parse(decodeURIComponent(s));}catch(e2){}}
+    var cur=JSON.parse(localStorage.getItem(KEY)||'[]');
+    (Array.isArray(old)?old:[]).forEach(function(p){if(p&&typeof p.d==='number'&&p.d>1e11)p.d=Math.floor(p.d/1000);
+      if(valid(p)&&!cur.some(function(q){return q.d===p.d;}))cur.push(p);});
+    localStorage.setItem(KEY,JSON.stringify(cur));
+    var path=location.pathname.replace(/[^\/]*$/,'')||'/';
+    ['/',path].forEach(function(pt){for(var j=0;j<Math.max(n,8);j++)document.cookie='jbb_bm_'+j+'=;path='+pt+';max-age=0';
+      document.cookie='jbb_bm_n=;path='+pt+';max-age=0';});
+  }catch(e){}})();
+  function load(){try{var l=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(l)?l.filter(valid):[];}catch(e){return [];}}
+  function save(list){try{var s=JSON.stringify(list);localStorage.setItem(KEY,s);return localStorage.getItem(KEY)===s;}catch(e){return false;}}
   window.jbbBookmarks={load:load,save:save};
 
   // ---------- окно подтверждения в стиле XP ----------
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function modal(title,html,buttons){
+    document.querySelectorAll('.xp-modal').forEach(function(m){m.remove();});
     var m=document.createElement('div');m.className='xp-modal';
     m.innerHTML='<div class="xp-win" role="dialog" aria-modal="true" aria-labelledby="xpw-t"><div class="xp-win-t"><span id="xpw-t"></span><button type="button" class="xp-win-x" aria-label="Закрыть">×</button></div><div class="xp-win-b"></div><div class="xp-win-f"></div></div>';
     m.querySelector('#xpw-t').textContent=title; m.querySelector('.xp-win-b').innerHTML=html;
-    var f=m.querySelector('.xp-win-f'),prev=document.activeElement;
-    function close(){m.remove();document.removeEventListener('keydown',key);if(prev&&prev.focus)prev.focus();}
-    function key(e){if(e.key==='Escape')close();}
+    var f=m.querySelector('.xp-win-f'),prev=document.activeElement,done=false;
+    function close(){if(done)return;done=true;m.remove();document.removeEventListener('keydown',key,true);if(prev&&prev.focus)try{prev.focus();}catch(e){}}
+    function key(e){if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();return;}
+      if(e.key==='Tab'){var fs=m.querySelectorAll('button,a[href],input'),a=fs[0],z=fs[fs.length-1];   // фокус не уходит из окна
+        if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus();}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus();}}}
     buttons.forEach(function(b){var el=document.createElement('button');el.type='button';el.textContent=b.t;if(b.cls)el.className=b.cls;
-      el.addEventListener('click',function(){close();if(b.fn)b.fn();});f.appendChild(el);});
+      el.addEventListener('click',function(){if(done)return;if(b.fn&&b.fn()===false)return;close();});f.appendChild(el);});
     m.querySelector('.xp-win-x').addEventListener('click',close);
     m.addEventListener('click',function(e){if(e.target===m)close();});
-    document.addEventListener('keydown',key);document.body.appendChild(m);
-    (f.querySelector('.def')||f.querySelector('button')).focus();
+    document.addEventListener('keydown',key,true);document.body.appendChild(m);
+    var inp=m.querySelector('input');
+    if(inp){inp.focus();inp.select();inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();var d=f.querySelector('.def');if(d)d.click();}});}
+    else (f.querySelector('.def')||f.querySelector('button')).focus();
+    return m;
   }
-  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function info(t,h){modal(t,h,[{t:'OK',cls:'def'}]);}
+  // многоточие после подписи — только если строка оборвана, а не кончается знаком препинания
+  function ell(x){x=x||'';return /[.!?…:;»)]$/.test(x)?x:x+'…';}
+  function nameField(v){return '<p class="bm-where" style="margin-top:10px"><label for="bm-name">Название закладки</label></p>'+
+    '<input id="bm-name" class="bm-name" type="text" maxlength="120" autocomplete="off" value="'+esc(v)+'">';}
 
-  // ---------- где читаем: блок текста и строка в нём ----------
-  function readY(){var tb=document.querySelector('.topbar'),bar=document.querySelector('.xp-tocbar.on .xp-tocbar-btn');
-    var y=tb?tb.getBoundingClientRect().bottom:0; if(bar)y=Math.max(y,bar.getBoundingClientRect().bottom); return y+12;}
-  // блоки текста главы до абзаца: врезки, списки и раскрывающиеся блоки разворачиваются в свои абзацы и пункты
-  function flat(){var pr=document.querySelector('.prose'),out=[];if(!pr)return out;
+  // ---------- блоки текста главы ----------
+  // до абзаца: врезки, списки, раскрывающиеся блоки, таблицы и сноски разворачиваются в абзацы, пункты и строки таблиц;
+  // у окна кода берётся только код, без полосы с кнопками
+  function prose(){return document.querySelector('.doc .prose')||document.querySelector('.prose');}
+  function norm(s){return s.replace(/\s+/g,' ').trim();}
+  function ownText(c){return norm(Array.prototype.filter.call(c.childNodes,function(n){return n.nodeType===3;}).map(function(n){return n.textContent;}).join(''));}
+  function flat(){var pr=prose(),out=[];if(!pr)return out;
     (function walk(el){Array.prototype.forEach.call(el.children,function(c){
-      if(/^(BLOCKQUOTE|UL|OL|DETAILS)$/.test(c.tagName)&&c.children.length)walk(c);
-      else if(c.tagName==='DIV'&&c.querySelector('pre')){var ps=Array.prototype.filter.call(c.querySelectorAll('pre'),function(x){return x.offsetParent!==null;});out.push(ps[0]||c.querySelector('pre'));}   // окно кода: только код, без полосы с кнопками
-      else out.push(c);});})(pr);
+      var t=c.tagName;
+      if(t==='SUMMARY'||t==='NAV'||t==='SCRIPT'||t==='STYLE'||c.classList.contains('bm-flash'))return;
+      if(/^(BLOCKQUOTE|UL|OL|DETAILS|TABLE|THEAD|TBODY|FIGURE)$/.test(t)&&c.children.length){walk(c);return;}
+      if(t==='DIV'&&c.querySelector('pre')){var ps=Array.prototype.filter.call(c.querySelectorAll('pre'),function(x){return x.offsetParent!==null;});out.push(ps[0]||c.querySelector('pre'));return;}
+      if(t==='DIV'&&c.children.length&&!ownText(c)){walk(c);return;}
+      if(t==='LI'&&c.querySelector(':scope>p,:scope>ul,:scope>ol')){walk(c);return;}
+      out.push(c);});})(pr);
     return out;}
-  function blocks(){return flat().filter(function(e){return e.offsetParent!==null&&e.offsetHeight>0;});}
+  function readY(){var tb=document.querySelector('.topbar'),bar=document.querySelector('.xp-tocbar.on .xp-tocbar-btn');
+    var y=tb?tb.getBoundingClientRect().bottom:0; if(bar)y=Math.max(y,bar.getBoundingClientRect().bottom); return Math.max(0,y)+12;}
   function lineH(el){var cs=getComputedStyle(el),lh=parseFloat(cs.lineHeight);return lh>0?lh:parseFloat(cs.fontSize)*1.5;}
+  function caret(px,py){if(document.caretRangeFromPoint){var c=document.caretRangeFromPoint(px,py);return c&&{n:c.startContainer,o:c.startOffset};}
+    if(document.caretPositionFromPoint){var q=document.caretPositionFromPoint(px,py);return q&&{n:q.offsetNode,o:q.offset};}return null;}
+  // смещение символа от начала блока и обратно — через текстовые узлы (Range.toString считает так же)
+  function offsetOf(b,node,off){var r=document.createRange();r.setStart(b,0);try{r.setEnd(node,off);}catch(e){return 0;}return r.toString().length;}
+  function pointAt(b,off){var w=document.createTreeWalker(b,NodeFilter.SHOW_TEXT),n,acc=0,last=null;
+    while((n=w.nextNode())){var L=n.textContent.length;if(acc+L>off){return {n:n,o:off-acc};}acc+=L;last=n;}
+    return last?{n:last,o:Math.max(0,last.textContent.length-1)}:null;}
+  function rectAt(b,off){var p=pointAt(b,off);if(!p)return b.getBoundingClientRect();
+    var r=document.createRange();r.setStart(p.n,p.o);r.setEnd(p.n,Math.min(p.o+1,p.n.textContent.length));
+    var rs=r.getClientRects();return rs.length?rs[0]:b.getBoundingClientRect();}
+  // блоки главы помечены content-visibility:auto: пока браузер считает блок далёким от экрана, он не рисует его
+  // содержимое, и каретка внутри отдаёт сам абзац вместо текста. Перед поиском строки будим блоки в полосе [y0, y1]
+  function wake(y0,y1){var pr=prose();if(!pr)return;Array.prototype.forEach.call(pr.children,function(c){
+    var r=c.getBoundingClientRect();if(r.bottom>=y0&&r.top<=y1)c.style.contentVisibility='visible';});void pr.offsetHeight;}
+  function wakeAround(b){var pr=prose(),top=b;while(top.parentElement&&top.parentElement!==pr)top=top.parentElement;
+    var e=top;for(var i=0;i<6&&e;i++){e.style.contentVisibility='visible';e=e.previousElementSibling;}
+    e=top.nextElementSibling;for(var j=0;j<3&&e;j++){e.style.contentVisibility='visible';e=e.nextElementSibling;}}
+  function sectionOf(b){var pr=prose(),top=b;while(top.parentElement&&top.parentElement!==pr)top=top.parentElement;
+    var h=top;while(h){if(/^H[23]$/.test(h.tagName))return norm(h.textContent);h=h.previousElementSibling;}return '';}
+
+  // ---------- где читаем ----------
   function here(){
-    // линия чтения — верх видимой области под панелями; ищем текст прямо под ней, затем блок, которому он принадлежит
-    var y=readY(),all=flat(),pr=document.querySelector('.prose'),pl=pr.getBoundingClientRect().left;
-    function caret(px,py){if(document.caretRangeFromPoint){var c=document.caretRangeFromPoint(px,py);return c&&{n:c.startContainer,o:c.startOffset};}
-      if(document.caretPositionFromPoint){var q=document.caretPositionFromPoint(px,py);return q&&{n:q.offsetNode,o:q.offset};}return null;}
+    var pr=prose();if(!pr)return null;
+    var y=readY();wake(y-40,y+400);
+    var all=flat(),box=pr.getBoundingClientRect(),pl=box.left;
+    if(box.bottom<y)return null;
     var b=null,c=null,py=0;
-    for(var dy=4;dy<120&&!b;dy+=6){
-      for(var dx=2;dx<Math.min(pr.clientWidth,320)&&!b;dx+=12){
+    for(var dy=4;dy<160&&!b;dy+=6){
+      for(var dx=2;dx<Math.min(pr.clientWidth,360)&&!b;dx+=12){
         var k=caret(pl+dx,y+dy);
-        // каретка бывает в тексте или в самом абзаце (отступ, промежуток между строками) — годится и то и другое,
-        // если точка внутри блока текста главы; полоса с кнопками окна кода в список блоков не входит
         if(k&&k.n&&(k.n.nodeType===3?k.n.textContent.trim():k.n.nodeType===1)){
-          for(var i=0;i<all.length;i++)if(all[i].contains(k.n)&&all[i].textContent.trim()){b=all[i];c=k;py=y+dy;break;}
+          for(var i=0;i<all.length;i++)if(all[i].contains(k.n)&&norm(all[i].textContent)){b=all[i];c=k;py=y+dy;break;}
         }
       }
     }
-    if(!b){   // запасной путь: первый видимый блок, который заходит за линию чтения
-      var bs=blocks();for(var j=0;j<bs.length;j++){var rr=bs[j].getBoundingClientRect();if(rr.bottom>y){b=bs[j];py=Math.max(y,rr.top);break;}}
-      if(!b)return null;c={n:b,o:0};
-    }
-    var r=b.getBoundingClientRect(),lh=lineH(b),line=Math.max(0,Math.floor((py-r.top)/lh));
-    // начало строки: ставим каретку к левому краю блока на той же высоте
-    for(var sx=1;sx<40;sx+=3){var s0=caret(r.left+sx,r.top+line*lh+lh/2);if(s0&&s0.n&&s0.n.nodeType===3&&b.contains(s0.n)){c=s0;break;}}
-    var rg=document.createRange();rg.setStart(c.n,c.o);rg.setEnd(b,b.childNodes.length);
-    var x=rg.toString().replace(/\s+/g,' ').trim().slice(0,90)||b.textContent.replace(/\s+/g,' ').trim().slice(0,90);
-    // раздел: ближайший заголовок h2/h3 выше блока на уровне текста главы
-    var top=b;while(top.parentElement&&top.parentElement!==pr)top=top.parentElement;
-    var sec='',h=top;while(h){if(/^H[23]$/.test(h.tagName)){sec=h.textContent.trim();break;}h=h.previousElementSibling;}
-    var h1=pr.querySelector('h1');
-    return {u:(location.pathname.split('/').pop()||'index.html'),t:(h1?h1.textContent.trim():document.title).replace(/\s+/g,' ').slice(0,80),
-      s:sec.slice(0,80),b:all.indexOf(b),l:line,x:x,d:Date.now()};
+    if(!b){var bs=all.filter(function(e){return e.offsetParent!==null&&e.offsetHeight>0&&norm(e.textContent);});
+      for(var j=0;j<bs.length;j++){var rr=bs[j].getBoundingClientRect();if(rr.bottom>y){b=bs[j];py=Math.max(y,rr.top);c={n:b,o:0};break;}}
+      if(!b)return null;}
+    // строки считаем от начала содержимого блока: у кода и ячеек есть внутренний отступ сверху
+    var r=b.getBoundingClientRect(),cs=getComputedStyle(b),lh=lineH(b),
+        top=r.top+(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.borderTopWidth)||0),
+        left=r.left+(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.borderLeftWidth)||0),
+        line=Math.max(0,Math.floor((py-top)/lh));
+    // начало строки: каретка к левому краю содержимого на высоте этой строки
+    for(var sx=0;sx<48;sx+=3){var s0=caret(left+sx+1,top+line*lh+lh/2);if(s0&&s0.n&&s0.n.nodeType===3&&b.contains(s0.n)){c=s0;break;}}
+    var off=c.n.nodeType===3?offsetOf(b,c.n,c.o):0, txt=b.textContent;
+    var x=norm(txt.slice(off,off+200)).slice(0,60)||norm(txt).slice(0,60);
+    var sec=sectionOf(b), m=sec.match(/^(\d+(?:\.\d+)*)\.?\s/);
+    return {u:(location.pathname.split('/').pop()||'index.html'),b:all.indexOf(b),o:off,l:line,x:x,
+      s:m?m[1]:sec.slice(0,40),d:Math.floor(Date.now()/1000)};
   }
 
   // ---------- кнопка в строке заголовка ----------
   var IC='<svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>';
+  function chapterTitle(){var h1=prose()&&prose().querySelector('h1');return norm(h1?h1.textContent:document.title);}
   function addButton(){
     if(document.getElementById('bm'))return;
-    var fs=document.getElementById('fs'),theme=document.getElementById('theme'),anchor=fs||theme;if(!anchor)return;
+    var theme=document.getElementById('theme');if(!theme)return;
     var bt=document.createElement('button');bt.className='btn bm-btn';bt.id='bm';bt.type='button';bt.title='Закладка на этой строке';bt.setAttribute('aria-label',bt.title);bt.innerHTML=IC;
-    anchor.parentNode.insertBefore(bt,theme||anchor);
-    bt.addEventListener('click',function(){
-      var p=here();
-      if(!p){modal('Закладка','<p>Здесь нечего отметить: закладку можно поставить в тексте главы.</p>',[{t:'OK',cls:'def'}]);return;}
-      var list=load();
-      if(list.length>=LIMIT){modal('Закладок слишком много','<p>Сохранено '+list.length+' закладок, больше в куки не поместится. Удалите лишние на странице <a href="bookmarks.html">«Закладки»</a>.</p>',[{t:'OK',cls:'def'}]);return;}
-      modal('Сохранить закладку?',
-        '<p><b>'+esc(p.t)+'</b></p>'+(p.s?'<p class="bm-where">'+esc(p.s)+'</p>':'')+
-        '<p class="bm-where">Строка '+(p.l+1)+' в этом месте текста:</p><q>'+esc(p.x)+'…</q>',
-        [{t:'Сохранить',cls:'def',fn:function(){var l=load();l.unshift(p);save(l);
-            modal('Закладка сохранена','<p>Все закладки — на странице <a href="bookmarks.html">«Закладки»</a> в меню.</p>',[{t:'OK',cls:'def'}]);}},
-         {t:'Отмена'}]);
-    });
+    theme.parentNode.insertBefore(bt,theme);
+    bt.addEventListener('click',ask);
+  }
+  function ask(){
+    var tb=document.querySelector('.xp-tocbar.open .xp-tocbar-btn');if(tb)tb.click();   // открытое оглавление закрываем: читаем текст, а не список
+    if(!lsOK()){info('Закладки недоступны','<p>Браузер не даёт сайту хранить данные (приватный режим с запретом хранения или запрет для сайта), поэтому закладку сохранить нельзя.</p>');return;}
+    var p=here();
+    if(!p){info('Закладка','<p>Здесь нечего отметить: закладку можно поставить в тексте главы.</p>');return;}
+    p.t=chapterTitle().slice(0,120);
+    var list=load(),same=list.filter(function(q){return q.u===p.u&&q.b===p.b&&Math.abs((q.o|0)-p.o)<3;})[0];
+    var where='<p><b>'+esc(p.t)+'</b></p>'+(p.s?'<p class="bm-where">Раздел '+esc(p.s)+'</p>':'')+
+      '<p class="bm-where">Строка '+(p.l+1)+' в этом месте текста:</p><q>'+esc(ell(p.x))+'</q>';
+    if(same){modal('Закладка уже есть',where+'<p class="bm-where">На этой строке уже стоит закладка «'+esc(same.n||same.x)+'» от '+new Date(same.d*1000).toLocaleDateString('ru-RU')+'.</p>',[{t:'OK',cls:'def'}]);return;}
+    if(list.length>=LIMIT){info('Закладок слишком много','<p>Сохранено '+list.length+' закладок. Удалите ненужные на странице <a href="bookmarks.html">«Закладки»</a>.</p>');return;}
+    var def=p.s?(p.s+' · '+p.x.slice(0,40)):p.x.slice(0,50);
+    var mw=modal('Сохранить закладку?',where+nameField(def),
+      [{t:'Сохранить',cls:'def',fn:function(){p.n=norm(mw.querySelector('#bm-name').value).slice(0,120)||def;
+         var l=load();while(l.some(function(q){return q.d===p.d;}))p.d++;   // время сохранения — ключ закладки, он единственный
+         setTimeout(function(){done([p].concat(l));},0);}},{t:'Отмена'}]);
+  }
+  function done(l){
+    if(!save(l)){info('Закладка не сохранилась','<p>Браузер не записал данные: хранилище сайта переполнено или запрещено.</p>');return;}
+    info('Закладка сохранена','<p>Все закладки — на странице <a href="bookmarks.html">«Закладки»</a> в меню.</p>');
   }
   function syncButton(){var bt=document.getElementById('bm');if(bt)bt.hidden=!document.querySelector('.doc .prose h1');}
 
-  // ---------- возврат к строке ----------
+  // ---------- возврат к строке: адрес вида глава.html#bm-<время сохранения> ----------
+  var going=0;
   function go(){
-    var raw=null;try{raw=sessionStorage.getItem('jbb-bm-go');}catch(e){}
-    if(!raw)return; var p;try{p=JSON.parse(raw);}catch(e){return;}
+    var m=location.hash.match(/^#bm-(\d+)$/);if(!m)return;
+    var id=+m[1],p=load().filter(function(q){return q.d===id;})[0];
+    history.replaceState(null,'',location.pathname+location.search);
+    if(!p){info('Закладка не найдена','<p>Этой закладки нет в этом браузере: её удалили, очистили данные сайта или ссылку открыли в другом браузере.</p>');return;}
     if(p.u!==(location.pathname.split('/').pop()||'index.html'))return;
-    try{sessionStorage.removeItem('jbb-bm-go');}catch(e){}
-    var all=document.querySelector('.prose');if(!all)return;
-    var fl=flat(),b=fl[p.b];
-    // текст главы могли дописать: если блок по номеру не совпадает с запомненной строкой, ищем блок по тексту
-    var key=(p.x||'').slice(0,40);
-    if(key&&(!b||b.textContent.replace(/\s+/g,' ').indexOf(key)<0)){
-      b=null;for(var i=0;i<fl.length;i++){if(fl[i].textContent.replace(/\s+/g,' ').indexOf(key)>=0){b=fl[i];break;}}}
-    if(!b)return;
-    // блоки текста главы отрисовываются лениво (content-visibility): после прыжка соседние блоки меняют высоту,
-    // поэтому позицию пересчитываем, пока разметка не устоится, и только потом подсвечиваем строку
-    var lh=lineH(b);
-    function place(){var t=b.getBoundingClientRect().top+scrollY+p.l*lh;scrollTo({top:t-readY()+12,behavior:'auto'});return t;}
-    place();
-    var tries=0;(function again(){requestAnimationFrame(function(){place();if(++tries<6)setTimeout(again,120);else flash();});})();
+    var all=flat(),b=all[p.b],key=(p.x||'').slice(0,30);
+    function has(e){return key&&norm(e.textContent).indexOf(key)>=0;}
+    // главу могли дописать: если блок по номеру не содержит запомненной строки, ищем блок по тексту, ближайший к прежнему номеру
+    if(key&&(!b||!has(b))){b=null;var best=1e9;all.forEach(function(e,i){if(has(e)&&Math.abs(i-p.b)<best){best=Math.abs(i-p.b);b=e;}});}
+    if(!b){info('Место не найдено','<p>Текст главы изменился, и запомненной строки в нём больше нет. Глава открыта с начала.</p>');return;}
+    var off=p.o|0;
+    if(key){var t=b.textContent;if(norm(t.slice(off,off+200)).indexOf(key)!==0){   // смещение сдвинулось внутри блока — уточняем по тексту
+      var re=new RegExp(key.split(' ').map(function(w){return w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}).join('\\s+')),mm=re.exec(t);if(mm)off=mm.index;}}
+    var d=b;while(d&&d!==document.body){if(d.tagName==='DETAILS'&&!d.open)d.open=true;d=d.parentElement;}   // строка внутри свёрнутого блока
+    wakeAround(b);
+    var tok=++going,lh=lineH(b);
+    // блоки отрисовываются лениво (content-visibility): после прыжка соседние меняют высоту — пересчитываем, пока не устоится
+    function place(){var r=rectAt(b,off),t=r.top+scrollY;scrollTo({top:Math.max(0,t-readY()+8),behavior:'auto'});return {t:t,h:r.height||lh};}
+    place();var n=0;
+    // setTimeout, а не requestAnimationFrame: в фоновой вкладке (ссылку открыли в новой вкладке) кадры не рисуются, таймеры идут
+    (function again(){setTimeout(function(){if(tok!==going)return;place();if(++n<10)again();else flash();},120);})();
     function flash(){
-      var top=place(),f=document.createElement('div');f.className='bm-flash';
-      if(getComputedStyle(all).position==='static')all.style.position='relative';
-      f.style.top=(top-(all.getBoundingClientRect().top+scrollY))+'px';f.style.height=lh+'px';
-      all.appendChild(f);requestAnimationFrame(function(){requestAnimationFrame(function(){f.classList.add('out');});});
+      var g=place(),pr=prose(),f=document.createElement('div');f.className='bm-flash';
+      if(getComputedStyle(pr).position==='static')pr.style.position='relative';
+      f.style.top=(g.t-(pr.getBoundingClientRect().top+scrollY))+'px';f.style.height=Math.max(g.h,lh*.8)+'px';
+      pr.appendChild(f);setTimeout(function(){f.classList.add('out');},60);
       setTimeout(function(){f.remove();},3200);
     }
   }
 
   // ---------- страница коллекции ----------
+  var TITLES=window.JBB_TITLES||{};
   function list(){
     var box=document.getElementById('bm-list');if(!box)return;
-    var l=load(),clr=document.getElementById('bm-clear');
+    var l=load(),clr=document.getElementById('bm-clear'),use=document.getElementById('bm-use');
     if(clr)clr.hidden=!l.length;
+    if(use)use.textContent=l.length?('Закладок: '+l.length):'';
+    if(!lsOK()){box.innerHTML='<p class="bm-empty">Браузер не даёт сайту хранить данные, поэтому закладки здесь не работают.</p>';return;}
     if(!l.length){box.innerHTML='<p class="bm-empty">Закладок пока нет. В любой главе нажмите кнопку с флажком в строке заголовка — закладка встанет на строку, которую вы читаете.</p>';return;}
-    box.innerHTML='<ul class="bm-list">'+l.map(function(p,i){var d=new Date(p.d);
-      return '<li><div><a class="bm-go" href="'+esc(p.u)+'" data-i="'+i+'">'+esc(p.t)+'</a>'+(p.s?'<span class="bm-sec">'+esc(p.s)+' · строка '+(p.l+1)+'</span>':'')+
-        '<span class="bm-x">«'+esc(p.x)+'…»</span><span class="bm-d">'+d.toLocaleDateString('ru-RU')+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</span></div>'+
-        '<button type="button" class="btn" data-del="'+i+'">Удалить</button></li>';}).join('')+'</ul>';
+    box.innerHTML='<ul class="bm-list">'+l.map(function(p){var d=new Date(p.d*1000),t=TITLES[p.u];
+      return '<li><div><a class="bm-go" href="'+esc(p.u)+'#bm-'+p.d+'">'+esc(p.n||p.x||t||p.u)+'</a>'+
+        '<span class="bm-sec">'+esc(t||p.t||p.u)+(p.s?' · раздел '+esc(p.s):'')+' · строка '+((p.l|0)+1)+(t?'':' · такой главы больше нет')+'</span>'+
+        '<span class="bm-x">«'+esc(ell(p.x))+'»</span><span class="bm-d">'+d.toLocaleDateString('ru-RU')+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</span></div>'+
+        '<span class="bm-acts"><button type="button" class="btn" data-ren="'+p.d+'">Переименовать</button><button type="button" class="btn" data-del="'+p.d+'">Удалить</button></span></li>';}).join('')+'</ul>';
   }
+  function byId(id){return load().filter(function(q){return q.d===id;})[0];}
   document.addEventListener('click',function(e){
-    var a=e.target.closest&&e.target.closest('a.bm-go');
-    if(a){try{sessionStorage.setItem('jbb-bm-go',JSON.stringify(load()[+a.getAttribute('data-i')]));}catch(x){}return;}
-    var d=e.target.closest&&e.target.closest('button[data-del]');
-    if(d){var i=+d.getAttribute('data-del'),l=load(),p=l[i];if(!p)return;
-      modal('Удалить закладку?','<p><b>'+esc(p.t)+'</b></p><q>'+esc(p.x)+'…</q>',[{t:'Удалить',cls:'danger',fn:function(){var l2=load();l2.splice(i,1);save(l2);list();}},{t:'Отмена',cls:'def'}]);return;}
+    if(!e.target.closest)return;
+    var rn=e.target.closest('button[data-ren]');
+    if(rn){var rid=+rn.getAttribute('data-ren'),rp=byId(rid);if(!rp){list();return;}
+      var cur=rp.n||rp.x||'',mw=modal('Переименовать закладку',nameField(cur),
+        [{t:'Сохранить',cls:'def',fn:function(){var v=norm(mw.querySelector('#bm-name').value).slice(0,120)||cur,l=load();
+          l.forEach(function(q){if(q.d===rid)q.n=v;});if(!save(l))setTimeout(function(){info('Не удалось','<p>Браузер не записал данные.</p>');},0);list();}},{t:'Отмена'}]);return;}
+    var dl=e.target.closest('button[data-del]');
+    if(dl){var id=+dl.getAttribute('data-del'),p=byId(id);if(!p){list();return;}
+      modal('Удалить закладку?','<p><b>'+esc(p.n||TITLES[p.u]||p.u)+'</b></p><q>'+esc(ell(p.x))+'</q>',
+        [{t:'Удалить',cls:'danger',fn:function(){if(!save(load().filter(function(q){return q.d!==id;})))setTimeout(function(){info('Не удалось','<p>Браузер не записал данные.</p>');},0);list();}},{t:'Отмена',cls:'def'}]);return;}
     if(e.target.id==='bm-clear'){var n=load().length;
-      modal('Очистить все закладки?','<p>Будут удалены все закладки: '+n+'. Вернуть их будет нельзя.</p>',[{t:'Очистить',cls:'danger',fn:function(){save([]);list();}},{t:'Отмена',cls:'def'}]);}
+      modal('Очистить все закладки?','<p>Будут удалены все закладки: '+n+'. Вернуть их будет нельзя.</p>',
+        [{t:'Очистить',cls:'danger',fn:function(){save([]);list();}},{t:'Отмена',cls:'def'}]);}
   });
+  // закладки поменялись в другой вкладке — перерисовать список
+  window.addEventListener('storage',function(e){if(e.key===KEY)list();});
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)list();});
 
   function init(){addButton();syncButton();go();list();}
   init();
+  window.addEventListener('hashchange',go);
   var docEl=document.querySelector('.doc');
   if(docEl)new MutationObserver(function(){syncButton();go();}).observe(docEl,{childList:true});
 })();
