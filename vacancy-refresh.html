@@ -3,7 +3,7 @@
 <title>Рефреш перед собеседованием — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=ea9815a987">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=c21c60240d">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body class="tp" data-title="Рефреш перед собеседованием">
 <a class="skip" href="#content">К содержимому</a>
@@ -26,6 +26,8 @@
   </div>
   <span class="tl-bar"><i id="bar"></i><span class="tick" id="tick" hidden></span></span>
   <p class="rf-eta" id="c-eta"></p>
+  <div class="rf-off" id="rf-off" hidden><span>Рефреш в главах отключён: панели и отметок «рефреш» в тексте нет, отметки прочитанного сохранены.</span>
+    <button class="btn" type="button" id="rf-on">Включить</button></div>
   <div class="rf-act">
     <button class="btn pri lg" type="button" id="next">▶ Читать следующее</button>
     <label class="rf-track"><span>Маршрут</span><select id="track"></select></label>
@@ -63,7 +65,7 @@
 <p class="img-credit">Иллюстрация в шапке: <a href="https://commons.wikimedia.org/wiki/File:Hourglass_1.jpg" rel="noopener">Песочные часы и колесо обозрения на столе. Фото Suohros, CC0</a></p>
 </main>
 </div></div>
-<script src="app.js?v=8c6c8ffa18"></script>
+<script src="app.js?v=b2a37e7677"></script>
 <script>
 /* Логика рефреша без DOM и без часов: одна и та же в браузере (window.JBBRefresh)
    и в тестах (require). Сборка вставляет этот файл в vacancy-refresh.html (tools/refresh_plan.py),
@@ -278,10 +280,13 @@ function render(quiet){
   $('#next').textContent = nx? '▶ Читать: '+nx.title : '✓ Всё прочитано';
   $('#next').title = nx ? 'гл. '+parseInt(nx.ch)+', раздел '+nx.sec+': '+nx.title : '';
   pace(); if(!quiet){ save(); saveRoute(); }
+  $('#rf-off').hidden = !routeOff();
 }
 
 // маршрут для панели на страницах глав (site_theme.JS_UI читает jbb-route-v1 и отмечает пункты в KEY)
+function routeOff(){ try{ return localStorage.getItem('jbb-route-off')==='1'; }catch(e){ return false; } }
 function saveRoute(){
+  if(routeOff()) return;   // отключённый в главах рефреш страница сама не включает
   try{ localStorage.setItem('jbb-route-v1', JSON.stringify({key:KEY, wpm:S.wpm, track:S.track,
     items: allItems().filter(active).map(i=>({id:i.id, t:i.title, h:i.href, c:i.sec, n:'гл. '+parseInt(i.ch)+', '+i.sec, w:i.words, o:i.imp==='o'}))})); }catch(e){}
 }
@@ -304,6 +309,7 @@ function offerUndo(text, prev){ undo = prev; toast.querySelector('span').textCon
   clearTimeout(tt); tt = setTimeout(()=>{ toast.hidden = true; undo = null; }, 6000); }
 toast.querySelector('button').addEventListener('click', ()=>{ if(undo){ S.done = undo; undo = null; render(); } toast.hidden = true; });
 
+document.getElementById('rf-on').addEventListener('click', ()=>{ try{ localStorage.removeItem('jbb-route-off'); }catch(e){} saveRoute(); $('#rf-off').hidden = true; });
 function toggle(id, v){ if(v) S.done[id]=Date.now(); else delete S.done[id]; render(); }
 function goNext(){ const n = nextItem(); if(n) { cursor=n.id; render(); location.href = n.href; } }
 

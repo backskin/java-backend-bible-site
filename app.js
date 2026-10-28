@@ -241,7 +241,8 @@
 
   // ---------- панель маршрута рефреша ----------
   var R=null; try{R=JSON.parse(ls('jbb-route-v1')||'null');}catch(e){}
-  var hideKey='jbb-route-hide';
+  var hideKey='jbb-route-hide', offKey='jbb-route-off';   // off: рефреш отключён совсем — ни панели, ни значка, ни отметок у заголовков
+  var routeOff=function(){return ls(offKey)==='1';};
   var rst=function(){try{return JSON.parse(ls(R.key)||'{}')||{};}catch(e){return {};}};
   var isDone=function(id){var d=rst().done||{};return !!d[id];};
   var setDone=function(id,v){var S=rst();S.done=S.done||{};if(v)S.done[id]=Date.now();else delete S.done[id];ls(R.key,JSON.stringify(S));};
@@ -250,6 +251,7 @@
     var old=document.querySelector('.rpanel'); if(old&&!document.querySelector('.doc').contains(old)) old.remove();
     RT=null; document.body.classList.remove('has-route');
     if(pill)pill.hidden=true;
+    if(routeOff())return;
     if(!(R&&R.items&&R.items.length&&P.art&&P.page))return;
     var mine=R.items.filter(function(i){return i.h.split('#')[0]===P.page;});
     if(!mine.length)return;
@@ -288,10 +290,26 @@
       if(!isDone(st.cur.id)) setDone(st.cur.id,true);
       var nx=nextAfter(st.cur); go(nx?nx.h:'vacancy-refresh.html');
     });
-    rbar.querySelector('.route-x').addEventListener('click',function(){st.hid=true;try{sessionStorage.setItem(hideKey,'1');}catch(e){}upd();});
+    var collapse=function(){st.hid=true;try{sessionStorage.setItem(hideKey,'1');}catch(e){}upd();};
+    // крестик спрашивает: свернуть до значка или отключить рефреш совсем (отметки прочитанного сохраняются)
+    rbar.querySelector('.route-x').addEventListener('click',function(){
+      if(!window.jbbModal){collapse();return;}
+      window.jbbModal('Панель рефреша',
+        '<p>Свернуть панель до значка внизу или отключить рефреш совсем?</p>'+
+        '<p class="bm-where">Если отключить, панель, значок и отметки «рефреш» у заголовков пропадут во всех главах. '+
+        'Отметки прочитанного сохранятся: включить рефреш снова можно на странице <a href="vacancy-refresh.html">«Рефреш перед собеседованием»</a>.</p>',
+        [{t:'Отключить рефреш',fn:function(){ls(offKey,'1');routeDisable();}},{t:'Свернуть',cls:'def',fn:collapse}]);
+    });
     RT={upd:upd,get hid(){return st.hid;},set hid(v){st.hid=v;},scroll:function(){var o=st.cur;pick();if(o!==st.cur)upd();}};
     pick(); upd();
   }
+  function routeDisable(){
+    var rb=document.querySelector('.rpanel');if(rb)rb.remove();
+    document.querySelectorAll('.rt-badge').forEach(function(b){b.remove();});
+    if(pill)pill.hidden=true; document.body.classList.remove('has-route'); RT=null;
+  }
+  // рефреш включили или отключили в другой вкладке
+  window.addEventListener('storage',function(e){if(e.key===offKey){if(routeOff())routeDisable();else{try{R=JSON.parse(ls('jbb-route-v1')||'null');}catch(x){}initRoute();}}});
   document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.rt-badge');if(!b||!RT)return;e.preventDefault();var id=b.getAttribute('data-rid');setDone(id,!isDone(id));RT.upd();});
   window.addEventListener('pageshow',function(){if(RT)RT.upd();});
 
@@ -733,6 +751,7 @@
     else (f.querySelector('.def')||f.querySelector('button')).focus();
     return m;
   }
+  window.jbbModal=modal;   // окно XP общее: им пользуется и панель рефреша
   function info(t,h){modal(t,h,[{t:'OK',cls:'def'}]);}
   // многоточие после подписи — только если строка оборвана, а не кончается знаком препинания
   function ell(x){x=x||'';return /[.!?…:;»)]$/.test(x)?x:x+'…';}
