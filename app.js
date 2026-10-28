@@ -614,10 +614,11 @@
     document.querySelectorAll('.chap[data-file]').forEach(function(li){var st=plan[li.getAttribute('data-file')];if(st){li.setAttribute('data-read',st);var r=li.querySelector('.rd');if(r)r.textContent={read:'прочитано',active:'читаю',review:'повторить'}[st]||'';}});
   }catch(e){}
   var fl=document.querySelector('.filter');
+  if(fl){var fb=fl.querySelector('[data-f="final"]');if(fb)fb.textContent='Готовые · '+document.querySelectorAll('.chap[data-final]').length;}
   if(fl){fl.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
     fl.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});
     var v=b.getAttribute('data-f');
-    document.querySelectorAll('.chap').forEach(function(li){var ok=v==='all'||(v==='draft'&&li.hasAttribute('data-draft'))||(v==='unread'&&!li.getAttribute('data-read'));li.hidden=!ok;});
+    document.querySelectorAll('.chap').forEach(function(li){var ok=v==='all'||(v==='draft'&&li.hasAttribute('data-draft'))||(v==='final'&&li.hasAttribute('data-final'))||(v==='unread'&&!li.getAttribute('data-read'));li.hidden=!ok;});
     document.querySelectorAll('.part-block').forEach(function(pb){pb.hidden=!pb.querySelector('.chap:not([hidden])');});
   });}
 
