@@ -1,4 +1,4 @@
-const CACHE = 'jbb-20261028032800';
+const CACHE = 'jbb-20261028033053';
 const CORE = ['./', 'index.html', 'style.css', 'app.js', 'glossary.js', 'search-index.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'fonts/lora-cyr-italic.woff2', 'fonts/lora-cyr.woff2', 'fonts/lora-lat-italic.woff2', 'fonts/lora-lat.woff2', 'fonts/mono-cyr-italic.woff2', 'fonts/mono-cyr.woff2', 'fonts/mono-lat-italic.woff2', 'fonts/mono-lat.woff2', 'fonts/plex-cyr-italic.woff2', 'fonts/plex-cyr.woff2', 'fonts/plex-lat-italic.woff2', 'fonts/plex-lat.woff2', 'fonts/ptsans-cyr-400-italic.woff2', 'fonts/ptsans-cyr-400.woff2', 'fonts/ptsans-cyr-700.woff2', 'fonts/ptsans-lat-400-italic.woff2', 'fonts/ptsans-lat-400.woff2', 'fonts/ptsans-lat-700.woff2', 'fonts/ptserif-cyr-400-italic.woff2', 'fonts/ptserif-cyr-400.woff2', 'fonts/ptserif-cyr-700-italic.woff2', 'fonts/ptserif-cyr-700.woff2', 'fonts/ptserif-lat-400-italic.woff2', 'fonts/ptserif-lat-400.woff2', 'fonts/ptserif-lat-700-italic.woff2', 'fonts/ptserif-lat-700.woff2'];
 self.addEventListener('install', e => {
