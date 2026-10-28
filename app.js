@@ -167,7 +167,8 @@
     var touched=false; ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){window.addEventListener(ev,function(){touched=true;},{passive:true,once:true});});
     function fix(){ if(touched)return;
       if(location.hash){var t=document.getElementById(decodeURIComponent(location.hash.slice(1)));if(t){if(Math.abs(t.getBoundingClientRect().top-16)>2)t.scrollIntoView();return;}}
-      if(window.scrollY!==0)window.scrollTo(0,0); }
+      var top=window.jbbStartY||0;   // читатель был ниже фото-шапки на прошлой странице — начинаем под шапкой (site_xp)
+      if(window.scrollY!==top)window.scrollTo(0,top); }
     fix();
     window.addEventListener('load',function(){vars();fix();});
   })();
@@ -636,6 +637,38 @@
   heroWait(document.querySelector('.xp-hero'));
   window.jbbHeroWait=heroWait;
 
+  // читатель ниже фото-шапки — и после полной загрузки другой страницы (главная, рефреш, план, закладки) он
+  // оказывается под шапкой, а не на ней: перед уходом запоминаем, был ли он ниже, новая страница сразу прокручивает
+  (function(){
+    function below(){var h=document.querySelector('.xp-hero');return !!h&&window.scrollY>=h.offsetHeight-2;}
+    function mark(){try{sessionStorage.setItem('jbb-past-hero',below()?'1':'0');}catch(e){}}
+    addEventListener('pagehide',mark);
+    document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(a)mark();},true);
+    var was=null;try{was=sessionStorage.getItem('jbb-past-hero');sessionStorage.removeItem('jbb-past-hero');}catch(e){}
+    var h=document.querySelector('.xp-hero');
+    if(was==='1'&&h&&!location.hash&&window.scrollY<h.offsetHeight){
+      window.jbbStartY=h.offsetHeight; window.scrollTo(0,h.offsetHeight);
+    }
+  })();
+
+  // переход к разделу: браузер прыгает по приблизительным высотам блоков (content-visibility), блоки над заголовком
+  // дорисовываются и сдвигают его вниз — виден хвост прошлого раздела, и оглавление отмечает прошлый. Уточняем
+  // положение несколько раз, пока разметка не устоится; если читатель сам взялся прокручивать — перестаём
+  function settleTo(el){
+    if(!el)return; var n=0,stop=false,off=function(){stop=true;};
+    ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){addEventListener(ev,off,{passive:true,once:true});});
+    var pr=document.querySelector('.prose'),top=el;while(pr&&top.parentElement&&top.parentElement!==pr)top=top.parentElement;
+    for(var e=top,i=0;e&&i<4;i++,e=e.previousElementSibling)e.style.contentVisibility='visible';   // будим блоки прямо над заголовком
+    (function again(){setTimeout(function(){if(stop)return;
+      var want=parseFloat(getComputedStyle(el).scrollMarginTop)||0,dy=el.getBoundingClientRect().top-want;
+      if(Math.abs(dy)>2)window.scrollBy(0,dy);
+      if(++n<8)again();else window.dispatchEvent(new Event('scroll'));},90);})();   // оглавление пересчитывает текущий раздел по итоговому месту
+  }
+  window.jbbSettleTo=settleTo;
+  addEventListener('hashchange',function(){var id=decodeURIComponent(location.hash.slice(1));if(id&&!/^bm-/.test(id))settleTo(document.getElementById(id));});
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a)return;
+    var id=decodeURIComponent(a.getAttribute('href').slice(1));if(id&&('#'+id)===decodeURIComponent(location.hash))setTimeout(function(){settleTo(document.getElementById(id));},0);});
+
   // вид страницы: «с меню» (глава, служебная) или «без меню» (главная). Переход между разными видами — без
   // постоянных элементов: иначе старое меню на долю секунды висит поверх главной
   function kindOf(path){return /(^|\/)(index\.html)?$/.test(path)?'home':'doc';}
@@ -686,8 +719,28 @@
       }
       p.addEventListener('click',tog);
       p.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();tog();}});
+      p._open=function(){return isOpen;};
     });
+    // кнопка над частями: свернуть или развернуть сразу все группы (той же анимацией)
+    var parts=Array.prototype.filter.call(side.querySelectorAll('.part'),function(p){return p._open;});
+    if(parts.length>1&&!side.querySelector('.parts-all')){
+      var bar=document.createElement('div');bar.className='parts-all';
+      var bt=document.createElement('button');bt.type='button';bar.appendChild(bt);
+      parts[0].parentNode.insertBefore(bar,parts[0]);
+      var label=function(){var any=parts.some(function(p){return p._open();});
+        bt.textContent=any?'Свернуть все части':'Развернуть все части';bt.setAttribute('aria-expanded',any?'true':'false');};
+      bt.addEventListener('click',function(){var any=parts.some(function(p){return p._open();});
+        parts.forEach(function(p){if(p._open()===any)p.click();});label();});
+      parts.forEach(function(p){p.addEventListener('click',function(){setTimeout(label,0);});});
+      label();
+    }
   }
+
+  // полосы прокрутки меню и правого оглавления видны, пока ими пользуются: при прокрутке и под курсором;
+  // через секунду после остановки гаснут (прокрутка событием scroll не всплывает — ловим на document при захвате)
+  var sbT=new WeakMap();
+  document.addEventListener('scroll',function(e){var t=e.target;if(!t||!t.classList||!(t.classList.contains('side')||t.classList.contains('rail-in')))return;
+    t.classList.add('scrolling');clearTimeout(sbT.get(t));sbT.set(t,setTimeout(function(){t.classList.remove('scrolling');},1000));},true);
 
   // «Скопировано» — подсказка XP над кнопкой
   document.addEventListener('click',function(e){
