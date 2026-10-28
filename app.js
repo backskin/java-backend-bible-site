@@ -215,6 +215,7 @@
     });
     var fs=document.getElementById('fs'), d=document;
     var can=d.fullscreenEnabled||d.webkitFullscreenEnabled;
+    if(fs&&!can) fs.hidden=true;
     if(fs&&can){ fs.hidden=false;
       var upd=function(){var on=!!(d.fullscreenElement||d.webkitFullscreenElement);fs.innerHTML=icon(on?'⤡':'⛶');fs.title=on?'Выйти из полноэкранного режима':'Во весь экран';fs.setAttribute('aria-label',fs.title);};
       fs.addEventListener('click',function(){ try{ if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d);} else {var el=d.documentElement;var r=(el.requestFullscreen||el.webkitRequestFullscreen).call(el,{navigationUI:'hide'});if(r&&r.catch)r.catch(function(){fs.hidden=true;});} }catch(x){fs.hidden=true;} });
@@ -962,9 +963,10 @@
   var IC='<svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>';
   function chapterTitle(){var h1=prose()&&prose().querySelector('h1');return norm(h1?h1.textContent:document.title);}
   function addButton(){
-    if(document.getElementById('bm'))return;
+    var bt=document.getElementById('bm');   // кнопка уже в разметке строки заголовка (site_theme.topbar)
+    if(bt){if(!bt._bm){bt._bm=1;bt.addEventListener('click',ask);}return;}
     var theme=document.getElementById('theme');if(!theme)return;
-    var bt=document.createElement('button');bt.className='btn bm-btn';bt.id='bm';bt.type='button';bt.title='Закладка на этой строке';bt.setAttribute('aria-label',bt.title);bt.innerHTML=IC;
+    bt=document.createElement('button');bt.className='btn bm-btn';bt.id='bm';bt.type='button';bt.title='Закладка на этой строке';bt.setAttribute('aria-label',bt.title);bt.innerHTML=IC;
     theme.parentNode.insertBefore(bt,theme);
     bt.addEventListener('click',ask);
   }
@@ -989,7 +991,7 @@
     if(!save(l)){info('Закладка не сохранилась','<p>Браузер не записал данные: хранилище сайта переполнено или запрещено.</p>');return;}
     info('Закладка сохранена','<p>Все закладки — на странице <a href="bookmarks.html">«Закладки»</a> в меню.</p>');
   }
-  function syncButton(){var bt=document.getElementById('bm');if(bt)bt.hidden=!document.querySelector('.doc .prose h1');}
+  function syncButton(){var bt=document.getElementById('bm');if(bt){var on=!!document.querySelector('.doc .prose h1');bt.disabled=!on;bt.title=on?'Закладка на этой строке':'Закладку можно поставить в тексте главы';}}   // место кнопки сохраняется на всех страницах
 
   // ---------- возврат к строке: адрес вида глава.html#bm-<время сохранения> ----------
   var going=0;
