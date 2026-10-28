@@ -465,7 +465,9 @@ a.btn{text-decoration:none}
 .gl-pop .lk a{color:var(--acc-ink)}
 /* кнопка «Словарь» убрана: словарь работает прямо в тексте и остаётся в меню приложений */
 .topbar-in a.btn[href="A-glossary.html"],.rail-tools a.btn[href="A-glossary.html"]{display:none}
-:root{font-size:calc(100% * var(--zoom,1))}
+/* масштаб текста (кнопки A−/A+): увеличивается сам текст главы целиком — шрифт, отступы, таблицы, код. Раньше менялся
+   базовый rem страницы, а текст в слое XP задан в пикселях, и на кнопки реагировала только ширина колонки */
+.doc .prose,main.tool{zoom:var(--zoom,1)}
 .zoom{display:inline-flex;align-items:stretch;border:1px solid var(--line-2);border-radius:9px;background:var(--paper);overflow:hidden;flex:none}
 .zoom button{border:0;background:transparent;color:var(--fg);font:600 13px var(--f-ui);padding:0 10px;min-height:34px;cursor:pointer}
 .zoom button:hover{background:var(--acc-soft)}
@@ -988,6 +990,10 @@ a{color:var(--xp-link)}
 .results a{border-radius:0}
 .results a:hover,.results a:focus{background:var(--xp-sel);color:#fff}
 .results mark{background:var(--xp-find);color:inherit}
+/* строка под курсором синяя: подпись главы, отрывок и подсветка найденного тоже меняют цвет, иначе их не прочесть */
+.results a:hover .ch,.results a:focus .ch,.results a:hover .sn,.results a:focus .sn{color:#fff}
+.results a:hover .ch,.results a:focus .ch{opacity:.85}
+.results a:hover mark,.results a:focus mark{background:#fff36b;color:#1b1b1b}
 .zoom{border:0;background:none;gap:2px}
 .zoom .zv{color:var(--xp-btn-t)}
 /* оглавление и панель — в потоке страницы: ничего не прилипает и не прыгает */
@@ -1006,7 +1012,8 @@ a{color:var(--xp-link)}
 .side .part b{display:block;font:700 14px/1.3 var(--xp-sans);color:var(--xp-grp-t)}
 .side .part::after{content:"";position:absolute;right:8px;top:50%;margin-top:-8px;width:16px;height:16px;border-radius:50%;background:var(--xp-grp) no-repeat center/10px
   var(--xp-chev)}
-.side .part.shut::after{transform:rotate(180deg)}
+.side .part::after{transition:transform .24s cubic-bezier(.2,.9,.3,1)}
+.side .part.shut::after,.side .part.turn::after{transform:rotate(180deg)}
 .side .part.shut{border-radius:3px}
 .side .part.shut+ul{display:none}
 .side ul{background:var(--xp-grp);border-radius:0 0 3px 3px;padding:6px 10px 8px;margin:0}
@@ -1060,8 +1067,11 @@ a{color:var(--xp-link)}
 .prose h3{font-size:20px;line-height:1.3;color:var(--xp-ink);font-weight:700;margin-top:36px;margin-bottom:8px}
 .prose h4{font-size:18px;color:var(--xp-ink);margin-top:28px;margin-bottom:6px}
 .prose h2:target,.prose h3:target{background:none}
-.prose h2.xp-flash,.prose h3.xp-flash{background:linear-gradient(var(--xp-find),var(--xp-find)) no-repeat 0 0/0 100%;animation:xp-mark 1.2s ease-out forwards}
-@keyframes xp-mark{0%{background-size:0 100%}40%{background-size:100% 100%}100%{background-size:100% 100%;background-color:transparent}}
+/* заголовок, к которому перешли: маркер прокатывается слева направо, держится и гаснет; класс снимает JS по окончании */
+.prose h2.xp-flash,.prose h3.xp-flash{position:relative;isolation:isolate}
+.prose h2.xp-flash::before,.prose h3.xp-flash::before{content:"";position:absolute;inset:-2px -6px;z-index:-1;background:var(--xp-find);
+  border-radius:2px;transform-origin:0 50%;animation:xp-mark 1.8s ease-out forwards}
+@keyframes xp-mark{0%{transform:scaleX(0);opacity:.95}22%{transform:scaleX(1);opacity:.95}60%{opacity:.95}100%{transform:scaleX(1);opacity:0}}
 .prose a{color:var(--xp-link);text-decoration:underline;text-underline-offset:2px}
 .prose a:hover{color:var(--xp-link);text-decoration-color:var(--xp-here)}
 .prose code{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-size:.88em;color:var(--xp-code);background:none;border:0;padding:0;border-radius:0;overflow-wrap:anywhere}
@@ -1079,6 +1089,12 @@ a{color:var(--xp-link)}
 /* фото-шапка главы — окно в живой мир выше всего, во всю ширину окна; панель и строка заголовка под ней и прилипают при прокрутке;
    кадр 3:1 (телефон 2:1) подгоняется под ширину обрезкой, без растяжения */
 figure.strip.xp-hero{display:block;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;position:relative;height:clamp(96px,8.7vw,160px);max-width:none;overflow:hidden;background:var(--xp-face)}
+/* заглушка: крошечная копия фото, растянутая и размытая, видна сразу; настоящее фото проявляется поверх, когда загрузилось */
+.xp-hero::before{content:"";position:absolute;inset:-24px;background:var(--lq,none) center/cover no-repeat;filter:blur(14px)}
+:root[data-theme="dark"] .xp-hero::before{background-image:var(--lqd,var(--lq,none))}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .xp-hero::before{background-image:var(--lqd,var(--lq,none))}}
+.xp-hero picture,.xp-hero>img{transition:opacity .35s ease}
+.xp-hero.wait picture,.xp-hero.wait>img{opacity:0}
 .xp-hero picture{position:absolute;inset:0;display:block}
 .xp-hero img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 50%;border:0;border-radius:0;box-shadow:none;filter:none}
 .xp-hero img.ch-d{display:none}
@@ -1088,6 +1104,13 @@ figure.strip.xp-hero{display:block;margin:0;padding:0;border:0;border-radius:0;b
 .xp-hero~.layout .main{padding-top:28px}
 @media (max-width:640px){figure.strip.xp-hero{height:33vw}}
 /* переход между главами: панель, меню и строка заголовка не анимируются — меняется только текст */
+/* переход между страницами разного устройства (глава и главная): «постоянные» элементы отключаются, остаётся
+   смена всей страницы — старая слегка темнеет и гаснет, новая проявляется (класс vt-plain ставят pageswap/pagereveal) */
+html.vt-plain .side,html.vt-plain .topbar,html.vt-plain .xp-hero{view-transition-name:none}
+@keyframes vt-out{to{opacity:0;filter:brightness(.82)}}
+@keyframes vt-in{from{opacity:0}}
+html.vt-plain::view-transition-old(root){animation:vt-out .22s ease-in both}
+html.vt-plain::view-transition-new(root){animation:vt-in .26s ease-out .06s both}
 ::view-transition-group(topbar),::view-transition-group(side){animation:none}
 ::view-transition-old(topbar),::view-transition-new(topbar),::view-transition-old(side),::view-transition-new(side){animation:none}
 .xp-hero{view-transition-name:hero}
@@ -1189,8 +1212,8 @@ figure.strip.xp-hero{display:block;margin:0;padding:0;border:0;border-radius:0;b
 .prose thead th{background:var(--xp-face);color:var(--xp-face-t);font-weight:400;border:0;border-right:1px solid var(--xp-page);border-bottom:2px solid var(--xp-btn-low)}
 .prose th,.prose td{border:0}
 .prose tbody tr:nth-child(even) td{background:none}
-.prose tbody tr:hover td{background:var(--xp-sel);color:#fff}
-.prose tbody tr:hover td code,.prose tbody tr:hover td a{color:#fff}
+/* строка под курсором — едва заметная подсветка, чтобы вести глаз по строке; текст своего цвета, выделение мышью видно */
+.prose tbody tr:hover td{background:color-mix(in srgb,var(--xp-sel) 10%,transparent)}
 .prose table.rt{border:0}
 
 /* --- рисунок, сноски, назад/дальше, дочитано --- */
@@ -1327,7 +1350,7 @@ figure.strip.xp-hero{display:block;margin:0;padding:0;border:0;border-radius:0;b
 }
 
 @media print{.xp-done{display:none}}
-@media (prefers-reduced-motion:reduce){.prose h2.xp-flash,.prose h3.xp-flash{animation:none}}
+@media (prefers-reduced-motion:reduce){.prose h2.xp-flash::before,.prose h3.xp-flash::before{animation:none;opacity:0}}
 html.xp-theme::view-transition-old(root),html.xp-theme::view-transition-new(root){animation-duration:.35s}
 
 /* витрина дизайн-бука: только раскладка образцов */

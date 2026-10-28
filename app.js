@@ -502,6 +502,10 @@
     if(samePage(u)&&opts.pop){var t0=u.hash&&document.getElementById(decodeURIComponent(u.hash.slice(1))); if(t0)t0.scrollIntoView(); else window.scrollTo(0,0); return;}
     var my={}; busy=my;
     document.body.classList.add('is-loading');
+    // нажатая глава в меню «вщёлкивается» сразу, не дожидаясь загрузки текста
+    if(sd){ var nm0=u.pathname.split('/').pop();
+      sd.querySelectorAll('a.cur').forEach(function(a){a.classList.remove('cur');});
+      sd.querySelectorAll('a[href="'+nm0+'"]').forEach(function(a){a.classList.add('cur');}); }
     fetch(u.pathname,{credentials:'same-origin'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();}).then(function(html){
       if(busy!==my)return;
       var nd=new DOMParser().parseFromString(html,'text/html'), ndoc=nd.querySelector('.doc');
@@ -516,8 +520,19 @@
         // фото-шапка стоит выше всего, вне .doc: меняем её вместе с главой (или убираем, если у новой страницы её нет)
         var oh=document.querySelector('.xp-hero'), nh=nd.querySelector('.xp-hero');
         var past=!oh||window.scrollY>=oh.offsetHeight;   // читатель уже ниже фото — не дёргаем экран обратно к нему
-        if(oh&&nh)oh.replaceWith(document.importNode(nh,true)); else if(oh)oh.remove();
-        else if(nh){var lay=document.querySelector('.layout'); if(lay)lay.parentNode.insertBefore(document.importNode(nh,true),lay);}
+        if(oh&&nh&&oh.innerHTML===nh.innerHTML){/* та же картинка — ничего не трогаем */}
+        else if(oh&&nh){
+          // старое фото стоит, пока новое не загрузится; новое кладём поверх прозрачным и проявляем
+          var n=document.importNode(nh,true);n.style.cssText+=';position:absolute;left:0;right:0;top:'+oh.offsetTop+'px;z-index:2;opacity:0;transition:opacity .35s ease;view-transition-name:none';
+          n.classList.add('xp-hero-next');oh.parentNode.insertBefore(n,oh.nextSibling);
+          var im=Array.prototype.filter.call(n.querySelectorAll('img'),function(i){return getComputedStyle(i).display!=='none';})[0];
+          var shown=false,show=function(){if(shown)return;shown=true;n.style.opacity='1';
+            setTimeout(function(){n.style.cssText=n.style.cssText.replace(/position:[^;]+;|left:[^;]+;|right:[^;]+;|top:[^;]+;|z-index:[^;]+;|opacity:[^;]+;|transition:[^;]+;|view-transition-name:[^;]+;/g,'');
+              n.classList.remove('xp-hero-next');if(oh.parentNode)oh.remove();},380);};
+          if(!im||(im.complete&&im.naturalWidth))show();else{im.addEventListener('load',show,{once:true});im.addEventListener('error',show,{once:true});setTimeout(show,4000);}
+        }
+        else if(oh)oh.remove();
+        else if(nh){var lay=document.querySelector('.layout'); if(lay){var n2=document.importNode(nh,true);lay.parentNode.insertBefore(n2,lay);if(window.jbbHeroWait)window.jbbHeroWait(n2);}}
         var res=document.getElementById('res'); if(res)res.classList.remove('on');
         var oc=document.querySelector('.topbar .crumb'), nc=nd.querySelector('.topbar .crumb'); if(oc&&nc)oc.innerHTML=nc.innerHTML;
         if(sd){ var name=u.pathname.split('/').pop();
@@ -614,6 +629,23 @@
   codeSync(); if(mq&&mq.addEventListener)mq.addEventListener('change',codeSync);
   new MutationObserver(codeSync).observe(root,{attributes:true,attributeFilter:['data-theme']});
 
+  // фото-шапка: пока видимая копия не загрузилась, под ней заглушка, а само фото прозрачно; загрузилось — проявляется
+  function heroWait(h){if(!h)return;var im=Array.prototype.filter.call(h.querySelectorAll('img'),function(i){return getComputedStyle(i).display!=='none';})[0];
+    if(!im||im.complete&&im.naturalWidth)return;h.classList.add('wait');
+    var ok=function(){h.classList.remove('wait');};im.addEventListener('load',ok,{once:true});im.addEventListener('error',ok,{once:true});setTimeout(ok,4000);}
+  heroWait(document.querySelector('.xp-hero'));
+  window.jbbHeroWait=heroWait;
+
+  // вид страницы: «с меню» (глава, служебная) или «без меню» (главная). Переход между разными видами — без
+  // постоянных элементов: иначе старое меню на долю секунды висит поверх главной
+  function kindOf(path){return /(^|\/)(index\.html)?$/.test(path)?'home':'doc';}
+  var myKind=kindOf(location.pathname);
+  addEventListener('pageswap',function(e){try{var to=e.activation&&e.activation.entry&&new URL(e.activation.entry.url).pathname;
+    if(e.viewTransition&&to&&kindOf(to)!==myKind)root.classList.add('vt-plain');}catch(x){}});
+  addEventListener('pagereveal',function(e){try{var fr=navigation.activation&&navigation.activation.from&&new URL(navigation.activation.from.url).pathname;
+    if(e.viewTransition&&fr&&kindOf(fr)!==myKind){root.classList.add('vt-plain');e.viewTransition.finished.finally(function(){root.classList.remove('vt-plain');});}}catch(x){}});
+  addEventListener('pageshow',function(){root.classList.remove('vt-plain');});
+
   // боковое меню: высота — видимая часть экрана под его верхним краем, иначе под фото-шапкой низ меню не долистать
   (function(){var sd=document.getElementById('side');if(!sd)return;var q=0;
     // высоту задаёт переменная --side-h: её читает только меню-колонка (sticky); выдвижное меню телефона держит свою 100dvh
@@ -632,8 +664,26 @@
       p.setAttribute('role','button'); p.setAttribute('tabindex','0');
       if(shut[key]&&!cur)p.classList.add('shut');
       p.setAttribute('aria-expanded',p.classList.contains('shut')?'false':'true');
-      function tog(){p.classList.toggle('shut');var s=p.classList.contains('shut');p.setAttribute('aria-expanded',s?'false':'true');
-        if(s)shut[key]=1;else delete shut[key];ls('jbb-parts',JSON.stringify(shut));}
+      // список глав выезжает и уезжает: высота от 0 до своей и обратно, быстро в начале и мягко в конце
+      // желаемое состояние хранится отдельно от класса: класс shut ставится только в конце сворачивания,
+      // и второй быстрый клик должен развернуть группу обратно, а не свернуть ещё раз
+      var anim=null, tm=0, isOpen=!p.classList.contains('shut');
+      function tog(){
+        isOpen=!isOpen;
+        p.setAttribute('aria-expanded',isOpen?'true':'false');
+        if(!isOpen)shut[key]=1;else delete shut[key];ls('jbb-parts',JSON.stringify(shut));
+        var from=ul.offsetHeight;                       // текущая высота — в том числе на середине прерванной анимации
+        if(anim){anim.cancel();anim=null;} clearTimeout(tm);
+        p.classList.toggle('turn',!isOpen);             // шеврон поворачивается сразу, не дожидаясь конца
+        if(reduce||!ul.animate){p.classList.toggle('shut',!isOpen);return;}
+        p.classList.remove('shut');ul.style.overflow='hidden';ul.style.boxSizing='border-box';
+        var to=isOpen?ul.scrollHeight:0, ms=isOpen?Math.min(360,180+to/6):Math.min(300,150+from/8);
+        anim=ul.animate([{height:from+'px',opacity:isOpen?.3:1},{height:to+'px',opacity:isOpen?1:0,paddingTop:isOpen?undefined:'0px',paddingBottom:isOpen?undefined:'0px'}].map(function(k){
+            Object.keys(k).forEach(function(x){if(k[x]===undefined)delete k[x];});return k;}),
+          {duration:ms,easing:isOpen?'cubic-bezier(.2,.9,.3,1)':'cubic-bezier(.5,0,.75,0)',fill:'forwards'});
+        // итог — по своему таймеру: в свёрнутой вкладке браузер не продвигает анимацию и не шлёт её событий
+        tm=setTimeout(function(){if(anim){anim.cancel();anim=null;}ul.style.overflow='';ul.style.boxSizing='';p.classList.toggle('shut',!isOpen);},ms+20);
+      }
       p.addEventListener('click',tog);
       p.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();tog();}});
     });
@@ -697,7 +747,10 @@
 
   // маркер по заголовку, к которому пришли по ссылке
   function flash(){var id=decodeURIComponent(location.hash.slice(1)); if(!id)return; var h=document.getElementById(id);
-    if(!h||!/^H[23]$/.test(h.tagName))return; h.classList.remove('xp-flash'); void h.offsetWidth; h.classList.add('xp-flash');}
+    if(!h||!/^H[23]$/.test(h.tagName))return;
+    document.querySelectorAll('.prose .xp-flash').forEach(function(x){x.classList.remove('xp-flash');});   // прежняя подсветка не остаётся
+    void h.offsetWidth; h.classList.add('xp-flash');
+    clearTimeout(h._xpf); h._xpf=setTimeout(function(){h.classList.remove('xp-flash');},1900);}
   window.addEventListener('hashchange',flash);
 
   // «Глава дочитана до конца»
