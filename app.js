@@ -519,6 +519,9 @@
         document.body.setAttribute('data-title',nd.body.getAttribute('data-title')||'');
         doc.innerHTML=ndoc.innerHTML; curPath=u.pathname;
         // фото-шапка стоит выше всего, вне .doc: меняем её вместе с главой (или убираем, если у новой страницы её нет)
+        // быстрое переключение: прежняя «следующая» шапка ещё проявляется — убираем её, остаётся одна шапка
+        document.querySelectorAll('.xp-hero-next').forEach(function(x){x.remove();});
+        var hs=document.querySelectorAll('.xp-hero'); for(var hi=1;hi<hs.length;hi++)hs[hi].remove();
         var oh=document.querySelector('.xp-hero'), nh=nd.querySelector('.xp-hero');
         var past=!oh||window.scrollY>=oh.offsetHeight;   // читатель уже ниже фото — не дёргаем экран обратно к нему
         if(oh&&nh&&oh.innerHTML===nh.innerHTML){/* та же картинка — ничего не трогаем */}
@@ -529,7 +532,7 @@
           var im=Array.prototype.filter.call(n.querySelectorAll('img'),function(i){return getComputedStyle(i).display!=='none';})[0];
           var shown=false,show=function(){if(shown)return;shown=true;n.style.opacity='1';
             setTimeout(function(){n.style.cssText=n.style.cssText.replace(/position:[^;]+;|left:[^;]+;|right:[^;]+;|top:[^;]+;|z-index:[^;]+;|opacity:[^;]+;|transition:[^;]+;|view-transition-name:[^;]+;/g,'');
-              n.classList.remove('xp-hero-next');if(oh.parentNode)oh.remove();},380);};
+              if(!n.parentNode)return;n.classList.remove('xp-hero-next');if(oh.parentNode)oh.remove();},380);};
           if(!im||(im.complete&&im.naturalWidth))show();else{im.addEventListener('load',show,{once:true});im.addEventListener('error',show,{once:true});setTimeout(show,4000);}
         }
         else if(oh)oh.remove();
@@ -668,6 +671,23 @@
   addEventListener('hashchange',function(){var id=decodeURIComponent(location.hash.slice(1));if(id&&!/^bm-/.test(id))settleTo(document.getElementById(id));});
   document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a)return;
     var id=decodeURIComponent(a.getAttribute('href').slice(1));if(id&&('#'+id)===decodeURIComponent(location.hash))setTimeout(function(){settleTo(document.getElementById(id));},0);});
+
+  // подсказка к ссылке: через 250 мс после наведения — куда она ведёт (data-tip ставит сборка; внешний адрес — на месте)
+  (function(){
+    if(!matchMedia('(hover: hover)').matches)return;
+    var tm=0,box=null,cur=null;
+    function text(a){var t=a.getAttribute('data-tip');if(t)return t;var h=a.getAttribute('href')||'';
+      if(/^https?:/.test(h)){try{var u=new URL(h);return 'Внешний сайт · '+u.host.replace(/^www\./,'')+'\n'+(h.length>90?h.slice(0,88)+'…':h);}catch(e){}}return '';}
+    function hide(){clearTimeout(tm);cur=null;if(box){box.remove();box=null;}}
+    function show(a){var t=text(a);if(!t)return;hide();cur=a;box=document.createElement('div');box.className='xp-balloon tip';box.textContent=t;
+      box.setAttribute('role','tooltip');document.body.appendChild(box);
+      var r=a.getBoundingClientRect(),b=box.getBoundingClientRect(),x=Math.min(Math.max(8,r.left),innerWidth-b.width-8),y=r.bottom+6;
+      if(y+b.height>innerHeight-8)y=r.top-b.height-6;box.style.left=x+'px';box.style.top=y+'px';}
+    document.addEventListener('mouseover',function(e){var a=e.target.closest&&e.target.closest('.prose a[href], .xp-win a[href]');
+      if(!a||a===cur||a.closest('.toc, .nav, .toc-list'))return;clearTimeout(tm);if(box)hide();tm=setTimeout(function(){show(a);},250);});
+    document.addEventListener('mouseout',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(a&&!a.contains(e.relatedTarget))hide();});
+    addEventListener('scroll',hide,{passive:true});document.addEventListener('mousedown',hide);document.addEventListener('keydown',hide);
+  })();
 
   // вид страницы: «с меню» (глава, служебная) или «без меню» (главная). Переход между разными видами — без
   // постоянных элементов: иначе старое меню на долю секунды висит поверх главной
