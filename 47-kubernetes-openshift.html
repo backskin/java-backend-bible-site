@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть X. Эксплуатация</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/47.svg" width="48" height="48" alt="" loading="lazy">47. Kubernetes и OpenShift для разработчика</h1><div class="meta"><span class="part-tag">Часть X. Эксплуатация</span><span>54 371 слов</span><span>≈ 5 ч 00 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/47.svg" width="48" height="48" alt="" loading="lazy">47. Kubernetes и OpenShift для разработчика</h1><div class="meta"><span class="part-tag">Часть X. Эксплуатация</span><span>54 788 слов</span><span>≈ 5 ч 05 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>Для backend-разработчика кластер — вовсе не «инфраструктура, которой занимается другая команда», а среда, в которой исполняется его код, и у этой среды есть своя модель памяти, свой планировщик и свой протокол завершения процесса. Если ошибиться с <code>livenessProbe</code>, здоровый сервис упадёт каскадом; если забыть <code>preStop</code>, каждый деплой будет сопровождаться ответами 502; CPU limit душит JIT и GC ровно тогда, когда сервис нужнее всего, а <code>OOMKilled</code> в логе выглядит так, будто под просто исчез, и без понимания cgroups его не отличить от <code>OutOfMemoryError</code>. На интервью в финтехе вопрос «что происходит по шагам, когда ты делаешь <code>kubectl delete pod</code>» отсеивает половину кандидатов, а вопрос «чем отличаются три пробы и почему liveness нельзя вешать на проверку БД» — ещё половину оставшихся. Поэтому глава написана для того, кто сам разворачивает свой Spring-сервис, дежурит по нему и в три часа ночи разбирает инцидент; как поднять control plane, здесь не рассказывается.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">17 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-модель-kubernetes" data-tip="Раздел этой главы: 1. Модель Kubernetes">1. Модель Kubernetes</a></li><li><a href="#2-объекты-с-которыми-работает-разработчик" data-tip="Раздел этой главы: 2. Объекты, с которыми работает разработчик">2. Объекты, с которыми работает разработчик</a></li><li><a href="#3-сеть-service-ingress-gateway-api" data-tip="Раздел этой главы: 3. Сеть: Service, Ingress, Gateway API">3. Сеть: Service, Ingress, Gateway API</a></li><li><a href="#4-конфигурация-configmap-и-secret" data-tip="Раздел этой главы: 4. Конфигурация: ConfigMap и Secret">4. Конфигурация: ConfigMap и Secret</a></li><li><a href="#5-пробы-probes" data-tip="Раздел этой главы: 5. Пробы (probes)">5. Пробы (probes)</a></li><li><a href="#6-ресурсы-и-планирование" data-tip="Раздел этой главы: 6. Ресурсы и планирование">6. Ресурсы и планирование</a></li><li><a href="#7-жизненный-цикл-пода-и-graceful-shutdown" data-tip="Раздел этой главы: 7. Жизненный цикл пода и graceful shutdown">7. Жизненный цикл пода и graceful shutdown</a></li><li><a href="#8-стратегии-выката" data-tip="Раздел этой главы: 8. Стратегии выката">8. Стратегии выката</a></li><li><a href="#9-наблюдаемость-и-отладка-изнутри-кластера" data-tip="Раздел этой главы: 9. Наблюдаемость и отладка изнутри кластера">9. Наблюдаемость и отладка изнутри кластера</a></li><li><a href="#10-openshift-специфика" data-tip="Раздел этой главы: 10. OpenShift-специфика">10. OpenShift-специфика</a></li><li><a href="#11-манифесты-сервиса" data-tip="Раздел этой главы: 11. Манифесты сервиса">11. Манифесты сервиса</a></li><li><a href="#12-разобранные-инциденты" data-tip="Раздел этой главы: 12. Разобранные инциденты">12. Разобранные инциденты</a></li><li><a href="#13-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 13. Ошибки и антипаттерны">13. Ошибки и антипаттерны</a></li><li><a href="#14-диагностика" data-tip="Раздел этой главы: 14. Диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью" data-tip="Раздел этой главы: 15. Вопросы на интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками" data-tip="Раздел этой главы: 16. Попробовать руками">16. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
@@ -3433,7 +3433,90 @@ oc status                <span class="c1"># сводка по проекту: ч
 <p class="cap cap-t"><b>Таблица 47.18.</b> Режимы TLS у Route.</p>
 <p>Перед ванильным Ingress у Route четыре преимущества: веса бэкендов (<code>alternateBackends</code>) дают canary без дополнительных контроллеров, три режима TLS входят в схему, а не задаются аннотациями, hostname генерируется автоматически по шаблону <code>&lt;route&gt;-&lt;project&gt;.&lt;apps-domain&gt;</code>, а sharding позволяет держать несколько роутеров (внутренний и внешний), которые разбирают Route по меткам. Недостаток тоже очевиден: объект не переносим, и в ванильном кластере его нет.</p>
 <p>С совместимостью дело обстоит неплохо. OpenShift понимает и обычные <code>Ingress</code>-объекты, и контроллер автоматически создаёт для них <code>Route</code>, так что чарт для ванильного Kubernetes заработает, пусть и с меньшими возможностями. Для обеих сред разумно держать Ingress как базу, а Route — как overlay в Kustomize.</p>
-<p>⚠️ Детали синтаксиса Route (точный набор аннотаций и их значения по умолчанию) при подготовке главы не удалось проверить по документации Red Hat: <code>docs.redhat.com</code> и <code>docs.openshift.com</code> не отдают содержимое автоматическим клиентам (404/redirect). Сверяйтесь с <code>oc explain route.spec.tls</code> на своём кластере.</p>
+<p>Поведение маршрута тонко настраивается аннотациями. Документация Red Hat автоматическим клиентам не отдаётся, поэтому список ниже взят из первоисточника — шаблона конфигурации HAProxy, по которому роутер OpenShift собирает свой конфиг (<code>images/router/haproxy/conf/haproxy-config.template</code> в репозитории <code>openshift/router</code>). В таблице все аннотации, которые этот шаблон читает, и то, что роутер делает, когда аннотации нет:</p>
+<table class="rt">
+<thead>
+<tr>
+<th>Аннотация</th>
+<th>Что задаёт</th>
+<th>Если не задана</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td data-label="Аннотация"><code>haproxy.router.openshift.io/timeout</code></td>
+<td data-label="Что задаёт"><code>timeout server</code>: сколько роутер ждёт ответа сервиса</td>
+<td data-label="Если не задана">переменная роутера <code>ROUTER_DEFAULT_SERVER_TIMEOUT</code>, иначе <strong>30 с</strong></td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>haproxy.router.openshift.io/timeout-tunnel</code></td>
+<td data-label="Что задаёт"><code>timeout tunnel</code>: простой WebSocket и соединений <code>passthrough</code></td>
+<td data-label="Если не задана"><code>ROUTER_DEFAULT_TUNNEL_TIMEOUT</code>, иначе <strong>1 ч</strong></td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>haproxy.router.openshift.io/balance</code></td>
+<td data-label="Что задаёт">алгоритм: <code>roundrobin</code>, <code>leastconn</code>, <code>source</code> или <code>random</code></td>
+<td data-label="Если не задана"><code>roundrobin</code>, если у маршрута несколько сервисов (<code>alternateBackends</code>); иначе <code>ROUTER_LOAD_BALANCE_ALGORITHM</code>, а без неё <code>random</code>; для <code>passthrough</code> — <code>source</code></td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>haproxy.router.openshift.io/ip_allowlist</code> (старое имя <code>ip_whitelist</code>)</td>
+<td data-label="Что задаёт">адреса и подсети, которым разрешён доступ; остальным соединение сбрасывается</td>
+<td data-label="Если не задана">доступ без ограничений</td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>haproxy.router.openshift.io/rate-limit-connections</code> и уточнения <code>.concurrent-tcp</code>, <code>.rate-tcp</code>, <code>.rate-http</code></td>
+<td data-label="Что задаёт">ограничение числа и частоты соединений и запросов с одного адреса</td>
+<td data-label="Если не задана">выключено</td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>haproxy.router.openshift.io/pod-concurrent-connections</code></td>
+<td data-label="Что задаёт">предел одновременных соединений на один под</td>
+<td data-label="Если не задана">без предела</td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>haproxy.router.openshift.io/disable_cookies</code></td>
+<td data-label="Что задаёт">отключает «липкую» cookie, по которой роутер возвращает клиента на тот же под</td>
+<td data-label="Если не задана">cookie включена</td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>router.openshift.io/cookie_name</code></td>
+<td data-label="Что задаёт">имя этой cookie</td>
+<td data-label="Если не задана"><code>ROUTER_COOKIE_NAME</code>, иначе внутреннее имя маршрута</td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>router.openshift.io/cookie-same-site</code></td>
+<td data-label="Что задаёт"><code>SameSite</code> у cookie (<code>Lax</code>, <code>Strict</code>, <code>None</code>); ставится только у маршрутов с TLS <code>edge</code> и <code>reencrypt</code>, вместе с <code>secure</code></td>
+<td data-label="Если не задана"><code>None</code></td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>haproxy.router.openshift.io/hsts_header</code></td>
+<td data-label="Что задаёт">заголовок <code>Strict-Transport-Security</code> (только <code>edge</code> и <code>reencrypt</code>)</td>
+<td data-label="Если не задана">не ставится</td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>haproxy.router.openshift.io/set-forwarded-headers</code></td>
+<td data-label="Что задаёт">что делать с <code>Forwarded</code> и <code>X-Forwarded-*</code>: <code>append</code>, <code>replace</code>, <code>never</code>, <code>if-none</code></td>
+<td data-label="Если не задана"><code>ROUTER_SET_FORWARDED_HEADERS</code>, иначе <code>append</code></td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>haproxy.router.openshift.io/rewrite-target</code></td>
+<td data-label="Что задаёт">переписывание пути перед передачей сервису</td>
+<td data-label="Если не задана">путь не меняется</td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>haproxy.router.openshift.io/h1-adjust-case</code></td>
+<td data-label="Что задаёт">приводит регистр заголовков HTTP/1 к виду, которого ждут старые клиенты</td>
+<td data-label="Если не задана">выключено</td>
+</tr>
+<tr>
+<td data-label="Аннотация"><code>router.openshift.io/haproxy.health.check.interval</code></td>
+<td data-label="Что задаёт">интервал проверки здоровья подов роутером</td>
+<td data-label="Если не задана"><code>ROUTER_BACKEND_CHECK_INTERVAL</code>, иначе 5000 мс</td>
+</tr>
+</tbody>
+</table>
+<p class="cap cap-t"><b>Таблица 47.19.</b> Аннотации Route и что делает роутер OpenShift, если их нет.</p>
+<p>Для Java-сервиса из таблицы важнее всего первая строка. Роутер ждёт ответа 30 секунд, и долгий отчёт или выгрузка, которые дольше этого срока, обрываются ответом 504 от роутера, хотя сервис продолжает работать. Поэтому для таких маршрутов <code>timeout</code> задают явно, а лучше переводят долгие операции на асинхронную схему «принять — опросить статус». Вторая по частоте проблема — липкая cookie: сервис без состояния, который получает её по умолчанию, распределяется по подам хуже, чем мог бы, и <code>disable_cookies</code> для него безопасен.<sup id="fnref:b47-8"><a class="footnote-ref" href="#fn:b47-8" data-tip="Сноска: openshift/router, файл images/router/haproxy/conf/haproxy-config.template, коммит 6d11db5c51d7 от 21.09.2026 (последнее изменение файла на 28.10.2026), https://github.com/openshift…">20</a></sup></p>
 <h3 id="103-security-context-constraints-scc">10.3 Security Context Constraints (SCC)</h3>
 <p><strong>Security Context Constraints</strong> (SCC) — механизм OpenShift, который появился раньше Pod Security Admission и умеет больше него: SCC описывает, что поду разрешено, — работать ли от root, какие capabilities, какие типы томов, <code>hostNetwork</code>/<code>hostPID</code>, какой seccomp-профиль, SELinux-контекст и диапазон UID и GID. Именно SCC отвечает за то, что образ из Docker Hub в OpenShift не стартует. Ниже разобраны SCC по умолчанию, стратегия выбора UID и два её следствия, рецепт для Dockerfile, причины, по которым не заводятся официальные образы, диагностика и то, когда уместно просить <code>anyuid</code>.</p>
 <p>Всем аутентифицированным пользователям по умолчанию доступен SCC <strong><code>restricted-v2</code></strong>, и именно он определяет жизнь обычного приложения: никаких привилегий, <code>allowPrivilegeEscalation: false</code>, все Linux capabilities сброшены, seccomp <code>runtime/default</code>, host-namespace'ы и host-пути запрещены.</p>
@@ -3563,7 +3646,7 @@ oc <span class="nb">set</span> triggers deploy/orders --from-image<span class="o
 </tr>
 </tbody>
 </table>
-<p class="cap cap-t"><b>Таблица 47.19.</b> Что в типовом Java-образе ломается в OpenShift и как чинить.</p>
+<p class="cap cap-t"><b>Таблица 47.20.</b> Что в типовом Java-образе ломается в OpenShift и как чинить.</p>
 <p>Все рецепты из таблицы собираются в канонический безопасный хвост Dockerfile, который работает и в ванильном Kubernetes, и в OpenShift:</p>
 <p class="cap cap-c"><b>Листинг 47.139.</b> Безопасный хвост Dockerfile для Kubernetes и OpenShift.</p><div class="hl" data-lang="Dockerfile"><div class="hl-bar"><span>Dockerfile</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">ENV</span> <span class="nv">HOME</span><span class="o">=</span>/tmp <span class="se">\</span>
     <span class="nv">JAVA_TOOL_OPTIONS</span><span class="o">=</span><span class="s2">"-Djava.io.tmpdir=/tmp -Duser.home=/tmp"</span>
@@ -3597,7 +3680,7 @@ oc <span class="nb">set</span> triggers deploy/orders --from-image<span class="o
       <span class="no">-----END CERTIFICATE-----</span>
 </code></pre></div>
 <p><code>passthrough</code> нужен ровно в трёх случаях: при <strong>mTLS с клиентскими сертификатами</strong>, потому что роутер не умеет пробрасывать их приложению, при требовании регулятора шифровать трафик до самого приложения без точек расшифровки и при <strong>gRPC с клиентской аутентификацией</strong>. Платят за него маршрутизацией по пути, весами <code>alternateBackends</code> и заголовками <code>X-Forwarded-*</code>, которые роутер больше не вставляет, так что приложение перестаёт видеть исходный IP клиента, а это ломает и логи, и rate limit по IP. Если же нужны и разбор трафика на L7, и шифрование внутри кластера, берут <code>reencrypt</code>.</p>
-<p>⚠️ Точный набор аннотаций <code>haproxy.router.openshift.io/*</code> и их значения по умолчанию проверить по первичному источнику по-прежнему не удалось: <code>docs.redhat.com</code> отдаёт 404 автоматическим клиентам (проверено 2026-09-22). Сверяйтесь на своём кластере: <code>oc explain route.spec</code> и <code>oc get route orders -o yaml</code>.</p>
+<p>Полный список аннотаций <code>haproxy.router.openshift.io/*</code> с их значениями по умолчанию — в таблице подраздела 10.2, составленной по шаблону конфигурации роутера; на своём кластере сверяйтесь командами <code>oc explain route.spec</code> и <code>oc get route orders -o yaml</code>.</p>
 <h3 id="109-s2i-и-buildconfig-в-сравнении-с-внешним-ci">10.9 S2I и BuildConfig в сравнении с внешним CI</h3>
 <p>Этот подраздел сводит в одну таблицу сравнение S2I с внешним CI, начатое в 10.4, чтобы выбор можно было обосновать по пунктам, а не по привычке. После таблицы названы решающий аргумент и причина, по которой <code>BuildConfig</code> полезно уметь читать даже тем, кто пользуется внешним CI.</p>
 <p>Сравнение идёт по восьми критериям, и решающая среди них третья строка, про один артефакт на все среды:</p>
@@ -3652,7 +3735,7 @@ oc <span class="nb">set</span> triggers deploy/orders --from-image<span class="o
 </tr>
 </tbody>
 </table>
-<p class="cap cap-t"><b>Таблица 47.20.</b> S2I против внешнего CI.</p>
+<p class="cap cap-t"><b>Таблица 47.21.</b> S2I против внешнего CI.</p>
 <p>Решает дело именно строка про один артефакт, потому что практика «в prod поехало ровно то, что протестировали на stage» несовместима с пересборкой в каждом кластере. S2I оправдан для внутренних инструментов, демо и прототипов, а для продового сервиса в финтехе нужны внешний CI и продвижение образа по дайджесту.</p>
 <p><code>BuildConfig</code> полезно уметь читать и тем, у кого внешний CI, потому что в наследство часто достаётся гибрид: CI собирает jar, а <code>BuildConfig</code> типа <code>Docker</code> пакует его в образ. На каждый день для этого хватает четырёх команд: <code>oc get bc</code>, <code>oc start-build orders --from-file=app.jar --follow</code>, <code>oc logs -f bc/orders</code> и <code>oc describe build orders-42</code>.</p>
 <h2 id="11-манифесты-сервиса">11. Манифесты сервиса</h2>
@@ -4041,7 +4124,7 @@ kubectl auth can-i get secrets --as<span class="o">=</span>system:serviceaccount
 </tr>
 </tbody>
 </table>
-<p class="cap cap-t"><b>Таблица 47.21.</b> Симптом, команда и что искать.</p>
+<p class="cap cap-t"><b>Таблица 47.22.</b> Симптом, команда и что искать.</p>
 <h3 id="142-чеклист-под-не-стартует">14.2 Чеклист «под не стартует»</h3>
 <p>Под, который так и не дошёл до готовности, почти всегда объясняет себя в событиях, и чеклист ниже ведёт от самого общего взгляда к разбору изнутри. Шагов шесть, и до последнего обычно доходить не приходится. Каждый следующий шаг имеет смысл, только если предыдущий причину не показал.</p>
 <ol>
@@ -4280,7 +4363,7 @@ https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/kubectl/
 https://github.com/openshift/cluster-kube-apiserver-operator/blob/master/bindata/bootkub…">SCC restricted-v2 в openshift/cluster-kube-apiserver-operator</a> — первичный; полный манифест <code>restricted-v2</code>, включая список <code>volumes</code>. Проверено: 2026-09-24.</li><li><a href="https://github.com/openjdk/jdk/tree/master/src/hotspot/share/gc" data-tip="Внешний сайт · github.com
 https://github.com/openjdk/jdk/tree/master/src/hotspot/share/gc">Исходники HotSpot (openjdk/jdk)</a> — первичный; <code>ShrinkHeapInSteps</code> объявлен в <code>serial_globals.hpp</code>, <code>ZUncommit</code> и <code>ShenandoahUncommit</code> включены по умолчанию и отключаются при <code>-Xms</code>, равном <code>-Xmx</code>, <code>G1PeriodicGCInterval</code> по умолчанию 0. Проверено: 2026-09-24.</li></ul></details></li><li><a href="https://docs.oracle.com/en/java/javase/21/troubleshoot/diagnostic-tools.html" data-tip="Внешний сайт · docs.oracle.com
 https://docs.oracle.com/en/java/javase/21/troubleshoot/diagnostic-tools.html">Java SE 21 Troubleshooting Guide: Diagnostic Tools</a> — первичный; NMT стоит 5–10 % производительности. Проверено: 2026-09-24.</li><li><a href="https://keda.sh/docs/" data-tip="Внешний сайт · keda.sh
-https://keda.sh/docs/">KEDA Documentation</a> — первичный; масштабировщик Kafka по лагу группы потребителей, scale-to-zero. Схема <code>ScaledObject</code> сверена по отдельной странице спецификации выше.</li><li>⚠️ <strong>Не закрыто:</strong> детали <code>Route</code> (полный список аннотаций <code>haproxy.router.openshift.io/*</code> и их значения по умолчанию) — <code>docs.redhat.com</code> и <code>docs.openshift.com</code> по-прежнему отдают 404 автоматическим клиентам (повторная проверка 2026-09-22). Сверяйте на живом кластере: <code>oc explain route.spec</code>, <code>oc get route -o yaml</code>.</li><li><a href="https://argo-rollouts.readthedocs.io/" data-tip="Внешний сайт · argo-rollouts.readthedocs.io
+https://keda.sh/docs/">KEDA Documentation</a> — первичный; масштабировщик Kafka по лагу группы потребителей, scale-to-zero. Схема <code>ScaledObject</code> сверена по отдельной странице спецификации выше.</li><li><code>openshift/router</code>, шаблон конфигурации HAProxy <code>images/router/haproxy/conf/haproxy-config.template</code> — первичный источник аннотаций <code>Route</code> и их значений по умолчанию (коммит 6d11db5c51d7, 2026-09-21; копия в <code>labs/openshift-router/</code>). Документация Red Hat (<code>docs.redhat.com</code>, <code>docs.openshift.com</code>) автоматическим клиентам не отдаётся (404, проверено 2026-09-22), поэтому таблица в 10.2 составлена по шаблону.</li><li><a href="https://argo-rollouts.readthedocs.io/" data-tip="Внешний сайт · argo-rollouts.readthedocs.io
 https://argo-rollouts.readthedocs.io/">Argo Rollouts</a> и <a href="https://docs.flagger.app/" data-tip="Внешний сайт · docs.flagger.app
 https://docs.flagger.app/">Flagger</a> — первичные; прогрессивная доставка с анализом метрик. Упомянуты обзорно, подробности в главе 53.</li><li><a href="https://kubectl.docs.kubernetes.io/references/kustomize/" data-tip="Внешний сайт · kubectl.docs.kubernetes.io
 https://kubectl.docs.kubernetes.io/references/kustomize/">Kustomize Reference</a> — первичный; <code>configMapGenerator</code> с хешем в имени, overlays, <code>images</code>.</li><li><a href="https://helm.sh/docs/" data-tip="Внешний сайт · helm.sh
@@ -4368,6 +4451,10 @@ https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/">h
 <li id="fn:b47-6">
 <p>Опыт <code>labs/k8s-ch47/lifecycle.sh</code> на kind, Kubernetes 1.37.0, 2026-10-28; вывод <code>labs/k8s-ch47/s47-lifecycle.txt</code>. О файле <code>/dev/termination-log</code> как о «последней воле» контейнера и о <code>FallbackToLogsOnError</code> — B. Ibryam, R. Huß. <em>Kubernetes Patterns</em>, 2nd ed. O'Reilly, 2023, гл. 4 «Health Probe», раздел «Discussion», с. 48 и сноска 1. Ограничения размера — Kubernetes Documentation, «Determine the Reason for Pod Failure», <a href="https://kubernetes.io/docs/tasks/debug/debug-application/determine-reason-pod-failure/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/tasks/debug/debug-application/determine-reason-pod-failure/">https://kubernetes.io/docs/tasks/debug/debug-application/determine-reason-pod-failure/</a>.&#160;<a class="footnote-backref" href="#fnref:b47-6" title="Jump back to footnote 19 in the text" data-tip="Назад к тексту">&#8617;</a></p>
+</li>
+<li id="fn:b47-8">
+<p><code>openshift/router</code>, файл <code>images/router/haproxy/conf/haproxy-config.template</code>, коммит 6d11db5c51d7 от 21.09.2026 (последнее изменение файла на 28.10.2026), <a href="https://github.com/openshift/router/blob/master/images/router/haproxy/conf/haproxy-config.template" data-tip="Внешний сайт · github.com
+https://github.com/openshift/router/blob/master/images/router/haproxy/conf/haproxy-confi…">https://github.com/openshift/router/blob/master/images/router/haproxy/conf/haproxy-config.template</a>; копия файла — <code>labs/openshift-router/haproxy-config.template</code>. Первичный источник: значения по умолчанию в таблице — это аргументы <code>firstMatch</code> и <code>env</code> в шаблоне (строки с <code>timeout</code>, <code>balance</code>, <code>cookie</code>, <code>setForwardedHeadersDefaultValue</code>). Роутер конкретного кластера может переопределять их переменными окружения из <code>IngressController</code>, поэтому на живом кластере их сверяют командой <code>oc -n openshift-ingress get deploy router-default -o yaml</code>.&#160;<a class="footnote-backref" href="#fnref:b47-8" title="Jump back to footnote 20 in the text" data-tip="Назад к тексту">&#8617;</a></p>
 </li>
 </ol>
 </div><p class="img-credit">Иллюстрация в шапке: <a href="https://commons.wikimedia.org/wiki/File:Sailboats_in_marina_at_Claytor_Lake_(7490689952).jpg" rel="noopener" data-tip="Внешний сайт · commons.wikimedia.org
