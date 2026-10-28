@@ -606,8 +606,6 @@
 (function(){
   var root=document.documentElement, reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
-  var PC=['#3d6fa8','#c2593a','#6b8e23','#7b4fc4','#12949f','#d9456a','#b8860b','#a8324a','#2b9fd0','#4e8f6e','#9a6a32','#5560c8'], RN={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8,IX:9,X:10,XI:11,XII:12};
-  function pc(t){var m=/Часть\s+([IVX]+)/.exec(t||'');return m&&RN[m[1]]?PC[RN[m[1]]-1]:null;}
 
   // код следует теме страницы: светлое окно днём, тёмное в тёмной теме
   var mq=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)');
@@ -616,12 +614,19 @@
   codeSync(); if(mq&&mq.addEventListener)mq.addEventListener('change',codeSync);
   new MutationObserver(codeSync).observe(root,{attributes:true,attributeFilter:['data-theme']});
 
-  // панель задач: квадратик краски части и сворачивание группы; часть текущей главы открыта
+  // боковое меню: высота — видимая часть экрана под его верхним краем, иначе под фото-шапкой низ меню не долистать
+  (function(){var sd=document.getElementById('side');if(!sd)return;var q=0;
+    // высоту задаёт переменная --side-h: её читает только меню-колонка (sticky); выдвижное меню телефона держит свою 100dvh
+    function fit(){q=0;if(getComputedStyle(sd).position!=='sticky')return;
+      var t=Math.max(0,sd.getBoundingClientRect().top);root.style.setProperty('--side-h',(window.innerHeight-t)+'px');}
+    function ask(){if(!q)q=setTimeout(fit,16);}   // таймер, а не кадр: в фоновой вкладке кадры не рисуются
+    fit();addEventListener('scroll',ask,{passive:true});addEventListener('resize',ask);addEventListener('load',fit);})();
+
+  // панель задач: сворачивание группы; часть текущей главы открыта
   var side=document.getElementById('side');
   if(side){
     var shut={}; try{shut=JSON.parse(ls('jbb-parts')||'{}')||{};}catch(e){}
     side.querySelectorAll('.part').forEach(function(p){
-      var c=pc(p.textContent); if(c)p.style.setProperty('--pc',c);
       var ul=p.nextElementSibling; if(!ul||ul.tagName!=='UL')return;
       var key=(p.textContent||'').trim(), cur=!!ul.querySelector('a.cur');
       p.setAttribute('role','button'); p.setAttribute('tabindex','0');
@@ -633,8 +638,6 @@
       p.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();tog();}});
     });
   }
-  var tag=document.querySelector('.meta .part-tag'), c0=tag&&pc(tag.textContent); if(c0)root.style.setProperty('--pc',c0);
-  document.querySelectorAll('.home .part-block').forEach(function(b){var h=b.querySelector('.pn');var c=h&&pc(h.textContent);if(c)b.style.setProperty('--pc',c);});
 
   // «Скопировано» — подсказка XP над кнопкой
   document.addEventListener('click',function(e){
