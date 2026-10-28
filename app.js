@@ -650,10 +650,12 @@
     if(!toc||!top||!list)return;
     root.style.setProperty('--xp-tbh',top.offsetHeight+'px');
     var bar=document.createElement('div'); bar.className='xp-tocbar';
-    bar.innerHTML='<div class="xp-tocbar-in"><button type="button" class="xp-tocbar-btn" aria-expanded="false"><span class="xp-tocbar-l">Содержание главы</span><span class="xp-tocbar-cur"></span><i aria-hidden="true"></i></button><nav class="xp-tocbar-list" hidden></nav></div>';
+    bar.innerHTML='<div class="xp-tocbar-scrim" hidden></div><div class="xp-tocbar-in"><button type="button" class="xp-tocbar-btn" aria-expanded="false"><span class="xp-tocbar-l">Содержание главы</span><span class="xp-tocbar-cur"></span><i aria-hidden="true"></i></button><nav class="xp-tocbar-list" hidden></nav></div>';
     var nav=bar.querySelector('nav'), btn=bar.querySelector('button'), cur=bar.querySelector('.xp-tocbar-cur');
     nav.appendChild(list.cloneNode(true));
-    function open(o){nav.hidden=!o; btn.setAttribute('aria-expanded',String(o)); bar.classList.toggle('open',o);}
+    var scrim=bar.querySelector('.xp-tocbar-scrim');
+    function open(o){nav.hidden=!o; scrim.hidden=!o; btn.setAttribute('aria-expanded',String(o)); bar.classList.toggle('open',o);}
+    scrim.addEventListener('click',function(){open(false);});
     btn.addEventListener('click',function(){open(nav.hidden);});
     nav.addEventListener('click',function(e){if(e.target.closest('a'))open(false);});
     document.addEventListener('keydown',function(e){if(e.key==='Escape')open(false);});
