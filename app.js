@@ -688,3 +688,154 @@
     io.observe(done);
   }
 })();
+
+(function(){
+  // ---------- хранение: куки частями ----------
+  var NAME='jbb_bm', PART=3800, LIMIT=60, YEAR=60*60*24*365*10;
+  function getCookie(n){var m=document.cookie.match('(?:^|; )'+n+'=([^;]*)');return m?m[1]:null;}
+  function setCookie(n,v,age){document.cookie=n+'='+v+';path=/;max-age='+age+';SameSite=Lax';}
+  function load(){try{var n=+getCookie(NAME+'_n')||0,s='';for(var i=0;i<n;i++)s+=getCookie(NAME+'_'+i)||'';return s?JSON.parse(decodeURIComponent(s)):[];}catch(e){return [];}}
+  function save(list){var s=encodeURIComponent(JSON.stringify(list)),old=+getCookie(NAME+'_n')||0,n=Math.ceil(s.length/PART);
+    for(var i=0;i<n;i++)setCookie(NAME+'_'+i,s.slice(i*PART,(i+1)*PART),YEAR);
+    for(var j=n;j<old;j++)setCookie(NAME+'_'+j,'',0);
+    setCookie(NAME+'_n',String(n),n?YEAR:0);}
+  window.jbbBookmarks={load:load,save:save};
+
+  // ---------- окно подтверждения в стиле XP ----------
+  function modal(title,html,buttons){
+    var m=document.createElement('div');m.className='xp-modal';
+    m.innerHTML='<div class="xp-win" role="dialog" aria-modal="true" aria-labelledby="xpw-t"><div class="xp-win-t"><span id="xpw-t"></span><button type="button" class="xp-win-x" aria-label="Закрыть">×</button></div><div class="xp-win-b"></div><div class="xp-win-f"></div></div>';
+    m.querySelector('#xpw-t').textContent=title; m.querySelector('.xp-win-b').innerHTML=html;
+    var f=m.querySelector('.xp-win-f'),prev=document.activeElement;
+    function close(){m.remove();document.removeEventListener('keydown',key);if(prev&&prev.focus)prev.focus();}
+    function key(e){if(e.key==='Escape')close();}
+    buttons.forEach(function(b){var el=document.createElement('button');el.type='button';el.textContent=b.t;if(b.cls)el.className=b.cls;
+      el.addEventListener('click',function(){close();if(b.fn)b.fn();});f.appendChild(el);});
+    m.querySelector('.xp-win-x').addEventListener('click',close);
+    m.addEventListener('click',function(e){if(e.target===m)close();});
+    document.addEventListener('keydown',key);document.body.appendChild(m);
+    (f.querySelector('.def')||f.querySelector('button')).focus();
+  }
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  // ---------- где читаем: блок текста и строка в нём ----------
+  function readY(){var tb=document.querySelector('.topbar'),bar=document.querySelector('.xp-tocbar.on .xp-tocbar-btn');
+    var y=tb?tb.getBoundingClientRect().bottom:0; if(bar)y=Math.max(y,bar.getBoundingClientRect().bottom); return y+12;}
+  // блоки текста главы до абзаца: врезки, списки и раскрывающиеся блоки разворачиваются в свои абзацы и пункты
+  function flat(){var pr=document.querySelector('.prose'),out=[];if(!pr)return out;
+    (function walk(el){Array.prototype.forEach.call(el.children,function(c){
+      if(/^(BLOCKQUOTE|UL|OL|DETAILS)$/.test(c.tagName)&&c.children.length)walk(c);
+      else if(c.tagName==='DIV'&&c.querySelector('pre')){var ps=Array.prototype.filter.call(c.querySelectorAll('pre'),function(x){return x.offsetParent!==null;});out.push(ps[0]||c.querySelector('pre'));}   // окно кода: только код, без полосы с кнопками
+      else out.push(c);});})(pr);
+    return out;}
+  function blocks(){return flat().filter(function(e){return e.offsetParent!==null&&e.offsetHeight>0;});}
+  function lineH(el){var cs=getComputedStyle(el),lh=parseFloat(cs.lineHeight);return lh>0?lh:parseFloat(cs.fontSize)*1.5;}
+  function here(){
+    // линия чтения — верх видимой области под панелями; ищем текст прямо под ней, затем блок, которому он принадлежит
+    var y=readY(),all=flat(),pr=document.querySelector('.prose'),pl=pr.getBoundingClientRect().left;
+    function caret(px,py){if(document.caretRangeFromPoint){var c=document.caretRangeFromPoint(px,py);return c&&{n:c.startContainer,o:c.startOffset};}
+      if(document.caretPositionFromPoint){var q=document.caretPositionFromPoint(px,py);return q&&{n:q.offsetNode,o:q.offset};}return null;}
+    var b=null,c=null,py=0;
+    for(var dy=4;dy<120&&!b;dy+=6){
+      for(var dx=2;dx<Math.min(pr.clientWidth,320)&&!b;dx+=12){
+        var k=caret(pl+dx,y+dy);
+        // каретка бывает в тексте или в самом абзаце (отступ, промежуток между строками) — годится и то и другое,
+        // если точка внутри блока текста главы; полоса с кнопками окна кода в список блоков не входит
+        if(k&&k.n&&(k.n.nodeType===3?k.n.textContent.trim():k.n.nodeType===1)){
+          for(var i=0;i<all.length;i++)if(all[i].contains(k.n)&&all[i].textContent.trim()){b=all[i];c=k;py=y+dy;break;}
+        }
+      }
+    }
+    if(!b){   // запасной путь: первый видимый блок, который заходит за линию чтения
+      var bs=blocks();for(var j=0;j<bs.length;j++){var rr=bs[j].getBoundingClientRect();if(rr.bottom>y){b=bs[j];py=Math.max(y,rr.top);break;}}
+      if(!b)return null;c={n:b,o:0};
+    }
+    var r=b.getBoundingClientRect(),lh=lineH(b),line=Math.max(0,Math.floor((py-r.top)/lh));
+    // начало строки: ставим каретку к левому краю блока на той же высоте
+    for(var sx=1;sx<40;sx+=3){var s0=caret(r.left+sx,r.top+line*lh+lh/2);if(s0&&s0.n&&s0.n.nodeType===3&&b.contains(s0.n)){c=s0;break;}}
+    var rg=document.createRange();rg.setStart(c.n,c.o);rg.setEnd(b,b.childNodes.length);
+    var x=rg.toString().replace(/\s+/g,' ').trim().slice(0,90)||b.textContent.replace(/\s+/g,' ').trim().slice(0,90);
+    // раздел: ближайший заголовок h2/h3 выше блока на уровне текста главы
+    var top=b;while(top.parentElement&&top.parentElement!==pr)top=top.parentElement;
+    var sec='',h=top;while(h){if(/^H[23]$/.test(h.tagName)){sec=h.textContent.trim();break;}h=h.previousElementSibling;}
+    var h1=pr.querySelector('h1');
+    return {u:(location.pathname.split('/').pop()||'index.html'),t:(h1?h1.textContent.trim():document.title).replace(/\s+/g,' ').slice(0,80),
+      s:sec.slice(0,80),b:all.indexOf(b),l:line,x:x,d:Date.now()};
+  }
+
+  // ---------- кнопка в строке заголовка ----------
+  var IC='<svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>';
+  function addButton(){
+    if(document.getElementById('bm'))return;
+    var fs=document.getElementById('fs'),theme=document.getElementById('theme'),anchor=fs||theme;if(!anchor)return;
+    var bt=document.createElement('button');bt.className='btn bm-btn';bt.id='bm';bt.type='button';bt.title='Закладка на этой строке';bt.setAttribute('aria-label',bt.title);bt.innerHTML=IC;
+    anchor.parentNode.insertBefore(bt,theme||anchor);
+    bt.addEventListener('click',function(){
+      var p=here();
+      if(!p){modal('Закладка','<p>Здесь нечего отметить: закладку можно поставить в тексте главы.</p>',[{t:'OK',cls:'def'}]);return;}
+      var list=load();
+      if(list.length>=LIMIT){modal('Закладок слишком много','<p>Сохранено '+list.length+' закладок, больше в куки не поместится. Удалите лишние на странице <a href="bookmarks.html">«Закладки»</a>.</p>',[{t:'OK',cls:'def'}]);return;}
+      modal('Сохранить закладку?',
+        '<p><b>'+esc(p.t)+'</b></p>'+(p.s?'<p class="bm-where">'+esc(p.s)+'</p>':'')+
+        '<p class="bm-where">Строка '+(p.l+1)+' в этом месте текста:</p><q>'+esc(p.x)+'…</q>',
+        [{t:'Сохранить',cls:'def',fn:function(){var l=load();l.unshift(p);save(l);
+            modal('Закладка сохранена','<p>Все закладки — на странице <a href="bookmarks.html">«Закладки»</a> в меню.</p>',[{t:'OK',cls:'def'}]);}},
+         {t:'Отмена'}]);
+    });
+  }
+  function syncButton(){var bt=document.getElementById('bm');if(bt)bt.hidden=!document.querySelector('.doc .prose h1');}
+
+  // ---------- возврат к строке ----------
+  function go(){
+    var raw=null;try{raw=sessionStorage.getItem('jbb-bm-go');}catch(e){}
+    if(!raw)return; var p;try{p=JSON.parse(raw);}catch(e){return;}
+    if(p.u!==(location.pathname.split('/').pop()||'index.html'))return;
+    try{sessionStorage.removeItem('jbb-bm-go');}catch(e){}
+    var all=document.querySelector('.prose');if(!all)return;
+    var fl=flat(),b=fl[p.b];
+    // текст главы могли дописать: если блок по номеру не совпадает с запомненной строкой, ищем блок по тексту
+    var key=(p.x||'').slice(0,40);
+    if(key&&(!b||b.textContent.replace(/\s+/g,' ').indexOf(key)<0)){
+      b=null;for(var i=0;i<fl.length;i++){if(fl[i].textContent.replace(/\s+/g,' ').indexOf(key)>=0){b=fl[i];break;}}}
+    if(!b)return;
+    // блоки текста главы отрисовываются лениво (content-visibility): после прыжка соседние блоки меняют высоту,
+    // поэтому позицию пересчитываем, пока разметка не устоится, и только потом подсвечиваем строку
+    var lh=lineH(b);
+    function place(){var t=b.getBoundingClientRect().top+scrollY+p.l*lh;scrollTo({top:t-readY()+12,behavior:'auto'});return t;}
+    place();
+    var tries=0;(function again(){requestAnimationFrame(function(){place();if(++tries<6)setTimeout(again,120);else flash();});})();
+    function flash(){
+      var top=place(),f=document.createElement('div');f.className='bm-flash';
+      if(getComputedStyle(all).position==='static')all.style.position='relative';
+      f.style.top=(top-(all.getBoundingClientRect().top+scrollY))+'px';f.style.height=lh+'px';
+      all.appendChild(f);requestAnimationFrame(function(){requestAnimationFrame(function(){f.classList.add('out');});});
+      setTimeout(function(){f.remove();},3200);
+    }
+  }
+
+  // ---------- страница коллекции ----------
+  function list(){
+    var box=document.getElementById('bm-list');if(!box)return;
+    var l=load(),clr=document.getElementById('bm-clear');
+    if(clr)clr.hidden=!l.length;
+    if(!l.length){box.innerHTML='<p class="bm-empty">Закладок пока нет. В любой главе нажмите кнопку с флажком в строке заголовка — закладка встанет на строку, которую вы читаете.</p>';return;}
+    box.innerHTML='<ul class="bm-list">'+l.map(function(p,i){var d=new Date(p.d);
+      return '<li><div><a class="bm-go" href="'+esc(p.u)+'" data-i="'+i+'">'+esc(p.t)+'</a>'+(p.s?'<span class="bm-sec">'+esc(p.s)+' · строка '+(p.l+1)+'</span>':'')+
+        '<span class="bm-x">«'+esc(p.x)+'…»</span><span class="bm-d">'+d.toLocaleDateString('ru-RU')+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</span></div>'+
+        '<button type="button" class="btn" data-del="'+i+'">Удалить</button></li>';}).join('')+'</ul>';
+  }
+  document.addEventListener('click',function(e){
+    var a=e.target.closest&&e.target.closest('a.bm-go');
+    if(a){try{sessionStorage.setItem('jbb-bm-go',JSON.stringify(load()[+a.getAttribute('data-i')]));}catch(x){}return;}
+    var d=e.target.closest&&e.target.closest('button[data-del]');
+    if(d){var i=+d.getAttribute('data-del'),l=load(),p=l[i];if(!p)return;
+      modal('Удалить закладку?','<p><b>'+esc(p.t)+'</b></p><q>'+esc(p.x)+'…</q>',[{t:'Удалить',cls:'danger',fn:function(){var l2=load();l2.splice(i,1);save(l2);list();}},{t:'Отмена',cls:'def'}]);return;}
+    if(e.target.id==='bm-clear'){var n=load().length;
+      modal('Очистить все закладки?','<p>Будут удалены все закладки: '+n+'. Вернуть их будет нельзя.</p>',[{t:'Очистить',cls:'danger',fn:function(){save([]);list();}},{t:'Отмена',cls:'def'}]);}
+  });
+
+  function init(){addButton();syncButton();go();list();}
+  init();
+  var docEl=document.querySelector('.doc');
+  if(docEl)new MutationObserver(function(){syncButton();go();}).observe(docEl,{childList:true});
+})();
