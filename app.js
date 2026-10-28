@@ -448,6 +448,7 @@
     var STEPS=[.82,.88,.94,1,1.06,1.12,1.18,1.25,1.33], k=3;
     try{var v=parseFloat(localStorage.getItem('jbb-zoom'));var i=STEPS.indexOf(v);if(i>=0)k=i;}catch(e){}
     var z=document.querySelector('.zoom'), made=!z;
+    if(made&&document.body.classList.contains('home'))return;   // на главной масштабировать нечего: кнопки не ставим
     if(made){z=document.createElement('div'); z.className='zoom'; z.setAttribute('role','group'); z.setAttribute('aria-label','Масштаб текста');
     z.innerHTML='<button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%"></button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button>';}
     function apply(initial){
@@ -744,10 +745,10 @@
     });
     // кнопка над частями: свернуть или развернуть сразу все группы (той же анимацией)
     var parts=Array.prototype.filter.call(side.querySelectorAll('.part'),function(p){return p._open;});
-    if(parts.length>1&&!side.querySelector('.parts-all')){
-      var bar=document.createElement('div');bar.className='parts-all';
-      var bt=document.createElement('button');bt.type='button';bar.appendChild(bt);
-      parts[0].parentNode.insertBefore(bar,parts[0]);
+    var bar=side.querySelector('.parts-all');
+    if(parts.length>1&&!(bar&&bar._on)){
+      if(!bar){bar=document.createElement('div');bar.className='parts-all';bar.innerHTML='<button type="button"></button>';parts[0].parentNode.insertBefore(bar,parts[0]);}
+      bar._on=1;var bt=bar.querySelector('button');
       var label=function(){var any=parts.some(function(p){return p._open();});
         bt.textContent=any?'Свернуть все части':'Развернуть все части';bt.setAttribute('aria-expanded',any?'true':'false');};
       bt.addEventListener('click',function(){var any=parts.some(function(p){return p._open();});
@@ -964,7 +965,8 @@
   function chapterTitle(){var h1=prose()&&prose().querySelector('h1');return norm(h1?h1.textContent:document.title);}
   function addButton(){
     var bt=document.getElementById('bm');   // кнопка уже в разметке строки заголовка (site_theme.topbar)
-    if(bt){if(!bt._bm){bt._bm=1;bt.addEventListener('click',ask);}return;}
+    if(bt){if(!bt._bm){bt._bm=1;bt.addEventListener('click',function(){if(bt.dataset.to)location.href=bt.dataset.to;else ask();});}return;}
+    return;   // на главной своей строки заголовка нет, и закладку там ставить некуда — кнопку не добавляем
     var theme=document.getElementById('theme');if(!theme)return;
     bt=document.createElement('button');bt.className='btn bm-btn';bt.id='bm';bt.type='button';bt.title='Закладка на этой строке';bt.setAttribute('aria-label',bt.title);bt.innerHTML=IC;
     theme.parentNode.insertBefore(bt,theme);
@@ -991,7 +993,11 @@
     if(!save(l)){info('Закладка не сохранилась','<p>Браузер не записал данные: хранилище сайта переполнено или запрещено.</p>');return;}
     info('Закладка сохранена','<p>Все закладки — на странице <a href="bookmarks.html">«Закладки»</a> в меню.</p>');
   }
-  function syncButton(){var bt=document.getElementById('bm');if(bt){var on=!!document.querySelector('.doc .prose h1');bt.disabled=!on;bt.title=on?'Закладка на этой строке':'Закладку можно поставить в тексте главы';}}   // место кнопки сохраняется на всех страницах
+  function syncButton(){var bt=document.getElementById('bm');if(!bt)return;
+    // в главе кнопка ставит закладку; на служебной странице ведёт к коллекции закладок; на самой коллекции не видна, но место держит
+    var on=!!document.querySelector('.doc .prose h1'),coll=/(^|\/)bookmarks\.html$/.test(location.pathname);
+    bt.style.visibility=coll?'hidden':'';bt.dataset.to=on||coll?'':'bookmarks.html';
+    bt.title=on?'Закладка на этой строке':'Мои закладки';bt.setAttribute('aria-label',bt.title);}
 
   // ---------- возврат к строке: адрес вида глава.html#bm-<время сохранения> ----------
   var going=0;
