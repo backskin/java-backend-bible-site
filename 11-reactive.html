@@ -3811,60 +3811,60 @@ https://github.com/reactor/reactor-core/issues/2602">#2602</a> закрыт ка
 <h2 id="14-ошибки-и-антипаттерны">14. Ошибки и антипаттерны</h2>
 <p>Тридцать две ошибки ниже чаще всего встречаются в реактивных сервисах на Spring, и почти каждая уже разобрана по механике в одном из предыдущих разделов. Каждый пункт построен по одной схеме: симптом, по которому ошибку узнают в проде, затем причина и лечение. Поэтому список работает двояко: как чек-лист на ревью реактивного кода и как справочник, когда симптом уже есть, а причина ещё не найдена. Первые пункты самые дорогие и самые частые, а ближе к концу собраны тонкие случаи с транзакциями, sink'ами и жизненным циклом бинов.</p>
 <ol>
-<li>
-<p><strong>Блокирующий вызов на event loop.</strong>
-   <em>Симптом:</em> под нагрузкой латентность растёт лавинообразно, health-проба не укладывается в таймаут, и Kubernetes перезапускает под; в thread dump потоки <code>reactor-http-nio-N</code> стоят в <code>SocketInputStream.read</code> или <code>park</code>.
-   <em>Причина:</em> внутри <code>map</code>/<code>flatMap</code> без переключения планировщика выполняется JDBC, <code>RestTemplate</code>, <code>Thread.sleep</code>, <code>CompletableFuture.get()</code>, синхронный логгер или <code>UUID.randomUUID()</code> на исчерпанной энтропии.
-   <em>Лечение:</em> вызов оборачивают в <code>Mono.fromCallable(...).subscribeOn(Schedulers.boundedElastic())</code>, в интеграционных тестах включают BlockHound, а для каждого вида блокирующей работы заводят отдельный именованный планировщик.</p>
-</li>
-<li>
-<p><strong>Забытый <code>subscribe</code>.</strong>
-   <em>Симптом:</em> «письмо не ушло», «аудит не записался», а в логе нет ни одной ошибки.
-   <em>Причина:</em> метод собрал <code>Mono</code> и выбросил его, подписки не возникло, и работа не началась.
-   <em>Лечение:</em> <code>Mono</code> возвращают наружу, собственные методы помечают <code>@CheckReturnValue</code> и включают проверку ErrorProne (сам Reactor свои операторы этой аннотацией не помечает), а в правила ревью вносят пункт «результат реактивного вызова нельзя игнорировать».</p>
-</li>
-<li>
-<p><strong>Подписка внутри оператора вместо <code>flatMap</code>.</strong>
-   <em>Симптом:</em> операция выполняется, но её ошибок не видно, отмена не работает, порядок не соблюдается, а транзакция не охватывает вложенный вызов.
-   <em>Причина:</em> вызов <code>.doOnNext(x -&gt; service.save(x).subscribe())</code> запускает вложенную независимую подписку вне цепочки.
-   <em>Лечение:</em> вместо этого пишут <code>.flatMap(service::save)</code> или <code>.concatMap(...)</code>, а вложенный <code>subscribe()</code> в цепочке считают запрещённой конструкцией.</p>
-</li>
-<li>
-<p><strong><code>block()</code> внутри цепочки.</strong>
-   <em>Симптом:</em> <code>IllegalStateException: block() ... is not supported in thread parallel-1</code> (то же на <code>single()</code> и на event loop Reactor Netty) либо, что хуже, тихая взаимоблокировка на собственном однопоточном планировщике или на исчерпанном <code>boundedElastic</code>, где такой проверки нет.
-   <em>Причина:</em> разработчик пытается «вернуть значение» из реактивного кода обычным способом.
-   <em>Лечение:</em> два стиля не смешивают; <code>block()</code> допустим только на границе приложения, только на платформенном или виртуальном потоке и всегда с таймаутом.</p>
-</li>
-<li>
-<p><strong>Неограниченный <code>flatMap</code>.</strong>
-   <em>Симптом:</em> всплеск на входе превращается в 256 одновременных запросов к внешней системе; либо она отказывает, либо у вас самих появляется <code>PoolAcquireTimeoutException</code>, а буферы в куче разрастаются до десятков МБ.
-   <em>Причина:</em> <code>flatMap(f)</code> вызван без второго аргумента, который по умолчанию равен 256.
-   <em>Лечение:</em> число одновременных подписок всегда указывают явно, а для строгого порядка берут <code>concatMap</code>.</p>
-</li>
-<li>
-<p><strong>Жадное вычисление в «запасных» ветках.</strong>
-   <em>Симптом:</em> исключение создаётся на каждый успешный запрос, fallback-запрос уходит всегда, а в логе видно обращение к резервному сервису при живом основном.
-   <em>Причина:</em> в <code>switchIfEmpty(Mono.error(new X()))</code>, <code>defaultIfEmpty(expensive())</code> или <code>onErrorResume(fallbackChainBuiltEagerly)</code> запасная ветка вычисляется при сборке.
-   <em>Лечение:</em> любую непустую «запасную» ветку заворачивают в <code>Mono.defer(...)</code> и проверяют в тестах двумя способами: <code>verify(fallback, never())</code> на сам метод и <code>PublisherProbe.assertWasNotSubscribed()</code> на подписку. Одна проверка подписки ранний вызов не ловит (раздел 13.6).</p>
-</li>
-<li>
-<p><strong><code>onErrorContinue</code>.</strong>
-   <em>Симптом:</em> ошибки проглатываются в чужом коде (WebClient), поведение меняется при замене <code>flatMap</code> на <code>concatMap</code>, а поток «залипает».
-   <em>Причина:</em> маркер оператора идёт через <code>Context</code> вверх по цепочке, а поддерживают его не все операторы.
-   <em>Лечение:</em> ошибку изолируют внутри <code>flatMap</code> вложенным <code>onErrorResume</code>.</p>
-</li>
-<li>
-<p><strong>Потеря контекста.</strong>
-   <em>Симптом:</em> <code>traceId</code> в логах пустой или, что страшнее, чужой, а <code>ReactiveSecurityContextHolder</code> после <code>publishOn</code> оказывается пуст.
-   <em>Причина:</em> <code>ThreadLocal</code>/MDC используются напрямую, хотя поток в цепочке меняется и повторно используется между запросами.
-   <em>Лечение:</em> пользуются <code>Context</code> и ставят <code>contextWrite</code> в конце цепочки; для логов берут <code>doOnEach</code>, а для интеграции — <code>context-propagation</code> и <code>Hooks.enableAutomaticContextPropagation()</code>.</p>
-</li>
-<li>
-<p><strong><code>boundedElastic()</code> как свалка.</strong>
-   <em>Симптом:</em> очередь в планировщике растёт, латентность уплывает, CPU низкий, а в дампе все 40 потоков <code>boundedElastic-N</code> стоят в I/O.
-   <em>Причина:</em> вся блокирующая работа приложения свалена в один общий пул размером CPU×10.
-   <em>Лечение:</em> на каждый downstream заводят отдельный <code>newBoundedElastic</code> (bulkhead), снимают метрики <code>reactor.scheduler</code> или собственные, а в пределе признают, что реактив здесь не нужен.</p>
-</li>
+<li><strong>Блокирующий вызов на event loop.</strong>
+   <em>Симптом:</em> под нагрузкой латентность растёт лавинообразно, health-проба не укладывается в таймаут, и Kubernetes перезапускает под; в thread dump потоки <code>reactor-http-nio-N</code> стоят в <code>SocketInputStream.read</code> или <code>park</code>.</li>
+</ol>
+<p><em>Причина:</em> внутри <code>map</code>/<code>flatMap</code> без переключения планировщика выполняется JDBC, <code>RestTemplate</code>, <code>Thread.sleep</code>, <code>CompletableFuture.get()</code>, синхронный логгер или <code>UUID.randomUUID()</code> на исчерпанной энтропии.</p>
+<p><em>Лечение:</em> вызов оборачивают в <code>Mono.fromCallable(...).subscribeOn(Schedulers.boundedElastic())</code>, в интеграционных тестах включают BlockHound, а для каждого вида блокирующей работы заводят отдельный именованный планировщик.</p>
+<ol start="2">
+<li><strong>Забытый <code>subscribe</code>.</strong>
+   <em>Симптом:</em> «письмо не ушло», «аудит не записался», а в логе нет ни одной ошибки.</li>
+</ol>
+<p><em>Причина:</em> метод собрал <code>Mono</code> и выбросил его, подписки не возникло, и работа не началась.</p>
+<p><em>Лечение:</em> <code>Mono</code> возвращают наружу, собственные методы помечают <code>@CheckReturnValue</code> и включают проверку ErrorProne (сам Reactor свои операторы этой аннотацией не помечает), а в правила ревью вносят пункт «результат реактивного вызова нельзя игнорировать».</p>
+<ol start="3">
+<li><strong>Подписка внутри оператора вместо <code>flatMap</code>.</strong>
+   <em>Симптом:</em> операция выполняется, но её ошибок не видно, отмена не работает, порядок не соблюдается, а транзакция не охватывает вложенный вызов.</li>
+</ol>
+<p><em>Причина:</em> вызов <code>.doOnNext(x -&gt; service.save(x).subscribe())</code> запускает вложенную независимую подписку вне цепочки.</p>
+<p><em>Лечение:</em> вместо этого пишут <code>.flatMap(service::save)</code> или <code>.concatMap(...)</code>, а вложенный <code>subscribe()</code> в цепочке считают запрещённой конструкцией.</p>
+<ol start="4">
+<li><strong><code>block()</code> внутри цепочки.</strong>
+   <em>Симптом:</em> <code>IllegalStateException: block() ... is not supported in thread parallel-1</code> (то же на <code>single()</code> и на event loop Reactor Netty) либо, что хуже, тихая взаимоблокировка на собственном однопоточном планировщике или на исчерпанном <code>boundedElastic</code>, где такой проверки нет.</li>
+</ol>
+<p><em>Причина:</em> разработчик пытается «вернуть значение» из реактивного кода обычным способом.</p>
+<p><em>Лечение:</em> два стиля не смешивают; <code>block()</code> допустим только на границе приложения, только на платформенном или виртуальном потоке и всегда с таймаутом.</p>
+<ol start="5">
+<li><strong>Неограниченный <code>flatMap</code>.</strong>
+   <em>Симптом:</em> всплеск на входе превращается в 256 одновременных запросов к внешней системе; либо она отказывает, либо у вас самих появляется <code>PoolAcquireTimeoutException</code>, а буферы в куче разрастаются до десятков МБ.</li>
+</ol>
+<p><em>Причина:</em> <code>flatMap(f)</code> вызван без второго аргумента, который по умолчанию равен 256.</p>
+<p><em>Лечение:</em> число одновременных подписок всегда указывают явно, а для строгого порядка берут <code>concatMap</code>.</p>
+<ol start="6">
+<li><strong>Жадное вычисление в «запасных» ветках.</strong>
+   <em>Симптом:</em> исключение создаётся на каждый успешный запрос, fallback-запрос уходит всегда, а в логе видно обращение к резервному сервису при живом основном.</li>
+</ol>
+<p><em>Причина:</em> в <code>switchIfEmpty(Mono.error(new X()))</code>, <code>defaultIfEmpty(expensive())</code> или <code>onErrorResume(fallbackChainBuiltEagerly)</code> запасная ветка вычисляется при сборке.</p>
+<p><em>Лечение:</em> любую непустую «запасную» ветку заворачивают в <code>Mono.defer(...)</code> и проверяют в тестах двумя способами: <code>verify(fallback, never())</code> на сам метод и <code>PublisherProbe.assertWasNotSubscribed()</code> на подписку. Одна проверка подписки ранний вызов не ловит (раздел 13.6).</p>
+<ol start="7">
+<li><strong><code>onErrorContinue</code>.</strong>
+   <em>Симптом:</em> ошибки проглатываются в чужом коде (WebClient), поведение меняется при замене <code>flatMap</code> на <code>concatMap</code>, а поток «залипает».</li>
+</ol>
+<p><em>Причина:</em> маркер оператора идёт через <code>Context</code> вверх по цепочке, а поддерживают его не все операторы.</p>
+<p><em>Лечение:</em> ошибку изолируют внутри <code>flatMap</code> вложенным <code>onErrorResume</code>.</p>
+<ol start="8">
+<li><strong>Потеря контекста.</strong>
+   <em>Симптом:</em> <code>traceId</code> в логах пустой или, что страшнее, чужой, а <code>ReactiveSecurityContextHolder</code> после <code>publishOn</code> оказывается пуст.</li>
+</ol>
+<p><em>Причина:</em> <code>ThreadLocal</code>/MDC используются напрямую, хотя поток в цепочке меняется и повторно используется между запросами.</p>
+<p><em>Лечение:</em> пользуются <code>Context</code> и ставят <code>contextWrite</code> в конце цепочки; для логов берут <code>doOnEach</code>, а для интеграции — <code>context-propagation</code> и <code>Hooks.enableAutomaticContextPropagation()</code>.</p>
+<ol start="9">
+<li><strong><code>boundedElastic()</code> как свалка.</strong>
+   <em>Симптом:</em> очередь в планировщике растёт, латентность уплывает, CPU низкий, а в дампе все 40 потоков <code>boundedElastic-N</code> стоят в I/O.</li>
+</ol>
+<p><em>Причина:</em> вся блокирующая работа приложения свалена в один общий пул размером CPU×10.</p>
+<p><em>Лечение:</em> на каждый downstream заводят отдельный <code>newBoundedElastic</code> (bulkhead), снимают метрики <code>reactor.scheduler</code> или собственные, а в пределе признают, что реактив здесь не нужен.</p>
+<ol start="10">
 <li>
 <p><strong>Изменяемое состояние между сигналами.</strong>
     <em>Симптом:</em> в результатах «перемешаны» данные разных запросов, а баги не воспроизводятся.
@@ -4533,5 +4533,5 @@ https://commons.wikimedia.org/wiki/File:Kinderdijk_windmills_04.jpg">Мельн�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-предпосылки-реактивного-подхода">1. Предпосылки реактивного подхода</a></li><li><a href="#2-спецификация-reactive-streams">2. Спецификация Reactive Streams</a></li><li><a href="#3-reactor-модель-выполнения">3. Reactor: модель выполнения</a></li><li><a href="#4-операторы-reactor">4. Операторы Reactor</a></li><li><a href="#5-schedulers-и-потоки-исполнения">5. Schedulers и потоки исполнения</a></li><li><a href="#6-backpressure-на-практике">6. Backpressure на практике</a></li><li><a href="#7-сигнал-ошибки">7. Сигнал ошибки</a></li><li><a href="#8-context-как-замена-threadlocal">8. Context как замена ThreadLocal</a></li><li><a href="#9-отладка">9. Отладка</a></li><li><a href="#10-тестирование-реактивного-кода">10. Тестирование реактивного кода</a></li><li><a href="#11-r2dbc-и-реактивные-интеграции">11. R2DBC и реактивные интеграции</a></li><li><a href="#12-производительность-и-выбор-в-2026">12. Производительность и выбор в 2026</a></li><li><a href="#13-разобранные-инциденты">13. Разобранные инциденты</a></li><li><a href="#14-ошибки-и-антипаттерны">14. Ошибки и антипаттерны</a></li><li><a href="#15-диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками">17. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=df34114fac"></script>
+<script src="app.js?v=c7c9dff52a"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

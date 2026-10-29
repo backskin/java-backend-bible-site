@@ -4073,51 +4073,51 @@ curl -s <span class="s2">"</span><span class="nv">$ES</span><span class="s2">/lo
 <h2 id="14-попробовать-руками">14. Попробовать руками</h2>
 <p>Ниже 14 упражнений, которые проводят через весь контур руками: от подключения сервиса к kube-prometheus-stack до полного треугольника переходов между сигналами. Каждое упражнение состоит из задания и <em>ожидаемого результата</em>, и почти в каждом есть второй шаг, где что-то ломают намеренно, потому что поломку, которую вы однажды устроили сами, потом легко узнать в продакшене. Для большинства упражнений хватает локального кластера kind и одного Spring Boot сервиса, а идут они в том же порядке, что и разделы главы.</p>
 <ol>
-<li>
-<p><strong>Поднять kube-prometheus-stack в kind и подключить свой сервис.</strong>
-   Выполните <code>kind create cluster --name obs</code> → <code>helm install kps prometheus-community/kube-prometheus-stack -n monitoring --create-namespace</code>. Задеплойте Spring Boot приложение с <code>management.endpoints.web.exposure.include=prometheus</code> на порту 8081, создайте Service с <strong>именованным</strong> портом <code>management</code> и <code>ServiceMonitor</code> с меткой <code>release: kps</code>.
-   <em>Ожидаемый результат:</em> через 1–2 минуты таргет появляется в <code>/targets</code> со статусом UP, <code>up{job="&lt;ns&gt;/&lt;svc&gt;"} == 1</code>, а в Grafana по метрике <code>http_server_requests_seconds_count</code> есть данные. Затем намеренно сломайте метку <code>release</code>: таргет исчезнет, и вы увидите, что <strong>никакого оповещения об этом нет</strong>.</p>
-</li>
-<li>
-<p><strong>Написать relabel-правило и проверить его в <code>/targets</code>.</strong>
-   Добавьте в <code>ServiceMonitor</code> <code>relabelings</code>, которое проставляет метку <code>node</code> из <code>__meta_kubernetes_pod_node_name</code>, и <code>keep</code>-правило, которое оставляет только поды с меткой <code>tier=backend</code>.
-   <em>Ожидаемый результат:</em> на странице <code>/service-discovery</code> видны оба набора меток, до relabeling и после, а поды без метки числятся в dropped, и в метриках появился метка <code>node</code>. Затем намеренно напишите <code>regex: "backend"</code> для значения <code>backend-api</code> и убедитесь, что таргет пропал из-за автоматической якоризации.</p>
-</li>
-<li>
-<p><strong>Найти топ метрик по кардинальности и срезать одну из них.</strong>
-   Выполните <code>topk(10, count by (__name__)({__name__=~".+"}))</code> и откройте <code>/tsdb-status</code>, выберите самую дорогую метрику своего сервиса и добавьте в <code>ServiceMonitor</code> <code>metricRelabelings</code> с <code>action: drop</code>.
-   <em>Ожидаемый результат:</em> <code>scrape_samples_post_metric_relabeling</code> стал заметно меньше <code>scrape_samples_scraped</code>, а <code>prometheus_tsdb_head_series</code> перестал расти. Разница между этими двумя метриками и есть сэкономленный объём.</p>
-</li>
-<li>
-<p><strong>Написать recording rule и сравнить время запроса.</strong>
-   Замерьте время выполнения <code>histogram_quantile(0.99, sum by (le, service) (rate(http_server_requests_seconds_bucket[5m])))</code> на диапазоне 7 дней (UI Prometheus показывает его как «Load time»). Затем создайте <code>PrometheusRule</code> с двумя правилами, сначала <code>sum by (le)</code>, потом <code>histogram_quantile</code>, и через час замерьте запрос к готовому ряду.
-   <em>Ожидаемый результат:</em> время запроса падает на порядок, а <code>prometheus_engine_query_samples_total</code> для нового запроса кратно меньше. Проверьте, что правила лежат в <strong>одной группе</strong>, иначе второе может считаться по устаревшим данным первого.</p>
-</li>
-<li>
-<p><strong>Написать оповещение с <code>for</code> и прогнать <code>promtool test rules</code>.</strong>
-   Напишите правило на долю 5xx с <code>for: 5m</code> и тест-файл из двух сценариев: длительное нарушение, при котором оповещение должно сработать, и одиночный всплеск на одну минуту, при котором не должен.
-   <em>Ожидаемый результат:</em> <code>promtool test rules</code> печатает <code>SUCCESS</code>. Если убрать <code>for</code>, второй тест упадёт и покажет, что оповещение срабатывает на всплеске, и это самая наглядная демонстрация того, зачем нужен <code>for</code>.</p>
-</li>
-<li>
-<p><strong>Настроить маршрутизацию с группировкой и проверить её через <code>amtool</code>.</strong>
-   Соберите дерево <code>route</code> с ветками по <code>team</code> и <code>severity</code>, корневым <code>fallback</code> и <code>continue: true</code> для дублирования critical в общий канал, а затем проверьте его командой <code>amtool config routes test --config.file=... severity=critical team=payments</code>.
-   <em>Ожидаемый результат:</em> команда печатает цепочку маршрутов и конечный receiver. Если сделать опечатку в метке (<code>team=payment</code>), оповещение уйдёт в <code>fallback</code>, и это ровно тот механизм, который стоит за производственным симптомом «оповещение не пришло».</p>
-</li>
-<li>
-<p><strong>Настроить inhibition и убедиться, что дочерние оповещения погасли.</strong>
-   Добавьте правило, по которому <code>alertname = NodeDown</code> гасит <code>alertname =~ "KubePodNotReady|TargetDown"</code> с <code>equal: ['node']</code>, и вручную через <code>amtool alert add</code> отправьте сначала дочернее оповещение, а потом родительский.
-   <em>Ожидаемый результат:</em> в UI Alertmanager дочернее оповещение получает статус <code>suppressed</code>, уведомление по нему не уходит, а <code>amtool alert query --inhibited</code> его показывает. Если убрать <code>equal</code>, вы увидите, как один <code>NodeDown</code> гасит оповещения на всех узлах разом.</p>
-</li>
-<li>
-<p><strong>Прочувствовать <code>group_wait</code> и <code>group_interval</code>.</strong>
-   Поставьте <code>group_wait: 30s</code>, <code>group_interval: 1m</code>, <code>repeat_interval: 5m</code>, создайте через <code>amtool alert add</code> оповещение, через 10 секунд второе с теми же метками <code>group_by</code> и подождите.
-   <em>Ожидаемый результат:</em> первое уведомление приходит через 30 секунд и содержит <strong>оба</strong> оповещения, следующее приходит не раньше чем через минуту после первого, а дальше повтор идёт каждые 5 минут. Затем добавьте <code>pod</code> в <code>group_by</code> и убедитесь, что теперь приходят два отдельных сообщения: так в миниатюре выглядит производственное «оповещение пришло трижды».</p>
-</li>
-<li>
-<p><strong>Поднять Loki + Alloy (Promtail с марта 2026 года снят с поддержки) и сравнить объём с Elasticsearch.</strong>
-   Залейте один и тот же поток логов (например, <code>flog</code> или свой сервис) параллельно в Loki и в OpenSearch на 30 минут и сравните <code>du -sh</code> на данных Loki с <code>_cat/indices?h=index,store.size</code>.
-   <em>Ожидаемый результат:</em> Loki занимает в разы меньше места. Затем добавьте в конфиг агента метку <code>level</code> и посмотрите на <code>loki_ingester_memory_streams</code>: число потоков вырастет кратно, и при достаточном объёме вы поймаете 429 <code>maximum active stream limit exceeded</code>.</p>
-</li>
+<li><strong>Поднять kube-prometheus-stack в kind и подключить свой сервис.</strong>
+   Выполните <code>kind create cluster --name obs</code> → <code>helm install kps prometheus-community/kube-prometheus-stack -n monitoring --create-namespace</code>. Задеплойте Spring Boot приложение с <code>management.endpoints.web.exposure.include=prometheus</code> на порту 8081, создайте Service с <strong>именованным</strong> портом <code>management</code> и <code>ServiceMonitor</code> с меткой <code>release: kps</code>.</li>
+</ol>
+<p><em>Ожидаемый результат:</em> через 1–2 минуты таргет появляется в <code>/targets</code> со статусом UP, <code>up{job="&lt;ns&gt;/&lt;svc&gt;"} == 1</code>, а в Grafana по метрике <code>http_server_requests_seconds_count</code> есть данные. Затем намеренно сломайте метку <code>release</code>: таргет исчезнет, и вы увидите, что <strong>никакого оповещения об этом нет</strong>.</p>
+<ol start="2">
+<li><strong>Написать relabel-правило и проверить его в <code>/targets</code>.</strong>
+   Добавьте в <code>ServiceMonitor</code> <code>relabelings</code>, которое проставляет метку <code>node</code> из <code>__meta_kubernetes_pod_node_name</code>, и <code>keep</code>-правило, которое оставляет только поды с меткой <code>tier=backend</code>.</li>
+</ol>
+<p><em>Ожидаемый результат:</em> на странице <code>/service-discovery</code> видны оба набора меток, до relabeling и после, а поды без метки числятся в dropped, и в метриках появился метка <code>node</code>. Затем намеренно напишите <code>regex: "backend"</code> для значения <code>backend-api</code> и убедитесь, что таргет пропал из-за автоматической якоризации.</p>
+<ol start="3">
+<li><strong>Найти топ метрик по кардинальности и срезать одну из них.</strong>
+   Выполните <code>topk(10, count by (__name__)({__name__=~".+"}))</code> и откройте <code>/tsdb-status</code>, выберите самую дорогую метрику своего сервиса и добавьте в <code>ServiceMonitor</code> <code>metricRelabelings</code> с <code>action: drop</code>.</li>
+</ol>
+<p><em>Ожидаемый результат:</em> <code>scrape_samples_post_metric_relabeling</code> стал заметно меньше <code>scrape_samples_scraped</code>, а <code>prometheus_tsdb_head_series</code> перестал расти. Разница между этими двумя метриками и есть сэкономленный объём.</p>
+<ol start="4">
+<li><strong>Написать recording rule и сравнить время запроса.</strong>
+   Замерьте время выполнения <code>histogram_quantile(0.99, sum by (le, service) (rate(http_server_requests_seconds_bucket[5m])))</code> на диапазоне 7 дней (UI Prometheus показывает его как «Load time»). Затем создайте <code>PrometheusRule</code> с двумя правилами, сначала <code>sum by (le)</code>, потом <code>histogram_quantile</code>, и через час замерьте запрос к готовому ряду.</li>
+</ol>
+<p><em>Ожидаемый результат:</em> время запроса падает на порядок, а <code>prometheus_engine_query_samples_total</code> для нового запроса кратно меньше. Проверьте, что правила лежат в <strong>одной группе</strong>, иначе второе может считаться по устаревшим данным первого.</p>
+<ol start="5">
+<li><strong>Написать оповещение с <code>for</code> и прогнать <code>promtool test rules</code>.</strong>
+   Напишите правило на долю 5xx с <code>for: 5m</code> и тест-файл из двух сценариев: длительное нарушение, при котором оповещение должно сработать, и одиночный всплеск на одну минуту, при котором не должен.</li>
+</ol>
+<p><em>Ожидаемый результат:</em> <code>promtool test rules</code> печатает <code>SUCCESS</code>. Если убрать <code>for</code>, второй тест упадёт и покажет, что оповещение срабатывает на всплеске, и это самая наглядная демонстрация того, зачем нужен <code>for</code>.</p>
+<ol start="6">
+<li><strong>Настроить маршрутизацию с группировкой и проверить её через <code>amtool</code>.</strong>
+   Соберите дерево <code>route</code> с ветками по <code>team</code> и <code>severity</code>, корневым <code>fallback</code> и <code>continue: true</code> для дублирования critical в общий канал, а затем проверьте его командой <code>amtool config routes test --config.file=... severity=critical team=payments</code>.</li>
+</ol>
+<p><em>Ожидаемый результат:</em> команда печатает цепочку маршрутов и конечный receiver. Если сделать опечатку в метке (<code>team=payment</code>), оповещение уйдёт в <code>fallback</code>, и это ровно тот механизм, который стоит за производственным симптомом «оповещение не пришло».</p>
+<ol start="7">
+<li><strong>Настроить inhibition и убедиться, что дочерние оповещения погасли.</strong>
+   Добавьте правило, по которому <code>alertname = NodeDown</code> гасит <code>alertname =~ "KubePodNotReady|TargetDown"</code> с <code>equal: ['node']</code>, и вручную через <code>amtool alert add</code> отправьте сначала дочернее оповещение, а потом родительский.</li>
+</ol>
+<p><em>Ожидаемый результат:</em> в UI Alertmanager дочернее оповещение получает статус <code>suppressed</code>, уведомление по нему не уходит, а <code>amtool alert query --inhibited</code> его показывает. Если убрать <code>equal</code>, вы увидите, как один <code>NodeDown</code> гасит оповещения на всех узлах разом.</p>
+<ol start="8">
+<li><strong>Прочувствовать <code>group_wait</code> и <code>group_interval</code>.</strong>
+   Поставьте <code>group_wait: 30s</code>, <code>group_interval: 1m</code>, <code>repeat_interval: 5m</code>, создайте через <code>amtool alert add</code> оповещение, через 10 секунд второе с теми же метками <code>group_by</code> и подождите.</li>
+</ol>
+<p><em>Ожидаемый результат:</em> первое уведомление приходит через 30 секунд и содержит <strong>оба</strong> оповещения, следующее приходит не раньше чем через минуту после первого, а дальше повтор идёт каждые 5 минут. Затем добавьте <code>pod</code> в <code>group_by</code> и убедитесь, что теперь приходят два отдельных сообщения: так в миниатюре выглядит производственное «оповещение пришло трижды».</p>
+<ol start="9">
+<li><strong>Поднять Loki + Alloy (Promtail с марта 2026 года снят с поддержки) и сравнить объём с Elasticsearch.</strong>
+   Залейте один и тот же поток логов (например, <code>flog</code> или свой сервис) параллельно в Loki и в OpenSearch на 30 минут и сравните <code>du -sh</code> на данных Loki с <code>_cat/indices?h=index,store.size</code>.</li>
+</ol>
+<p><em>Ожидаемый результат:</em> Loki занимает в разы меньше места. Затем добавьте в конфиг агента метку <code>level</code> и посмотрите на <code>loki_ingester_memory_streams</code>: число потоков вырастет кратно, и при достаточном объёме вы поймаете 429 <code>maximum active stream limit exceeded</code>.</p>
+<ol start="10">
 <li>
 <p><strong>Сломать мультилайн и починить трассировки стека.</strong>
     Запустите сервис, который бросает исключение со трассировкой стека, и настройте Fluent Bit <strong>без</strong> мультилайн-парсера.
@@ -4230,5 +4230,5 @@ https://commons.wikimedia.org/wiki/File:Meerkats_(16256152998).jpg">Сурика
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-архитектура-контура-наблюдаемости">1. Архитектура контура наблюдаемости</a></li><li><a href="#2-логи-сбор-и-транспорт">2. Логи: сбор и транспорт</a></li><li><a href="#3-хранение-логов">3. Хранение логов</a></li><li><a href="#4-устройство-prometheus">4. Устройство Prometheus</a></li><li><a href="#5-масштабирование-метрик-федерация-thanos-victoriametrics-mimir">5. Масштабирование метрик: федерация, Thanos, VictoriaMetrics, Mimir</a></li><li><a href="#6-alertmanager">6. Alertmanager</a></li><li><a href="#7-grafana">7. Grafana</a></li><li><a href="#8-инфраструктура-трассировки">8. Инфраструктура трассировки</a></li><li><a href="#9-профили-и-непрерывное-профилирование">9. Профили и непрерывное профилирование</a></li><li><a href="#10-эксплуатация-контура-наблюдаемости">10. Эксплуатация контура наблюдаемости</a></li><li><a href="#11-ошибки-и-антипаттерны">11. Ошибки и антипаттерны</a></li><li><a href="#12-диагностика">12. Диагностика</a></li><li><a href="#13-вопросы-на-интервью">13. Вопросы на интервью</a></li><li><a href="#14-попробовать-руками">14. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=df34114fac"></script>
+<script src="app.js?v=c7c9dff52a"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

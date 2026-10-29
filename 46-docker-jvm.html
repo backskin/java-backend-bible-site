@@ -2288,53 +2288,53 @@ https://openjdk.org/jeps/252">JEP 252</a>) к правилам перехода 
 <h2 id="11-ошибки-и-антипаттерны">11. Ошибки и антипаттерны</h2>
 <p>Ниже собраны 33 ошибки, которые чаще всего встречаются при упаковке и запуске JVM-приложений в контейнерах, — от записи <code>ENTRYPOINT</code> до кеша сборки в CI. Каждый пункт построен по одной схеме: сначала симптом, то есть то, что вы увидите в мониторинге, логах или конвейере, затем причина, если она не очевидна из названия, и в конце лечение. Пользоваться списком можно двумя способами: если вы наблюдаете знакомый симптом, найдите его по тексту и проверьте причину, а при ревью Dockerfile и манифестов пройдитесь по названиям пунктов как по чеклисту. Подробные объяснения механизмов остались в соответствующих разделах главы, здесь же только то, что нужно для узнавания и исправления.</p>
 <ol>
-<li>
-<p><strong><code>ENTRYPOINT</code> в shell-форме.</strong>
-   <em>Симптом:</em> при каждом деплое идёт всплеск 502/504, под после начала терминации живёт ровно <code>terminationGracePeriodSeconds</code>, а в логе нет строки <code>Commencing graceful shutdown</code>.
-   <em>Причина:</em> PID 1 здесь — это <code>sh</code>, SIGTERM с действием по умолчанию он игнорирует, и <code>java</code> сигнала не видит, а умирает от SIGKILL.
-   <em>Лечение:</em> exec-форма <code>ENTRYPOINT ["java", "-jar", "app.jar"]</code>, а если нужен скрипт, в его последней строке должен стоять <code>exec java ...</code>.</p>
-</li>
-<li>
-<p><strong><code>FROM ...:latest</code> или тег без версии.</strong>
-   <em>Симптом:</em> сборка, которая вчера работала, сегодня падает на <code>UnsupportedClassVersionError</code> или на изменившемся поведении <code>glibc</code>.
-   <em>Причина:</em> тег подвижен и завтра может указывать на другой образ.
-   <em>Лечение:</em> закрепить базовый образ по digest и обновлять его через Renovate с прогоном тестов.</p>
-</li>
-<li>
-<p><strong><code>-Xmx</code> захардкожен в <code>ENTRYPOINT</code> образа.</strong>
-   <em>Симптом:</em> стоит уменьшить <code>limits.memory</code>, как под уходит в OOMKilled, а если увеличить, память простаивает.
-   <em>Лечение:</em> <code>-XX:MaxRAMPercentage</code> и <code>JAVA_TOOL_OPTIONS</code> в манифесте, чтобы куча следовала за лимитом.</p>
-</li>
-<li>
-<p><strong>Fat jar одним <code>COPY</code>.</strong>
-   <em>Симптом:</em> каждый push отправляет 60 МБ, и деплой в другой регион занимает минуты.
-   <em>Лечение:</em> layered jar через <code>-Djarmode=tools ... extract --layers</code>.</p>
-</li>
-<li>
-<p><strong>Секрет в <code>ARG</code>/<code>ENV</code>.</strong>
-   <em>Симптом:</em> <code>docker history --no-trunc</code> показывает пароль, а сканер секретов бьёт тревогу через полгода.
-   <em>Лечение:</em> BuildKit <code>--mount=type=secret</code>, а при утечке — ротация секрета и удаление образа из реестра, а не просто пересборка.</p>
-</li>
-<li>
-<p><strong>Контейнер работает от root.</strong>
-   <em>Симптом:</em> Pod Security Standards <code>restricted</code> не пускает под, а аудит безопасности заводит тикет.
-   <em>Лечение:</em> <code>USER 1001</code> + <code>chown -R 1001:0</code> + <code>chmod -R g=u</code> в образе и <code>runAsNonRoot: true</code> в манифесте.</p>
-</li>
-<li>
-<p><strong>JDK вместо JRE «на всякий случай».</strong>
-   <em>Симптом:</em> образ весит 450 МБ вместо 270, и сканер показывает CVE в <code>binutils</code> и <code>perl</code>.
-   <em>Лечение:</em> <code>-jre</code> или distroless, а диагностику вести через <code>kubectl debug</code>.</p>
-</li>
-<li>
-<p><strong>Нет <code>.dockerignore</code>.</strong>
-   <em>Симптом:</em> «Maven качает зависимости при каждой сборке», контекст весит 900 МБ, а внутри образа лежит <code>.git</code>.
-   <em>Лечение:</em> <code>.dockerignore</code>, в котором как минимум перечислены <code>target/</code>, <code>.git</code> и <code>.env</code>.</p>
-</li>
-<li>
-<p><strong>Кеш Maven не повторно используется.</strong>
-   <em>Симптом:</em> сборка образа идёт 8 минут, и 6 из них уходит на скачивание зависимостей.
-   <em>Лечение:</em> <code>RUN --mount=type=cache,target=/root/.m2/repository,sharing=locked</code>.</p>
-</li>
+<li><strong><code>ENTRYPOINT</code> в shell-форме.</strong>
+   <em>Симптом:</em> при каждом деплое идёт всплеск 502/504, под после начала терминации живёт ровно <code>terminationGracePeriodSeconds</code>, а в логе нет строки <code>Commencing graceful shutdown</code>.</li>
+</ol>
+<p><em>Причина:</em> PID 1 здесь — это <code>sh</code>, SIGTERM с действием по умолчанию он игнорирует, и <code>java</code> сигнала не видит, а умирает от SIGKILL.</p>
+<p><em>Лечение:</em> exec-форма <code>ENTRYPOINT ["java", "-jar", "app.jar"]</code>, а если нужен скрипт, в его последней строке должен стоять <code>exec java ...</code>.</p>
+<ol start="2">
+<li><strong><code>FROM ...:latest</code> или тег без версии.</strong>
+   <em>Симптом:</em> сборка, которая вчера работала, сегодня падает на <code>UnsupportedClassVersionError</code> или на изменившемся поведении <code>glibc</code>.</li>
+</ol>
+<p><em>Причина:</em> тег подвижен и завтра может указывать на другой образ.</p>
+<p><em>Лечение:</em> закрепить базовый образ по digest и обновлять его через Renovate с прогоном тестов.</p>
+<ol start="3">
+<li><strong><code>-Xmx</code> захардкожен в <code>ENTRYPOINT</code> образа.</strong>
+   <em>Симптом:</em> стоит уменьшить <code>limits.memory</code>, как под уходит в OOMKilled, а если увеличить, память простаивает.</li>
+</ol>
+<p><em>Лечение:</em> <code>-XX:MaxRAMPercentage</code> и <code>JAVA_TOOL_OPTIONS</code> в манифесте, чтобы куча следовала за лимитом.</p>
+<ol start="4">
+<li><strong>Fat jar одним <code>COPY</code>.</strong>
+   <em>Симптом:</em> каждый push отправляет 60 МБ, и деплой в другой регион занимает минуты.</li>
+</ol>
+<p><em>Лечение:</em> layered jar через <code>-Djarmode=tools ... extract --layers</code>.</p>
+<ol start="5">
+<li><strong>Секрет в <code>ARG</code>/<code>ENV</code>.</strong>
+   <em>Симптом:</em> <code>docker history --no-trunc</code> показывает пароль, а сканер секретов бьёт тревогу через полгода.</li>
+</ol>
+<p><em>Лечение:</em> BuildKit <code>--mount=type=secret</code>, а при утечке — ротация секрета и удаление образа из реестра, а не просто пересборка.</p>
+<ol start="6">
+<li><strong>Контейнер работает от root.</strong>
+   <em>Симптом:</em> Pod Security Standards <code>restricted</code> не пускает под, а аудит безопасности заводит тикет.</li>
+</ol>
+<p><em>Лечение:</em> <code>USER 1001</code> + <code>chown -R 1001:0</code> + <code>chmod -R g=u</code> в образе и <code>runAsNonRoot: true</code> в манифесте.</p>
+<ol start="7">
+<li><strong>JDK вместо JRE «на всякий случай».</strong>
+   <em>Симптом:</em> образ весит 450 МБ вместо 270, и сканер показывает CVE в <code>binutils</code> и <code>perl</code>.</li>
+</ol>
+<p><em>Лечение:</em> <code>-jre</code> или distroless, а диагностику вести через <code>kubectl debug</code>.</p>
+<ol start="8">
+<li><strong>Нет <code>.dockerignore</code>.</strong>
+   <em>Симптом:</em> «Maven качает зависимости при каждой сборке», контекст весит 900 МБ, а внутри образа лежит <code>.git</code>.</li>
+</ol>
+<p><em>Лечение:</em> <code>.dockerignore</code>, в котором как минимум перечислены <code>target/</code>, <code>.git</code> и <code>.env</code>.</p>
+<ol start="9">
+<li><strong>Кеш Maven не повторно используется.</strong>
+   <em>Симптом:</em> сборка образа идёт 8 минут, и 6 из них уходит на скачивание зависимостей.</li>
+</ol>
+<p><em>Лечение:</em> <code>RUN --mount=type=cache,target=/root/.m2/repository,sharing=locked</code>.</p>
+<ol start="10">
 <li>
 <p><strong><code>sharing=shared</code> у кеш-маунта Maven при параллельных сборках.</strong>
     <em>Симптом:</em> плавающие ошибки <code>Could not resolve dependencies</code> и битые <code>.jar</code> и <code>.lastUpdated</code> в кеше.
@@ -2981,5 +2981,5 @@ https://commons.wikimedia.org/wiki/File:Container_Terminal_Tollerort_01.jpg">К�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-устройство-контейнера">1. Устройство контейнера</a></li><li><a href="#2-образ-и-слои">2. Образ и слои</a></li><li><a href="#3-базовые-образы-для-jvm">3. Базовые образы для JVM</a></li><li><a href="#4-layered-jar-и-альтернативы-толстому-jar">4. Layered jar и альтернативы «толстому jar»</a></li><li><a href="#5-ускорение-старта-cds-aot-кеш-crac">5. Ускорение старта: CDS, AOT-кеш, CRaC</a></li><li><a href="#6-graalvm-native-image">6. GraalVM Native Image</a></li><li><a href="#7-jvm-в-контейнере">7. JVM в контейнере</a></li><li><a href="#8-процессы-сигналы-и-остановка">8. Процессы, сигналы и остановка</a></li><li><a href="#9-безопасность-образа-и-цепочка-поставки">9. Безопасность образа и цепочка поставки</a></li><li><a href="#10-локальная-разработка-и-отладка">10. Локальная разработка и отладка</a></li><li><a href="#11-ошибки-и-антипаттерны">11. Ошибки и антипаттерны</a></li><li><a href="#12-диагностика">12. Диагностика</a></li><li><a href="#13-разобранные-инциденты">13. Разобранные инциденты</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=df34114fac"></script>
+<script src="app.js?v=c7c9dff52a"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

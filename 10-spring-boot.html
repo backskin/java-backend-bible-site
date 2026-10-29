@@ -2867,60 +2867,60 @@ SPRING_PROFILE_ACTIVE=prod, H2 только в test: Failed to configure a DataS
 <p>Типовые ошибки повторяются из проекта в проект, а антипаттерны — — решения, которые выглядят разумно, но стабильно приводят к таким ошибкам. Ниже собраны двадцать девять ошибок, которые чаще всего встречаются в Boot-проектах, от структуры пакетов и стартеров до Actuator, тестов и обновления версий. Каждый пункт построен по одной схеме: симптом, по которому ошибку узнают в журнале или в поведении, причина и лечение. Пользоваться списком удобнее всего от симптома: найдите строку, похожую на то, что видите у себя, и дальше идите по причине, а за подробной механикой возвращайтесь в раздел, на который ссылается пункт.</p>
 <p>Все пункты воспроизведены на Spring Boot 4.1.1, а там, где поведение зависит от версии, ещё и на 3.4.13 и 3.5.16.<sup id="fnref:b10-59"><a class="footnote-ref" href="#fn:b10-59" data-tip="Сноска: Запуски автора 2026-10-27, Spring Boot 4.1.1, Temurin 21.0.10: labs/boot-pitfalls — PitfallsLab на ApplicationContextRunner (пункты 3, 4, 10, 20, 21, 22, 23, вывод s10-pitfalls-run…">59</a></sup> Опыт опроверг четыре утверждения, которые кочуют по статьям и докладам: про открытый порт DevTools в проде (пункт 13), про молчащие задания <code>@Scheduled</code> при ленивой инициализации (пункт 20), про строгий разбор <code>yes</code> после 3.5 (пункт 21) и про баннер, ломающий JSON-журнал (пункт 28). В этих пунктах описано то, что показал запуск.</p>
 <ol>
-<li>
-<p><strong>Два <code>@SpringBootApplication</code> в дереве пакетов.</strong>
-   <em>Симптом:</em> тест падает с <code>IllegalStateException: Found multiple @SpringBootConfiguration annotated classes</code>, и в сообщении перечислены оба класса.
-   <em>Причина:</em> тестовый срез (<code>@SpringBootTest</code>, <code>@WebMvcTest</code> и другие) ищет класс конфигурации, поднимаясь по пакетам от пакета теста, и в одном пакете нашёл два. Обычно второй класс-приложение пришёл из подключённого внутреннего модуля или это тестовый <code>TestApplication</code>, случайно положенный в основной код (2.1). В опыте рядом лежали <code>ReportsApp</code> и старый <code>LegacyReportsApp</code>, а тест из подпакета упал до создания контекста.
-   <em>Лечение:</em> в основном коде оставить ровно один <code>@SpringBootApplication</code>, тестовые приложения держать в <code>src/test/java</code>, а в библиотеках <code>@SpringBootApplication</code> не объявлять никогда.</p>
-</li>
-<li>
-<p><strong>Свой <code>@ComponentScan</code> захватывает пакет стартера.</strong>
-   <em>Симптом:</em> в контексте два бина одного типа, свой и из стартера, хотя стартер обещал отступить при наличии пользовательского (<code>@ConditionalOnMissingBean</code>).
-   <em>Причина:</em> <code>@ComponentScan</code> без фильтров Boot регистрирует автоконфигурацию стартера как <strong>обычную</strong> <code>@Configuration</code>, и её условия вычисляются вместе с конфигурациями приложения, до того как появился пользовательский бин (3.5). Опыт это показывает по имени бина: при сканировании пакета стартера через <code>@ComponentScan({"…app", "…starter"})</code> автоконфигурация зарегистрирована под именем <code>limitsStarterAutoConfiguration</code>, как любой компонент, и в контексте оказались оба клиента лимитов. При обычном сканировании и при <code>@SpringBootApplication(scanBasePackages = {…, "…starter"})</code> она зарегистрирована под полным именем класса, как автоконфигурация, и клиент остался один, пользовательский. Разница в том, что <code>@SpringBootApplication</code> подключает фильтр <code>AutoConfigurationExcludeFilter</code>, а голый <code>@ComponentScan</code> — нет.
-   <em>Лечение:</em> не сканировать пакеты чужих библиотек; если без этого не обойтись, расширять <code>scanBasePackages</code>: второй <code>@ComponentScan</code> фильтров Boot не несёт. Фильтр спасает только класс, перечисленный в <code>AutoConfiguration.imports</code>.</p>
-</li>
-<li>
-<p><strong><code>spring.main.allow-bean-definition-overriding=true</code> как «решение».</strong>
-   <em>Симптом:</em> флаг добавили, чтобы избавиться от <code>BeanDefinitionOverrideException: Invalid bean definition with name 'limitsClient'</code>.
-   <em>Причина:</em> два источника определяют бин с одним и тем же именем. Флаг конфликт не устраняет: он разрешает последнему зарегистрированному определению молча заменить предыдущее. В опыте две конфигурации объявляли <code>limitsClient</code>; при порядке «A, затем B» в контексте остался клиент из B, при обратном — из A. Поведение сервиса начинает зависеть от порядка регистрации, который меняется от переименования класса или нового модуля.
-   <em>Лечение:</em> найти оба источника (их называет само исключение и <code>/actuator/beans</code>) и устранить дубликат явно. Флаг допустим как временная мера на время миграции, с задачей на его удаление.</p>
-</li>
-<li>
-<p><strong>Забытый <code>@EnableConfigurationProperties</code> в стартере.</strong>
-   <em>Симптом:</em> <code>NoSuchBeanDefinitionException: No qualifying bean of type '…LimitsProperties'</code>.
-   <em>Причина:</em> у библиотеки нет своего сканирования компонентов, а <code>@ConfigurationPropertiesScan</code> приложения не обязан покрывать пакет библиотеки (4.2, 5.2). Тот же стартер с аннотацией в опыте поднялся и прочитал <code>tundra.limits.base-url</code>.
-   <em>Лечение:</em> в автоконфигурации всегда ставить <code>@EnableConfigurationProperties(XxxProperties.class)</code> и проверять стартер тестом на <code>ApplicationContextRunner</code>.</p>
-</li>
-<li>
-<p><strong>Секреты в <code>/actuator/env</code>.</strong>
-   <em>Симптом:</em> пароль базы виден по HTTP.
-   <em>Причина:</em> <code>management.endpoints.web.exposure.include: "*"</code> вместе с <code>show-values: always</code>, либо Boot 2.x и имя свойства, которое не попадает под <code>keys-to-sanitize</code>. Оба варианта воспроизведены в инциденте 11.3, а механика маскирования описана в 6.3.
-   <em>Лечение:</em> не открывать <code>env</code> и <code>configprops</code> наружу, ставить <code>show-values: when-authorized</code>, закрывать Actuator Spring Security и передавать секреты через <code>configtree</code>.</p>
-</li>
-<li>
-<p><strong>Проверка внешних систем в группе liveness.</strong>
-   <em>Симптом:</em> короткая недоступность базы приводит к перезапуску всех подов, начинается лавина холодных стартов, и вместо деградации случается отказ.
-   <em>Причина:</em> в группу <code>liveness</code> включены <code>db</code>, <code>redis</code> или <code>kafka</code>, и kubelet перезапускает контейнер из-за чужой проблемы. На кластере kind инцидент воспроизведён полностью (6.4, 11.7).
-   <em>Лечение:</em> в liveness оставить <code>livenessState</code> и внутренние проверки, а внешние зависимости осознанно класть в readiness или в отдельную группу для мониторинга.</p>
-</li>
-<li>
-<p><strong>Медленный индикатор здоровья без кеша.</strong>
-   <em>Симптом:</em> <code>/actuator/health</code> отвечает секундами, проба kubelet упирается в свой тайм-аут, и под убит.
-   <em>Причина:</em> Boot не ограничивает время работы индикатора и по умолчанию не кеширует ответ: у <code>management.endpoint.health.cache.time-to-live</code> значение <code>0ms</code>. В опыте индикатор бюро кредитных историй ждал ответа три секунды, и каждый из трёх запросов подряд к <code>/actuator/health</code> занял 3,0 с. С <code>time-to-live=10s</code> первый запрос занял те же 3,0 с, а второй и третий — по 0,003 с.
-   <em>Лечение:</em> задать тайм-аут на клиенте внутри каждого индикатора, который ходит в сеть (100–500 мс), и включить кеш ответа. Кеш выбирать короче периода пробы, иначе проба будет видеть устаревшее состояние.</p>
-</li>
-<li>
-<p><strong>Взрыв кеша контекстов в тестах.</strong>
-   <em>Симптом:</em> прогон тестов растягивается на десятки минут, а в CI случается <code>OutOfMemoryError</code>.
-   <em>Причина:</em> десятки уникальных комбинаций <code>properties</code>, <code>@ActiveProfiles</code> и <code>@MockitoBean</code> плюс <code>@DirtiesContext</code>, и каждая комбинация даёт отдельный контекст (8.4). Рост числа контекстов и времени прогона измерен в инциденте 11.4.
-   <em>Лечение:</em> завести одну мета-аннотацию на интеграционный тест, включить журнал <code>org.springframework.test.context.cache</code> на уровне DEBUG и следить за <code>missCount</code>.</p>
-</li>
-<li>
-<p><strong><code>spring.config.location</code> вместо <code>additional-location</code>.</strong>
-   <em>Симптом:</em> после подключения внешнего файла конфигурации приложение перестало видеть <code>application.properties</code> из jar.
-   <em>Причина:</em> <code>spring.config.location</code> заменяет весь список мест поиска, а <code>additional-location</code> дополняет его (5.1). В опыте с <code>additional-location</code> значение <code>source</code> осталось из <code>application.properties</code> внутри jar, а с <code>location</code> файл из jar перестал читаться, и <code>source</code> взялся из <code>@PropertySource</code>.
-   <em>Лечение:</em> для дополнительного файла использовать <code>spring.config.additional-location</code>.</p>
-</li>
+<li><strong>Два <code>@SpringBootApplication</code> в дереве пакетов.</strong>
+   <em>Симптом:</em> тест падает с <code>IllegalStateException: Found multiple @SpringBootConfiguration annotated classes</code>, и в сообщении перечислены оба класса.</li>
+</ol>
+<p><em>Причина:</em> тестовый срез (<code>@SpringBootTest</code>, <code>@WebMvcTest</code> и другие) ищет класс конфигурации, поднимаясь по пакетам от пакета теста, и в одном пакете нашёл два. Обычно второй класс-приложение пришёл из подключённого внутреннего модуля или это тестовый <code>TestApplication</code>, случайно положенный в основной код (2.1). В опыте рядом лежали <code>ReportsApp</code> и старый <code>LegacyReportsApp</code>, а тест из подпакета упал до создания контекста.</p>
+<p><em>Лечение:</em> в основном коде оставить ровно один <code>@SpringBootApplication</code>, тестовые приложения держать в <code>src/test/java</code>, а в библиотеках <code>@SpringBootApplication</code> не объявлять никогда.</p>
+<ol start="2">
+<li><strong>Свой <code>@ComponentScan</code> захватывает пакет стартера.</strong>
+   <em>Симптом:</em> в контексте два бина одного типа, свой и из стартера, хотя стартер обещал отступить при наличии пользовательского (<code>@ConditionalOnMissingBean</code>).</li>
+</ol>
+<p><em>Причина:</em> <code>@ComponentScan</code> без фильтров Boot регистрирует автоконфигурацию стартера как <strong>обычную</strong> <code>@Configuration</code>, и её условия вычисляются вместе с конфигурациями приложения, до того как появился пользовательский бин (3.5). Опыт это показывает по имени бина: при сканировании пакета стартера через <code>@ComponentScan({"…app", "…starter"})</code> автоконфигурация зарегистрирована под именем <code>limitsStarterAutoConfiguration</code>, как любой компонент, и в контексте оказались оба клиента лимитов. При обычном сканировании и при <code>@SpringBootApplication(scanBasePackages = {…, "…starter"})</code> она зарегистрирована под полным именем класса, как автоконфигурация, и клиент остался один, пользовательский. Разница в том, что <code>@SpringBootApplication</code> подключает фильтр <code>AutoConfigurationExcludeFilter</code>, а голый <code>@ComponentScan</code> — нет.</p>
+<p><em>Лечение:</em> не сканировать пакеты чужих библиотек; если без этого не обойтись, расширять <code>scanBasePackages</code>: второй <code>@ComponentScan</code> фильтров Boot не несёт. Фильтр спасает только класс, перечисленный в <code>AutoConfiguration.imports</code>.</p>
+<ol start="3">
+<li><strong><code>spring.main.allow-bean-definition-overriding=true</code> как «решение».</strong>
+   <em>Симптом:</em> флаг добавили, чтобы избавиться от <code>BeanDefinitionOverrideException: Invalid bean definition with name 'limitsClient'</code>.</li>
+</ol>
+<p><em>Причина:</em> два источника определяют бин с одним и тем же именем. Флаг конфликт не устраняет: он разрешает последнему зарегистрированному определению молча заменить предыдущее. В опыте две конфигурации объявляли <code>limitsClient</code>; при порядке «A, затем B» в контексте остался клиент из B, при обратном — из A. Поведение сервиса начинает зависеть от порядка регистрации, который меняется от переименования класса или нового модуля.</p>
+<p><em>Лечение:</em> найти оба источника (их называет само исключение и <code>/actuator/beans</code>) и устранить дубликат явно. Флаг допустим как временная мера на время миграции, с задачей на его удаление.</p>
+<ol start="4">
+<li><strong>Забытый <code>@EnableConfigurationProperties</code> в стартере.</strong>
+   <em>Симптом:</em> <code>NoSuchBeanDefinitionException: No qualifying bean of type '…LimitsProperties'</code>.</li>
+</ol>
+<p><em>Причина:</em> у библиотеки нет своего сканирования компонентов, а <code>@ConfigurationPropertiesScan</code> приложения не обязан покрывать пакет библиотеки (4.2, 5.2). Тот же стартер с аннотацией в опыте поднялся и прочитал <code>tundra.limits.base-url</code>.</p>
+<p><em>Лечение:</em> в автоконфигурации всегда ставить <code>@EnableConfigurationProperties(XxxProperties.class)</code> и проверять стартер тестом на <code>ApplicationContextRunner</code>.</p>
+<ol start="5">
+<li><strong>Секреты в <code>/actuator/env</code>.</strong>
+   <em>Симптом:</em> пароль базы виден по HTTP.</li>
+</ol>
+<p><em>Причина:</em> <code>management.endpoints.web.exposure.include: "*"</code> вместе с <code>show-values: always</code>, либо Boot 2.x и имя свойства, которое не попадает под <code>keys-to-sanitize</code>. Оба варианта воспроизведены в инциденте 11.3, а механика маскирования описана в 6.3.</p>
+<p><em>Лечение:</em> не открывать <code>env</code> и <code>configprops</code> наружу, ставить <code>show-values: when-authorized</code>, закрывать Actuator Spring Security и передавать секреты через <code>configtree</code>.</p>
+<ol start="6">
+<li><strong>Проверка внешних систем в группе liveness.</strong>
+   <em>Симптом:</em> короткая недоступность базы приводит к перезапуску всех подов, начинается лавина холодных стартов, и вместо деградации случается отказ.</li>
+</ol>
+<p><em>Причина:</em> в группу <code>liveness</code> включены <code>db</code>, <code>redis</code> или <code>kafka</code>, и kubelet перезапускает контейнер из-за чужой проблемы. На кластере kind инцидент воспроизведён полностью (6.4, 11.7).</p>
+<p><em>Лечение:</em> в liveness оставить <code>livenessState</code> и внутренние проверки, а внешние зависимости осознанно класть в readiness или в отдельную группу для мониторинга.</p>
+<ol start="7">
+<li><strong>Медленный индикатор здоровья без кеша.</strong>
+   <em>Симптом:</em> <code>/actuator/health</code> отвечает секундами, проба kubelet упирается в свой тайм-аут, и под убит.</li>
+</ol>
+<p><em>Причина:</em> Boot не ограничивает время работы индикатора и по умолчанию не кеширует ответ: у <code>management.endpoint.health.cache.time-to-live</code> значение <code>0ms</code>. В опыте индикатор бюро кредитных историй ждал ответа три секунды, и каждый из трёх запросов подряд к <code>/actuator/health</code> занял 3,0 с. С <code>time-to-live=10s</code> первый запрос занял те же 3,0 с, а второй и третий — по 0,003 с.</p>
+<p><em>Лечение:</em> задать тайм-аут на клиенте внутри каждого индикатора, который ходит в сеть (100–500 мс), и включить кеш ответа. Кеш выбирать короче периода пробы, иначе проба будет видеть устаревшее состояние.</p>
+<ol start="8">
+<li><strong>Взрыв кеша контекстов в тестах.</strong>
+   <em>Симптом:</em> прогон тестов растягивается на десятки минут, а в CI случается <code>OutOfMemoryError</code>.</li>
+</ol>
+<p><em>Причина:</em> десятки уникальных комбинаций <code>properties</code>, <code>@ActiveProfiles</code> и <code>@MockitoBean</code> плюс <code>@DirtiesContext</code>, и каждая комбинация даёт отдельный контекст (8.4). Рост числа контекстов и времени прогона измерен в инциденте 11.4.</p>
+<p><em>Лечение:</em> завести одну мета-аннотацию на интеграционный тест, включить журнал <code>org.springframework.test.context.cache</code> на уровне DEBUG и следить за <code>missCount</code>.</p>
+<ol start="9">
+<li><strong><code>spring.config.location</code> вместо <code>additional-location</code>.</strong>
+   <em>Симптом:</em> после подключения внешнего файла конфигурации приложение перестало видеть <code>application.properties</code> из jar.</li>
+</ol>
+<p><em>Причина:</em> <code>spring.config.location</code> заменяет весь список мест поиска, а <code>additional-location</code> дополняет его (5.1). В опыте с <code>additional-location</code> значение <code>source</code> осталось из <code>application.properties</code> внутри jar, а с <code>location</code> файл из jar перестал читаться, и <code>source</code> взялся из <code>@PropertySource</code>.</p>
+<p><em>Лечение:</em> для дополнительного файла использовать <code>spring.config.additional-location</code>.</p>
+<ol start="10">
 <li>
 <p><strong><code>@ConditionalOnMissingBean</code> в обычной пользовательской конфигурации.</strong>
     <em>Симптом:</em> бин то создаётся, то нет, и поведение меняется после переименования класса или переноса конфигурации в другой модуль.
@@ -3505,5 +3505,5 @@ https://commons.wikimedia.org/wiki/File:Albuquerque_Balloon_Fiesta_2011_-_balloo
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-что-boot-добавляет-к-spring-framework">1. Что Boot добавляет к Spring Framework</a></li><li><a href="#2-что-происходит-при-запуске">2. Что происходит при запуске</a></li><li><a href="#3-автоконфигурация">3. Автоконфигурация</a></li><li><a href="#4-стартеры-устройство-и-разработка">4. Стартеры: устройство и разработка</a></li><li><a href="#5-внешняя-конфигурация">5. Внешняя конфигурация</a></li><li><a href="#6-actuator">6. Actuator</a></li><li><a href="#7-встроенный-сервер-корректная-остановка-виртуальные-потоки">7. Встроенный сервер, корректная остановка, виртуальные потоки</a></li><li><a href="#8-тестирование-в-boot">8. Тестирование в Boot</a></li><li><a href="#9-логирование-и-devtools">9. Логирование и DevTools</a></li><li><a href="#10-версии-поддержка-и-миграция">10. Версии, поддержка и миграция</a></li><li><a href="#11-разобранные-инциденты">11. Разобранные инциденты</a></li><li><a href="#12-ошибки-и-антипаттерны">12. Ошибки и антипаттерны</a></li><li><a href="#13-диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=df34114fac"></script>
+<script src="app.js?v=c7c9dff52a"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

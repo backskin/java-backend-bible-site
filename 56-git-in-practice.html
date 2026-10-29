@@ -3279,9 +3279,15 @@ git ls-remote origin                 <span class="c1"># что реально н
 <li>
 <p><strong>Выбрать действие.</strong></p>
 <ul>
-<li>«Мои коммиты уже есть на сервере под другими SHA» → <code>git reset --hard @{u}</code> (предварительно <code>git branch backup/...</code>).</li>
-<li>«У меня есть уникальные коммиты, у них тоже» → <code>git rebase --onto @{u} &lt;старая-база&gt; HEAD</code> (перенести только своё).</li>
-<li>«Ветка общая и переписывать нельзя» → <code>git merge @{u}</code>, разрешить конфликт один раз.</li>
+<li>
+<p>«Мои коммиты уже есть на сервере под другими SHA» → <code>git reset --hard @{u}</code> (предварительно <code>git branch backup/...</code>).</p>
+</li>
+<li>
+<p>«У меня есть уникальные коммиты, у них тоже» → <code>git rebase --onto @{u} &lt;старая-база&gt; HEAD</code> (перенести только своё).</p>
+</li>
+<li>
+<p>«Ветка общая и переписывать нельзя» → <code>git merge @{u}</code>, разрешить конфликт один раз.</p>
+</li>
 </ul>
 </li>
 <li>
@@ -3467,45 +3473,45 @@ git ls-remote origin                 <span class="c1"># что реально н
 <hr>
 <h2 id="16-попробовать-руками">16. Попробовать руками</h2>
 <p>Все упражнения делаются в отдельном каталоге и ничего не ломают. Используйте <code>git config user.email/user.name</code> локально, чтобы не мешать основным настройкам.</p>
-<p><strong>Упражнение 1. Увидеть объекты своими глазами.</strong>
-Создайте репозиторий, сделайте один коммит с двумя файлами в подкаталоге. Выполните <code>git cat-file -p HEAD</code>, затем <code>git cat-file -p HEAD^{tree}</code>, затем <code>git cat-file -p &lt;хеш blob'а&gt;</code>. Отдельно посчитайте <code>git hash-object -t blob --stdin &lt; файл</code>.
-<em>Ожидаемый результат:</em> хеш из <code>hash-object</code> совпадает с хешем в дереве; в объекте коммита нет ни одного diff'а; <code>git count-objects -v</code> показывает ровно столько объектов, сколько уникальных blob'ов + деревьев + 1 коммит.</p>
-<p><strong>Упражнение 2. Собрать коммит низкоуровневыми командами.</strong>
-Выполните последовательность из раздела 1.8: <code>hash-object -w</code>, <code>update-index --cacheinfo</code>, <code>write-tree</code>, <code>commit-tree</code>, <code>update-ref</code>.
-<em>Ожидаемый результат:</em> <code>git log</code> показывает ваш коммит, <code>git status</code> чист, при этом вы ни разу не вызвали <code>git add</code> и <code>git commit</code>.</p>
-<p><strong>Упражнение 3. Конфликт и три стиля маркеров.</strong>
-Создайте файл из пяти строк, ответвите ветку, измените в обеих ветках одну и ту же строку и сделайте merge. Посмотрите файл. Затем <code>git merge --abort</code> и повторите с <code>-c merge.conflictStyle=diff3</code>, затем с <code>zdiff3</code>. Отдельно постройте случай, где обе стороны добавили одинаковую строку в начале блока (пример из 2.5).
-<em>Ожидаемый результат:</em> в <code>diff3</code> появляется секция <code>|||||||</code> с базой; в <code>zdiff3</code> на многострочном конфликте общие строки вынесены за маркеры. <code>git ls-files -u</code> показывает три записи со стадиями 1, 2, 3.</p>
-<p><strong>Упражнение 4. <code>rerere</code> в действии.</strong>
-Включите <code>rerere.enabled</code>, вызовите конфликт, разрешите, закоммитьте (увидите «Recorded resolution»). Затем <code>git reset --hard HEAD~1</code> и повторите тот же merge.
-<em>Ожидаемый результат:</em> маркеров в файле нет — разрешение применено автоматически; <code>git status</code> при этом показывает <code>UU</code>, то есть файл всё ещё требует <code>git add</code>. <code>ls .git/rr-cache</code> содержит каталог с хешем конфликта.</p>
-<p><strong>Упражнение 5. Воспроизвести ловушку revert'а merge-коммита.</strong>
-Создайте ветку с новым файлом, влейте её с <code>--no-ff</code>, сделайте <code>git revert -m 1 HEAD</code>, затем попробуйте <code>git merge</code> той же ветки.
-<em>Ожидаемый результат:</em> <code>Already up to date.</code>, файла в дереве нет. После <code>git revert --no-edit &lt;sha-revert-коммита&gt;</code> файл возвращается, а сообщение коммита начинается с <code>Reapply "…"</code>. Затем повторите с доработкой ветки и убедитесь, что revert-of-revert приносит старую версию.</p>
-<p><strong>Упражнение 6. Потерять и восстановить коммиты.</strong>
-Сделайте пять коммитов, выполните <code>git reset --hard HEAD~3</code>, затем восстановите тремя способами: через <code>ORIG_HEAD</code>, через <code>git reflog</code> и через <code>git fsck --lost-found</code> (для последнего сначала удалите reflog-запись: <code>git reflog expire --expire=now --all</code>).
-<em>Ожидаемый результат:</em> все три способа приводят к одному SHA; после <code>git reflog expire</code> <code>git fsck --no-reflogs --lost-found</code> показывает <code>dangling commit</code> с нужным хешем.</p>
-<p><strong>Упражнение 7. Разбить коммит на два.</strong>
-Сделайте один коммит, меняющий два файла. Запустите <code>git rebase -i HEAD~1</code>, поставьте <code>edit</code>, выполните <code>git reset HEAD^</code>, затем <code>git add -p</code> первого файла и <code>git commit</code>, затем остальное и <code>git commit</code>, затем <code>git rebase --continue</code>.
-<em>Ожидаемый результат:</em> <code>git log --oneline</code> показывает два коммита вместо одного; <code>git diff &lt;старый-коммит&gt; HEAD</code> пуст — итоговое состояние идентично.</p>
-<p><strong>Упражнение 8. <code>--autosquash</code> как ежедневная практика.</strong>
-Сделайте три коммита, затем правку и <code>git commit --fixup &lt;sha-первого&gt;</code>. Выполните <code>git rebase -i --autosquash &lt;база&gt;</code>.
-<em>Ожидаемый результат:</em> в todo-списке fixup-коммит уже стоит сразу после своей цели и помечен <code>fixup</code>; после сохранения в истории снова три коммита, а изменения из fixup вошли в первый.</p>
-<p><strong>Упражнение 9. <code>bisect run</code> на реальном критерии.</strong>
-Создайте 15 коммитов, в седьмом внесите «поломку» (например, строку, которую ищет grep). Запустите <code>git bisect start HEAD &lt;первый&gt;</code> и <code>git bisect run sh -c 'grep -q ПОЛОМКА file &amp;&amp; exit 1 || exit 0'</code>.
-<em>Ожидаемый результат:</em> вывод <code>bisect found first 'bad' commit</code> с SHA седьмого коммита, порядка четырёх шагов вместо пятнадцати. Повторите, добавив в середину несобираемый коммит и возвращая из скрипта 125, — bisect его пропустит.</p>
-<p><strong>Упражнение 10. Убить и вылечить <code>git blame</code>.</strong>
-Сделайте два содержательных коммита в Java-файле, затем третий — массовое переформатирование. Посмотрите <code>git blame</code>. Создайте <code>.git-blame-ignore-revs</code> с SHA третьего коммита и настройте <code>blame.ignoreRevsFile</code>.
-<em>Ожидаемый результат:</em> до настройки почти все строки приписаны форматирующему коммиту, после — вернулись к настоящим авторам. Отдельно проверьте, что <code>git log -L :имяМетода:File.java</code> падает с «no match» без <code>*.java diff=java</code> в <code>.gitattributes</code> и работает после его добавления.</p>
-<p><strong>Упражнение 11. Найти и вырезать крупный объект.</strong>
-Закоммитьте файл на 5–10 МБ (<code>head -c 10000000 /dev/urandom &gt; big.bin</code>), сделайте ещё пару коммитов, удалите файл коммитом. Посмотрите <code>git count-objects -vH</code> — размер не уменьшился. Найдите объект командой из 11.1. Затем на клоне <code>--mirror</code> выполните <code>git filter-repo --invert-paths --path big.bin</code> (или <code>--strip-blobs-bigger-than 1M</code>).
-<em>Ожидаемый результат:</em> до чистки <code>size-pack</code> порядка 10 МБ и blob виден в списке крупнейших; после — <code>size-pack</code> в килобайтах, <code>git rev-list --objects --all | grep big.bin</code> пуст, а <code>origin</code> у зеркала удалён самим filter-repo.</p>
-<p><strong>Упражнение 12. Сэмулировать force-push-аварию и восстановиться.</strong>
-Сделайте локальный «сервер»: <code>git clone --bare repo server.git</code>, затем два клона от него. В первом сделайте коммит и запушьте. Во втором, не делая fetch, сделайте свой коммит и <code>git push --force</code>. Убедитесь, что коммит из первого клона исчез из <code>server.git</code>. Восстановите его: найдите SHA в первом клоне (<code>git reflog show origin/main</code> либо <code>git log</code>), выполните <code>git push --force-with-lease origin &lt;sha&gt;:main</code> или merge-back. Затем повторите эксперимент с <code>--force-with-lease --force-if-includes</code>.
-<em>Ожидаемый результат:</em> голый <code>--force</code> затирает чужой коммит; <code>--force-with-lease</code> отклоняется с <code>stale info</code>; после <code>git fetch</code> (имитация фонового fetch от IDE) lease перестаёт защищать, а <code>--force-if-includes</code> продолжает отклонять push. Восстановление через прямой push SHA возвращает ветку в прежнее состояние.</p>
-<p><strong>Упражнение 13 (дополнительное). Стек веток и <code>--update-refs</code>.</strong>
-Создайте <code>part1</code> от <code>main</code>, <code>part2</code> от <code>part1</code>, добавьте коммит в <code>main</code>, затем на <code>part2</code> выполните <code>git rebase --update-refs main</code>.
-<em>Ожидаемый результат:</em> вывод содержит «Updated the following refs with --update-refs: refs/heads/part1», и <code>git log --oneline --decorate</code> показывает <code>part1</code> на своём месте в новой линейной истории, а не на старом коммите.</p>
+<p><strong>Упражнение 1. Увидеть объекты своими глазами.</strong></p>
+<p>Создайте репозиторий, сделайте один коммит с двумя файлами в подкаталоге. Выполните <code>git cat-file -p HEAD</code>, затем <code>git cat-file -p HEAD^{tree}</code>, затем <code>git cat-file -p &lt;хеш blob'а&gt;</code>. Отдельно посчитайте <code>git hash-object -t blob --stdin &lt; файл</code>.</p>
+<p><em>Ожидаемый результат:</em> хеш из <code>hash-object</code> совпадает с хешем в дереве; в объекте коммита нет ни одного diff'а; <code>git count-objects -v</code> показывает ровно столько объектов, сколько уникальных blob'ов + деревьев + 1 коммит.</p>
+<p><strong>Упражнение 2. Собрать коммит низкоуровневыми командами.</strong></p>
+<p>Выполните последовательность из раздела 1.8: <code>hash-object -w</code>, <code>update-index --cacheinfo</code>, <code>write-tree</code>, <code>commit-tree</code>, <code>update-ref</code>.</p>
+<p><em>Ожидаемый результат:</em> <code>git log</code> показывает ваш коммит, <code>git status</code> чист, при этом вы ни разу не вызвали <code>git add</code> и <code>git commit</code>.</p>
+<p><strong>Упражнение 3. Конфликт и три стиля маркеров.</strong></p>
+<p>Создайте файл из пяти строк, ответвите ветку, измените в обеих ветках одну и ту же строку и сделайте merge. Посмотрите файл. Затем <code>git merge --abort</code> и повторите с <code>-c merge.conflictStyle=diff3</code>, затем с <code>zdiff3</code>. Отдельно постройте случай, где обе стороны добавили одинаковую строку в начале блока (пример из 2.5).</p>
+<p><em>Ожидаемый результат:</em> в <code>diff3</code> появляется секция <code>|||||||</code> с базой; в <code>zdiff3</code> на многострочном конфликте общие строки вынесены за маркеры. <code>git ls-files -u</code> показывает три записи со стадиями 1, 2, 3.</p>
+<p><strong>Упражнение 4. <code>rerere</code> в действии.</strong></p>
+<p>Включите <code>rerere.enabled</code>, вызовите конфликт, разрешите, закоммитьте (увидите «Recorded resolution»). Затем <code>git reset --hard HEAD~1</code> и повторите тот же merge.</p>
+<p><em>Ожидаемый результат:</em> маркеров в файле нет — разрешение применено автоматически; <code>git status</code> при этом показывает <code>UU</code>, то есть файл всё ещё требует <code>git add</code>. <code>ls .git/rr-cache</code> содержит каталог с хешем конфликта.</p>
+<p><strong>Упражнение 5. Воспроизвести ловушку revert'а merge-коммита.</strong></p>
+<p>Создайте ветку с новым файлом, влейте её с <code>--no-ff</code>, сделайте <code>git revert -m 1 HEAD</code>, затем попробуйте <code>git merge</code> той же ветки.</p>
+<p><em>Ожидаемый результат:</em> <code>Already up to date.</code>, файла в дереве нет. После <code>git revert --no-edit &lt;sha-revert-коммита&gt;</code> файл возвращается, а сообщение коммита начинается с <code>Reapply "…"</code>. Затем повторите с доработкой ветки и убедитесь, что revert-of-revert приносит старую версию.</p>
+<p><strong>Упражнение 6. Потерять и восстановить коммиты.</strong></p>
+<p>Сделайте пять коммитов, выполните <code>git reset --hard HEAD~3</code>, затем восстановите тремя способами: через <code>ORIG_HEAD</code>, через <code>git reflog</code> и через <code>git fsck --lost-found</code> (для последнего сначала удалите reflog-запись: <code>git reflog expire --expire=now --all</code>).</p>
+<p><em>Ожидаемый результат:</em> все три способа приводят к одному SHA; после <code>git reflog expire</code> <code>git fsck --no-reflogs --lost-found</code> показывает <code>dangling commit</code> с нужным хешем.</p>
+<p><strong>Упражнение 7. Разбить коммит на два.</strong></p>
+<p>Сделайте один коммит, меняющий два файла. Запустите <code>git rebase -i HEAD~1</code>, поставьте <code>edit</code>, выполните <code>git reset HEAD^</code>, затем <code>git add -p</code> первого файла и <code>git commit</code>, затем остальное и <code>git commit</code>, затем <code>git rebase --continue</code>.</p>
+<p><em>Ожидаемый результат:</em> <code>git log --oneline</code> показывает два коммита вместо одного; <code>git diff &lt;старый-коммит&gt; HEAD</code> пуст — итоговое состояние идентично.</p>
+<p><strong>Упражнение 8. <code>--autosquash</code> как ежедневная практика.</strong></p>
+<p>Сделайте три коммита, затем правку и <code>git commit --fixup &lt;sha-первого&gt;</code>. Выполните <code>git rebase -i --autosquash &lt;база&gt;</code>.</p>
+<p><em>Ожидаемый результат:</em> в todo-списке fixup-коммит уже стоит сразу после своей цели и помечен <code>fixup</code>; после сохранения в истории снова три коммита, а изменения из fixup вошли в первый.</p>
+<p><strong>Упражнение 9. <code>bisect run</code> на реальном критерии.</strong></p>
+<p>Создайте 15 коммитов, в седьмом внесите «поломку» (например, строку, которую ищет grep). Запустите <code>git bisect start HEAD &lt;первый&gt;</code> и <code>git bisect run sh -c 'grep -q ПОЛОМКА file &amp;&amp; exit 1 || exit 0'</code>.</p>
+<p><em>Ожидаемый результат:</em> вывод <code>bisect found first 'bad' commit</code> с SHA седьмого коммита, порядка четырёх шагов вместо пятнадцати. Повторите, добавив в середину несобираемый коммит и возвращая из скрипта 125, — bisect его пропустит.</p>
+<p><strong>Упражнение 10. Убить и вылечить <code>git blame</code>.</strong></p>
+<p>Сделайте два содержательных коммита в Java-файле, затем третий — массовое переформатирование. Посмотрите <code>git blame</code>. Создайте <code>.git-blame-ignore-revs</code> с SHA третьего коммита и настройте <code>blame.ignoreRevsFile</code>.</p>
+<p><em>Ожидаемый результат:</em> до настройки почти все строки приписаны форматирующему коммиту, после — вернулись к настоящим авторам. Отдельно проверьте, что <code>git log -L :имяМетода:File.java</code> падает с «no match» без <code>*.java diff=java</code> в <code>.gitattributes</code> и работает после его добавления.</p>
+<p><strong>Упражнение 11. Найти и вырезать крупный объект.</strong></p>
+<p>Закоммитьте файл на 5–10 МБ (<code>head -c 10000000 /dev/urandom &gt; big.bin</code>), сделайте ещё пару коммитов, удалите файл коммитом. Посмотрите <code>git count-objects -vH</code> — размер не уменьшился. Найдите объект командой из 11.1. Затем на клоне <code>--mirror</code> выполните <code>git filter-repo --invert-paths --path big.bin</code> (или <code>--strip-blobs-bigger-than 1M</code>).</p>
+<p><em>Ожидаемый результат:</em> до чистки <code>size-pack</code> порядка 10 МБ и blob виден в списке крупнейших; после — <code>size-pack</code> в килобайтах, <code>git rev-list --objects --all | grep big.bin</code> пуст, а <code>origin</code> у зеркала удалён самим filter-repo.</p>
+<p><strong>Упражнение 12. Сэмулировать force-push-аварию и восстановиться.</strong></p>
+<p>Сделайте локальный «сервер»: <code>git clone --bare repo server.git</code>, затем два клона от него. В первом сделайте коммит и запушьте. Во втором, не делая fetch, сделайте свой коммит и <code>git push --force</code>. Убедитесь, что коммит из первого клона исчез из <code>server.git</code>. Восстановите его: найдите SHA в первом клоне (<code>git reflog show origin/main</code> либо <code>git log</code>), выполните <code>git push --force-with-lease origin &lt;sha&gt;:main</code> или merge-back. Затем повторите эксперимент с <code>--force-with-lease --force-if-includes</code>.</p>
+<p><em>Ожидаемый результат:</em> голый <code>--force</code> затирает чужой коммит; <code>--force-with-lease</code> отклоняется с <code>stale info</code>; после <code>git fetch</code> (имитация фонового fetch от IDE) lease перестаёт защищать, а <code>--force-if-includes</code> продолжает отклонять push. Восстановление через прямой push SHA возвращает ветку в прежнее состояние.</p>
+<p><strong>Упражнение 13 (дополнительное). Стек веток и <code>--update-refs</code>.</strong></p>
+<p>Создайте <code>part1</code> от <code>main</code>, <code>part2</code> от <code>part1</code>, добавьте коммит в <code>main</code>, затем на <code>part2</code> выполните <code>git rebase --update-refs main</code>.</p>
+<p><em>Ожидаемый результат:</em> вывод содержит «Updated the following refs with --update-refs: refs/heads/part1», и <code>git log --oneline --decorate</code> показывает <code>part1</code> на своём месте в новой линейной истории, а не на старом коммите.</p>
 <hr>
 <div class="ch-mark" data-file="56-git-in-practice.md" hidden><div class="ch-mark-l"><b>План подготовки</b><span class="ch-mark-s" role="status" aria-live="polite"></span></div><div class="ch-mark-b" role="group" aria-label="Отметить главу в плане"><button type="button" data-s="active" aria-pressed="false">● Читаю</button><button type="button" data-s="read" aria-pressed="false">✓ Прочитано</button><button type="button" data-s="review" aria-pressed="false">↻ Повторить</button></div><a href="prep-plan.html">Весь план</a></div><nav class="nav" aria-label="Соседние главы"><a class="prev" href="55-build-and-dependencies.html" data-tip="55. Сборка и зависимости"><span class="lbl">← Назад <span class="k">[</span></span><span class="ttl">55. Сборка и зависимости</span></a><a class="next" href="57-intellij-idea.html" data-tip="57. IntelliJ IDEA: приёмы, которыми не пользуются"><span class="lbl">Дальше <span class="k">]</span> →</span><span class="ttl">57. IntelliJ IDEA: приёмы, которыми не пользуются</span></a></nav><h2 id="источники">Источники</h2>
 <ul><li class="src-grp"><div class="src-head"><span class="src-host">git-scm.com</span> <span class="src-n">5 источников</span></div><div class="src-titles"><a href="https://git-scm.com/docs" data-tip="Внешний сайт · git-scm.com
@@ -3537,5 +3543,5 @@ https://commons.wikimedia.org/wiki/File:Oak_tree_(eik),_branches_(greiner)_Sprin
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-модель-данных-git">1. Модель данных Git</a></li><li><a href="#2-ветки-и-слияние">2. Ветки и слияние</a></li><li><a href="#3-rebase-и-merge">3. Rebase и merge</a></li><li><a href="#4-cherry-pick-и-перенос-изменений">4. Cherry-pick и перенос изменений</a></li><li><a href="#5-отмена-и-восстановление-изменений">5. Отмена и восстановление изменений</a></li><li><a href="#6-инструменты-исследования-истории">6. Инструменты исследования истории</a></li><li><a href="#7-работа-с-удалёнными-репозиториями">7. Работа с удалёнными репозиториями</a></li><li><a href="#8-стратегии-ветвления">8. Стратегии ветвления</a></li><li><a href="#9-соглашения-о-коммитах-и-настройки-репозитория">9. Соглашения о коммитах и настройки репозитория</a></li><li><a href="#10-хуки-и-автоматизация">10. Хуки и автоматизация</a></li><li><a href="#11-большие-и-сложные-репозитории">11. Большие и сложные репозитории</a></li><li><a href="#12-разобранные-инциденты">12. Разобранные инциденты</a></li><li><a href="#13-ошибки-и-антипаттерны">13. Ошибки и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=df34114fac"></script>
+<script src="app.js?v=c7c9dff52a"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>
