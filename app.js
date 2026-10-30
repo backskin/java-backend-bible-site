@@ -365,8 +365,13 @@
     var latin=[], cyr=[];
     var codeLike=function(f){return /[A-Z].*[A-Z]|[a-z][A-Z]|\d|[_#+.]/.test(f)||/^[A-Z0-9]{2,}$/.test(f);};
     var TRIVIAL={}; 'SQL API HTTP HTTPS JSON XML URL URI ID UI CPU RAM OS IDE JDK JVM JRE REST CI CD UUID DTO ORM TCP IP DNS TLS SSL CSV HTML CSS JS'.split(' ').forEach(function(w){TRIVIAL[w]=1;});
+    // аббревиатура (ACID, GC, JDBC) размечается один раз на страницу, понятие — один раз на раздел ##
+    var abbr={};
+    G.forEach(function(e,i){ if(/^[A-Z][A-Z0-9/+&-]*$/.test(e.t))abbr[i]=1; });
     G.forEach(function(e,i){ var inCh=e.r.some(function(r){return r[0]===chap;}); e.f.forEach(function(f){
-      if(f.length<2||(!codeLike(f)&&!inCh)||TRIVIAL[f])return;
+      // однословное понятие («страница», «снимок») — только в своих главах, иначе слишком часто значит другое;
+      // многословное («закон Литтла», «оконная функция») однозначно и размечается везде
+      if(f.length<2||(!codeLike(f)&&!inCh&&!/\s/.test(f))||TRIVIAL[f])return;
       if(/[А-Яа-яЁё]/.test(f)){
         var pat=f.split(/\s+/).map(function(w){ if(!/[А-Яа-яЁё]/.test(w))return esc(w);
           var st=w.length>=5?w.replace(/[аяоеиыуюйьъ]{1,2}$/i,''):w; return esc(st)+'[а-яё]{0,4}'; }).join('\\s+');
@@ -374,8 +379,9 @@
       }else latin.push({p:esc(f),i:i,l:f.length});
     });});
     latin.sort(function(a,b){return b.l-a.l;}); cyr.sort(function(a,b){return b.l-a.l;});
-    return {latin:latin,cyr:cyr,
-      reL:latin.length?new RegExp('(?<![A-Za-z0-9_$.])(?:'+latin.map(function(x){return '('+x.p+')';}).join('|')+')(?![A-Za-z0-9_])','g'):null,
+    return {latin:latin,cyr:cyr,abbr:abbr,
+      // «H2.1», «C1-2» — номер раздела или диапазон, а не термин
+      reL:latin.length?new RegExp('(?<![A-Za-z0-9_$.])(?:'+latin.map(function(x){return '('+x.p+')';}).join('|')+')(?![A-Za-z0-9_]|[.-]\\d)','g'):null,
       reC:cyr.length?new RegExp('(?<![\\p{L}\\p{N}_])(?:'+cyr.map(function(x){return '('+x.p+')';}).join('|')+')(?![\\p{L}\\p{N}_])','giu'):null};
   }
   function markTerms(){
@@ -385,9 +391,10 @@
     var SKIP='CODE,PRE,A,H1,H2,H3,H4,H5,H6,SCRIPT,STYLE,BUTTON,KBD,SUP';
     function find(re,list,text,out){ if(!re)return; re.lastIndex=0; var m;
       while((m=re.exec(text))){ for(var k=1;k<m.length;k++){ if(m[k]!==undefined){ out.push({s:m.index,e:m.index+m[0].length,i:list[k-1].i}); break; } } } }
-    var seen={}, blocks=[].slice.call(prose.children), bi=0;
+    var seen={}, seenPage={}, blocks=[].slice.call(prose.children), bi=0;
     function markBlock(el){
-      if(el.tagName==='H2'){seen={};return;}
+      // заголовки любого уровня не размечаются: «H2.1 Карта опыта» — номер раздела, а не СУБД H2
+      if(/^H[1-6]$/.test(el.tagName)){ if(el.tagName==='H2')seen={}; return; }
       if(el.matches('.hl,pre,.meta,.toc,.ws-btn,.nav,.ch-mark,table')) return;
       var w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:function(n){
         for(var p=n.parentNode;p&&p!==el;p=p.parentNode){ if(SKIP.indexOf(p.tagName)>=0||(p.classList&&(p.classList.contains('gl-term')||p.classList.contains('rt-badge'))))return NodeFilter.FILTER_REJECT; }
@@ -399,8 +406,9 @@
         hits.sort(function(a,b){return a.s-b.s||b.e-a.e;});
         var frag=null,pos=0,last=-1;
         hits.forEach(function(h){
-          if(h.s<last||seen[h.i])return;
-          seen[h.i]=1; last=h.e;
+          var S=gl.abbr[h.i]?seenPage:seen;
+          if(h.s<last||S[h.i])return;
+          S[h.i]=1; last=h.e;
           if(!frag)frag=document.createDocumentFragment();
           frag.appendChild(document.createTextNode(t.slice(pos,h.s)));
           var sp=document.createElement('span'); sp.className='gl-term'; sp.setAttribute('data-g',h.i); sp.tabIndex=0;
