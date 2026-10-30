@@ -255,14 +255,15 @@ https://github.com/spring-projects/spring-boot/wiki/Supported-Versions">Supporte
 <p>Рекомендованный маршрут опирается на то, что каждая последняя минорная версия перед мажорным переходом специально сделана мостом: в ней новые API уже есть, старые ещё работают, но помечены устаревшими, и компилятор вместе с логом показывает объём работ до того, как что-то сломается. Migration Guide для 3.0 начинается ровно с этого требования — «upgrade to the latest available 2.7.x version» (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide">Spring Boot 3.0 Migration Guide</a>), и Migration Guide для 4.0 повторяет его дословно для ветки 3.5 (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide">Spring Boot 4.0 Migration Guide</a>). Отсюда маршрут из пяти шагов, каждый из которых заканчивается выкатом в прод.</p>
-<pre><code class="language-mermaid">flowchart LR
-    A[&quot;2.6.x · Java 8/11/17&quot;] --&gt; B[&quot;2.7.18 · Security 5.8 · закрыть deprecated&quot;]
-    B --&gt; C[&quot;Java 17 · на 2.7&quot;]
-    C --&gt; D[&quot;3.0.x · Jakarta, HB 6.1, Sec 6.0&quot;]
-    D --&gt; E[&quot;3.5.x · по минорным или сразу&quot;]
-    E --&gt; F[&quot;4.0.x · Jackson 3, Sec 7, HB 7&quot;]
-    F --&gt; G[&quot;4.1.x&quot;]
-</code></pre>
+<div class="hl" data-lang="Mermaid"><div class="hl-bar"><span>Mermaid</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>flowchart LR
+    A["2.6.x · Java 8/11/17"] --&gt; B["2.7.18 · Security 5.8 · закрыть deprecated"]
+    B --&gt; C["Java 17 · на 2.7"]
+    C --&gt; D["3.0.x · Jakarta, HB 6.1, Sec 6.0"]
+    D --&gt; E["3.5.x · по минорным или сразу"]
+    E --&gt; F["4.0.x · Jackson 3, Sec 7, HB 7"]
+    F --&gt; G["4.1.x"]
+</code></pre></div>
+
 <p>Схема показывает, что между 2.6 и 4.1 лежит не один прыжок, а пять самостоятельных переходов, и что Java 17 ставится отдельно, ещё на Boot 2.7, где она уже поддерживается. Разберём, зачем каждый из них нужен.</p>
 <p><strong>Шаг 1: 2.6 → последняя 2.7.</strong> Это самый дешёвый шаг, обычно на один-два дня, и его ценность не в новых возможностях 2.7, а в том, что 2.7 удалила всё, что было устаревшим в 2.5, и пометила устаревшим всё, что удалит 3.0. На этом же шаге стоит поднять Spring Security до 5.8: Boot 2.7 по умолчанию приносит 5.7, но Migration Guide 3.0 прямо рекомендует перед переходом на Boot 3 перевести приложение на 5.8, потому что 5.8 создана как мост к Security 6. Security 5.8 ставится поверх Boot 2.7 переопределением версии в BOM (<code>spring-security.version</code>), и это один из немногих случаев, когда такое переопределение не только допустимо, но и рекомендовано.</p>
 <p><strong>Шаг 2: Java 17 на Boot 2.7.</strong> Boot 2.7 работает на Java 17, поэтому новую JDK стоит поставить до смены мажорной версии Boot, отдельным релизом. Если сменить JDK и Boot одновременно, то <code>InaccessibleObjectException</code> от сильной инкапсуляции JDK и <code>ClassNotFoundException</code> от Jakarta придут в одном логе, и разделить их будет трудно; если же Java 17 уже месяц работает в проде на 2.7, то всё, что сломается при переходе на 3.0, относится к Boot, а не к JDK.</p>
@@ -281,12 +282,13 @@ https://github.com/spring-projects/spring-boot/wiki/Deprecations">Deprecations</
 <h3 id="23-модуль-spring-boot-properties-migrator">2.3 Модуль <code>spring-boot-properties-migrator</code></h3>
 <p><code>spring-boot-properties-migrator</code> — это модуль Boot, который при старте приложения сравнивает ваше окружение с метаданными свойств, находит переименованные и удалённые ключи, пишет о них в лог и временно подставляет значения старых ключей под новые имена. Нужен он потому, что переименованное свойство не даёт ни ошибки компиляции, ни ошибки старта: Boot просто не связывает ключ, которого больше нет в <code>@ConfigurationProperties</code>, и значение молча пропадает. Ниже о том, как его подключают, что он умеет и чего не видит.</p>
 <p>Подключается модуль одной зависимостью в области <code>runtime</code>, и Migration Guide обеих мажорных версий рекомендует добавлять его именно на время миграции и удалять после:</p>
-<pre><code class="language-xml">&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-boot-properties-migrator&lt;/artifactId&gt;
-    &lt;scope&gt;runtime&lt;/scope&gt;
-&lt;/dependency&gt;
-</code></pre>
+<div class="hl" data-lang="XML"><div class="hl-bar"><span>XML</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">&lt;dependency&gt;</span>
+    <span class="nt">&lt;groupId&gt;</span>org.springframework.boot<span class="nt">&lt;/groupId&gt;</span>
+    <span class="nt">&lt;artifactId&gt;</span>spring-boot-properties-migrator<span class="nt">&lt;/artifactId&gt;</span>
+    <span class="nt">&lt;scope&gt;</span>runtime<span class="nt">&lt;/scope&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</code></pre></div>
+
 <p>После старта с этим модулем в логе появляется отчёт: свойства, которые переименованы и значения которых мигратор перенёс, идут уровнем WARN, а свойства, которые больше не поддерживаются и для которых замены нет, — уровнем ERROR (это поведение <code>PropertiesMigrationReport</code>, проверено при сверке главы 10). Для сервиса лимитов на Redis после перехода на 3.0 отчёт будет примерно таким: ключ <code>spring.redis.host</code> из <code>application.yml</code> помечен как переименованный в <code>spring.data.redis.host</code>, и приложение работает, потому что мигратор подставил значение. Без мигратора то же приложение стартует, но подключается к Redis на <code>localhost:6379</code>, потому что <code>spring.data.redis.host</code> не задан, и в проде это заканчивается ошибкой подключения при первой же операции.</p>
 <p>У мигратора есть два ограничения, из-за которых на него нельзя полагаться целиком. Он видит только те источники свойств, которые загружены в окружение приложения при этом конкретном запуске, поэтому ключи из профиля <code>prod</code>, из ConfigMap в Kubernetes или из Vault, которые на локальной машине не подгружаются, в отчёт не попадут; запускать приложение с мигратором нужно на стенде, где конфигурация максимально близка к боевой. Кроме того, он работает только с метаданными, которые Boot знает о своих свойствах, и ничего не скажет о свойствах ваших собственных <code>@ConfigurationProperties</code> или сторонних библиотек без метаданных. И наконец, мигратор ни в коем случае нельзя оставлять в проде надолго: он маскирует проблему, и через год, при следующем переходе, старые ключи исчезнут совсем, а мигратор к тому времени уже удалят из зависимостей.</p>
 <blockquote class="cb-warn">
@@ -322,11 +324,12 @@ https://github.com/spring-projects/spring-boot/wiki/Deprecations">Deprecations</
 </tbody>
 </table>
 <p>Запускается рецепт через Maven-плагин без изменения <code>pom.xml</code>, и первый прогон стоит делать в режиме <code>dryRun</code>, который не трогает файлы, а пишет патч в <code>target/rewrite/rewrite.patch</code>:</p>
-<pre><code class="language-bash">./mvnw -U org.openrewrite.maven:rewrite-maven-plugin:dryRun \
-  -Drewrite.recipeArtifactCoordinates=org.openrewrite.recipe:rewrite-spring:RELEASE \
-  -Drewrite.activeRecipes=org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_0 \
-  -Drewrite.exportDatatables=true
-</code></pre>
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>./mvnw -U org.openrewrite.maven:rewrite-maven-plugin:dryRun <span class="se">\</span>
+  -Drewrite.recipeArtifactCoordinates<span class="o">=</span>org.openrewrite.recipe:rewrite-spring:RELEASE <span class="se">\</span>
+  -Drewrite.activeRecipes<span class="o">=</span>org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_0 <span class="se">\</span>
+  -Drewrite.exportDatatables<span class="o">=</span><span class="nb">true</span>
+</code></pre></div>
+
 <p>Прочитав патч, тот же запуск повторяют с целью <code>run</code> вместо <code>dryRun</code>, и изменения ложатся в рабочую копию, где их можно разобрать по коммитам. Цель <code>dryRun</code> и параметры <code>rewrite.recipeArtifactCoordinates</code>, <code>rewrite.activeRecipes</code> описаны в документации плагина ⚠️ (сама страница docs.openrewrite.org при подготовке приложения не открывалась, синтаксис сверен с разделом 10.7 главы 10, где он уже использован).</p>
 <p>Граница между работой инструмента и работой человека проходит по тому, что можно вывести из типов. OpenRewrite надёжно переименовывает импорты и типы, потому что видит их в дереве; переименовывает свойства в <code>application.yml</code> и <code>application.properties</code> внутри репозитория; поднимает версии в сборке и меняет координаты артефактов вроде <code>mysql:mysql-connector-java</code> → <code>com.mysql:mysql-connector-j</code>; переносит регистрацию автоконфигураций из <code>spring.factories</code> в <code>AutoConfiguration.imports</code>; переписывает <code>WebSecurityConfigurerAdapter</code> в бин <code>SecurityFilterChain</code> для типовых случаев. А вот чего он не делает и сделать не может, так это не понимает строк: имена классов в <code>excludeName</code>, в <code>@ConditionalOnClass(name = "...")</code>, в SpEL-выражениях и в собственных константах остаются старыми. Он не видит конфигурации вне репозитория: Helm-чарты, ConfigMap, переменные окружения в CI и Vault. Он не решает, что делать с библиотекой, у которой нет Jakarta-версии, и не переписывает HQL, который Hibernate 6 перестал принимать. И наконец, он не меняет поведение, которое сменилось по умолчанию, потому что там нечего переписывать: trailing slash, формат логов, выбор HTTP-клиента остаются вашими решениями.</p>
 <blockquote class="cb-warn">
@@ -338,9 +341,10 @@ https://github.com/spring-projects/spring-boot/wiki/Deprecations">Deprecations</
 <p>Затем поднимаются зависимости, которыми Boot не управляет и версии которых вы задаёте сами. Главная из них — Spring Cloud: у каждой линии Spring Cloud своя совместимая ветка Boot, и Migration Guide обеих мажорных версий напоминает, что версию Spring Cloud нужно определить до перехода, потому что она задаётся явно (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide">Spring Boot 3.0 Migration Guide</a>). По рецептам OpenRewrite видно соответствие линий: <code>UpgradeSpringBoot_3_0</code> включает <code>UpgradeSpringCloud_2022</code>, <code>UpgradeSpringBoot_3_5</code> — <code>UpgradeSpringCloud_2025</code>, а <code>UpgradeSpringBoot_4_0</code> — <code>UpgradeSpringCloud_2025_1</code>. Кроме Spring Cloud сюда попадают springdoc-openapi (линия 2 для Boot 3 и линия 3 для Boot 4, судя по рецептам <code>UpgradeSpringDoc_2</code> и <code>UpgradeSpringDoc_3_0</code>), MapStruct, Lombok, драйверы Oracle и клиентские библиотеки внутренних систем.</p>
 <p>И наконец, до всех шагов нужна инвентаризация библиотек на готовность к Jakarta, потому что именно она определяет сроки перехода на 3.0. Команда ниже показывает все артефакты в дереве зависимостей, которые тянут за собой старые пакеты Java EE; каждое совпадение — это либо библиотека, которую нужно обновить до Jakarta-версии, либо та, которую придётся заменить или трансформировать.</p>
-<pre><code class="language-bash">./mvnw -q dependency:tree -DoutputType=text \
-  | grep -E &quot;javax\.(servlet|persistence|validation|annotation|transaction|ws\.rs|jms|mail|inject)&quot; 
-</code></pre>
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>./mvnw -q dependency:tree -DoutputType<span class="o">=</span>text <span class="se">\</span>
+  <span class="p">|</span> grep -E <span class="s2">"javax\.(servlet|persistence|validation|annotation|transaction|ws\.rs|jms|mail|inject)"</span> 
+</code></pre></div>
+
 <p>Это только первая линия проверки: дерево зависимостей показывает библиотеки, которые объявили <code>javax</code>-API своей зависимостью, но не показывает те, что используют <code>javax.servlet</code> в байткоде и получают API как <code>provided</code>. Для них нужен поиск по байткоду, например <code>jdeps</code> по каждому jar'у из <code>target/lib</code> с фильтром по пакетам <code>javax.servlet</code> и <code>javax.persistence</code>, и именно такие библиотеки дают <code>ClassNotFoundException</code> во время выполнения, разобранный в инциденте 8.3.</p>
 <h2 id="3-шаг-26-27">3. Шаг 2.6 → 2.7</h2>
 <p>Boot 2.7 — последняя минорная версия ветки 2.x, и её главная ценность не в собственных возможностях, а в том, что она заранее вводит механизмы, на которых построена 3.0, при этом не отключая старые. Переход с 2.6 на 2.7 обычно занимает день-два и почти ничего не ломает, но именно на нём делается подготовительная работа, которая иначе ляжет на самый тяжёлый шаг 2.7 → 3.0. Ниже сначала то, что 2.7 ввела как подготовку к 3.0, потом то, что в ней меняется при обновлении с 2.6, и в конце короткий список того, что на этом шаге стоит сделать сверх обязательного.</p>
@@ -349,44 +353,47 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Gu
 <p><strong>Регистрация автоконфигураций.</strong> До 2.7 автоконфигурация регистрировалась ключом <code>org.springframework.boot.autoconfigure.EnableAutoConfiguration</code> в <code>META-INF/spring.factories</code>, и этот механизм общий с другими расширениями Spring, отчего файл превращался в свалку. Boot 2.7 ввёл отдельный файл <code>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</code>, где каждая строка содержит полное имя одного класса, и продолжил читать <code>spring.factories</code> для обратной совместимости, дедуплицируя записи, если класс указан в обоих местах (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-2.7-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-2.7-Release-Notes">Spring Boot 2.7 Release Notes</a>). Boot 3.0 чтение этого ключа из <code>spring.factories</code> убрал, и внутренний стартер банка, который регистрирует, скажем, аудит платёжных операций через <code>spring.factories</code>, после перехода на 3.0 просто перестаёт подключаться: без ошибки, без предупреждения, бины аудита не создаются. Поэтому перенос делается на 2.7, где его можно проверить, не меняя ничего другого.</p>
 <p>Вот как выглядела регистрация во внутреннем стартере аудита до переноса; обратите внимание, что ключ общий, а классы перечислены через запятую с переносами строк:</p>
-<pre><code class="language-properties"># META-INF/spring.factories (Boot 2.6)
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  ru.bank.audit.autoconfigure.PaymentAuditAutoConfiguration,\
-  ru.bank.audit.autoconfigure.AuditKafkaPublisherAutoConfiguration
-</code></pre>
+<div class="hl" data-lang="properties"><div class="hl-bar"><span>properties</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># META-INF/spring.factories (Boot 2.6)</span>
+<span class="na">org.springframework.boot.autoconfigure.EnableAutoConfiguration</span><span class="o">=</span><span class="se">\</span>
+  <span class="s">ru.bank.audit.autoconfigure.PaymentAuditAutoConfiguration,</span><span class="se">\</span>
+  <span class="s">ru.bank.audit.autoconfigure.AuditKafkaPublisherAutoConfiguration</span>
+</code></pre></div>
+
 <p>После переноса те же два класса стоят в отдельном файле по одному на строку, и на 2.7 оба файла можно держать одновременно, если стартер должен работать и на старых сервисах:</p>
-<pre><code class="language-text"># META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code># META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
 ru.bank.audit.autoconfigure.PaymentAuditAutoConfiguration
 ru.bank.audit.autoconfigure.AuditKafkaPublisherAutoConfiguration
-</code></pre>
+</code></pre></div>
+
 <p><strong>Аннотация <code>@AutoConfiguration</code>.</strong> Вместе с новым файлом 2.7 ввела аннотацию <code>@AutoConfiguration</code> для классов верхнего уровня, перечисленных в <code>AutoConfiguration.imports</code>; она заменяет <code>@Configuration</code> и сразу принимает атрибуты упорядочения <code>after</code>, <code>afterName</code>, <code>before</code> и <code>beforeName</code>, так что отдельные <code>@AutoConfigureAfter</code> и <code>@AutoConfigureBefore</code> больше не нужны. Вложенные и импортируемые конфигурации по-прежнему помечаются <code>@Configuration</code>. Ниже тот же класс аудита до и после, и здесь важно, что <code>proxyBeanMethods = false</code> в <code>@AutoConfiguration</code> уже зашит, поэтому его можно не писать.</p>
-<pre><code class="language-java">// Boot 2.6
-@Configuration(proxyBeanMethods = false)
-@AutoConfigureAfter(KafkaAutoConfiguration.class)
-@ConditionalOnClass(KafkaTemplate.class)
-@EnableConfigurationProperties(AuditProperties.class)
-public class AuditKafkaPublisherAutoConfiguration {
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// Boot 2.6</span>
+<span class="nd">@Configuration</span><span class="p">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="p">)</span>
+<span class="nd">@AutoConfigureAfter</span><span class="p">(</span><span class="n">KafkaAutoConfiguration</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<span class="nd">@ConditionalOnClass</span><span class="p">(</span><span class="n">KafkaTemplate</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<span class="nd">@EnableConfigurationProperties</span><span class="p">(</span><span class="n">AuditProperties</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">AuditKafkaPublisherAutoConfiguration</span> <span class="p">{</span>
 
-    @Bean
-    @ConditionalOnMissingBean
-    AuditPublisher auditPublisher(KafkaTemplate&lt;String, AuditEvent&gt; template, AuditProperties props) {
-        return new KafkaAuditPublisher(template, props.getTopic());
-    }
-}
+    <span class="nd">@Bean</span>
+    <span class="nd">@ConditionalOnMissingBean</span>
+    <span class="n">AuditPublisher</span> <span class="nf">auditPublisher</span><span class="p">(</span><span class="n">KafkaTemplate</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">AuditEvent</span><span class="o">&gt;</span> <span class="n">template</span><span class="p">,</span> <span class="n">AuditProperties</span> <span class="n">props</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="n">KafkaAuditPublisher</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">props</span><span class="p">.</span><span class="na">getTopic</span><span class="p">());</span>
+    <span class="p">}</span>
+<span class="p">}</span>
 
-// Boot 2.7 и дальше
-@AutoConfiguration(after = KafkaAutoConfiguration.class)
-@ConditionalOnClass(KafkaTemplate.class)
-@EnableConfigurationProperties(AuditProperties.class)
-public class AuditKafkaPublisherAutoConfiguration {
+<span class="c1">// Boot 2.7 и дальше</span>
+<span class="nd">@AutoConfiguration</span><span class="p">(</span><span class="n">after</span> <span class="o">=</span> <span class="n">KafkaAutoConfiguration</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<span class="nd">@ConditionalOnClass</span><span class="p">(</span><span class="n">KafkaTemplate</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<span class="nd">@EnableConfigurationProperties</span><span class="p">(</span><span class="n">AuditProperties</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">AuditKafkaPublisherAutoConfiguration</span> <span class="p">{</span>
 
-    @Bean
-    @ConditionalOnMissingBean
-    AuditPublisher auditPublisher(KafkaTemplate&lt;String, AuditEvent&gt; template, AuditProperties props) {
-        return new KafkaAuditPublisher(template, props.getTopic());
-    }
-}
-</code></pre>
+    <span class="nd">@Bean</span>
+    <span class="nd">@ConditionalOnMissingBean</span>
+    <span class="n">AuditPublisher</span> <span class="nf">auditPublisher</span><span class="p">(</span><span class="n">KafkaTemplate</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">AuditEvent</span><span class="o">&gt;</span> <span class="n">template</span><span class="p">,</span> <span class="n">AuditProperties</span> <span class="n">props</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="n">KafkaAuditPublisher</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">props</span><span class="p">.</span><span class="na">getTopic</span><span class="p">());</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>При этом <code>after = KafkaAutoConfiguration.class</code> ссылается на класс, и в Boot 4, где <code>KafkaAutoConfiguration</code> переехала в пакет <code>org.springframework.boot.kafka.autoconfigure</code>, этот код перестанет компилироваться, что хорошо; а вариант <code>afterName = "org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration"</code> компилироваться будет и молча перестанет упорядочивать. Подробно эта ловушка разобрана в подразделе 10.4 главы 10.</p>
 <p><strong><code>SecurityFilterChain</code> вместо <code>WebSecurityConfigurerAdapter</code>.</strong> Boot 2.7 приносит Spring Security 5.7, в которой <code>WebSecurityConfigurerAdapter</code> объявлен устаревшим; в Security 6.0 его удалили совсем. Новая модель — бин <code>SecurityFilterChain</code>, который строится из <code>HttpSecurity</code>, полученного через внедрение, и бин <code>WebSecurityCustomizer</code> вместо переопределения <code>configure(WebSecurity)</code>. Переписать конфигурацию на эту модель стоит именно на 2.7, потому что на 5.7 и 5.8 оба стиля работают, и вы можете сравнить поведение до и после на одной версии. Код «было → стало» приведён в подразделе 4.4, где этот переход разобран вместе с остальными изменениями Security 6, а полная карта — в разделе 14 главы 13.</p>
 <p><strong>Тестовые срезы.</strong> Если в банке есть собственные тестовые срезы вроде <code>@PaymentGatewayTest</code>, их регистрация тоже переезжает из <code>spring.factories</code> в <code>META-INF/spring/&lt;полное имя аннотации&gt;.imports</code> с тем же форматом «один класс на строку» (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-2.7-Release-Notes" data-tip="Внешний сайт · github.com
@@ -424,10 +431,11 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Release-Note
 <p>Ломается прежде всего сильная инкапсуляция внутренностей JDK. Начиная с JDK 9 модульная система закрывала внутренние пакеты, но до JDK 16 это ослаблялось одной опцией <code>--illegal-access=permit</code>, и старые библиотеки продолжали лезть рефлексией в <code>sun.*</code> и в закрытые поля <code>java.*</code>. <a href="https://openjdk.org/jeps/403" data-tip="Внешний сайт · openjdk.org
 https://openjdk.org/jeps/403">JEP 403</a> в JDK 17 закрыл эту лазейку: внутренности JDK инкапсулированы строго, кроме критичных API вроде <code>sun.misc.Unsafe</code>, и ослабить инкапсуляцию одной опцией командной строки, как в JDK 9–16, больше нельзя. На практике это выглядит как <code>InaccessibleObjectException</code> при старте или при первом вызове: старая версия Lombok, ранние версии библиотек сериализации, XML-маршаллеры, некоторые агенты мониторинга и самописные утилиты «глубокого копирования» падают с сообщением вида «module java.base does not "opens java.lang" to unnamed module».</p>
 <p>Лечится это в правильном порядке так: сначала обновить библиотеку до версии, которая работает на Java 17, и только если такой версии нет, точечно открыть конкретный пакет флагом <code>--add-opens</code>. Флаг открывает один пакет одного модуля для рефлексии из указанного модуля и выглядит так:</p>
-<pre><code class="language-bash">java --add-opens java.base/java.lang=ALL-UNNAMED \
-     --add-opens java.base/java.util=ALL-UNNAMED \
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>java --add-opens java.base/java.lang<span class="o">=</span>ALL-UNNAMED <span class="se">\</span>
+     --add-opens java.base/java.util<span class="o">=</span>ALL-UNNAMED <span class="se">\</span>
      -jar limits-service.jar
-</code></pre>
+</code></pre></div>
+
 <p>Каждый такой флаг — это долг, который стоит записать в ADR с указанием библиотеки, ради которой он добавлен, потому что через год никто не вспомнит, зачем он нужен, а удалить его побоятся. Для контейнеров флаги удобнее задавать через <code>JAVA_TOOL_OPTIONS</code> или <code>JDK_JAVA_OPTIONS</code>, чтобы не менять команду запуска в Dockerfile, но и там их список должен быть коротким и объяснённым.</p>
 <p>Второе, что стоит проверить на Java 17, — сборка с флагом <code>-parameters</code>. Boot 3.2 вместе с Framework 6.1 перестал вычитывать имена параметров из байткода (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.2-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.2-Release-Notes">Spring Boot 3.2 Release Notes</a>), и если проект собирается без этого флага, то <code>@PathVariable Long accountId</code> без явного имени, <code>@RequestParam String currency</code> и связывание конструктора <code>@ConfigurationProperties</code> перестают находить имена. <code>spring-boot-starter-parent</code> и Gradle-плагин Boot включают <code>-parameters</code> сами, но проекты с собственным родительским POM банка часто его теряют, поэтому флаг лучше прописать явно уже на шаге Java 17.</p>
@@ -494,35 +502,36 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Release-Note
 </table>
 <p>Строка про <code>javax.xml</code> требует уточнения: JAXB (<code>javax.xml.bind</code>) и JAX-WS (<code>javax.xml.ws</code>) удалены из самой JDK ещё в Java 11 и живут как отдельные артефакты, поэтому они переехали в Jakarta вместе с остальными, а <code>javax.xml.parsers</code>, <code>javax.xml.transform</code> и <code>javax.xml.crypto</code> по-прежнему часть JDK. Это важно для сервисов, работающих с ЭЦП и XML-подписью в удостоверяющем центре: <code>javax.xml.crypto.dsig</code> остаётся на месте, а JAXB-модели документов, которые вы подписываете, переезжают на <code>jakarta.xml.bind</code>, и в одном классе теперь соседствуют оба пространства имён.</p>
 <p>Для самого кода замена механическая, и вот как она выглядит на сущности платёжного поручения и валидаторе; обратите внимание, что <code>javax.sql.DataSource</code> в соседнем классе остаётся без изменений:</p>
-<pre><code class="language-java">// Boot 2.7
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// Boot 2.7</span>
+<span class="kn">import</span> <span class="nn">javax.persistence.Column</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">javax.persistence.Entity</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">javax.persistence.Id</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">javax.validation.constraints.NotNull</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">javax.validation.constraints.Positive</span><span class="p">;</span>
 
-// Boot 3.0
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+<span class="c1">// Boot 3.0</span>
+<span class="kn">import</span> <span class="nn">jakarta.persistence.Column</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">jakarta.persistence.Entity</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">jakarta.persistence.Id</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">jakarta.validation.constraints.NotNull</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">jakarta.validation.constraints.Positive</span><span class="p">;</span>
 
-@Entity
-public class PaymentOrder {
-    @Id
-    private UUID id;
+<span class="nd">@Entity</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">PaymentOrder</span> <span class="p">{</span>
+    <span class="nd">@Id</span>
+    <span class="kd">private</span> <span class="n">UUID</span> <span class="n">id</span><span class="p">;</span>
 
-    @NotNull
-    @Positive
-    @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal amount;
+    <span class="nd">@NotNull</span>
+    <span class="nd">@Positive</span>
+    <span class="nd">@Column</span><span class="p">(</span><span class="n">nullable</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span> <span class="n">precision</span> <span class="o">=</span> <span class="mi">19</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="kd">private</span> <span class="n">BigDecimal</span> <span class="n">amount</span><span class="p">;</span>
 
-    @NotNull
-    @Column(nullable = false, length = 3)
-    private String currency;
-}
-</code></pre>
+    <span class="nd">@NotNull</span>
+    <span class="nd">@Column</span><span class="p">(</span><span class="n">nullable</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="kd">private</span> <span class="n">String</span> <span class="n">currency</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Есть одна поблажка, о которой полезно знать, чтобы не удивляться: Framework 6.0 ещё распознавал <code>javax.annotation.PostConstruct</code>, <code>@PreDestroy</code> и <code>javax.inject.Inject</code> наряду с их Jakarta-аналогами, «covering common use in pre-compiled binaries», как сказано в <a href="https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-6.0-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-6.0-Release-No…">Spring Framework 6.0 Release Notes</a>. Поэтому старая библиотека с <code>@javax.annotation.PostConstruct</code> на Boot 3 продолжала работать, и это маскировало недоделанную миграцию. Framework 7.0 эту поддержку убрал (<a href="https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-7.0-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-7.0-Release-No…">Spring Framework 7.0 Release Notes</a>), и на Boot 4 такой метод просто не вызывается: бин создаётся, но инициализация не выполняется, и ошибки нет. Это ещё одна причина искать <code>javax.annotation</code> и <code>javax.inject</code> поиском по байткоду до перехода на 4.0.</p>
@@ -593,71 +602,74 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Gu
 <h3 id="44-spring-security-6-lambda-dsl-новые-матчеры-и-явное-сохранение-контекста">4.4 Spring Security 6: lambda DSL, новые матчеры и явное сохранение контекста</h3>
 <p>Spring Security 6.0, который приходит с Boot 3.0, завершает переход на компонентную модель конфигурации: <code>WebSecurityConfigurerAdapter</code> удалён, <code>authorizeRequests</code> уступил место <code>authorizeHttpRequests</code> на <code>AuthorizationManager</code>, а <code>antMatchers</code> и <code>mvcMatchers</code> заменены одним <code>requestMatchers</code>. Опасность этого перехода в том, что ошибки компиляции здесь закрывают только половину работы, а вторая половина — изменения поведения, которые не видны ни компилятору, ни юнит-тестам. Полная таблица «было → стало» с колонкой «как ломается» и план тестирования приведены в подразделах 14.1 и 14.4 главы 13 (<code>13-spring-security.md</code>), а ниже показан сам переход на коде типичного платёжного API и разобрано изменение, из-за которого чаще всего «не прилипает» логин.</p>
 <p>Так выглядела конфигурация платёжного API на Boot 2.6 с Security 5.6: класс наследуется от адаптера, правила строятся цепочкой через <code>.and()</code>, пути задаются <code>antMatchers</code>.</p>
-<pre><code class="language-java">// Boot 2.6, Spring Security 5.6
-@Configuration
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-public class PaymentSecurityConfig extends WebSecurityConfigurerAdapter {
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// Boot 2.6, Spring Security 5.6</span>
+<span class="nd">@Configuration</span>
+<span class="nd">@EnableGlobalMethodSecurity</span><span class="p">(</span><span class="n">prePostEnabled</span> <span class="o">=</span> <span class="kc">true</span><span class="p">)</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">PaymentSecurityConfig</span> <span class="kd">extends</span> <span class="n">WebSecurityConfigurerAdapter</span> <span class="p">{</span>
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-            .csrf().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
-            .authorizeRequests()
-                .antMatchers(&quot;/actuator/health/**&quot;).permitAll()
-                .antMatchers(HttpMethod.POST, &quot;/api/v1/payments/**&quot;).hasAuthority(&quot;SCOPE_payments:write&quot;)
-                .antMatchers(&quot;/api/v1/payments/**&quot;).hasAuthority(&quot;SCOPE_payments:read&quot;)
-                .anyRequest().authenticated()
-            .and()
-            .oauth2ResourceServer().jwt();
-    }
+    <span class="nd">@Override</span>
+    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">configure</span><span class="p">(</span><span class="n">HttpSecurity</span> <span class="n">http</span><span class="p">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="p">{</span>
+        <span class="n">http</span>
+            <span class="p">.</span><span class="na">csrf</span><span class="p">().</span><span class="na">disable</span><span class="p">()</span>
+            <span class="p">.</span><span class="na">sessionManagement</span><span class="p">().</span><span class="na">sessionCreationPolicy</span><span class="p">(</span><span class="n">SessionCreationPolicy</span><span class="p">.</span><span class="na">STATELESS</span><span class="p">)</span>
+            <span class="p">.</span><span class="na">and</span><span class="p">()</span>
+            <span class="p">.</span><span class="na">authorizeRequests</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">antMatchers</span><span class="p">(</span><span class="s">"/actuator/health/**"</span><span class="p">).</span><span class="na">permitAll</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">antMatchers</span><span class="p">(</span><span class="n">HttpMethod</span><span class="p">.</span><span class="na">POST</span><span class="p">,</span> <span class="s">"/api/v1/payments/**"</span><span class="p">).</span><span class="na">hasAuthority</span><span class="p">(</span><span class="s">"SCOPE_payments:write"</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">antMatchers</span><span class="p">(</span><span class="s">"/api/v1/payments/**"</span><span class="p">).</span><span class="na">hasAuthority</span><span class="p">(</span><span class="s">"SCOPE_payments:read"</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">anyRequest</span><span class="p">().</span><span class="na">authenticated</span><span class="p">()</span>
+            <span class="p">.</span><span class="na">and</span><span class="p">()</span>
+            <span class="p">.</span><span class="na">oauth2ResourceServer</span><span class="p">().</span><span class="na">jwt</span><span class="p">();</span>
+    <span class="p">}</span>
 
-    @Override
-    public void configure(WebSecurity web) {
-        web.ignoring().antMatchers(&quot;/static/**&quot;);
-    }
-}
-</code></pre>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">configure</span><span class="p">(</span><span class="n">WebSecurity</span> <span class="n">web</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">web</span><span class="p">.</span><span class="na">ignoring</span><span class="p">().</span><span class="na">antMatchers</span><span class="p">(</span><span class="s">"/static/**"</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>На Security 6 та же конфигурация превращается в два бина, причём все настройки задаются лямбдами, а <code>requestMatchers</code> принимает те же строковые шаблоны; метод-секьюрити включается новой аннотацией, у которой <code>prePostEnabled</code> включён по умолчанию.</p>
-<pre><code class="language-java">// Boot 3.x, Spring Security 6.x (и без изменений в 7.x)
-@Configuration
-@EnableMethodSecurity
-public class PaymentSecurityConfig {
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// Boot 3.x, Spring Security 6.x (и без изменений в 7.x)</span>
+<span class="nd">@Configuration</span>
+<span class="nd">@EnableMethodSecurity</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">PaymentSecurityConfig</span> <span class="p">{</span>
 
-    @Bean
-    SecurityFilterChain paymentApi(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -&gt; csrf.disable())
-            .sessionManagement(s -&gt; s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -&gt; auth
-                .requestMatchers(&quot;/actuator/health/**&quot;).permitAll()
-                .requestMatchers(HttpMethod.POST, &quot;/api/v1/payments/**&quot;).hasAuthority(&quot;SCOPE_payments:write&quot;)
-                .requestMatchers(&quot;/api/v1/payments/**&quot;).hasAuthority(&quot;SCOPE_payments:read&quot;)
-                .anyRequest().authenticated())
-            .oauth2ResourceServer(oauth -&gt; oauth.jwt(Customizer.withDefaults()));
-        return http.build();
-    }
+    <span class="nd">@Bean</span>
+    <span class="n">SecurityFilterChain</span> <span class="nf">paymentApi</span><span class="p">(</span><span class="n">HttpSecurity</span> <span class="n">http</span><span class="p">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="p">{</span>
+        <span class="n">http</span>
+            <span class="p">.</span><span class="na">csrf</span><span class="p">(</span><span class="n">csrf</span> <span class="o">-&gt;</span> <span class="n">csrf</span><span class="p">.</span><span class="na">disable</span><span class="p">())</span>
+            <span class="p">.</span><span class="na">sessionManagement</span><span class="p">(</span><span class="n">s</span> <span class="o">-&gt;</span> <span class="n">s</span><span class="p">.</span><span class="na">sessionCreationPolicy</span><span class="p">(</span><span class="n">SessionCreationPolicy</span><span class="p">.</span><span class="na">STATELESS</span><span class="p">))</span>
+            <span class="p">.</span><span class="na">authorizeHttpRequests</span><span class="p">(</span><span class="n">auth</span> <span class="o">-&gt;</span> <span class="n">auth</span>
+                <span class="p">.</span><span class="na">requestMatchers</span><span class="p">(</span><span class="s">"/actuator/health/**"</span><span class="p">).</span><span class="na">permitAll</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">requestMatchers</span><span class="p">(</span><span class="n">HttpMethod</span><span class="p">.</span><span class="na">POST</span><span class="p">,</span> <span class="s">"/api/v1/payments/**"</span><span class="p">).</span><span class="na">hasAuthority</span><span class="p">(</span><span class="s">"SCOPE_payments:write"</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">requestMatchers</span><span class="p">(</span><span class="s">"/api/v1/payments/**"</span><span class="p">).</span><span class="na">hasAuthority</span><span class="p">(</span><span class="s">"SCOPE_payments:read"</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">anyRequest</span><span class="p">().</span><span class="na">authenticated</span><span class="p">())</span>
+            <span class="p">.</span><span class="na">oauth2ResourceServer</span><span class="p">(</span><span class="n">oauth</span> <span class="o">-&gt;</span> <span class="n">oauth</span><span class="p">.</span><span class="na">jwt</span><span class="p">(</span><span class="n">Customizer</span><span class="p">.</span><span class="na">withDefaults</span><span class="p">()));</span>
+        <span class="k">return</span> <span class="n">http</span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+    <span class="p">}</span>
 
-    @Bean
-    WebSecurityCustomizer ignoreStatic() {
-        return web -&gt; web.ignoring().requestMatchers(&quot;/static/**&quot;);
-    }
-}
-</code></pre>
+    <span class="nd">@Bean</span>
+    <span class="n">WebSecurityCustomizer</span> <span class="nf">ignoreStatic</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">web</span> <span class="o">-&gt;</span> <span class="n">web</span><span class="p">.</span><span class="na">ignoring</span><span class="p">().</span><span class="na">requestMatchers</span><span class="p">(</span><span class="s">"/static/**"</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Этот код компилируется и на Security 5.8, поэтому его пишут ещё на Boot 2.7, как сказано в подразделе 3.3, и проверяют там тем же набором тестов. Лямбда-DSL в 6.x сосуществует с цепочками <code>.and()</code>, которые помечены устаревшими в 6.1 и удалены в 7.0, так что переписывать на лямбды нужно в любом случае, и лучше сделать это сразу.</p>
 <p>Из изменений поведения, которых компилятор не видит, три встречаются в каждом втором сервисе. Первое — явное сохранение контекста безопасности: в Security 5 фильтр <code>SecurityContextPersistenceFilter</code> сам сохранял <code>SecurityContext</code> в сессию в конце запроса, а в 6.0 его заменил <code>SecurityContextHolderFilter</code>, который контекст только загружает. Поэтому код ручного логина, который делал <code>SecurityContextHolder.getContext().setAuthentication(auth)</code> и полагался на автоматическое сохранение, после перехода аутентифицирует пользователя только на время текущего запроса, а следующий запрос с той же cookie снова анонимный. Правильный вариант выглядит так:</p>
-<pre><code class="language-java">@PostMapping(&quot;/login/otp&quot;)
-void loginByOtp(@RequestBody OtpLoginRequest request,
-                HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
-    Authentication auth = otpAuthenticationManager.authenticate(
-            new OtpAuthenticationToken(request.phone(), request.code()));
-    SecurityContext context = securityContextHolderStrategy.createEmptyContext();
-    context.setAuthentication(auth);
-    securityContextHolderStrategy.setContext(context);
-    securityContextRepository.saveContext(context, httpRequest, httpResponse);
-}
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@PostMapping</span><span class="p">(</span><span class="s">"/login/otp"</span><span class="p">)</span>
+<span class="kt">void</span> <span class="nf">loginByOtp</span><span class="p">(</span><span class="nd">@RequestBody</span> <span class="n">OtpLoginRequest</span> <span class="n">request</span><span class="p">,</span>
+                <span class="n">HttpServletRequest</span> <span class="n">httpRequest</span><span class="p">,</span> <span class="n">HttpServletResponse</span> <span class="n">httpResponse</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">Authentication</span> <span class="n">auth</span> <span class="o">=</span> <span class="n">otpAuthenticationManager</span><span class="p">.</span><span class="na">authenticate</span><span class="p">(</span>
+            <span class="k">new</span> <span class="n">OtpAuthenticationToken</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="na">phone</span><span class="p">(),</span> <span class="n">request</span><span class="p">.</span><span class="na">code</span><span class="p">()));</span>
+    <span class="n">SecurityContext</span> <span class="n">context</span> <span class="o">=</span> <span class="n">securityContextHolderStrategy</span><span class="p">.</span><span class="na">createEmptyContext</span><span class="p">();</span>
+    <span class="n">context</span><span class="p">.</span><span class="na">setAuthentication</span><span class="p">(</span><span class="n">auth</span><span class="p">);</span>
+    <span class="n">securityContextHolderStrategy</span><span class="p">.</span><span class="na">setContext</span><span class="p">(</span><span class="n">context</span><span class="p">);</span>
+    <span class="n">securityContextRepository</span><span class="p">.</span><span class="na">saveContext</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">httpRequest</span><span class="p">,</span> <span class="n">httpResponse</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Здесь <code>securityContextRepository</code> — бин <code>HttpSessionSecurityContextRepository</code> или составной репозиторий, а <code>securityContextHolderStrategy</code> берётся через <code>SecurityContextHolder.getContextHolderStrategy()</code>; подробности и тест, который ловит этот случай, — в подразделе 14.4 главы 13. Второе изменение — <code>@EnableMethodSecurity</code> по умолчанию включает только <code>prePostEnabled</code>, а <code>securedEnabled</code> и <code>jsr250Enabled</code> выключены, и если в сервисе кредитных решений стоит <code>@Secured("ROLE_UNDERWRITER")</code>, после перехода аннотация молча перестаёт проверяться. Третье — Security 6 применяет авторизацию ко всем типам диспетчеризации, включая <code>ERROR</code> и <code>FORWARD</code>, и Boot 3.0 соответственно регистрирует фильтр Security для всех типов (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide">Spring Boot 3.0 Migration Guide</a>); поэтому страница ошибки, на которую Tomcat делает внутренний forward, может сама потребовать аутентификации, и клиент вместо тела ошибки получит 401. Настраивается это свойством <code>spring.security.filter.dispatcher-types</code> или явным правилом <code>permitAll()</code> для <code>/error</code>.</p>
 <blockquote class="cb-warn">
@@ -668,30 +680,32 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Gu
 https://github.com/spring-cloud/spring-cloud-sleuth">spring-cloud-sleuth</a>). Поэтому переход на Boot 3 для трассировки означает замену библиотеки, конфигурации и, что важнее всего, формата заголовков распространения контекста. Ниже о том, из чего собирается новая схема, что в ней по умолчанию иначе, чем в Sleuth, и как пережить период, когда часть сервисов уже на Boot 3, а часть ещё на Boot 2. Подробно механика трассировки, W3C Trace Context и потеря контекста разобраны в разделе 5 главы 51 (<code>51-observability.md</code>).</p>
 <p>Новая схема состоит из трёх слоёв. Сверху — Micrometer Observation API, через который Spring Framework 6 сам инструментирует входящие HTTP-запросы (<code>ServerHttpObservationFilter</code>), <code>RestTemplate</code>, <code>WebClient</code> и другие точки; одно наблюдение порождает и метрику, и спан. Посередине — Micrometer Tracing, фасад над трассировщиком, с двумя мостами на выбор: <code>micrometer-tracing-bridge-brave</code> для Brave и <code>micrometer-tracing-bridge-otel</code> для OpenTelemetry. Снизу — репортер, который отправляет спаны в бэкенд: Zipkin, OTLP-коллектор или Wavefront. Boot 3.0 автоконфигурирует всё это при наличии зависимостей (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Release-Notes">Spring Boot 3.0 Release Notes</a>), и для сервиса, который раньше подключал <code>spring-cloud-starter-sleuth</code> и <code>spring-cloud-sleuth-zipkin</code>, набор зависимостей меняется так:</p>
-<pre><code class="language-xml">&lt;!-- было на Boot 2.x: spring-cloud-starter-sleuth + spring-cloud-sleuth-zipkin --&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-boot-starter-actuator&lt;/artifactId&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;io.micrometer&lt;/groupId&gt;
-    &lt;artifactId&gt;micrometer-tracing-bridge-otel&lt;/artifactId&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;io.opentelemetry&lt;/groupId&gt;
-    &lt;artifactId&gt;opentelemetry-exporter-otlp&lt;/artifactId&gt;
-&lt;/dependency&gt;
-</code></pre>
+<div class="hl" data-lang="XML"><div class="hl-bar"><span>XML</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="cm">&lt;!-- было на Boot 2.x: spring-cloud-starter-sleuth + spring-cloud-sleuth-zipkin --&gt;</span>
+<span class="nt">&lt;dependency&gt;</span>
+    <span class="nt">&lt;groupId&gt;</span>org.springframework.boot<span class="nt">&lt;/groupId&gt;</span>
+    <span class="nt">&lt;artifactId&gt;</span>spring-boot-starter-actuator<span class="nt">&lt;/artifactId&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+<span class="nt">&lt;dependency&gt;</span>
+    <span class="nt">&lt;groupId&gt;</span>io.micrometer<span class="nt">&lt;/groupId&gt;</span>
+    <span class="nt">&lt;artifactId&gt;</span>micrometer-tracing-bridge-otel<span class="nt">&lt;/artifactId&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+<span class="nt">&lt;dependency&gt;</span>
+    <span class="nt">&lt;groupId&gt;</span>io.opentelemetry<span class="nt">&lt;/groupId&gt;</span>
+    <span class="nt">&lt;artifactId&gt;</span>opentelemetry-exporter-otlp<span class="nt">&lt;/artifactId&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</code></pre></div>
+
 <p>Важнее зависимостей то, что изменилось по умолчанию, потому что именно это ломает трассы в смешанном парке сервисов. Руководство по миграции с Sleuth в вики Micrometer Tracing перечисляет три отличия (<a href="https://github.com/micrometer-metrics/tracing/wiki/Spring-Cloud-Sleuth-3.1-Migration-Guide" data-tip="Внешний сайт · github.com
 https://github.com/micrometer-metrics/tracing/wiki/Spring-Cloud-Sleuth-3.1-Migration-Guide">Spring Cloud Sleuth 3.1 Migration Guide</a>): в Boot 3 идентификатор трассы по умолчанию 128-битный, формат распространения контекста по умолчанию W3C (<code>traceparent</code>), а не B3, как в Sleuth, и объединённые спаны (joined spans) не поддерживаются. Первые два отличия означают, что сервис на Boot 3 отправляет соседу на Boot 2 заголовок <code>traceparent</code>, который Sleuth по умолчанию не читает, и Sleuth начинает новую трассу; в Jaeger или Zipkin одна операция перевода между счетами распадается на две несвязанные трассы. Руководство советует на время перехода настроить сервисы на Sleuth так, чтобы они отправляли оба формата и совпадали по остальным параметрам:</p>
-<pre><code class="language-yaml"># сервисы, которые ещё на Boot 2.x и Sleuth, на время перехода
-spring:
-  sleuth:
-    propagation:
-      type: w3c,b3
-    trace-id128: true
-    supports-join: false
-</code></pre>
+<div class="hl" data-lang="YAML"><div class="hl-bar"><span>YAML</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># сервисы, которые ещё на Boot 2.x и Sleuth, на время перехода</span>
+<span class="nt">spring</span><span class="p">:</span>
+  <span class="nt">sleuth</span><span class="p">:</span>
+    <span class="nt">propagation</span><span class="p">:</span>
+      <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">w3c,b3</span>
+    <span class="nt">trace-id128</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">supports-join</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+</code></pre></div>
+
 <p>Ключи <code>spring.sleuth.propagation.type=w3c,b3</code>, <code>spring.sleuth.traceId128=true</code> и <code>spring.sleuth.supportsJoin=false</code> приведены в руководстве именно в таком виде, а запись в kebab-case выше их эквивалент по правилам relaxed binding. С другой стороны, в Boot 3.0 поддерживался только один формат распространения, и лишь в более поздних версиях появились раздельные списки: в Boot 3.5 свойство <code>management.tracing.propagation.produce</code> по умолчанию содержит только W3C, а <code>management.tracing.propagation.consume</code> — все поддерживаемые форматы (исходник <code>TracingProperties</code> на теге v3.5.0). Поэтому сервис на Boot 3.5 принимает B3 от старых соседей без настройки, а сервис на 3.0 — нет, и это ещё один аргумент не задерживаться на 3.0.</p>
 <p>Два других отличия проявляются уже не в связности трасс, а в их количестве и в логах. Вероятность выборки в Boot 3 по умолчанию равна 0.1 (<code>management.tracing.sampling.probability</code>, исходник <code>TracingProperties</code> на тегах v3.0.0 и v3.5.0), то есть в бэкенд уходит примерно каждая десятая трасса, и команда, которая после миграции ищет трассу конкретного платежа по <code>trace_id</code> из лога, в девяти случаях из десяти её не находит; на стендах вероятность обычно выставляют в 1.0, а в проде решают осознанно. Кроме того, Sleuth сам дописывал <code>traceId</code> и <code>spanId</code> в шаблон логов через свой <code>EnvironmentPostProcessor</code>, а Boot 3.0 этого не делал, поэтому в логах 3.0 идентификаторы пропадают, пока не задан <code>logging.pattern.level</code>; начиная с Boot 3.2 correlation ID снова попадает в лог автоматически (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.2-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.2-Release-Notes">Spring Boot 3.2 Release Notes</a>).</p>
@@ -704,26 +718,28 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.2-Release-Note
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide">Spring Boot 3.0 Migration Guide</a> и в <a href="https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-6.0-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-6.0-Release-No…">Spring Framework 6.0 Release Notes</a>, но разбросаны по разным разделам, и ниже собраны в одном месте с кодом там, где он нужен для починки. Порядок здесь от самого частого к более редкому.</p>
 <p><strong>Trailing slash matching выключен.</strong> Во Framework 6.0 опция сопоставления пути с завершающим слешем объявлена устаревшей, и её значение по умолчанию стало <code>false</code>: контроллер с <code>@GetMapping("/api/v1/accounts/{id}")</code> больше не отвечает на <code>GET /api/v1/accounts/42/</code>, и такой запрос получает 404. Для публичного API банка это самый частый источник жалоб после миграции, потому что мобильные клиенты, интеграции партнёров и скрипты сверки годами слали адреса с завершающим слешем, и никто об этом не знал. Migration Guide предлагает временно вернуть старое поведение глобально:</p>
-<pre><code class="language-java">@Configuration
-public class LegacyTrailingSlashConfig implements WebMvcConfigurer {
-    @Override
-    public void configurePathMatch(PathMatchConfigurer configurer) {
-        configurer.setUseTrailingSlashMatch(true); // устарело в 6.0, удалено в 7.0
-    }
-}
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Configuration</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">LegacyTrailingSlashConfig</span> <span class="kd">implements</span> <span class="n">WebMvcConfigurer</span> <span class="p">{</span>
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">configurePathMatch</span><span class="p">(</span><span class="n">PathMatchConfigurer</span> <span class="n">configurer</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">configurer</span><span class="p">.</span><span class="na">setUseTrailingSlashMatch</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span> <span class="c1">// устарело в 6.0, удалено в 7.0</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Это решение годится только как мост, потому что сама опция <code>trailingSlashMatch</code> удалена во Framework 7.0 (<a href="https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-7.0-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-7.0-Release-No…">Spring Framework 7.0 Release Notes</a>), и на Boot 4 этот код не скомпилируется. Штатная замена появилась во Framework 6.2: фильтр <code>UrlHandlerFilter</code>, который либо перенаправляет запрос на адрес без слеша, либо подменяет путь внутри запроса. Javadoc фильтра требует ставить его после <code>ForwardedHeaderFilter</code> и до фильтров безопасности, и это важно: если Security увидит путь со слешем раньше, чем фильтр его нормализует, правило для <code>/api/v1/accounts/**</code> может не совпасть.</p>
-<pre><code class="language-java">@Bean
-FilterRegistrationBean&lt;UrlHandlerFilter&gt; trailingSlashFilter() {
-    UrlHandlerFilter filter = UrlHandlerFilter
-            .trailingSlashHandler(&quot;/api/**&quot;).wrapRequest()
-            .build();
-    FilterRegistrationBean&lt;UrlHandlerFilter&gt; registration = new FilterRegistrationBean&lt;&gt;(filter);
-    registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
-    return registration;
-}
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Bean</span>
+<span class="n">FilterRegistrationBean</span><span class="o">&lt;</span><span class="n">UrlHandlerFilter</span><span class="o">&gt;</span> <span class="nf">trailingSlashFilter</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">UrlHandlerFilter</span> <span class="n">filter</span> <span class="o">=</span> <span class="n">UrlHandlerFilter</span>
+            <span class="p">.</span><span class="na">trailingSlashHandler</span><span class="p">(</span><span class="s">"/api/**"</span><span class="p">).</span><span class="na">wrapRequest</span><span class="p">()</span>
+            <span class="p">.</span><span class="na">build</span><span class="p">();</span>
+    <span class="n">FilterRegistrationBean</span><span class="o">&lt;</span><span class="n">UrlHandlerFilter</span><span class="o">&gt;</span> <span class="n">registration</span> <span class="o">=</span> <span class="k">new</span> <span class="n">FilterRegistrationBean</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">filter</span><span class="p">);</span>
+    <span class="n">registration</span><span class="p">.</span><span class="na">setOrder</span><span class="p">(</span><span class="n">Ordered</span><span class="p">.</span><span class="na">HIGHEST_PRECEDENCE</span> <span class="o">+</span> <span class="mi">10</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">registration</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Порядок <code>HIGHEST_PRECEDENCE + 10</code> здесь выбран с расчётом на то, что цепочка Spring Security по умолчанию стоит на −100 (порядки встроенных фильтров разобраны в разделе 3 главы 14), а <code>ForwardedHeaderFilter</code>, если он есть, зарегистрирован раньше; в вашем сервисе порядок стоит проверить по логу регистрации фильтров. Разбор того, как эта поломка выглядела в проде, — в инциденте 8.1.</p>
 <p><strong>Переименованные свойства.</strong> Часть свойств сменила префикс, и Boot просто перестал их связывать. Ниже основные переименования из журнала изменений конфигурации 3.0 (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Configuration-Changelog" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Configuration-Change…">Spring Boot 3.0 Configuration Changelog</a>); смотреть в таблице стоит на правую колонку, потому что там описано, что происходит, если старое имя осталось.</p>
@@ -784,14 +800,15 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Configuratio
 </tbody>
 </table>
 <p><strong><code>@ConstructorBinding</code> и внедрение в <code>@ConfigurationProperties</code>.</strong> В Boot 3.0 класс свойств с единственным конструктором с параметрами связывается через конструктор автоматически, и <code>@ConstructorBinding</code> на уровне класса больше не нужна и переехала в пакет <code>org.springframework.boot.context.properties.bind</code>. Ловушка скрыта в обратном случае: если в конструктор класса свойств раньше внедрялся бин, например <code>Clock</code> для расчёта окон лимитов, то теперь Boot считает этот конструктор целью связывания и пытается найти свойство с именем <code>clock</code>. Migration Guide требует в этом случае пометить конструктор <code>@Autowired</code>, но правильнее вообще не смешивать свойства и бины в одном классе:</p>
-<pre><code class="language-java">// Boot 3.x: record связывается через конструктор без аннотаций
-@ConfigurationProperties(&quot;limits.card&quot;)
-public record CardLimitProperties(
-        @DefaultValue(&quot;150000.00&quot;) BigDecimal dailyLimit,
-        @DefaultValue(&quot;600000.00&quot;) BigDecimal monthlyLimit,
-        @DefaultValue(&quot;PT24H&quot;) Duration window) {
-}
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// Boot 3.x: record связывается через конструктор без аннотаций</span>
+<span class="nd">@ConfigurationProperties</span><span class="p">(</span><span class="s">"limits.card"</span><span class="p">)</span>
+<span class="kd">public</span> <span class="kd">record</span> <span class="nc">CardLimitProperties</span><span class="p">(</span>
+        <span class="nd">@DefaultValue</span><span class="p">(</span><span class="s">"150000.00"</span><span class="p">)</span> <span class="n">BigDecimal</span> <span class="n">dailyLimit</span><span class="p">,</span>
+        <span class="nd">@DefaultValue</span><span class="p">(</span><span class="s">"600000.00"</span><span class="p">)</span> <span class="n">BigDecimal</span> <span class="n">monthlyLimit</span><span class="p">,</span>
+        <span class="nd">@DefaultValue</span><span class="p">(</span><span class="s">"PT24H"</span><span class="p">)</span> <span class="n">Duration</span> <span class="n">window</span><span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p><strong>Apache HttpClient 5 вместо 4 и молчаливый откат на JDK-клиент.</strong> Framework 6.0 удалил поддержку Apache HttpClient 4 в <code>HttpComponentsClientHttpRequestFactory</code>, и теперь она требует <code>org.apache.httpcomponents.client5:httpclient5</code> с другим <code>groupId</code>. Migration Guide предупреждает о последствии, которое легко пропустить: если HttpClient 5 не оказался в classpath, <code>RestTemplate</code> молча откатывается на клиент JDK, а все настройки пула соединений, таймаутов и прокси, которые были сделаны на HttpClient 4, перестают действовать. Для сервиса, который ходит в процессинг с тщательно подобранными таймаутами, это означает, что таймауты вернулись к бесконечным, и узнаёте вы об этом при первой деградации процессинга. Boot 3.1 окончательно убрал управление версией HttpClient 4 (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.1-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.1-Release-Notes">Spring Boot 3.1 Release Notes</a>).</p>
 <p><strong>Формат даты в логах.</strong> Шаблон даты в логах Logback и Log4j2 сменился на ISO-8601: <code>yyyy-MM-dd'T'HH:mm:ss.SSSXXX</code> вместо <code>yyyy-MM-dd HH:mm:ss.SSS</code>, то есть между датой и временем теперь стоит <code>T</code>, а в конце добавлено смещение часового пояса. Приложение от этого не страдает, а вот парсер логов в Logstash или правило в SIEM, настроенное регулярным выражением на пробел между датой и временем, перестаёт разбирать строки, и логи либо теряются, либо попадают в индекс без времени события. Вернуть старый формат можно свойством <code>logging.pattern.dateformat</code> или переменной <code>LOG_DATEFORMAT_PATTERN</code>, но лучше сразу перейти на структурные логи (подраздел 5.4).</p>
@@ -813,20 +830,21 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.1-Release-Note
 <p>Переход на 3.0 не только ломает, но и приносит возможности, которых на Boot 2 не было, и три из них имеет смысл внедрить в том же проекте миграции, пока код всё равно открыт на редактирование. Это стандартный формат ошибок, декларативные HTTP-клиенты и AOT-обработка с возможностью собрать native image. Ниже каждая из трёх коротко и со ссылкой на главу, где она разобрана подробно.</p>
 <p><strong><code>ProblemDetail</code> для ошибок.</strong> Framework 6.0 добавил поддержку формата problem details, который тогда был описан в RFC 7807, а в июле 2023 года заменён RFC 9457 с сохранением медиа-типа <code>application/problem+json</code>. Класс <code>ProblemDetail</code> (с 6.0) и базовый <code>ResponseEntityExceptionHandler</code> отдают ошибки в стандартном формате, а в Boot 3 автоматическая обработка включается свойством <code>spring.mvc.problemdetails.enabled</code>, которое по умолчанию <code>false</code> (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Configuration-Changelog" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Configuration-Change…">Spring Boot 3.0 Configuration Changelog</a>). Для банковского API это возможность наконец привести к одному виду ошибки лимитов, отказов антифрода и валидации:</p>
-<pre><code class="language-java">@RestControllerAdvice
-class PaymentErrorsAdvice {
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@RestControllerAdvice</span>
+<span class="kd">class</span> <span class="nc">PaymentErrorsAdvice</span> <span class="p">{</span>
 
-    @ExceptionHandler(LimitExceededException.class)
-    ProblemDetail limitExceeded(LimitExceededException e) {
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY,
-                &quot;Превышен дневной лимит по карте&quot;);
-        pd.setType(URI.create(&quot;https://api.bank.example/problems/limit-exceeded&quot;));
-        pd.setProperty(&quot;limit&quot;, e.limit());
-        pd.setProperty(&quot;remaining&quot;, e.remaining());
-        return pd;
-    }
-}
-</code></pre>
+    <span class="nd">@ExceptionHandler</span><span class="p">(</span><span class="n">LimitExceededException</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+    <span class="n">ProblemDetail</span> <span class="nf">limitExceeded</span><span class="p">(</span><span class="n">LimitExceededException</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">ProblemDetail</span> <span class="n">pd</span> <span class="o">=</span> <span class="n">ProblemDetail</span><span class="p">.</span><span class="na">forStatusAndDetail</span><span class="p">(</span><span class="n">HttpStatus</span><span class="p">.</span><span class="na">UNPROCESSABLE_ENTITY</span><span class="p">,</span>
+                <span class="s">"Превышен дневной лимит по карте"</span><span class="p">);</span>
+        <span class="n">pd</span><span class="p">.</span><span class="na">setType</span><span class="p">(</span><span class="n">URI</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="s">"https://api.bank.example/problems/limit-exceeded"</span><span class="p">));</span>
+        <span class="n">pd</span><span class="p">.</span><span class="na">setProperty</span><span class="p">(</span><span class="s">"limit"</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="na">limit</span><span class="p">());</span>
+        <span class="n">pd</span><span class="p">.</span><span class="na">setProperty</span><span class="p">(</span><span class="s">"remaining"</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="na">remaining</span><span class="p">());</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Как <code>ProblemDetail</code> взаимодействует с <code>BasicErrorController</code> и почему свой <code>ResponseEntityExceptionHandler</code> тихо отключает свойство Boot, разобрано в разделе 4 главы 14.</p>
 <p><strong>HTTP interface clients (<code>@HttpExchange</code>).</strong> Framework 6.0 ввёл декларативные клиенты: интерфейс с аннотациями <code>@GetExchange</code>, <code>@PostExchange</code> и прокси, который строится поверх <code>WebClient</code>, а с 6.1 и поверх <code>RestClient</code>. В Boot 3.x прокси собирается руками через <code>HttpServiceProxyFactory</code>, а в Boot 4 для этого появилась автоконфигурация и <code>@ImportHttpServices</code> (подраздел 6.5). Для тех, кто на Boot 2 держал ради этого OpenFeign, это повод посмотреть на встроенную альтернативу, хотя переписывать работающие Feign-клиенты только ради этого не обязательно.</p>
 <p><strong>AOT и GraalVM native image.</strong> Boot 3.0 умеет обрабатывать контекст заранее, на этапе сборки, и собирать приложение в native image, что даёт старт за доли секунды и меньший расход памяти ценой долгой сборки и ограничений на рефлексию и динамические прокси. Для банковских сервисов, которые живут неделями и прогреваются JIT, это редко оправдано, и честный разбор того, когда native окупается, — в разделе 6 главы 46 (<code>46-docker-jvm.md</code>).</p>
@@ -836,35 +854,37 @@ class PaymentErrorsAdvice {
 <p>Boot 3.1 решил старую проблему интеграционных тестов и локальной разработки: как подключить приложение к PostgreSQL, Kafka или Redis в контейнере, не выписывая руками URL, логины и порты через <code>@DynamicPropertySource</code>. Механизм называется <code>ConnectionDetails</code>: это абстракция параметров подключения, которую автоконфигурация берёт вместо свойств, а <code>@ServiceConnection</code> на поле контейнера Testcontainers создаёт такой бин автоматически (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.1-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.1-Release-Notes">Spring Boot 3.1 Release Notes</a>). Ниже тест сервиса лимитов на Boot 2 и тот же тест на 3.1, а потом использование тех же контейнеров для локального запуска.</p>
 <p>На Boot 2 тест с контейнером требовал руками передать параметры подключения, и каждый новый контейнер добавлял ещё один блок таких строк:</p>
-<pre><code class="language-java">// Boot 2.x
-@SpringBootTest
-@Testcontainers
-class LimitServiceIT {
-    @Container
-    static PostgreSQLContainer&lt;?&gt; postgres = new PostgreSQLContainer&lt;&gt;(&quot;postgres:17&quot;);
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// Boot 2.x</span>
+<span class="nd">@SpringBootTest</span>
+<span class="nd">@Testcontainers</span>
+<span class="kd">class</span> <span class="nc">LimitServiceIT</span> <span class="p">{</span>
+    <span class="nd">@Container</span>
+    <span class="kd">static</span> <span class="n">PostgreSQLContainer</span><span class="o">&lt;?&gt;</span> <span class="n">postgres</span> <span class="o">=</span> <span class="k">new</span> <span class="n">PostgreSQLContainer</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="s">"postgres:17"</span><span class="p">);</span>
 
-    @DynamicPropertySource
-    static void props(DynamicPropertyRegistry r) {
-        r.add(&quot;spring.datasource.url&quot;, postgres::getJdbcUrl);
-        r.add(&quot;spring.datasource.username&quot;, postgres::getUsername);
-        r.add(&quot;spring.datasource.password&quot;, postgres::getPassword);
-    }
-}
-</code></pre>
+    <span class="nd">@DynamicPropertySource</span>
+    <span class="kd">static</span> <span class="kt">void</span> <span class="nf">props</span><span class="p">(</span><span class="n">DynamicPropertyRegistry</span> <span class="n">r</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">r</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="s">"spring.datasource.url"</span><span class="p">,</span> <span class="n">postgres</span><span class="p">::</span><span class="n">getJdbcUrl</span><span class="p">);</span>
+        <span class="n">r</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="s">"spring.datasource.username"</span><span class="p">,</span> <span class="n">postgres</span><span class="p">::</span><span class="n">getUsername</span><span class="p">);</span>
+        <span class="n">r</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="s">"spring.datasource.password"</span><span class="p">,</span> <span class="n">postgres</span><span class="p">::</span><span class="n">getPassword</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>На 3.1 и дальше то же самое делает одна аннотация, и для Kafka и Redis работает так же:</p>
-<pre><code class="language-java">// Boot 3.1+
-@SpringBootTest
-@Testcontainers
-class LimitServiceIT {
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer&lt;?&gt; postgres = new PostgreSQLContainer&lt;&gt;(&quot;postgres:17&quot;);
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// Boot 3.1+</span>
+<span class="nd">@SpringBootTest</span>
+<span class="nd">@Testcontainers</span>
+<span class="kd">class</span> <span class="nc">LimitServiceIT</span> <span class="p">{</span>
+    <span class="nd">@Container</span>
+    <span class="nd">@ServiceConnection</span>
+    <span class="kd">static</span> <span class="n">PostgreSQLContainer</span><span class="o">&lt;?&gt;</span> <span class="n">postgres</span> <span class="o">=</span> <span class="k">new</span> <span class="n">PostgreSQLContainer</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="s">"postgres:17"</span><span class="p">);</span>
 
-    @Container
-    @ServiceConnection
-    static KafkaContainer kafka = new KafkaContainer(&quot;apache/kafka-native:4.1.0&quot;);
-}
-</code></pre>
+    <span class="nd">@Container</span>
+    <span class="nd">@ServiceConnection</span>
+    <span class="kd">static</span> <span class="n">KafkaContainer</span> <span class="n">kafka</span> <span class="o">=</span> <span class="k">new</span> <span class="n">KafkaContainer</span><span class="p">(</span><span class="s">"apache/kafka-native:4.1.0"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Вторая половина той же возможности — контейнеры на этапе разработки. В <code>src/test/java</code> объявляется тестовый <code>main</code>, который запускает основное приложение с конфигурацией контейнеров, и Maven-цель <code>spring-boot:test-run</code> или Gradle-задача <code>bootTestRun</code> поднимают сервис локально вместе с базой и брокером, без Docker Compose и без общего стенда. Для команды, у которой локальная разработка годами означала «подключиться к dev-стенду и не мешать соседям», это заметное улучшение. Альтернатива для тех, у кого уже есть <code>compose.yaml</code>, — модуль <code>spring-boot-docker-compose</code>: при старте приложения он находит файл в рабочем каталоге, выполняет <code>docker compose up</code>, создаёт <code>ConnectionDetails</code> для известных сервисов и при остановке выполняет <code>docker compose down</code>.</p>
 <p>Третья возможность 3.1, SSL bundles, для банка, пожалуй, важнее первых двух: хранилища ключей и PEM-сертификаты описываются один раз в <code>spring.ssl.bundle.*</code> и затем применяются к встроенному веб-серверу, к клиентам баз данных, к <code>RestTemplate</code> и <code>WebClient</code> единообразно. Сервис, который ходит в процессинг по mTLS и сам принимает mTLS от шлюза, раньше настраивал это в трёх местах тремя способами, а теперь ссылается на один бандл по имени; в Boot 3.2 добавилась перезагрузка бандла при смене файла сертификата, что снимает необходимость перезапускать под при ротации.</p>
 <p>При обновлении на 3.1 внимания требуют Hibernate 6.2, Mockito 5 и удаление управления версией Apache HttpClient 4 (подраздел 4.6). Подробно <code>@ServiceConnection</code>, жизненный цикл контейнеров и их кэширование вместе с контекстом разобраны в подразделе 6.5 главы 43 (<code>43-testing.md</code>).</p>
@@ -873,37 +893,39 @@ class LimitServiceIT {
 <p><strong>Виртуальные потоки.</strong> На Java 21 свойство <code>spring.threads.virtual.enabled=true</code> переключает Tomcat и Jetty на обработку запросов в виртуальных потоках, а <code>applicationTaskExecutor</code> и планировщик — на реализации поверх виртуальных потоков (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.2-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.2-Release-Notes">Spring Boot 3.2 Release Notes</a>). Для сервиса, который большую часть времени ждёт ответа процессинга или базы, это означает, что пул из 200 потоков Tomcat больше не ограничивает число одновременных запросов, и ограничителем становится то, что им и должно быть: пул соединений к базе и лимиты зависимостей. Какие компоненты переключаются и какие нет, разобрано в подразделе 8.5 главы 14, механика и пиннинг — в разделе 5 главы 02, а то, почему включать это свойство без ограничения fan-out опасно, — в инциденте 10.5 той же главы.</p>
 <p><strong><code>RestClient</code>.</strong> Framework 6.1 добавил синхронный HTTP-клиент с текучим API по образцу <code>WebClient</code>, но без реактивного стека, а Boot 3.2 автоконфигурирует для него <code>RestClient.Builder</code>. Это прямая замена <code>RestTemplate</code> для нового кода, и на ней стоит остановиться, потому что в Framework 7.1 <code>RestTemplate</code> будет официально помечен устаревшим (подраздел 6.5). Вызов процессинга на <code>RestClient</code> выглядит так:</p>
-<pre><code class="language-java">@Component
-class CardProcessingClient {
-    private final RestClient restClient;
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Component</span>
+<span class="kd">class</span> <span class="nc">CardProcessingClient</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">RestClient</span> <span class="n">restClient</span><span class="p">;</span>
 
-    CardProcessingClient(RestClient.Builder builder, ProcessingProperties props) {
-        this.restClient = builder.baseUrl(props.baseUrl()).build();
-    }
+    <span class="n">CardProcessingClient</span><span class="p">(</span><span class="n">RestClient</span><span class="p">.</span><span class="na">Builder</span> <span class="n">builder</span><span class="p">,</span> <span class="n">ProcessingProperties</span> <span class="n">props</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="na">restClient</span> <span class="o">=</span> <span class="n">builder</span><span class="p">.</span><span class="na">baseUrl</span><span class="p">(</span><span class="n">props</span><span class="p">.</span><span class="na">baseUrl</span><span class="p">()).</span><span class="na">build</span><span class="p">();</span>
+    <span class="p">}</span>
 
-    AuthorizationResult authorize(AuthorizationRequest request) {
-        return restClient.post()
-                .uri(&quot;/v2/authorizations&quot;)
-                .body(request)
-                .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError, (req, resp) -&gt; {
-                    throw new ProcessingRejectedException(resp.getStatusCode());
-                })
-                .body(AuthorizationResult.class);
-    }
-}
-</code></pre>
+    <span class="n">AuthorizationResult</span> <span class="nf">authorize</span><span class="p">(</span><span class="n">AuthorizationRequest</span> <span class="n">request</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">restClient</span><span class="p">.</span><span class="na">post</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">uri</span><span class="p">(</span><span class="s">"/v2/authorizations"</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">body</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">retrieve</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">onStatus</span><span class="p">(</span><span class="n">HttpStatusCode</span><span class="p">::</span><span class="n">is4xxClientError</span><span class="p">,</span> <span class="p">(</span><span class="n">req</span><span class="p">,</span> <span class="n">resp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">{</span>
+                    <span class="k">throw</span> <span class="k">new</span> <span class="n">ProcessingRejectedException</span><span class="p">(</span><span class="n">resp</span><span class="p">.</span><span class="na">getStatusCode</span><span class="p">());</span>
+                <span class="p">})</span>
+                <span class="p">.</span><span class="na">body</span><span class="p">(</span><span class="n">AuthorizationResult</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p><strong><code>JdbcClient</code>.</strong> Тот же подход Framework 6.1 применил к JDBC: <code>JdbcClient</code> поверх <code>NamedParameterJdbcTemplate</code> с цепочкой вызовов вместо перегрузок, и Boot 3.2 автоконфигурирует его, когда есть <code>NamedParameterJdbcTemplate</code>. Для отчётных выборок и сверок, где JPA только мешает, код становится короче:</p>
-<pre><code class="language-java">List&lt;SettlementRow&gt; rows = jdbcClient.sql(&quot;&quot;&quot;
-        select merchant_id, sum(amount) as total, count(*) as cnt
-        from acquiring_operation
-        where settlement_date = :date and status = 'CONFIRMED'
-        group by merchant_id
-        &quot;&quot;&quot;)
-        .param(&quot;date&quot;, date)
-        .query(SettlementRow.class)
-        .list();
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">List</span><span class="o">&lt;</span><span class="n">SettlementRow</span><span class="o">&gt;</span> <span class="n">rows</span> <span class="o">=</span> <span class="n">jdbcClient</span><span class="p">.</span><span class="na">sql</span><span class="p">(</span><span class="s">"""</span>
+<span class="s">        select merchant_id, sum(amount) as total, count(*) as cnt</span>
+<span class="s">        from acquiring_operation</span>
+<span class="s">        where settlement_date = :date and status = 'CONFIRMED'</span>
+<span class="s">        group by merchant_id</span>
+<span class="s">        """</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">param</span><span class="p">(</span><span class="s">"date"</span><span class="p">,</span> <span class="n">date</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">query</span><span class="p">(</span><span class="n">SettlementRow</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">list</span><span class="p">();</span>
+</code></pre></div>
+
 <p><strong>CRaC.</strong> Boot 3.2 получил первую поддержку JVM Checkpoint Restore: приложение запускается, прогревается, снимается снимок процесса, и последующие старты восстанавливают его из снимка за десятки миллисекунд. Требуется JDK со сборкой CRaC, и для банковских сервисов это пока экзотика; подробный разбор с ограничениями — в подразделе 5.5 главы 46.</p>
 <p>При обновлении на 3.2 ломаются две вещи. Первая — имена параметров: Framework 6.1 перестал разбирать байткод ради имён параметров, и проекты, собранные без <code>-parameters</code>, теряют связывание <code>@PathVariable</code> и <code>@RequestParam</code> без явного имени (подраздел 4.1). Вторая — переписанный загрузчик вложенных jar'ов: классы запуска получили новые имена <code>org.springframework.boot.loader.launch.JarLauncher</code> и <code>org.springframework.boot.loader.launch.PropertiesLauncher</code>, и Dockerfile, в котором <code>ENTRYPOINT</code> ссылается на старый <code>org.springframework.boot.loader.JarLauncher</code> из распакованного jar'а, перестаёт запускаться. Кроме того, в логе по умолчанию появилось имя приложения из <code>spring.application.name</code>, что снова задевает парсеры логов.</p>
 <h3 id="53-boot-33-cds-sbom-flyway-10">5.3 Boot 3.3: CDS, SBOM, Flyway 10</h3>
@@ -917,14 +939,15 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.1-Release-Note
 <p>Boot 3.4 вышел поверх Framework 6.2 и оказался самой насыщенной минорной версией ветки: в нём появились структурные логи из коробки, новые тестовые аннотации в самом Framework, новая модель доступа к эндпоинтам и несколько изменений по умолчанию, которые при обновлении заметны. Ниже сначала возможности, затем то, что изменилось по умолчанию.</p>
 <p><strong>Структурное логирование.</strong> Свойства <code>logging.structured.format.console</code> и <code>logging.structured.format.file</code> включают вывод логов в JSON в одном из трёх форматов: Elastic Common Schema (<code>ecs</code>), Graylog Extended Log Format (<code>gelf</code>) или Logstash (<code>logstash</code>) (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.4-Release-Notes" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.4-Release-Notes">Spring Boot 3.4 Release Notes</a>). Для сервиса, который до этого тащил <code>logstash-logback-encoder</code> и собственный <code>logback-spring.xml</code>, это позволяет удалить и то и другое:</p>
-<pre><code class="language-yaml">spring:
-  application:
-    name: card-limits
-logging:
-  structured:
-    format:
-      console: ecs
-</code></pre>
+<div class="hl" data-lang="YAML"><div class="hl-bar"><span>YAML</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">spring</span><span class="p">:</span>
+  <span class="nt">application</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">card-limits</span>
+<span class="nt">logging</span><span class="p">:</span>
+  <span class="nt">structured</span><span class="p">:</span>
+    <span class="nt">format</span><span class="p">:</span>
+      <span class="nt">console</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ecs</span>
+</code></pre></div>
+
 <p>MDC, включая <code>traceId</code> и <code>spanId</code>, попадает в JSON автоматически, а настройка полей и трассировок стека описана в разделе 2 главы 51. Структурные логи заодно снимают проблему парсеров, которые ломались на смене формата даты в 3.0 и на имени приложения в 3.2.</p>
 <p><strong><code>@MockitoBean</code> и <code>@MockitoSpyBean</code>.</strong> Framework 6.2 ввёл собственные аннотации для подмены бинов заглушками в тестах, и Boot 3.4 объявил свои <code>@MockBean</code> и <code>@SpyBean</code> устаревшими, а Boot 4.0 их удалил. Замена механическая для полей тестового класса, но <code>@MockitoBean</code> не работает в классах <code>@Configuration</code>, и общий набор заглушек, собранный в <code>@TestConfiguration</code>, придётся переносить на сам тестовый класс или в собственную мета-аннотацию; Migration Guide 4.0 показывает оба варианта (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide">Spring Boot 4.0 Migration Guide</a>). Как эти аннотации устроены внутри и почему они влияют на кэш тестовых контекстов, разобрано в разделе 13 главы 43.</p>
@@ -993,43 +1016,45 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Gu
 <p>Boot 4 использует Jackson 3 как основную JSON-библиотеку, и для прикладного кода это самое трудоёмкое изменение 4.0, потому что Jackson есть в каждом сервисе, а в сервисах с интеграциями — в десятках мест. Jackson 3 сменил группу артефактов и корневой пакет с <code>com.fasterxml.jackson</code> на <code>tools.jackson</code>, переименовал ключевые сущности, сделал исключения непроверяемыми и поменял значения по умолчанию у нескольких настроек (<a href="https://github.com/FasterXML/jackson/wiki/Jackson-Release-3.0" data-tip="Внешний сайт · github.com
 https://github.com/FasterXML/jackson/wiki/Jackson-Release-3.0">Jackson Release 3.0</a>). Исключение из переезда одно, и о нём стоит помнить: модуль <code>jackson-annotations</code> остался в группе <code>com.fasterxml.jackson.core</code> и пакете <code>com.fasterxml.jackson.annotation</code>, поэтому <code>@JsonProperty</code> и <code>@JsonIgnore</code> на DTO менять не нужно. Ниже изменения в коде, в конфигурации Boot, в поведении по умолчанию и путь отступления, если перейти сразу не получается; подробный разбор Jackson в Spring — в разделе 6 главы 14.</p>
 <p>В коде ломается прежде всего обработка исключений. В Jackson 2 корневое исключение <code>JsonProcessingException</code> было проверяемым, и код разбора сообщений из Kafka или ответов партнёров обязательно его ловил; в Jackson 3 корневым стало <code>tools.jackson.core.JacksonException</code>, которое наследует <code>RuntimeException</code>, а <code>JsonProcessingException</code> больше нет, и такой код после миграции не компилируется.</p>
-<pre><code class="language-java">// Jackson 2 (Boot 3.x)
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// Jackson 2 (Boot 3.x)</span>
+<span class="kn">import</span> <span class="nn">com.fasterxml.jackson.core.JsonProcessingException</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">com.fasterxml.jackson.databind.ObjectMapper</span><span class="p">;</span>
 
-PaymentEvent parse(String payload) {
-    try {
-        return objectMapper.readValue(payload, PaymentEvent.class);
-    } catch (JsonProcessingException e) {
-        throw new MalformedEventException(payload, e);
-    }
-}
+<span class="n">PaymentEvent</span> <span class="nf">parse</span><span class="p">(</span><span class="n">String</span> <span class="n">payload</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">objectMapper</span><span class="p">.</span><span class="na">readValue</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">PaymentEvent</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">JsonProcessingException</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="n">MalformedEventException</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">e</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
 
-// Jackson 3 (Boot 4.x)
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.json.JsonMapper;
+<span class="c1">// Jackson 3 (Boot 4.x)</span>
+<span class="kn">import</span> <span class="nn">tools.jackson.core.JacksonException</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">tools.jackson.databind.json.JsonMapper</span><span class="p">;</span>
 
-PaymentEvent parse(String payload) {
-    try {
-        return jsonMapper.readValue(payload, PaymentEvent.class);
-    } catch (JacksonException e) { // непроверяемое: компилятор больше не напомнит
-        throw new MalformedEventException(payload, e);
-    }
-}
-</code></pre>
+<span class="n">PaymentEvent</span> <span class="nf">parse</span><span class="p">(</span><span class="n">String</span> <span class="n">payload</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">jsonMapper</span><span class="p">.</span><span class="na">readValue</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">PaymentEvent</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">JacksonException</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// непроверяемое: компилятор больше не напомнит</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="n">MalformedEventException</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">e</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Комментарий в последнем блоке указывает на обратную сторону: раз исключение непроверяемое, компилятор больше не заставляет его обрабатывать, и в новом коде легко забыть <code>catch</code>, после чего битое сообщение из очереди роняет обработчик вместо того, чтобы уйти в DLQ. Поэтому при миграции полезно найти все вызовы <code>readValue</code> и <code>writeValueAsString</code> и убедиться, что у каждого есть осознанная обработка ошибки.</p>
 <p>В конфигурации Boot переименовано несколько типов и свойств (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide">Spring Boot 4.0 Migration Guide</a>). <code>Jackson2ObjectMapperBuilderCustomizer</code> стал <code>JsonMapperBuilderCustomizer</code>, <code>@JsonComponent</code> — <code>@JacksonComponent</code>, <code>@JsonMixin</code> — <code>@JacksonMixin</code>, а свойства <code>spring.jackson.read.*</code> и <code>spring.jackson.write.*</code> переехали под <code>spring.jackson.json.read</code> и <code>spring.jackson.json.write</code>. Эквивалента <code>Jackson2ObjectMapperBuilder</code> в Jackson 3 нет, и Framework 7 рекомендует вместо него <code>JsonMapper.builder()</code>. Кроме того, Boot 4 автоконфигурирует не <code>ObjectMapper</code>, а форматно-специфичные <code>JsonMapper</code> и <code>XmlMapper</code>, и чтобы заменить автоконфигурированный преобразователь своим, объявить бин <code>ObjectMapper</code> уже недостаточно, нужен бин <code>JsonMapper</code>. Это правило стоит запомнить, потому что именно на нём построен инцидент 8.4. Кастомизация преобразователя в Boot 4 выглядит так:</p>
-<pre><code class="language-java">@Configuration(proxyBeanMethods = false)
-class JsonConfig {
-    @Bean
-    JsonMapperBuilderCustomizer bankingJson() {
-        return builder -&gt; builder
-                .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) // прежний порядок полей
-                .changeDefaultPropertyInclusion(incl -&gt; incl.withValueInclusion(JsonInclude.Include.NON_NULL));
-    }
-}
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Configuration</span><span class="p">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="p">)</span>
+<span class="kd">class</span> <span class="nc">JsonConfig</span> <span class="p">{</span>
+    <span class="nd">@Bean</span>
+    <span class="n">JsonMapperBuilderCustomizer</span> <span class="nf">bankingJson</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">builder</span> <span class="o">-&gt;</span> <span class="n">builder</span>
+                <span class="p">.</span><span class="na">disable</span><span class="p">(</span><span class="n">MapperFeature</span><span class="p">.</span><span class="na">SORT_PROPERTIES_ALPHABETICALLY</span><span class="p">)</span> <span class="c1">// прежний порядок полей</span>
+                <span class="p">.</span><span class="na">changeDefaultPropertyInclusion</span><span class="p">(</span><span class="n">incl</span> <span class="o">-&gt;</span> <span class="n">incl</span><span class="p">.</span><span class="na">withValueInclusion</span><span class="p">(</span><span class="n">JsonInclude</span><span class="p">.</span><span class="na">Include</span><span class="p">.</span><span class="na">NON_NULL</span><span class="p">));</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Значения по умолчанию у Jackson 3 изменились в нескольких местах, и часть этих изменений видна клиентам API. Руководство по миграции на Jackson 3 перечисляет среди прочего такие (<a href="https://github.com/FasterXML/jackson/blob/main/jackson3/MIGRATING_TO_JACKSON_3.md" data-tip="Внешний сайт · github.com
 https://github.com/FasterXML/jackson/blob/main/jackson3/MIGRATING_TO_JACKSON_3.md">Migrating to Jackson 3</a>): <code>MapperFeature.SORT_PROPERTIES_ALPHABETICALLY</code> включён, и порядок полей в JSON у классов без <code>@JsonPropertyOrder</code> меняется на алфавитный; <code>DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES</code> включён, и <code>null</code> в поле типа <code>int</code> или <code>long</code> теперь даёт ошибку, а не ноль; <code>DeserializationFeature.FAIL_ON_TRAILING_TOKENS</code> включён, и лишнее содержимое после JSON-значения тоже даёт ошибку; <code>DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES</code>, наоборот, выключен (в 2.x был включён), и неизвестное поле во входном JSON больше не даёт ошибку даже у <code>ObjectMapper</code>, созданного через <code>new</code> мимо Boot, а сервису на Boot это ничего не меняет, потому что Boot и раньше его выключал; <code>SerializationFeature.WRITE_DATES_AS_TIMESTAMPS</code> выключен и переехал в новое перечисление <code>DateTimeFeature</code>. Последнее изменение для сервиса на Boot почти незаметно, потому что Boot 3 и так выключал запись дат числами, но для кода, который создавал <code>ObjectMapper</code> через <code>new</code> мимо Boot, это смена формата дат с эпохи в миллисекундах на ISO-8601. Модули <code>jackson-datatype-jsr310</code>, <code>jackson-datatype-jdk8</code> и <code>jackson-module-parameter-names</code> встроены в <code>jackson-databind</code>, так что регистрировать <code>JavaTimeModule</code> больше не нужно, а Boot 4 к тому же регистрирует все модули, найденные в classpath, а не только известные (отключается свойством <code>spring.jackson.find-and-add-modules=false</code>).</p>
 <p>Если перейти на Jackson 3 целиком в одном релизе не получается, у Boot 4 есть два пути отступления разной глубины. Мягкий — свойство <code>spring.jackson.use-jackson2-defaults=true</code>: по исходнику <code>JacksonAutoConfiguration</code> на теге v4.0.0 оно вызывает у строителя <code>configureForJackson2()</code> и выключает <code>DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS</code> и <code>WRITE_DURATIONS_AS_TIMESTAMPS</code>, то есть приближает поведение Jackson 3 к тому, что было в Boot 3.x, оставляя сам Jackson 3. Жёсткий — модуль <code>spring-boot-jackson2</code>, который поставляется в устаревшем виде, настраивается свойствами <code>spring.jackson2.*</code> и нужен для библиотек, которые ещё не умеют Jackson 3, например Jersey 4.0 в составе Boot 4. Framework 7 планирует отключить автоопределение Jackson 2 в 7.1 и удалить его поддержку в 7.2 (<a href="https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-7.0-Release-Notes" data-tip="Внешний сайт · github.com
@@ -1049,38 +1074,40 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Gu
 https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-7.0-Release-No…">Spring Framework 7.0 Release Notes</a>). Поскольку Boot 4.0 и 4.1 стоят на Framework 7.0, на них <code>RestTemplate</code> компилируется без предупреждений, но новый код стоит писать на <code>RestClient</code>, а существующие клиенты переводить постепенно, начиная с тех, где нужна новая функциональность.</p>
 <p>Декларативные клиенты получили в Framework 7 аннотацию <code>@ImportHttpServices</code>, которая регистрирует группы HTTP-интерфейсов и создаёт для них прокси, а Boot 4 добавил к этому автоконфигурацию и свойства <code>spring.http.serviceclient.&lt;группа&gt;.*</code> с базовым адресом, таймаутами, SSL-бандлом и настройками версии API (<a href="https://docs.spring.io/spring-boot/reference/io/rest-client.html" data-tip="Внешний сайт · docs.spring.io
 https://docs.spring.io/spring-boot/reference/io/rest-client.html">документация Boot 4.0, HTTP Service Clients</a>). Для сервиса, который ходит в процессинг и в антифрод, это выглядит так:</p>
-<pre><code class="language-java">@HttpExchange(&quot;/v2&quot;)
-public interface ProcessingClient {
-    @PostExchange(&quot;/authorizations&quot;)
-    AuthorizationResult authorize(@RequestBody AuthorizationRequest request);
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@HttpExchange</span><span class="p">(</span><span class="s">"/v2"</span><span class="p">)</span>
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">ProcessingClient</span> <span class="p">{</span>
+    <span class="nd">@PostExchange</span><span class="p">(</span><span class="s">"/authorizations"</span><span class="p">)</span>
+    <span class="n">AuthorizationResult</span> <span class="nf">authorize</span><span class="p">(</span><span class="nd">@RequestBody</span> <span class="n">AuthorizationRequest</span> <span class="n">request</span><span class="p">);</span>
 
-    @GetExchange(&quot;/authorizations/{id}&quot;)
-    AuthorizationResult status(@PathVariable String id);
-}
+    <span class="nd">@GetExchange</span><span class="p">(</span><span class="s">"/authorizations/{id}"</span><span class="p">)</span>
+    <span class="n">AuthorizationResult</span> <span class="nf">status</span><span class="p">(</span><span class="nd">@PathVariable</span> <span class="n">String</span> <span class="n">id</span><span class="p">);</span>
+<span class="p">}</span>
 
-@SpringBootApplication
-@ImportHttpServices(group = &quot;processing&quot;, types = ProcessingClient.class)
-@ImportHttpServices(group = &quot;antifraud&quot;, types = AntifraudClient.class)
-public class PaymentsApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(PaymentsApplication.class, args);
-    }
-}
-</code></pre>
-<pre><code class="language-yaml">spring:
-  http:
-    clients:
-      connect-timeout: 1s
-    serviceclient:
-      processing:
-        base-url: &quot;https://processing.internal.bank&quot;
-        read-timeout: 3s
-        ssl:
-          bundle: processing-mtls
-      antifraud:
-        base-url: &quot;https://antifraud.internal.bank&quot;
-        read-timeout: 800ms
-</code></pre>
+<span class="nd">@SpringBootApplication</span>
+<span class="nd">@ImportHttpServices</span><span class="p">(</span><span class="n">group</span> <span class="o">=</span> <span class="s">"processing"</span><span class="p">,</span> <span class="n">types</span> <span class="o">=</span> <span class="n">ProcessingClient</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<span class="nd">@ImportHttpServices</span><span class="p">(</span><span class="n">group</span> <span class="o">=</span> <span class="s">"antifraud"</span><span class="p">,</span> <span class="n">types</span> <span class="o">=</span> <span class="n">AntifraudClient</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">PaymentsApplication</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">SpringApplication</span><span class="p">.</span><span class="na">run</span><span class="p">(</span><span class="n">PaymentsApplication</span><span class="p">.</span><span class="na">class</span><span class="p">,</span> <span class="n">args</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="hl" data-lang="YAML"><div class="hl-bar"><span>YAML</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">spring</span><span class="p">:</span>
+  <span class="nt">http</span><span class="p">:</span>
+    <span class="nt">clients</span><span class="p">:</span>
+      <span class="nt">connect-timeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1s</span>
+    <span class="nt">serviceclient</span><span class="p">:</span>
+      <span class="nt">processing</span><span class="p">:</span>
+        <span class="nt">base-url</span><span class="p">:</span> <span class="s">"https://processing.internal.bank"</span>
+        <span class="nt">read-timeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3s</span>
+        <span class="nt">ssl</span><span class="p">:</span>
+          <span class="nt">bundle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">processing-mtls</span>
+      <span class="nt">antifraud</span><span class="p">:</span>
+        <span class="nt">base-url</span><span class="p">:</span> <span class="s">"https://antifraud.internal.bank"</span>
+        <span class="nt">read-timeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">800ms</span>
+</code></pre></div>
+
 <p>Ключ <code>ssl.bundle</code> внутри группы приведён по списку возможностей из документации (базовый адрес, заголовки, версия API, перенаправления, таймауты, SSL-бандлы), но точное имя вложенного свойства в документации примером не показано ⚠️ не проверено. Заодно обратите внимание на префикс <code>spring.http.clients</code>: глобальные настройки HTTP-клиентов в Boot 4 переехали из <code>spring.http.client.*</code> в <code>spring.http.clients.*</code>, и <code>spring.http.client.factory</code> стал <code>spring.http.clients.imperative.factory</code> (<a href="https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Configuration-Changelog" data-tip="Внешний сайт · github.com
 https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Configuration-Change…">Spring Boot 4.0 Configuration Changelog</a>), так что настройки из подраздела 5.4 после перехода нужно переименовать.</p>
 <p>API versioning — встроенная поддержка версий API в MVC и WebFlux: версия берётся из заголовка, параметра запроса, сегмента пути или параметра медиа-типа, а контроллеры сопоставляются по атрибуту <code>version</code>. Boot 4 настраивает её свойствами <code>spring.mvc.apiversion.*</code> (<code>default</code>, <code>supported</code>, <code>required</code>, <code>use.header</code>, <code>use.path-segment</code> и другие), а для устаревших версий можно подключить <code>ApiVersionDeprecationHandler</code>, который отдаёт клиентам заголовки <code>Deprecation</code> и <code>Sunset</code>. Для банка, у которого мобильные клиенты живут на старых версиях годами, это возможность убрать самописные фильтры версий; как устроено версионирование HTTP API вообще, разобрано в главе 27 (<code>27-http-and-rest.md</code>).</p>
@@ -1089,20 +1116,21 @@ https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Gu
 <h3 id="66-отказоустойчивость-в-ядре-framework-retryable-и-concurrencylimit">6.6 Отказоустойчивость в ядре Framework: <code>@Retryable</code> и <code>@ConcurrencyLimit</code></h3>
 <p>Framework 7 перенёс в ядро упрощённую поддержку повторов и ограничения параллелизма, и вместе с этим проект Spring Retry архивирован с формулировкой «superseded by Spring Framework 7». Для сервисов, которые использовали <code>spring-retry</code> ради <code>@Retryable</code> на вызовах процессинга, это означает смену пакета и атрибутов, а для Boot 4 — ещё и то, что управление версией Spring Retry из BOM удалено, и продолжать им пользоваться можно только с явной версией. Ниже код и то, чего в ядре нет. Подробный разбор повторов, бюджетов и circuit breaker — в главе 35 (<code>35-resilience.md</code>).</p>
 <p>Аннотации живут в пакете <code>org.springframework.resilience.annotation</code> и включаются <code>@EnableResilientMethods</code>. Главное отличие от Spring Retry, на котором легко ошибиться, — семантика счётчика: <code>maxRetries</code> в Framework 7 считает повторы <strong>сверх</strong> первого вызова, тогда как <code>maxAttempts</code> в Spring Retry и Resilience4j считает все попытки.</p>
-<pre><code class="language-java">@Configuration
-@EnableResilientMethods
-class ResilienceConfig { }
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Configuration</span>
+<span class="nd">@EnableResilientMethods</span>
+<span class="kd">class</span> <span class="nc">ResilienceConfig</span> <span class="p">{</span> <span class="p">}</span>
 
-@Service
-class StatementExportService {
-    @Retryable(includes = TransientDataAccessException.class,
-               maxRetries = 2, delay = 200, multiplier = 2, jitter = 50)
-    @ConcurrencyLimit(4)
-    byte[] exportStatement(String accountId, YearMonth month) {
-        return statementRepository.render(accountId, month);
-    }
-}
-</code></pre>
+<span class="nd">@Service</span>
+<span class="kd">class</span> <span class="nc">StatementExportService</span> <span class="p">{</span>
+    <span class="nd">@Retryable</span><span class="p">(</span><span class="n">includes</span> <span class="o">=</span> <span class="n">TransientDataAccessException</span><span class="p">.</span><span class="na">class</span><span class="p">,</span>
+               <span class="n">maxRetries</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">delay</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">multiplier</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">jitter</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span>
+    <span class="nd">@ConcurrencyLimit</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+    <span class="kt">byte</span><span class="o">[]</span> <span class="nf">exportStatement</span><span class="p">(</span><span class="n">String</span> <span class="n">accountId</span><span class="p">,</span> <span class="n">YearMonth</span> <span class="n">month</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">statementRepository</span><span class="p">.</span><span class="na">render</span><span class="p">(</span><span class="n">accountId</span><span class="p">,</span> <span class="n">month</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>В ядре нет circuit breaker, поэтому сервисы, которым он нужен, остаются на Resilience4j, и для Boot 4 у него есть отдельный артефакт <code>resilience4j-spring-boot4</code> начиная с версии 2.4.0. И ещё одно следствие для Boot 4: Spring Kafka и Spring AMQP тоже перевели свои повторы с Spring Retry на Framework, поэтому свойство <code>spring.kafka.retry.topic.backoff.random</code> удалено в пользу <code>spring.kafka.retry.topic.backoff.jitter</code>, а <code>RabbitRetryTemplateCustomizer</code> заменён двумя отдельными кастомайзерами.</p>
 <h3 id="67-jspecify-и-null-safety">6.7 JSpecify и null-safety</h3>
 <p>Framework 7 и Boot 4 перешли с аннотаций null-safety на основе JSR 305 из пакета <code>org.springframework.lang</code> на аннотации JSpecify (<code>org.jspecify.annotations.Nullable</code>, <code>@NullMarked</code>), и теперь nullness объявлена для всего API, включая элементы массивов и параметры обобщённых типов (<a href="https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-7.0-Release-Notes" data-tip="Внешний сайт · github.com

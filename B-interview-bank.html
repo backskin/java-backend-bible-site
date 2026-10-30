@@ -334,50 +334,53 @@
 <h2 id="задачи-что-выведет-этот-код">Задачи «что выведет этот код»</h2>
 <p>Классический жанр первых двадцати минут интервью. Сорок семь задач: тридцать одна — блок из главы 01, остальные собраны из глав 4 и 43. Ответ в каждой — тот, который даёт реальная JVM (Java 21, 64 бита, compressed oops), а не тот, который кажется очевидным. Правило работы то же: сначала ответьте вслух, потом смотрите разбор. Если ошиблись — не запоминайте ответ, найдите механизм: почти каждая задача здесь про один конкретный пункт JLS, и, зная пункт, вы решите и все соседние вариации.</p>
 <p><strong>1. Кэш <code>Integer</code></strong> (гл. 01)</p>
-<pre><code class="language-java">Integer a = 127, b = 127;
-Integer c = 128, d = 128;
-Integer e = Integer.valueOf(127);
-Integer f = new Integer(127);           // deprecated, но компилируется
-int g = 128;
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">Integer</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">127</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">127</span><span class="p">;</span>
+<span class="n">Integer</span> <span class="n">c</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="mi">128</span><span class="p">;</span>
+<span class="n">Integer</span> <span class="n">e</span> <span class="o">=</span> <span class="n">Integer</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="mi">127</span><span class="p">);</span>
+<span class="n">Integer</span> <span class="n">f</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Integer</span><span class="p">(</span><span class="mi">127</span><span class="p">);</span>           <span class="c1">// deprecated, но компилируется</span>
+<span class="kt">int</span> <span class="n">g</span> <span class="o">=</span> <span class="mi">128</span><span class="p">;</span>
 
-System.out.println(a == b);
-System.out.println(c == d);
-System.out.println(a == e);
-System.out.println(a == f);
-System.out.println(c == g);
-System.out.println(c.equals(d));
-</code></pre>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span> <span class="o">==</span> <span class="n">b</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">c</span> <span class="o">==</span> <span class="n">d</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span> <span class="o">==</span> <span class="n">e</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span> <span class="o">==</span> <span class="n">f</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">c</span> <span class="o">==</span> <span class="n">g</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">d</span><span class="p">));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>true false true false true true</code></p>
 <p><strong>Разбор.</strong> Первые четыре — сравнение ссылок. JLS §5.1.7 требует, чтобы упаковка константного выражения в диапазоне −128…127 всегда давала одну ссылку → <code>a == b</code> истина, <code>c == d</code> ложь (128 вне кэша, два разных объекта). <code>Integer.valueOf(127)</code> возвращает тот же кэшированный объект → <code>a == e</code> истина. <code>new Integer(127)</code> обязан создать новый → ложь. Пятая строка — <strong>сравнение обёртки с примитивом</strong>: <code>c</code> распаковывается, сравниваются значения <code>int</code> → истина. Шестая — <code>equals</code>, сравнение значений.</p>
 <p>Мораль: единственная строка здесь, которая делает то, что от неё ожидает читатель, — последняя.</p>
 <p><strong>2. Распаковка <code>null</code></strong> (гл. 01)</p>
-<pre><code class="language-java">Map&lt;String, Integer&gt; counters = new HashMap&lt;&gt;();
-counters.put(&quot;a&quot;, 1);
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="n">counters</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">counters</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
 
-int x = counters.get(&quot;a&quot;);
-int y = counters.get(&quot;b&quot;);
-System.out.println(x + &quot; &quot; + y);
-</code></pre>
+<span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">counters</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">"a"</span><span class="p">);</span>
+<span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="n">counters</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">"b"</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="s">" "</span> <span class="o">+</span> <span class="n">y</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>NullPointerException</code> на строке с <code>y</code>.</p>
 <p><strong>Разбор.</strong> <code>counters.get("b")</code> возвращает <code>null</code>, компилятор вставил <code>.intValue()</code> для приведения к <code>int</code>, JLS §5.1.8: распаковка <code>null</code> бросает NPE. В исходнике нет ни одного явного вызова метода — отсюда «NPE из ниоткуда».</p>
 <p>Helpful NPE (JDK 15+) даст внятное сообщение: <code>Cannot invoke "java.lang.Integer.intValue()" because the return value of "java.util.Map.get(Object)" is null</code>.</p>
 <p>Лечение: <code>int y = counters.getOrDefault("b", 0);</code></p>
 <p><strong>3. Пул строк</strong> (гл. 01)</p>
-<pre><code class="language-java">String a = &quot;java&quot;;
-String b = &quot;ja&quot; + &quot;va&quot;;
-String part = &quot;ja&quot;;
-String c = part + &quot;va&quot;;
-final String fpart = &quot;ja&quot;;
-String d = fpart + &quot;va&quot;;
-String e = new String(&quot;java&quot;);
-String f = e.intern();
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">String</span> <span class="n">a</span> <span class="o">=</span> <span class="s">"java"</span><span class="p">;</span>
+<span class="n">String</span> <span class="n">b</span> <span class="o">=</span> <span class="s">"ja"</span> <span class="o">+</span> <span class="s">"va"</span><span class="p">;</span>
+<span class="n">String</span> <span class="n">part</span> <span class="o">=</span> <span class="s">"ja"</span><span class="p">;</span>
+<span class="n">String</span> <span class="n">c</span> <span class="o">=</span> <span class="n">part</span> <span class="o">+</span> <span class="s">"va"</span><span class="p">;</span>
+<span class="kd">final</span> <span class="n">String</span> <span class="n">fpart</span> <span class="o">=</span> <span class="s">"ja"</span><span class="p">;</span>
+<span class="n">String</span> <span class="n">d</span> <span class="o">=</span> <span class="n">fpart</span> <span class="o">+</span> <span class="s">"va"</span><span class="p">;</span>
+<span class="n">String</span> <span class="n">e</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="p">(</span><span class="s">"java"</span><span class="p">);</span>
+<span class="n">String</span> <span class="n">f</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="na">intern</span><span class="p">();</span>
 
-System.out.println(a == b);
-System.out.println(a == c);
-System.out.println(a == d);
-System.out.println(a == e);
-System.out.println(a == f);
-</code></pre>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span> <span class="o">==</span> <span class="n">b</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span> <span class="o">==</span> <span class="n">c</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span> <span class="o">==</span> <span class="n">d</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span> <span class="o">==</span> <span class="n">e</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span> <span class="o">==</span> <span class="n">f</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>true false true false true</code></p>
 <p><strong>Разбор.</strong></p>
 <ul>
@@ -388,67 +391,72 @@ System.out.println(a == f);
 <li><code>f</code> — <code>intern()</code> возвращает канонический экземпляр из пула, а там уже лежит <code>"java"</code> от литерала.</li>
 </ul>
 <p><strong>4. Порядок инициализации при наследовании</strong> (гл. 01)</p>
-<pre><code class="language-java">class A {
-    static { System.out.print(&quot;SA &quot;); }
-    { System.out.print(&quot;IA &quot;); }
-    A() { System.out.print(&quot;CA &quot;); }
-}
-class B extends A {
-    static { System.out.print(&quot;SB &quot;); }
-    { System.out.print(&quot;IB &quot;); }
-    B() { System.out.print(&quot;CB &quot;); }
-}
-public class Main {
-    public static void main(String[] args) {
-        new B();
-        System.out.print(&quot;| &quot;);
-        new B();
-    }
-}
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">class</span> <span class="nc">A</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"SA "</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"IA "</span><span class="p">);</span> <span class="p">}</span>
+    <span class="n">A</span><span class="p">()</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"CA "</span><span class="p">);</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">class</span> <span class="nc">B</span> <span class="kd">extends</span> <span class="n">A</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"SB "</span><span class="p">);</span> <span class="p">}</span>
+    <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"IB "</span><span class="p">);</span> <span class="p">}</span>
+    <span class="n">B</span><span class="p">()</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"CB "</span><span class="p">);</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Main</span> <span class="p">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">new</span> <span class="n">B</span><span class="p">();</span>
+        <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"| "</span><span class="p">);</span>
+        <span class="k">new</span> <span class="n">B</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>SA SB IA CA IB CB | IA CA IB CB</code></p>
 <p><strong>Разбор.</strong> Статические блоки выполняются <strong>один раз</strong> при инициализации класса, суперкласс — первым (JLS §12.4.2, шаг 7). Дальше для каждого <code>new</code>: конструктор <code>B</code> неявно зовёт <code>super()</code> → в <code>A</code> сначала инициализаторы экземпляра (<code>IA</code>), потом тело конструктора (<code>CA</code>), затем возврат в <code>B</code> → инициализаторы экземпляра <code>B</code> (<code>IB</code>), потом тело конструктора (<code>CB</code>) — это пять шагов JLS §12.5. Второй <code>new B()</code> статику не повторяет.</p>
 <p>Запоминаемая формула: <strong>статика сверху вниз один раз → для каждого объекта: поля+блоки родителя, конструктор родителя, поля+блоки потомка, конструктор потомка.</strong></p>
 <p><strong>5. Переопределяемый метод из конструктора</strong> (гл. 01)</p>
-<pre><code class="language-java">class Base {
-    Base() { print(); }
-    void print() { System.out.println(&quot;Base&quot;); }
-}
-class Derived extends Base {
-    private final int value = 42;
-    private String name = &quot;derived&quot;;
-    @Override void print() { System.out.println(&quot;Derived: &quot; + value + &quot; &quot; + name); }
-}
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">class</span> <span class="nc">Base</span> <span class="p">{</span>
+    <span class="n">Base</span><span class="p">()</span> <span class="p">{</span> <span class="n">print</span><span class="p">();</span> <span class="p">}</span>
+    <span class="kt">void</span> <span class="nf">print</span><span class="p">()</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Base"</span><span class="p">);</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">class</span> <span class="nc">Derived</span> <span class="kd">extends</span> <span class="n">Base</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">42</span><span class="p">;</span>
+    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span> <span class="o">=</span> <span class="s">"derived"</span><span class="p">;</span>
+    <span class="nd">@Override</span> <span class="kt">void</span> <span class="nf">print</span><span class="p">()</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Derived: "</span> <span class="o">+</span> <span class="n">value</span> <span class="o">+</span> <span class="s">" "</span> <span class="o">+</span> <span class="n">name</span><span class="p">);</span> <span class="p">}</span>
+<span class="p">}</span>
 
-new Derived().print();
-</code></pre>
+<span class="k">new</span> <span class="n">Derived</span><span class="p">().</span><span class="na">print</span><span class="p">();</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong></p>
-<pre><code>Derived: 0 null
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>Derived: 0 null
 Derived: 42 derived
-</code></pre>
+</code></pre></div>
+
 <p><strong>Разбор.</strong> Конструктор <code>Base</code> вызывает <code>print()</code>, динамическое связывание уводит вызов в <code>Derived.print()</code>. Но инициализаторы полей <code>Derived</code> выполняются <strong>после</strong> возврата из конструктора суперкласса (шаг 4 в §12.5) — поэтому <code>value</code> ещё 0, <code>name</code> ещё <code>null</code>. Да, <code>final int value = 42</code> тоже равно нулю: <code>final</code> не означает «инициализировано с самого начала».</p>
 <p>⚠️ Тонкость: если бы <code>value</code> было <code>static final int</code> или <code>final int</code> с <strong>константным инициализатором</strong>, компилятор мог бы заинлайнить константу прямо в <code>print()</code> — и тогда вывелось бы <code>42</code>. Для <code>private final int value = 42</code> в конкретной реализации javac этого не делает (константы встраиваются при чтении через простое имя только для <code>static final</code>; для полей экземпляра идёт <code>getfield</code>). Это ровно та деталь, из-за которой на такую задачу нельзя полагаться в продакшене — поведение неочевидно даже для эксперта.</p>
 <p>Правило: не вызывайте переопределяемые методы из конструктора.</p>
 <p><strong>6. Перегрузка и <code>null</code></strong> (гл. 01)</p>
-<pre><code class="language-java">static void f(Object o) { System.out.println(&quot;Object&quot;); }
-static void f(String s) { System.out.println(&quot;String&quot;); }
-static void f(Integer i) { System.out.println(&quot;Integer&quot;); }
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">static</span> <span class="kt">void</span> <span class="nf">f</span><span class="p">(</span><span class="n">Object</span> <span class="n">o</span><span class="p">)</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Object"</span><span class="p">);</span> <span class="p">}</span>
+<span class="kd">static</span> <span class="kt">void</span> <span class="nf">f</span><span class="p">(</span><span class="n">String</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"String"</span><span class="p">);</span> <span class="p">}</span>
+<span class="kd">static</span> <span class="kt">void</span> <span class="nf">f</span><span class="p">(</span><span class="n">Integer</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Integer"</span><span class="p">);</span> <span class="p">}</span>
 
-f(null);
-</code></pre>
+<span class="n">f</span><span class="p">(</span><span class="kc">null</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> не компилируется — «reference to f is ambiguous».</p>
 <p><strong>Разбор.</strong> <code>null</code> применим ко всем трём. Компилятор выбирает наиболее специфичный (§15.12.2.5): <code>String</code> и <code>Integer</code> оба специфичнее <code>Object</code>, но между собой <strong>не сравнимы</strong> — ни один не является подтипом другого. Однозначного выбора нет → ошибка.</p>
 <p>Если убрать <code>f(Integer)</code>, скомпилируется и выведет <code>String</code> (он специфичнее <code>Object</code>). Явный каст решает всегда: <code>f((Object) null)</code>.</p>
 <p><strong>7. Три фазы разрешения перегрузки</strong> (гл. 01)</p>
-<pre><code class="language-java">static void g(long x)      { System.out.println(&quot;long&quot;); }
-static void g(Integer x)   { System.out.println(&quot;Integer&quot;); }
-static void g(Object... x) { System.out.println(&quot;varargs&quot;); }
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">static</span> <span class="kt">void</span> <span class="nf">g</span><span class="p">(</span><span class="kt">long</span> <span class="n">x</span><span class="p">)</span>      <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"long"</span><span class="p">);</span> <span class="p">}</span>
+<span class="kd">static</span> <span class="kt">void</span> <span class="nf">g</span><span class="p">(</span><span class="n">Integer</span> <span class="n">x</span><span class="p">)</span>   <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Integer"</span><span class="p">);</span> <span class="p">}</span>
+<span class="kd">static</span> <span class="kt">void</span> <span class="nf">g</span><span class="p">(</span><span class="n">Object</span><span class="p">...</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"varargs"</span><span class="p">);</span> <span class="p">}</span>
 
-g(5);
-g(Integer.valueOf(5));
-g(5L);
-g(&quot;a&quot;, &quot;b&quot;);
-</code></pre>
+<span class="n">g</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+<span class="n">g</span><span class="p">(</span><span class="n">Integer</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="mi">5</span><span class="p">));</span>
+<span class="n">g</span><span class="p">(</span><span class="mi">5L</span><span class="p">);</span>
+<span class="n">g</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>long</code>, <code>Integer</code>, <code>long</code>, <code>varargs</code></p>
 <p><strong>Разбор.</strong> Фазы применимости (§15.12.2): (1) строгая — без упаковки и varargs; (2) свободная — с упаковкой; (3) с varargs.</p>
 <ul>
@@ -459,119 +467,125 @@ g(&quot;a&quot;, &quot;b&quot;);
 </ul>
 <p>Порядок «расширение → упаковка → varargs» гарантирует, что добавление упаковки в Java 5 не поменяло поведение существующего кода.</p>
 <p><strong>8. <code>return</code> в <code>finally</code></strong> (гл. 01)</p>
-<pre><code class="language-java">static int f() {
-    try {
-        throw new IllegalStateException(&quot;важная ошибка&quot;);
-    } finally {
-        return 42;
-    }
-}
-static int g() {
-    try {
-        return 1;
-    } finally {
-        return 2;
-    }
-}
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">static</span> <span class="kt">int</span> <span class="nf">f</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalStateException</span><span class="p">(</span><span class="s">"важная ошибка"</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">finally</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="mi">42</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">static</span> <span class="kt">int</span> <span class="nf">g</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">finally</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="mi">2</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
 
-System.out.println(f());
-System.out.println(g());
-</code></pre>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">f</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">g</span><span class="p">());</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>42</code> и <code>2</code>. Исключение исчезает.</p>
 <p><strong>Разбор.</strong> JLS §14.20.2: если <code>finally</code> завершается резко (abrupt), причина резкого завершения <code>try</code> <strong>отбрасывается</strong>. <code>return</code> — резкое завершение. Поэтому исключение из <code>f()</code> теряется бесследно, а <code>return 1</code> в <code>g()</code> перекрывается <code>return 2</code>.</p>
 <p>В проде это выглядит как «транзакция откатилась, а сервис вернул 200 OK». Error Prone (<code>Finally</code>) и SpotBugs (<code>FI_...</code>, <code>REC_...</code>) детектируют. Никогда не пишите <code>return</code>/<code>break</code>/<code>continue</code>/<code>throw</code> в <code>finally</code>.</p>
 <p><strong>9. Значение <code>return</code> фиксируется до <code>finally</code></strong> (гл. 01)</p>
-<pre><code class="language-java">static int f() {
-    int x = 1;
-    try { return x; } finally { x = 2; }
-}
-static StringBuilder g() {
-    StringBuilder sb = new StringBuilder(&quot;a&quot;);
-    try { return sb; } finally { sb.append(&quot;b&quot;); }
-}
-static List&lt;String&gt; h() {
-    List&lt;String&gt; list = new ArrayList&lt;&gt;();
-    try { return list; } finally { list.add(&quot;x&quot;); }
-}
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">static</span> <span class="kt">int</span> <span class="nf">f</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="k">try</span> <span class="p">{</span> <span class="k">return</span> <span class="n">x</span><span class="p">;</span> <span class="p">}</span> <span class="k">finally</span> <span class="p">{</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">static</span> <span class="n">StringBuilder</span> <span class="nf">g</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">StringBuilder</span> <span class="n">sb</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="p">(</span><span class="s">"a"</span><span class="p">);</span>
+    <span class="k">try</span> <span class="p">{</span> <span class="k">return</span> <span class="n">sb</span><span class="p">;</span> <span class="p">}</span> <span class="k">finally</span> <span class="p">{</span> <span class="n">sb</span><span class="p">.</span><span class="na">append</span><span class="p">(</span><span class="s">"b"</span><span class="p">);</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">static</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">h</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+    <span class="k">try</span> <span class="p">{</span> <span class="k">return</span> <span class="n">list</span><span class="p">;</span> <span class="p">}</span> <span class="k">finally</span> <span class="p">{</span> <span class="n">list</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="s">"x"</span><span class="p">);</span> <span class="p">}</span>
+<span class="p">}</span>
 
-System.out.println(f());
-System.out.println(g());
-System.out.println(h());
-</code></pre>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">f</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">g</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">h</span><span class="p">());</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>1</code>, <code>ab</code>, <code>[x]</code></p>
 <p><strong>Разбор.</strong> Выражение в <code>return</code> вычисляется <strong>до</strong> входа в <code>finally</code>, и его значение сохраняется во временной ячейке. Для примитива это значит, что последующее изменение переменной ни на что не влияет → <code>1</code>. Для ссылки фиксируется <strong>ссылка</strong>, а объект по ней изменить ещё можно → <code>ab</code> и <code>[x]</code>.</p>
 <p>Практический вывод: <code>finally</code>, мутирующий возвращаемый объект, работает, и это скрытый источник сюрпризов при рефакторинге <code>int</code> → <code>Integer</code> (и наоборот).</p>
 <p><strong>10. try-with-resources: порядок закрытия и suppressed</strong> (гл. 01)</p>
-<pre><code class="language-java">static class Res implements AutoCloseable {
-    private final String name;
-    Res(String name) { this.name = name; System.out.println(&quot;open &quot; + name); }
-    @Override public void close() {
-        System.out.println(&quot;close &quot; + name);
-        throw new IllegalStateException(&quot;close failed: &quot; + name);
-    }
-}
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">static</span> <span class="kd">class</span> <span class="nc">Res</span> <span class="kd">implements</span> <span class="n">AutoCloseable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">name</span><span class="p">;</span>
+    <span class="n">Res</span><span class="p">(</span><span class="n">String</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span> <span class="k">this</span><span class="p">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">;</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"open "</span> <span class="o">+</span> <span class="n">name</span><span class="p">);</span> <span class="p">}</span>
+    <span class="nd">@Override</span> <span class="kd">public</span> <span class="kt">void</span> <span class="nf">close</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"close "</span> <span class="o">+</span> <span class="n">name</span><span class="p">);</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalStateException</span><span class="p">(</span><span class="s">"close failed: "</span> <span class="o">+</span> <span class="n">name</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
 
-public static void main(String[] args) {
-    try (Res a = new Res(&quot;A&quot;); Res b = new Res(&quot;B&quot;)) {
-        throw new RuntimeException(&quot;body&quot;);
-    } catch (Exception e) {
-        System.out.println(&quot;caught: &quot; + e.getMessage());
-        for (Throwable s : e.getSuppressed()) System.out.println(&quot;suppressed: &quot; + s.getMessage());
-    }
-}
-</code></pre>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="p">(</span><span class="n">Res</span> <span class="n">a</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Res</span><span class="p">(</span><span class="s">"A"</span><span class="p">);</span> <span class="n">Res</span> <span class="n">b</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Res</span><span class="p">(</span><span class="s">"B"</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="n">RuntimeException</span><span class="p">(</span><span class="s">"body"</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">Exception</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"caught: "</span> <span class="o">+</span> <span class="n">e</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">Throwable</span> <span class="n">s</span> <span class="p">:</span> <span class="n">e</span><span class="p">.</span><span class="na">getSuppressed</span><span class="p">())</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"suppressed: "</span> <span class="o">+</span> <span class="n">s</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong></p>
-<pre><code>open A
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>open A
 open B
 close B
 close A
 caught: body
 suppressed: close failed: B
 suppressed: close failed: A
-</code></pre>
+</code></pre></div>
+
 <p><strong>Разбор.</strong> JLS §14.20.3: ресурсы закрываются в порядке, <strong>обратном объявлению</strong> — сначала <code>B</code>, потом <code>A</code>. Исключение из тела становится основным; исключения из <code>close()</code> прикрепляются к нему через <code>addSuppressed</code> в порядке закрытия. <code>catch</code> выполняется <strong>после</strong> закрытия всех ресурсов.</p>
 <p>Если бы тело не бросало, основным стало бы исключение от <code>close B</code>, а <code>close A</code> попало бы в его suppressed. Со старым <code>try/finally</code> вы бы потеряли <code>RuntimeException("body")</code> целиком.</p>
 <p><strong>11. <code>equals</code> без <code>hashCode</code></strong> (гл. 01)</p>
-<pre><code class="language-java">class Key {
-    final int id;
-    Key(int id) { this.id = id; }
-    @Override public boolean equals(Object o) { return o instanceof Key k &amp;&amp; k.id == id; }
-}
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">class</span> <span class="nc">Key</span> <span class="p">{</span>
+    <span class="kd">final</span> <span class="kt">int</span> <span class="n">id</span><span class="p">;</span>
+    <span class="n">Key</span><span class="p">(</span><span class="kt">int</span> <span class="n">id</span><span class="p">)</span> <span class="p">{</span> <span class="k">this</span><span class="p">.</span><span class="na">id</span> <span class="o">=</span> <span class="n">id</span><span class="p">;</span> <span class="p">}</span>
+    <span class="nd">@Override</span> <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">equals</span><span class="p">(</span><span class="n">Object</span> <span class="n">o</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">o</span> <span class="k">instanceof</span> <span class="n">Key</span> <span class="n">k</span> <span class="o">&amp;&amp;</span> <span class="n">k</span><span class="p">.</span><span class="na">id</span> <span class="o">==</span> <span class="n">id</span><span class="p">;</span> <span class="p">}</span>
+<span class="p">}</span>
 
-Set&lt;Key&gt; set = new HashSet&lt;&gt;();
-set.add(new Key(1));
-set.add(new Key(1));
-System.out.println(set.size());
-System.out.println(set.contains(new Key(1)));
+<span class="n">Set</span><span class="o">&lt;</span><span class="n">Key</span><span class="o">&gt;</span> <span class="n">set</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">set</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span> <span class="n">Key</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+<span class="n">set</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span> <span class="n">Key</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">set</span><span class="p">.</span><span class="na">size</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">set</span><span class="p">.</span><span class="na">contains</span><span class="p">(</span><span class="k">new</span> <span class="n">Key</span><span class="p">(</span><span class="mi">1</span><span class="p">)));</span>
 
-List&lt;Key&gt; list = new ArrayList&lt;&gt;();
-list.add(new Key(1));
-System.out.println(list.contains(new Key(1)));
-</code></pre>
+<span class="n">List</span><span class="o">&lt;</span><span class="n">Key</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">list</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span> <span class="n">Key</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">list</span><span class="p">.</span><span class="na">contains</span><span class="p">(</span><span class="k">new</span> <span class="n">Key</span><span class="p">(</span><span class="mi">1</span><span class="p">)));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>2</code>, <code>false</code>, <code>true</code></p>
 <p><strong>Разбор.</strong> <code>HashSet</code> сначала находит бакет по <code>hashCode()</code>. Он не переопределён → identity hash, у трёх разных объектов он разный → элементы попадают в разные бакеты, <code>equals</code> не вызывается, дубликат не обнаруживается. <code>contains</code> ищет в бакете, которого нет.</p>
 <p><code>ArrayList.contains</code> — линейный перебор с <code>equals</code>, хеш не используется → <code>true</code>. Эта разница и делает баг коварным: в списке всё «работает», в множестве/мапе — нет.</p>
 <p>Правило: <code>equals</code> и <code>hashCode</code> переопределяются только парой. <code>@Override</code> + EqualsVerifier в тестах ловят это автоматически (раздел 11).</p>
 <p><strong>12. Изменяемый ключ</strong> (гл. 01)</p>
-<pre><code class="language-java">class Key {
-    int id;
-    Key(int id) { this.id = id; }
-    @Override public boolean equals(Object o) { return o instanceof Key k &amp;&amp; k.id == id; }
-    @Override public int hashCode() { return Integer.hashCode(id); }
-}
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">class</span> <span class="nc">Key</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">id</span><span class="p">;</span>
+    <span class="n">Key</span><span class="p">(</span><span class="kt">int</span> <span class="n">id</span><span class="p">)</span> <span class="p">{</span> <span class="k">this</span><span class="p">.</span><span class="na">id</span> <span class="o">=</span> <span class="n">id</span><span class="p">;</span> <span class="p">}</span>
+    <span class="nd">@Override</span> <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">equals</span><span class="p">(</span><span class="n">Object</span> <span class="n">o</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">o</span> <span class="k">instanceof</span> <span class="n">Key</span> <span class="n">k</span> <span class="o">&amp;&amp;</span> <span class="n">k</span><span class="p">.</span><span class="na">id</span> <span class="o">==</span> <span class="n">id</span><span class="p">;</span> <span class="p">}</span>
+    <span class="nd">@Override</span> <span class="kd">public</span> <span class="kt">int</span> <span class="nf">hashCode</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Integer</span><span class="p">.</span><span class="na">hashCode</span><span class="p">(</span><span class="n">id</span><span class="p">);</span> <span class="p">}</span>
+<span class="p">}</span>
 
-Key k = new Key(1);
-Map&lt;Key, String&gt; map = new HashMap&lt;&gt;();
-map.put(k, &quot;v&quot;);
-k.id = 2;
+<span class="n">Key</span> <span class="n">k</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Key</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">Map</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">map</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s">"v"</span><span class="p">);</span>
+<span class="n">k</span><span class="p">.</span><span class="na">id</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
 
-System.out.println(map.get(k));
-System.out.println(map.get(new Key(1)));
-System.out.println(map.get(new Key(2)));
-System.out.println(map.size());
-map.remove(k);
-System.out.println(map.size());
-</code></pre>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">map</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">k</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">map</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="k">new</span> <span class="n">Key</span><span class="p">(</span><span class="mi">1</span><span class="p">)));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">map</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="k">new</span> <span class="n">Key</span><span class="p">(</span><span class="mi">2</span><span class="p">)));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">map</span><span class="p">.</span><span class="na">size</span><span class="p">());</span>
+<span class="n">map</span><span class="p">.</span><span class="na">remove</span><span class="p">(</span><span class="n">k</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">map</span><span class="p">.</span><span class="na">size</span><span class="p">());</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>null null null 1 1</code></p>
 <p><strong>Разбор.</strong> Запись положена в бакет, вычисленный по <code>hash(1)</code>. После мутации:</p>
 <ul>
@@ -582,68 +596,73 @@ System.out.println(map.size());
 </ul>
 <p>Запись существует (<code>size() == 1</code>), но <strong>недостижима и неудаляема</strong> — настоящая утечка памяти, видимая только в heap-дампе. Ключи <code>HashMap</code> обязаны быть неизменяемы по полям, участвующим в <code>equals</code>/<code>hashCode</code>.</p>
 <p><strong>13. <code>TreeSet</code> и рассогласованный <code>compareTo</code></strong> (гл. 01)</p>
-<pre><code class="language-java">var a = new BigDecimal(&quot;1.0&quot;);
-var b = new BigDecimal(&quot;1.00&quot;);
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">var</span> <span class="n">a</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="p">(</span><span class="s">"1.0"</span><span class="p">);</span>
+<span class="kd">var</span> <span class="n">b</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="p">(</span><span class="s">"1.00"</span><span class="p">);</span>
 
-System.out.println(a.equals(b));
-System.out.println(a.compareTo(b));
-System.out.println(new HashSet&lt;&gt;(List.of(a, b)).size());
-System.out.println(new TreeSet&lt;&gt;(List.of(a, b)).size());
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">b</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="na">compareTo</span><span class="p">(</span><span class="n">b</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)).</span><span class="na">size</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="k">new</span> <span class="n">TreeSet</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)).</span><span class="na">size</span><span class="p">());</span>
 
-Map&lt;BigDecimal, String&gt; hm = new HashMap&lt;&gt;();
-hm.put(a, &quot;first&quot;); hm.put(b, &quot;second&quot;);
-Map&lt;BigDecimal, String&gt; tm = new TreeMap&lt;&gt;();
-tm.put(a, &quot;first&quot;); tm.put(b, &quot;second&quot;);
-System.out.println(hm.size() + &quot; &quot; + tm.size() + &quot; &quot; + tm.get(a));
-</code></pre>
+<span class="n">Map</span><span class="o">&lt;</span><span class="n">BigDecimal</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">hm</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">hm</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s">"first"</span><span class="p">);</span> <span class="n">hm</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="s">"second"</span><span class="p">);</span>
+<span class="n">Map</span><span class="o">&lt;</span><span class="n">BigDecimal</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">tm</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TreeMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">tm</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s">"first"</span><span class="p">);</span> <span class="n">tm</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="s">"second"</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">hm</span><span class="p">.</span><span class="na">size</span><span class="p">()</span> <span class="o">+</span> <span class="s">" "</span> <span class="o">+</span> <span class="n">tm</span><span class="p">.</span><span class="na">size</span><span class="p">()</span> <span class="o">+</span> <span class="s">" "</span> <span class="o">+</span> <span class="n">tm</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">a</span><span class="p">));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>false</code>, <code>0</code>, <code>2</code>, <code>1</code>, <code>1 1 second</code></p>
 <p><strong>Разбор.</strong> <code>BigDecimal.equals</code> учитывает <code>scale</code> (<code>1.0</code> и <code>1.00</code> разные), <code>compareTo</code> сравнивает только численно (равны). <code>HashSet</code>/<code>HashMap</code> работают через <code>equals</code>/<code>hashCode</code> → два элемента. <code>TreeSet</code>/<code>TreeMap</code> работают <strong>только</strong> через <code>compareTo</code> → один; второй <code>put</code> перезаписал значение, и ключ остался первым (<code>a</code>), а значение — вторым.</p>
 <p>Javadoc <code>Comparable</code> называет это «strongly recommended, but not strictly required» и приводит <code>BigDecimal</code> как канонический пример нарушения. В финтех-коде лечится нормализацией scale на границе системы.</p>
 <p><strong>14. <code>Comparator</code> через вычитание</strong> (гл. 01)</p>
-<pre><code class="language-java">List&lt;Integer&gt; list = new ArrayList&lt;&gt;(List.of(Integer.MAX_VALUE, -1, 0));
-list.sort((x, y) -&gt; x - y);
-System.out.println(list);
-list.sort(Integer::compare);
-System.out.println(list);
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">Integer</span><span class="p">.</span><span class="na">MAX_VALUE</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">));</span>
+<span class="n">list</span><span class="p">.</span><span class="na">sort</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">-</span> <span class="n">y</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">list</span><span class="p">);</span>
+<span class="n">list</span><span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">Integer</span><span class="p">::</span><span class="n">compare</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">list</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>[2147483647, -1, 0]</code> (или другой неверный порядок), затем <code>[-1, 0, 2147483647]</code></p>
 <p><strong>Разбор.</strong> <code>Integer.MAX_VALUE - (-1)</code> переполняется и даёт <code>Integer.MIN_VALUE</code>, то есть «меньше» — компаратор утверждает, что <code>MAX_VALUE &lt; -1</code>. Отношение порядка нарушено, сортировка даёт мусор.</p>
 <p>⚠️ Конкретный вывод первой строки зависит от реализации сортировки и размера массива: на маленьких массивах TimSort использует binary insertion sort и обычно молча выдаёт неверный порядок; на больших может бросить <code>IllegalArgumentException: Comparison method violates its general contract!</code>. Сам факт, что «у нас не падает», ничего не гарантирует.</p>
 <p>Правильно всегда: <code>Comparator.comparingInt</code>, <code>Integer.compare</code>, <code>Long.compare</code>.</p>
 <p><strong>15. Ковариантность массивов</strong> (гл. 01)</p>
-<pre><code class="language-java">Object[] objects = new String[2];
-System.out.println(objects.getClass().getSimpleName());
-objects[0] = &quot;ok&quot;;
-objects[1] = 42;
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">Object</span><span class="o">[]</span> <span class="n">objects</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="o">[</span><span class="mi">2</span><span class="o">]</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">objects</span><span class="p">.</span><span class="na">getClass</span><span class="p">().</span><span class="na">getSimpleName</span><span class="p">());</span>
+<span class="n">objects</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">=</span> <span class="s">"ok"</span><span class="p">;</span>
+<span class="n">objects</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span> <span class="o">=</span> <span class="mi">42</span><span class="p">;</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> печатает <code>String[]</code>, затем <code>ArrayStoreException: java.lang.Integer</code></p>
 <p><strong>Разбор.</strong> Массивы <strong>ковариантны</strong>: <code>String[]</code> является подтипом <code>Object[]</code>, поэтому присваивание компилируется. Но массив <strong>реифицирован</strong> — он знает свой компонентный тип во время выполнения, и инструкция <code>aastore</code> проверяет совместимость при каждой записи. Запись <code>Integer</code> в массив строк → <code>ArrayStoreException</code>.</p>
 <p>Обобщения инвариантны именно чтобы такой ошибки не было: <code>List&lt;Object&gt; l = new ArrayList&lt;String&gt;()</code> не компилируется. Цена ковариантности массивов — проверка на каждой записи во время выполнения и обнаружение ошибки поздно.</p>
 <p><strong>16. Стирание типов</strong> (гл. 01)</p>
-<pre><code class="language-java">List&lt;String&gt; a = new ArrayList&lt;&gt;();
-List&lt;Integer&gt; b = new ArrayList&lt;&gt;();
-System.out.println(a.getClass() == b.getClass());
-System.out.println(a.getClass().getName());
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">a</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="n">b</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="na">getClass</span><span class="p">()</span> <span class="o">==</span> <span class="n">b</span><span class="p">.</span><span class="na">getClass</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="na">getClass</span><span class="p">().</span><span class="na">getName</span><span class="p">());</span>
 
-List&lt;Integer&gt; nums = new ArrayList&lt;&gt;();
-nums.add(1);
-List raw = nums;
-raw.add(&quot;не число&quot;);
-System.out.println(nums.size());
-int x = nums.get(1);
-</code></pre>
+<span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="n">nums</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">nums</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">List</span> <span class="n">raw</span> <span class="o">=</span> <span class="n">nums</span><span class="p">;</span>
+<span class="n">raw</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="s">"не число"</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">nums</span><span class="p">.</span><span class="na">size</span><span class="p">());</span>
+<span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">nums</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>true</code>, <code>java.util.ArrayList</code>, <code>2</code>, затем <code>ClassCastException: class java.lang.String cannot be cast to class java.lang.Integer</code></p>
 <p><strong>Разбор.</strong> Во время выполнения <code>List&lt;String&gt;</code> и <code>List&lt;Integer&gt;</code> — один и тот же класс: параметры типа стёрты (JLS §4.6). Сырой тип <code>List</code> отключает проверку, и в список <code>Integer</code>-ов попадает строка — это <strong>heap pollution</strong>. Размер честно 2. Исключение возникает только на <code>nums.get(1)</code>, где компилятор вставил <code>checkcast Integer</code> — то есть <strong>далеко от места, где данные испортили</strong>.</p>
 <p>Именно поэтому сырые типы недопустимы, а <code>-Xlint:unchecked</code> должен быть включён вместе с <code>-Werror</code>.</p>
 <p><strong>17. <code>ConcurrentModificationException</code> — и когда его нет</strong> (гл. 01)</p>
-<pre><code class="language-java">List&lt;String&gt; first = new ArrayList&lt;&gt;(List.of(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;));
-for (String s : first) { if (s.equals(&quot;a&quot;)) first.remove(s); }
-System.out.println(first);
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">first</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">,</span> <span class="s">"c"</span><span class="p">));</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">String</span> <span class="n">s</span> <span class="p">:</span> <span class="n">first</span><span class="p">)</span> <span class="p">{</span> <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="s">"a"</span><span class="p">))</span> <span class="n">first</span><span class="p">.</span><span class="na">remove</span><span class="p">(</span><span class="n">s</span><span class="p">);</span> <span class="p">}</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">first</span><span class="p">);</span>
 
-List&lt;String&gt; second = new ArrayList&lt;&gt;(List.of(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;));
-for (String s : second) { if (s.equals(&quot;b&quot;)) second.remove(s); }
-System.out.println(second);
-</code></pre>
+<span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">second</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">,</span> <span class="s">"c"</span><span class="p">));</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">String</span> <span class="n">s</span> <span class="p">:</span> <span class="n">second</span><span class="p">)</span> <span class="p">{</span> <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="s">"b"</span><span class="p">))</span> <span class="n">second</span><span class="p">.</span><span class="na">remove</span><span class="p">(</span><span class="n">s</span><span class="p">);</span> <span class="p">}</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">second</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> первый цикл бросает <code>ConcurrentModificationException</code>; второй завершается нормально и печатает <code>[a, c]</code>.</p>
 <p><strong>Разбор.</strong> <code>ArrayList</code> использует fail-fast итератор: поле <code>modCount</code> увеличивается при структурном изменении, итератор сравнивает его с сохранённым <code>expectedModCount</code> в <code>next()</code> (но <strong>не</strong> в <code>hasNext()</code>).</p>
 <ul>
@@ -652,97 +671,105 @@ System.out.println(second);
 </ul>
 <p>То есть fail-fast <strong>не гарантирован</strong> — javadoc прямо говорит, что на него нельзя полагаться для корректности, только для отладки. Именно поэтому баг «удаление из списка в цикле» может годами не проявляться на трёхэлементных данных и рвануть на других.</p>
 <p>Правильные способы:</p>
-<pre><code class="language-java">list.removeIf(s -&gt; s.equals(&quot;a&quot;));                    // лучший
-Iterator&lt;String&gt; it = list.iterator();
-while (it.hasNext()) if (it.next().equals(&quot;a&quot;)) it.remove();   // явный итератор
-list = list.stream().filter(s -&gt; !s.equals(&quot;a&quot;)).collect(toCollection(ArrayList::new));
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">list</span><span class="p">.</span><span class="na">removeIf</span><span class="p">(</span><span class="n">s</span> <span class="o">-&gt;</span> <span class="n">s</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="s">"a"</span><span class="p">));</span>                    <span class="c1">// лучший</span>
+<span class="n">Iterator</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">it</span> <span class="o">=</span> <span class="n">list</span><span class="p">.</span><span class="na">iterator</span><span class="p">();</span>
+<span class="k">while</span> <span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="na">hasNext</span><span class="p">())</span> <span class="k">if</span> <span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="na">next</span><span class="p">().</span><span class="na">equals</span><span class="p">(</span><span class="s">"a"</span><span class="p">))</span> <span class="n">it</span><span class="p">.</span><span class="na">remove</span><span class="p">();</span>   <span class="c1">// явный итератор</span>
+<span class="n">list</span> <span class="o">=</span> <span class="n">list</span><span class="p">.</span><span class="na">stream</span><span class="p">().</span><span class="na">filter</span><span class="p">(</span><span class="n">s</span> <span class="o">-&gt;</span> <span class="o">!</span><span class="n">s</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="s">"a"</span><span class="p">)).</span><span class="na">collect</span><span class="p">(</span><span class="n">toCollection</span><span class="p">(</span><span class="n">ArrayList</span><span class="p">::</span><span class="k">new</span><span class="p">));</span>
+</code></pre></div>
+
 <p><code>ConcurrentHashMap</code> итератор weakly consistent и CME не бросает; <code>CopyOnWriteArrayList</code> итерирует по снимку.</p>
 <p><strong>18. <code>List.of</code> и <code>null</code></strong> (гл. 01)</p>
-<pre><code class="language-java">System.out.println(List.of(&quot;a&quot;, &quot;b&quot;).size());
-System.out.println(Arrays.asList(&quot;a&quot;, null).size());
-System.out.println(List.of(&quot;a&quot;, &quot;a&quot;).size());
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">).</span><span class="na">size</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="kc">null</span><span class="p">).</span><span class="na">size</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"a"</span><span class="p">).</span><span class="na">size</span><span class="p">());</span>
 
-System.out.println(List.of(&quot;a&quot;).contains(null));
-System.out.println(Set.of(&quot;a&quot;, &quot;a&quot;).size());
-System.out.println(List.of(&quot;a&quot;, null).size());
-</code></pre>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"a"</span><span class="p">).</span><span class="na">contains</span><span class="p">(</span><span class="kc">null</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Set</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"a"</span><span class="p">).</span><span class="na">size</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="kc">null</span><span class="p">).</span><span class="na">size</span><span class="p">());</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>2</code>, <code>2</code>, <code>2</code>, затем <code>NullPointerException</code> на <code>contains(null)</code>; строки после неё не выполнятся. Если убрать проблемную строку: <code>Set.of("a","a")</code> бросит <code>IllegalArgumentException: duplicate element: a</code>, а <code>List.of("a", null)</code> — <code>NullPointerException</code>.</p>
 <p><strong>Разбор.</strong> Immutable-коллекции Java 9 (<code>List.of</code>, <code>Set.of</code>, <code>Map.of</code>) <strong>не допускают <code>null</code> вообще</strong>: ни как элемент, ни как аргумент <code>contains</code>/<code>indexOf</code>/<code>get</code>. Это сознательное решение — избавиться от «null-пропускающих» API. Дубликаты запрещены в <code>Set.of</code> и <code>Map.of</code> (бросается <code>IllegalArgumentException</code>), но разрешены в <code>List.of</code>.</p>
 <p><code>Arrays.asList</code> — старый API, <code>null</code> разрешает.</p>
 <p>Ещё одно отличие, о котором забывают: у <code>List.of</code> <strong>порядок итерации <code>Set.of</code>/<code>Map.of</code> намеренно рандомизирован</strong> между запусками JVM (подмешивается <code>SALT</code>), чтобы код не полагался на порядок. Если у вас тест «сравниваем строку, собранную из <code>Set.of</code>», он будет то проходить, то падать.</p>
 <p><strong>19. <code>Arrays.asList</code></strong> (гл. 01)</p>
-<pre><code class="language-java">List&lt;String&gt; list = Arrays.asList(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;);
-list.set(0, &quot;z&quot;);
-System.out.println(list);
-list.add(&quot;d&quot;);
-</code></pre>
-<pre><code class="language-java">int[] primitives = {1, 2, 3};
-Integer[] boxed = {1, 2, 3};
-System.out.println(Arrays.asList(primitives).size());
-System.out.println(Arrays.asList(boxed).size());
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">,</span> <span class="s">"c"</span><span class="p">);</span>
+<span class="n">list</span><span class="p">.</span><span class="na">set</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">"z"</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">list</span><span class="p">);</span>
+<span class="n">list</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="s">"d"</span><span class="p">);</span>
+</code></pre></div>
+
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kt">int</span><span class="o">[]</span> <span class="n">primitives</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">};</span>
+<span class="n">Integer</span><span class="o">[]</span> <span class="n">boxed</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">};</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="n">primitives</span><span class="p">).</span><span class="na">size</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="n">boxed</span><span class="p">).</span><span class="na">size</span><span class="p">());</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> первый блок печатает <code>[z, b, c]</code>, затем <code>UnsupportedOperationException</code>. Второй блок: <code>1</code> и <code>3</code>.</p>
 <p><strong>Разбор.</strong> <code>Arrays.asList</code> возвращает <code>java.util.Arrays$ArrayList</code> — <strong>представление (view) поверх массива</strong> фиксированного размера. <code>set</code> работает и пишет прямо в исходный массив; <code>add</code>/<code>remove</code> бросают <code>UnsupportedOperationException</code>, потому что размер массива изменить нельзя.</p>
 <p>Второй блок — про varargs и обобщения: <code>asList(T... a)</code> требует ссылочный тип. <code>int[]</code> не является <code>Integer[]</code>, зато сам по себе является объектом → <code>T</code> выводится как <code>int[]</code>, и получается <code>List&lt;int[]&gt;</code> из <strong>одного</strong> элемента. <code>Integer[]</code> разворачивается в varargs нормально → 3 элемента.</p>
 <p>Практика: для модифицируемого списка — <code>new ArrayList&lt;&gt;(Arrays.asList(...))</code>; для неизменяемого — <code>List.of(...)</code>; для примитивного массива в список — <code>Arrays.stream(primitives).boxed().toList()</code>.</p>
 <p><strong>20. <code>double</code></strong> (гл. 01)</p>
-<pre><code class="language-java">System.out.println(0.1 + 0.2);
-System.out.println(0.1 + 0.2 == 0.3);
-System.out.println(2.00 - 1.10);
-System.out.println(0.1f + 0.2f == 0.3f);
-System.out.println(new BigDecimal(0.1));
-System.out.println(new BigDecimal(&quot;0.1&quot;));
-System.out.println(0.1 + 0.2 - 0.3 &lt; 1e-15);
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mf">0.1</span> <span class="o">+</span> <span class="mf">0.2</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mf">0.1</span> <span class="o">+</span> <span class="mf">0.2</span> <span class="o">==</span> <span class="mf">0.3</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mf">2.00</span> <span class="o">-</span> <span class="mf">1.10</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mf">0.1f</span> <span class="o">+</span> <span class="mf">0.2f</span> <span class="o">==</span> <span class="mf">0.3f</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="k">new</span> <span class="n">BigDecimal</span><span class="p">(</span><span class="mf">0.1</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="k">new</span> <span class="n">BigDecimal</span><span class="p">(</span><span class="s">"0.1"</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mf">0.1</span> <span class="o">+</span> <span class="mf">0.2</span> <span class="o">-</span> <span class="mf">0.3</span> <span class="o">&lt;</span> <span class="mf">1e-15</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong></p>
-<pre><code>0.30000000000000004
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>0.30000000000000004
 false
 0.8999999999999999
 true
 0.1000000000000000055511151231257827021181583404541015625
 0.1
 true
-</code></pre>
+</code></pre></div>
+
 <p><strong>Разбор.</strong> Двоичная плавающая точка не представляет 0.1 и 0.2 точно; сумма ближайших representable значений даёт значение, ближайшее к которому при печати — <code>0.30000000000000004</code>.</p>
 <p>Четвёртая строка — ловушка внутри ловушки: у <code>float</code> меньше мантисса, ошибки округления «схлопываются» и сравнение <strong>случайно</strong> оказывается истинным. Это не значит, что <code>float</code> точнее — просто грубее.</p>
 <p><code>new BigDecimal(double)</code> берёт <strong>точное</strong> значение двоичного <code>double</code> со всеми его 55 знаками — это почти всегда не то, что вы хотели. Всегда <code>new BigDecimal(String)</code> или <code>BigDecimal.valueOf(double)</code> (последний идёт через <code>Double.toString</code> и даёт <code>0.1</code>).</p>
 <p><strong>21. <code>NaN</code></strong> (гл. 01)</p>
-<pre><code class="language-java">double nan = Double.NaN;
-System.out.println(nan == nan);
-System.out.println(nan != nan);
-System.out.println(Double.valueOf(nan).equals(Double.valueOf(nan)));
-System.out.println(Double.compare(nan, nan));
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kt">double</span> <span class="n">nan</span> <span class="o">=</span> <span class="n">Double</span><span class="p">.</span><span class="na">NaN</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">nan</span> <span class="o">==</span> <span class="n">nan</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">nan</span> <span class="o">!=</span> <span class="n">nan</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Double</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="n">nan</span><span class="p">).</span><span class="na">equals</span><span class="p">(</span><span class="n">Double</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="n">nan</span><span class="p">)));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Double</span><span class="p">.</span><span class="na">compare</span><span class="p">(</span><span class="n">nan</span><span class="p">,</span> <span class="n">nan</span><span class="p">));</span>
 
-Set&lt;Double&gt; set = new HashSet&lt;&gt;();
-set.add(Double.NaN);
-System.out.println(set.contains(Double.NaN));
+<span class="n">Set</span><span class="o">&lt;</span><span class="n">Double</span><span class="o">&gt;</span> <span class="n">set</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">set</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">Double</span><span class="p">.</span><span class="na">NaN</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">set</span><span class="p">.</span><span class="na">contains</span><span class="p">(</span><span class="n">Double</span><span class="p">.</span><span class="na">NaN</span><span class="p">));</span>
 
-double[] arr = {Double.NaN};
-System.out.println(Arrays.asList(1.0, Double.NaN).indexOf(Double.NaN));
+<span class="kt">double</span><span class="o">[]</span> <span class="n">arr</span> <span class="o">=</span> <span class="p">{</span><span class="n">Double</span><span class="p">.</span><span class="na">NaN</span><span class="p">};</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">Double</span><span class="p">.</span><span class="na">NaN</span><span class="p">).</span><span class="na">indexOf</span><span class="p">(</span><span class="n">Double</span><span class="p">.</span><span class="na">NaN</span><span class="p">));</span>
 
-System.out.println(0.0 == -0.0);
-System.out.println(Double.valueOf(0.0).equals(-0.0));
-System.out.println(Double.compare(0.0, -0.0));
-System.out.println(Math.min(0.0, -0.0));
-</code></pre>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mf">0.0</span> <span class="o">==</span> <span class="o">-</span><span class="mf">0.0</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Double</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="mf">0.0</span><span class="p">).</span><span class="na">equals</span><span class="p">(</span><span class="o">-</span><span class="mf">0.0</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Double</span><span class="p">.</span><span class="na">compare</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.0</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="na">min</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.0</span><span class="p">));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>false true true 0 true 1 true false 1 -0.0</code></p>
 <p><strong>Разбор.</strong> IEEE 754: <code>NaN</code> не равен ничему по <code>==</code>, включая себя. Но <code>Double.equals</code> сравнивает <strong>битовые представления</strong> через <code>doubleToLongBits</code>, который канонизирует все NaN в одно значение → <code>true</code>. <code>Double.compare</code> тоже трактует NaN как равный себе и больший любого числа. Поэтому в коллекциях <code>NaN</code> ведёт себя «нормально», а в арифметике — нет.</p>
 <p>Зеркальная история с нулями: <code>==</code> их приравнивает, <code>equals</code> и <code>compare</code> — нет (<code>-0.0</code> считается меньше <code>0.0</code>). <code>Math.min(0.0, -0.0)</code> возвращает <code>-0.0</code> именно по этой семантике.</p>
 <p>Практический вывод: <code>equals</code>/<code>compareTo</code> для полей типа <code>double</code> пишите через <code>Double.compare</code>, а не <code>==</code> — иначе <code>x.equals(x)</code> может вернуть <code>false</code> при <code>NaN</code> в поле.</p>
 <p><strong>22. Целочисленное переполнение</strong> (гл. 01)</p>
-<pre><code class="language-java">System.out.println(Integer.MAX_VALUE + 1);
-System.out.println(Math.abs(Integer.MIN_VALUE));
-System.out.println(Integer.MIN_VALUE / -1);
-System.out.println(-7 % 3);
-System.out.println(Math.floorMod(-7, 3));
-System.out.println((int) 3_000_000_000L);
-System.out.println(1 &lt;&lt; 32);
-System.out.println((byte) 130);
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Integer</span><span class="p">.</span><span class="na">MAX_VALUE</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="na">abs</span><span class="p">(</span><span class="n">Integer</span><span class="p">.</span><span class="na">MIN_VALUE</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Integer</span><span class="p">.</span><span class="na">MIN_VALUE</span> <span class="o">/</span> <span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="o">-</span><span class="mi">7</span> <span class="o">%</span> <span class="mi">3</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Math</span><span class="p">.</span><span class="na">floorMod</span><span class="p">(</span><span class="o">-</span><span class="mi">7</span><span class="p">,</span> <span class="mi">3</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">((</span><span class="kt">int</span><span class="p">)</span> <span class="mi">3_000_000_000L</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">32</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">((</span><span class="kt">byte</span><span class="p">)</span> <span class="mi">130</span><span class="p">);</span>
 
-long millis = 1000 * 60 * 60 * 24 * 30;      // «30 дней в миллисекундах»
-System.out.println(millis);
-</code></pre>
+<span class="kt">long</span> <span class="n">millis</span> <span class="o">=</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">30</span><span class="p">;</span>      <span class="c1">// «30 дней в миллисекундах»</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">millis</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>-2147483648</code>, <code>-2147483648</code>, <code>-2147483648</code>, <code>-1</code>, <code>2</code>, <code>-1294967296</code>, <code>1</code>, <code>-126</code>, <code>-1702967296</code></p>
 <p><strong>Разбор.</strong></p>
 <ul>
@@ -754,34 +781,38 @@ System.out.println(millis);
 <li>Последняя строка — самая реальная: вся арифметика справа выполняется в <code>int</code> (все литералы <code>int</code>), результат переполняется, и только потом расширяется до <code>long</code>. Нужно <code>1000L * 60 * 60 * 24 * 30</code> или <code>TimeUnit.DAYS.toMillis(30)</code> / <code>Duration.ofDays(30).toMillis()</code>.</li>
 </ul>
 <p><strong>23. Тернарный оператор и автораспаковка</strong> (гл. 01)</p>
-<pre><code class="language-java">Map&lt;String, Boolean&gt; flags = new HashMap&lt;&gt;();
-Boolean enabled = flags.containsKey(&quot;feature&quot;) ? flags.get(&quot;feature&quot;) : false;
-System.out.println(enabled);
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">Boolean</span><span class="o">&gt;</span> <span class="n">flags</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">Boolean</span> <span class="n">enabled</span> <span class="o">=</span> <span class="n">flags</span><span class="p">.</span><span class="na">containsKey</span><span class="p">(</span><span class="s">"feature"</span><span class="p">)</span> <span class="o">?</span> <span class="n">flags</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">"feature"</span><span class="p">)</span> <span class="p">:</span> <span class="kc">false</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">enabled</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>false</code>. Ключа нет, <code>containsKey</code> вернул <code>false</code>, взята третья ветка — всё в порядке. А теперь добавим одну строку:</p>
-<pre><code class="language-java">Map&lt;String, Boolean&gt; flags = new HashMap&lt;&gt;();
-flags.put(&quot;feature&quot;, null);
-Boolean enabled = flags.containsKey(&quot;feature&quot;) ? flags.get(&quot;feature&quot;) : false;
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">Boolean</span><span class="o">&gt;</span> <span class="n">flags</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">flags</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="s">"feature"</span><span class="p">,</span> <span class="kc">null</span><span class="p">);</span>
+<span class="n">Boolean</span> <span class="n">enabled</span> <span class="o">=</span> <span class="n">flags</span><span class="p">.</span><span class="na">containsKey</span><span class="p">(</span><span class="s">"feature"</span><span class="p">)</span> <span class="o">?</span> <span class="n">flags</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">"feature"</span><span class="p">)</span> <span class="p">:</span> <span class="kc">false</span><span class="p">;</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>NullPointerException</code>.</p>
 <p><strong>Разбор.</strong> Ключ есть, значение <code>null</code>. Второй операнд тернарника имеет тип <code>Boolean</code>, третий — <code>boolean</code>. По JLS §15.25 в таком случае результатом является <strong>примитивный</strong> тип: <code>Boolean</code> распаковывается. <code>null.booleanValue()</code> → NPE. Обратите внимание: NPE происходит <strong>при вычислении тернарника</strong>, до присваивания, и переменная слева объявлена как <code>Boolean</code> — то есть «места для NPE» в коде визуально нет.</p>
 <p>Тот же механизм для чисел:</p>
-<pre><code class="language-java">Integer i = null;
-int j = 5;
-System.out.println(true ? i : j);   // NPE: результат int, i распаковывается
-System.out.println(true ? i : (Integer) 5);   // печатает null — оба операнда Integer, распаковки нет
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">Integer</span> <span class="n">i</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="kc">true</span> <span class="o">?</span> <span class="n">i</span> <span class="p">:</span> <span class="n">j</span><span class="p">);</span>   <span class="c1">// NPE: результат int, i распаковывается</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="kc">true</span> <span class="o">?</span> <span class="n">i</span> <span class="p">:</span> <span class="p">(</span><span class="n">Integer</span><span class="p">)</span> <span class="mi">5</span><span class="p">);</span>   <span class="c1">// печатает null — оба операнда Integer, распаковки нет</span>
+</code></pre></div>
+
 <p>Это одна из самых коварных ловушек Java: достаточно, чтобы <strong>один</strong> из операндов был примитивом, и весь тернарник становится примитивным.</p>
 <p>Лечение: <code>flags.getOrDefault("feature", false)</code> (он тоже вернёт <code>null</code>, если значение <code>null</code>!) или явно <code>Boolean.TRUE.equals(flags.get("feature"))</code>.</p>
 <p><strong>24. Тернарный оператор и числовое продвижение</strong> (гл. 01)</p>
-<pre><code class="language-java">System.out.println(true ? 1 : 2.0);
-System.out.println(false ? 1 : 'a');
-System.out.println(true ? 'a' : 0);
-System.out.println(true ? 'a' : 65536);
-Object o = true ? Integer.valueOf(1) : Double.valueOf(2.0);
-System.out.println(o);
-System.out.println(o.getClass().getSimpleName());
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="kc">true</span> <span class="o">?</span> <span class="mi">1</span> <span class="p">:</span> <span class="mf">2.0</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="kc">false</span> <span class="o">?</span> <span class="mi">1</span> <span class="p">:</span> <span class="sc">'a'</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="kc">true</span> <span class="o">?</span> <span class="sc">'a'</span> <span class="p">:</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="kc">true</span> <span class="o">?</span> <span class="sc">'a'</span> <span class="p">:</span> <span class="mi">65536</span><span class="p">);</span>
+<span class="n">Object</span> <span class="n">o</span> <span class="o">=</span> <span class="kc">true</span> <span class="o">?</span> <span class="n">Integer</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="n">Double</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="mf">2.0</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">o</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="na">getClass</span><span class="p">().</span><span class="na">getSimpleName</span><span class="p">());</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>1.0</code>, <code>a</code>, <code>a</code>, <code>97</code>, <code>1.0</code>, <code>Double</code></p>
 <p><strong>Разбор.</strong> Тип тернарника вычисляется <strong>до</strong> выбора ветки (§15.25).</p>
 <ul>
@@ -793,276 +824,303 @@ System.out.println(o.getClass().getSimpleName());
 </ul>
 <p>Практический вывод: смешивать в тернарнике разные числовые типы — заявка на баг. Приводите явно.</p>
 <p><strong>25. <code>switch</code> и fall-through</strong> (гл. 01)</p>
-<pre><code class="language-java">int day = 3;
-switch (day) {
-    case 1: System.out.print(&quot;Mon &quot;);
-    case 2: System.out.print(&quot;Tue &quot;);
-    case 3: System.out.print(&quot;Wed &quot;);
-    case 4: System.out.print(&quot;Thu &quot;); break;
-    case 5: System.out.print(&quot;Fri &quot;);
-    default: System.out.print(&quot;other &quot;);
-}
-System.out.println();
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kt">int</span> <span class="n">day</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="k">switch</span> <span class="p">(</span><span class="n">day</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="mi">1</span><span class="p">:</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"Mon "</span><span class="p">);</span>
+    <span class="k">case</span> <span class="mi">2</span><span class="p">:</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"Tue "</span><span class="p">);</span>
+    <span class="k">case</span> <span class="mi">3</span><span class="p">:</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"Wed "</span><span class="p">);</span>
+    <span class="k">case</span> <span class="mi">4</span><span class="p">:</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"Thu "</span><span class="p">);</span> <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="mi">5</span><span class="p">:</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"Fri "</span><span class="p">);</span>
+    <span class="k">default</span><span class="p">:</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"other "</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">();</span>
 
-int x = 7;
-switch (x) {
-    default: System.out.print(&quot;default &quot;);
-    case 1: System.out.print(&quot;one &quot;);
-    case 2: System.out.print(&quot;two &quot;); break;
-    case 3: System.out.print(&quot;three &quot;);
-}
-</code></pre>
+<span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">7</span><span class="p">;</span>
+<span class="k">switch</span> <span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">default</span><span class="p">:</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"default "</span><span class="p">);</span>
+    <span class="k">case</span> <span class="mi">1</span><span class="p">:</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"one "</span><span class="p">);</span>
+    <span class="k">case</span> <span class="mi">2</span><span class="p">:</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"two "</span><span class="p">);</span> <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="mi">3</span><span class="p">:</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="s">"three "</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>Wed Thu</code> и <code>default one two</code></p>
 <p><strong>Разбор.</strong> Классический <code>switch</code> с <code>:</code> — это вычисляемый переход: управление входит в подходящую метку и идёт <strong>дальше по всем следующим меткам</strong>, пока не встретит <code>break</code> или конец блока. Метка <code>default</code> не обязана быть последней и участвует в fall-through на общих основаниях: во втором примере вход в <code>default</code>, потом <code>one</code>, потом <code>two</code> и <code>break</code>.</p>
 <p><code>switch</code>-выражения со стрелками (Java 14+) fall-through не имеют и обязаны быть исчерпывающими:</p>
-<pre><code class="language-java">String name = switch (day) {
-    case 1, 7 -&gt; &quot;выходной&quot;;
-    case 2, 3, 4, 5, 6 -&gt; &quot;рабочий&quot;;
-    default -&gt; &quot;неизвестно&quot;;
-};
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">String</span> <span class="n">name</span> <span class="o">=</span> <span class="k">switch</span> <span class="p">(</span><span class="n">day</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">7</span> <span class="o">-&gt;</span> <span class="s">"выходной"</span><span class="p">;</span>
+    <span class="k">case</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span> <span class="o">-&gt;</span> <span class="s">"рабочий"</span><span class="p">;</span>
+    <span class="k">default</span> <span class="o">-&gt;</span> <span class="s">"неизвестно"</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+
 <p>Это одна из причин переходить на стрелочную форму: fall-through — источник багов, а <code>-Xlint:fallthrough</code> ловит его только при отсутствии комментария-маркера.</p>
 <p><strong>26. <code>char</code> и арифметика</strong> (гл. 01)</p>
-<pre><code class="language-java">System.out.println('a' + 1);
-System.out.println((char) ('a' + 1));
-System.out.println(&quot;&quot; + 'a' + 1);
-System.out.println('a' + 'b');
-System.out.println(&quot;&quot; + 'a' + 'b');
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="sc">'a'</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">((</span><span class="kt">char</span><span class="p">)</span> <span class="p">(</span><span class="sc">'a'</span> <span class="o">+</span> <span class="mi">1</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">""</span> <span class="o">+</span> <span class="sc">'a'</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="sc">'a'</span> <span class="o">+</span> <span class="sc">'b'</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">""</span> <span class="o">+</span> <span class="sc">'a'</span> <span class="o">+</span> <span class="sc">'b'</span><span class="p">);</span>
 
-char c = 'a';
-c += 1;
-System.out.println(c);
-// c = c + 1;   — не компилируется
+<span class="kt">char</span> <span class="n">c</span> <span class="o">=</span> <span class="sc">'a'</span><span class="p">;</span>
+<span class="n">c</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">c</span><span class="p">);</span>
+<span class="c1">// c = c + 1;   — не компилируется</span>
 
-System.out.println((char) -1 == '￿');
-System.out.println((int) '0');
-</code></pre>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">((</span><span class="kt">char</span><span class="p">)</span> <span class="o">-</span><span class="mi">1</span> <span class="o">==</span> <span class="sc">'￿'</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">((</span><span class="kt">int</span><span class="p">)</span> <span class="sc">'0'</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>98</code>, <code>b</code>, <code>a1</code>, <code>195</code>, <code>ab</code>, <code>b</code>, <code>true</code>, <code>48</code></p>
 <p><strong>Разбор.</strong> <code>char</code> участвует в арифметике как беззнаковое 16-битное целое с продвижением до <code>int</code> (unary numeric promotion): <code>'a' + 1</code> → <code>97 + 1 = 98</code> типа <code>int</code>. Чтобы получить символ, нужен явный каст.</p>
 <p><code>"" + 'a' + 1</code> вычисляется слева направо: <code>"" + 'a'</code> = <code>"a"</code> (конкатенация), потом <code>"a" + 1</code> = <code>"a1"</code>. А <code>'a' + 'b'</code> без строки — арифметика: <code>97 + 98 = 195</code>.</p>
 <p><code>c += 1</code> компилируется, а <code>c = c + 1</code> — нет: <strong>составное присваивание содержит неявный сужающий каст</strong> (JLS §15.26.2: <code>E1 op= E2</code> эквивалентно <code>E1 = (T)(E1 op E2)</code>). Это же объясняет, почему <code>byte b = 10; b += 300;</code> компилируется и тихо переполняется.</p>
 <p><code>(char) -1</code> даёт <code>￿</code> — <code>char</code> беззнаковый, приведение берёт младшие 16 бит.</p>
 <p><strong>27. <code>switch</code> по строке и <code>null</code></strong> (гл. 01)</p>
-<pre><code class="language-java">static String classify(String code) {
-    switch (code) {
-        case &quot;A&quot;: return &quot;первый&quot;;
-        case &quot;B&quot;: return &quot;второй&quot;;
-        default:  return &quot;прочее&quot;;
-    }
-}
-System.out.println(classify(&quot;A&quot;));
-System.out.println(classify(&quot;Z&quot;));
-System.out.println(classify(null));
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">static</span> <span class="n">String</span> <span class="nf">classify</span><span class="p">(</span><span class="n">String</span> <span class="n">code</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="s">"A"</span><span class="p">:</span> <span class="k">return</span> <span class="s">"первый"</span><span class="p">;</span>
+        <span class="k">case</span> <span class="s">"B"</span><span class="p">:</span> <span class="k">return</span> <span class="s">"второй"</span><span class="p">;</span>
+        <span class="k">default</span><span class="p">:</span>  <span class="k">return</span> <span class="s">"прочее"</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">classify</span><span class="p">(</span><span class="s">"A"</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">classify</span><span class="p">(</span><span class="s">"Z"</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">classify</span><span class="p">(</span><span class="kc">null</span><span class="p">));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>первый</code>, <code>прочее</code>, затем <code>NullPointerException</code>.</p>
 <p><strong>Разбор.</strong> Классический <code>switch</code> по <code>String</code> компилируется в два <code>switch</code>: первый — по <code>code.hashCode()</code> с проверкой <code>equals</code> внутри веток, второй — по вычисленному индексу. Первым же действием вызывается <code>hashCode()</code> на <code>null</code> → NPE. В <code>default</code> управление <strong>не попадает</strong>.</p>
 <p>С Java 21 (JEP 441) в pattern-switch появилась метка <code>case null</code>, и без неё поведение по-прежнему «бросить NPE» — то есть язык сохранил обратную совместимость и дал явный способ обработать <code>null</code>:</p>
-<pre><code class="language-java">return switch (code) {
-    case null -&gt; &quot;не задано&quot;;
-    case &quot;A&quot;  -&gt; &quot;первый&quot;;
-    case &quot;B&quot;  -&gt; &quot;второй&quot;;
-    default   -&gt; &quot;прочее&quot;;
-};
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">return</span> <span class="k">switch</span> <span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="kc">null</span> <span class="o">-&gt;</span> <span class="s">"не задано"</span><span class="p">;</span>
+    <span class="k">case</span> <span class="s">"A"</span>  <span class="o">-&gt;</span> <span class="s">"первый"</span><span class="p">;</span>
+    <span class="k">case</span> <span class="s">"B"</span>  <span class="o">-&gt;</span> <span class="s">"второй"</span><span class="p">;</span>
+    <span class="k">default</span>   <span class="o">-&gt;</span> <span class="s">"прочее"</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+
 <p><code>switch</code> по <code>enum</code> с <code>null</code> тоже бросает NPE (вызывается <code>ordinal()</code>).</p>
 <p><strong>28. Статические методы не переопределяются</strong> (гл. 01)</p>
-<pre><code class="language-java">class Parent {
-    static String staticName() { return &quot;Parent.static&quot;; }
-    String instanceName() { return &quot;Parent.instance&quot;; }
-    static String callStatic() { return staticName(); }
-}
-class Child extends Parent {
-    static String staticName() { return &quot;Child.static&quot;; }
-    @Override String instanceName() { return &quot;Child.instance&quot;; }
-}
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">class</span> <span class="nc">Parent</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="n">String</span> <span class="nf">staticName</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="s">"Parent.static"</span><span class="p">;</span> <span class="p">}</span>
+    <span class="n">String</span> <span class="nf">instanceName</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="s">"Parent.instance"</span><span class="p">;</span> <span class="p">}</span>
+    <span class="kd">static</span> <span class="n">String</span> <span class="nf">callStatic</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="n">staticName</span><span class="p">();</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">class</span> <span class="nc">Child</span> <span class="kd">extends</span> <span class="n">Parent</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="n">String</span> <span class="nf">staticName</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="s">"Child.static"</span><span class="p">;</span> <span class="p">}</span>
+    <span class="nd">@Override</span> <span class="n">String</span> <span class="nf">instanceName</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="s">"Child.instance"</span><span class="p">;</span> <span class="p">}</span>
+<span class="p">}</span>
 
-Parent p = new Child();
-System.out.println(p.instanceName());
-System.out.println(p.staticName());
-System.out.println(Parent.staticName());
-System.out.println(Child.staticName());
-System.out.println(new Child().callStatic());
-</code></pre>
+<span class="n">Parent</span> <span class="n">p</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Child</span><span class="p">();</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="na">instanceName</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="na">staticName</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Parent</span><span class="p">.</span><span class="na">staticName</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Child</span><span class="p">.</span><span class="na">staticName</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="k">new</span> <span class="n">Child</span><span class="p">().</span><span class="na">callStatic</span><span class="p">());</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>Child.instance</code>, <code>Parent.static</code>, <code>Parent.static</code>, <code>Child.static</code>, <code>Parent.static</code></p>
 <p><strong>Разбор.</strong> Метод экземпляра переопределяется — динамическое связывание по фактическому типу. Статический метод <strong>скрывается</strong> (hiding): вызов разрешается на компиляции по статическому типу выражения. <code>p.staticName()</code> компилируется в <code>invokestatic Parent.staticName()</code> — переменная <code>p</code> в байткоде даже не используется.</p>
 <p>Пятая строка особенно показательна: <code>callStatic()</code> объявлен в <code>Parent</code>, и внутри него <code>staticName()</code> разрешён на компиляции в <code>Parent.staticName</code> — никакого «виртуального» вызова статики в Java нет вообще. Это та причина, по которой статические фабрики нельзя «переопределить» в наследнике, и по которой паттерн Template Method не работает на статике.</p>
 <p>IDE предупреждает «Static method accessed via instance reference» — это предупреждение надо чинить, а не подавлять.</p>
 <p><strong>29. <code>finally</code> и <code>System.exit</code></strong> (гл. 01)</p>
-<pre><code class="language-java">public static void main(String[] args) {
-    Runtime.getRuntime().addShutdownHook(new Thread(() -&gt; System.out.println(&quot;shutdown hook&quot;)));
-    try {
-        System.out.println(&quot;try&quot;);
-        System.exit(0);
-    } finally {
-        System.out.println(&quot;finally&quot;);
-    }
-}
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">Runtime</span><span class="p">.</span><span class="na">getRuntime</span><span class="p">().</span><span class="na">addShutdownHook</span><span class="p">(</span><span class="k">new</span> <span class="n">Thread</span><span class="p">(()</span> <span class="o">-&gt;</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"shutdown hook"</span><span class="p">)));</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"try"</span><span class="p">);</span>
+        <span class="n">System</span><span class="p">.</span><span class="na">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">finally</span> <span class="p">{</span>
+        <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"finally"</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong></p>
-<pre><code>try
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>try
 shutdown hook
-</code></pre>
+</code></pre></div>
+
 <p><strong>Разбор.</strong> <code>System.exit</code> инициирует завершение JVM: запускаются shutdown hooks, но управление в текущий метод <strong>никогда не возвращается</strong>, поэтому <code>finally</code> не выполняется. Это один из трёх случаев, когда <code>finally</code> пропускается (остальные — аварийное падение JVM и бесконечное выполнение потока).</p>
 <p>Практическое следствие: cleanup-логика, критичная для корректности, должна быть в shutdown hook, а не только в <code>finally</code>. И наоборот: <code>System.exit</code> в середине бизнес-логики — способ потерять незафиксированные данные; в Spring Boot корректное завершение — <code>SpringApplication.exit(context, code)</code> + <code>System.exit</code>, чтобы контекст закрылся штатно (graceful shutdown, глава 10).</p>
 <p><strong>30. Захват переменных лямбдой</strong> (гл. 01)</p>
-<pre><code class="language-java">List&lt;Runnable&gt; tasks = new ArrayList&lt;&gt;();
-for (int i = 0; i &lt; 3; i++) {
-    int copy = i;
-    tasks.add(() -&gt; System.out.print(copy + &quot; &quot;));
-}
-tasks.forEach(Runnable::run);
-System.out.println();
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">List</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;</span> <span class="n">tasks</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">copy</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+    <span class="n">tasks</span><span class="p">.</span><span class="na">add</span><span class="p">(()</span> <span class="o">-&gt;</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="n">copy</span> <span class="o">+</span> <span class="s">" "</span><span class="p">));</span>
+<span class="p">}</span>
+<span class="n">tasks</span><span class="p">.</span><span class="na">forEach</span><span class="p">(</span><span class="n">Runnable</span><span class="p">::</span><span class="n">run</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">();</span>
 
-List&lt;Runnable&gt; tasks2 = new ArrayList&lt;&gt;();
-for (String s : List.of(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;)) {
-    tasks2.add(() -&gt; System.out.print(s + &quot; &quot;));
-}
-tasks2.forEach(Runnable::run);
-</code></pre>
+<span class="n">List</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">&gt;</span> <span class="n">tasks2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">String</span> <span class="n">s</span> <span class="p">:</span> <span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">,</span> <span class="s">"c"</span><span class="p">))</span> <span class="p">{</span>
+    <span class="n">tasks2</span><span class="p">.</span><span class="na">add</span><span class="p">(()</span> <span class="o">-&gt;</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">print</span><span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="s">" "</span><span class="p">));</span>
+<span class="p">}</span>
+<span class="n">tasks2</span><span class="p">.</span><span class="na">forEach</span><span class="p">(</span><span class="n">Runnable</span><span class="p">::</span><span class="n">run</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>0 1 2</code> и <code>a b c</code></p>
 <p><strong>Разбор.</strong> В первом цикле <code>i</code> не effectively final (инкрементируется), поэтому захватить его напрямую нельзя — код <code>tasks.add(() -&gt; print(i))</code> не скомпилировался бы. Локальная <code>copy</code> создаётся заново на каждой итерации и не меняется → effectively final, каждая лямбда получает свою копию.</p>
 <p>Во втором цикле переменная расширенного <code>for</code> <strong>тоже создаётся заново на каждой итерации</strong> и является effectively final — поэтому захват работает без всяких <code>copy</code>. Это частый источник путаницы: «почему в одном цикле можно, а в другом нет».</p>
 <p>Сравнение с JavaScript, где <code>var</code> в цикле давал знаменитое «все замыкания видят последнее значение», полезно на интервью: Java эту ловушку исключила на уровне языка, запретив захват изменяемых локальных переменных.</p>
 <p>Обратите внимание: <code>tasks</code> и <code>tasks2</code> — поля/локальные ссылки, которые сами не переприсваиваются, а их содержимое меняется. Захват ссылки, а не значения — поэтому <code>tasks.forEach</code> видит все добавленные задачи.</p>
 <p><strong>31. <code>Optional</code></strong> (гл. 01)</p>
-<pre><code class="language-java">System.out.println(Optional.ofNullable(null).isPresent());
-System.out.println(Optional.empty().orElse(&quot;default&quot;));
-System.out.println(Optional.of(&quot;x&quot;).map(s -&gt; (String) null).isPresent());
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Optional</span><span class="p">.</span><span class="na">ofNullable</span><span class="p">(</span><span class="kc">null</span><span class="p">).</span><span class="na">isPresent</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Optional</span><span class="p">.</span><span class="na">empty</span><span class="p">().</span><span class="na">orElse</span><span class="p">(</span><span class="s">"default"</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Optional</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"x"</span><span class="p">).</span><span class="na">map</span><span class="p">(</span><span class="n">s</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">String</span><span class="p">)</span> <span class="kc">null</span><span class="p">).</span><span class="na">isPresent</span><span class="p">());</span>
 
-String s = null;
-System.out.println(Optional.of(s));
-</code></pre>
+<span class="n">String</span> <span class="n">s</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Optional</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">s</span><span class="p">));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>false</code>, <code>default</code>, <code>false</code>, затем <code>NullPointerException</code>.</p>
 <p><strong>Разбор.</strong> <code>Optional.of</code> требует ненулевое значение и бросает NPE немедленно — это контракт: «я утверждаю, что значение есть». Для «может быть null» существует <code>ofNullable</code>. <code>map</code>, вернувший <code>null</code>, даёт <code>Optional.empty()</code> — это специфицировано и удобно для цепочек.</p>
 <p>Ещё два подводных камня <code>Optional</code>, которые стоит помнить:</p>
-<pre><code class="language-java">Optional&lt;String&gt; o = Optional.of(&quot;v&quot;);
-o.orElse(loadDefault());          // loadDefault() вызывается ВСЕГДА, даже когда значение есть
-o.orElseGet(() -&gt; loadDefault()); // вызывается только при отсутствии
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">Optional</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">o</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"v"</span><span class="p">);</span>
+<span class="n">o</span><span class="p">.</span><span class="na">orElse</span><span class="p">(</span><span class="n">loadDefault</span><span class="p">());</span>          <span class="c1">// loadDefault() вызывается ВСЕГДА, даже когда значение есть</span>
+<span class="n">o</span><span class="p">.</span><span class="na">orElseGet</span><span class="p">(()</span> <span class="o">-&gt;</span> <span class="n">loadDefault</span><span class="p">());</span> <span class="c1">// вызывается только при отсутствии</span>
 
-Optional&lt;Optional&lt;String&gt;&gt; nested = Optional.of(Optional.of(&quot;v&quot;));  // почти всегда ошибка; нужен flatMap
-</code></pre>
+<span class="n">Optional</span><span class="o">&lt;</span><span class="n">Optional</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;&gt;</span> <span class="n">nested</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">Optional</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"v"</span><span class="p">));</span>  <span class="c1">// почти всегда ошибка; нужен flatMap</span>
+</code></pre></div>
+
 <p><code>Optional</code> не <code>Serializable</code>, не предназначен для полей и параметров, и в JSON-DTO его лучше не использовать (Jackson требует <code>Jdk8Module</code>, а сериализация даёт неочевидную форму).</p>
 <p><strong>32. Передача по значению</strong> (гл. 01)</p>
-<pre><code class="language-java">class Box { String label = &quot;A&quot;; }
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">class</span> <span class="nc">Box</span> <span class="p">{</span> <span class="n">String</span> <span class="n">label</span> <span class="o">=</span> <span class="s">"A"</span><span class="p">;</span> <span class="p">}</span>
 
-static void mutate(Box box)   { box.label = &quot;B&quot;; }
-static void reassign(Box box) { box = new Box(); box.label = &quot;C&quot;; }
+<span class="kd">static</span> <span class="kt">void</span> <span class="nf">mutate</span><span class="p">(</span><span class="n">Box</span> <span class="n">box</span><span class="p">)</span>   <span class="p">{</span> <span class="n">box</span><span class="p">.</span><span class="na">label</span> <span class="o">=</span> <span class="s">"B"</span><span class="p">;</span> <span class="p">}</span>
+<span class="kd">static</span> <span class="kt">void</span> <span class="nf">reassign</span><span class="p">(</span><span class="n">Box</span> <span class="n">box</span><span class="p">)</span> <span class="p">{</span> <span class="n">box</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Box</span><span class="p">();</span> <span class="n">box</span><span class="p">.</span><span class="na">label</span> <span class="o">=</span> <span class="s">"C"</span><span class="p">;</span> <span class="p">}</span>
 
-Box b = new Box();
-mutate(b);    System.out.println(b.label);
-reassign(b);  System.out.println(b.label);
-</code></pre>
+<span class="n">Box</span> <span class="n">b</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Box</span><span class="p">();</span>
+<span class="n">mutate</span><span class="p">(</span><span class="n">b</span><span class="p">);</span>    <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="na">label</span><span class="p">);</span>
+<span class="n">reassign</span><span class="p">(</span><span class="n">b</span><span class="p">);</span>  <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="na">label</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>B</code>, затем снова <code>B</code>. Java передаёт по значению всегда; для объектов значением является ссылка, поэтому метод меняет состояние объекта, но не переменную вызывающего.</p>
 <p><strong>33. Деление на ноль</strong> (гл. 01)</p>
-<pre><code class="language-java">System.out.println(1.0 / 0);
-System.out.println(0.0 / 0.0);
-System.out.println(1.0 % 0.0);
-System.out.println(1 / 0);
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mf">0.0</span> <span class="o">/</span> <span class="mf">0.0</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">%</span> <span class="mf">0.0</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">0</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>Infinity</code>, <code>NaN</code>, <code>NaN</code>, затем <code>ArithmeticException: / by zero</code>. Целочисленное деление на ноль — исключение, вещественное — специальные значения IEEE 754.</p>
 <p><strong>34. Три вида сдвига</strong> (гл. 01)</p>
-<pre><code class="language-java">int x = -8;
-System.out.println(x &gt;&gt; 1);
-System.out.println(x &gt;&gt;&gt; 1);
-System.out.println(1 &lt;&lt; 32);
-System.out.println(1L &lt;&lt; 32);
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="o">-</span><span class="mi">8</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;&gt;&gt;</span> <span class="mi">1</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">32</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="mi">1L</span> <span class="o">&lt;&lt;</span> <span class="mi">32</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>-4</code>, <code>2147483644</code>, <code>1</code>, <code>4294967296</code>. <code>&gt;&gt;</code> копирует знаковый бит, <code>&gt;&gt;&gt;</code> вдвигает нули, а величина сдвига берётся по модулю 32 для <code>int</code> и 64 для <code>long</code>.</p>
 <p><strong>35. Длина строки с эмодзи</strong> (гл. 01, 04)</p>
-<pre><code class="language-java">String emoji = &quot;👍&quot;;
-System.out.println(emoji.length());
-System.out.println(emoji.codePointCount(0, emoji.length()));
-System.out.println(emoji.codePoints().count());
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">String</span> <span class="n">emoji</span> <span class="o">=</span> <span class="s">"👍"</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">emoji</span><span class="p">.</span><span class="na">length</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">emoji</span><span class="p">.</span><span class="na">codePointCount</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">emoji</span><span class="p">.</span><span class="na">length</span><span class="p">()));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">emoji</span><span class="p">.</span><span class="na">codePoints</span><span class="p">().</span><span class="na">count</span><span class="p">());</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>2</code>, <code>1</code>, <code>1</code>. <code>String.length()</code> считает единицы UTF-16, а символ вне BMP занимает суррогатную пару — поэтому обрезка <code>substring</code> может разорвать символ пополам.</p>
 <p><strong>36. Семья и флаг</strong> (гл. 04)</p>
-<pre><code class="language-java">String family = &quot;👨‍👩‍👧‍👦&quot;;
-System.out.println(family.length());
-System.out.println(family.codePointCount(0, family.length()));
-String flag = &quot;🇷🇺&quot;;
-System.out.println(flag.length());
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">String</span> <span class="n">family</span> <span class="o">=</span> <span class="s">"👨‍👩‍👧‍👦"</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">family</span><span class="p">.</span><span class="na">length</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">family</span><span class="p">.</span><span class="na">codePointCount</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">family</span><span class="p">.</span><span class="na">length</span><span class="p">()));</span>
+<span class="n">String</span> <span class="n">flag</span> <span class="o">=</span> <span class="s">"🇷🇺"</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">flag</span><span class="p">.</span><span class="na">length</span><span class="p">());</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>11</code>, <code>7</code>, <code>4</code>. Один воспринимаемый символ — это графемный кластер из нескольких кодовых точек, склеенных ZWJ; считать его умеет только <code>BreakIterator</code>.</p>
 <p><strong>37. Перегрузка решается статически</strong> (гл. 01)</p>
-<pre><code class="language-java">static void handle(Object o) { System.out.println(&quot;Object&quot;); }
-static void handle(String s) { System.out.println(&quot;String&quot;); }
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">static</span> <span class="kt">void</span> <span class="nf">handle</span><span class="p">(</span><span class="n">Object</span> <span class="n">o</span><span class="p">)</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Object"</span><span class="p">);</span> <span class="p">}</span>
+<span class="kd">static</span> <span class="kt">void</span> <span class="nf">handle</span><span class="p">(</span><span class="n">String</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"String"</span><span class="p">);</span> <span class="p">}</span>
 
-Object o = &quot;я строка&quot;;
-handle(o);
-handle((String) o);
-</code></pre>
+<span class="n">Object</span> <span class="n">o</span> <span class="o">=</span> <span class="s">"я строка"</span><span class="p">;</span>
+<span class="n">handle</span><span class="p">(</span><span class="n">o</span><span class="p">);</span>
+<span class="n">handle</span><span class="p">((</span><span class="n">String</span><span class="p">)</span> <span class="n">o</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>Object</code>, затем <code>String</code>. Переопределение разрешается во время выполнения по фактическому типу, перегрузка — компилятором по статическому.</p>
 <p><strong>38. Константы и инициализация класса</strong> (гл. 01)</p>
-<pre><code class="language-java">class Config {
-    static final String NAME = &quot;svc&quot;;
-    static final String HOST = System.getenv(&quot;H&quot;);
-    static { System.out.println(&quot;Config init&quot;); }
-}
-System.out.println(Config.NAME);
-System.out.println(Config.HOST);
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">class</span> <span class="nc">Config</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">NAME</span> <span class="o">=</span> <span class="s">"svc"</span><span class="p">;</span>
+    <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">HOST</span> <span class="o">=</span> <span class="n">System</span><span class="p">.</span><span class="na">getenv</span><span class="p">(</span><span class="s">"H"</span><span class="p">);</span>
+    <span class="kd">static</span> <span class="p">{</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Config init"</span><span class="p">);</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Config</span><span class="p">.</span><span class="na">NAME</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Config</span><span class="p">.</span><span class="na">HOST</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> сначала <code>svc</code> без строки <code>Config init</code>, затем <code>Config init</code> и значение <code>HOST</code>. <code>NAME</code> — constant variable, он встраивается в вызывающий класс и не вызывает инициализацию.</p>
 <p><strong>39. <code>peek</code> и <code>count</code></strong> (гл. 3)</p>
-<pre><code class="language-java">System.out.println(List.of(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;).stream().peek(System.out::println).count());
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">,</span> <span class="s">"c"</span><span class="p">).</span><span class="na">stream</span><span class="p">().</span><span class="na">peek</span><span class="p">(</span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">::</span><span class="n">println</span><span class="p">).</span><span class="na">count</span><span class="p">());</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> напечатается только <code>3</code>. На SIZED-источнике без фильтров <code>count()</code> берёт размер, не исполняя pipeline; добавьте <code>filter(x -&gt; true)</code> — и <code>peek</code> заработает.</p>
 <p><strong>40. Неизменяемое представление и копия</strong> (гл. 3)</p>
-<pre><code class="language-java">List&lt;String&gt; src = new ArrayList&lt;&gt;(List.of(&quot;a&quot;, &quot;b&quot;));
-List&lt;String&gt; view = Collections.unmodifiableList(src);
-List&lt;String&gt; copy = List.copyOf(src);
-src.add(&quot;c&quot;);
-System.out.println(view);
-System.out.println(copy);
-System.out.println(copy.contains(null));
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">src</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">));</span>
+<span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">view</span> <span class="o">=</span> <span class="n">Collections</span><span class="p">.</span><span class="na">unmodifiableList</span><span class="p">(</span><span class="n">src</span><span class="p">);</span>
+<span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">copy</span> <span class="o">=</span> <span class="n">List</span><span class="p">.</span><span class="na">copyOf</span><span class="p">(</span><span class="n">src</span><span class="p">);</span>
+<span class="n">src</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="s">"c"</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">view</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">copy</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">copy</span><span class="p">.</span><span class="na">contains</span><span class="p">(</span><span class="kc">null</span><span class="p">));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>[a, b, c]</code>, <code>[a, b]</code>, затем <code>NullPointerException</code>. <code>unmodifiableList</code> — представление, <code>copyOf</code> — снимок; и неизменяемые коллекции Java 9+ не терпят <code>null</code> даже в <code>contains</code>.</p>
 <p><strong>41. Календарная арифметика</strong> (гл. 04)</p>
-<pre><code class="language-java">LocalDate jan31 = LocalDate.of(2024, 1, 31);
-System.out.println(jan31.plusMonths(1));
-System.out.println(jan31.plusMonths(1).plusMonths(1));
-System.out.println(jan31.plusMonths(2));
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">LocalDate</span> <span class="n">jan31</span> <span class="o">=</span> <span class="n">LocalDate</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">31</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">jan31</span><span class="p">.</span><span class="na">plusMonths</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">jan31</span><span class="p">.</span><span class="na">plusMonths</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="na">plusMonths</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">jan31</span><span class="p">.</span><span class="na">plusMonths</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>2024-02-29</code>, <code>2024-03-29</code>, <code>2024-03-31</code>. Сложение месяцев обрезает день до последнего в месяце, и операция неассоциативна — отсюда расхождения в графиках платежей.</p>
 <p><strong>42. Переход на летнее время</strong> (гл. 04)</p>
-<pre><code class="language-java">ZoneId berlin = ZoneId.of(&quot;Europe/Berlin&quot;);
-ZonedDateTime before = ZonedDateTime.of(2024, 3, 30, 12, 0, 0, 0, berlin);
-System.out.println(before.plusDays(1));
-System.out.println(before.plusHours(24));
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">ZoneId</span> <span class="n">berlin</span> <span class="o">=</span> <span class="n">ZoneId</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"Europe/Berlin"</span><span class="p">);</span>
+<span class="n">ZonedDateTime</span> <span class="n">before</span> <span class="o">=</span> <span class="n">ZonedDateTime</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">berlin</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">before</span><span class="p">.</span><span class="na">plusDays</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">before</span><span class="p">.</span><span class="na">plusHours</span><span class="p">(</span><span class="mi">24</span><span class="p">));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>2024-03-31T12:00+02:00</code> и <code>2024-03-31T13:00+02:00</code>. <code>plusDays</code> — календарная операция и сохраняет настенное время, <code>plusHours</code> — физическая и добавляет ровно 24 часа.</p>
 <p><strong>43. Несуществующее и неоднозначное время</strong> (гл. 04)</p>
-<pre><code class="language-java">ZoneId berlin = ZoneId.of(&quot;Europe/Berlin&quot;);
-System.out.println(LocalDateTime.of(2024, 3, 31, 2, 30).atZone(berlin));
-System.out.println(LocalDateTime.of(2024, 10, 27, 2, 30).atZone(berlin));
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">ZoneId</span> <span class="n">berlin</span> <span class="o">=</span> <span class="n">ZoneId</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"Europe/Berlin"</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">30</span><span class="p">).</span><span class="na">atZone</span><span class="p">(</span><span class="n">berlin</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">LocalDateTime</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">27</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">30</span><span class="p">).</span><span class="na">atZone</span><span class="p">(</span><span class="n">berlin</span><span class="p">));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>2024-03-31T03:30+02:00</code> и <code>2024-10-27T02:30+02:00</code>. Для «дыры» <code>atZone</code> молча сдвигает время вперёд на длину разрыва, для «нахлёста» молча берёт первый (летний) вариант.</p>
 <p><strong>44. <code>YYYY</code> вместо <code>yyyy</code></strong> (гл. 04)</p>
-<pre><code class="language-java">LocalDate d = LocalDate.of(2025, 12, 29);
-System.out.println(d.format(DateTimeFormatter.ofPattern(&quot;YYYY-MM-dd&quot;)));
-System.out.println(d.format(DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd&quot;)));
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">LocalDate</span> <span class="n">d</span> <span class="o">=</span> <span class="n">LocalDate</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="mi">2025</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">29</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="n">DateTimeFormatter</span><span class="p">.</span><span class="na">ofPattern</span><span class="p">(</span><span class="s">"YYYY-MM-dd"</span><span class="p">)));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="n">DateTimeFormatter</span><span class="p">.</span><span class="na">ofPattern</span><span class="p">(</span><span class="s">"yyyy-MM-dd"</span><span class="p">)));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>2026-12-29</code> и <code>2025-12-29</code>. <code>YYYY</code> — это week-based year: последние дни декабря попадают в первую ISO-неделю следующего года, и раз в год отчёт уезжает.</p>
 <p><strong>45. Потеря точности при суммировании</strong> (гл. 04)</p>
-<pre><code class="language-java">double sum = 0.0;
-for (int i = 0; i &lt; 10_000_000; i++) sum += 0.01;
-System.out.println(sum);
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kt">double</span> <span class="n">sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10_000_000</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="n">sum</span> <span class="o">+=</span> <span class="mf">0.01</span><span class="p">;</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">sum</span><span class="p">);</span>
 
-double[] v = {1e16, 1.0, -1e16};
-System.out.println(v[0] + v[1] + v[2]);
-System.out.println(v[0] + v[2] + v[1]);
-</code></pre>
+<span class="kt">double</span><span class="o">[]</span> <span class="n">v</span> <span class="o">=</span> <span class="p">{</span><span class="mf">1e16</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1e16</span><span class="p">};</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">v</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">+</span> <span class="n">v</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span> <span class="o">+</span> <span class="n">v</span><span class="o">[</span><span class="mi">2</span><span class="o">]</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">v</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">+</span> <span class="n">v</span><span class="o">[</span><span class="mi">2</span><span class="o">]</span> <span class="o">+</span> <span class="n">v</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span><span class="p">);</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>99999.99999200302</code>, затем <code>0.0</code> и <code>1.0</code>. Ошибка накапливается, а сложение <code>double</code> неассоциативно: при большой разнице порядков слагаемое просто исчезает.</p>
 <p><strong>46. <code>stripTrailingZeros</code></strong> (гл. 04)</p>
-<pre><code class="language-java">System.out.println(new BigDecimal(&quot;100.00&quot;).stripTrailingZeros());
-System.out.println(new BigDecimal(&quot;100.00&quot;).stripTrailingZeros().toPlainString());
-System.out.println(new BigDecimal(&quot;0.0000001&quot;));
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="k">new</span> <span class="n">BigDecimal</span><span class="p">(</span><span class="s">"100.00"</span><span class="p">).</span><span class="na">stripTrailingZeros</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="k">new</span> <span class="n">BigDecimal</span><span class="p">(</span><span class="s">"100.00"</span><span class="p">).</span><span class="na">stripTrailingZeros</span><span class="p">().</span><span class="na">toPlainString</span><span class="p">());</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="k">new</span> <span class="n">BigDecimal</span><span class="p">(</span><span class="s">"0.0000001"</span><span class="p">));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>1E+2</code>, <code>100</code>, <code>1E-7</code>. <code>toString</code> у <code>BigDecimal</code> переходит в научную нотацию по правилам scale — в API и в отчёты нужно отдавать <code>toPlainString</code>.</p>
 <p><strong>47. Турецкая <code>i</code></strong> (гл. 04)</p>
-<pre><code class="language-java">Locale tr = Locale.forLanguageTag(&quot;tr&quot;);
-System.out.println(&quot;TITLE&quot;.toLowerCase(tr));
-System.out.println(&quot;ß&quot;.toUpperCase(Locale.ROOT));
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">Locale</span> <span class="n">tr</span> <span class="o">=</span> <span class="n">Locale</span><span class="p">.</span><span class="na">forLanguageTag</span><span class="p">(</span><span class="s">"tr"</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"TITLE"</span><span class="p">.</span><span class="na">toLowerCase</span><span class="p">(</span><span class="n">tr</span><span class="p">));</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"ß"</span><span class="p">.</span><span class="na">toUpperCase</span><span class="p">(</span><span class="n">Locale</span><span class="p">.</span><span class="na">ROOT</span><span class="p">));</span>
+</code></pre></div>
+
 <p><strong>Ответ:</strong> <code>tıtle</code> и <code>SS</code>. <code>toLowerCase()</code> без локали берёт локаль JVM по умолчанию, поэтому сравнение заголовков и кодов ломается на турецких серверах, а смена регистра может менять длину строки.</p>
 <h2 id="вопросы-по-темам">Вопросы по темам</h2>
 <p>Основной массив — 1371 вопросов в 42 темах. Сгруппирован по темам, а не по главам: на интервью думают темами, и подготовка к «блоку про Kafka» удобнее, чем к «главе 29». Внутри темы вопросы идут в порядке глав, от базовых к более узким; в скобках — глава-источник, где тема разобрана с механикой и примерами. Дубликаты убраны, поэтому вопрос, встречавшийся в двух главах, стоит один раз. Поведенческие вопросы вынесены в отдельный раздел ниже и здесь не повторяются.</p>
@@ -2060,13 +2118,14 @@ https://github.com/openjdk/jol">openjdk/jol</a>), а не по памяти. С 
         SELECT 1 FROM payments p
         WHERE p.client_id = c.id AND p.status = 'SUCCESS'
           AND p.created_at &gt;= now() - INTERVAL '90 days');</p>
-<pre><code>SELECT * FROM (
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>SELECT * FROM (
   SELECT p.*, row_number() OVER (PARTITION BY branch_id ORDER BY amount DESC, id) rn
   FROM payments p WHERE created_at &gt;= date_trunc('month', now())
 ) t WHERE rn &lt;= 3;
 ```
 Подчеркнуть: `NOT EXISTS`, а не `NOT IN`; условие по дате внутри подзапроса; частичный индекс `payments (client_id, created_at) WHERE status = 'SUCCESS'`. Во второй задаче уточнить, нужны ли ничьи (`rank()` даст больше трёх строк), и упомянуть `CROSS JOIN LATERAL (… LIMIT 3)` как вариант для «мало отделений, много платежей».
-</code></pre>
+</code></pre></div>
+
 <p><strong>483. Вопрос-ловушка: чем <code>ROWS BETWEEN 6 PRECEDING AND CURRENT ROW</code> отличается от <code>RANGE BETWEEN INTERVAL '6 days' PRECEDING AND CURRENT ROW</code> для скользящего недельного среднего?</strong> (гл. 20)</p>
 <p><code>ROWS</code> считает семь последних <em>строк</em>, <code>RANGE</code> — все строки, попавшие в семь календарных <em>суток</em>. Если в ряду есть пропуски (выходные, дни без операций), <code>ROWS</code> заглянет глубже семи дней и «недельное» среднее перестанет быть недельным; если в один день несколько строк, <code>ROWS</code> не возьмёт всю неделю. Для метрик по времени правильный ответ почти всегда <code>RANGE ... INTERVAL</code>, и он требует ровно одной колонки в <code>ORDER BY</code> окна.</p>
 <p><strong>484. Вопрос-ловушка: <code>sum(x) OVER (PARTITION BY g ORDER BY m)</code> — что это считает?</strong> (гл. 20)</p>

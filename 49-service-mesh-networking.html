@@ -31,7 +31,7 @@ https://kubernetes.io/docs/concepts/cluster-administration/networking/">kubernet
 </ol>
 <p>Из этих правил вытекает больше, чем кажется. Во-первых, <strong>порт-конфликтов между подами не бывает</strong>: два Spring Boot-приложения на одном узле спокойно слушают <code>8080</code>, потому что это <code>8080</code> в разных сетевых namespace. Прощай, Docker-эра с <code>-p 18080:8080</code> и таблицей занятых портов в вики. Во-вторых, <strong>IP пода — эфемерный</strong>: пересоздали под — получили новый адрес. Всё, что пытается кешировать IP надолго (привет, <code>networkaddress.cache.ttl=-1</code> в JVM — см. § 3.4), ломается. В-третьих, поскольку NAT между подами нет, <strong>логи и аудит видят настоящий источник</strong>, и NetworkPolicy может опираться на IP.</p>
 <p>Внутри пода все контейнеры делят <strong>один сетевой namespace</strong>: один IP, одна таблица маршрутизации, один набор портов, общий <code>localhost</code>. Это база для sidecar-паттерна (§ 7): прокси в соседнем контейнере может перехватывать трафик приложения через iptables-правила, потому что iptables у них — общие. Технически namespace создаётся не контейнером приложения, а инфраструктурным «pause»-контейнером, который живёт весь срок жизни пода и держит namespace, даже когда прикладные контейнеры перезапускаются.</p>
-<pre><code>Node 10.0.1.5
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>Node 10.0.1.5
 ┌──────────────────────────────────────────────────────┐
 │  Pod A 10.244.1.7        Pod B 10.244.1.8            │
 │  ┌───────────────┐       ┌───────────────┐           │
@@ -43,7 +43,8 @@ https://kubernetes.io/docs/concepts/cluster-administration/networking/">kubernet
 │                       │                              │
 │                    eth0 10.0.1.5  ── к другим нодам  │
 └──────────────────────────────────────────────────────┘
-</code></pre>
+</code></pre></div>
+
 <p>Пара <code>veth</code> — виртуальный «патч-корд»: один конец внутри namespace пода как <code>eth0</code>, второй — в host namespace, включён в бридж или напрямую в таблицу маршрутизации хоста.</p>
 <h3 id="12-функции-cni-плагина">1.2 Функции CNI-плагина</h3>
 <p>CNI (Container Network Interface) — это до неприличия простая спецификация: бинарник, которому kubelet (точнее, CRI-среда выполнения) передаёт JSON на stdin и переменные окружения, а тот выполняет команду <code>ADD</code> / <code>DEL</code> / <code>CHECK</code> и печатает результат. На <code>ADD</code> плагин обязан: выделить IP из выделенного узлу диапазона (IPAM), создать veth-пару, перенести её конец в namespace пода, настроить адрес и маршрут по умолчанию, вернуть результат. Всё остальное — маршрутизация между узлами, политики, шифрование — уже надстройка конкретной реализации.</p>
@@ -187,13 +188,14 @@ https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/">kubern
 <h3 id="31-устройство-dns-имён-в-кластере">3.1 Устройство DNS-имён в кластере</h3>
 <p>Kubelet записывает в <code>/etc/resolv.conf</code> каждого пода (<a href="https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/">kubernetes.io, DNS for Services and Pods</a>):</p>
-<pre><code>nameserver 10.96.0.10
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>nameserver 10.96.0.10
 search &lt;namespace&gt;.svc.cluster.local svc.cluster.local cluster.local
 options ndots:5
-</code></pre>
+</code></pre></div>
+
 <p>Полное имя сервиса — <code>my-svc.my-namespace.svc.cluster-domain.example</code>, где <code>cluster-domain.example</code> почти всегда <code>cluster.local</code>. Обычный сервис разрешается в свой ClusterIP, headless — в набор IP подов. Для именованных портов существуют SRV-записи вида <code>_port-name._port-protocol.my-svc.my-namespace.svc.cluster.local</code>.</p>
 <p>За разрешение имён отвечает <strong>CoreDNS</strong> — плагинный DNS-сервер на Go. Его конфигурация — Corefile:</p>
-<pre><code>.:53 {
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>.:53 {
     errors
     health { lameduck 5s }
     ready
@@ -209,7 +211,8 @@ options ndots:5
     reload
     loadbalance
 }
-</code></pre>
+</code></pre></div>
+
 <p>Плагин <code>kubernetes</code> отвечает на <code>*.cluster.local</code> из своего watch-кеша объектов Service/EndpointSlice — то есть <strong>в API-сервер на каждый запрос он не ходит</strong>. Всё остальное уходит в <code>forward</code> на вышестоящие распознаватели узла. <code>cache 30</code> кеширует положительные ответы, <code>ttl 30</code> — TTL в ответах.</p>
 <h3 id="32-опция-ndots5-и-разрешение-внешних-имён">3.2 Опция <code>ndots:5</code> и разрешение внешних имён</h3>
 <p>Опция <code>ndots:N</code> в распознавателе glibc означает: если в имени <strong>меньше N точек</strong>, сначала пробовать его с каждым search-доменом по очереди, и только потом — как абсолютное. Kubernetes ставит <code>ndots:5</code>, чтобы работали короткие имена внутри кластера: <code>payments</code> → <code>payments.&lt;ns&gt;.svc.cluster.local</code>, <code>payments.billing</code> → <code>payments.billing.svc.cluster.local</code>.</p>
@@ -233,22 +236,23 @@ options ndots:5
 <p><strong><code>dnsConfig</code> на поде</strong> — снизить <code>ndots</code>:</p>
 </li>
 </ol>
-<pre><code class="language-yaml">apiVersion: v1
-kind: Pod
-metadata:
-  name: payments
-spec:
-  dnsPolicy: ClusterFirst
-  dnsConfig:
-    options:
-      - name: ndots
-        value: &quot;2&quot;
-      - name: single-request-reopen   # A и AAAA в разных сокетах, лечит баг с потерей ответа
-      - name: timeout
-        value: &quot;1&quot;
-      - name: attempts
-        value: &quot;3&quot;
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Pod</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">dnsPolicy</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ClusterFirst</span>
+  <span class="nt">dnsConfig</span><span class="p">:</span>
+    <span class="nt">options</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ndots</span>
+        <span class="nt">value</span><span class="p">:</span> <span class="s">"2"</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">single-request-reopen</span>   <span class="c1"># A и AAAA в разных сокетах, лечит баг с потерей ответа</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">timeout</span>
+        <span class="nt">value</span><span class="p">:</span> <span class="s">"1"</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">attempts</span>
+        <span class="nt">value</span><span class="p">:</span> <span class="s">"3"</span>
+</code></pre></div>
+
 <p>С <code>ndots:2</code> имя <code>api.partner-bank.com</code> (2 точки — не меньше 2) идёт сразу абсолютным запросом, а короткое <code>payments</code> внутри namespace продолжает работать. Ломается только двухсегментная форма <code>payments.billing</code> — её придётся писать как <code>payments.billing.svc.cluster.local</code>. Это осознанный компромисс, и для сервисов, много ходящих наружу, он почти всегда оправдан.</p>
 <ol start="3">
 <li><strong>NodeLocal DNSCache</strong> — DaemonSet с кеширующим распознавателем на каждом узле, слушающим на link-local адресе. Пода общаются с локальным кешем по TCP-соединению к CoreDNS вместо UDP, что убирает и потери пакетов, и conntrack-записи для UDP-DNS.</li>
@@ -262,21 +266,22 @@ spec:
 </ul>
 <p>Подробности проверены и зафиксированы в главе 27; механика ОС-распознавателя и <code>search</code>-доменов — в главе 50 (<code>50-linux-and-networking.md</code>). Для mesh это важно потому, что <strong>при включённом sidecar приложение почти никогда не разрешает само</strong> — Envoy перехватывает соединение на уровне IP:порт и сам решает, куда его отправить, опираясь на конфигурацию от istiod, а не на DNS. Но разрешение имени всё равно происходит: приложение должно получить <em>какой-то</em> IP, чтобы вызвать <code>connect()</code>. Именно поэтому у Istio есть режим DNS-прокси (<code>ISTIO_META_DNS_CAPTURE</code>), которая перехватывает и DNS-запросы тоже — тогда разрешение имени обслуживает локальный агент из конфигурации mesh, без похода в CoreDNS вообще. Это одновременно и лечение <code>ndots</code>-проблемы, и способ заставить работать имена из <code>ServiceEntry</code>, которых в кластерном DNS нет.</p>
 <h3 id="34-базовая-диагностика-dns">3.4 Базовая диагностика DNS</h3>
-<pre><code class="language-bash"># что реально в resolv.conf пода
-kubectl exec -it deploy/payments -- cat /etc/resolv.conf
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># что реально в resolv.conf пода</span>
+kubectl <span class="nb">exec</span> -it deploy/payments -- cat /etc/resolv.conf
 
-# сколько запросов уходит на одно имя (видно search-домены)
-kubectl run -it --rm dnsdebug --image=nicolaka/netshoot --restart=Never -- \
-  sh -c 'dig +search +trace api.partner-bank.com | head -40'
+<span class="c1"># сколько запросов уходит на одно имя (видно search-домены)</span>
+kubectl run -it --rm dnsdebug --image<span class="o">=</span>nicolaka/netshoot --restart<span class="o">=</span>Never -- <span class="se">\</span>
+  sh -c <span class="s1">'dig +search +trace api.partner-bank.com | head -40'</span>
 
-# сравнить: с точкой на конце и без
-kubectl exec -it deploy/payments -- sh -c \
-  'time nslookup api.partner-bank.com; time nslookup api.partner-bank.com.'
+<span class="c1"># сравнить: с точкой на конце и без</span>
+kubectl <span class="nb">exec</span> -it deploy/payments -- sh -c <span class="se">\</span>
+  <span class="s1">'time nslookup api.partner-bank.com; time nslookup api.partner-bank.com.'</span>
 
-# метрики CoreDNS: доля NXDOMAIN и латентность
-kubectl -n kube-system port-forward svc/kube-dns 9153:9153
-curl -s localhost:9153/metrics | grep -E 'coredns_dns_(request_duration|responses_total)'
-</code></pre>
+<span class="c1"># метрики CoreDNS: доля NXDOMAIN и латентность</span>
+kubectl -n kube-system port-forward svc/kube-dns <span class="m">9153</span>:9153
+curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1">'coredns_dns_(request_duration|responses_total)'</span>
+</code></pre></div>
+
 <p>Если в <code>coredns_dns_responses_total{rcode="NXDOMAIN"}</code> доля 70–80 % — это ровно симптом <code>ndots:5</code> с внешними именами.</p>
 <hr>
 <h2 id="4-networkpolicy-ingress-и-egress">4. NetworkPolicy, ingress и egress</h2>
@@ -290,94 +295,97 @@ https://kubernetes.io/docs/concepts/services-networking/network-policies/">kuber
 </ol>
 <p>Важное следствие: для соединения A → B должны сойтись <strong>обе</strong> стороны — egress-политика A должна разрешать выход к B, и ingress-политика B должна разрешать вход от A.</p>
 <p><strong>Базовый набор для сервиса.</strong> Начинаем с default deny в namespace:</p>
-<pre><code class="language-yaml">apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: default-deny-all
-  namespace: payments
-spec:
-  podSelector: {}          # все поды namespace
-  policyTypes: [Ingress, Egress]
-  # ни ingress, ни egress не перечислены =&gt; запрещено всё
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">NetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">default-deny-all</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">podSelector</span><span class="p">:</span> <span class="p p-Indicator">{}</span>          <span class="c1"># все поды namespace</span>
+  <span class="nt">policyTypes</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">Ingress</span><span class="p p-Indicator">,</span> <span class="nv">Egress</span><span class="p p-Indicator">]</span>
+  <span class="c1"># ни ingress, ни egress не перечислены =&gt; запрещено всё</span>
+</code></pre></div>
+
 <p>Дальше — точечные разрешения. Первое, о чём забывают: <strong>DNS</strong>. Если запретили egress, поды перестают разрешать имена, и симптом выглядит как «приложение не видит базу», хотя дело в CoreDNS:</p>
-<pre><code class="language-yaml">apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-dns
-  namespace: payments
-spec:
-  podSelector: {}
-  policyTypes: [Egress]
-  egress:
-    - to:
-        - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: kube-system }
-          podSelector:
-            matchLabels: { k8s-app: kube-dns }
-      ports:
-        - { protocol: UDP, port: 53 }
-        - { protocol: TCP, port: 53 }
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">NetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">allow-dns</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">podSelector</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+  <span class="nt">policyTypes</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">Egress</span><span class="p p-Indicator">]</span>
+  <span class="nt">egress</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">to</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">namespaceSelector</span><span class="p">:</span>
+            <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> kubernetes.io/metadata.name</span><span class="p">:</span> <span class="nv">kube-system</span> <span class="p p-Indicator">}</span>
+          <span class="nt">podSelector</span><span class="p">:</span>
+            <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> k8s-app</span><span class="p">:</span> <span class="nv">kube-dns</span> <span class="p p-Indicator">}</span>
+      <span class="nt">ports</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="p p-Indicator">{</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">UDP</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">53</span> <span class="p p-Indicator">}</span>
+        <span class="p p-Indicator">-</span> <span class="p p-Indicator">{</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">TCP</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">53</span> <span class="p p-Indicator">}</span>
+</code></pre></div>
+
 <p>Обратите внимание на структуру: <code>namespaceSelector</code> и <code>podSelector</code> <strong>внутри одного элемента списка <code>to</code></strong> (без дефиса перед <code>podSelector</code>) означают AND — «под с меткой <code>k8s-app: kube-dns</code> в namespace <code>kube-system</code>». Если поставить дефис и сделать их двумя элементами, получится OR — «любой под в kube-system ИЛИ под с меткой kube-dns где угодно». Это ошибка № 1 в NetworkPolicy, и YAML о ней не предупредит.</p>
 <p>Типовой полный набор для Spring Boot-сервиса:</p>
-<pre><code class="language-yaml">---
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata: { name: payments-ingress, namespace: payments }
-spec:
-  podSelector:
-    matchLabels: { app: payments }
-  policyTypes: [Ingress]
-  ingress:
-    # трафик от ingress-контроллера
-    - from:
-        - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: ingress-nginx }
-      ports: [{ protocol: TCP, port: 8080 }]
-    # трафик от сервиса заказов
-    - from:
-        - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: orders }
-          podSelector:
-            matchLabels: { app: orders }
-      ports: [{ protocol: TCP, port: 8080 }]
-    # Prometheus скребёт actuator
-    - from:
-        - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: monitoring }
-      ports: [{ protocol: TCP, port: 8081 }]
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata: { name: payments-egress, namespace: payments }
-spec:
-  podSelector:
-    matchLabels: { app: payments }
-  policyTypes: [Egress]
-  egress:
-    - to:
-        - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: kube-system }
-          podSelector:
-            matchLabels: { k8s-app: kube-dns }
-      ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
-    # PostgreSQL вне кластера
-    - to: [{ ipBlock: { cidr: 10.20.30.0/24 } }]
-      ports: [{ protocol: TCP, port: 5432 }]
-    # Kafka
-    - to:
-        - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: kafka }
-      ports: [{ protocol: TCP, port: 9092 }]
-    # выход наружу через egress-gateway
-    - to:
-        - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: istio-system }
-          podSelector:
-            matchLabels: { istio: egressgateway }
-      ports: [{ protocol: TCP, port: 443 }]
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">NetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">payments-ingress</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">podSelector</span><span class="p">:</span>
+    <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> app</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+  <span class="nt">policyTypes</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">Ingress</span><span class="p p-Indicator">]</span>
+  <span class="nt">ingress</span><span class="p">:</span>
+    <span class="c1"># трафик от ingress-контроллера</span>
+    <span class="p p-Indicator">-</span> <span class="nt">from</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">namespaceSelector</span><span class="p">:</span>
+            <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> kubernetes.io/metadata.name</span><span class="p">:</span> <span class="nv">ingress-nginx</span> <span class="p p-Indicator">}</span>
+      <span class="nt">ports</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">TCP</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">8080</span> <span class="p p-Indicator">}]</span>
+    <span class="c1"># трафик от сервиса заказов</span>
+    <span class="p p-Indicator">-</span> <span class="nt">from</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">namespaceSelector</span><span class="p">:</span>
+            <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> kubernetes.io/metadata.name</span><span class="p">:</span> <span class="nv">orders</span> <span class="p p-Indicator">}</span>
+          <span class="nt">podSelector</span><span class="p">:</span>
+            <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> app</span><span class="p">:</span> <span class="nv">orders</span> <span class="p p-Indicator">}</span>
+      <span class="nt">ports</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">TCP</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">8080</span> <span class="p p-Indicator">}]</span>
+    <span class="c1"># Prometheus скребёт actuator</span>
+    <span class="p p-Indicator">-</span> <span class="nt">from</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">namespaceSelector</span><span class="p">:</span>
+            <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> kubernetes.io/metadata.name</span><span class="p">:</span> <span class="nv">monitoring</span> <span class="p p-Indicator">}</span>
+      <span class="nt">ports</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">TCP</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">8081</span> <span class="p p-Indicator">}]</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">NetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">payments-egress</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">podSelector</span><span class="p">:</span>
+    <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> app</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+  <span class="nt">policyTypes</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">Egress</span><span class="p p-Indicator">]</span>
+  <span class="nt">egress</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">to</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">namespaceSelector</span><span class="p">:</span>
+            <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> kubernetes.io/metadata.name</span><span class="p">:</span> <span class="nv">kube-system</span> <span class="p p-Indicator">}</span>
+          <span class="nt">podSelector</span><span class="p">:</span>
+            <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> k8s-app</span><span class="p">:</span> <span class="nv">kube-dns</span> <span class="p p-Indicator">}</span>
+      <span class="nt">ports</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">UDP</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">53</span> <span class="p p-Indicator">},</span> <span class="p p-Indicator">{</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">TCP</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">53</span> <span class="p p-Indicator">}]</span>
+    <span class="c1"># PostgreSQL вне кластера</span>
+    <span class="p p-Indicator">-</span> <span class="nt">to</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> ipBlock</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> cidr</span><span class="p">:</span> <span class="nv">10.20.30.0/24</span> <span class="p p-Indicator">}</span> <span class="p p-Indicator">}]</span>
+      <span class="nt">ports</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">TCP</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">5432</span> <span class="p p-Indicator">}]</span>
+    <span class="c1"># Kafka</span>
+    <span class="p p-Indicator">-</span> <span class="nt">to</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">namespaceSelector</span><span class="p">:</span>
+            <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> kubernetes.io/metadata.name</span><span class="p">:</span> <span class="nv">kafka</span> <span class="p p-Indicator">}</span>
+      <span class="nt">ports</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">TCP</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">9092</span> <span class="p p-Indicator">}]</span>
+    <span class="c1"># выход наружу через egress-gateway</span>
+    <span class="p p-Indicator">-</span> <span class="nt">to</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">namespaceSelector</span><span class="p">:</span>
+            <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> kubernetes.io/metadata.name</span><span class="p">:</span> <span class="nv">istio-system</span> <span class="p p-Indicator">}</span>
+          <span class="nt">podSelector</span><span class="p">:</span>
+            <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> istio</span><span class="p">:</span> <span class="nv">egressgateway</span> <span class="p p-Indicator">}</span>
+      <span class="nt">ports</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">TCP</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">443</span> <span class="p p-Indicator">}]</span>
+</code></pre></div>
+
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> NetworkPolicy — <strong>L3/L4 и работает по IP</strong>. Она не знает про DNS-имена. Правило «разрешить egress на <code>api.partner-bank.com</code>» штатно невозможно: партнёр меняет IP — вы теряете связь; вы прописали /16 — открыли пол-облака. Решения: (а) egress-gateway с фиксированным набором адресов, (б) CNI с DNS-aware политиками (Calico <code>GlobalNetworkPolicy</code> с доменами, Cilium <code>toFQDNs</code>), (в) <code>ServiceEntry</code> + egress-gateway в Istio (§ 9.6).</p>
 </blockquote>
@@ -386,39 +394,40 @@ spec:
 <p><strong>Gateway API</strong> — замена, вынесенная в отдельную группу <code>gateway.networking.k8s.io</code>. Четыре вида ресурсов достигли v1: <code>GatewayClass</code>, <code>Gateway</code>, <code>HTTPRoute</code>, <code>GRPCRoute</code>; они покрывают матчинг по заголовкам и веса трафика, которые в Ingress были возможны только через аннотации. Ingress при этом <strong>не объявлен устаревшим</strong>, и в документации есть отдельный раздел про миграцию (<a href="https://kubernetes.io/docs/concepts/services-networking/gateway/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/concepts/services-networking/gateway/">kubernetes.io, Gateway API</a>).</p>
 <p>Ключевая идея Gateway API — <strong>разделение ролей</strong>. Инфраструктурная команда владеет <code>GatewayClass</code> и <code>Gateway</code> (кто и как терминирует TLS, какие адреса, какие порты), команда сервиса владеет <code>HTTPRoute</code> (куда идут её пути) и не может случайно поменять TLS-конфигурацию всего кластера. В Ingress всё это было в одном объекте.</p>
-<pre><code class="language-yaml">apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: public
-  namespace: infra
-spec:
-  gatewayClassName: istio
-  listeners:
-    - name: https
-      protocol: HTTPS
-      port: 443
-      hostname: &quot;*.bank.example&quot;
-      tls:
-        mode: Terminate
-        certificateRefs: [{ name: wildcard-bank-tls }]
-      allowedRoutes:
-        namespaces: { from: Selector, selector: { matchLabels: { exposed: &quot;true&quot; } } }
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: payments
-  namespace: payments
-spec:
-  parentRefs: [{ name: public, namespace: infra }]
-  hostnames: [&quot;api.bank.example&quot;]
-  rules:
-    - matches: [{ path: { type: PathPrefix, value: /v1/payments } }]
-      backendRefs:
-        - { name: payments, port: 8080, weight: 90 }
-        - { name: payments-canary, port: 8080, weight: 10 }
-      timeouts: { request: 3s }
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">gateway.networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Gateway</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">public</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">infra</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">gatewayClassName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">istio</span>
+  <span class="nt">listeners</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">https</span>
+      <span class="nt">protocol</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">HTTPS</span>
+      <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">443</span>
+      <span class="nt">hostname</span><span class="p">:</span> <span class="s">"*.bank.example"</span>
+      <span class="nt">tls</span><span class="p">:</span>
+        <span class="nt">mode</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Terminate</span>
+        <span class="nt">certificateRefs</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">wildcard-bank-tls</span> <span class="p p-Indicator">}]</span>
+      <span class="nt">allowedRoutes</span><span class="p">:</span>
+        <span class="nt">namespaces</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> from</span><span class="p">:</span> <span class="nv">Selector</span><span class="p p-Indicator">,</span><span class="nt"> selector</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> exposed</span><span class="p">:</span> <span class="s">"true"</span> <span class="p p-Indicator">}</span> <span class="p p-Indicator">}</span> <span class="p p-Indicator">}</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">gateway.networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">HTTPRoute</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">parentRefs</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">public</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">infra</span> <span class="p p-Indicator">}]</span>
+  <span class="nt">hostnames</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"api.bank.example"</span><span class="p p-Indicator">]</span>
+  <span class="nt">rules</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">matches</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> path</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> type</span><span class="p">:</span> <span class="nv">PathPrefix</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span> <span class="nv">/v1/payments</span> <span class="p p-Indicator">}</span> <span class="p p-Indicator">}]</span>
+      <span class="nt">backendRefs</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">payments</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">8080</span><span class="p p-Indicator">,</span><span class="nt"> weight</span><span class="p">:</span> <span class="nv">90</span> <span class="p p-Indicator">}</span>
+        <span class="p p-Indicator">-</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">payments-canary</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">8080</span><span class="p p-Indicator">,</span><span class="nt"> weight</span><span class="p">:</span> <span class="nv">10</span> <span class="p p-Indicator">}</span>
+      <span class="nt">timeouts</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> request</span><span class="p">:</span> <span class="nv">3s</span> <span class="p p-Indicator">}</span>
+</code></pre></div>
+
 <p>Istio реализует Gateway API наравне со своими CRD, и для north-south трафика это сейчас предпочтительный путь: те же веса, что в <code>VirtualService</code>, но в стандартном API.</p>
 <h3 id="43-исходящий-трафик-egress">4.3 Исходящий трафик (egress)</h3>
 <p>По умолчанию под выходит в интернет через SNAT на IP узла: исходящий пакет с <code>10.244.1.7</code> маскарадится в адрес узла. Проблемы начинаются, когда партнёр требует <strong>белый список IP</strong>.</p>
@@ -442,23 +451,25 @@ spec:
 <li><strong>L7-прокси в пути</strong> — Envoy/sidecar/ingress-контроллер терминирует HTTP/2 и балансирует по стримам. Это ровно то, что даёт mesh «бесплатно», и это одна из самых частых настоящих причин его внедрения.</li>
 <li><strong>Клиентская балансировка</strong> — gRPC-клиент разрешает <strong>headless</strong>-сервис, получает список IP подов, держит подсоединение к каждому и сам применяет <code>round_robin</code>:</li>
 </ol>
-<pre><code class="language-java">ManagedChannel channel = Grpc.newChannelBuilder(
-            &quot;dns:///payments-headless.payments.svc.cluster.local:9090&quot;,
-            InsecureChannelCredentials.create())
-        .defaultLoadBalancingPolicy(&quot;round_robin&quot;)
-        .idleTimeout(30, TimeUnit.SECONDS)
-        .build();
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">ManagedChannel</span> <span class="n">channel</span> <span class="o">=</span> <span class="n">Grpc</span><span class="p">.</span><span class="na">newChannelBuilder</span><span class="p">(</span>
+            <span class="s">"dns:///payments-headless.payments.svc.cluster.local:9090"</span><span class="p">,</span>
+            <span class="n">InsecureChannelCredentials</span><span class="p">.</span><span class="na">create</span><span class="p">())</span>
+        <span class="p">.</span><span class="na">defaultLoadBalancingPolicy</span><span class="p">(</span><span class="s">"round_robin"</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">idleTimeout</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">TimeUnit</span><span class="p">.</span><span class="na">SECONDS</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">build</span><span class="p">();</span>
+</code></pre></div>
+
 <p>Схема <code>dns:///</code> включает DNS-распознаватель grpc-java; для headless-сервиса он получает все адреса подов. Минус: клиент не узнаёт о новых подах до следующего разрешения имени (grpc-java разрешает имя заново при разрыве соединения или по своему расписанию), а при 100 клиентах × 50 подов получаем 5000 соединений.</p>
 <ol start="3">
 <li><strong>Ограничить время жизни соединения на сервере</strong> — <code>maxConnectionAge</code> в gRPC-сервере или <code>maxRequestsPerConnection</code> в Istio DestinationRule. Соединение периодически закрывается (с GOAWAY), клиент переподключается, L4 заново распределяет. Грубо, но работает даже с тупым L4.</li>
 </ol>
-<pre><code class="language-java">Server server = NettyServerBuilder.forPort(9090)
-        .maxConnectionAge(30, TimeUnit.MINUTES)
-        .maxConnectionAgeGrace(30, TimeUnit.SECONDS)  // время на добивку текущих стримов
-        .addService(new PaymentsService())
-        .build();
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">Server</span> <span class="n">server</span> <span class="o">=</span> <span class="n">NettyServerBuilder</span><span class="p">.</span><span class="na">forPort</span><span class="p">(</span><span class="mi">9090</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">maxConnectionAge</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">TimeUnit</span><span class="p">.</span><span class="na">MINUTES</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">maxConnectionAgeGrace</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">TimeUnit</span><span class="p">.</span><span class="na">SECONDS</span><span class="p">)</span>  <span class="c1">// время на добивку текущих стримов</span>
+        <span class="p">.</span><span class="na">addService</span><span class="p">(</span><span class="k">new</span> <span class="n">PaymentsService</span><span class="p">())</span>
+        <span class="p">.</span><span class="na">build</span><span class="p">();</span>
+</code></pre></div>
+
 <blockquote>
 <p>💡 <strong>На интервью.</strong> «Почему L4-балансировщик ломает gRPC?» — «Потому что gRPC — это HTTP/2: одно долгоживущее TCP-соединение, в котором мультиплексируются все запросы. L4 балансирует на уровне соединений, значит выбор бэкенда делается один раз и навсегда. После скейлинга новые поды не получат трафика. Лечится L7-прокси, который балансирует по стримам, клиентской балансировкой через headless-сервис, либо принудительным закрытием соединений по <code>maxConnectionAge</code>.»</p>
 </blockquote>
@@ -532,7 +543,7 @@ spec:
 <li><strong>Galley</strong> — валидация и агрегация конфигурации (сейчас — validating webhook и конвертация).</li>
 </ul>
 <p>До Istio 1.5 это были три (плюс sidecar-injector и mixer) отдельных <code>Deployment</code>; их слияние в istiod — главное упрощение эксплуатации за всю историю проекта. Заодно выкинули <strong>Mixer</strong> — компонент, через который раньше шли все проверки политик и телеметрия: каждый запрос порождал вызов к Mixer, что давало ощутимую латентность и делало Mixer узким местом. Сейчас телеметрия и политики считаются внутри Envoy.</p>
-<pre><code class="language-mermaid">flowchart LR
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>flowchart LR
   subgraph CP[Control plane]
     D[istiod&lt;br/&gt;Pilot+CA+валидация]
     K[(kube-apiserver)]
@@ -549,7 +560,8 @@ spec:
   D --&gt;|SDS: сертификаты| E1
   D --&gt;|SDS| E2
   E1 --&gt;|mTLS| E2
-</code></pre>
+</code></pre></div>
+
 <p>Важнейшее свойство архитектуры: <strong>падение control plane не роняет трафик</strong>. Envoy продолжает работать с последней полученной конфигурацией. Что перестаёт работать: применение новых политик, обновление списков эндпоинтов (новые поды не получат трафика, удалённые продолжат его получать) и — через несколько часов — ротация сертификатов. То есть istiod down — это не авария, а «часы до аварии».</p>
 <h3 id="63-встроенные-возможности-mesh">6.3 Встроенные возможности mesh</h3>
 <ul>
@@ -649,28 +661,30 @@ https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/">kubernet
 <li>поддерживают <code>readinessProbe</code> и <code>startupProbe</code> (обычный init-контейнер не поддерживает ничего);</li>
 <li>перезапускаются независимо, не считаются при определении завершённости Job.</li>
 </ul>
-<pre><code class="language-yaml">apiVersion: apps/v1
-kind: Deployment
-metadata: { name: payments }
-spec:
-  template:
-    spec:
-      initContainers:
-        - name: istio-proxy
-          image: docker.io/istio/proxyv2:1.31.0
-          restartPolicy: Always          # &lt;- превращает init-контейнер в native sidecar
-          startupProbe:
-            httpGet: { path: /healthz/ready, port: 15021 }
-            periodSeconds: 1
-            failureThreshold: 30
-      containers:
-        - name: app
-          image: registry.bank.example/payments:1.4.2
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">template</span><span class="p">:</span>
+    <span class="nt">spec</span><span class="p">:</span>
+      <span class="nt">initContainers</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">istio-proxy</span>
+          <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker.io/istio/proxyv2:1.31.0</span>
+          <span class="nt">restartPolicy</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Always</span>          <span class="c1"># &lt;- превращает init-контейнер в native sidecar</span>
+          <span class="nt">startupProbe</span><span class="p">:</span>
+            <span class="nt">httpGet</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> path</span><span class="p">:</span> <span class="nv">/healthz/ready</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">15021</span> <span class="p p-Indicator">}</span>
+            <span class="nt">periodSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+            <span class="nt">failureThreshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30</span>
+      <span class="nt">containers</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">app</span>
+          <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">registry.bank.example/payments:1.4.2</span>
+</code></pre></div>
+
 <p>Istio внедряет прокси как native sidecar при включённой опции <code>ENABLE_NATIVE_SIDECARS</code> (в современных версиях — поведение по умолчанию на кластерах с поддержкой). Проверить, какой у вас режим, можно так:</p>
-<pre><code class="language-bash">kubectl get pod -l app=payments -o jsonpath='{.items[0].spec.initContainers[*].name}'
-# если среди init-контейнеров есть istio-proxy — это native sidecar
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>kubectl get pod -l <span class="nv">app</span><span class="o">=</span>payments -o <span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.items[0].spec.initContainers[*].name}'</span>
+<span class="c1"># если среди init-контейнеров есть istio-proxy — это native sidecar</span>
+</code></pre></div>
+
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> Даже с native sidecar остаётся окно на завершении: под уже исключён из EndpointSlice, но kube-proxy на других узлах ещё не обновил правила, и запросы продолжают приходить. Это не проблема mesh, это свойство Kubernetes (удаление из эндпоинтов и SIGTERM идут параллельно и без синхронизации — см. главу 47). Лечится <code>preStop: sleep 5–15s</code> на прикладном контейнере.</p>
 </blockquote>
@@ -797,7 +811,7 @@ https://istio.io/latest/docs/ambient/overview/">istio.io, Ambient Mode Overview<
 <p><strong>Обновление без рестарта.</strong> Envoy применяет новые listeners и routes на лету: существующие соединения дорабатывают на старой конфигурации (draining), новые идут по новой. Это принципиальное отличие от nginx с его reload и от HAProxy старых версий.</p>
 <h3 id="83-цепочка-обработки-запроса-в-envoy">8.3 Цепочка обработки запроса в Envoy</h3>
 <p>Эту цепочку надо уметь проговорить — на ней строится вся отладка mesh.</p>
-<pre><code>входящий пакет
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>входящий пакет
    ↓
 Listener            (адрес:порт; выбирается по destination IP:port)
    ↓  filter chain match (SNI, ALPN, source/destination CIDR, transport protocol)
@@ -810,7 +824,8 @@ Route configuration (virtual_hosts по :authority → routes по :path/headers
 Cluster             (политики: LB, connection pool, circuit breaker, outlier detection, TLS)
    ↓
 Endpoint            (конкретный IP:порт)
-</code></pre>
+</code></pre></div>
+
 <p>Что из этого следует практически:</p>
 <ul>
 <li><strong>Если запрос не доходит</strong> — отказ произошёл на одном из этих уровней, и у каждого свой диагностический признак. Нет listener → соединение вообще не принято. Нет маршрута в route config → <code>404</code> с флагом <code>NR</code>. Нет cluster → <code>503 NC</code>. Cluster есть, эндпоинтов нет → <code>503 UH no_healthy_upstream</code>. Эндпоинты есть, соединиться не смог → <code>503 UF</code>/<code>UC</code>.</li>
@@ -819,27 +834,28 @@ Endpoint            (конкретный IP:порт)
 </ul>
 <h3 id="84-admin-интерфейс-envoy">8.4 Admin-интерфейс Envoy</h3>
 <p>Envoy слушает admin на <code>localhost:15000</code> внутри пода. Это единственный источник истины о том, <strong>что прокси реально знает</strong>, в отличие от того, что вы ему написали в YAML.</p>
-<pre><code class="language-bash">POD=$(kubectl get pod -l app=orders -o jsonpath='{.items[0].metadata.name}')
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nv">POD</span><span class="o">=</span><span class="k">$(</span>kubectl get pod -l <span class="nv">app</span><span class="o">=</span>orders -o <span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.items[0].metadata.name}'</span><span class="k">)</span>
 
-# полный дамп конфигурации (десятки тысяч строк — грепайте)
-kubectl exec $POD -c istio-proxy -- curl -s localhost:15000/config_dump &gt; dump.json
+<span class="c1"># полный дамп конфигурации (десятки тысяч строк — грепайте)</span>
+kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy -- curl -s localhost:15000/config_dump &gt; dump.json
 
-# только clusters и состояние их эндпоинтов (health, outlier ejection)
-kubectl exec $POD -c istio-proxy -- curl -s localhost:15000/clusters | grep payments
+<span class="c1"># только clusters и состояние их эндпоинтов (health, outlier ejection)</span>
+kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy -- curl -s localhost:15000/clusters <span class="p">|</span> grep payments
 
-# статистика: ретраи, таймауты, circuit breaking, коды ответов
-kubectl exec $POD -c istio-proxy -- curl -s localhost:15000/stats | grep -E 'payments.*(upstream_rq_retry|pending_overflow|timeout|5xx)'
+<span class="c1"># статистика: ретраи, таймауты, circuit breaking, коды ответов</span>
+kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy -- curl -s localhost:15000/stats <span class="p">|</span> grep -E <span class="s1">'payments.*(upstream_rq_retry|pending_overflow|timeout|5xx)'</span>
 
-# какие сертификаты загружены и когда истекают
-kubectl exec $POD -c istio-proxy -- curl -s localhost:15000/certs
+<span class="c1"># какие сертификаты загружены и когда истекают</span>
+kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy -- curl -s localhost:15000/certs
 
-# поднять уровень логирования конкретных подсистем на лету
-kubectl exec $POD -c istio-proxy -- curl -s -X POST \
-  'localhost:15000/logging?router=debug&amp;connection=debug&amp;upstream=debug'
+<span class="c1"># поднять уровень логирования конкретных подсистем на лету</span>
+kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy -- curl -s -X POST <span class="se">\</span>
+  <span class="s1">'localhost:15000/logging?router=debug&amp;connection=debug&amp;upstream=debug'</span>
 
-# сбросить статистику перед экспериментом
-kubectl exec $POD -c istio-proxy -- curl -s -X POST localhost:15000/reset_counters
-</code></pre>
+<span class="c1"># сбросить статистику перед экспериментом</span>
+kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy -- curl -s -X POST localhost:15000/reset_counters
+</code></pre></div>
+
 <p>Самые полезные счётчики в <code>/stats</code> для кластера <code>outbound|8080||payments.payments.svc.cluster.local</code>:</p>
 <table class="rt rt-2">
 <thead>
@@ -1010,8 +1026,9 @@ https://istio.io/latest/docs/reference/config/networking/virtual-service/">istio
 <hr>
 <h2 id="9-istio-управление-трафиком">9. Istio: управление трафиком</h2>
 <h3 id="91-установка-istio-и-профили">9.1 Установка Istio и профили</h3>
-<pre><code class="language-bash">istioctl install --set profile=default -y
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>istioctl install --set <span class="nv">profile</span><span class="o">=</span>default -y
+</code></pre></div>
+
 <p>Профили — предустановленные наборы компонентов:</p>
 <table class="rt">
 <thead>
@@ -1058,62 +1075,66 @@ https://istio.io/latest/docs/reference/config/networking/virtual-service/">istio
 <p>Альтернатива <code>istioctl</code> — Helm-чарты (<code>base</code>, <code>istiod</code>, <code>gateway</code>, <code>cni</code>, <code>ztunnel</code>) и Istio Operator. Для GitOps (глава 53) обычно берут Helm: конфигурация целиком в git, <code>istioctl</code> остаётся для отладки.</p>
 <h3 id="92-sidecar-injection">9.2 Sidecar injection</h3>
 <p>Инжекция делается mutating admission webhook'ом istiod при создании пода. Включается меткой на namespace:</p>
-<pre><code class="language-bash">kubectl label namespace payments istio-injection=enabled
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>kubectl label namespace payments istio-injection<span class="o">=</span>enabled
+</code></pre></div>
+
 <p>Важно: <strong>метка влияет только на вновь создаваемые поды</strong>. Существующие надо перезапустить (<code>kubectl rollout restart deployment -n payments</code>). Это отдельная строка в плане внедрения — «перезапустить всё».</p>
 <p>Точечное управление аннотациями на поде:</p>
-<pre><code class="language-yaml">spec:
-  template:
-    metadata:
-      labels:
-        sidecar.istio.io/inject: &quot;false&quot;        # не инжектировать этот под
-      annotations:
-        sidecar.istio.io/proxyCPU: &quot;50m&quot;
-        sidecar.istio.io/proxyMemory: &quot;192Mi&quot;
-        proxy.istio.io/config: |
-          holdApplicationUntilProxyStarts: true
-          terminationDrainDuration: 30s
-        traffic.sidecar.istio.io/excludeOutboundPorts: &quot;5432&quot;   # PostgreSQL мимо прокси
-        traffic.sidecar.istio.io/excludeOutboundIPRanges: &quot;10.20.30.0/24&quot;
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">template</span><span class="p">:</span>
+    <span class="nt">metadata</span><span class="p">:</span>
+      <span class="nt">labels</span><span class="p">:</span>
+        <span class="nt">sidecar.istio.io/inject</span><span class="p">:</span> <span class="s">"false"</span>        <span class="c1"># не инжектировать этот под</span>
+      <span class="nt">annotations</span><span class="p">:</span>
+        <span class="nt">sidecar.istio.io/proxyCPU</span><span class="p">:</span> <span class="s">"50m"</span>
+        <span class="nt">sidecar.istio.io/proxyMemory</span><span class="p">:</span> <span class="s">"192Mi"</span>
+        <span class="nt">proxy.istio.io/config</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+          <span class="no">holdApplicationUntilProxyStarts: true</span>
+          <span class="no">terminationDrainDuration: 30s</span>
+        <span class="nt">traffic.sidecar.istio.io/excludeOutboundPorts</span><span class="p">:</span> <span class="s">"5432"</span>   <span class="c1"># PostgreSQL мимо прокси</span>
+        <span class="nt">traffic.sidecar.istio.io/excludeOutboundIPRanges</span><span class="p">:</span> <span class="s">"10.20.30.0/24"</span>
+</code></pre></div>
+
 <p>Кандидаты на исключение из mesh: соединения к БД (JDBC — не HTTP, mesh даёт мало, а риск сломать TLS высок), высокочастотные бинарные протоколы, поды с host network.</p>
 <p><strong>Revision-based upgrade и canary-апгрейд самого Istio.</strong> Обновление control plane — рискованная операция, потому что затрагивает весь трафик. Ревизии позволяют держать две версии istiod одновременно:</p>
-<pre><code class="language-bash"># ставим новую ревизию рядом со старой
-istioctl install --set revision=1-31-0 --set profile=default -y
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># ставим новую ревизию рядом со старой</span>
+istioctl install --set <span class="nv">revision</span><span class="o">=</span><span class="m">1</span>-31-0 --set <span class="nv">profile</span><span class="o">=</span>default -y
 
-# переводим один namespace на новую ревизию
-kubectl label ns payments istio.io/rev=1-31-0 --overwrite
-kubectl label ns payments istio-injection-              # снимаем старую метку
+<span class="c1"># переводим один namespace на новую ревизию</span>
+kubectl label ns payments istio.io/rev<span class="o">=</span><span class="m">1</span>-31-0 --overwrite
+kubectl label ns payments istio-injection-              <span class="c1"># снимаем старую метку</span>
 kubectl rollout restart deployment -n payments
 
-# убедились, что всё хорошо — переводим остальные, затем удаляем старую ревизию
-istioctl uninstall --revision 1-30-2 -y
-</code></pre>
+<span class="c1"># убедились, что всё хорошо — переводим остальные, затем удаляем старую ревизию</span>
+istioctl uninstall --revision <span class="m">1</span>-30-2 -y
+</code></pre></div>
+
 <p>Дополнительно есть <strong>revision tags</strong> — именованный псевдоним (<code>prod-stable</code>), на который указывают namespace; переключение тега на новую ревизию меняет целевую версию без правки меток на всех namespace.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> Забытая метка <code>istio-injection=enabled</code> на старом namespace плюс переход на ревизии = в поды продолжает внедряться прокси старой ревизии, которую вы уже удалили → при следующем рестарте пода webhook не отвечает, и под <strong>не создаётся вовсе</strong> (если <code>failurePolicy: Fail</code>). Проверяйте <code>kubectl get ns -L istio-injection -L istio.io/rev</code> перед удалением ревизии.</p>
 </blockquote>
 <h3 id="93-gateway-входной-шлюз-mesh">9.3 Gateway: входной шлюз mesh</h3>
 <p><code>Gateway</code> описывает L4/L6-часть: на каком порту слушать, какой протокол, какой хост, какой сертификат. Он <strong>не задаёт маршрутизацию</strong> — это делает привязанный <code>VirtualService</code>.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
-kind: Gateway
-metadata:
-  name: bank-gateway
-  namespace: istio-system
-spec:
-  selector:
-    istio: ingressgateway          # какие поды gateway реализуют этот объект
-  servers:
-    - port: { number: 443, name: https, protocol: HTTPS }
-      hosts: [&quot;api.bank.example&quot;]
-      tls:
-        mode: SIMPLE
-        credentialName: bank-tls   # Secret типа kubernetes.io/tls в namespace gateway
-    - port: { number: 80, name: http, protocol: HTTP }
-      hosts: [&quot;api.bank.example&quot;]
-      tls:
-        httpsRedirect: true        # 301 на HTTPS
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Gateway</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">bank-gateway</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">istio-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">selector</span><span class="p">:</span>
+    <span class="nt">istio</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ingressgateway</span>          <span class="c1"># какие поды gateway реализуют этот объект</span>
+  <span class="nt">servers</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">port</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> number</span><span class="p">:</span> <span class="nv">443</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">https</span><span class="p p-Indicator">,</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">HTTPS</span> <span class="p p-Indicator">}</span>
+      <span class="nt">hosts</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"api.bank.example"</span><span class="p p-Indicator">]</span>
+      <span class="nt">tls</span><span class="p">:</span>
+        <span class="nt">mode</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SIMPLE</span>
+        <span class="nt">credentialName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">bank-tls</span>   <span class="c1"># Secret типа kubernetes.io/tls в namespace gateway</span>
+    <span class="p p-Indicator">-</span> <span class="nt">port</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> number</span><span class="p">:</span> <span class="nv">80</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">http</span><span class="p p-Indicator">,</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">HTTP</span> <span class="p p-Indicator">}</span>
+      <span class="nt">hosts</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"api.bank.example"</span><span class="p p-Indicator">]</span>
+      <span class="nt">tls</span><span class="p">:</span>
+        <span class="nt">httpsRedirect</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>        <span class="c1"># 301 на HTTPS</span>
+</code></pre></div>
+
 <p><code>credentialName</code> ссылается на Secret <strong>в namespace самого gateway-пода</strong> (обычно <code>istio-system</code>), а не там, где лежит <code>Gateway</code>-объект, — типовая причина «сертификат не подхватился». Режимы TLS: <code>SIMPLE</code> (обычный TLS), <code>MUTUAL</code> (требовать клиентский сертификат), <code>PASSTHROUGH</code> (не терминировать, маршрутизировать по SNI), <code>ISTIO_MUTUAL</code> (внутренний mTLS mesh).</p>
 <h3 id="94-маршрутизация-через-virtualservice">9.4 Маршрутизация через VirtualService</h3>
 <p>VirtualService — главный объект маршрутизации в Istio: он описывает, на какие версии сервиса и по каким правилам уходят запросы к хосту, и именно в нём задают повторы, таймауты, разбиение трафика и внедрение сбоев. Ниже ключевые свойства объекта в том виде, как их фиксирует справочник Istio (reference):</p>
@@ -1125,206 +1146,215 @@ spec:
 <li><code>fault</code> при включении <strong>отключает таймауты и повторы</strong> на этом маршруте.</li>
 </ul>
 <p>Маршрутизация по заголовку (dark launch для внутренних тестировщиков) плюс веса:</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
-kind: VirtualService
-metadata:
-  name: payments
-  namespace: payments
-spec:
-  hosts: [&quot;payments.payments.svc.cluster.local&quot;, &quot;api.bank.example&quot;]
-  gateways: [&quot;istio-system/bank-gateway&quot;, &quot;mesh&quot;]
-  http:
-    # 1. внутренние тестировщики принудительно на v2
-    - match:
-        - headers:
-            x-canary-user: { exact: &quot;true&quot; }
-      route:
-        - destination: { host: payments, subset: v2 }
-      timeout: 5s
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">VirtualService</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">hosts</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"payments.payments.svc.cluster.local"</span><span class="p p-Indicator">,</span> <span class="s">"api.bank.example"</span><span class="p p-Indicator">]</span>
+  <span class="nt">gateways</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"istio-system/bank-gateway"</span><span class="p p-Indicator">,</span> <span class="s">"mesh"</span><span class="p p-Indicator">]</span>
+  <span class="nt">http</span><span class="p">:</span>
+    <span class="c1"># 1. внутренние тестировщики принудительно на v2</span>
+    <span class="p p-Indicator">-</span> <span class="nt">match</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">headers</span><span class="p">:</span>
+            <span class="nt">x-canary-user</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> exact</span><span class="p">:</span> <span class="s">"true"</span> <span class="p p-Indicator">}</span>
+      <span class="nt">route</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">destination</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> host</span><span class="p">:</span> <span class="nv">payments</span><span class="p p-Indicator">,</span><span class="nt"> subset</span><span class="p">:</span> <span class="nv">v2</span> <span class="p p-Indicator">}</span>
+      <span class="nt">timeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5s</span>
 
-    # 2. административный путь — только на стабильную версию, с длинным таймаутом
-    - match:
-        - uri: { prefix: /v1/payments/reconciliation }
-      route:
-        - destination: { host: payments, subset: v1 }
-      timeout: 120s
-      retries: { attempts: 0 }          # длинный отчёт не повторяем
+    <span class="c1"># 2. административный путь — только на стабильную версию, с длинным таймаутом</span>
+    <span class="p p-Indicator">-</span> <span class="nt">match</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">uri</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> prefix</span><span class="p">:</span> <span class="nv">/v1/payments/reconciliation</span> <span class="p p-Indicator">}</span>
+      <span class="nt">route</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">destination</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> host</span><span class="p">:</span> <span class="nv">payments</span><span class="p p-Indicator">,</span><span class="nt"> subset</span><span class="p">:</span> <span class="nv">v1</span> <span class="p p-Indicator">}</span>
+      <span class="nt">timeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">120s</span>
+      <span class="nt">retries</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> attempts</span><span class="p">:</span> <span class="nv">0</span> <span class="p p-Indicator">}</span>          <span class="c1"># длинный отчёт не повторяем</span>
 
-    # 3. остальное — 95/5
-    - route:
-        - destination: { host: payments, subset: v1 }
-          weight: 95
-        - destination: { host: payments, subset: v2 }
-          weight: 5
-      timeout: 3s
-      retries:
-        attempts: 2
-        perTryTimeout: 1s
-        retryOn: connect-failure,refused-stream,gateway-error
-        retryRemoteLocalities: false
-</code></pre>
+    <span class="c1"># 3. остальное — 95/5</span>
+    <span class="p p-Indicator">-</span> <span class="nt">route</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">destination</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> host</span><span class="p">:</span> <span class="nv">payments</span><span class="p p-Indicator">,</span><span class="nt"> subset</span><span class="p">:</span> <span class="nv">v1</span> <span class="p p-Indicator">}</span>
+          <span class="nt">weight</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">95</span>
+        <span class="p p-Indicator">-</span> <span class="nt">destination</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> host</span><span class="p">:</span> <span class="nv">payments</span><span class="p p-Indicator">,</span><span class="nt"> subset</span><span class="p">:</span> <span class="nv">v2</span> <span class="p p-Indicator">}</span>
+          <span class="nt">weight</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+      <span class="nt">timeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3s</span>
+      <span class="nt">retries</span><span class="p">:</span>
+        <span class="nt">attempts</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+        <span class="nt">perTryTimeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1s</span>
+        <span class="nt">retryOn</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">connect-failure,refused-stream,gateway-error</span>
+        <span class="nt">retryRemoteLocalities</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+</code></pre></div>
+
 <p>Заметьте арифметику таймаутов: <code>timeout: 3s</code> — это <strong>общий бюджет на все попытки</strong>, а <code>perTryTimeout: 1s</code> × <code>attempts: 2</code> плюс исходная попытка даёт максимум 3 с. Если поставить <code>perTryTimeout: 2s</code> при <code>attempts: 3</code>, общий таймаут 3 с обрежет процесс на середине второй попытки — и вы получите не то поведение, которое ожидали. Правило: <code>timeout ≥ perTryTimeout × (attempts + 1)</code> плюс запас на backoff.</p>
 <p><strong>Fault injection</strong> — искусственные отказы для проверки устойчивости без изменения кода:</p>
-<pre><code class="language-yaml">    - match:
-        - headers:
-            x-chaos: { exact: &quot;delay&quot; }
-      fault:
-        delay:
-          percentage: { value: 100 }
-          fixedDelay: 7s
-      route:
-        - destination: { host: payments, subset: v1 }
----
-# или процент ошибок для всего трафика в тестовом контуре
-      fault:
-        abort:
-          percentage: { value: 10 }
-          httpStatus: 503
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>    <span class="p p-Indicator">-</span> <span class="nt">match</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">headers</span><span class="p">:</span>
+            <span class="nt">x-chaos</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> exact</span><span class="p">:</span> <span class="s">"delay"</span> <span class="p p-Indicator">}</span>
+      <span class="nt">fault</span><span class="p">:</span>
+        <span class="nt">delay</span><span class="p">:</span>
+          <span class="nt">percentage</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> value</span><span class="p">:</span> <span class="nv">100</span> <span class="p p-Indicator">}</span>
+          <span class="nt">fixedDelay</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">7s</span>
+      <span class="nt">route</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">destination</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> host</span><span class="p">:</span> <span class="nv">payments</span><span class="p p-Indicator">,</span><span class="nt"> subset</span><span class="p">:</span> <span class="nv">v1</span> <span class="p p-Indicator">}</span>
+<span class="nn">---</span>
+<span class="c1"># или процент ошибок для всего трафика в тестовом контуре</span>
+      <span class="nt">fault</span><span class="p">:</span>
+        <span class="nt">abort</span><span class="p">:</span>
+          <span class="nt">percentage</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> value</span><span class="p">:</span> <span class="nv">10</span> <span class="p p-Indicator">}</span>
+          <span class="nt">httpStatus</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">503</span>
+</code></pre></div>
+
 <p>Комбинация <code>delay</code> с заголовком-переключателем — самый дешёвый способ проверить, что ваши Resilience4j-таймауты и fallback реально работают: включили задержку, увидели, что клиент отвалился по своему таймауту и отдал деградированный ответ, выключили. Для gRPC вместо <code>httpStatus</code> используется <code>grpcStatus</code>.</p>
 <p><strong>Mirroring:</strong></p>
-<pre><code class="language-yaml">    - route:
-        - destination: { host: payments, subset: v1 }
-      mirror: { host: payments, subset: v2 }
-      mirrorPercentage: { value: 5 }     # по умолчанию 100 %
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>    <span class="p p-Indicator">-</span> <span class="nt">route</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">destination</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> host</span><span class="p">:</span> <span class="nv">payments</span><span class="p p-Indicator">,</span><span class="nt"> subset</span><span class="p">:</span> <span class="nv">v1</span> <span class="p p-Indicator">}</span>
+      <span class="nt">mirror</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> host</span><span class="p">:</span> <span class="nv">payments</span><span class="p p-Indicator">,</span><span class="nt"> subset</span><span class="p">:</span> <span class="nv">v2</span> <span class="p p-Indicator">}</span>
+      <span class="nt">mirrorPercentage</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> value</span><span class="p">:</span> <span class="nv">5</span> <span class="p p-Indicator">}</span>     <span class="c1"># по умолчанию 100 %</span>
+</code></pre></div>
+
 <h3 id="95-destinationrule-политики-для-получателя">9.5 DestinationRule: политики для получателя</h3>
 <p><code>VirtualService</code> решает «куда», <code>DestinationRule</code> — «как туда ходить». Он же объявляет <strong>subsets</strong> — именованные группы подов по меткам, на которые ссылается <code>VirtualService</code>.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
-kind: DestinationRule
-metadata:
-  name: payments
-  namespace: payments
-spec:
-  host: payments.payments.svc.cluster.local
-  trafficPolicy:
-    tls: { mode: ISTIO_MUTUAL }
-    loadBalancer:
-      simple: LEAST_REQUEST
-    connectionPool:
-      tcp:
-        maxConnections: 200              # дефолт 2^32-1, то есть без лимита
-        connectTimeout: 2s               # минимум 10s по дефолту документации
-        tcpKeepalive: { time: 60s, interval: 10s, probes: 3 }
-      http:
-        http1MaxPendingRequests: 100     # дефолт 2^32-1
-        http2MaxRequests: 500            # дефолт 2^32-1
-        maxRequestsPerConnection: 0      # 0 = без лимита (дефолт)
-        idleTimeout: 60s                 # дефолт 1 час
-        h2UpgradePolicy: UPGRADE
-    outlierDetection:
-      consecutive5xxErrors: 5            # дефолт 5
-      interval: 10s                      # дефолт 10s
-      baseEjectionTime: 30s              # дефолт 30s
-      maxEjectionPercent: 50             # дефолт 50
-      minHealthPercent: 50               # дефолт 50
-  subsets:
-    - name: v1
-      labels: { version: v1 }
-    - name: v2
-      labels: { version: v2 }
-      trafficPolicy:                     # переопределение только для v2
-        connectionPool:
-          http: { http2MaxRequests: 50 }
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DestinationRule</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments.payments.svc.cluster.local</span>
+  <span class="nt">trafficPolicy</span><span class="p">:</span>
+    <span class="nt">tls</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> mode</span><span class="p">:</span> <span class="nv">ISTIO_MUTUAL</span> <span class="p p-Indicator">}</span>
+    <span class="nt">loadBalancer</span><span class="p">:</span>
+      <span class="nt">simple</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LEAST_REQUEST</span>
+    <span class="nt">connectionPool</span><span class="p">:</span>
+      <span class="nt">tcp</span><span class="p">:</span>
+        <span class="nt">maxConnections</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">200</span>              <span class="c1"># дефолт 2^32-1, то есть без лимита</span>
+        <span class="nt">connectTimeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2s</span>               <span class="c1"># минимум 10s по дефолту документации</span>
+        <span class="nt">tcpKeepalive</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> time</span><span class="p">:</span> <span class="nv">60s</span><span class="p p-Indicator">,</span><span class="nt"> interval</span><span class="p">:</span> <span class="nv">10s</span><span class="p p-Indicator">,</span><span class="nt"> probes</span><span class="p">:</span> <span class="nv">3</span> <span class="p p-Indicator">}</span>
+      <span class="nt">http</span><span class="p">:</span>
+        <span class="nt">http1MaxPendingRequests</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>     <span class="c1"># дефолт 2^32-1</span>
+        <span class="nt">http2MaxRequests</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>            <span class="c1"># дефолт 2^32-1</span>
+        <span class="nt">maxRequestsPerConnection</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>      <span class="c1"># 0 = без лимита (дефолт)</span>
+        <span class="nt">idleTimeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">60s</span>                 <span class="c1"># дефолт 1 час</span>
+        <span class="nt">h2UpgradePolicy</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">UPGRADE</span>
+    <span class="nt">outlierDetection</span><span class="p">:</span>
+      <span class="nt">consecutive5xxErrors</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>            <span class="c1"># дефолт 5</span>
+      <span class="nt">interval</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10s</span>                      <span class="c1"># дефолт 10s</span>
+      <span class="nt">baseEjectionTime</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30s</span>              <span class="c1"># дефолт 30s</span>
+      <span class="nt">maxEjectionPercent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">50</span>             <span class="c1"># дефолт 50</span>
+      <span class="nt">minHealthPercent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">50</span>               <span class="c1"># дефолт 50</span>
+  <span class="nt">subsets</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
+      <span class="nt">labels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> version</span><span class="p">:</span> <span class="nv">v1</span> <span class="p p-Indicator">}</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v2</span>
+      <span class="nt">labels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> version</span><span class="p">:</span> <span class="nv">v2</span> <span class="p p-Indicator">}</span>
+      <span class="nt">trafficPolicy</span><span class="p">:</span>                     <span class="c1"># переопределение только для v2</span>
+        <span class="nt">connectionPool</span><span class="p">:</span>
+          <span class="nt">http</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> http2MaxRequests</span><span class="p">:</span> <span class="nv">50</span> <span class="p p-Indicator">}</span>
+</code></pre></div>
+
 <p>Значения по умолчанию соединений — «без лимита», и это осознанный выбор Istio: не ломать существующий трафик при включении mesh. Но это значит, что <strong>circuit breaking у вас выключен, пока вы его явно не настроите</strong>. Если хотите защиты от перегрузки — задавайте <code>maxConnections</code> и <code>http2MaxRequests</code> осмысленно (обычно на основе измеренной пропускной способности сервиса и числа реплик).</p>
 <p>Липкая балансировка по пользователю (например, чтобы попадать в локальный кеш пода):</p>
-<pre><code class="language-yaml">    loadBalancer:
-      consistentHash:
-        httpHeaderName: x-user-id
-        # либо: httpCookie: { name: session, ttl: 3600s }
-        # либо: useSourceIp: true
-        # либо: maglev: { tableSize: 65537 }
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>    <span class="nt">loadBalancer</span><span class="p">:</span>
+      <span class="nt">consistentHash</span><span class="p">:</span>
+        <span class="nt">httpHeaderName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">x-user-id</span>
+        <span class="c1"># либо: httpCookie: { name: session, ttl: 3600s }</span>
+        <span class="c1"># либо: useSourceIp: true</span>
+        <span class="c1"># либо: maglev: { tableSize: 65537 }</span>
+</code></pre></div>
+
 <p><code>ringHash</code> по умолчанию строит кольцо минимум из 1024 виртуальных узлов; <code>maglev</code> — таблицу на 65537 записей и работает быстрее при большом числе эндпоинтов.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> <code>DestinationRule</code> с <code>subsets</code> есть, но <code>VirtualService</code> на него не ссылается — трафик идёт <strong>мимо subsets</strong>, на все поды сразу, и канарейка не работает, хотя объекты «применились». И наоборот: <code>VirtualService</code> ссылается на subset, которого нет в <code>DestinationRule</code> → <code>503 NC no_cluster_found</code>. Проверка — <code>istioctl analyze</code>.</p>
 </blockquote>
 <h3 id="96-serviceentry-внешние-сервисы">9.6 ServiceEntry: внешние сервисы</h3>
 <p>Всё, чего нет в реестре Kubernetes, для mesh не существует. По умолчанию Istio настроен разрешать исходящий трафик наружу (<code>outboundTrafficPolicy.mode: ALLOW_ANY</code>), но такой трафик идёт через passthrough-кластер: без телеметрии по хостам, без политик, без TLS-оригинации.</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
-kind: ServiceEntry
-metadata:
-  name: partner-bank-api
-  namespace: payments
-spec:
-  hosts: [&quot;api.partner-bank.com&quot;]
-  ports:
-    - { number: 443, name: https, protocol: HTTPS }
-  resolution: DNS
-  location: MESH_EXTERNAL
----
-apiVersion: networking.istio.io/v1
-kind: DestinationRule
-metadata: { name: partner-bank-api, namespace: payments }
-spec:
-  host: api.partner-bank.com
-  trafficPolicy:
-    connectionPool:
-      tcp: { maxConnections: 50, connectTimeout: 3s }
-    outlierDetection:
-      consecutive5xxErrors: 3
-      baseEjectionTime: 60s
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ServiceEntry</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">partner-bank-api</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">hosts</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"api.partner-bank.com"</span><span class="p p-Indicator">]</span>
+  <span class="nt">ports</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="p p-Indicator">{</span><span class="nt"> number</span><span class="p">:</span> <span class="nv">443</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">https</span><span class="p p-Indicator">,</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">HTTPS</span> <span class="p p-Indicator">}</span>
+  <span class="nt">resolution</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DNS</span>
+  <span class="nt">location</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MESH_EXTERNAL</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DestinationRule</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">partner-bank-api</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">api.partner-bank.com</span>
+  <span class="nt">trafficPolicy</span><span class="p">:</span>
+    <span class="nt">connectionPool</span><span class="p">:</span>
+      <span class="nt">tcp</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> maxConnections</span><span class="p">:</span> <span class="nv">50</span><span class="p p-Indicator">,</span><span class="nt"> connectTimeout</span><span class="p">:</span> <span class="nv">3s</span> <span class="p p-Indicator">}</span>
+    <span class="nt">outlierDetection</span><span class="p">:</span>
+      <span class="nt">consecutive5xxErrors</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
+      <span class="nt">baseEjectionTime</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">60s</span>
+</code></pre></div>
+
 <p>После этого партнёрский API появляется в метриках и в Kiali как отдельный узел, к нему применяются таймауты и circuit breaking, а <code>VirtualService</code> может добавить повторы.</p>
 <p><strong>TLS origination</strong> — приложение ходит по HTTP на <code>localhost</code>-подобный внутренний адрес, а прокси сам устанавливает TLS наружу. Полезно, когда не хочется тащить truststore в приложение:</p>
-<pre><code class="language-yaml">spec:
-  host: api.partner-bank.com
-  trafficPolicy:
-    portLevelSettings:
-      - port: { number: 80 }
-        tls:
-          mode: SIMPLE
-          sni: api.partner-bank.com
-          caCertificates: /etc/certs/partner-ca.pem
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">api.partner-bank.com</span>
+  <span class="nt">trafficPolicy</span><span class="p">:</span>
+    <span class="nt">portLevelSettings</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">port</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> number</span><span class="p">:</span> <span class="nv">80</span> <span class="p p-Indicator">}</span>
+        <span class="nt">tls</span><span class="p">:</span>
+          <span class="nt">mode</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">SIMPLE</span>
+          <span class="nt">sni</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">api.partner-bank.com</span>
+          <span class="nt">caCertificates</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/etc/certs/partner-ca.pem</span>
+</code></pre></div>
+
 <p>Для жёсткого контроля выхода ставят <code>outboundTrafficPolicy.mode: REGISTRY_ONLY</code> — всё, что не описано <code>ServiceEntry</code>, блокируется (<code>502</code> с флагом, в логах Envoy — <code>BlackHoleCluster</code>). Это сильная мера безопасности (предотвращает exfiltration и SSRF в известные плохие адреса), но требует дисциплины: каждый новый внешний хост — новый объект.</p>
 <p>Схема egress-gateway целиком:</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
-kind: Gateway
-metadata: { name: egress, namespace: istio-system }
-spec:
-  selector: { istio: egressgateway }
-  servers:
-    - port: { number: 443, name: tls, protocol: TLS }
-      hosts: [&quot;api.partner-bank.com&quot;]
-      tls: { mode: PASSTHROUGH }
----
-apiVersion: networking.istio.io/v1
-kind: VirtualService
-metadata: { name: partner-via-egress, namespace: payments }
-spec:
-  hosts: [&quot;api.partner-bank.com&quot;]
-  gateways: [mesh, istio-system/egress]
-  tls:
-    - match: [{ port: 443, sniHosts: [&quot;api.partner-bank.com&quot;], gateways: [mesh] }]
-      route:
-        - destination:
-            host: istio-egressgateway.istio-system.svc.cluster.local
-            port: { number: 443 }
-    - match: [{ port: 443, sniHosts: [&quot;api.partner-bank.com&quot;], gateways: [istio-system/egress] }]
-      route:
-        - destination: { host: api.partner-bank.com, port: { number: 443 } }
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Gateway</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">egress</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">istio-system</span> <span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">selector</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> istio</span><span class="p">:</span> <span class="nv">egressgateway</span> <span class="p p-Indicator">}</span>
+  <span class="nt">servers</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">port</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> number</span><span class="p">:</span> <span class="nv">443</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">tls</span><span class="p p-Indicator">,</span><span class="nt"> protocol</span><span class="p">:</span> <span class="nv">TLS</span> <span class="p p-Indicator">}</span>
+      <span class="nt">hosts</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"api.partner-bank.com"</span><span class="p p-Indicator">]</span>
+      <span class="nt">tls</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> mode</span><span class="p">:</span> <span class="nv">PASSTHROUGH</span> <span class="p p-Indicator">}</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">VirtualService</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">partner-via-egress</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">hosts</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"api.partner-bank.com"</span><span class="p p-Indicator">]</span>
+  <span class="nt">gateways</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">mesh</span><span class="p p-Indicator">,</span> <span class="nv">istio-system/egress</span><span class="p p-Indicator">]</span>
+  <span class="nt">tls</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">match</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">443</span><span class="p p-Indicator">,</span><span class="nt"> sniHosts</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"api.partner-bank.com"</span><span class="p p-Indicator">],</span><span class="nt"> gateways</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">mesh</span><span class="p p-Indicator">]</span> <span class="p p-Indicator">}]</span>
+      <span class="nt">route</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">destination</span><span class="p">:</span>
+            <span class="nt">host</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">istio-egressgateway.istio-system.svc.cluster.local</span>
+            <span class="nt">port</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> number</span><span class="p">:</span> <span class="nv">443</span> <span class="p p-Indicator">}</span>
+    <span class="p p-Indicator">-</span> <span class="nt">match</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">443</span><span class="p p-Indicator">,</span><span class="nt"> sniHosts</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"api.partner-bank.com"</span><span class="p p-Indicator">],</span><span class="nt"> gateways</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">istio-system/egress</span><span class="p p-Indicator">]</span> <span class="p p-Indicator">}]</span>
+      <span class="nt">route</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">destination</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> host</span><span class="p">:</span> <span class="nv">api.partner-bank.com</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> number</span><span class="p">:</span> <span class="nv">443</span> <span class="p p-Indicator">}</span> <span class="p p-Indicator">}</span>
+</code></pre></div>
+
 <p>Egress-gateway даёт партнёру предсказуемый IP (это IP подов gateway или их NAT), а вам — единую точку логирования и политик для внешнего трафика.</p>
 <h3 id="97-ресурс-sidecar-и-ограничение-видимости">9.7 Ресурс Sidecar и ограничение видимости</h3>
 <p>По умолчанию istiod рассылает <strong>каждому</strong> прокси конфигурацию <strong>всех</strong> сервисов кластера. Прокси сервиса <code>payments</code>, который ходит в три места, знает о двух тысячах кластеров и десятках тысяч эндпоинтов. Это и есть та самая память по 300–500 МБ на под.</p>
 <p>Ресурс <code>Sidecar</code> режет видимость:</p>
-<pre><code class="language-yaml">apiVersion: networking.istio.io/v1
-kind: Sidecar
-metadata:
-  name: default
-  namespace: payments
-spec:
-  egress:
-    - hosts:
-        - &quot;./*&quot;                          # всё в своём namespace
-        - &quot;istio-system/*&quot;               # gateway'и и control plane
-        - &quot;kafka/kafka-bootstrap.kafka.svc.cluster.local&quot;
-        - &quot;accounts/accounts.accounts.svc.cluster.local&quot;
-  outboundTrafficPolicy:
-    mode: REGISTRY_ONLY
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Sidecar</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">default</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">egress</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">hosts</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="s">"./*"</span>                          <span class="c1"># всё в своём namespace</span>
+        <span class="p p-Indicator">-</span> <span class="s">"istio-system/*"</span>               <span class="c1"># gateway'и и control plane</span>
+        <span class="p p-Indicator">-</span> <span class="s">"kafka/kafka-bootstrap.kafka.svc.cluster.local"</span>
+        <span class="p p-Indicator">-</span> <span class="s">"accounts/accounts.accounts.svc.cluster.local"</span>
+  <span class="nt">outboundTrafficPolicy</span><span class="p">:</span>
+    <span class="nt">mode</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">REGISTRY_ONLY</span>
+</code></pre></div>
+
 <p>Эффект на больших кластерах — кратное снижение памяти прокси и объёма xDS-трафика, плюс заметно более быстрая сходимость конфигурации. Есть и глобальный рычаг: <code>PILOT_ENABLE_SIDECAR_SCOPING</code> / <code>discoverySelectors</code> в <code>MeshConfig</code>, ограничивающие набор namespace, за которыми istiod вообще следит.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> <code>Sidecar</code> с <code>REGISTRY_ONLY</code> и забытым хостом — сервис внезапно перестаёт ходить туда, куда ходил. Симптом: <code>503</code> c флагом, в <code>istioctl proxy-config clusters</code> нужного кластера нет. Внедрять только после инвентаризации исходящих зависимостей (её удобно снять из метрик <code>istio_requests_total</code> по <code>destination_service</code>).</p>
@@ -1334,8 +1364,9 @@ spec:
 <h3 id="101-идентичность-и-mtls">10.1 Идентичность и mTLS</h3>
 <p>Каждой рабочей нагрузке mesh выдаёт криптографическую идентичность в формате SPIFFE — URI вида <code>spiffe://&lt;trust domain&gt;/&lt;workload identifier&gt;</code> (<a href="https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/" data-tip="Внешний сайт · spiffe.io
 https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/">spiffe.io</a>). В Istio это:</p>
-<pre><code>spiffe://cluster.local/ns/payments/sa/payments-sa
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>spiffe://cluster.local/ns/payments/sa/payments-sa
+</code></pre></div>
+
 <p>Идентичность привязана к <strong>ServiceAccount</strong>, а не к поду, namespace или IP. Это принципиально: политики пишутся в терминах «сервис-аккаунт <code>orders-sa</code> может звать», и это не ломается при пересоздании подов и не подделывается подменой IP.</p>
 <p>Как выдаётся сертификат (<a href="https://istio.io/latest/docs/concepts/security/" data-tip="Внешний сайт · istio.io
 https://istio.io/latest/docs/concepts/security/">istio.io, Security</a>):</p>
@@ -1349,15 +1380,16 @@ https://istio.io/latest/docs/concepts/security/">istio.io, Security</a>):</p>
 <p>Последний пункт заслуживает внимания: приватный ключ рабочей нагрузки <strong>никогда не покидает под и не записывается на диск</strong>. Нет Secret, который можно прочитать через API, нет файла, который утечёт в бэкап. Сертификаты живут часами (по умолчанию порядка 24 часов, обновляются заметно раньше истечения) — украденный сертификат быстро протухает.</p>
 <p>Корневой CA istiod по умолчанию self-signed. В банке это редко подходит: обычно подключают промежуточный CA от корпоративного PKI (Secret <code>cacerts</code> с <code>ca-cert.pem</code>, <code>ca-key.pem</code>, <code>root-cert.pem</code>, <code>cert-chain.pem</code>) или внешний SPIRE / Vault PKI. Детали X.509 и цепочек — глава 41.</p>
 <h3 id="102-peerauthentication-и-переход-на-режим-strict">10.2 PeerAuthentication и переход на режим STRICT</h3>
-<pre><code class="language-yaml">apiVersion: security.istio.io/v1
-kind: PeerAuthentication
-metadata:
-  name: default
-  namespace: istio-system     # в root namespace = на весь mesh
-spec:
-  mtls:
-    mode: PERMISSIVE
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">security.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">PeerAuthentication</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">default</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">istio-system</span>     <span class="c1"># в root namespace = на весь mesh</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">mtls</span><span class="p">:</span>
+    <span class="nt">mode</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">PERMISSIVE</span>
+</code></pre></div>
+
 <p>Режимы: <code>STRICT</code> — только mTLS; <code>PERMISSIVE</code> — принимаются и mTLS, и plaintext; <code>DISABLE</code> — mTLS выключен.</p>
 <p><strong>PERMISSIVE — это механизм миграции, а не постоянное состояние.</strong> Он существует, потому что включить STRICT сразу на живом кластере — это гарантированная авария: любой под без sidecar (мониторинг, legacy, Job, под из другого namespace) мгновенно теряет доступ.</p>
 <p>Порядок миграции, который работает:</p>
@@ -1382,13 +1414,14 @@ spec:
 <li>Только когда все namespace прошли — переключить корневую политику.</li>
 </ol>
 <p>Гранулярность бывает нужна и на уровне порта:</p>
-<pre><code class="language-yaml">spec:
-  selector:
-    matchLabels: { app: payments }
-  mtls: { mode: STRICT }
-  portLevelMtls:
-    &quot;8081&quot;: { mode: PERMISSIVE }   # actuator для Prometheus без sidecar
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">selector</span><span class="p">:</span>
+    <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> app</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+  <span class="nt">mtls</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> mode</span><span class="p">:</span> <span class="nv">STRICT</span> <span class="p p-Indicator">}</span>
+  <span class="nt">portLevelMtls</span><span class="p">:</span>
+    <span class="s">"8081"</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{</span><span class="nt"> mode</span><span class="p">:</span> <span class="nv">PERMISSIVE</span> <span class="p p-Indicator">}</span>   <span class="c1"># actuator для Prometheus без sidecar</span>
+</code></pre></div>
+
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> Классическая ошибка — включить <code>STRICT</code> и забыть, что база данных или Kafka <strong>вне mesh</strong>. mTLS применяется только к входящему трафику меш-подов, так что исходящий к внешним системам не ломается; но если вы заодно включили <code>ISTIO_MUTUAL</code> в <code>DestinationRule</code> для хоста без sidecar — получите <code>503 UF upstream_connect_error</code> со стороны клиента и ничего в логах сервера. Это симптом № 1 «mTLS mismatch».</p>
 </blockquote>
@@ -1396,122 +1429,127 @@ spec:
 <p>Правила «кто с кем может говорить». Порядок оценки строго определён: <strong>CUSTOM → DENY → ALLOW</strong>, и «deny policies take precedence over allow policies» (<a href="https://istio.io/latest/docs/concepts/security/" data-tip="Внешний сайт · istio.io
 https://istio.io/latest/docs/concepts/security/">istio.io, Security</a>). Плюс есть <code>AUDIT</code> — не блокирует, только помечает.</p>
 <p>Ключевое поведение, которое путают: <strong>если на рабочую нагрузку есть хотя бы одна ALLOW-политика, всё, что не разрешено явно, запрещено</strong>. Если ALLOW-политик нет вовсе — разрешено всё (кроме явных DENY). Отсюда идиома default-deny:</p>
-<pre><code class="language-yaml">apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: deny-all
-  namespace: payments
-spec: {}          # пустой spec = ALLOW с пустыми rules = не разрешено ничего
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">security.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">AuthorizationPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">deny-all</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+<span class="nt">spec</span><span class="p">:</span> <span class="p p-Indicator">{}</span>          <span class="c1"># пустой spec = ALLOW с пустыми rules = не разрешено ничего</span>
+</code></pre></div>
+
 <p>Дальше — точечные разрешения по идентичности:</p>
-<pre><code class="language-yaml">apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: payments-access
-  namespace: payments
-spec:
-  selector:
-    matchLabels: { app: payments }
-  action: ALLOW
-  rules:
-    # 1. сервис заказов может создавать и читать платежи
-    - from:
-        - source:
-            principals: [&quot;cluster.local/ns/orders/sa/orders-sa&quot;]
-      to:
-        - operation:
-            methods: [&quot;POST&quot;, &quot;GET&quot;]
-            paths: [&quot;/v1/payments&quot;, &quot;/v1/payments/*&quot;]
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">security.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">AuthorizationPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments-access</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">selector</span><span class="p">:</span>
+    <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> app</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+  <span class="nt">action</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ALLOW</span>
+  <span class="nt">rules</span><span class="p">:</span>
+    <span class="c1"># 1. сервис заказов может создавать и читать платежи</span>
+    <span class="p p-Indicator">-</span> <span class="nt">from</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">source</span><span class="p">:</span>
+            <span class="nt">principals</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"cluster.local/ns/orders/sa/orders-sa"</span><span class="p p-Indicator">]</span>
+      <span class="nt">to</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">operation</span><span class="p">:</span>
+            <span class="nt">methods</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"POST"</span><span class="p p-Indicator">,</span> <span class="s">"GET"</span><span class="p p-Indicator">]</span>
+            <span class="nt">paths</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"/v1/payments"</span><span class="p p-Indicator">,</span> <span class="s">"/v1/payments/*"</span><span class="p p-Indicator">]</span>
 
-    # 2. бэкофис может читать всё, но только из своего namespace
-    - from:
-        - source:
-            namespaces: [&quot;backoffice&quot;]
-      to:
-        - operation:
-            methods: [&quot;GET&quot;]
+    <span class="c1"># 2. бэкофис может читать всё, но только из своего namespace</span>
+    <span class="p p-Indicator">-</span> <span class="nt">from</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">source</span><span class="p">:</span>
+            <span class="nt">namespaces</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"backoffice"</span><span class="p p-Indicator">]</span>
+      <span class="nt">to</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">operation</span><span class="p">:</span>
+            <span class="nt">methods</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"GET"</span><span class="p p-Indicator">]</span>
 
-    # 3. ingress-gateway пускаем на публичные пути
-    - from:
-        - source:
-            principals: [&quot;cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account&quot;]
-      to:
-        - operation:
-            paths: [&quot;/v1/public/*&quot;]
+    <span class="c1"># 3. ingress-gateway пускаем на публичные пути</span>
+    <span class="p p-Indicator">-</span> <span class="nt">from</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">source</span><span class="p">:</span>
+            <span class="nt">principals</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"</span><span class="p p-Indicator">]</span>
+      <span class="nt">to</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">operation</span><span class="p">:</span>
+            <span class="nt">paths</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"/v1/public/*"</span><span class="p p-Indicator">]</span>
 
-    # 4. health-эндпоинты без ограничений (иначе сломаются пробы)
-    - to:
-        - operation:
-            paths: [&quot;/actuator/health/*&quot;, &quot;/healthz&quot;]
----
-# явный запрет: никто не ходит в админский путь снаружи
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata: { name: deny-admin-external, namespace: payments }
-spec:
-  selector:
-    matchLabels: { app: payments }
-  action: DENY
-  rules:
-    - from:
-        - source:
-            notNamespaces: [&quot;payments&quot;, &quot;backoffice&quot;]
-      to:
-        - operation:
-            paths: [&quot;/internal/*&quot;]
-</code></pre>
+    <span class="c1"># 4. health-эндпоинты без ограничений (иначе сломаются пробы)</span>
+    <span class="p p-Indicator">-</span> <span class="nt">to</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">operation</span><span class="p">:</span>
+            <span class="nt">paths</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"/actuator/health/*"</span><span class="p p-Indicator">,</span> <span class="s">"/healthz"</span><span class="p p-Indicator">]</span>
+<span class="nn">---</span>
+<span class="c1"># явный запрет: никто не ходит в админский путь снаружи</span>
+<span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">security.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">AuthorizationPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">deny-admin-external</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">selector</span><span class="p">:</span>
+    <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> app</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+  <span class="nt">action</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DENY</span>
+  <span class="nt">rules</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">from</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">source</span><span class="p">:</span>
+            <span class="nt">notNamespaces</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"payments"</span><span class="p p-Indicator">,</span> <span class="s">"backoffice"</span><span class="p p-Indicator">]</span>
+      <span class="nt">to</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">operation</span><span class="p">:</span>
+            <span class="nt">paths</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"/internal/*"</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
 <p>Внутри одного <code>rule</code> условия <code>from</code>, <code>to</code> и <code>when</code> комбинируются по AND; элементы внутри списков — по OR; несколько <code>rules</code> — по OR.</p>
 <p><strong>Что закрывается и что нет.</strong> <code>AuthorizationPolicy</code> закрывает вопрос «кто с кем может говорить» на уровне сервисов, HTTP-методов и путей — то есть латеральное перемещение внутри кластера. Скомпрометированный под сервиса отчётов не сможет дёрнуть <code>POST /v1/payments</code>, даже зная URL, потому что у него другая криптографическая идентичность. Это очень много.</p>
 <p>Но он <strong>не</strong> отвечает на вопрос «имеет ли пользователь Иванов право видеть счёт № 40817...». Объектная и строковая авторизация остаётся в приложении: Spring Security с <code>@PreAuthorize</code>, проверки владения, row-level security (глава 13, <code>13-spring-security.md</code>). Формулировка, которая хорошо звучит на интервью: <strong>mesh делает авторизацию между сервисами, приложение — авторизацию внутри домена данных</strong>.</p>
 <p>Ещё одна причина не выбрасывать проверки из приложения — <strong>defence in depth</strong>. Sidecar можно случайно не заинжектить (namespace без метки, под с <code>sidecar.istio.io/inject: "false"</code>), и тогда <code>AuthorizationPolicy</code> просто не применяется: её обеспечивает прокси, а его нет. Никакого «fail closed» здесь не происходит.</p>
 <h3 id="104-requestauthentication-проверка-jwt-в-mesh">10.4 RequestAuthentication: проверка JWT в mesh</h3>
-<pre><code class="language-yaml">apiVersion: security.istio.io/v1
-kind: RequestAuthentication
-metadata:
-  name: jwt-keycloak
-  namespace: payments
-spec:
-  selector:
-    matchLabels: { app: payments }
-  jwtRules:
-    - issuer: &quot;https://sso.bank.example/realms/retail&quot;
-      jwksUri: &quot;https://sso.bank.example/realms/retail/protocol/openid-connect/certs&quot;
-      audiences: [&quot;payments-api&quot;]
-      forwardOriginalToken: true          # пробросить токен приложению
-      outputClaimToHeaders:
-        - header: x-auth-subject
-          claim: sub
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">security.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">RequestAuthentication</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">jwt-keycloak</span>
+  <span class="nt">namespace</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">selector</span><span class="p">:</span>
+    <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> app</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+  <span class="nt">jwtRules</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">issuer</span><span class="p">:</span> <span class="s">"https://sso.bank.example/realms/retail"</span>
+      <span class="nt">jwksUri</span><span class="p">:</span> <span class="s">"https://sso.bank.example/realms/retail/protocol/openid-connect/certs"</span>
+      <span class="nt">audiences</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"payments-api"</span><span class="p p-Indicator">]</span>
+      <span class="nt">forwardOriginalToken</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>          <span class="c1"># пробросить токен приложению</span>
+      <span class="nt">outputClaimToHeaders</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">header</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">x-auth-subject</span>
+          <span class="nt">claim</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sub</span>
+</code></pre></div>
+
 <p>Критически важная деталь: <strong><code>RequestAuthentication</code> сам по себе ничего не требует</strong>. Он проверяет токен, <strong>если тот присутствует</strong>: некорректный токен → <code>401</code>, отсутствующий токен → запрос проходит как анонимный. Чтобы потребовать токен, нужна отдельная <code>AuthorizationPolicy</code>:</p>
-<pre><code class="language-yaml">apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata: { name: require-jwt, namespace: payments }
-spec:
-  selector:
-    matchLabels: { app: payments }
-  action: ALLOW
-  rules:
-    - from:
-        - source:
-            requestPrincipals: [&quot;https://sso.bank.example/realms/retail/*&quot;]
-      to:
-        - operation: { paths: [&quot;/v1/*&quot;] }
-      when:
-        - key: request.auth.claims[scope]
-          values: [&quot;payments:write&quot;]
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">security.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">AuthorizationPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">require-jwt</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">selector</span><span class="p">:</span>
+    <span class="nt">matchLabels</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> app</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+  <span class="nt">action</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ALLOW</span>
+  <span class="nt">rules</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">from</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">source</span><span class="p">:</span>
+            <span class="nt">requestPrincipals</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"https://sso.bank.example/realms/retail/*"</span><span class="p p-Indicator">]</span>
+      <span class="nt">to</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">operation</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> paths</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"/v1/*"</span><span class="p p-Indicator">]</span> <span class="p p-Indicator">}</span>
+      <span class="nt">when</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">request.auth.claims[scope]</span>
+          <span class="nt">values</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"payments:write"</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
 <p><code>requestPrincipals: ["*"]</code> означает «любой корректный JWT»; формат значения — <code>&lt;issuer&gt;/&lt;subject&gt;</code>.</p>
 <p><strong>Как это сочетается со Spring Security.</strong> Два жизнеспособных варианта.</p>
 <p><em>Вариант A — mesh проверяет подпись, приложение доверяет.</em> На границе (ingress-gateway) <code>RequestAuthentication</code> проверяет подпись, issuer, audience и срок; приложение получает токен и читает claims <strong>без повторной проверки подписи</strong>. Плюс: приложение не ходит за JWKS, меньше латентность и меньше кода. Минус: если sidecar не заинжектился или кто-то обратился к поду напрямую внутри кластера, проверки нет вообще. Применимо только вместе с жёсткой <code>AuthorizationPolicy</code>, гарантирующей, что в под приходит трафик только от gateway.</p>
 <p><em>Вариант B — проверяют оба.</em> Mesh отсекает мусор на границе (дешёвая защита от токен-флуда и гарантия, что до приложения не доедут заведомо битые токены), Spring Security Resource Server проверяет подпись ещё раз и выполняет <code>@PreAuthorize</code> по ролям и объектам. Это дороже на несколько сотен микросекунд и настоятельно предпочтительнее в финтехе. Настройка Spring — глава 13 и глава 42 (<code>42-appsec-oauth-keycloak.md</code>):</p>
-<pre><code class="language-yaml">spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: https://sso.bank.example/realms/retail
-          audiences: payments-api
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">spring</span><span class="p">:</span>
+  <span class="nt">security</span><span class="p">:</span>
+    <span class="nt">oauth2</span><span class="p">:</span>
+      <span class="nt">resourceserver</span><span class="p">:</span>
+        <span class="nt">jwt</span><span class="p">:</span>
+          <span class="nt">issuer-uri</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">https://sso.bank.example/realms/retail</span>
+          <span class="nt">audiences</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payments-api</span>
+</code></pre></div>
+
 <p>Рабочее правило: <strong>mesh — периметр и грубый фильтр, приложение — источник истины по правам</strong>. Проверка подписи в двух местах не является избыточной работой в смысле безопасности; это ровно defence in depth.</p>
 <hr>
 <h2 id="11-istio-наблюдаемость-и-progressive-delivery">11. Istio: наблюдаемость и progressive delivery</h2>
@@ -1560,61 +1598,65 @@ spec:
 <li><strong><code>response_flags</code></strong> — те самые флаги Envoy (§ 15.2), доступные прямо в Prometheus. Это делает возможным оповещение вида «растёт доля <code>UO</code>» (сработал circuit breaker) или «появились <code>UH</code>» (нет здоровых эндпоинтов) — на порядок точнее, чем просто «растут 503».</li>
 </ul>
 <p>Пример полезных запросов:</p>
-<pre><code class="language-promql"># error rate по сервису, глазами сервера
-sum by (destination_workload) (
-  rate(istio_requests_total{reporter=&quot;destination&quot;, response_code=~&quot;5..&quot;}[5m])
-)
-/
-sum by (destination_workload) (rate(istio_requests_total{reporter=&quot;destination&quot;}[5m]))
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># error rate по сервису, глазами сервера</span>
+<span class="k">sum</span> <span class="k">by</span> <span class="o">(</span><span class="nv">destination_workload</span><span class="o">)</span> <span class="o">(</span>
+  <span class="kr">rate</span><span class="o">(</span><span class="nv">istio_requests_total</span><span class="p">{</span><span class="nl">reporter</span><span class="o">=</span><span class="p">"</span><span class="s">destination</span><span class="p">",</span> <span class="nl">response_code</span><span class="o">=~</span><span class="p">"</span><span class="s">5..</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<span class="o">)</span>
+<span class="o">/</span>
+<span class="k">sum</span> <span class="k">by</span> <span class="o">(</span><span class="nv">destination_workload</span><span class="o">)</span> <span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">istio_requests_total</span><span class="p">{</span><span class="nl">reporter</span><span class="o">=</span><span class="p">"</span><span class="s">destination</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 
-# p99 латентности вызова orders -&gt; payments
-histogram_quantile(0.99, sum by (le) (
-  rate(istio_request_duration_milliseconds_bucket{
-    reporter=&quot;source&quot;, source_workload=&quot;orders&quot;, destination_service=~&quot;payments.*&quot;}[5m])
-))
+<span class="c1"># p99 латентности вызова orders -&gt; payments</span>
+<span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.99</span><span class="p">,</span> <span class="k">sum</span> <span class="k">by</span> <span class="o">(</span><span class="nv">le</span><span class="o">)</span> <span class="o">(</span>
+  <span class="kr">rate</span><span class="o">(</span><span class="nv">istio_request_duration_milliseconds_bucket</span><span class="p">{</span>
+    <span class="nl">reporter</span><span class="o">=</span><span class="p">"</span><span class="s">source</span><span class="p">",</span> <span class="nl">source_workload</span><span class="o">=</span><span class="p">"</span><span class="s">orders</span><span class="p">",</span> <span class="nl">destination_service</span><span class="o">=~</span><span class="p">"</span><span class="s">payments.*</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<span class="o">))</span>
 
-# доля запросов, отбитых circuit breaker'ом
-sum(rate(istio_requests_total{response_flags=&quot;UO&quot;}[5m]))
-</code></pre>
+<span class="c1"># доля запросов, отбитых circuit breaker'ом</span>
+<span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">istio_requests_total</span><span class="p">{</span><span class="nl">response_flags</span><span class="o">=</span><span class="p">"</span><span class="s">UO</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+</code></pre></div>
+
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно: кардинальность.</strong> Стандартный набор меток Istio даёт <code>source_workload × destination_service × response_code × response_flags × protocol × ...</code>. В кластере на 300 сервисов это легко сотни тысяч временных рядов только от mesh. Добавьте к этому гистограмму с двумя десятками бакетов — и Prometheus начинает есть десятки гигабайт. Симптом: после внедрения Istio Prometheus уходит в OOM. Лечение: (а) <code>Telemetry</code> API с <code>tagOverrides</code> для удаления ненужных измерений, (б) <code>metricsRelabelings</code> в ServiceMonitor, выбрасывающий <code>source_version</code>, <code>destination_canonical_revision</code> и подобное, (в) отключить сбор метрик с неинтересных namespace. Категорически нельзя добавлять в метки ничего запросозависимого (путь с ID, user id) — про кардинальность подробно в главе 51.</p>
 </blockquote>
-<pre><code class="language-yaml">apiVersion: telemetry.istio.io/v1
-kind: Telemetry
-metadata: { name: reduce-cardinality, namespace: istio-system }
-spec:
-  metrics:
-    - providers: [{ name: prometheus }]
-      overrides:
-        - match: { metric: ALL_METRICS }
-          tagOverrides:
-            source_canonical_revision: { operation: REMOVE }
-            destination_canonical_revision: { operation: REMOVE }
-            source_cluster: { operation: REMOVE }
-            destination_cluster: { operation: REMOVE }
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">telemetry.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Telemetry</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">reduce-cardinality</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">istio-system</span> <span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">metrics</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">providers</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">prometheus</span> <span class="p p-Indicator">}]</span>
+      <span class="nt">overrides</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">match</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> metric</span><span class="p">:</span> <span class="nv">ALL_METRICS</span> <span class="p p-Indicator">}</span>
+          <span class="nt">tagOverrides</span><span class="p">:</span>
+            <span class="nt">source_canonical_revision</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> operation</span><span class="p">:</span> <span class="nv">REMOVE</span> <span class="p p-Indicator">}</span>
+            <span class="nt">destination_canonical_revision</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> operation</span><span class="p">:</span> <span class="nv">REMOVE</span> <span class="p p-Indicator">}</span>
+            <span class="nt">source_cluster</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> operation</span><span class="p">:</span> <span class="nv">REMOVE</span> <span class="p p-Indicator">}</span>
+            <span class="nt">destination_cluster</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> operation</span><span class="p">:</span> <span class="nv">REMOVE</span> <span class="p p-Indicator">}</span>
+</code></pre></div>
+
 <h3 id="112-access-логи-envoy">11.2 Access-логи Envoy</h3>
 <p>Формат по умолчанию (упрощённо, порядок полей):</p>
-<pre><code>[%START_TIME%] &quot;%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%&quot;
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>[%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%"
 %RESPONSE_CODE% %RESPONSE_FLAGS% %RESPONSE_CODE_DETAILS% %CONNECTION_TERMINATION_DETAILS%
-&quot;%UPSTREAM_TRANSPORT_FAILURE_REASON%&quot; %BYTES_RECEIVED% %BYTES_SENT% %DURATION%
-%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% &quot;%REQ(X-FORWARDED-FOR)%&quot; &quot;%REQ(USER-AGENT)%&quot;
-&quot;%REQ(X-REQUEST-ID)%&quot; &quot;%REQ(:AUTHORITY)%&quot; &quot;%UPSTREAM_HOST%&quot; %UPSTREAM_CLUSTER%
+"%UPSTREAM_TRANSPORT_FAILURE_REASON%" %BYTES_RECEIVED% %BYTES_SENT% %DURATION%
+%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%"
+"%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%" %UPSTREAM_CLUSTER%
 %UPSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS%
 %REQUESTED_SERVER_NAME% %ROUTE_NAME%
-</code></pre>
+</code></pre></div>
+
 <p>Читать надо в таком порядке: <code>RESPONSE_CODE</code> + <code>RESPONSE_FLAGS</code> (что произошло) → <code>UPSTREAM_CLUSTER</code> и <code>UPSTREAM_HOST</code> (куда пошёл запрос; пусто = никуда) → <code>DURATION</code> против <code>X-ENVOY-UPSTREAM-SERVICE-TIME</code> (сколько времени запрос провёл в вышестоящем сервисе, а сколько — в прокси и сети) → <code>ROUTE_NAME</code> (какое правило сработало).</p>
 <p>Разница <code>DURATION − UPSTREAM_SERVICE_TIME</code> — прямой измеритель накладных расходов mesh и сети на этот конкретный запрос. Если она стабильно большая, ищите throttling прокси или проблему соединений, а не медленный бэкенд.</p>
 <p>Включить логи в JSON и добавить трассировочные заголовки:</p>
-<pre><code class="language-yaml">apiVersion: telemetry.istio.io/v1
-kind: Telemetry
-metadata: { name: access-logs, namespace: istio-system }
-spec:
-  accessLogging:
-    - providers: [{ name: envoy }]
-      filter:
-        expression: &quot;response.code &gt;= 400 || has(request.headers['x-debug'])&quot;
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">telemetry.istio.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Telemetry</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">access-logs</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">istio-system</span> <span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">accessLogging</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">providers</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">envoy</span> <span class="p p-Indicator">}]</span>
+      <span class="nt">filter</span><span class="p">:</span>
+        <span class="nt">expression</span><span class="p">:</span> <span class="s">"response.code</span><span class="nv"> </span><span class="s">&gt;=</span><span class="nv"> </span><span class="s">400</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">has(request.headers['x-debug'])"</span>
+</code></pre></div>
+
 <p>Фильтр по CEL-выражению — способ не утонуть: логировать только ошибки плюс помеченные запросы. При 10 000 rps полный access-log с двух прокси на запрос — это 20 000 строк в секунду, что сопоставимо с объёмом логов всего приложения.</p>
 <h3 id="113-трассировка-и-распространение-заголовков-приложением">11.3 Трассировка и распространение заголовков приложением</h3>
 <p><strong>Самое частое заблуждение про mesh.</strong> Формулировка, которую надо запомнить дословно: <strong>service mesh не создаёт распределённую трассировку — он участвует в ней.</strong></p>
@@ -1629,35 +1671,37 @@ spec:
 <li>какой-то сервис в цепочке написан на языке без инструментации.</li>
 </ul>
 <p>Минимальный ручной проброс, если инструментации нет:</p>
-<pre><code class="language-java">private static final List&lt;String&gt; TRACE_HEADERS = List.of(
-        &quot;x-request-id&quot;,
-        &quot;traceparent&quot;, &quot;tracestate&quot;,
-        &quot;x-b3-traceid&quot;, &quot;x-b3-spanid&quot;, &quot;x-b3-parentspanid&quot;,
-        &quot;x-b3-sampled&quot;, &quot;x-b3-flags&quot;,
-        &quot;x-ot-span-context&quot;);
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">TRACE_HEADERS</span> <span class="o">=</span> <span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span>
+        <span class="s">"x-request-id"</span><span class="p">,</span>
+        <span class="s">"traceparent"</span><span class="p">,</span> <span class="s">"tracestate"</span><span class="p">,</span>
+        <span class="s">"x-b3-traceid"</span><span class="p">,</span> <span class="s">"x-b3-spanid"</span><span class="p">,</span> <span class="s">"x-b3-parentspanid"</span><span class="p">,</span>
+        <span class="s">"x-b3-sampled"</span><span class="p">,</span> <span class="s">"x-b3-flags"</span><span class="p">,</span>
+        <span class="s">"x-ot-span-context"</span><span class="p">);</span>
 
-@Bean
-RestClientCustomizer tracePropagation() {
-    return builder -&gt; builder.requestInterceptor((request, body, execution) -&gt; {
-        HttpServletRequest inbound = ((ServletRequestAttributes)
-                RequestContextHolder.currentRequestAttributes()).getRequest();
-        for (String h : TRACE_HEADERS) {
-            String v = inbound.getHeader(h);
-            if (v != null) {
-                request.getHeaders().set(h, v);
-            }
-        }
-        return execution.execute(request, body);
-    });
-}
-</code></pre>
+<span class="nd">@Bean</span>
+<span class="n">RestClientCustomizer</span> <span class="nf">tracePropagation</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">builder</span> <span class="o">-&gt;</span> <span class="n">builder</span><span class="p">.</span><span class="na">requestInterceptor</span><span class="p">((</span><span class="n">request</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="n">execution</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">{</span>
+        <span class="n">HttpServletRequest</span> <span class="n">inbound</span> <span class="o">=</span> <span class="p">((</span><span class="n">ServletRequestAttributes</span><span class="p">)</span>
+                <span class="n">RequestContextHolder</span><span class="p">.</span><span class="na">currentRequestAttributes</span><span class="p">()).</span><span class="na">getRequest</span><span class="p">();</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">String</span> <span class="n">h</span> <span class="p">:</span> <span class="n">TRACE_HEADERS</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">String</span> <span class="n">v</span> <span class="o">=</span> <span class="n">inbound</span><span class="p">.</span><span class="na">getHeader</span><span class="p">(</span><span class="n">h</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">v</span> <span class="o">!=</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">request</span><span class="p">.</span><span class="na">getHeaders</span><span class="p">().</span><span class="na">set</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">execution</span><span class="p">.</span><span class="na">execute</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">body</span><span class="p">);</span>
+    <span class="p">});</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Это костыль (он ломается при асинхронности и не создаёт собственных span'ов), но он лучше, чем разорванная трасса. Правильный путь — OTel-агент или Micrometer Tracing; подробности в главе 51 (<code>51-observability.md</code>).</p>
 <p>Проверить, работает ли проброс, можно за минуту:</p>
-<pre><code class="language-bash">kubectl exec deploy/orders -c istio-proxy -- \
-  curl -s -H 'x-request-id: TESTME-12345' http://payments:8080/v1/payments/1 -o /dev/null
-# смотрим, дошёл ли тот же id до payments
-kubectl logs deploy/payments -c istio-proxy --tail=20 | grep TESTME-12345
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>kubectl <span class="nb">exec</span> deploy/orders -c istio-proxy -- <span class="se">\</span>
+  curl -s -H <span class="s1">'x-request-id: TESTME-12345'</span> http://payments:8080/v1/payments/1 -o /dev/null
+<span class="c1"># смотрим, дошёл ли тот же id до payments</span>
+kubectl logs deploy/payments -c istio-proxy --tail<span class="o">=</span><span class="m">20</span> <span class="p">|</span> grep TESTME-12345
+</code></pre></div>
+
 <p>Если <code>x-request-id</code> в логе прокси payments отличается — проброса нет.</p>
 <blockquote>
 <p>💡 <strong>На интервью.</strong> «Почему трассировка требует участия приложения, если у меня есть mesh?» — «Sidecar видит входящий и исходящий запросы как два независимых события и не знает, что второй порождён первым: между ними ваш процесс, тредпулы и асинхронность, внутрь которых прокси не смотрит. Связать их можно только через заголовки контекста — <code>traceparent</code> или B3, — а скопировать их из входящего запроса в исходящий обязано приложение. Mesh даёт span'ы на границах и генерирует корневой контекст, но без проброса в коде трасса рассыпается на несвязанные куски.»</p>
@@ -1667,44 +1711,46 @@ kubectl logs deploy/payments -c istio-proxy --tail=20 | grep TESTME-12345
 <p>Ограничение: Kiali показывает то, что было в метриках за окно. Редкий вызов раз в час на графе за 5 минут не виден, и «зависимости нет» — неверный вывод.</p>
 <h3 id="115-canary-и-progressive-delivery">11.5 Canary и progressive delivery</h3>
 <p>Ручная канарейка — это <code>VirtualService</code> с весами, которые вы двигаете руками:</p>
-<pre><code class="language-bash"># 95/5 -&gt; 80/20 -&gt; 50/50 -&gt; 0/100
-kubectl patch virtualservice payments -n payments --type=merge -p '
-spec:
-  http:
-  - route:
-    - destination: {host: payments, subset: v1}
-      weight: 80
-    - destination: {host: payments, subset: v2}
-      weight: 20'
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># 95/5 -&gt; 80/20 -&gt; 50/50 -&gt; 0/100</span>
+kubectl patch virtualservice payments -n payments --type<span class="o">=</span>merge -p <span class="s1">'</span>
+<span class="s1">spec:</span>
+<span class="s1">  http:</span>
+<span class="s1">  - route:</span>
+<span class="s1">    - destination: {host: payments, subset: v1}</span>
+<span class="s1">      weight: 80</span>
+<span class="s1">    - destination: {host: payments, subset: v2}</span>
+<span class="s1">      weight: 20'</span>
+</code></pre></div>
+
 <p>Это работает, но требует человека, который смотрит на графики и решает. Автоматизация — <strong>Flagger</strong> или <strong>Argo Rollouts</strong>: контроллер сам двигает веса, на каждом шаге проверяет метрики (success rate, p99) и при нарушении порога <strong>откатывает</strong>.</p>
-<pre><code class="language-yaml">apiVersion: flagger.app/v1beta1
-kind: Canary
-metadata: { name: payments, namespace: payments }
-spec:
-  provider: istio
-  targetRef: { apiVersion: apps/v1, kind: Deployment, name: payments }
-  service:
-    port: 8080
-    gateways: [&quot;istio-system/bank-gateway&quot;]
-    hosts: [&quot;api.bank.example&quot;]
-  analysis:
-    interval: 1m
-    threshold: 5           # столько неудачных проверок — откат
-    maxWeight: 50
-    stepWeight: 10
-    metrics:
-      - name: request-success-rate
-        thresholdRange: { min: 99 }
-        interval: 1m
-      - name: request-duration
-        thresholdRange: { max: 500 }   # ms, p99
-        interval: 1m
-    webhooks:
-      - name: load-test
-        url: http://flagger-loadtester.test/
-        metadata: { cmd: &quot;hey -z 1m -q 10 -c 2 http://payments.payments:8080/v1/payments/1&quot; }
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">flagger.app/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Canary</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">payments</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">provider</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">istio</span>
+  <span class="nt">targetRef</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> apiVersion</span><span class="p">:</span> <span class="nv">apps/v1</span><span class="p p-Indicator">,</span><span class="nt"> kind</span><span class="p">:</span> <span class="nv">Deployment</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span> <span class="nv">payments</span> <span class="p p-Indicator">}</span>
+  <span class="nt">service</span><span class="p">:</span>
+    <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8080</span>
+    <span class="nt">gateways</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"istio-system/bank-gateway"</span><span class="p p-Indicator">]</span>
+    <span class="nt">hosts</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"api.bank.example"</span><span class="p p-Indicator">]</span>
+  <span class="nt">analysis</span><span class="p">:</span>
+    <span class="nt">interval</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1m</span>
+    <span class="nt">threshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>           <span class="c1"># столько неудачных проверок — откат</span>
+    <span class="nt">maxWeight</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">50</span>
+    <span class="nt">stepWeight</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+    <span class="nt">metrics</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">request-success-rate</span>
+        <span class="nt">thresholdRange</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> min</span><span class="p">:</span> <span class="nv">99</span> <span class="p p-Indicator">}</span>
+        <span class="nt">interval</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1m</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">request-duration</span>
+        <span class="nt">thresholdRange</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> max</span><span class="p">:</span> <span class="nv">500</span> <span class="p p-Indicator">}</span>   <span class="c1"># ms, p99</span>
+        <span class="nt">interval</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1m</span>
+    <span class="nt">webhooks</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">load-test</span>
+        <span class="nt">url</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http://flagger-loadtester.test/</span>
+        <span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> cmd</span><span class="p">:</span> <span class="s">"hey</span><span class="nv"> </span><span class="s">-z</span><span class="nv"> </span><span class="s">1m</span><span class="nv"> </span><span class="s">-q</span><span class="nv"> </span><span class="s">10</span><span class="nv"> </span><span class="s">-c</span><span class="nv"> </span><span class="s">2</span><span class="nv"> </span><span class="s">http://payments.payments:8080/v1/payments/1"</span> <span class="p p-Indicator">}</span>
+</code></pre></div>
+
 <p>Flagger сам создаёт и обновляет <code>VirtualService</code>/<code>DestinationRule</code> — руками их трогать больше нельзя. Стратегии деплоя и GitOps подробно разобраны в главе 53 (<code>53-cicd-process.md</code>), объекты Kubernetes — в главе 47.</p>
 <p>Важное ограничение канарейки по весам: она статистическая. При 5 % трафика на новую версию и базовом error rate 0,1 % нужно немало запросов, чтобы отличить 0,1 % от 0,3 %. Для низконагруженных сервисов канарейка по весам почти бесполезна — там лучше работает маршрутизация по заголовку (внутренние пользователи на v2) и мониторинг вручную.</p>
 <hr>
@@ -1809,11 +1855,12 @@ https://istio.io/latest/docs/reference/config/networking/virtual-service/">istio
 </ol>
 <p><strong>Причина.</strong> 3 (Resilience4j) × 3 (Envoy) = <strong>9 запросов на один бизнес-вызов</strong>. Пока <code>scoring</code> здоров, это незаметно: повторов нет. Как только он начал отдавать первые 503, включились оба слоя, нагрузка выросла в 9 раз, и <code>scoring</code> уже не смог выбраться — классический <strong>retry storm</strong> (глава 35). Система сама себя добила.</p>
 <p><strong>Лечение немедленное.</strong> Отключили повторы в mesh для этого маршрута:</p>
-<pre><code class="language-yaml">    - route:
-        - destination: { host: scoring }
-      retries: { attempts: 0 }
-      timeout: 2s
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>    <span class="p p-Indicator">-</span> <span class="nt">route</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">destination</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> host</span><span class="p">:</span> <span class="nv">scoring</span> <span class="p p-Indicator">}</span>
+      <span class="nt">retries</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> attempts</span><span class="p">:</span> <span class="nv">0</span> <span class="p p-Indicator">}</span>
+      <span class="nt">timeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2s</span>
+</code></pre></div>
+
 <p>RPS упал втрое, сервис поднялся за минуту.</p>
 <p><strong>Лечение системное — разделение ответственности.</strong></p>
 <p>Правило: <strong>повторять должен ровно один слой на каждом хопе.</strong> Мы выбрали такое разделение:</p>
@@ -2073,12 +2120,13 @@ https://linkerd.io/2/features/">linkerd.io, Features</a>). Актуальная 
 <p><em>Симптом.</em> PostgreSQL/Redis/собственный бинарный протокол перестаёт работать после включения mesh; в логах прокси странные ошибки парсинга.</p>
 <p><em>Причина.</em> Istio определяет протокол по <strong>имени порта</strong> в Service (<code>http</code>, <code>http2</code>, <code>grpc</code>, <code>tcp</code>, <code>tls</code>, <code>mongo</code>, <code>redis</code>, <code>mysql</code>) или по полю <code>appProtocol</code>. Порт с именем <code>postgres</code> или без имени вообще обрабатывается эвристикой и может быть ошибочно принят за HTTP.</p>
 <p><em>Лечение.</em> Явно именовать порты: <code>name: tcp-postgres</code> или <code>appProtocol: tcp</code>.</p>
-<pre><code class="language-yaml">spec:
-  ports:
-    - name: tcp-postgres      # префикс определяет протокол
-      port: 5432
-      appProtocol: tcp        # более явный способ
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">ports</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">tcp-postgres</span>      <span class="c1"># префикс определяет протокол</span>
+      <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5432</span>
+      <span class="nt">appProtocol</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">tcp</span>        <span class="c1"># более явный способ</span>
+</code></pre></div>
+
 <p><em>Профилактика.</em> Правило в CI: каждый порт Service обязан иметь имя с корректным префиксом.</p>
 <p><strong>9. Headless-сервис не работает так, как ожидается.</strong></p>
 <p><em>Симптом.</em> StatefulSet (Kafka, Cassandra) после включения mesh теряет связность между членами; или mTLS не применяется к обращениям по IP пода.</p>
@@ -2147,36 +2195,37 @@ https://istio.io/latest/docs/reference/config/networking/virtual-service/">istio
 <hr>
 <h2 id="15-диагностика">15. Диагностика</h2>
 <h3 id="151-команды-istioctl">15.1 Команды <code>istioctl</code></h3>
-<pre><code class="language-bash"># 1. Синхронизирована ли конфигурация прокси с istiod?
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># 1. Синхронизирована ли конфигурация прокси с istiod?</span>
 istioctl proxy-status
-# NAME                          CDS      LDS      EDS      RDS      ISTIOD        VERSION
-# payments-7f9d-x.payments      SYNCED   SYNCED   SYNCED   SYNCED   istiod-abc    1.31.0
-# Всё, кроме SYNCED (STALE, NOT SENT), — прокси работает на устаревшей конфигурации.
+<span class="c1"># NAME                          CDS      LDS      EDS      RDS      ISTIOD        VERSION</span>
+<span class="c1"># payments-7f9d-x.payments      SYNCED   SYNCED   SYNCED   SYNCED   istiod-abc    1.31.0</span>
+<span class="c1"># Всё, кроме SYNCED (STALE, NOT SENT), — прокси работает на устаревшей конфигурации.</span>
 
-# 2. Что прокси реально знает
+<span class="c1"># 2. Что прокси реально знает</span>
 istioctl proxy-config listeners payments-7f9d-x.payments
-istioctl proxy-config routes    payments-7f9d-x.payments --name 8080 -o json
+istioctl proxy-config routes    payments-7f9d-x.payments --name <span class="m">8080</span> -o json
 istioctl proxy-config clusters  payments-7f9d-x.payments --fqdn payments.payments.svc.cluster.local
-istioctl proxy-config endpoints payments-7f9d-x.payments --cluster \
-  &quot;outbound|8080|v1|payments.payments.svc.cluster.local&quot;
-istioctl proxy-config secret    payments-7f9d-x.payments      # сертификаты и сроки
-istioctl proxy-config bootstrap payments-7f9d-x.payments      # стартовая конфигурация
+istioctl proxy-config endpoints payments-7f9d-x.payments --cluster <span class="se">\</span>
+  <span class="s2">"outbound|8080|v1|payments.payments.svc.cluster.local"</span>
+istioctl proxy-config secret    payments-7f9d-x.payments      <span class="c1"># сертификаты и сроки</span>
+istioctl proxy-config bootstrap payments-7f9d-x.payments      <span class="c1"># стартовая конфигурация</span>
 istioctl proxy-config log       payments-7f9d-x.payments --level router:debug,upstream:debug
 
-# 3. Найти, какой маршрут выберет запрос
-istioctl proxy-config routes payments-7f9d-x.payments -o json \
-  | jq '.[] | select(.name==&quot;8080&quot;) | .virtualHosts[] | {name, domains, routes: [.routes[] | {match, route}]}'
+<span class="c1"># 3. Найти, какой маршрут выберет запрос</span>
+istioctl proxy-config routes payments-7f9d-x.payments -o json <span class="se">\</span>
+  <span class="p">|</span> jq <span class="s1">'.[] | select(.name=="8080") | .virtualHosts[] | {name, domains, routes: [.routes[] | {match, route}]}'</span>
 
-# 4. Проверка конфигурации на ошибки и несогласованности
+<span class="c1"># 4. Проверка конфигурации на ошибки и несогласованности</span>
 istioctl analyze -n payments
 istioctl analyze --all-namespaces
 
-# 5. Полная сводка по поду: mTLS-режим, политики, маршруты, VirtualService
+<span class="c1"># 5. Полная сводка по поду: mTLS-режим, политики, маршруты, VirtualService</span>
 istioctl x describe pod payments-7f9d-x -n payments
 
-# 6. Версии прокси во всём кластере (найти непереваренные после апгрейда)
-istioctl proxy-status | awk '{print $NF}' | sort | uniq -c
-</code></pre>
+<span class="c1"># 6. Версии прокси во всём кластере (найти непереваренные после апгрейда)</span>
+istioctl proxy-status <span class="p">|</span> awk <span class="s1">'{print $NF}'</span> <span class="p">|</span> sort <span class="p">|</span> uniq -c
+</code></pre></div>
+
 <p><code>istioctl x describe pod</code> — лучшая первая команда при любой проблеме с конкретным подом: она за один экран показывает, есть ли sidecar, какой эффективный режим mTLS, какие <code>AuthorizationPolicy</code> применяются, какие <code>VirtualService</code>/<code>DestinationRule</code> затрагивают его трафик и какие порты опознаны как какие протоколы.</p>
 <h3 id="152-флаги-ответа-envoy-response-flags">15.2 Флаги ответа Envoy (response flags)</h3>
 <p>Флаг печатается в access-log вторым после кода ответа и доступен как метка <code>response_flags</code> в метриках Istio. Значения по <code>accesslog.proto</code> v3 (<a href="https://www.envoyproxy.io/docs/envoy/latest/api-v3/data/accesslog/v3/accesslog.proto" data-tip="Внешний сайт · envoyproxy.io
@@ -2376,27 +2425,28 @@ https://www.envoyproxy.io/docs/envoy/latest/api-v3/data/accesslog/v3/accesslog.p
 <li><strong>Сравнить с контролем.</strong> Поднять тот же сервис без sidecar в соседнем namespace и прогнать одинаковую нагрузку. Это единственный способ получить честную цифру «цены mesh» в вашей конфигурации.</li>
 </ol>
 <h3 id="156-диагностика-сети-вне-mesh">15.6 Диагностика сети вне mesh</h3>
-<pre><code class="language-bash"># отладочный под со всем инструментарием
-kubectl run -it --rm netshoot --image=nicolaka/netshoot --restart=Never -- bash
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># отладочный под со всем инструментарием</span>
+kubectl run -it --rm netshoot --image<span class="o">=</span>nicolaka/netshoot --restart<span class="o">=</span>Never -- bash
 
-# внутри:
+<span class="c1"># внутри:</span>
 dig +search payments.payments.svc.cluster.local
 dig SRV _grpc._tcp.payments.payments.svc.cluster.local
-ss -tnp                                   # состояния TCP-соединений
-curl -v --max-time 3 http://payments:8080/actuator/health
-tcpdump -ni any port 8080 -c 50
-mtr -n -c 20 10.244.2.17                  # путь и потери
+ss -tnp                                   <span class="c1"># состояния TCP-соединений</span>
+curl -v --max-time <span class="m">3</span> http://payments:8080/actuator/health
+tcpdump -ni any port <span class="m">8080</span> -c <span class="m">50</span>
+mtr -n -c <span class="m">20</span> <span class="m">10</span>.244.2.17                  <span class="c1"># путь и потери</span>
 
-# эфемерный контейнер в существующем поде (не перезапуская его)
-kubectl debug -it payments-7f9d-x --image=nicolaka/netshoot --target=app
+<span class="c1"># эфемерный контейнер в существующем поде (не перезапуская его)</span>
+kubectl debug -it payments-7f9d-x --image<span class="o">=</span>nicolaka/netshoot --target<span class="o">=</span>app
 
-# что видит kube-proxy
-kubectl get endpointslices -n payments -l kubernetes.io/service-name=payments -o yaml
+<span class="c1"># что видит kube-proxy</span>
+kubectl get endpointslices -n payments -l kubernetes.io/service-name<span class="o">=</span>payments -o yaml
 
-# правила на ноде (нужен доступ к ноде)
-iptables-save -t nat | grep payments
-ipvsadm -Ln | grep -A5 10.96.0.42
-</code></pre>
+<span class="c1"># правила на ноде (нужен доступ к ноде)</span>
+iptables-save -t nat <span class="p">|</span> grep payments
+ipvsadm -Ln <span class="p">|</span> grep -A5 <span class="m">10</span>.96.0.42
+</code></pre></div>
+
 <p>Расширенный инструментарий уровня ОС (<code>strace</code>, <code>perf</code>, <code>ss</code> в деталях, чтение OOM-killer) — глава 50 (<code>50-linux-and-networking.md</code>).</p>
 <hr>
 <h2 id="16-вопросы-на-интервью">16. Вопросы на интервью</h2>
@@ -2453,28 +2503,30 @@ ipvsadm -Ln | grep -A5 10.96.0.42
 <hr>
 <h2 id="17-попробовать-руками">17. Попробовать руками</h2>
 <p>Все упражнения выполняются на локальном кластере <code>kind</code> (см. главу 47). Базовая подготовка:</p>
-<pre><code class="language-bash">kind create cluster --name mesh --config - &lt;&lt;'CFG'
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-  - role: control-plane
-  - role: worker
-  - role: worker
-CFG
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>kind create cluster --name mesh --config - <span class="s">&lt;&lt;'CFG'</span>
+<span class="s">kind: Cluster</span>
+<span class="s">apiVersion: kind.x-k8s.io/v1alpha4</span>
+<span class="s">nodes:</span>
+<span class="s">  - role: control-plane</span>
+<span class="s">  - role: worker</span>
+<span class="s">  - role: worker</span>
+<span class="s">CFG</span>
 
-istioctl install --set profile=demo -y
-kubectl label namespace default istio-injection=enabled
+istioctl install --set <span class="nv">profile</span><span class="o">=</span>demo -y
+kubectl label namespace default istio-injection<span class="o">=</span>enabled
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/bookinfo/platform/kube/bookinfo.yaml
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/bookinfo/networking/bookinfo-gateway.yaml
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/bookinfo/networking/destination-rule-all.yaml
-</code></pre>
+</code></pre></div>
+
 <p><strong>Упражнение 1. Увидеть sidecar и его правила.</strong></p>
 <p>Поднимите Bookinfo и выполните <code>kubectl get pod -l app=reviews -o jsonpath='{.items[0].spec.containers[*].name}'</code>.</p>
 <p><em>Ожидаемо:</em> в списке появится <code>istio-proxy</code> рядом с <code>reviews</code>. Затем <code>kubectl exec &lt;pod&gt; -c istio-proxy -- iptables-save -t nat | head -40</code> покажет цепочки <code>ISTIO_OUTPUT</code> и <code>ISTIO_INBOUND</code> с <code>REDIRECT</code> на порты 15001 и 15006 и правилом <code>RETURN</code> для UID 1337.</p>
 <p><strong>Упражнение 2. Canary по весам.</strong></p>
 <p>Создайте <code>VirtualService</code> для <code>reviews</code> с весами 90/10 между subsets <code>v1</code> и <code>v3</code>, затем прогоните сотню запросов:</p>
-<pre><code class="language-bash">for i in $(seq 100); do curl -s &quot;http://$GATEWAY/productpage&quot; | grep -o 'reviews-v[0-9]' | head -1; done | sort | uniq -c
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">for</span> i <span class="k">in</span> <span class="k">$(</span>seq <span class="m">100</span><span class="k">)</span><span class="p">;</span> <span class="k">do</span> curl -s <span class="s2">"http://</span><span class="nv">$GATEWAY</span><span class="s2">/productpage"</span> <span class="p">|</span> grep -o <span class="s1">'reviews-v[0-9]'</span> <span class="p">|</span> head -1<span class="p">;</span> <span class="k">done</span> <span class="p">|</span> sort <span class="p">|</span> uniq -c
+</code></pre></div>
+
 <p><em>Ожидаемо:</em> соотношение примерно 90 к 10. Поменяйте веса на 50/50 без рестарта подов — распределение изменится в течение секунд.</p>
 <p><strong>Упражнение 3. STRICT mTLS и отвалившийся незамешанный клиент.</strong></p>
 <p>Создайте namespace <code>outside</code> <strong>без</strong> метки инжекции, запустите в нём <code>curl</code>-под и убедитесь, что он достучался до <code>productpage.default</code>. Затем примените <code>PeerAuthentication: STRICT</code> в <code>default</code> и повторите запрос.</p>
@@ -2486,23 +2538,26 @@ kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/bo
 <p>Добавьте <code>fault.delay: {percentage: {value: 100}, fixedDelay: 7s}</code> на маршрут к <code>ratings</code> и <code>timeout: 2s</code> на <strong>клиентском</strong> маршруте к <code>reviews</code>.</p>
 <p><em>Ожидаемо:</em> запросы возвращаются примерно за 2 секунды с <code>504</code>, в access-log прокси клиента флаг <code>UT</code>, а в логе прокси <code>ratings</code> — флаг <code>DI</code>. Проверьте на этом же примере ошибку № 19: если поставить delay и timeout на <strong>одном</strong> маршруте, таймаут не сработает.</p>
 <p><strong>Упражнение 6. Найти маршрут через <code>proxy-config</code>.</strong></p>
-<pre><code class="language-bash">POD=$(kubectl get pod -l app=productpage -o jsonpath='{.items[0].metadata.name}')
-istioctl proxy-config routes $POD --name 9080 -o json | jq '.[].virtualHosts[] | {name, domains}'
-istioctl proxy-config clusters $POD --fqdn reviews.default.svc.cluster.local
-istioctl proxy-config endpoints $POD --cluster &quot;outbound|9080|v1|reviews.default.svc.cluster.local&quot;
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nv">POD</span><span class="o">=</span><span class="k">$(</span>kubectl get pod -l <span class="nv">app</span><span class="o">=</span>productpage -o <span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.items[0].metadata.name}'</span><span class="k">)</span>
+istioctl proxy-config routes <span class="nv">$POD</span> --name <span class="m">9080</span> -o json <span class="p">|</span> jq <span class="s1">'.[].virtualHosts[] | {name, domains}'</span>
+istioctl proxy-config clusters <span class="nv">$POD</span> --fqdn reviews.default.svc.cluster.local
+istioctl proxy-config endpoints <span class="nv">$POD</span> --cluster <span class="s2">"outbound|9080|v1|reviews.default.svc.cluster.local"</span>
+</code></pre></div>
+
 <p><em>Ожидаемо:</em> увидите virtual host <code>reviews.default.svc.cluster.local:9080</code>, три кластера по subsets и конкретные IP:порт подов. Теперь удалите subset <code>v3</code> из <code>DestinationRule</code>, оставив ссылку на него в <code>VirtualService</code>, и повторите запрос — получите <code>503</code> с флагом <code>NC</code>, а <code>istioctl analyze</code> укажет на несогласованность.</p>
 <p><strong>Упражнение 7. Поймать двойной повтор.</strong></p>
 <p>На <code>ratings</code> включите <code>fault.abort: {percentage: {value: 100}, httpStatus: 503}</code>. В <code>VirtualService</code> для <code>ratings</code> задайте <code>retries: {attempts: 3}</code>. Обнулите счётчики и сделайте один запрос:</p>
-<pre><code class="language-bash">kubectl exec $POD -c istio-proxy -- curl -s -X POST localhost:15000/reset_counters
-curl -s &quot;http://$GATEWAY/productpage&quot; &gt; /dev/null
-kubectl exec $POD -c istio-proxy -- curl -s localhost:15000/stats | grep ratings | grep -E 'retry|rq_total'
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy -- curl -s -X POST localhost:15000/reset_counters
+curl -s <span class="s2">"http://</span><span class="nv">$GATEWAY</span><span class="s2">/productpage"</span> &gt; /dev/null
+kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy -- curl -s localhost:15000/stats <span class="p">|</span> grep ratings <span class="p">|</span> grep -E <span class="s1">'retry|rq_total'</span>
+</code></pre></div>
+
 <p><em>Ожидаемо:</em> <code>upstream_rq_retry</code> равен 3, а общее число запросов к вышестоящему сервису — 4 на один клиентский. Добавьте повторы ещё и в клиентское приложение (или второй <code>VirtualService</code> на промежуточном хопе) — увидите перемножение.</p>
 <p><strong>Упражнение 8. Кардинальность метрик.</strong></p>
 <p>Посчитайте число временных рядов, которые даёт mesh:</p>
-<pre><code class="language-bash">kubectl exec $POD -c istio-proxy -- curl -s localhost:15090/stats/prometheus | grep -c '^istio_requests_total'
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>kubectl <span class="nb">exec</span> <span class="nv">$POD</span> -c istio-proxy -- curl -s localhost:15090/stats/prometheus <span class="p">|</span> grep -c <span class="s1">'^istio_requests_total'</span>
+</code></pre></div>
+
 <p><em>Ожидаемо:</em> десятки строк даже на Bookinfo из шести сервисов. Примените <code>Telemetry</code> с <code>tagOverrides: REMOVE</code> для <code>source_canonical_revision</code> и <code>destination_canonical_revision</code> и повторите — число рядов заметно упадёт.</p>
 <p><strong>Упражнение 9. Разорвать и починить трассировку.</strong></p>
 <p>Прогоните запрос через Bookinfo и посмотрите трассу в Jaeger (<code>istioctl dashboard jaeger</code>). Bookinfo специально пробрасывает заголовки. Теперь разверните свой минимальный Spring Boot-сервис <strong>без</strong> Micrometer Tracing, поставьте его в середину цепочки и повторите.</p>
@@ -2511,9 +2566,10 @@ kubectl exec $POD -c istio-proxy -- curl -s localhost:15000/stats | grep ratings
 <p>Посмотрите, сколько кластеров знает прокси: <code>istioctl proxy-config clusters $POD | wc -l</code>. Примените <code>Sidecar</code> с <code>egress.hosts: ["./*", "istio-system/*"]</code> и повторите.</p>
 <p><em>Ожидаемо:</em> число кластеров упадёт; замерьте RSS контейнера <code>istio-proxy</code> до и после (<code>kubectl top pod --containers</code>). На маленьком кластере эффект скромный, на большом — кратный.</p>
 <p><strong>Упражнение 11. <code>ndots</code> своими глазами.</strong></p>
-<pre><code class="language-bash">kubectl run -it --rm dnstest --image=nicolaka/netshoot --restart=Never -- \
-  sh -c 'cat /etc/resolv.conf; time nslookup example.com; time nslookup example.com.'
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>kubectl run -it --rm dnstest --image<span class="o">=</span>nicolaka/netshoot --restart<span class="o">=</span>Never -- <span class="se">\</span>
+  sh -c <span class="s1">'cat /etc/resolv.conf; time nslookup example.com; time nslookup example.com.'</span>
+</code></pre></div>
+
 <p><em>Ожидаемо:</em> в resolv.conf видны три search-домена и <code>ndots:5</code>; вариант с точкой на конце заметно быстрее. Затем создайте под с <code>dnsConfig.options: [{name: ndots, value: "2"}]</code> и сравните — разница исчезнет.</p>
 <p><strong>Упражнение 12. Сломать gRPC L4-балансировкой.</strong></p>
 <p>Разверните gRPC-сервис в трёх репликах за обычным ClusterIP и клиент, который держит один канал и шлёт 1000 запросов. Посчитайте распределение по подам (по логам или метрикам).</p>

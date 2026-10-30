@@ -84,42 +84,44 @@
 <li>получать <code>ChatResponse</code> и parse output в рекорд.</li>
 </ul>
 <h3 id="31-простой-client">3.1 Простой client</h3>
-<pre><code class="language-java">@Service
-public class WalletAssistantClient {
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Service</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">WalletAssistantClient</span> <span class="p">{</span>
 
-    private final ChatClient chatClient;
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">ChatClient</span> <span class="n">chatClient</span><span class="p">;</span>
 
-    public WalletAssistantClient(ChatClient chatClient) {
-        this.chatClient = chatClient;
-    }
+    <span class="kd">public</span> <span class="nf">WalletAssistantClient</span><span class="p">(</span><span class="n">ChatClient</span> <span class="n">chatClient</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="na">chatClient</span> <span class="o">=</span> <span class="n">chatClient</span><span class="p">;</span>
+    <span class="p">}</span>
 
-    public WalletSummary askSummary(String userId, String question) {
-        var prompt = &quot;&quot;&quot;
-            Ты — ассистент для внутреннего сервиса кошелька.
-            Анализируй только данные из signed tool calls и allowed read-only APIs.
-            Возвращай JSON в формате WalletSummary.
-            &quot;&quot;&quot;;
+    <span class="kd">public</span> <span class="n">WalletSummary</span> <span class="nf">askSummary</span><span class="p">(</span><span class="n">String</span> <span class="n">userId</span><span class="p">,</span> <span class="n">String</span> <span class="n">question</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="n">prompt</span> <span class="o">=</span> <span class="s">"""</span>
+<span class="s">            Ты — ассистент для внутреннего сервиса кошелька.</span>
+<span class="s">            Анализируй только данные из signed tool calls и allowed read-only APIs.</span>
+<span class="s">            Возвращай JSON в формате WalletSummary.</span>
+<span class="s">            """</span><span class="p">;</span>
 
-        return chatClient.prompt()
-            .system(prompt)
-            .user(question)
-            .call()
-            .entity(WalletSummary.class);
-    }
-}
-</code></pre>
+        <span class="k">return</span> <span class="n">chatClient</span><span class="p">.</span><span class="na">prompt</span><span class="p">()</span>
+            <span class="p">.</span><span class="na">system</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+            <span class="p">.</span><span class="na">user</span><span class="p">(</span><span class="n">question</span><span class="p">)</span>
+            <span class="p">.</span><span class="na">call</span><span class="p">()</span>
+            <span class="p">.</span><span class="na">entity</span><span class="p">(</span><span class="n">WalletSummary</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Это уже выглядит как production-level code: system prompt ясный, output schema strict, есть правило “только из tools или allowed read-only APIs”. Это важно, потому что иначе модель начнёт “помнить” то, чего не должна.”</p>
 <h3 id="32-structured-output">3.2 Structured output</h3>
 <p>Через Spring AI можно попросить JSON Schema и разбирать результат как класс. Пример структуры:</p>
-<pre><code class="language-java">public record WalletSummary(
-    String accountId,
-    BigDecimal balance,
-    String currency,
-    List&lt;String&gt; recentActivity,
-    String riskNote,
-    boolean requiresHumanReview
-) {}
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">public</span> <span class="kd">record</span> <span class="nc">WalletSummary</span><span class="p">(</span>
+    <span class="n">String</span> <span class="n">accountId</span><span class="p">,</span>
+    <span class="n">BigDecimal</span> <span class="n">balance</span><span class="p">,</span>
+    <span class="n">String</span> <span class="n">currency</span><span class="p">,</span>
+    <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">recentActivity</span><span class="p">,</span>
+    <span class="n">String</span> <span class="n">riskNote</span><span class="p">,</span>
+    <span class="kt">boolean</span> <span class="n">requiresHumanReview</span>
+<span class="p">)</span> <span class="p">{}</span>
+</code></pre></div>
+
 <p>Если модель не смогла соблюсти формат, мы в проекте должны в логах закрепить это как <code>invalid structured output</code>, а не “было вроде ок”. Это очень важная часть инженерии AI: без валидации даже локальная модель даёт красивый, но непригодный JSON.</p>
 <h2 id="4-tool-calling-и-api-сервис">4. Tool calling и API-сервис</h2>
 <p>Основной принцип здесь — <strong>model calls tools, not arbitrary shell or DB</strong>. Для ИИ-помощника мы даём limited set of tools:</p>
@@ -138,29 +140,31 @@ public class WalletAssistantClient {
 <li><code>close_account</code> — no direct path.</li>
 </ul>
 <h3 id="41-toolspec-для-read-only-доступа">4.1 ToolSpec для read-only доступа</h3>
-<pre><code class="language-java">public record ToolSpec(
-    String name,
-    String description,
-    Map&lt;String, Object&gt; inputSchema,
-    Set&lt;String&gt; allowedScopes,
-    boolean readOnly
-) {}
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">public</span> <span class="kd">record</span> <span class="nc">ToolSpec</span><span class="p">(</span>
+    <span class="n">String</span> <span class="n">name</span><span class="p">,</span>
+    <span class="n">String</span> <span class="n">description</span><span class="p">,</span>
+    <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">Object</span><span class="o">&gt;</span> <span class="n">inputSchema</span><span class="p">,</span>
+    <span class="n">Set</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">allowedScopes</span><span class="p">,</span>
+    <span class="kt">boolean</span> <span class="n">readOnly</span>
+<span class="p">)</span> <span class="p">{}</span>
+</code></pre></div>
+
 <p>И для инструмента <code>get_balance</code> это будет примерно так:</p>
-<pre><code class="language-json">{
-  &quot;name&quot;: &quot;get_balance&quot;,
-  &quot;description&quot;: &quot;Return the current balance and currency for a wallet account. Read-only.&quot;,
-  &quot;inputSchema&quot;: {
-    &quot;type&quot;: &quot;object&quot;,
-    &quot;required&quot;: [&quot;accountId&quot;],
-    &quot;properties&quot;: {
-      &quot;accountId&quot;: { &quot;type&quot;: &quot;string&quot; }
-    }
-  },
-  &quot;allowedScopes&quot;: [&quot;wallet:read&quot;],
-  &quot;readOnly&quot;: true
-}
-</code></pre>
+<div class="hl" data-lang="JSON"><div class="hl-bar"><span>JSON</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="p">{</span>
+  <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"get_balance"</span><span class="p">,</span>
+  <span class="nt">"description"</span><span class="p">:</span> <span class="s2">"Return the current balance and currency for a wallet account. Read-only."</span><span class="p">,</span>
+  <span class="nt">"inputSchema"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">,</span>
+    <span class="nt">"required"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"accountId"</span><span class="p">],</span>
+    <span class="nt">"properties"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">"accountId"</span><span class="p">:</span> <span class="p">{</span> <span class="nt">"type"</span><span class="p">:</span> <span class="s2">"string"</span> <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">"allowedScopes"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"wallet:read"</span><span class="p">],</span>
+  <span class="nt">"readOnly"</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>То, что важно: название, description и input schema есть не для красоты, а для передачи модели и гарантий качества. Это не “магия”, а чёткое API-интерфейс для AI tool calling.</p>
 <h2 id="5-rag-поверх-своего-сервиса">5. RAG поверх своего сервиса</h2>
 <h3 id="51-что-именно-индексируем">5.1 Что именно индексируем</h3>
@@ -235,12 +239,13 @@ public class WalletAssistantClient {
 <li>не использовать модели на внешних серверах для чувствительных данных, если это запрещено политикой.</li>
 </ul>
 <h3 id="71-пример-внутренней-политики-безопасности">7.1 Пример внутренней политики безопасности</h3>
-<pre><code class="language-text">- Input can contain only userId, accountId, and business data previously allowed by the user or the environment.
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>- Input can contain only userId, accountId, and business data previously allowed by the user or the environment.
 - The model may not issue write operations without explicit human approval.
 - No PII and no secrets in prompt context.
 - All tool calls are logged and traceable.
 - If data is missing, answer with 'not enough information' instead of guessing.
-</code></pre>
+</code></pre></div>
+
 <p>Это не “красиво оформлено”, это техническое правило. Без него агент начинает действовать как “злой алчущий бот”, а не как сервис.</p>
 <h2 id="8-пример-архитектуры-для-домена-банка">8. Пример архитектуры для домена банка</h2>
 <p>Внутренний проект может быть построен так:</p>

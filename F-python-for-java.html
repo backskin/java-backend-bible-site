@@ -118,35 +118,36 @@
 </tbody>
 </table>
 <p>Ниже сокращённый вариант запущенного примера. Для каждой идиомы в комментарии записан эквивалент на Java.</p>
-<pre><code class="language-python">from dataclasses import dataclass
-from decimal import Decimal
+<div class="hl" data-lang="Python"><div class="hl-bar"><span>Python</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="kn">import</span> <span class="n">Decimal</span>
 
-@dataclass(frozen=True)                       # record Payment(String id, long amountMinor, String currency)
-class Payment:
-    id: str
-    amount_minor: int
-    currency: str = &quot;RUB&quot;
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>                       <span class="c1"># record Payment(String id, long amountMinor, String currency)</span>
+<span class="k">class</span> <span class="nc">Payment</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">amount_minor</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">currency</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"RUB"</span>
 
-    def fee_minor(self) -&gt; int:               # self — это явный this
-        return round(self.amount_minor * 0.015)
+    <span class="k">def</span> <span class="nf">fee_minor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>               <span class="c1"># self — это явный this</span>
+        <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amount_minor</span> <span class="o">*</span> <span class="mf">0.015</span><span class="p">)</span>
 
-payments = [Payment(&quot;p-1&quot;, 150_000), Payment(&quot;p-2&quot;, 20_000, &quot;USD&quot;), Payment(&quot;p-3&quot;, 5_000)]
+<span class="n">payments</span> <span class="o">=</span> <span class="p">[</span><span class="n">Payment</span><span class="p">(</span><span class="s2">"p-1"</span><span class="p">,</span> <span class="mi">150_000</span><span class="p">),</span> <span class="n">Payment</span><span class="p">(</span><span class="s2">"p-2"</span><span class="p">,</span> <span class="mi">20_000</span><span class="p">,</span> <span class="s2">"USD"</span><span class="p">),</span> <span class="n">Payment</span><span class="p">(</span><span class="s2">"p-3"</span><span class="p">,</span> <span class="mi">5_000</span><span class="p">)]</span>
 
-# stream().filter(...).map(...).toList()
-rub_amounts = [p.amount_minor for p in payments if p.currency == &quot;RUB&quot;]
+<span class="c1"># stream().filter(...).map(...).toList()</span>
+<span class="n">rub_amounts</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">amount_minor</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">payments</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">currency</span> <span class="o">==</span> <span class="s2">"RUB"</span><span class="p">]</span>
 
-# groupingBy(Payment::currency, summingLong(Payment::amountMinor))
-by_currency: dict[str, int] = {}
-for p in payments:
-    by_currency[p.currency] = by_currency.get(p.currency, 0) + p.amount_minor
+<span class="c1"># groupingBy(Payment::currency, summingLong(Payment::amountMinor))</span>
+<span class="n">by_currency</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">payments</span><span class="p">:</span>
+    <span class="n">by_currency</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">currency</span><span class="p">]</span> <span class="o">=</span> <span class="n">by_currency</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">currency</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">amount_minor</span>
 
-first, *rest = payments                       # распаковка; в Java аналога нет
-maybe = next((p for p in payments if p.currency == &quot;EUR&quot;), None)   # Optional.empty()
-print(&quot;float:&quot;, 0.1 + 0.2, &quot;| Decimal:&quot;, Decimal(&quot;0.1&quot;) + Decimal(&quot;0.2&quot;))
-print(&quot;7 / 2 =&quot;, 7 / 2, &quot;| 7 // 2 =&quot;, 7 // 2, &quot;| -7 // 2 =&quot;, -7 // 2, &quot;| -7 % 2 =&quot;, -7 % 2)
-</code></pre>
+<span class="n">first</span><span class="p">,</span> <span class="o">*</span><span class="n">rest</span> <span class="o">=</span> <span class="n">payments</span>                       <span class="c1"># распаковка; в Java аналога нет</span>
+<span class="n">maybe</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">payments</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">currency</span> <span class="o">==</span> <span class="s2">"EUR"</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>   <span class="c1"># Optional.empty()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"float:"</span><span class="p">,</span> <span class="mf">0.1</span> <span class="o">+</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s2">"| Decimal:"</span><span class="p">,</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"0.1"</span><span class="p">)</span> <span class="o">+</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"0.2"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"7 / 2 ="</span><span class="p">,</span> <span class="mi">7</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"| 7 // 2 ="</span><span class="p">,</span> <span class="mi">7</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"| -7 // 2 ="</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"| -7 % 2 ="</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+
 <p>Вывод запуска:</p>
-<pre><code class="language-text">суммы в рублях: [150000, 5000]
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>суммы в рублях: [150000, 5000]
 по валютам: {'RUB': 155000, 'USD': 20000}
 p-1: 150000 коп., комиссия 2250 коп.
 p-2: 20000 коп., комиссия 300 коп.
@@ -159,7 +160,8 @@ float: 0.1 + 0.2 = 0.30000000000000004 | Decimal: 0.3
 срез: Пла | длина: 6 | в верхнем регистре: ПЛАТЁЖ
 по убыванию суммы: ['p-1', 'p-2', 'p-3']
 генератор: [0, 1, 4, 9, 16]
-</code></pre>
+</code></pre></div>
+
 <p>Два результата, о которые спотыкается человек из Java. Первый: <code>/</code> всегда возвращает <code>float</code>, а целочисленное деление записывается <code>//</code>. Второй: <code>//</code> округляет вниз, а не к нулю: <code>-7 // 2</code> это <code>-4</code>, а не <code>-3</code>, и остаток <code>-7 % 2</code> это <code>1</code>; в Java <code>-7 / 2</code> даёт <code>-3</code>, а <code>-7 % 2</code> даёт <code>-1</code>. Расхождение важно, когда вы переписываете расчёт сумм или календарную арифметику.</p>
 <blockquote class="cb-rare">
 <p><strong><span class="ic">🎲</span> Неочевидно. Одна и та же сумма в <code>float</code> и в <code>Decimal</code> расходится уже на втором знаке цепочки операций.</strong> Запуск показал классический результат: <code>0.1 + 0.2</code> равно <code>0.30000000000000004</code>, а сумма <code>Decimal("0.1") + Decimal("0.2")</code> равна <code>0.3</code>. Но ловушка в другом: <code>Decimal(0.1)</code> (число, а не строка) даст длинный «хвост», потому что число <code>0.1</code> уже было неточным до передачи. Деньги всегда создают из строки или из целого числа минимальных единиц. Тот же приём работает и в Java: <code>new BigDecimal("0.1")</code>, а не <code>new BigDecimal(0.1)</code>.<sup id="fnref:sF-1"><a class="footnote-ref" href="#fn:sF-1" data-tip="Сноска: Python documentation, decimal — «Decimal objects» (создание из строки и из числа), https://docs.python.org/3/library/decimal.html. Первичный источник. Страница открывается. Результ…">1</a></sup></p>
@@ -170,31 +172,32 @@ float: 0.1 + 0.2 = 0.30000000000000004 | Decimal: 0.3
 <hr>
 <h2 id="f3-ловушки-python-для-человека-из-java">F3. Ловушки Python для человека из Java</h2>
 <p>Каждая из семи воспроизведена запуском. Это те места, где опыт Java подсказывает неверный ответ.</p>
-<pre><code class="language-python"># 1. Изменяемое значение по умолчанию создаётся один раз, при определении функции
-def add_item(item, bucket=[]):
-    bucket.append(item)
-    return bucket
-print(add_item(&quot;a&quot;), add_item(&quot;b&quot;))
+<div class="hl" data-lang="Python"><div class="hl-bar"><span>Python</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># 1. Изменяемое значение по умолчанию создаётся один раз, при определении функции</span>
+<span class="k">def</span> <span class="nf">add_item</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">bucket</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="n">bucket</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bucket</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">add_item</span><span class="p">(</span><span class="s2">"a"</span><span class="p">),</span> <span class="n">add_item</span><span class="p">(</span><span class="s2">"b"</span><span class="p">))</span>
 
-# 2. Замыкания в цикле захватывают переменную, а не её значение
-functions = [lambda: i for i in range(3)]
-print([f() for f in functions])
-functions = [lambda i=i: i for i in range(3)]      # привязка значения через аргумент по умолчанию
-print([f() for f in functions])
+<span class="c1"># 2. Замыкания в цикле захватывают переменную, а не её значение</span>
+<span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="k">lambda</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">f</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">functions</span><span class="p">])</span>
+<span class="n">functions</span> <span class="o">=</span> <span class="p">[</span><span class="k">lambda</span> <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>      <span class="c1"># привязка значения через аргумент по умолчанию</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">f</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">functions</span><span class="p">])</span>
 
-# 3. is и малые числа
-print(int(&quot;1000&quot;) is int(&quot;1000&quot;), int(&quot;100&quot;) is int(&quot;100&quot;))
+<span class="c1"># 3. is и малые числа</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="s2">"1000"</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">(</span><span class="s2">"1000"</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="s2">"100"</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">(</span><span class="s2">"100"</span><span class="p">))</span>
 
-# 4. Ложные значения
-print([bool(v) for v in ([], &quot;&quot;, 0, None, [0], &quot;0&quot;)])
+<span class="c1"># 4. Ложные значения</span>
+<span class="nb">print</span><span class="p">([</span><span class="nb">bool</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">([],</span> <span class="s2">""</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"0"</span><span class="p">)])</span>
 
-# 7. Подсказка типа не проверяется при выполнении
-def double(value: int) -&gt; int:
-    return value * 2
-print(double(&quot;ab&quot;))
-</code></pre>
+<span class="c1"># 7. Подсказка типа не проверяется при выполнении</span>
+<span class="k">def</span> <span class="nf">double</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="o">*</span> <span class="mi">2</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">double</span><span class="p">(</span><span class="s2">"ab"</span><span class="p">))</span>
+</code></pre></div>
+
 <p>Вывод:</p>
-<pre><code class="language-text">1. изменяемый аргумент по умолчанию: ['a', 'b'] ['a', 'b'] (во втором вызове уже два элемента)
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>1. изменяемый аргумент по умолчанию: ['a', 'b'] ['a', 'b'] (во втором вызове уже два элемента)
 2. замыкания в цикле: [2, 2, 2] (ожидали [0, 1, 2])
    с привязкой значения: [0, 1, 2]
 3. int('1000') is int('1000'): False | ==: True | для 100: True (малые числа кэшируются, большие нет)
@@ -203,7 +206,8 @@ print(double(&quot;ab&quot;))
 5. два вычисления подряд: 0.26 с; в двух потоках: 0.26 с (выигрыша нет; для процессора нужны процессы или другая версия интерпретатора)
 6. 2 ** 100 = 1267650600228229401496703205376 (в Java long переполнился бы)
 7. double('ab') = abab (подсказка int не помешала; проверяет только анализатор вроде mypy)
-</code></pre>
+</code></pre></div>
+
 <p>Разбор по порядку. Первая ловушка: список по умолчанию создаётся один раз при определении функции, поэтому второй вызов видит элемент из первого. В Java такого нет, потому что значение по умолчанию там не бывает. Правильный приём: <code>bucket=None</code> и <code>if bucket is None: bucket = []</code> внутри. Вторая: лямбды в цикле читают переменную <code>i</code> в момент вызова, когда цикл уже закончился и <code>i == 2</code>; поэтому и получилось <code>[2, 2, 2]</code>. В Java этой ловушки нет, потому что захватываемые переменные должны быть эффективно финальными. Третья: на <code>int("1000")</code> дважды получились разные объекты, а на <code>int("100")</code> один и тот же; это деталь реализации, и полагаться на неё нельзя. Четвёртая: пустые коллекции, <code>0</code>, пустая строка и <code>None</code> считаются ложными, а список <code>[0]</code> и строка <code>"0"</code> нет; поэтому <code>if items:</code> читается как «список не пуст», а вот <code>if value:</code> для числа скрывает ноль как «нет значения». Шестая: целые не переполняются, поэтому код, который в Java ловил бы переполнение, в Python молча продолжит с огромным числом. Седьмая: подсказки типов нужны анализатору и читателю, а не интерпретатору; <code>double("ab")</code> вернул <code>"abab"</code>.<sup id="fnref:sF-3"><a class="footnote-ref" href="#fn:sF-3" data-tip="Сноска: Python documentation, «Programming FAQ» (разделы о замыканиях в цикле и о разделяемых значениях по умолчанию), https://docs.python.org/3/faq/programming.html, и PEP 484 «Type Hints…">3</a></sup></p>
 <p>Пятая ловушка главная для тех, кто пишет сервисы, и разобрана в разделе F7.</p>
 <blockquote class="cb-rare">
@@ -215,12 +219,13 @@ print(double(&quot;ab&quot;))
 <hr>
 <h2 id="f4-окружение-venv-pip-и-зависимости-если-вы-привыкли-к-maven">F4. Окружение: venv, pip и зависимости, если вы привыкли к Maven</h2>
 <p>В Maven зависимости лежат в локальном репозитории <code>~/.m2</code> и общие для всех проектов, версии зафиксированы в <code>pom.xml</code>, транзитивные разрешаются по правилам «ближайшее определение выигрывает». В Python по умолчанию всё ставится в одно общее окружение интерпретатора, и два проекта, которым нужны разные версии одной библиотеки, конфликтуют. Поэтому каждому проекту создают собственное виртуальное окружение (<code>venv</code>), своего рода личный <code>~/.m2</code> рядом с проектом.</p>
-<pre><code class="language-bash">python -m venv .venv                                  # создать окружение в каталоге .venv
-./.venv/Scripts/python -m pip install requests pytest   # Windows; на Linux и macOS: .venv/bin/python
-./.venv/Scripts/python -m pip freeze                  # зафиксировать версии
-</code></pre>
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>python -m venv .venv                                  <span class="c1"># создать окружение в каталоге .venv</span>
+./.venv/Scripts/python -m pip install requests pytest   <span class="c1"># Windows; на Linux и macOS: .venv/bin/python</span>
+./.venv/Scripts/python -m pip freeze                  <span class="c1"># зафиксировать версии</span>
+</code></pre></div>
+
 <p>Результат запуска (фрагмент <code>pip freeze</code>):</p>
-<pre><code class="language-text">certifi==2026.10.19
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>certifi==2026.10.19
 charset-normalizer==3.5.2
 colorama==0.4.6
 idna==3.20
@@ -230,7 +235,8 @@ pluggy==1.7.0
 Pygments==2.21.0
 pytest==9.1.1
 requests==2.34.2
-</code></pre>
+</code></pre></div>
+
 <p>Установка двух пакетов принесла ещё восемь транзитивных. Список <code>pip freeze</code> — это аналог зафиксированного дерева зависимостей: его сохраняют в <code>requirements.txt</code> и воспроизводят командой <code>pip install -r requirements.txt</code>. Для проектов с несколькими слоями зависимостей используют <code>pyproject.toml</code> и инструменты вроде <code>uv</code>, <code>poetry</code> или <code>pip-tools</code>; в запуске для этой книги они не использовались: ⚠️ не проверено.<sup id="fnref:sF-4"><a class="footnote-ref" href="#fn:sF-4" data-tip="Сноска: Python documentation, venv — «Creation of virtual environments», https://docs.python.org/3/library/venv.html. Первичный источник. Страница открывается. Установка requests, pytest, …">4</a></sup></p>
 <p>Практические отличия от Maven, которые стоит знать на собеседовании:</p>
 <ul>
@@ -248,39 +254,41 @@ requests==2.34.2
 <hr>
 <h2 id="f5-вызов-модели-без-библиотек-чат-эмбеддинги-косинус">F5. Вызов модели без библиотек: чат, эмбеддинги, косинус</h2>
 <p>Запускаемый пример на стандартной библиотеке: только <code>urllib</code>, <code>json</code> и <code>math</code>. Он показывает, что клиент к модели — это обычный HTTP-вызов, и ничего магического в нём нет. Ollama в запуске слушает порт 11434 (через <code>kubectl port-forward</code>).</p>
-<pre><code class="language-python">import json, math, time, urllib.request
+<div class="hl" data-lang="Python"><div class="hl-bar"><span>Python</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kn">import</span> <span class="nn">json</span><span class="o">,</span> <span class="nn">math</span><span class="o">,</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">urllib.request</span>
 
-BASE = &quot;http://localhost:11434&quot;
-MODEL = &quot;qwen2.5:1.5b&quot;
-EMBED_MODEL = &quot;bge-m3&quot;
+<span class="n">BASE</span> <span class="o">=</span> <span class="s2">"http://localhost:11434"</span>
+<span class="n">MODEL</span> <span class="o">=</span> <span class="s2">"qwen2.5:1.5b"</span>
+<span class="n">EMBED_MODEL</span> <span class="o">=</span> <span class="s2">"bge-m3"</span>
 
-def post(path: str, body: dict, timeout: float = 120) -&gt; dict:
-    request = urllib.request.Request(BASE + path, data=json.dumps(body).encode(&quot;utf-8&quot;),
-                                     headers={&quot;Content-Type&quot;: &quot;application/json&quot;})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.load(response)
+<span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">120</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">request</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="n">BASE</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">body</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">),</span>
+                                     <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Content-Type"</span><span class="p">:</span> <span class="s2">"application/json"</span><span class="p">})</span>
+    <span class="k">with</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
 
-def chat(prompt: str, temperature: float = 0.0, num_predict: int = 40) -&gt; dict:
-    return post(&quot;/api/chat&quot;, {&quot;model&quot;: MODEL, &quot;stream&quot;: False,
-                              &quot;options&quot;: {&quot;temperature&quot;: temperature, &quot;num_predict&quot;: num_predict},
-                              &quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}]})
+<span class="k">def</span> <span class="nf">chat</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">num_predict</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">post</span><span class="p">(</span><span class="s2">"/api/chat"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"model"</span><span class="p">:</span> <span class="n">MODEL</span><span class="p">,</span> <span class="s2">"stream"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                              <span class="s2">"options"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"temperature"</span><span class="p">:</span> <span class="n">temperature</span><span class="p">,</span> <span class="s2">"num_predict"</span><span class="p">:</span> <span class="n">num_predict</span><span class="p">},</span>
+                              <span class="s2">"messages"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">prompt</span><span class="p">}]})</span>
 
-def embed(text: str) -&gt; list[float]:
-    return post(&quot;/api/embed&quot;, {&quot;model&quot;: EMBED_MODEL, &quot;input&quot;: text})[&quot;embeddings&quot;][0]
+<span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="n">post</span><span class="p">(</span><span class="s2">"/api/embed"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"model"</span><span class="p">:</span> <span class="n">EMBED_MODEL</span><span class="p">,</span> <span class="s2">"input"</span><span class="p">:</span> <span class="n">text</span><span class="p">})[</span><span class="s2">"embeddings"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
-def cosine(a: list[float], b: list[float]) -&gt; float:
-    dot = sum(x * y for x, y in zip(a, b))
-    return dot / (math.sqrt(sum(x * x for x in a)) * math.sqrt(sum(y * y for y in b)))
-</code></pre>
+<span class="k">def</span> <span class="nf">cosine</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">b</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">dot</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">dot</span> <span class="o">/</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">a</span><span class="p">))</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">y</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">b</span><span class="p">)))</span>
+</code></pre></div>
+
 <p>Запуск с четырьмя фразами: два обращения про возврат ошибочного перевода, один вопрос про ипотеку и рецепт борща:</p>
-<pre><code class="language-text">ответ: 'Москва'; токенов запроса 41, ответа 4; 0.20 с
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>ответ: 'Москва'; токенов запроса 41, ответа 4; 0.20 с
 размерность вектора: 1024
 косинусная близость:
    1 1.000 0.750 0.509 0.294
    2 0.750 1.000 0.448 0.346
    3 0.509 0.448 1.000 0.334
    4 0.294 0.346 0.334 1.000
-</code></pre>
+</code></pre></div>
+
 <p>Читать матрицу надо так. Две формулировки одной просьбы (отменить перевод и вернуть деньги, отправленные по ошибке) дали <code>0,750</code>. Ипотека и перевод оба банковские, поэтому между ними <code>0,509</code>, заметно выше, чем у борща с чем угодно (<code>0,29–0,35</code>). Из этого следует практический вывод для главы 75: порог близости не «0,5 по умолчанию», а число, которое подбирают на размеченных примерах вашего корпуса. В запуске порог <code>0,5</code> отделил бы борщ от банка, но пропустил бы вопрос про ипотеку как «похожий» на возврат перевода.</p>
 <p>Сравнение с Java: тот же вызов на <code>java.net.http.HttpClient</code> занимает столько же строк, но Python даёт <code>json.load</code> без отдельной модели данных. Это и преимущество, и источник ошибок: поле <code>message</code> из словаря вы достаёте по строковому ключу, а опечатку обнаружите только при выполнении. В Java этот контракт обычно описан классом или <code>record</code>.</p>
 <blockquote class="cb-rare">
@@ -292,49 +300,51 @@ def cosine(a: list[float], b: list[float]) -&gt; float:
 <hr>
 <h2 id="f6-оценка-качества-на-pytest-параметризованный-тест-и-порог">F6. Оценка качества на pytest: параметризованный тест и порог</h2>
 <p>Оценка (eval) модели — это тот же тестовый набор, где ожидаемый результат получен от человека, а проверка статистическая. В Python для этого достаточно <code>pytest</code>. Параметризованный тест — аналог <code>@ParameterizedTest</code> JUnit 5 с <code>@MethodSource</code>.</p>
-<pre><code class="language-python">import pytest, requests
+<div class="hl" data-lang="Python"><div class="hl-bar"><span>Python</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kn">import</span> <span class="nn">pytest</span><span class="o">,</span> <span class="nn">requests</span>
 
-BASE = &quot;http://localhost:11434&quot;
-MODEL = &quot;qwen2.5:1.5b&quot;
-LABELS = [&quot;перевод&quot;, &quot;кредит&quot;, &quot;карта&quot;, &quot;другое&quot;]
+<span class="n">BASE</span> <span class="o">=</span> <span class="s2">"http://localhost:11434"</span>
+<span class="n">MODEL</span> <span class="o">=</span> <span class="s2">"qwen2.5:1.5b"</span>
+<span class="n">LABELS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"перевод"</span><span class="p">,</span> <span class="s2">"кредит"</span><span class="p">,</span> <span class="s2">"карта"</span><span class="p">,</span> <span class="s2">"другое"</span><span class="p">]</span>
 
-CASES = [
-    (&quot;Не дошёл перевод по номеру телефона&quot;, &quot;перевод&quot;),
-    (&quot;Хочу рефинансировать ипотеку&quot;, &quot;кредит&quot;),
-    (&quot;Карту заблокировали после покупки за границей&quot;, &quot;карта&quot;),
-    (&quot;Какая сегодня погода?&quot;, &quot;другое&quot;),
-    (&quot;Отправил деньги не тому человеку&quot;, &quot;перевод&quot;),
-    (&quot;Нужен график платежей по кредиту&quot;, &quot;кредит&quot;),
-]
+<span class="n">CASES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">"Не дошёл перевод по номеру телефона"</span><span class="p">,</span> <span class="s2">"перевод"</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"Хочу рефинансировать ипотеку"</span><span class="p">,</span> <span class="s2">"кредит"</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"Карту заблокировали после покупки за границей"</span><span class="p">,</span> <span class="s2">"карта"</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"Какая сегодня погода?"</span><span class="p">,</span> <span class="s2">"другое"</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"Отправил деньги не тому человеку"</span><span class="p">,</span> <span class="s2">"перевод"</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"Нужен график платежей по кредиту"</span><span class="p">,</span> <span class="s2">"кредит"</span><span class="p">),</span>
+<span class="p">]</span>
 
-def classify(text: str) -&gt; str:
-    prompt = (&quot;Классифицируй обращение клиента банка. Ответь одним словом из списка: &quot; + &quot;, &quot;.join(LABELS)
-              + f&quot;.\nОбращение: {text}\nКласс:&quot;)
-    r = requests.post(BASE + &quot;/api/chat&quot;, json={&quot;model&quot;: MODEL, &quot;stream&quot;: False,
-                      &quot;options&quot;: {&quot;temperature&quot;: 0, &quot;num_predict&quot;: 8},
-                      &quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}]}, timeout=120)
-    r.raise_for_status()
-    answer = r.json()[&quot;message&quot;][&quot;content&quot;].strip().lower()
-    return next((label for label in LABELS if label in answer), &quot;?&quot;)
+<span class="k">def</span> <span class="nf">classify</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"Классифицируй обращение клиента банка. Ответь одним словом из списка: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">LABELS</span><span class="p">)</span>
+              <span class="o">+</span> <span class="sa">f</span><span class="s2">".</span><span class="se">\n</span><span class="s2">Обращение: </span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="se">\n</span><span class="s2">Класс:"</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">BASE</span> <span class="o">+</span> <span class="s2">"/api/chat"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"model"</span><span class="p">:</span> <span class="n">MODEL</span><span class="p">,</span> <span class="s2">"stream"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="s2">"options"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"temperature"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"num_predict"</span><span class="p">:</span> <span class="mi">8</span><span class="p">},</span>
+                      <span class="s2">"messages"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">prompt</span><span class="p">}]},</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">120</span><span class="p">)</span>
+    <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+    <span class="n">answer</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"message"</span><span class="p">][</span><span class="s2">"content"</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">next</span><span class="p">((</span><span class="n">label</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">LABELS</span> <span class="k">if</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">answer</span><span class="p">),</span> <span class="s2">"?"</span><span class="p">)</span>
 
-@pytest.mark.parametrize(&quot;text,expected&quot;, CASES)
-def test_case(text, expected):
-    assert classify(text) == expected
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">"text,expected"</span><span class="p">,</span> <span class="n">CASES</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_case</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">expected</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">classify</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">==</span> <span class="n">expected</span>
 
-def test_accuracy_gate():
-    hits = sum(classify(t) == e for t, e in CASES)
-    accuracy = hits / len(CASES)
-    print(f&quot;\naccuracy = {hits}/{len(CASES)} = {accuracy:.2f}&quot;)
-    assert accuracy &gt;= 0.6
-</code></pre>
+<span class="k">def</span> <span class="nf">test_accuracy_gate</span><span class="p">():</span>
+    <span class="n">hits</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">classify</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="n">e</span> <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">CASES</span><span class="p">)</span>
+    <span class="n">accuracy</span> <span class="o">=</span> <span class="n">hits</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">CASES</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">accuracy = </span><span class="si">{</span><span class="n">hits</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">CASES</span><span class="p">)</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">accuracy</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">accuracy</span> <span class="o">&gt;=</span> <span class="mf">0.6</span>
+</code></pre></div>
+
 <p>Запуск (<code>python -m pytest -q test_eval.py -s</code>) занял 2,17 с и дал:</p>
-<pre><code class="language-text">..F...
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>..F...
 accuracy = 5/6 = 0.83
 .
 FAILED test_eval.py::test_case[... Карту заблокировали после покупки за границей-карта]
 AssertionError: assert 'другое' == 'карта'
 1 failed, 6 passed in 2.17s
-</code></pre>
+</code></pre></div>
+
 <p>Результат поучителен сразу двумя вещами. Модель на 1,5 миллиарда параметров ошиблась на фразе про блокировку карты и назвала её «другое». Поштучный тест на этом падает, а суммарный порог (<code>accuracy &gt;= 0.6</code>, фактически <code>0,83</code>) проходит. Это и есть разница между двумя видами проверок: поштучная фиксирует регрессию на конкретном примере (хорошо для регрессионного набора, который вы расширяете после каждого инцидента), а порог принимает или отклоняет модель целиком (хорошо для выбора между моделями и для ворот в CI). Смешивать их нельзя: если поштучные тесты красные «ожидаемо», сборка перестаёт быть сигналом. Поэтому в практике разделяют регрессионный набор (должен быть зелёным всегда) и оценочный набор (проверяется порогом и сравнивается между версиями).</p>
 <p>Что отличается от привычного JUnit: <code>assert</code> — обычный оператор, <code>pytest</code> сам разбирает выражение и печатает значения; тестовая оснастка (<em>fixtures</em> в pytest) подключается по имени аргумента, без аннотаций и расширений; идентификаторы параметризованных тестов строятся из данных (здесь они в юникоде, и в выводе консоли превращались в <code>К...</code>).</p>
 <blockquote class="cb-rare">
@@ -347,27 +357,29 @@ AssertionError: assert 'другое' == 'карта'
 <h2 id="f7-параллелизм-gil-потоки-asyncio-и-почему-здесь-это-важно-для-вызовов-модели">F7. Параллелизм: GIL, потоки, asyncio и почему здесь это важно для вызовов модели</h2>
 <p>В Python 3.14.3, который использовался в запусках, обычная сборка работает с глобальной блокировкой интерпретатора (GIL): <code>sys._is_gil_enabled()</code> вернул <code>True</code>. Блокировка не даёт двум потокам одновременно исполнять байт-код Python, поэтому потоки не ускоряют вычисления, нагружающие процессор. Запуск ловушки 5: два вычисления подряд заняли <code>0,26 с</code>, те же два в двух потоках тоже <code>0,26 с</code>. В Java два потока на двух ядрах дали бы почти двукратный выигрыш.</p>
 <p>Блокировка отпускается на операциях ввода-вывода, поэтому потоки работают для сетевых вызовов. Здесь встречается вторая ловушка, на этот раз общая для Java и Python: ускоряет ли параллельный вызов клиента, если узкое место на сервере. Запуск шести запросов к модели:</p>
-<pre><code class="language-python">def sequential() -&gt; float:
-    t0 = time.perf_counter()
-    for p in PROMPTS: one(p)
-    return time.perf_counter() - t0
+<div class="hl" data-lang="Python"><div class="hl-bar"><span>Python</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">def</span> <span class="nf">sequential</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">PROMPTS</span><span class="p">:</span> <span class="n">one</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
 
-def with_threads(workers: int) -&gt; float:
-    t0 = time.perf_counter()
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        list(pool.map(one, PROMPTS))
-    return time.perf_counter() - t0
+<span class="k">def</span> <span class="nf">with_threads</span><span class="p">(</span><span class="n">workers</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">one</span><span class="p">,</span> <span class="n">PROMPTS</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
 
-async def with_asyncio() -&gt; float:
-    t0 = time.perf_counter()
-    await asyncio.gather(*(asyncio.to_thread(one, p) for p in PROMPTS))
-    return time.perf_counter() - t0
-</code></pre>
-<pre><code class="language-text">последовательно: 1.20 с
+<span class="k">async</span> <span class="k">def</span> <span class="nf">with_asyncio</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">one</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">PROMPTS</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+</code></pre></div>
+
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>последовательно: 1.20 с
 пул из 3 потоков: 1.10 с
 пул из 6 потоков: 1.10 с
 asyncio.gather + to_thread: 1.11 с
-</code></pre>
+</code></pre></div>
+
 <p>Ускорения почти нет: <code>1,20</code> против <code>1,10</code>. Причина не в Python. Ollama в этой установке обрабатывает запросы к одной модели по очереди на процессоре, и клиентский параллелизм упирается в сервер. Это тот же вывод, что в главе 75 про ограничение параллелизма: сначала измерьте пропускную способность сервера, а потом решайте, сколько потоков на клиенте, иначе вы только увеличите очередь и задержку каждого запроса. У платного API-провайдера картина противоположная: там сервер принимает много запросов параллельно, и пул потоков или <code>asyncio</code> дают почти линейный выигрыш до лимита квоты.</p>
 <p>Сопоставление с Java:</p>
 <table class="rt">
@@ -406,37 +418,39 @@ asyncio.gather + to_thread: 1.11 с
 <hr>
 <h2 id="f8-тонкий-сервис-вокруг-модели-fastapi-и-контракт">F8. Тонкий сервис вокруг модели: FastAPI и контракт</h2>
 <p>Типичный сервис-обёртка: принять JSON, проверить, вызвать модель, вернуть типизированный ответ. На Python для этого используют <code>FastAPI</code> и <code>pydantic</code>: модель данных описывается классом, валидация и OpenAPI-схема получаются автоматически. Сервис в запуске поднимался командой <code>uvicorn service:app --port 8092</code>, версии из окружения: <code>fastapi 0.156.2</code>, <code>uvicorn 0.54.0</code>, <code>pydantic 2.14.1</code>, <code>httpx 0.28.1</code>.</p>
-<pre><code class="language-python">import httpx
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
+<div class="hl" data-lang="Python"><div class="hl-bar"><span>Python</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kn">import</span> <span class="nn">httpx</span>
+<span class="kn">from</span> <span class="nn">fastapi</span> <span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
 
-BASE = &quot;http://localhost:11434&quot;
-app = FastAPI(title=&quot;support-classifier&quot;)
+<span class="n">BASE</span> <span class="o">=</span> <span class="s2">"http://localhost:11434"</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"support-classifier"</span><span class="p">)</span>
 
-class Ticket(BaseModel):
-    text: str = Field(min_length=3, max_length=2000)
+<span class="k">class</span> <span class="nc">Ticket</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">min_length</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
 
-class Verdict(BaseModel):
-    label: str
-    raw: str
+<span class="k">class</span> <span class="nc">Verdict</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">raw</span><span class="p">:</span> <span class="nb">str</span>
 
-@app.post(&quot;/classify&quot;, response_model=Verdict)
-async def classify(ticket: Ticket) -&gt; Verdict:
-    prompt = (&quot;Классифицируй обращение клиента банка. Ответь одним словом: перевод, кредит, карта или другое.\n&quot;
-              f&quot;Обращение: {ticket.text}\nКласс:&quot;)
-    async with httpx.AsyncClient(timeout=60) as client:
-        r = await client.post(BASE + &quot;/api/chat&quot;, json={&quot;model&quot;: &quot;qwen2.5:1.5b&quot;, &quot;stream&quot;: False,
-                              &quot;options&quot;: {&quot;temperature&quot;: 0, &quot;num_predict&quot;: 8},
-                              &quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}]})
-    raw = r.json()[&quot;message&quot;][&quot;content&quot;].strip()
-    label = next((l for l in (&quot;перевод&quot;, &quot;кредит&quot;, &quot;карта&quot;, &quot;другое&quot;) if l in raw.lower()), &quot;другое&quot;)
-    return Verdict(label=label, raw=raw)
-</code></pre>
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/classify"</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">Verdict</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">classify</span><span class="p">(</span><span class="n">ticket</span><span class="p">:</span> <span class="n">Ticket</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Verdict</span><span class="p">:</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"Классифицируй обращение клиента банка. Ответь одним словом: перевод, кредит, карта или другое.</span><span class="se">\n</span><span class="s2">"</span>
+              <span class="sa">f</span><span class="s2">"Обращение: </span><span class="si">{</span><span class="n">ticket</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="se">\n</span><span class="s2">Класс:"</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">BASE</span> <span class="o">+</span> <span class="s2">"/api/chat"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"model"</span><span class="p">:</span> <span class="s2">"qwen2.5:1.5b"</span><span class="p">,</span> <span class="s2">"stream"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                              <span class="s2">"options"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"temperature"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"num_predict"</span><span class="p">:</span> <span class="mi">8</span><span class="p">},</span>
+                              <span class="s2">"messages"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">prompt</span><span class="p">}]})</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"message"</span><span class="p">][</span><span class="s2">"content"</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"перевод"</span><span class="p">,</span> <span class="s2">"кредит"</span><span class="p">,</span> <span class="s2">"карта"</span><span class="p">,</span> <span class="s2">"другое"</span><span class="p">)</span> <span class="k">if</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">raw</span><span class="o">.</span><span class="n">lower</span><span class="p">()),</span> <span class="s2">"другое"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Verdict</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="n">raw</span><span class="p">)</span>
+</code></pre></div>
+
 <p>Вызовы <code>curl</code> (тело из файла в UTF-8):</p>
-<pre><code class="language-text">{&quot;label&quot;:&quot;перевод&quot;,&quot;raw&quot;:&quot;Перевод&quot;}                      ← «Не дошёл перевод по номеру телефона»
-{&quot;label&quot;:&quot;перевод&quot;,&quot;raw&quot;:&quot;Перевод&quot;}                      ← «Кто выиграл вчера матч?»
-{&quot;detail&quot;:[{&quot;type&quot;:&quot;string_too_short&quot;,&quot;loc&quot;:[&quot;body&quot;,&quot;text&quot;],&quot;msg&quot;:&quot;String should have at least 3 characters&quot;,&quot;input&quot;:&quot;a&quot;,&quot;ctx&quot;:{&quot;min_length&quot;:3}}]}
-</code></pre>
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>{"label":"перевод","raw":"Перевод"}                      ← «Не дошёл перевод по номеру телефона»
+{"label":"перевод","raw":"Перевод"}                      ← «Кто выиграл вчера матч?»
+{"detail":[{"type":"string_too_short","loc":["body","text"],"msg":"String should have at least 3 characters","input":"a","ctx":{"min_length":3}}]}
+</code></pre></div>
+
 <p>Автоматически получили: валидацию входа (ответ <code>422</code> на слишком короткий текст с указанием поля и причины), <code>/openapi.json</code> с описанием контракта (схема <code>3.1.0</code>) и интерактивную страницу документации. Для Java-разработчика это аналог <code>@Valid</code> с Bean Validation и <code>springdoc-openapi</code>, только без настройки и аннотаций на параметрах.</p>
 <p>Но вторая строка вывода выявила то, что нельзя пропустить: вопрос про футбол модель классифицировала как «перевод», хотя метка «другое» существует. Малая модель с коротким ответом (<code>num_predict</code> 8) не умеет отказываться, а вывод <code>"перевод"</code> внешне нормален и никаких ошибок не вызывает. Если поверх такого ответа принимают решение (например, направляют обращение в очередь переводов), ошибка тихая. Защита та же, что в главе 76: оценка на размеченном наборе, порог уверенности, возможность ответа «не знаю» и ручная проверка выборки.</p>
 <p>Сравнение с Spring: тот же сервис на Spring Boot — это контроллер, <code>record</code> для запроса с <code>@Size</code>, <code>WebClient</code> или <code>RestClient</code> для вызова модели и <code>springdoc</code> для схемы; по объёму кода они сопоставимы, а по эксплуатации Java-вариант вписывается в уже настроенный у вас контур (метрики Micrometer, трассировка, безопасность). Поэтому на собеседовании корректный ответ звучит «Python-сервис для эксперимента и вспомогательных задач, Java для того, что становится частью основного контура».</p>

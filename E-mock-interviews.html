@@ -287,21 +287,22 @@
 <p><em>Условие.</em> Есть класс <code>Account</code> с балансом. Напишите <code>transfer(from, to, amount)</code>, который корректно работает при одновременных переводах между любыми парами счетов.</p>
 <p><em>Что проверяют.</em> Знает ли кандидат о взаимной блокировке и как её избежать, умеет ли проверить потокобезопасность тестом.</p>
 <p><em>Ход решения.</em> Деньги — <code>BigDecimal</code> или <code>long</code> в копейках. Простое <code>synchronized</code> на методе сервиса сериализует все переводы, и это стоит сказать вслух как первый вариант. Затем блокировка двух счетов с единым порядком захвата по идентификатору, чтобы встречные переводы не заблокировали друг друга. Проверка достаточности средств — под блокировкой. Тест: пул из 16 потоков, <code>CountDownLatch</code> для одновременного старта, тысячи случайных переводов между несколькими счетами, и в конце проверка инварианта «сумма балансов не изменилась» и отсутствия отрицательных балансов.</p>
-<pre><code class="language-java">public void transfer(Account from, Account to, long amountKopecks) {
-    if (from.id() == to.id()) throw new IllegalArgumentException(&quot;перевод на тот же счёт&quot;);
-    Account first = from.id() &lt; to.id() ? from : to;     // единый порядок захвата
-    Account second = first == from ? to : from;
-    first.lock().lock();
-    try {
-        second.lock().lock();
-        try {
-            if (from.balance() &lt; amountKopecks) throw new InsufficientFundsException(from.id());
-            from.debit(amountKopecks);
-            to.credit(amountKopecks);
-        } finally { second.lock().unlock(); }
-    } finally { first.lock().unlock(); }
-}
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">public</span> <span class="kt">void</span> <span class="nf">transfer</span><span class="p">(</span><span class="n">Account</span> <span class="n">from</span><span class="p">,</span> <span class="n">Account</span> <span class="kd">to</span><span class="p">,</span> <span class="kt">long</span> <span class="n">amountKopecks</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">from</span><span class="p">.</span><span class="na">id</span><span class="p">()</span> <span class="o">==</span> <span class="kd">to</span><span class="p">.</span><span class="na">id</span><span class="p">())</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalArgumentException</span><span class="p">(</span><span class="s">"перевод на тот же счёт"</span><span class="p">);</span>
+    <span class="n">Account</span> <span class="n">first</span> <span class="o">=</span> <span class="n">from</span><span class="p">.</span><span class="na">id</span><span class="p">()</span> <span class="o">&lt;</span> <span class="kd">to</span><span class="p">.</span><span class="na">id</span><span class="p">()</span> <span class="o">?</span> <span class="n">from</span> <span class="p">:</span> <span class="kd">to</span><span class="p">;</span>     <span class="c1">// единый порядок захвата</span>
+    <span class="n">Account</span> <span class="n">second</span> <span class="o">=</span> <span class="n">first</span> <span class="o">==</span> <span class="n">from</span> <span class="o">?</span> <span class="kd">to</span> <span class="p">:</span> <span class="n">from</span><span class="p">;</span>
+    <span class="n">first</span><span class="p">.</span><span class="na">lock</span><span class="p">().</span><span class="na">lock</span><span class="p">();</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="n">second</span><span class="p">.</span><span class="na">lock</span><span class="p">().</span><span class="na">lock</span><span class="p">();</span>
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">from</span><span class="p">.</span><span class="na">balance</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">amountKopecks</span><span class="p">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">InsufficientFundsException</span><span class="p">(</span><span class="n">from</span><span class="p">.</span><span class="na">id</span><span class="p">());</span>
+            <span class="n">from</span><span class="p">.</span><span class="na">debit</span><span class="p">(</span><span class="n">amountKopecks</span><span class="p">);</span>
+            <span class="kd">to</span><span class="p">.</span><span class="na">credit</span><span class="p">(</span><span class="n">amountKopecks</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">finally</span> <span class="p">{</span> <span class="n">second</span><span class="p">.</span><span class="na">lock</span><span class="p">().</span><span class="na">unlock</span><span class="p">();</span> <span class="p">}</span>
+    <span class="p">}</span> <span class="k">finally</span> <span class="p">{</span> <span class="n">first</span><span class="p">.</span><span class="na">lock</span><span class="p">().</span><span class="na">unlock</span><span class="p">();</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p><em>Если копнут.</em> «А если счета в базе?» Ответ: тот же порядок, <code>SELECT ... ORDER BY id FOR UPDATE</code> (вопрос 5 профиля E2). <em>Красный флаг.</em> Блокировка <code>from</code>, затем <code>to</code> без порядка; тест в одном потоке.</p>
 <h3 id="задача-2-идемпотентный-эндпоинт-создания-платежа">Задача 2. Идемпотентный эндпоинт создания платежа</h3>
 <p><em>Условие.</em> На Spring Boot сделайте <code>POST /payments</code>, который принимает заголовок <code>Idempotency-Key</code> и не создаёт второй платёж при повторе.</p>

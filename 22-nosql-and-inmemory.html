@@ -119,14 +119,15 @@
 </ul>
 <h3 id="22-lsm-tree-append-only-и-слияния">2.2 LSM-tree: append-only и слияния</h3>
 <p>LSM-tree (log-structured merge tree) устроено наоборот: оно никогда не меняет записанное на месте, а копит изменения в памяти и сбрасывает их на диск неизменяемыми файлами, которые потом сливаются в фоне. Схема ниже показывает путь записи сверху вниз, от WAL и memtable до многоуровневых SSTable.</p>
-<pre><code>запись → WAL (durability) → memtable (в RAM, сортированная структура)
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>запись → WAL (durability) → memtable (в RAM, сортированная структура)
                                   │ переполнилась
                                   ▼
                             flush → SSTable L0 (immutable, отсортированный файл)
                                   │ compaction
                                   ▼
                             SSTable L1 → L2 → ... (слияние, удаление перезаписанных версий)
-</code></pre>
+</code></pre></div>
+
 <p>Каждый элемент этой схемы делает свою работу. <strong>memtable</strong> — сортированная структура в памяти (skiplist в RocksDB и Cassandra, B+*-дерево в Tarantool vinyl), поэтому запись сводится к вставке в память и дописыванию в WAL, и обе операции последовательны. <strong>SSTable</strong>, или <strong>run</strong>, хранит данные в неизменяемом отсортированном файле с блочным индексом и <strong>Bloom-фильтром</strong>; фильтр отвечает «точно нет» или «возможно, есть» и тем самым позволяет вовсе не читать файл, если ключа в нём нет (в vinyl по умолчанию фильтр допускает 5% ложных срабатываний, <a href="https://www.tarantool.io/en/doc/latest/concepts/engines/vinyl/" data-tip="Внешний сайт · tarantool.io
 https://www.tarantool.io/en/doc/latest/concepts/engines/vinyl/">Tarantool docs: vinyl</a>). <strong>Compaction</strong> в фоне сливает файлы и выбрасывает перезаписанные версии и удалённые ключи; vinyl при этом дампит L0 кусками по 50–100 МБ последовательной записью со сжатием, так что фрагментации внутри run не бывает по построению. <strong>Удаление</strong> в такой схеме тоже оказывается записью: движок пишет маркер-«надгробие» (tombstone), и этот маркер живёт до следующей compaction, всё это время участвуя в каждом чтении.</p>
 <h3 id="23-амплификация-записи-чтения-и-места">2.3 Амплификация записи, чтения и места</h3>
@@ -248,27 +249,29 @@ https://raw.githubusercontent.com/redis/redis/unstable/redis.conf">redis.conf</a
 </table>
 <p><strong>Правильно обходить keyspace</strong> нужно командой <code>SCAN</code>. Это курсорный итератор, каждый вызов которого делает константный объём работы, а гарантия у него такая: каждый элемент, который присутствовал в базе от начала до конца итерации, будет возвращён хотя бы один раз. Дубликаты при этом возможны, а ключи, добавленные во время обхода, могут попасть в выборку, а могут и не попасть. Для коллекций есть аналоги с той же семантикой: <code>HSCAN</code>, <code>SSCAN</code> и <code>ZSCAN</code>.</p>
 <p>Разница между двумя способами обхода хорошо видна на двух вызовах redis-cli: первая держит сервер всё время обхода, а вторая отдаёт ключи порциями.</p>
-<pre><code class="language-bash"># Плохо: блокирует сервер на всё время обхода
-redis-cli KEYS 'session:*'
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Плохо: блокирует сервер на всё время обхода</span>
+redis-cli KEYS <span class="s1">'session:*'</span>
 
-# Хорошо: курсор, порциями, сервер между вызовами обслуживает других
-redis-cli --scan --pattern 'session:*' --count 1000
-</code></pre>
+<span class="c1"># Хорошо: курсор, порциями, сервер между вызовами обслуживает других</span>
+redis-cli --scan --pattern <span class="s1">'session:*'</span> --count <span class="m">1000</span>
+</code></pre></div>
+
 <p>На Java с Lettuce тот же обход по курсору выглядит так; обратите внимание на условие выхода из цикла.</p>
-<pre><code class="language-java">import io.lettuce.core.*;
-import io.lettuce.core.api.sync.RedisCommands;
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kn">import</span> <span class="nn">io.lettuce.core.*</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">io.lettuce.core.api.sync.RedisCommands</span><span class="p">;</span>
 
-RedisCommands&lt;String, String&gt; cmd = connection.sync();
-ScanArgs args = ScanArgs.Builder.matches(&quot;session:*&quot;).limit(1000);
-KeyScanCursor&lt;String&gt; cursor = cmd.scan(args);
-long total = 0;
-while (true) {
-    total += cursor.getKeys().size();
-    if (cursor.isFinished()) break;
-    cursor = cmd.scan(cursor, args);
-}
-System.out.println(&quot;matched=&quot; + total);
-</code></pre>
+<span class="n">RedisCommands</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">cmd</span> <span class="o">=</span> <span class="n">connection</span><span class="p">.</span><span class="na">sync</span><span class="p">();</span>
+<span class="n">ScanArgs</span> <span class="n">args</span> <span class="o">=</span> <span class="n">ScanArgs</span><span class="p">.</span><span class="na">Builder</span><span class="p">.</span><span class="na">matches</span><span class="p">(</span><span class="s">"session:*"</span><span class="p">).</span><span class="na">limit</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>
+<span class="n">KeyScanCursor</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">cursor</span> <span class="o">=</span> <span class="n">cmd</span><span class="p">.</span><span class="na">scan</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+<span class="kt">long</span> <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="k">while</span> <span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">total</span> <span class="o">+=</span> <span class="n">cursor</span><span class="p">.</span><span class="na">getKeys</span><span class="p">().</span><span class="na">size</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">cursor</span><span class="p">.</span><span class="na">isFinished</span><span class="p">())</span> <span class="k">break</span><span class="p">;</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">cmd</span><span class="p">.</span><span class="na">scan</span><span class="p">(</span><span class="n">cursor</span><span class="p">,</span> <span class="n">args</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"matched="</span> <span class="o">+</span> <span class="n">total</span><span class="p">);</span>
+</code></pre></div>
+
 <p>Здесь важно понимать, что <code>limit(1000)</code> лишь <strong>подсказывает серверу объём работы за итерацию</strong> и не гарантирует, сколько ключей он вернёт. <code>SCAN</code> вполне может вернуть ноль ключей вместе с ненулевым курсором, и это нормальное поведение, поэтому останавливаться нужно только тогда, когда <code>isFinished()</code> сообщает, что курсор стал <code>0</code>.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> Классический инцидент выглядит так: мониторинговый скрипт раз в минуту выполняет <code>KEYS *</code> на экземпляре с 20 млн ключей. Команда работает около 4 секунд, и всё это время p99 приложения тоже составляет 4 секунды, circuit breaker открывается, и сервисы начинают деградировать. В логах приложения при этом видно только «таймаут Redis», и команда неделю ищет проблему в сети. Лечится это тремя мерами сразу: обход через <code>SCAN</code>, <code>rename-command KEYS ""</code> в конфигурации прода и <code>SLOWLOG</code> в мониторинге.</p>
@@ -282,13 +285,14 @@ System.out.println(&quot;matched=&quot; + total);
 <h3 id="41-string-и-sds">4.1 String и SDS</h3>
 <p>Строка в Redis устроена как <strong>SDS</strong> (Simple Dynamic String), то есть структура, в которой рядом с байтовым массивом хранятся длина и объём свободного места. Благодаря этому <code>STRLEN</code> работает за <code>O(1)</code>, строка безопасна для бинарных данных, потому что ничего не завязано на <code>\0</code>, а <code>APPEND</code> амортизируется за счёт того, что свободное место выделяется заранее. У заголовка SDS есть несколько вариантов с 8-, 16-, 32- и 64-битными длинами, чтобы за короткие строки не приходилось платить длинным заголовком.</p>
 <p>Кроме того, Redis применяет <strong>целочисленное кодирование</strong>: если значение строки выглядит как long, оно хранится числом, а не текстом. Какое представление выбрано, показывает <code>OBJECT ENCODING key</code>, и ответов бывает три: <code>int</code>, <code>embstr</code> (короткая строка, которую выделили одним блоком вместе с объектом) или <code>raw</code>. В примере ниже видно, как кодировка меняется в зависимости от значения.</p>
-<pre><code class="language-bash">redis&gt; SET a 12345
-redis&gt; OBJECT ENCODING a      # int
-redis&gt; SET b &quot;short string&quot;
-redis&gt; OBJECT ENCODING b      # embstr
-redis&gt; SET c &quot;……длинная строка более 44 байт……&quot;
-redis&gt; OBJECT ENCODING c      # raw
-</code></pre>
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>redis&gt; SET a <span class="m">12345</span>
+redis&gt; OBJECT ENCODING a      <span class="c1"># int</span>
+redis&gt; SET b <span class="s2">"short string"</span>
+redis&gt; OBJECT ENCODING b      <span class="c1"># embstr</span>
+redis&gt; SET c <span class="s2">"……длинная строка более 44 байт……"</span>
+redis&gt; OBJECT ENCODING c      <span class="c1"># raw</span>
+</code></pre></div>
+
 <h3 id="42-list-quicklist">4.2 List: quicklist</h3>
 <p>Список в Redis хранится как <strong>quicklist</strong>, и это компромисс между двумя классическими структурами. Связный список быстр на концах, но тратит огромный объём памяти на указатели, а массив компактен, но дорог при вставке, поэтому quicklist берёт от каждого лучшее: он устроен как двусвязный список узлов, где каждый узел хранит несколько элементов в компактном <code>listpack</code> (раньше это был <code>ziplist</code>), который можно дополнительно сжать LZF.</p>
 <p>Из такого устройства следует, что <code>LPUSH</code>/<code>RPOP</code>/<code>LLEN</code> выполняются за O(1), а <code>LINDEX</code> в середину списка стоит O(N). Поэтому список на миллион элементов хорошо работает как очередь, но совершенно не годится в роли индексированного массива.</p>
@@ -308,12 +312,13 @@ https://raw.githubusercontent.com/valkey-io/valkey/unstable/src/intset.h">intset
 https://valkey.io/topics/streams-intro/">Valkey: Streams intro</a>.</p>
 <p><code>XADD</code> выполняется за O(1), доступ по ID стоит фактически константу, а <code>XRANGE</code> тратит O(log N) на позиционирование и ещё O(M) на выдачу. <strong>Consumer groups</strong> (<code>XGROUP CREATE</code>, <code>XREADGROUP</code>) отдают каждое сообщение ровно одному потребителю группы, и до <code>XACK</code> сообщение числится в <strong>PEL</strong> (pending entries list) этого потребителя. На этом и строится восстановление после падения потребителя: <code>XPENDING</code> показывает зависшие сообщения, <code>XCLAIM</code> вручную переназначает их другому, а <code>XAUTOCLAIM</code> (6.2+) забирает их пачкой, когда время простоя превышает порог. Обрезают лог через <code>XADD ... MAXLEN 1000</code> или <code>XTRIM</code>, причём форма <code>MAXLEN ~ 1000</code> обходится дешевле, так как удаляет данные целыми узлами. <strong>Без обрезки stream растёт до OOM</strong>, и это самая частая ошибка при работе с ним.</p>
 <p>Типичный цикл работы с группой потребителей выглядит так: создать группу, записать событие, прочитать пачку, подтвердить обработку и забрать зависшие сообщения другим воркером.</p>
-<pre><code class="language-bash">XGROUP CREATE payments:events grp $ MKSTREAM
-XADD payments:events '*' type charge amount 1000 id 42
-XREADGROUP GROUP grp worker-1 COUNT 10 BLOCK 5000 STREAMS payments:events '&gt;'
-XACK payments:events grp 1737460000000-0
-XAUTOCLAIM payments:events grp worker-2 60000 0 COUNT 100
-</code></pre>
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>XGROUP CREATE payments:events grp $ MKSTREAM
+XADD payments:events <span class="s1">'*'</span> <span class="nb">type</span> charge amount <span class="m">1000</span> id <span class="m">42</span>
+XREADGROUP GROUP grp worker-1 COUNT <span class="m">10</span> BLOCK <span class="m">5000</span> STREAMS payments:events <span class="s1">'&gt;'</span>
+XACK payments:events grp <span class="m">1737460000000</span>-0
+XAUTOCLAIM payments:events grp worker-2 <span class="m">60000</span> <span class="m">0</span> COUNT <span class="m">100</span>
+</code></pre></div>
+
 <h3 id="48-pubsub-и-streams">4.8 Pub/Sub и Streams</h3>
 <p>Pub/Sub и Streams часто путают, потому что оба механизма доставляют сообщения подписчикам, но гарантии у них принципиально разные: Pub/Sub ничего не хранит и отдаёт сообщение только тем, кто подключён прямо сейчас, а Streams ведёт лог с подтверждениями. Таблица сравнивает их по тем свойствам, которые решают, можно ли доверить механизму бизнес-события.</p>
 <table class="rt">
@@ -422,13 +427,14 @@ XAUTOCLAIM payments:events grp worker-2 60000 0 COUNT 100
 https://raw.githubusercontent.com/redis/redis/unstable/redis.conf">redis.conf</a>) и совпадают со встроенными значениями в <code>config.c</code> Redis и Valkey (<a href="https://raw.githubusercontent.com/redis/redis/unstable/src/config.c" data-tip="Внешний сайт · raw.githubusercontent.com
 https://raw.githubusercontent.com/redis/redis/unstable/src/config.c">config.c в исходниках Redis</a>); в конкретной версии и в конкретном managed-сервисе они могут отличаться, а проверить их можно через <code>CONFIG GET hash-max-listpack-*</code>.</p>
 <p>Пользоваться этим стоит так. Поиск в listpack линейный, но на коллекции в сотню-другую элементов он сводится к последовательному проходу по непрерывному блоку памяти и обгоняет хеш-таблицу с её указателями и промахами кеша, занимая при этом в разы меньше места. Поэтому <strong>«много маленьких хешей» обходится дешевле «одного большого»</strong>, а «один большой» дешевле «миллиона отдельных строковых ключей», ведь у каждого ключа есть свои накладные расходы и в главном словаре, и в словаре TTL. Отсюда и классический приём, показанный ниже: вместо миллиона строковых ключей данные раскладывают по корзинам-хешам.</p>
-<pre><code class="language-bash"># 1 млн ключей вида user:12345 -&gt; JSON: ~100+ байт накладных на ключ
-SET user:12345 '{&quot;name&quot;:&quot;...&quot;,&quot;tier&quot;:&quot;gold&quot;}'
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># 1 млн ключей вида user:12345 -&gt; JSON: ~100+ байт накладных на ключ</span>
+SET user:12345 <span class="s1">'{"name":"...","tier":"gold"}'</span>
 
-# то же в 10 тыс. хешей по 100 полей: оверхед на ключ платится 10 тыс. раз,
-# и каждый хеш остаётся listpack'ом
-HSET user:bucket:123 45 '{&quot;name&quot;:&quot;...&quot;,&quot;tier&quot;:&quot;gold&quot;}'
-</code></pre>
+<span class="c1"># то же в 10 тыс. хешей по 100 полей: оверхед на ключ платится 10 тыс. раз,</span>
+<span class="c1"># и каждый хеш остаётся listpack'ом</span>
+HSET user:bucket:123 <span class="m">45</span> <span class="s1">'{"name":"...","tier":"gold"}'</span>
+</code></pre></div>
+
 <p>У приёма есть цена. До Redis 7.4 TTL нельзя было поставить на отдельное поле хеша, а в 7.4 появились <code>HEXPIRE</code>/<code>HPEXPIRE</code>/<code>HPERSIST</code>, но клиенты и managed-сервисы поддерживают их неравномерно. Кроме того, в кластере вся корзина живёт в одном слоте, поэтому она не должна вырастать настолько, чтобы превратиться в горячий ключ. Результат приёма проверяют командами <code>OBJECT ENCODING key</code> и <code>MEMORY USAGE key</code>.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> Порог <code>hash-max-listpack-value 64</code> считается <strong>в байтах значения</strong>, а не в символах. Русский текст в UTF-8 занимает два байта на букву, поэтому строка из 40 кириллических символов весит уже 80 байт и переводит хеш в <code>hashtable</code>. На практике инцидент выглядит так: после того как в профиль добавили поле с русским описанием, потребление памяти кластера за ночь выросло в 2.5 раза, хотя объём данных вырос на 10%. Диагностировать это помогает <code>OBJECT ENCODING</code> на нескольких ключах до изменения и после него.</p>
@@ -625,13 +631,14 @@ https://valkey.io/topics/cluster-spec/">Valkey: cluster spec</a>). Таблиц�
 <h3 id="65-crossslot-hash-tags-и-перенаправления">6.5 CROSSSLOT, hash tags и перенаправления</h3>
 <p>В кластере операция над несколькими ключами допустима, только если все ключи лежат в одном слоте, а иначе Redis отвечает <code>CROSSSLOT Keys in request don't hash to the same slot</code>. Управлять этим позволяет <strong>hash tag</strong>: если в ключе есть <code>{...}</code>, хешируется только содержимое первых фигурных скобок, поэтому <code>{user1000}.following</code> и <code>{user1000}.followers</code> попадут в один слот (<a href="https://valkey.io/topics/cluster-spec/" data-tip="Внешний сайт · valkey.io
 https://valkey.io/topics/cluster-spec/">Valkey: cluster spec</a>). Пример ниже показывает обе ситуации: без тега <code>MGET</code> падает, а с общим тегом проходит.</p>
-<pre><code class="language-bash"># MGET через два слота — ошибка
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># MGET через два слота — ошибка</span>
 redis&gt; MGET user:1:name user:2:name
-(error) CROSSSLOT Keys in request don't hash to the same slot
+<span class="o">(</span>error<span class="o">)</span> CROSSSLOT Keys <span class="k">in</span> request don<span class="err">'</span>t <span class="nb">hash</span> to the same slot
 
-# С hash tag — один слот, работает
-redis&gt; MGET {u1}:name {u1}:email
-</code></pre>
+<span class="c1"># С hash tag — один слот, работает</span>
+redis&gt; MGET <span class="o">{</span>u1<span class="o">}</span>:name <span class="o">{</span>u1<span class="o">}</span>:email
+</code></pre></div>
+
 <p>У hash tag есть обратная сторона: по сути это ручное управление размещением данных. Если объединить тегом слишком крупную группу, например <code>{tenant-1}</code> для крупнейшего арендатора, вы получите <strong>горячий слот</strong>, который нельзя разделить, потому что балансировщик переносит слоты только целиком.</p>
 <p><strong>Перенаправления.</strong> Клиент может обратиться не к тому узлу, и тогда сервер отвечает одним из трёх перенаправлений:</p>
 <ul>
@@ -687,20 +694,21 @@ https://valkey.io/topics/transactions/">Valkey: transactions</a>).</p>
 <li><strong>Условной логики.</strong> Внутри транзакции нельзя «прочитать и решить», потому что результаты команд становятся доступны только после <code>EXEC</code>.</li>
 </ul>
 <p><strong><code>WATCH</code></strong> добавляет к этому оптимистичную блокировку: если любой из отслеживаемых ключей изменится между <code>WATCH</code> и <code>EXEC</code>, <code>EXEC</code> вернёт nil, и клиенту придётся повторить цикл. По сути это CAS, а не блокировка, и когда за одни и те же ключи борется много клиентов (contention), цикл повторных попыток может обойтись дорого. Ниже классический цикл на Lettuce с ограничением в пять попыток.</p>
-<pre><code class="language-java">// Lettuce: классический WATCH/MULTI/EXEC-цикл
-RedisCommands&lt;String, String&gt; cmd = connection.sync();
-for (int attempt = 0; attempt &lt; 5; attempt++) {
-    cmd.watch(&quot;balance:42&quot;);
-    long balance = Long.parseLong(cmd.get(&quot;balance:42&quot;));
-    if (balance &lt; 100) { cmd.unwatch(); throw new IllegalStateException(&quot;insufficient&quot;); }
-    cmd.multi();
-    cmd.decrby(&quot;balance:42&quot;, 100);
-    cmd.incrby(&quot;balance:99&quot;, 100);
-    TransactionResult result = cmd.exec();
-    if (!result.wasDiscarded()) return;   // успех
-}
-throw new IllegalStateException(&quot;too much contention&quot;);
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// Lettuce: классический WATCH/MULTI/EXEC-цикл</span>
+<span class="n">RedisCommands</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">cmd</span> <span class="o">=</span> <span class="n">connection</span><span class="p">.</span><span class="na">sync</span><span class="p">();</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">attempt</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">;</span> <span class="n">attempt</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">cmd</span><span class="p">.</span><span class="na">watch</span><span class="p">(</span><span class="s">"balance:42"</span><span class="p">);</span>
+    <span class="kt">long</span> <span class="n">balance</span> <span class="o">=</span> <span class="n">Long</span><span class="p">.</span><span class="na">parseLong</span><span class="p">(</span><span class="n">cmd</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="s">"balance:42"</span><span class="p">));</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">balance</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">)</span> <span class="p">{</span> <span class="n">cmd</span><span class="p">.</span><span class="na">unwatch</span><span class="p">();</span> <span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalStateException</span><span class="p">(</span><span class="s">"insufficient"</span><span class="p">);</span> <span class="p">}</span>
+    <span class="n">cmd</span><span class="p">.</span><span class="na">multi</span><span class="p">();</span>
+    <span class="n">cmd</span><span class="p">.</span><span class="na">decrby</span><span class="p">(</span><span class="s">"balance:42"</span><span class="p">,</span> <span class="mi">100</span><span class="p">);</span>
+    <span class="n">cmd</span><span class="p">.</span><span class="na">incrby</span><span class="p">(</span><span class="s">"balance:99"</span><span class="p">,</span> <span class="mi">100</span><span class="p">);</span>
+    <span class="n">TransactionResult</span> <span class="n">result</span> <span class="o">=</span> <span class="n">cmd</span><span class="p">.</span><span class="na">exec</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">result</span><span class="p">.</span><span class="na">wasDiscarded</span><span class="p">())</span> <span class="k">return</span><span class="p">;</span>   <span class="c1">// успех</span>
+<span class="p">}</span>
+<span class="k">throw</span> <span class="k">new</span> <span class="n">IllegalStateException</span><span class="p">(</span><span class="s">"too much contention"</span><span class="p">);</span>
+</code></pre></div>
+
 <p>Этот код работает только на одиночном экземпляре или при условии, что оба ключа находятся в одном слоте кластера, и даже тогда переводом денег его считать нельзя: см. §7.3.</p>
 <h3 id="72-атомарность-lua-скриптов">7.2 Атомарность Lua-скриптов</h3>
 <p>Lua-скрипт в Redis нужен там, где атомарная операция должна содержать условие: прочитать значение, принять решение и записать результат так, чтобы никто не вклинился посередине. Скрипт, запущенный через <code>EVAL</code>/<code>EVALSHA</code>, выполняется <strong>целиком, атомарно и в главном потоке</strong>, поэтому внутри него можно читать, решать и писать, и это единственный способ выразить в Redis условную атомарную логику.</p>
@@ -708,32 +716,35 @@ throw new IllegalStateException(&quot;too much contention&quot;);
 <p>С Redis 7.0 появились <strong>Functions</strong> (<code>FUNCTION LOAD</code>, <code>FCALL</code>), то есть библиотеки функций, которые хранятся в базе, реплицируются и в отличие от скриптового кеша переживают перезапуск. Для долгоживущей серверной логики это правильнее, чем <code>EVAL</code> из приложения, но экосистема, в том числе Java-клиенты, освоила функции слабее, чем скрипты.</p>
 <h3 id="73-распределённая-блокировка-и-redlock">7.3 Распределённая блокировка и Redlock</h3>
 <p>Распределённая блокировка на Redis нужна, чтобы из нескольких экземпляров сервиса одну и ту же работу в каждый момент делал только один. Сделать её правильно на одном экземпляре несложно, если соблюсти три условия, но даже правильно сделанная блокировка не гарантирует корректности данных, и ниже разобрано сначала первое, а потом второе. <strong>Корректный минимум на одном экземпляре</strong> выглядит так.</p>
-<pre><code class="language-bash"># захват: атомарно установить, только если нет, с TTL
-SET lock:order:42 &lt;random-token&gt; NX PX 30000
-</code></pre>
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># захват: атомарно установить, только если нет, с TTL</span>
+SET lock:order:42 &lt;random-token&gt; NX PX <span class="m">30000</span>
+</code></pre></div>
+
 <p>Все три элемента здесь обязательны: без <code>NX</code> вы перехватите чужую блокировку, без <code>PX</code> блокировка станет вечной, если владелец упадёт, а без <strong>owner-token</strong> вы освободите чужую. Освобождать блокировку можно только через Lua, потому что «проверить и удалить» двумя отдельными командами не атомарно; ниже сам скрипт и его вызов из Java.</p>
-<pre><code class="language-lua">-- KEYS[1] = ключ блокировки, ARGV[1] = токен владельца
-if redis.call('GET', KEYS[1]) == ARGV[1] then
-  return redis.call('DEL', KEYS[1])
-else
-  return 0
-end
-</code></pre>
-<pre><code class="language-java">private static final String UNLOCK =
-    &quot;if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end&quot;;
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- KEYS[1] = ключ блокировки, ARGV[1] = токен владельца</span>
+<span class="kr">if</span> <span class="nv">redis</span><span class="p">.</span><span class="nf">call</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span> <span class="nv">KEYS</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">==</span> <span class="nv">ARGV</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="kr">then</span>
+  <span class="kr">return</span> <span class="nv">redis</span><span class="p">.</span><span class="nf">call</span><span class="p">(</span><span class="s1">'DEL'</span><span class="p">,</span> <span class="nv">KEYS</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="kr">else</span>
+  <span class="kr">return</span> <span class="mi">0</span>
+<span class="kr">end</span>
+</code></pre></div>
 
-boolean tryLock(String key, String token, Duration ttl) {
-    String res = cmd.set(key, token,
-        SetArgs.Builder.nx().px(ttl.toMillis()));
-    return &quot;OK&quot;.equals(res);
-}
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">UNLOCK</span> <span class="o">=</span>
+    <span class="s">"if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end"</span><span class="p">;</span>
 
-boolean unlock(String key, String token) {
-    Long r = cmd.eval(UNLOCK, ScriptOutputType.INTEGER,
-                      new String[]{key}, token);
-    return r != null &amp;&amp; r == 1L;
-}
-</code></pre>
+<span class="kt">boolean</span> <span class="nf">tryLock</span><span class="p">(</span><span class="n">String</span> <span class="n">key</span><span class="p">,</span> <span class="n">String</span> <span class="n">token</span><span class="p">,</span> <span class="n">Duration</span> <span class="n">ttl</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">String</span> <span class="n">res</span> <span class="o">=</span> <span class="n">cmd</span><span class="p">.</span><span class="na">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span>
+        <span class="n">SetArgs</span><span class="p">.</span><span class="na">Builder</span><span class="p">.</span><span class="na">nx</span><span class="p">().</span><span class="na">px</span><span class="p">(</span><span class="n">ttl</span><span class="p">.</span><span class="na">toMillis</span><span class="p">()));</span>
+    <span class="k">return</span> <span class="s">"OK"</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">res</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">boolean</span> <span class="nf">unlock</span><span class="p">(</span><span class="n">String</span> <span class="n">key</span><span class="p">,</span> <span class="n">String</span> <span class="n">token</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">Long</span> <span class="n">r</span> <span class="o">=</span> <span class="n">cmd</span><span class="p">.</span><span class="na">eval</span><span class="p">(</span><span class="n">UNLOCK</span><span class="p">,</span> <span class="n">ScriptOutputType</span><span class="p">.</span><span class="na">INTEGER</span><span class="p">,</span>
+                      <span class="k">new</span> <span class="n">String</span><span class="o">[]</span><span class="p">{</span><span class="n">key</span><span class="p">},</span> <span class="n">token</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">r</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">r</span> <span class="o">==</span> <span class="mi">1L</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p><strong>Почему этого всё равно недостаточно для корректности.</strong> Мартин Клеппманн разобрал Redlock и сформулировал к нему три претензии (<a href="https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html" data-tip="Внешний сайт · martin.kleppmann.com
 https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html">How to do distributed locking</a>):</p>
 <ol>
@@ -748,37 +759,40 @@ https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html">How 
 <h3 id="74-rate-limiter">7.4 Rate limiter</h3>
 <p>Rate limiter ограничивает число запросов, которое один клиент может сделать за единицу времени, и Redis для него подходит хорошо, потому что счётчик должен быть общим для всех экземпляров сервиса и атомарным. Алгоритмов несколько, и различаются они тем, насколько точно соблюдают лимит на границах окон, сколько памяти тратят и допускают ли всплески; ниже они перечислены от простого к сложному, а последний, token bucket, показан целиком в виде Lua-скрипта.</p>
 <p><strong>Fixed window</strong> устроен проще всех, но у него есть известный дефект: на границе двух окон он может пропустить 2× лимита. Логика сводится к двум командам, показанным ниже.</p>
-<pre><code class="language-bash"># псевдо-логика: INCR + EXPIRE при первом инкременте
-INCR rl:{user42}:1737460020
-EXPIRE rl:{user42}:1737460020 60 NX
-</code></pre>
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># псевдо-логика: INCR + EXPIRE при первом инкременте</span>
+INCR rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020
+EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <span class="m">60</span> NX
+</code></pre></div>
+
 <p><strong>Sliding window counter</strong> считает взвешенную сумму текущего и предыдущего окна; это дешёвый компромисс, и ошибается он на единицы процентов.</p>
 <p><strong>Sliding window log</strong> на zset точен, но дороже по памяти, потому что каждый запрос кладётся в множество отдельным элементом со score=timestamp, а старые элементы отрезаются через <code>ZREMRANGEBYSCORE</code>.</p>
 <p><strong>Token bucket</strong> на Lua даёт лучший баланс и при этом допускает всплески. Скрипт ниже пополняет ведро пропорционально прошедшему времени, списывает запрошенные токены, если их хватает, и возвращает решение вместе с остатком.</p>
-<pre><code class="language-lua">-- KEYS[1]=bucket, ARGV[1]=rate(токенов/сек), ARGV[2]=capacity,
--- ARGV[3]=now_ms, ARGV[4]=requested
-local data = redis.call('HMGET', KEYS[1], 'tokens', 'ts')
-local capacity = tonumber(ARGV[2])
-local rate = tonumber(ARGV[1])
-local now = tonumber(ARGV[3])
-local requested = tonumber(ARGV[4])
-local tokens = tonumber(data[1]) or capacity
-local ts = tonumber(data[2]) or now
-tokens = math.min(capacity, tokens + (now - ts) / 1000 * rate)
-local allowed = 0
-if tokens &gt;= requested then
-  tokens = tokens - requested
-  allowed = 1
-end
-redis.call('HSET', KEYS[1], 'tokens', tokens, 'ts', now)
-redis.call('PEXPIRE', KEYS[1], math.ceil(capacity / rate * 2000))
-return {allowed, math.floor(tokens)}
-</code></pre>
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- KEYS[1]=bucket, ARGV[1]=rate(токенов/сек), ARGV[2]=capacity,</span>
+<span class="c1">-- ARGV[3]=now_ms, ARGV[4]=requested</span>
+<span class="kd">local</span> <span class="nv">data</span> <span class="o">=</span> <span class="nv">redis</span><span class="p">.</span><span class="nf">call</span><span class="p">(</span><span class="s1">'HMGET'</span><span class="p">,</span> <span class="nv">KEYS</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">'tokens'</span><span class="p">,</span> <span class="s1">'ts'</span><span class="p">)</span>
+<span class="kd">local</span> <span class="nv">capacity</span> <span class="o">=</span> <span class="nb">tonumber</span><span class="p">(</span><span class="nv">ARGV</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+<span class="kd">local</span> <span class="nv">rate</span> <span class="o">=</span> <span class="nb">tonumber</span><span class="p">(</span><span class="nv">ARGV</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="kd">local</span> <span class="nv">now</span> <span class="o">=</span> <span class="nb">tonumber</span><span class="p">(</span><span class="nv">ARGV</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+<span class="kd">local</span> <span class="nv">requested</span> <span class="o">=</span> <span class="nb">tonumber</span><span class="p">(</span><span class="nv">ARGV</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+<span class="kd">local</span> <span class="nv">tokens</span> <span class="o">=</span> <span class="nb">tonumber</span><span class="p">(</span><span class="nv">data</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="ow">or</span> <span class="nv">capacity</span>
+<span class="kd">local</span> <span class="nv">ts</span> <span class="o">=</span> <span class="nb">tonumber</span><span class="p">(</span><span class="nv">data</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="ow">or</span> <span class="nv">now</span>
+<span class="nv">tokens</span> <span class="o">=</span> <span class="nb">math.min</span><span class="p">(</span><span class="nv">capacity</span><span class="p">,</span> <span class="nv">tokens</span> <span class="o">+</span> <span class="p">(</span><span class="nv">now</span> <span class="o">-</span> <span class="nv">ts</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1000</span> <span class="o">*</span> <span class="nv">rate</span><span class="p">)</span>
+<span class="kd">local</span> <span class="nv">allowed</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="kr">if</span> <span class="nv">tokens</span> <span class="o">&gt;=</span> <span class="nv">requested</span> <span class="kr">then</span>
+  <span class="nv">tokens</span> <span class="o">=</span> <span class="nv">tokens</span> <span class="o">-</span> <span class="nv">requested</span>
+  <span class="nv">allowed</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="kr">end</span>
+<span class="nv">redis</span><span class="p">.</span><span class="nf">call</span><span class="p">(</span><span class="s1">'HSET'</span><span class="p">,</span> <span class="nv">KEYS</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">'tokens'</span><span class="p">,</span> <span class="nv">tokens</span><span class="p">,</span> <span class="s1">'ts'</span><span class="p">,</span> <span class="nv">now</span><span class="p">)</span>
+<span class="nv">redis</span><span class="p">.</span><span class="nf">call</span><span class="p">(</span><span class="s1">'PEXPIRE'</span><span class="p">,</span> <span class="nv">KEYS</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nb">math.ceil</span><span class="p">(</span><span class="nv">capacity</span> <span class="o">/</span> <span class="nv">rate</span> <span class="o">*</span> <span class="mi">2000</span><span class="p">))</span>
+<span class="kr">return</span> <span class="p">{</span><span class="nv">allowed</span><span class="p">,</span> <span class="nb">math.floor</span><span class="p">(</span><span class="nv">tokens</span><span class="p">)}</span>
+</code></pre></div>
+
 <p>В этом скрипте стоит обратить внимание на две детали. Время передаётся <strong>снаружи</strong> (<code>ARGV[3]</code>), чтобы скрипт оставался детерминированным и не зависел от часов узла, а TTL ставится при каждом вызове, чтобы заброшенные ведра не копились в памяти. Алгоритмы ограничения нагрузки как самостоятельная дисциплина, включая leaky bucket, load shedding и бюджеты повторных попыток, разобраны в главе 35 (<code>35-resilience.md</code>).</p>
 <h3 id="75-идемпотентность-и-дедупликация">7.5 Идемпотентность и дедупликация</h3>
 <p>Идемпотентность означает, что повторный запрос с тем же ключом не выполняет операцию второй раз, а возвращает результат первой, и в платёжных сценариях это обязательное свойство, потому что клиенты и шлюзы повторяют запросы при любом таймауте. Redis часто используют как быстрый фильтр таких повторов, и ниже показана базовая команда, а затем разобрано, что нужно добавить, чтобы схема работала по-настоящему, и почему Redis не может быть её единственной опорой.</p>
-<pre><code class="language-bash">SET idem:&lt;Idempotency-Key&gt; &lt;request-hash&gt; NX EX 86400
-</code></pre>
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>SET idem:&lt;Idempotency-Key&gt; &lt;request-hash&gt; NX EX <span class="m">86400</span>
+</code></pre></div>
+
 <p>Если <code>SET</code> вернул nil, значит запрос уже обрабатывался. Работающую схему от игрушечной отличает то, что в ключе хранится не флаг, а <strong>состояние и результат</strong> (<code>processing</code> → <code>done</code> плюс сериализованный ответ), и повторный запрос получает тот же ответ, а не сообщение «уже обработано». Помнить при этом нужно, что Redis может потерять этот ключ (см. §6.2), поэтому для платежей ключ идемпотентности живёт в PostgreSQL с уникальным индексом, а Redis служит лишь быстрым фильтром перед ним. Подробно эта тема разобрана в главе 27 (<code>27-http-and-rest.md</code>) и главе 31 (<code>31-integration-patterns-consistency.md</code>).</p>
 <h3 id="76-очередь-задач-лидерборды-счётчики-сессии">7.6 Очередь задач, лидерборды, счётчики, сессии</h3>
 <p>Помимо блокировок, лимитов и идемпотентности, на Redis регулярно строят ещё несколько типовых вещей, и у каждой есть своя граница, за которой Redis перестаёт подходить. Ниже они перечислены по одной: какие структуры и команды для каждой нужны и с какими гарантиями приходится мириться.</p>
@@ -808,14 +822,15 @@ return {allowed, math.floor(tokens)}
 <li><strong>Hash tag ставится только вокруг сущности</strong> (§6.5), и это тоже часть соглашения: <code>{acc:123}:balance</code>, <code>{acc:123}:limits</code>.</li>
 </ul>
 <p>Полезно держать в репозитории сервиса один класс-реестр ключей вместо строковых литералов, разбросанных по коду; выглядит он примерно так.</p>
-<pre><code class="language-java">public final class RedisKeys {
-    private static final String NS = &quot;billing:&quot;;
-    public static String invoiceCache(long id) { return NS + &quot;cache:v2:invoice:&quot; + id; }
-    public static String invoiceLock(long id)  { return NS + &quot;lock:invoice:&quot; + id; }
-    public static String userRate(long id)     { return NS + &quot;rl:{u&quot; + id + &quot;}&quot;; }
-    private RedisKeys() {}
-}
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">RedisKeys</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">NS</span> <span class="o">=</span> <span class="s">"billing:"</span><span class="p">;</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">invoiceCache</span><span class="p">(</span><span class="kt">long</span> <span class="n">id</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">NS</span> <span class="o">+</span> <span class="s">"cache:v2:invoice:"</span> <span class="o">+</span> <span class="n">id</span><span class="p">;</span> <span class="p">}</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">invoiceLock</span><span class="p">(</span><span class="kt">long</span> <span class="n">id</span><span class="p">)</span>  <span class="p">{</span> <span class="k">return</span> <span class="n">NS</span> <span class="o">+</span> <span class="s">"lock:invoice:"</span> <span class="o">+</span> <span class="n">id</span><span class="p">;</span> <span class="p">}</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">userRate</span><span class="p">(</span><span class="kt">long</span> <span class="n">id</span><span class="p">)</span>     <span class="p">{</span> <span class="k">return</span> <span class="n">NS</span> <span class="o">+</span> <span class="s">"rl:{u"</span> <span class="o">+</span> <span class="n">id</span> <span class="o">+</span> <span class="s">"}"</span><span class="p">;</span> <span class="p">}</span>
+    <span class="kd">private</span> <span class="nf">RedisKeys</span><span class="p">()</span> <span class="p">{}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Такой реестр позволяет грепом найти, кто ещё читает этот ключ, даёт единое место для смены версии формата и защищает от опечаток, которые Redis не диагностирует никак: промах по имени ключа выглядит как «данных нет», а не как ошибка.</p>
 <hr>
 <h2 id="8-redis-из-java-клиенты-сериализация-эксплуатация">8. Redis из Java: клиенты, сериализация, эксплуатация</h2>
@@ -873,31 +888,32 @@ https://github.com/redisson/redisson">redisson на GitHub</a>). Поддерж�
 <p>Поэтому по умолчанию стоит брать <strong>Lettuce + Spring Data Redis</strong> для обычной работы, а Redisson подключать только тогда, когда действительно нужен конкретный распределённый примитив и вы понимаете его гарантии.</p>
 <h3 id="82-spring-data-redis-конфигурация-и-сериализация">8.2 Spring Data Redis: конфигурация и сериализация</h3>
 <p>Конфигурация Spring Data Redis занимает десяток строк, но именно в ней чаще всего остаются два значения по умолчанию, опасных для прода: таймаут команды в минуту и Java-сериализация значений. Ниже показана конфигурация, в которой оба заданы явно, а после неё объяснено, почему каждое из них нужно менять.</p>
-<pre><code class="language-java">@Configuration
-class RedisConfig {
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Configuration</span>
+<span class="kd">class</span> <span class="nc">RedisConfig</span> <span class="p">{</span>
 
-    @Bean
-    LettuceConnectionFactory connectionFactory(RedisProperties props) {
-        var server = new RedisStandaloneConfiguration(props.getHost(), props.getPort());
-        var clientConfig = LettuceClientConfiguration.builder()
-                .commandTimeout(Duration.ofMillis(200))          // критично: по умолчанию 60 с
-                .shutdownTimeout(Duration.ofMillis(100))
-                .build();
-        return new LettuceConnectionFactory(server, clientConfig);
-    }
+    <span class="nd">@Bean</span>
+    <span class="n">LettuceConnectionFactory</span> <span class="nf">connectionFactory</span><span class="p">(</span><span class="n">RedisProperties</span> <span class="n">props</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="n">server</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RedisStandaloneConfiguration</span><span class="p">(</span><span class="n">props</span><span class="p">.</span><span class="na">getHost</span><span class="p">(),</span> <span class="n">props</span><span class="p">.</span><span class="na">getPort</span><span class="p">());</span>
+        <span class="kd">var</span> <span class="n">clientConfig</span> <span class="o">=</span> <span class="n">LettuceClientConfiguration</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">commandTimeout</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofMillis</span><span class="p">(</span><span class="mi">200</span><span class="p">))</span>          <span class="c1">// критично: по умолчанию 60 с</span>
+                <span class="p">.</span><span class="na">shutdownTimeout</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofMillis</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+                <span class="p">.</span><span class="na">build</span><span class="p">();</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="n">LettuceConnectionFactory</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">clientConfig</span><span class="p">);</span>
+    <span class="p">}</span>
 
-    @Bean
-    RedisTemplate&lt;String, Object&gt; redisTemplate(RedisConnectionFactory cf) {
-        var template = new RedisTemplate&lt;String, Object&gt;();
-        template.setConnectionFactory(cf);
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setHashKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
-        return template;
-    }
-}
-</code></pre>
+    <span class="nd">@Bean</span>
+    <span class="n">RedisTemplate</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">Object</span><span class="o">&gt;</span> <span class="nf">redisTemplate</span><span class="p">(</span><span class="n">RedisConnectionFactory</span> <span class="n">cf</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="n">template</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RedisTemplate</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">Object</span><span class="o">&gt;</span><span class="p">();</span>
+        <span class="n">template</span><span class="p">.</span><span class="na">setConnectionFactory</span><span class="p">(</span><span class="n">cf</span><span class="p">);</span>
+        <span class="n">template</span><span class="p">.</span><span class="na">setKeySerializer</span><span class="p">(</span><span class="k">new</span> <span class="n">StringRedisSerializer</span><span class="p">());</span>
+        <span class="n">template</span><span class="p">.</span><span class="na">setHashKeySerializer</span><span class="p">(</span><span class="k">new</span> <span class="n">StringRedisSerializer</span><span class="p">());</span>
+        <span class="n">template</span><span class="p">.</span><span class="na">setValueSerializer</span><span class="p">(</span><span class="k">new</span> <span class="n">GenericJackson2JsonRedisSerializer</span><span class="p">());</span>
+        <span class="n">template</span><span class="p">.</span><span class="na">setHashValueSerializer</span><span class="p">(</span><span class="k">new</span> <span class="n">GenericJackson2JsonRedisSerializer</span><span class="p">());</span>
+        <span class="k">return</span> <span class="n">template</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Первое, на что здесь нужно смотреть, — <strong><code>commandTimeout</code>, который по умолчанию равен 60 секундам</strong> и никак не соотносится с реальностью: Redis либо отвечает за миллисекунды, либо у него проблема. Ставить его стоит в 100–500 мс, иначе при любой заминке пул HTTP-потоков на минуту окажется занят, и ляжет весь сервис (таймауты как инструмент устойчивости разобраны в главе 35, <code>35-resilience.md</code>). Второе — <strong>сериализаторы нужно задавать явно</strong>, потому что <code>JdkSerializationRedisSerializer</code>, который стоит по умолчанию, пишет Java-сериализацию: её нельзя прочитать глазами, она несовместима между версиями класса и опасна, так как открывает десериализацию недоверенных данных (OWASP A08; глава 42, <code>42-appsec-oauth-keycloak.md</code>). Третье — <strong><code>GenericJackson2JsonRedisSerializer</code> кладёт в JSON имя класса</strong> (<code>@class</code>): значения получаются самоописывающимися, но привязанными к FQCN, и если переименовать пакет, старый кеш перестанет читаться. Альтернативы здесь две: <code>Jackson2JsonRedisSerializer&lt;T&gt;</code> с явным типом или, когда важен объём, бинарный формат вроде Protobuf, Kryo или MessagePack.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно (Spring Boot 4 / Jackson 3).</strong> В Spring Boot 4 основным стал Jackson версии 3 с пакетом <code>tools.jackson</code>, и сериализаторы в Spring Data Redis для Jackson 3 называются иначе. При миграции Boot 3 → 4 конфигурацию сериализации нужно проверить отдельно, потому что молчаливая смена формата значений означает, что весь существующий кеш перестанет читаться. О переезде пакетов в Boot 4 подробнее в <code>FACTS.md</code>.</p>
@@ -975,17 +991,18 @@ https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/">Mon
 <p>Проверяют работу индекса через <code>db.coll.find(...).explain("executionStats")</code>. Первым делом смотрят на <code>winningPlan.stage</code>: <code>IXSCAN</code> означает, что индекс используется, а <code>COLLSCAN</code> — что нет. Затем сравнивают <code>totalKeysExamined</code> / <code>totalDocsExamined</code> / <code>nReturned</code>: если просмотренных ключей и документов на порядки больше, чем возвращённых, индекс не подходит под запрос. Наконец, <code>SORT</code> в плане означает сортировку в памяти, у которой по умолчанию лимит 100 МБ, а дальше запрос либо падает с ошибкой, либо требует <code>allowDiskUse</code>.</p>
 <h3 id="93-aggregation-pipeline-и-lookup">9.3 Aggregation pipeline и <code>$lookup</code></h3>
 <p>Aggregation pipeline — это механизм MongoDB для группировок, фильтрации и соединений на стороне сервера, аналог GROUP BY и JOIN в SQL, но устроенный как конвейер стадий, где каждая стадия получает поток документов и отдаёт поток дальше. Пример ниже считает по оплаченным документам суммы по клиентам, отбирает крупнейших и подтягивает к ним данные клиента через <code>$lookup</code>; смотреть в нём стоит на порядок стадий.</p>
-<pre><code class="language-javascript">db.orders.aggregate([
-  { $match:  { status: &quot;PAID&quot;, createdAt: { $gte: ISODate(&quot;2026-09-01&quot;) } } },
-  { $group:  { _id: &quot;$customerId&quot;, total: { $sum: &quot;$amount&quot; }, cnt: { $sum: 1 } } },
-  { $match:  { total: { $gte: 100000 } } },
-  { $sort:   { total: -1 } },
-  { $limit:  50 },
-  { $lookup: { from: &quot;customers&quot;, localField: &quot;_id&quot;,
-               foreignField: &quot;_id&quot;, as: &quot;customer&quot; } },
-  { $project:{ total: 1, cnt: 1, name: { $first: &quot;$customer.name&quot; } } }
-])
-</code></pre>
+<div class="hl" data-lang="JavaScript"><div class="hl-bar"><span>JavaScript</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nx">db</span><span class="p">.</span><span class="nx">orders</span><span class="p">.</span><span class="nx">aggregate</span><span class="p">([</span>
+  <span class="p">{</span> <span class="nx">$match</span><span class="o">:</span>  <span class="p">{</span> <span class="nx">status</span><span class="o">:</span> <span class="s2">"PAID"</span><span class="p">,</span> <span class="nx">createdAt</span><span class="o">:</span> <span class="p">{</span> <span class="nx">$gte</span><span class="o">:</span> <span class="nx">ISODate</span><span class="p">(</span><span class="s2">"2026-09-01"</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="nx">$group</span><span class="o">:</span>  <span class="p">{</span> <span class="nx">_id</span><span class="o">:</span> <span class="s2">"$customerId"</span><span class="p">,</span> <span class="nx">total</span><span class="o">:</span> <span class="p">{</span> <span class="nx">$sum</span><span class="o">:</span> <span class="s2">"$amount"</span> <span class="p">},</span> <span class="nx">cnt</span><span class="o">:</span> <span class="p">{</span> <span class="nx">$sum</span><span class="o">:</span> <span class="mf">1</span> <span class="p">}</span> <span class="p">}</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="nx">$match</span><span class="o">:</span>  <span class="p">{</span> <span class="nx">total</span><span class="o">:</span> <span class="p">{</span> <span class="nx">$gte</span><span class="o">:</span> <span class="mf">100000</span> <span class="p">}</span> <span class="p">}</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="nx">$sort</span><span class="o">:</span>   <span class="p">{</span> <span class="nx">total</span><span class="o">:</span> <span class="o">-</span><span class="mf">1</span> <span class="p">}</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="nx">$limit</span><span class="o">:</span>  <span class="mf">50</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="nx">$lookup</span><span class="o">:</span> <span class="p">{</span> <span class="kr">from</span><span class="o">:</span> <span class="s2">"customers"</span><span class="p">,</span> <span class="nx">localField</span><span class="o">:</span> <span class="s2">"_id"</span><span class="p">,</span>
+               <span class="nx">foreignField</span><span class="o">:</span> <span class="s2">"_id"</span><span class="p">,</span> <span class="kr">as</span><span class="o">:</span> <span class="s2">"customer"</span> <span class="p">}</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="nx">$project</span><span class="o">:</span><span class="p">{</span> <span class="nx">total</span><span class="o">:</span> <span class="mf">1</span><span class="p">,</span> <span class="nx">cnt</span><span class="o">:</span> <span class="mf">1</span><span class="p">,</span> <span class="nx">name</span><span class="o">:</span> <span class="p">{</span> <span class="nx">$first</span><span class="o">:</span> <span class="s2">"$customer.name"</span> <span class="p">}</span> <span class="p">}</span> <span class="p">}</span>
+<span class="p">])</span>
+</code></pre></div>
+
 <p>Производительность конвейера определяется порядком стадий. <code>$match</code> и <code>$sort</code> нужно ставить <strong>в начало</strong>, чтобы они могли использовать индекс, потому что после <code>$group</code> индексов уже нет; <code>$limit</code> стоит поднимать как можно выше, а <code>$project</code> использовать, чтобы уменьшить объём данных перед тяжёлыми стадиями.</p>
 <p><strong><code>$lookup</code> — не JOIN</strong>, хотя выглядит похоже. Выполняется он как вложенный цикл: для каждого входного документа MongoDB делает поиск во второй коллекции, и если справа нет индекса по <code>foreignField</code>, это оборачивается N сканами коллекции. В шардированной среде <code>$lookup</code> до недавнего времени был серьёзно ограничен, если «правая» коллекция шардирована. Отсюда практический вывод: если дизайн регулярно требует <code>$lookup</code> на горячем пути, это сигнал, что либо модель нужно денормализовать, либо задача реляционная и место ей в PostgreSQL.</p>
 <h3 id="94-wiredtiger-mvcc-транзакции">9.4 WiredTiger, MVCC, транзакции</h3>
@@ -1084,27 +1101,29 @@ https://www.percona.com/blog/resharding-in-mongodb-5-0/">Percona: Resharding in 
 </tbody>
 </table>
 <p><strong>Covered query</strong> — запрос, который целиком обслуживается индексом: все поля проекции и фильтра есть в индексе, а <code>_id</code> либо исключён из проекции, либо тоже входит в индекс. В этом случае <code>totalDocsExamined = 0</code>, то есть документы не читаются вообще, и это самый дешёвый режим, ради которого индекс иногда осознанно расширяют лишним полем. В примере ниже индекс покрывает и фильтр, и проекцию.</p>
-<pre><code class="language-javascript">// covered: индекс {status:1, createdAt:-1, amount:1}, проекция только по его полям
-db.orders.find({status:&quot;PAID&quot;}, {_id:0, createdAt:1, amount:1})
-         .sort({createdAt:-1}).limit(20).explain(&quot;executionStats&quot;)
-// ожидаем: IXSCAN -&gt; PROJECTION_COVERED, totalDocsExamined: 0
-</code></pre>
+<div class="hl" data-lang="JavaScript"><div class="hl-bar"><span>JavaScript</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// covered: индекс {status:1, createdAt:-1, amount:1}, проекция только по его полям</span>
+<span class="nx">db</span><span class="p">.</span><span class="nx">orders</span><span class="p">.</span><span class="nx">find</span><span class="p">({</span><span class="nx">status</span><span class="o">:</span><span class="s2">"PAID"</span><span class="p">},</span> <span class="p">{</span><span class="nx">_id</span><span class="o">:</span><span class="mf">0</span><span class="p">,</span> <span class="nx">createdAt</span><span class="o">:</span><span class="mf">1</span><span class="p">,</span> <span class="nx">amount</span><span class="o">:</span><span class="mf">1</span><span class="p">})</span>
+         <span class="p">.</span><span class="nx">sort</span><span class="p">({</span><span class="nx">createdAt</span><span class="o">:-</span><span class="mf">1</span><span class="p">}).</span><span class="nx">limit</span><span class="p">(</span><span class="mf">20</span><span class="p">).</span><span class="nx">explain</span><span class="p">(</span><span class="s2">"executionStats"</span><span class="p">)</span>
+<span class="c1">// ожидаем: IXSCAN -&gt; PROJECTION_COVERED, totalDocsExamined: 0</span>
+</code></pre></div>
+
 <h3 id="910-транзакции-шардирование-и-change-streams">9.10 Транзакции, шардирование и change streams</h3>
 <p><strong>Транзакции.</strong> Стоимость многодокументной транзакции складывается из трёх частей. Первая — удержание снимка, которое давит на кеш WiredTiger. Вторая — блокировки на уровне документов с политикой «не ждать дольше 5 мс»: по умолчанию транзакция не встаёт в очередь за занятым документом, а сразу отдаёт <code>WriteConflict</code>, после которого клиент обязан повторить её. Третья появляется в шардированном кластере — это <strong>двухфазный фиксация</strong> между участвующими шардами со всеми свойствами 2PC: координатором, журналами решений и окном неопределённости, если координатор упадёт (глава 18, <code>18-transactions-isolation-locking.md</code>). Правильная форма транзакции в Java-драйвере показана ниже.</p>
-<pre><code class="language-java">// Java-драйвер: правильная форма — withTransaction, он сам повторяет транзакцию при TransientTransactionError
-try (ClientSession session = mongoClient.startSession()) {
-    TransactionOptions opts = TransactionOptions.builder()
-            .readConcern(ReadConcern.SNAPSHOT)
-            .writeConcern(WriteConcern.MAJORITY)
-            .maxCommitTime(3L, TimeUnit.SECONDS)
-            .build();
-    session.withTransaction(() -&gt; {
-        orders.insertOne(session, orderDoc);
-        accounts.updateOne(session, eq(&quot;_id&quot;, accId), inc(&quot;balance&quot;, -amount));
-        return null;
-    }, opts);
-}
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// Java-драйвер: правильная форма — withTransaction, он сам повторяет транзакцию при TransientTransactionError</span>
+<span class="k">try</span> <span class="p">(</span><span class="n">ClientSession</span> <span class="n">session</span> <span class="o">=</span> <span class="n">mongoClient</span><span class="p">.</span><span class="na">startSession</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">TransactionOptions</span> <span class="n">opts</span> <span class="o">=</span> <span class="n">TransactionOptions</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+            <span class="p">.</span><span class="na">readConcern</span><span class="p">(</span><span class="n">ReadConcern</span><span class="p">.</span><span class="na">SNAPSHOT</span><span class="p">)</span>
+            <span class="p">.</span><span class="na">writeConcern</span><span class="p">(</span><span class="n">WriteConcern</span><span class="p">.</span><span class="na">MAJORITY</span><span class="p">)</span>
+            <span class="p">.</span><span class="na">maxCommitTime</span><span class="p">(</span><span class="mi">3L</span><span class="p">,</span> <span class="n">TimeUnit</span><span class="p">.</span><span class="na">SECONDS</span><span class="p">)</span>
+            <span class="p">.</span><span class="na">build</span><span class="p">();</span>
+    <span class="n">session</span><span class="p">.</span><span class="na">withTransaction</span><span class="p">(()</span> <span class="o">-&gt;</span> <span class="p">{</span>
+        <span class="n">orders</span><span class="p">.</span><span class="na">insertOne</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">orderDoc</span><span class="p">);</span>
+        <span class="n">accounts</span><span class="p">.</span><span class="na">updateOne</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">eq</span><span class="p">(</span><span class="s">"_id"</span><span class="p">,</span> <span class="n">accId</span><span class="p">),</span> <span class="n">inc</span><span class="p">(</span><span class="s">"balance"</span><span class="p">,</span> <span class="o">-</span><span class="n">amount</span><span class="p">));</span>
+        <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="p">},</span> <span class="n">opts</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Правил здесь три. Транзакция должна быть короткой, то есть длиться десятки миллисекунд, а не секунды; внутри неё нельзя делать сетевые вызовы к другим системам; и коллекции должны существовать заранее, потому что создание коллекции внутри транзакции поддерживается не везде и не во всех версиях.</p>
 <p><strong>Фрагменты и балансер.</strong> Коллекция делится на фрагменты (в документации их теперь называют диапазонами, range), и максимальный размер фрагмента по умолчанию составляет <strong>128 МБ</strong>, а до версии 6.0 он был 64 МБ (<a href="https://raw.githubusercontent.com/mongodb/mongo/r6.0.0/src/mongo/s/balancer_configuration.cpp" data-tip="Внешний сайт · raw.githubusercontent.com
 https://raw.githubusercontent.com/mongodb/mongo/r6.0.0/src/mongo/s/balancer_configuratio…">balancer_configuration.cpp в исходниках MongoDB</a>). С 6.0 кластер делит фрагмент не в момент превышения этого размера, а только тогда, когда фрагмент нужно перенести, поэтому реальные фрагменты бывают заметно больше <code>chunkSize</code>. Балансер работает фоновым процессом на конфиг-сервере: он сравнивает между шардами число фрагментов (в новых версиях объём данных) и переносит фрагменты по одному. Миграция фрагмента состоит из копирования документов, синхронизации «хвоста» изменений и атомарной смены владельца в метаданных, и во время финальной фазы операции с этим диапазоном ненадолго блокируются.</p>
@@ -1113,18 +1132,19 @@ https://raw.githubusercontent.com/mongodb/mongo/r6.0.0/src/mongo/s/balancer_conf
 https://www.percona.com/blog/resharding-in-mongodb-5-0/">Percona: Resharding in MongoDB 5.0</a>, <a href="https://www.mongodb.com/docs/manual/core/sharding-reshard-a-collection/" data-tip="Внешний сайт · mongodb.com
 https://www.mongodb.com/docs/manual/core/sharding-reshard-a-collection/">MongoDB Docs: Reshard a Collection</a>). Индексы под новый ключ заранее создавать не нужно, операция строит их сама.</p>
 <p><strong>Change streams</strong> на практике открывают через <code>watch()</code> на коллекции, базе или всём кластере. Фильтруют их стадиями pipeline (<code>$match</code> по <code>operationType</code> или по полям <code>fullDocument</code>), а возобновляют по <code>resumeToken</code>, который <strong>обязательно нужно сохранять</strong> на стороне потребителя, иначе после рестарта вы либо потеряете изменения, либо перечитаете всё заново. По умолчанию событие обновления содержит только описание изменений (<code>updateDescription</code>), а полный документ приходит при <code>fullDocument: 'updateLookup'</code>. Это дополнительное чтение, и возвращает оно <strong>текущее</strong> состояние документа, а не состояние на момент события, так что при частых обновлениях вы увидите более свежую версию, чем ожидали. Для удалений полного документа нет вовсе, если не включён <code>changeStreamPreAndPostImages</code> (6.0+), а он занимает место. Ниже показан потребитель, который сохраняет токен после каждого обработанного события.</p>
-<pre><code class="language-java">List&lt;Bson&gt; pipeline = List.of(Aggregates.match(
-        Filters.in(&quot;operationType&quot;, List.of(&quot;insert&quot;, &quot;update&quot;, &quot;replace&quot;))));
-MongoCursor&lt;ChangeStreamDocument&lt;Document&gt;&gt; cursor = orders.watch(pipeline)
-        .fullDocument(FullDocument.UPDATE_LOOKUP)
-        .resumeAfter(loadSavedToken())       // токен из своей БД
-        .iterator();
-while (cursor.hasNext()) {
-    ChangeStreamDocument&lt;Document&gt; ev = cursor.next();
-    handle(ev.getFullDocument());
-    saveToken(ev.getResumeToken());          // сохранять ПОСЛЕ успешной обработки
-}
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">List</span><span class="o">&lt;</span><span class="n">Bson</span><span class="o">&gt;</span> <span class="n">pipeline</span> <span class="o">=</span> <span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">Aggregates</span><span class="p">.</span><span class="na">match</span><span class="p">(</span>
+        <span class="n">Filters</span><span class="p">.</span><span class="na">in</span><span class="p">(</span><span class="s">"operationType"</span><span class="p">,</span> <span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"insert"</span><span class="p">,</span> <span class="s">"update"</span><span class="p">,</span> <span class="s">"replace"</span><span class="p">))));</span>
+<span class="n">MongoCursor</span><span class="o">&lt;</span><span class="n">ChangeStreamDocument</span><span class="o">&lt;</span><span class="n">Document</span><span class="o">&gt;&gt;</span> <span class="n">cursor</span> <span class="o">=</span> <span class="n">orders</span><span class="p">.</span><span class="na">watch</span><span class="p">(</span><span class="n">pipeline</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">fullDocument</span><span class="p">(</span><span class="n">FullDocument</span><span class="p">.</span><span class="na">UPDATE_LOOKUP</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">resumeAfter</span><span class="p">(</span><span class="n">loadSavedToken</span><span class="p">())</span>       <span class="c1">// токен из своей БД</span>
+        <span class="p">.</span><span class="na">iterator</span><span class="p">();</span>
+<span class="k">while</span> <span class="p">(</span><span class="n">cursor</span><span class="p">.</span><span class="na">hasNext</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">ChangeStreamDocument</span><span class="o">&lt;</span><span class="n">Document</span><span class="o">&gt;</span> <span class="n">ev</span> <span class="o">=</span> <span class="n">cursor</span><span class="p">.</span><span class="na">next</span><span class="p">();</span>
+    <span class="n">handle</span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="na">getFullDocument</span><span class="p">());</span>
+    <span class="n">saveToken</span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="na">getResumeToken</span><span class="p">());</span>          <span class="c1">// сохранять ПОСЛЕ успешной обработки</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Порядок «обработать, затем сохранить токен» даёт at-least-once, а значит, обработчик обязан быть идемпотентным (глава 31, <code>31-integration-patterns-consistency.md</code>).</p>
 <hr>
 <h2 id="10-tarantool">10. Tarantool</h2>
@@ -1147,35 +1167,36 @@ https://www.tarantool.io/en/doc/latest/concepts/engines/memtx/">Tarantool docs: 
 <p>Durability настраивают параметром <code>wal_mode</code>: <code>write</code> пишет в WAL и делает fsync по политике ОС, <code>fsync</code> вызывает fsync на каждую транзакцию, а <code>none</code> не пишет ничего, превращая Tarantool в чистый кеш. Сверх этого есть синхронная репликация с кворумом (<code>synchronous</code> спейсы и основанный на Raft <code>election_mode</code>), и если она включена, транзакция подтверждается только после того, как её приняли реплики в количестве кворума. Это одно из главных отличий от Redis: <strong>Tarantool умеет синхронную репликацию с автоматическими выборами лидера</strong> и поэтому способен давать существенно более сильные гарантии.</p>
 <h3 id="104-хранимые-процедуры-на-lua">10.4 Хранимые процедуры на Lua</h3>
 <p>Хранимая процедура на Lua выполняется прямо в экземпляре Tarantool, рядом с данными, и позволяет превратить многошаговую операцию, которая из Java потребовала бы нескольких обращений и блокировок, в один вызов. Пример ниже создаёт спейс счетов с первичным индексом и объявляет функцию атомарного перевода между счетами; смотреть стоит на то, что проверка остатка и оба списания выполняются внутри одного <code>box.atomic</code>.</p>
-<pre><code class="language-lua">-- init.lua: спейс и индексы
-box.schema.space.create('accounts', {if_not_exists = true})
-box.space.accounts:format({
-    {name = 'id',      type = 'string'},
-    {name = 'balance', type = 'unsigned'},
-    {name = 'version', type = 'unsigned'},
-})
-box.space.accounts:create_index('pk',
-    {parts = {'id'}, type = 'HASH', if_not_exists = true})
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- init.lua: спейс и индексы</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">schema</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="nf">create</span><span class="p">(</span><span class="s1">'accounts'</span><span class="p">,</span> <span class="p">{</span><span class="nv">if_not_exists</span> <span class="o">=</span> <span class="kc">true</span><span class="p">})</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span><span class="p">:</span><span class="nf">format</span><span class="p">({</span>
+    <span class="p">{</span><span class="nv">name</span> <span class="o">=</span> <span class="s1">'id'</span><span class="p">,</span>      <span class="nb">type</span> <span class="o">=</span> <span class="s1">'string'</span><span class="p">},</span>
+    <span class="p">{</span><span class="nv">name</span> <span class="o">=</span> <span class="s1">'balance'</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">'unsigned'</span><span class="p">},</span>
+    <span class="p">{</span><span class="nv">name</span> <span class="o">=</span> <span class="s1">'version'</span><span class="p">,</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">'unsigned'</span><span class="p">},</span>
+<span class="p">})</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span><span class="p">:</span><span class="nf">create_index</span><span class="p">(</span><span class="s1">'pk'</span><span class="p">,</span>
+    <span class="p">{</span><span class="nv">parts</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'id'</span><span class="p">},</span> <span class="nb">type</span> <span class="o">=</span> <span class="s1">'HASH'</span><span class="p">,</span> <span class="nv">if_not_exists</span> <span class="o">=</span> <span class="kc">true</span><span class="p">})</span>
 
--- атомарный перевод: одна сетевая операция вместо read-modify-write из Java
-function transfer(from_id, to_id, amount)
-    return box.atomic(function()
-        local from = box.space.accounts:get(from_id)
-        local to   = box.space.accounts:get(to_id)
-        if from == nil or to == nil then
-            error({code = 404, message = 'account not found'})
-        end
-        if from.balance &lt; amount then
-            error({code = 409, message = 'insufficient funds'})
-        end
-        box.space.accounts:update(from_id, {{'-', 'balance', amount},
-                                            {'+', 'version', 1}})
-        box.space.accounts:update(to_id,   {{'+', 'balance', amount},
-                                            {'+', 'version', 1}})
-        return true
-    end)
-end
-</code></pre>
+<span class="c1">-- атомарный перевод: одна сетевая операция вместо read-modify-write из Java</span>
+<span class="kr">function</span> <span class="nf">transfer</span><span class="p">(</span><span class="nv">from_id</span><span class="p">,</span> <span class="nv">to_id</span><span class="p">,</span> <span class="nv">amount</span><span class="p">)</span>
+    <span class="kr">return</span> <span class="nv">box</span><span class="p">.</span><span class="nf">atomic</span><span class="p">(</span><span class="kr">function</span><span class="p">()</span>
+        <span class="kd">local</span> <span class="nv">from</span> <span class="o">=</span> <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span><span class="p">:</span><span class="nf">get</span><span class="p">(</span><span class="nv">from_id</span><span class="p">)</span>
+        <span class="kd">local</span> <span class="nv">to</span>   <span class="o">=</span> <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span><span class="p">:</span><span class="nf">get</span><span class="p">(</span><span class="nv">to_id</span><span class="p">)</span>
+        <span class="kr">if</span> <span class="nv">from</span> <span class="o">==</span> <span class="kc">nil</span> <span class="ow">or</span> <span class="nv">to</span> <span class="o">==</span> <span class="kc">nil</span> <span class="kr">then</span>
+            <span class="nb">error</span><span class="p">({</span><span class="nv">code</span> <span class="o">=</span> <span class="mi">404</span><span class="p">,</span> <span class="nv">message</span> <span class="o">=</span> <span class="s1">'account not found'</span><span class="p">})</span>
+        <span class="kr">end</span>
+        <span class="kr">if</span> <span class="nv">from</span><span class="p">.</span><span class="py">balance</span> <span class="o">&lt;</span> <span class="nv">amount</span> <span class="kr">then</span>
+            <span class="nb">error</span><span class="p">({</span><span class="nv">code</span> <span class="o">=</span> <span class="mi">409</span><span class="p">,</span> <span class="nv">message</span> <span class="o">=</span> <span class="s1">'insufficient funds'</span><span class="p">})</span>
+        <span class="kr">end</span>
+        <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span><span class="p">:</span><span class="nf">update</span><span class="p">(</span><span class="nv">from_id</span><span class="p">,</span> <span class="p">{{</span><span class="s1">'-'</span><span class="p">,</span> <span class="s1">'balance'</span><span class="p">,</span> <span class="nv">amount</span><span class="p">},</span>
+                                            <span class="p">{</span><span class="s1">'+'</span><span class="p">,</span> <span class="s1">'version'</span><span class="p">,</span> <span class="mi">1</span><span class="p">}})</span>
+        <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span><span class="p">:</span><span class="nf">update</span><span class="p">(</span><span class="nv">to_id</span><span class="p">,</span>   <span class="p">{{</span><span class="s1">'+'</span><span class="p">,</span> <span class="s1">'balance'</span><span class="p">,</span> <span class="nv">amount</span><span class="p">},</span>
+                                            <span class="p">{</span><span class="s1">'+'</span><span class="p">,</span> <span class="s1">'version'</span><span class="p">,</span> <span class="mi">1</span><span class="p">}})</span>
+        <span class="kr">return</span> <span class="kc">true</span>
+    <span class="kr">end</span><span class="p">)</span>
+<span class="kr">end</span>
+</code></pre></div>
+
 <p>Именно в этом и состоит смысл Tarantool: в такой витрине сложная операция стоит один round-trip и десятки микросекунд, а не три обращения к базе по миллисекунде каждое плюс блокировки. Типовое применение в банке — <strong>витрина данных клиента</strong> с агрегированным профилем, лимитами и антифрод-счётчиками, которую собирают из десятка систем и отдают фронту за единицы миллисекунд.</p>
 <h3 id="105-репликация-vshard-экосистема">10.5 Репликация, vshard, экосистема</h3>
 <p><strong>Репликация</strong> в Tarantool по умолчанию асинхронная и допускает любую топологию, включая <strong>master-master</strong>, и именно здесь кроется ловушка. Без синхронной репликации и кворума master-master означает конфликты, которые Tarantool не разрешает за вас: если один и тот же ключ одновременно записали на двух мастерах, репликация встанет с ошибкой, и разбирать её придётся руками. Поэтому master-master оправдан только тогда, когда наборы ключей у мастеров строго не пересекаются.</p>
@@ -1189,7 +1210,7 @@ https://www.tarantool.io/en/doc/latest/concepts/sharding/">Tarantool docs: shard
 <hr>
 <h3 id="107-потоки-файберы-и-долгие-lua-процедуры">10.7 Потоки, файберы и долгие Lua-процедуры</h3>
 <p>Почти все инциденты с Tarantool объясняются моделью исполнения, поэтому её стоит разложить подробнее, чем в §10.2: какие потоки есть в экземпляре, что делает каждый из них и почему единственный поток <code>tx</code> превращает любой долгий Lua-код в отказ в обслуживании. Схема ниже показывает путь запроса от клиента через IProto-потоки в поток <code>tx</code> и дальше в журнал и к репликам.</p>
-<pre><code>   клиенты
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>   клиенты
       │  бинарный протокол iproto (MsgPack)
       ▼
 ┌───────────────┐   очередь запросов   ┌──────────────────────────────┐
@@ -1203,53 +1224,56 @@ https://www.tarantool.io/en/doc/latest/concepts/sharding/">Tarantool docs: shard
                                        │  WAL-поток    │   │ relay-потоки │
                                        │  (.xlog)      │   │ (репликам)   │
                                        └───────────────┘   └──────────────┘
-</code></pre>
+</code></pre></div>
+
 <p>Обязанности между потоками разделены так (<a href="https://www.tarantool.io/en/doc/latest/concepts/engines/memtx/" data-tip="Внешний сайт · tarantool.io
 https://www.tarantool.io/en/doc/latest/concepts/engines/memtx/">Tarantool docs: memtx</a>): сетевые потоки заняты только чтением сокетов и разбором MsgPack, поток <code>tx</code> единственный трогает спейсы и индексы, WAL-поток снимает с <code>tx</code> синхронную запись на диск, а relay-потоки читают журнал и отдают его репликам. Начиная с Tarantool 2.10 число IProto-потоков настраивается (<code>iproto_threads</code>), и это единственная ручка, которая позволяет «добавить ядер» без шардирования. Помогает она, когда вы упираетесь в разбор протокола и сеть, и никак не помогает, когда узким местом стал сам <code>tx</code>.</p>
 <p><strong>Файбер</strong> — это корутина с собственным стеком (по умолчанию 512 КБ виртуальной памяти на файбер, хотя реально фиксируется меньше), которую планирует сам Tarantool, а не ядро ОС. Переключение между файберами стоит десятки наносекунд, тогда как переключение потоков ОС занимает микросекунды. Планирование при этом <strong>кооперативное</strong>: файбер работает, пока не сделает <strong>yield</strong>, либо явно (<code>fiber.yield()</code>, <code>fiber.sleep()</code>), либо неявно, когда попадает в операцию, которая ждёт: запись в WAL, сетевой вызов (<code>net.box</code>, HTTP-клиент), <code>fiber.channel</code> или ожидание кворума синхронной репликации.</p>
 <p>Отсюда вытекают два симметричных правила, и на практике нарушают оба.</p>
 <p><strong>Правило 1: код без yield блокирует весь экземпляр.</strong> Цикл <code>for _, t in box.space.big:pairs() do ... end</code> по миллиону кортежей сам по себе не делает ни одного yield, потому что <code>pairs</code> по memtx-индексу работает с чистой памятью, и на время цикла экземпляр перестаёт отвечать всем: клиентам, репликам и healthcheck'ам. Это ровно тот же класс проблем, что <code>KEYS *</code> и тяжёлый Lua-скрипт в Redis (§3.1, §7.2), только здесь такой код обычно пишет прикладной разработчик, а не DBA, и пишет его много. Ниже показаны оба варианта пересчёта: блокирующий и порционный с явной уступкой управления.</p>
-<pre><code class="language-lua">-- как НЕ надо: пересчёт витрины блокирует инстанс на секунды
-function recalc_all()
-    local total = 0
-    for _, t in box.space.payments:pairs() do
-        total = total + t.amount
-    end
-    return total
-end
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- как НЕ надо: пересчёт витрины блокирует инстанс на секунды</span>
+<span class="kr">function</span> <span class="nf">recalc_all</span><span class="p">()</span>
+    <span class="kd">local</span> <span class="nv">total</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="kr">for</span> <span class="nv">_</span><span class="p">,</span> <span class="nv">t</span> <span class="kr">in</span> <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">payments</span><span class="p">:</span><span class="nf">pairs</span><span class="p">()</span> <span class="kr">do</span>
+        <span class="nv">total</span> <span class="o">=</span> <span class="nv">total</span> <span class="o">+</span> <span class="nv">t</span><span class="p">.</span><span class="py">amount</span>
+    <span class="kr">end</span>
+    <span class="kr">return</span> <span class="nv">total</span>
+<span class="kr">end</span>
 
--- как надо: порциями по первичному ключу, с явной уступкой управления
-local fiber = require('fiber')
-local BATCH = 1000
+<span class="c1">-- как надо: порциями по первичному ключу, с явной уступкой управления</span>
+<span class="kd">local</span> <span class="nv">fiber</span> <span class="o">=</span> <span class="nb">require</span><span class="p">(</span><span class="s1">'fiber'</span><span class="p">)</span>
+<span class="kd">local</span> <span class="nv">BATCH</span> <span class="o">=</span> <span class="mi">1000</span>
 
-function recalc_all_yielding()
-    local total, last, processed = 0, nil, 0
-    while true do
-        local rows = last == nil
-            and box.space.payments:select({}, {limit = BATCH})
-            or  box.space.payments:select({last}, {limit = BATCH, iterator = 'GT'})
-        if #rows == 0 then break end
-        for _, t in ipairs(rows) do
-            total = total + t.amount
-            last = t.id
-        end
-        processed = processed + #rows
-        fiber.yield()               -- дать поработать другим файберам
-    end
-    return total, processed
-end
-</code></pre>
+<span class="kr">function</span> <span class="nf">recalc_all_yielding</span><span class="p">()</span>
+    <span class="kd">local</span> <span class="nv">total</span><span class="p">,</span> <span class="nv">last</span><span class="p">,</span> <span class="nv">processed</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="kr">while</span> <span class="kc">true</span> <span class="kr">do</span>
+        <span class="kd">local</span> <span class="nv">rows</span> <span class="o">=</span> <span class="nv">last</span> <span class="o">==</span> <span class="kc">nil</span>
+            <span class="ow">and</span> <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">payments</span><span class="p">:</span><span class="nf">select</span><span class="p">({},</span> <span class="p">{</span><span class="nv">limit</span> <span class="o">=</span> <span class="nv">BATCH</span><span class="p">})</span>
+            <span class="ow">or</span>  <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">payments</span><span class="p">:</span><span class="nf">select</span><span class="p">({</span><span class="nv">last</span><span class="p">},</span> <span class="p">{</span><span class="nv">limit</span> <span class="o">=</span> <span class="nv">BATCH</span><span class="p">,</span> <span class="nv">iterator</span> <span class="o">=</span> <span class="s1">'GT'</span><span class="p">})</span>
+        <span class="kr">if</span> <span class="o">#</span><span class="nv">rows</span> <span class="o">==</span> <span class="mi">0</span> <span class="kr">then</span> <span class="kr">break</span> <span class="kr">end</span>
+        <span class="kr">for</span> <span class="nv">_</span><span class="p">,</span> <span class="nv">t</span> <span class="kr">in</span> <span class="nb">ipairs</span><span class="p">(</span><span class="nv">rows</span><span class="p">)</span> <span class="kr">do</span>
+            <span class="nv">total</span> <span class="o">=</span> <span class="nv">total</span> <span class="o">+</span> <span class="nv">t</span><span class="p">.</span><span class="py">amount</span>
+            <span class="nv">last</span> <span class="o">=</span> <span class="nv">t</span><span class="p">.</span><span class="py">id</span>
+        <span class="kr">end</span>
+        <span class="nv">processed</span> <span class="o">=</span> <span class="nv">processed</span> <span class="o">+</span> <span class="o">#</span><span class="nv">rows</span>
+        <span class="nv">fiber</span><span class="p">.</span><span class="nf">yield</span><span class="p">()</span>               <span class="c1">-- дать поработать другим файберам</span>
+    <span class="kr">end</span>
+    <span class="kr">return</span> <span class="nv">total</span><span class="p">,</span> <span class="nv">processed</span>
+<span class="kr">end</span>
+</code></pre></div>
+
 <p>Второй вариант по суммарному времени медленнее, потому что тратит время на переключения и повторные спуски по индексу, но stop-the-world не создаёт. Регулярные пересчёты правильнее вообще вынести из <code>tx</code>: либо считать инкрементально при записи, либо читать с отдельной реплики для чтения, либо держать отдельный экземпляр под тяжёлые обходы.</p>
 <p><strong>Правило 2: yield — это точка, где вклинится другой файбер.</strong> Классический баг выглядит так: между чтением баланса и списанием стоит сетевой вызов.</p>
-<pre><code class="language-lua">-- как НЕ надо: между чтением и записью есть yield (сетевой вызов)
-function charge(account_id, amount)
-    local acc = box.space.accounts:get(account_id)       -- чтение
-    local ok = external_client:check_limits(account_id)  -- YIELD: сеть
-    if ok and acc.balance &gt;= amount then
-        box.space.accounts:update(account_id, {{'-', 'balance', amount}})  -- запись
-    end
-end
-</code></pre>
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- как НЕ надо: между чтением и записью есть yield (сетевой вызов)</span>
+<span class="kr">function</span> <span class="nf">charge</span><span class="p">(</span><span class="nv">account_id</span><span class="p">,</span> <span class="nv">amount</span><span class="p">)</span>
+    <span class="kd">local</span> <span class="nv">acc</span> <span class="o">=</span> <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span><span class="p">:</span><span class="nf">get</span><span class="p">(</span><span class="nv">account_id</span><span class="p">)</span>       <span class="c1">-- чтение</span>
+    <span class="kd">local</span> <span class="nv">ok</span> <span class="o">=</span> <span class="nv">external_client</span><span class="p">:</span><span class="nf">check_limits</span><span class="p">(</span><span class="nv">account_id</span><span class="p">)</span>  <span class="c1">-- YIELD: сеть</span>
+    <span class="kr">if</span> <span class="nv">ok</span> <span class="ow">and</span> <span class="nv">acc</span><span class="p">.</span><span class="py">balance</span> <span class="o">&gt;=</span> <span class="nv">amount</span> <span class="kr">then</span>
+        <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span><span class="p">:</span><span class="nf">update</span><span class="p">(</span><span class="nv">account_id</span><span class="p">,</span> <span class="p">{{</span><span class="s1">'-'</span><span class="p">,</span> <span class="s1">'balance'</span><span class="p">,</span> <span class="nv">amount</span><span class="p">}})</span>  <span class="c1">-- запись</span>
+    <span class="kr">end</span>
+<span class="kr">end</span>
+</code></pre></div>
+
 <p>Между <code>get</code> и <code>update</code> проходит неопределённое время, за которое другой файбер мог списать те же деньги, и проверка <code>acc.balance &gt;= amount</code> относится уже к устаревшему снимку. Лечить это можно тремя способами, если расположить их по возрастанию строгости. Первый: вынести все внешние вызовы за пределы критической секции, а проверку и списание делать внутри одной транзакции без yield. Второй: использовать атомарный <code>update</code> с условием на стороне данных, например хранить баланс как unsigned и полагаться на то, что <code>{'-', 'balance', amount}</code> упадёт при уходе в минус. Третий: включить MVCC (<code>memtx_use_mvcc_engine</code>) и получить вместо потерянного обновления честный конфликт с откатом.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> <code>box.begin()</code> без MVCC запрещает yield внутри транзакции, но это <strong>не</strong> страховка от ошибки, а источник другой ошибки. Код, который случайно сделал yield внутри <code>box.begin()</code>, падает с <code>Transaction has been aborted by a fiber yield</code>, причём падает не всегда, а только тогда, когда yield действительно случился, например потому что WAL оказался занят. Такие баги воспроизводятся раз в неделю под нагрузкой и никогда не воспроизводятся на стенде.</p>
@@ -1297,15 +1321,16 @@ end
 </tbody>
 </table>
 <p>Из этого следуют три вещи, которые видно только в проде. Во-первых, <strong>вторичный индекс в memtx — это ещё одна структура на все кортежи</strong>, поэтому спейс с пятью индексами стоит существенно дороже спейса с одним; на диске лишние 20 ГБ ещё можно пережить, а здесь это прямо RAM и прямо деньги. Во-вторых, <code>HASH</code> не поддерживает итерацию в порядке ключа: <code>select</code> без ключа по HASH-индексу отдаёт данные в непредсказуемом порядке, и пагинация «по последнему ключу» на нём невозможна, так что если планируется обход, первичный индекс делают <code>TREE</code>. В-третьих, <code>bsize()</code> у индекса (<code>box.space.X.index.pk:bsize()</code>) показывает его реальный размер, и смотреть на него нужно в первую очередь, когда арена растёт быстрее, чем объём данных. Скрипт ниже считает отдельно кортежи и индексы спейса.</p>
-<pre><code class="language-lua">-- сколько стоит спейс: кортежи отдельно, индексы отдельно
-local s = box.space.accounts
-local idx_bytes = 0
-for _, i in pairs(s.index) do
-    if type(_) == 'number' then idx_bytes = idx_bytes + i:bsize() end
-end
-print(('tuples=%d index_bytes=%d arena_used=%d quota_ratio=%s'):format(
-    s:len(), idx_bytes, box.slab.info().arena_used, box.slab.info().quota_used_ratio))
-</code></pre>
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- сколько стоит спейс: кортежи отдельно, индексы отдельно</span>
+<span class="kd">local</span> <span class="nv">s</span> <span class="o">=</span> <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span>
+<span class="kd">local</span> <span class="nv">idx_bytes</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="kr">for</span> <span class="nv">_</span><span class="p">,</span> <span class="nv">i</span> <span class="kr">in</span> <span class="nb">pairs</span><span class="p">(</span><span class="nv">s</span><span class="p">.</span><span class="py">index</span><span class="p">)</span> <span class="kr">do</span>
+    <span class="kr">if</span> <span class="nb">type</span><span class="p">(</span><span class="nv">_</span><span class="p">)</span> <span class="o">==</span> <span class="s1">'number'</span> <span class="kr">then</span> <span class="nv">idx_bytes</span> <span class="o">=</span> <span class="nv">idx_bytes</span> <span class="o">+</span> <span class="nv">i</span><span class="p">:</span><span class="nf">bsize</span><span class="p">()</span> <span class="kr">end</span>
+<span class="kr">end</span>
+<span class="nb">print</span><span class="p">((</span><span class="s1">'tuples=%d index_bytes=%d arena_used=%d quota_ratio=%s'</span><span class="p">):</span><span class="nf">format</span><span class="p">(</span>
+    <span class="nv">s</span><span class="p">:</span><span class="nf">len</span><span class="p">(),</span> <span class="nv">idx_bytes</span><span class="p">,</span> <span class="nv">box</span><span class="p">.</span><span class="py">slab</span><span class="p">.</span><span class="nf">info</span><span class="p">().</span><span class="nv">arena_used</span><span class="p">,</span> <span class="nv">box</span><span class="p">.</span><span class="py">slab</span><span class="p">.</span><span class="nf">info</span><span class="p">().</span><span class="nv">quota_used_ratio</span><span class="p">))</span>
+</code></pre></div>
+
 <h3 id="1010-память-арена-квота-и-рост-потребления">10.10 Память: арена, квота и рост потребления</h3>
 <p>Memtx держит все данные в оперативной памяти, поэтому самый частый вопрос в эксплуатации Tarantool звучит так: на что уходит память и что делать, когда она подходит к концу. Размером этой памяти управляет <code>memtx_memory</code>, который задаёт <strong>квоту</strong> slab-распределителя памяти; по умолчанию она равна 268 МБ, и это одна из первых настроек, которые меняют на проде (<a href="https://www.tarantool.io/en/doc/latest/reference/reference_lua/box_slab/slab_info/" data-tip="Внешний сайт · tarantool.io
 https://www.tarantool.io/en/doc/latest/reference/reference_lua/box_slab/slab_info/">Tarantool docs: box.slab.info()</a>). Расходы устроены как три вложенных уровня:</p>
@@ -1411,47 +1436,49 @@ https://www.tarantool.io/en/doc/latest/concepts/replication/repl_sync/">Tarantoo
 <p><code>bucket_count</code> выбирают один раз на всю жизнь кластера, потому что <strong>менять его на живых данных нельзя</strong>. Документация рекомендует делить набор данных на <strong>100N–1000N бакетов</strong>, где N — предполагаемый максимальный размер кластера в репликасетах (<a href="https://www.tarantool.io/en/doc/latest/concepts/sharding/vshard_admin/" data-tip="Внешний сайт · tarantool.io
 https://www.tarantool.io/en/doc/latest/concepts/sharding/vshard_admin/">Tarantool docs: vshard admin</a>). Для кластера, который может вырасти до 10 репликасетов, это даёт разумный диапазон в 1 000–10 000 бакетов, а типовые продовые значения лежат в пределах 3 000–30 000. Если бакетов слишком мало, гранула перебалансировки получается крупной, и возникает перекос, а если слишком много, растут накладные расходы на отображение и на учёт.</p>
 <p>Переезд бакета устроен как конечный автомат состояний: <code>ACTIVE</code> (бакет обслуживается), <code>SENDING</code> (на источнике идёт копирование, запись в бакет запрещена), <code>RECEIVING</code> (на приёмнике), <code>SENT</code>, <code>GARBAGE</code> (можно удалять) и <code>PINNED</code> (бакет закреплён, и балансировщик его не трогает). Практическое следствие в том, что <strong>во время перебалансировки часть ключей временно недоступна на запись</strong>, и приложение получает ошибку вида «бакет не активен». Роутер умеет повторять запрос, но таймауты и повторные попытки нужно настраивать осознанно, иначе каждая перебалансировка будет оборачиваться всплеском ошибок в проде. Пример ниже показывает, как CRUD-модуль работает с шардированным спейсом при вставке и чтении.</p>
-<pre><code class="language-lua">-- вставка в шардированный спейс через CRUD-модуль: bucket_id считает crud
-local crud = require('crud')
-crud.insert('accounts', {id, bucket_id, balance, updated_at})   -- вручную
-crud.insert_object('accounts', {id = id, balance = 0})          -- crud сам посчитает bucket_id
-                                                                -- по sharding key из DDL
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- вставка в шардированный спейс через CRUD-модуль: bucket_id считает crud</span>
+<span class="kd">local</span> <span class="nv">crud</span> <span class="o">=</span> <span class="nb">require</span><span class="p">(</span><span class="s1">'crud'</span><span class="p">)</span>
+<span class="nv">crud</span><span class="p">.</span><span class="nf">insert</span><span class="p">(</span><span class="s1">'accounts'</span><span class="p">,</span> <span class="p">{</span><span class="nv">id</span><span class="p">,</span> <span class="nv">bucket_id</span><span class="p">,</span> <span class="nv">balance</span><span class="p">,</span> <span class="nv">updated_at</span><span class="p">})</span>   <span class="c1">-- вручную</span>
+<span class="nv">crud</span><span class="p">.</span><span class="nf">insert_object</span><span class="p">(</span><span class="s1">'accounts'</span><span class="p">,</span> <span class="p">{</span><span class="nv">id</span> <span class="o">=</span> <span class="nv">id</span><span class="p">,</span> <span class="nv">balance</span> <span class="o">=</span> <span class="mi">0</span><span class="p">})</span>          <span class="c1">-- crud сам посчитает bucket_id</span>
+                                                                <span class="c1">-- по sharding key из DDL</span>
 
--- чтение по ключу шардирования — один репликасет
-crud.get('accounts', id)
+<span class="c1">-- чтение по ключу шардирования — один репликасет</span>
+<span class="nv">crud</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="s1">'accounts'</span><span class="p">,</span> <span class="nv">id</span><span class="p">)</span>
 
--- чтение НЕ по ключу шардирования — map-reduce по всем узлам
-crud.select('accounts', {{'==', 'phone', '+79990000000'}})
-</code></pre>
+<span class="c1">-- чтение НЕ по ключу шардирования — map-reduce по всем узлам</span>
+<span class="nv">crud</span><span class="p">.</span><span class="nf">select</span><span class="p">(</span><span class="s1">'accounts'</span><span class="p">,</span> <span class="p">{{</span><span class="s1">'=='</span><span class="p">,</span> <span class="s1">'phone'</span><span class="p">,</span> <span class="s1">'+79990000000'</span><span class="p">}})</span>
+</code></pre></div>
+
 <p>Последняя строка примера — главная ловушка шардированного Tarantool, точно такая же, как scatter-gather в MongoDB (§9.6): запрос не по ключу шардирования уходит на <strong>все</strong> стораджи, результат собирается на роутере, и с ростом кластера такой запрос масштабируется в минус. Если подобные запросы есть на горячем пути, нужен либо вторичный «индексный» спейс (ключ → id, шардированный по собственному ключу), либо другой ключ шардирования, либо внешний поисковый индекс.</p>
 <p>Слоем управления исторически служит <strong>Cartridge</strong> — фреймворк, в котором экземпляры получают роли (<code>router</code>, <code>storage</code> или собственные), а топология хранится в общем конфиге и раскатывается через веб-интерфейс или <code>cartridge-cli</code>. В Tarantool 3.x основной путь — декларативная конфигурация (YAML, в том числе в централизованном хранилище вроде etcd) плюс <strong>TCM/TCF</strong> в коммерческой поставке. Для этой книги важна не версия интерфейса, а то, что топология и роли задаются конфигурацией, которая должна лежать в git и раскатываться как код, а не редактироваться руками в веб-морде, иначе кластер становится невоспроизводимым.</p>
 <h3 id="1015-tarantool-из-java-драйвер-пул-пакетирование-типы">10.15 Tarantool из Java: драйвер, пул, пакетирование, типы</h3>
 <p>С Java-стороны работа с Tarantool сводится к одному драйверу, но у этого драйвера своя модель соединений, асинхронный API и неочевидное соответствие типов между MsgPack, Lua и Java, и каждая из этих особенностей рано или поздно проявляется в проде. Основной клиент — <code>cartridge-java</code> (артефакт <code>io.tarantool:cartridge-driver</code>), который умеет работать и с одиночным экземпляром, и с кластером через роутеры с CRUD-модулем. Старый <code>tarantool-java</code> (<code>org.tarantool:connector</code>) поддерживает только одиночный экземпляр и считается унаследованным. Ниже показана типовая конфигурация клиента с вызовом хранимой процедуры, а затем разобраны соединения, асинхронность, типы, пакетирование и обработка ошибок.</p>
-<pre><code class="language-java">import io.tarantool.driver.api.*;
-import io.tarantool.driver.auth.SimpleTarantoolCredentials;
-import io.tarantool.driver.api.tuple.TarantoolTuple;
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kn">import</span> <span class="nn">io.tarantool.driver.api.*</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">io.tarantool.driver.auth.SimpleTarantoolCredentials</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">io.tarantool.driver.api.tuple.TarantoolTuple</span><span class="p">;</span>
 
-TarantoolClientConfig config = TarantoolClientConfig.builder()
-        .withCredentials(new SimpleTarantoolCredentials(&quot;app&quot;, &quot;secret&quot;))
-        .withConnectTimeout(300)        // мс
-        .withRequestTimeout(500)        // мс: столько ждём ответа
-        .withReadTimeout(500)
-        .build();
+<span class="n">TarantoolClientConfig</span> <span class="n">config</span> <span class="o">=</span> <span class="n">TarantoolClientConfig</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+        <span class="p">.</span><span class="na">withCredentials</span><span class="p">(</span><span class="k">new</span> <span class="n">SimpleTarantoolCredentials</span><span class="p">(</span><span class="s">"app"</span><span class="p">,</span> <span class="s">"secret"</span><span class="p">))</span>
+        <span class="p">.</span><span class="na">withConnectTimeout</span><span class="p">(</span><span class="mi">300</span><span class="p">)</span>        <span class="c1">// мс</span>
+        <span class="p">.</span><span class="na">withRequestTimeout</span><span class="p">(</span><span class="mi">500</span><span class="p">)</span>        <span class="c1">// мс: столько ждём ответа</span>
+        <span class="p">.</span><span class="na">withReadTimeout</span><span class="p">(</span><span class="mi">500</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">build</span><span class="p">();</span>
 
-TarantoolClient&lt;TarantoolTuple, TarantoolResult&lt;TarantoolTuple&gt;&gt; client =
-    TarantoolClientFactory.createClient()
-        .withAddresses(new TarantoolServerAddress(&quot;router-1&quot;, 3301),
-                       new TarantoolServerAddress(&quot;router-2&quot;, 3301))
-        .withTarantoolClientConfig(config)
-        .withConnections(4)             // соединений на адрес: это и есть &quot;пул&quot;
-        .withProxyMethodMapping()       // работа через CRUD на роутерах
-        .withRetryingByNumberOfAttempts(3)
-        .build();
+<span class="n">TarantoolClient</span><span class="o">&lt;</span><span class="n">TarantoolTuple</span><span class="p">,</span> <span class="n">TarantoolResult</span><span class="o">&lt;</span><span class="n">TarantoolTuple</span><span class="o">&gt;&gt;</span> <span class="n">client</span> <span class="o">=</span>
+    <span class="n">TarantoolClientFactory</span><span class="p">.</span><span class="na">createClient</span><span class="p">()</span>
+        <span class="p">.</span><span class="na">withAddresses</span><span class="p">(</span><span class="k">new</span> <span class="n">TarantoolServerAddress</span><span class="p">(</span><span class="s">"router-1"</span><span class="p">,</span> <span class="mi">3301</span><span class="p">),</span>
+                       <span class="k">new</span> <span class="n">TarantoolServerAddress</span><span class="p">(</span><span class="s">"router-2"</span><span class="p">,</span> <span class="mi">3301</span><span class="p">))</span>
+        <span class="p">.</span><span class="na">withTarantoolClientConfig</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">withConnections</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>             <span class="c1">// соединений на адрес: это и есть "пул"</span>
+        <span class="p">.</span><span class="na">withProxyMethodMapping</span><span class="p">()</span>       <span class="c1">// работа через CRUD на роутерах</span>
+        <span class="p">.</span><span class="na">withRetryingByNumberOfAttempts</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">build</span><span class="p">();</span>
 
-// вызов хранимой процедуры: один round-trip на всю бизнес-операцию
-CompletableFuture&lt;List&lt;?&gt;&gt; f = client.call(&quot;transfer&quot;, List.of(&quot;acc-1&quot;, &quot;acc-2&quot;, 100));
-List&lt;?&gt; result = f.get();
-</code></pre>
+<span class="c1">// вызов хранимой процедуры: один round-trip на всю бизнес-операцию</span>
+<span class="n">CompletableFuture</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;?&gt;&gt;</span> <span class="n">f</span> <span class="o">=</span> <span class="n">client</span><span class="p">.</span><span class="na">call</span><span class="p">(</span><span class="s">"transfer"</span><span class="p">,</span> <span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"acc-1"</span><span class="p">,</span> <span class="s">"acc-2"</span><span class="p">,</span> <span class="mi">100</span><span class="p">));</span>
+<span class="n">List</span><span class="o">&lt;?&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="na">get</span><span class="p">();</span>
+</code></pre></div>
+
 <p>Работая с Tarantool из Java, важно помнить о пяти вещах.</p>
 <p><strong>Соединения, а не пул в привычном смысле.</strong> Драйвер держит фиксированное число TCP-соединений на адрес и мультиплексирует запросы по ним так же, как Lettuce (§8.1): каждому запросу присваивается sync-идентификатор, а ответы приходят в произвольном порядке. Поэтому «увеличить пул» здесь означает <code>withConnections(n)</code>, и смысл это имеет только до тех пор, пока узким местом остаётся сокет, а не поток <code>tx</code>.</p>
 <p><strong>Асинхронность.</strong> API возвращает <code>CompletableFuture</code>, и типовая ошибка — вызвать синхронный <code>.get()</code> без таймаута, тогда как правильно всегда использовать <code>get(timeout, unit)</code> или <code>orTimeout</code>. Таймаут запроса на клиенте обязан быть меньше таймаута вышестоящего HTTP-запроса, иначе поток повиснет (глава 35, <code>35-resilience.md</code>).</p>
@@ -1498,19 +1525,20 @@ List&lt;?&gt; result = f.get();
 </tbody>
 </table>
 <p><strong>Пакетирование.</strong> Если отправлять 10 000 кортежей по одному, получится 10 000 round-trip, и никакая скорость Tarantool этого не спасёт. Правильных вариантов три: <code>crud.insert_many</code>/<code>replace_many</code> (с 0.11), собственная хранимка, которая принимает массив кортежей и выполняет на всю пачку один <code>box.atomic</code>, или, если пачка большая, разбиение на порции по 1 000–5 000 с yield между ними (§10.7). У того же правила есть вторая половина: <strong>не делать одну гигантскую транзакцию</strong>, потому что транзакция на 500 тысяч кортежей удерживает память, долго пишется в WAL и не даёт вклиниться другим файберам. Ниже показана серверная часть такой порционной загрузки.</p>
-<pre><code class="language-lua">-- серверная часть батч-загрузки: пачками, атомарно внутри пачки, с yield между
-local fiber = require('fiber')
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- серверная часть батч-загрузки: пачками, атомарно внутри пачки, с yield между</span>
+<span class="kd">local</span> <span class="nv">fiber</span> <span class="o">=</span> <span class="nb">require</span><span class="p">(</span><span class="s1">'fiber'</span><span class="p">)</span>
 
-function load_batch(rows)
-    box.atomic(function()
-        for _, r in ipairs(rows) do
-            box.space.accounts:replace(r)
-        end
-    end)
-    fiber.yield()
-    return #rows
-end
-</code></pre>
+<span class="kr">function</span> <span class="nf">load_batch</span><span class="p">(</span><span class="nv">rows</span><span class="p">)</span>
+    <span class="nv">box</span><span class="p">.</span><span class="nf">atomic</span><span class="p">(</span><span class="kr">function</span><span class="p">()</span>
+        <span class="kr">for</span> <span class="nv">_</span><span class="p">,</span> <span class="nv">r</span> <span class="kr">in</span> <span class="nb">ipairs</span><span class="p">(</span><span class="nv">rows</span><span class="p">)</span> <span class="kr">do</span>
+            <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span><span class="p">:</span><span class="nf">replace</span><span class="p">(</span><span class="nv">r</span><span class="p">)</span>
+        <span class="kr">end</span>
+    <span class="kr">end</span><span class="p">)</span>
+    <span class="nv">fiber</span><span class="p">.</span><span class="nf">yield</span><span class="p">()</span>
+    <span class="kr">return</span> <span class="o">#</span><span class="nv">rows</span>
+<span class="kr">end</span>
+</code></pre></div>
+
 <p><strong>Ошибки.</strong> Драйвер отдаёт ошибки сервера как исключения с кодом Tarantool: <code>ER_READONLY</code> означает, что узел стал репликой, <code>ER_TUPLE_FOUND</code> — нарушение уникальности, <code>ER_MEMORY_ISSUE</code> — кончилась арена, а <code>ER_TRANSACTION_CONFLICT</code> — конфликт MVCC. Повторять запрос имеет смысл только при <code>ER_READONLY</code> (после смены лидера), при таймаутах и при конфликтах MVCC, а повторять его при <code>ER_MEMORY_ISSUE</code> бессмысленно и даже вредно.</p>
 <h3 id="1016-банковская-витрина-данных-на-tarantool">10.16 Банковская витрина данных на Tarantool</h3>
 <p>Типовой сценарий, ради которого Tarantool обычно и появляется в банке, выглядит так: есть десяток систем-источников (АБС, CRM, скоринг, справочники, МДМ) и есть канал, которому нужен агрегированный профиль клиента за единицы миллисекунд при десятках тысяч запросов в секунду. Ходить в источники по цепочке нельзя, потому что суммарная латентность и связность получаются неприемлемыми, и поэтому строят <strong>витрину</strong>, то есть денормализованный агрегат в памяти, который читается за один вызов. Ниже разобрано, как витрину наливают, как перезаливают без даунтайма и как держат её согласованной с источниками.</p>
@@ -1518,34 +1546,36 @@ end
 <ol>
 <li><strong>Инкрементальный поток</strong> приходит через CDC из источников (Debezium → Kafka → потребитель → Tarantool) или напрямую событиями от систем. Потребитель вызывает хранимку <code>upsert_profile(client_id, part, payload, source_lsn)</code>, которая обновляет <strong>свою часть</strong> профиля и не трогает чужие. Главное требование здесь — <strong>идемпотентность</strong>: каждое сообщение несёт версию или LSN источника, и хранимка применяет его, только если версия больше уже сохранённой. Это защищает и от повторной доставки, ведь Kafka даёт at-least-once, и от переупорядочивания сообщений. Так выглядит сама хранимка:</li>
 </ol>
-<pre><code class="language-lua">-- идемпотентное обновление части профиля
-function upsert_part(client_id, part, payload, src_version)
-    return box.atomic(function()
-        local cur = box.space.profile_parts:get({client_id, part})
-        if cur ~= nil and cur.src_version &gt;= src_version then
-            return 'skipped'                      -- старое или повторное сообщение
-        end
-        box.space.profile_parts:replace({client_id, part, payload,
-                                         src_version, os.time()})
-        return 'applied'
-    end)
-end
-</code></pre>
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- идемпотентное обновление части профиля</span>
+<span class="kr">function</span> <span class="nf">upsert_part</span><span class="p">(</span><span class="nv">client_id</span><span class="p">,</span> <span class="nv">part</span><span class="p">,</span> <span class="nv">payload</span><span class="p">,</span> <span class="nv">src_version</span><span class="p">)</span>
+    <span class="kr">return</span> <span class="nv">box</span><span class="p">.</span><span class="nf">atomic</span><span class="p">(</span><span class="kr">function</span><span class="p">()</span>
+        <span class="kd">local</span> <span class="nv">cur</span> <span class="o">=</span> <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">profile_parts</span><span class="p">:</span><span class="nf">get</span><span class="p">({</span><span class="nv">client_id</span><span class="p">,</span> <span class="nv">part</span><span class="p">})</span>
+        <span class="kr">if</span> <span class="nv">cur</span> <span class="o">~=</span> <span class="kc">nil</span> <span class="ow">and</span> <span class="nv">cur</span><span class="p">.</span><span class="py">src_version</span> <span class="o">&gt;=</span> <span class="nv">src_version</span> <span class="kr">then</span>
+            <span class="kr">return</span> <span class="s1">'skipped'</span>                      <span class="c1">-- старое или повторное сообщение</span>
+        <span class="kr">end</span>
+        <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">profile_parts</span><span class="p">:</span><span class="nf">replace</span><span class="p">({</span><span class="nv">client_id</span><span class="p">,</span> <span class="nv">part</span><span class="p">,</span> <span class="nv">payload</span><span class="p">,</span>
+                                         <span class="nv">src_version</span><span class="p">,</span> <span class="nb">os.time</span><span class="p">()})</span>
+        <span class="kr">return</span> <span class="s1">'applied'</span>
+    <span class="kr">end</span><span class="p">)</span>
+<span class="kr">end</span>
+</code></pre></div>
+
 <ol start="2">
 <li><strong>Полный перезалив (reload)</strong> — процедура, которая собирает витрину с нуля из источников. Она нужна не для удобства, а как условие эксплуатации: витрина обязана быть <strong>производной</strong>, то есть восстановимой, и если перезалить её невозможно, вы построили не витрину, а второй источник истины со всеми вытекающими последствиями (та же ошибка в Elasticsearch разобрана в §11.7).</li>
 </ol>
 <p><strong>Как делают перезалив без простоя.</strong> Приём здесь тот же, что с псевдонимами (<em>aliases</em>) в Elasticsearch: данные пишут в теневой спейс, а затем атомарно переключаются на него. Последовательность шагов показана в комментариях к коду.</p>
-<pre><code class="language-lua">-- 1. создать теневой спейс с той же схемой и индексами
--- 2. залить в него полный срез (батчами, с yield)
--- 3. атомарно переключить &quot;активный&quot; указатель
-function switch_active(new_space_name)
-    box.atomic(function()
-        box.space.meta:replace({'profile_active', new_space_name})
-    end)
-end
--- 4. хранимки читают имя активного спейса из meta (или используют alias-обёртку)
--- 5. старый спейс удалить после подтверждения, что новый обслуживает трафик
-</code></pre>
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- 1. создать теневой спейс с той же схемой и индексами</span>
+<span class="c1">-- 2. залить в него полный срез (батчами, с yield)</span>
+<span class="c1">-- 3. атомарно переключить "активный" указатель</span>
+<span class="kr">function</span> <span class="nf">switch_active</span><span class="p">(</span><span class="nv">new_space_name</span><span class="p">)</span>
+    <span class="nv">box</span><span class="p">.</span><span class="nf">atomic</span><span class="p">(</span><span class="kr">function</span><span class="p">()</span>
+        <span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">meta</span><span class="p">:</span><span class="nf">replace</span><span class="p">({</span><span class="s1">'profile_active'</span><span class="p">,</span> <span class="nv">new_space_name</span><span class="p">})</span>
+    <span class="kr">end</span><span class="p">)</span>
+<span class="kr">end</span>
+<span class="c1">-- 4. хранимки читают имя активного спейса из meta (или используют alias-обёртку)</span>
+<span class="c1">-- 5. старый спейс удалить после подтверждения, что новый обслуживает трафик</span>
+</code></pre></div>
+
 <p>Цену этого приёма нужно знать заранее: в момент перезалива в памяти живут <strong>две копии</strong> данных, поэтому арену приходится планировать с запасом ×2 или лить перезалив на отдельный набор узлов и переключать трафик на уровне роутеров.</p>
 <p><strong>Как держат согласованность с источником.</strong> Асинхронная витрина всегда отстаёт, так что вопрос не в том, «как не отстать», а в том, как понять, что расхождение вышло за допустимые пределы. На практике работает такой набор мер:</p>
 <ul>
@@ -1645,11 +1675,12 @@ end
 <p>Всё, что умеет поисковый движок, держится на инвертированном индексе, и его легче понять через противопоставление. Прямой индекс отображает документ в его слова, а <strong>инвертированный</strong> наоборот: терм в список документов (posting list) вместе с позициями и частотами. Поэтому поиск слова сводится к чтению одного posting list, а поиск фразы — к пересечению нескольких списков с проверкой позиций. Списки хранятся сжатыми (дельта-кодирование и frame-of-reference), и пересечение идёт со скоростью памяти.</p>
 <p>Часто упускают ключевой момент: в индекс попадает <strong>не текст, а термы, полученные после анализа</strong>. Анализатор устроен как цепочка <code>char_filter*</code> → <code>tokenizer</code> → <code>token_filter*</code>, и типовая цепочка выглядит так: <code>standard</code> tokenizer → <code>lowercase</code> → <code>stop</code> → <code>stemmer</code> (для русского это <code>russian</code> snowball или гибридный подход с гипотезами) → <code>synonym</code>.</p>
 <p>Отсюда правило: <strong>поисковый запрос анализируется тем же анализатором, что и поле</strong>. Если поле проиндексировано со стеммингом, а запрос без него, то по запросу «платежи» документ со словом «платёж» не найдётся. Проверять, во что анализатор превращает текст, нужно через <code>_analyze</code>, как в примере ниже.</p>
-<pre><code class="language-bash">curl -XPOST 'localhost:9200/orders/_analyze' -H 'Content-Type: application/json' -d '{
-  &quot;analyzer&quot;: &quot;russian&quot;,
-  &quot;text&quot;: &quot;Переводы между счетами&quot;
-}'
-</code></pre>
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>curl -XPOST <span class="s1">'localhost:9200/orders/_analyze'</span> -H <span class="s1">'Content-Type: application/json'</span> -d <span class="s1">'{</span>
+<span class="s1">  "analyzer": "russian",</span>
+<span class="s1">  "text": "Переводы между счетами"</span>
+<span class="s1">}'</span>
+</code></pre></div>
+
 <h3 id="112-сегменты-refresh-flush-merge">11.2 Сегменты, refresh, flush, merge</h3>
 <p>Lucene пишет данные в <strong>неизменяемые сегменты</strong>, и от того, как сегменты появляются и сливаются, зависит, когда документ становится виден поиску и сколько стоит индексация. Новый документ сначала попадает в буфер в памяти, затем <strong>refresh</strong> превращает буфер в новый сегмент, доступный для поиска; сегмент пишется в файловый кеш ОС, и это дёшево. <strong>Flush</strong> делает fsync и фиксация, и это уже дорого. <strong>Merge</strong> сливает мелкие сегменты в крупные и при этом физически удаляет документы, помеченные как удалённые.</p>
 <p>Из этого вытекает <strong>near-real-time</strong>: по умолчанию индекс обновляется раз в секунду, причём современный Elasticsearch делает это только для индексов, к которым за последние 30 секунд был хотя бы один поисковый запрос (<a href="https://www.elastic.co/docs/manage-data/data-store/near-real-time-search" data-tip="Внешний сайт · elastic.co
@@ -1696,17 +1727,18 @@ https://www.elastic.co/docs/manage-data/data-store/near-real-time-search">Elasti
 <p>Официальная формулировка такова: keyword предназначен для структурированного контента (ID, email, hostname, коды статусов, теги) и используется в сортировках, агрегациях и term-запросах, для полнотекстового поиска его использовать не следует, а text без дополнительной настройки не поддерживает сортировку и агрегации (<a href="https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/keyword" data-tip="Внешний сайт · elastic.co
 https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/keyword">Elastic: keyword field type</a>).</p>
 <p>Стандартное решение называется <strong>multi-field</strong>: одно поле индексируется обоими способами сразу, как в отображении ниже.</p>
-<pre><code class="language-json">{ &quot;mappings&quot;: { &quot;properties&quot;: {
-  &quot;merchantName&quot;: {
-    &quot;type&quot;: &quot;text&quot;,
-    &quot;analyzer&quot;: &quot;russian&quot;,
-    &quot;fields&quot;: { &quot;raw&quot;: { &quot;type&quot;: &quot;keyword&quot;, &quot;ignore_above&quot;: 256 } }
-  },
-  &quot;status&quot;:    { &quot;type&quot;: &quot;keyword&quot; },
-  &quot;amount&quot;:    { &quot;type&quot;: &quot;scaled_float&quot;, &quot;scaling_factor&quot;: 100 },
-  &quot;createdAt&quot;: { &quot;type&quot;: &quot;date&quot; }
-}}}
-</code></pre>
+<div class="hl" data-lang="JSON"><div class="hl-bar"><span>JSON</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="p">{</span> <span class="nt">"mappings"</span><span class="p">:</span> <span class="p">{</span> <span class="nt">"properties"</span><span class="p">:</span> <span class="p">{</span>
+  <span class="nt">"merchantName"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">"type"</span><span class="p">:</span> <span class="s2">"text"</span><span class="p">,</span>
+    <span class="nt">"analyzer"</span><span class="p">:</span> <span class="s2">"russian"</span><span class="p">,</span>
+    <span class="nt">"fields"</span><span class="p">:</span> <span class="p">{</span> <span class="nt">"raw"</span><span class="p">:</span> <span class="p">{</span> <span class="nt">"type"</span><span class="p">:</span> <span class="s2">"keyword"</span><span class="p">,</span> <span class="nt">"ignore_above"</span><span class="p">:</span> <span class="mi">256</span> <span class="p">}</span> <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">"status"</span><span class="p">:</span>    <span class="p">{</span> <span class="nt">"type"</span><span class="p">:</span> <span class="s2">"keyword"</span> <span class="p">},</span>
+  <span class="nt">"amount"</span><span class="p">:</span>    <span class="p">{</span> <span class="nt">"type"</span><span class="p">:</span> <span class="s2">"scaled_float"</span><span class="p">,</span> <span class="nt">"scaling_factor"</span><span class="p">:</span> <span class="mi">100</span> <span class="p">},</span>
+  <span class="nt">"createdAt"</span><span class="p">:</span> <span class="p">{</span> <span class="nt">"type"</span><span class="p">:</span> <span class="s2">"date"</span> <span class="p">}</span>
+<span class="p">}}}</span>
+</code></pre></div>
+
 <p>Искать в таком отображении нужно по <code>merchantName</code>, а фасеты и сортировку строить по <code>merchantName.raw</code>.</p>
 <p><strong>Dynamic mapping</strong> удобен при разработке и опасен в проде: любое новое поле документа создаёт поле в отображении, а тип угадывается по первому значению, так что <code>"123"</code> станет <code>text</code>, а не числом. Отсюда <strong>mapping explosion</strong>, когда документы с динамическими ключами (например, <code>attributes.&lt;uuid&gt;</code>) порождают десятки тысяч полей, cluster state раздувается, и кластер деградирует. Лечится это через <code>dynamic: strict</code>, который падает на неизвестном поле, или <code>dynamic: false</code>, который хранит поле, но не индексирует его, а вдобавок через <code>flattened</code> для мешка произвольных атрибутов и лимиты <code>index.mapping.total_fields.limit</code>.</p>
 <p>И главное, что нужно знать про отображение: <strong>тип поля у существующего индекса изменить нельзя</strong>. Смена типа означает новый индекс, reindex и переключение псевдонима, поэтому к индексам всегда обращаются через <strong>псевдоним</strong> (<em>alias</em>), а не по имени.</p>
@@ -1717,14 +1749,15 @@ https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/keyword">E
 <li><strong>Filter context</strong> отвечает на вопрос «подходит или нет» без всякого скоринга, и такие условия <strong>кешируются</strong> в node query cache.</li>
 </ul>
 <p>В запросе ниже полнотекстовое условие стоит в <code>must</code>, статус и диапазон дат вынесены в <code>filter</code>, а буст по имени мерчанта добавлен через <code>should</code>.</p>
-<pre><code class="language-json">{ &quot;query&quot;: { &quot;bool&quot;: {
-  &quot;must&quot;:   [ { &quot;match&quot;: { &quot;description&quot;: &quot;перевод по номеру телефона&quot; } } ],
-  &quot;filter&quot;: [ { &quot;term&quot;:  { &quot;status&quot;: &quot;PAID&quot; } },
-              { &quot;range&quot;: { &quot;createdAt&quot;: { &quot;gte&quot;: &quot;now-30d/d&quot; } } } ],
-  &quot;should&quot;: [ { &quot;match&quot;: { &quot;merchantName&quot;: { &quot;query&quot;: &quot;тинькофф&quot;, &quot;boost&quot;: 2 } } } ],
-  &quot;must_not&quot;:[{ &quot;term&quot;:  { &quot;hidden&quot;: true } } ]
-}}}
-</code></pre>
+<div class="hl" data-lang="JSON"><div class="hl-bar"><span>JSON</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="p">{</span> <span class="nt">"query"</span><span class="p">:</span> <span class="p">{</span> <span class="nt">"bool"</span><span class="p">:</span> <span class="p">{</span>
+  <span class="nt">"must"</span><span class="p">:</span>   <span class="p">[</span> <span class="p">{</span> <span class="nt">"match"</span><span class="p">:</span> <span class="p">{</span> <span class="nt">"description"</span><span class="p">:</span> <span class="s2">"перевод по номеру телефона"</span> <span class="p">}</span> <span class="p">}</span> <span class="p">],</span>
+  <span class="nt">"filter"</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span> <span class="nt">"term"</span><span class="p">:</span>  <span class="p">{</span> <span class="nt">"status"</span><span class="p">:</span> <span class="s2">"PAID"</span> <span class="p">}</span> <span class="p">},</span>
+              <span class="p">{</span> <span class="nt">"range"</span><span class="p">:</span> <span class="p">{</span> <span class="nt">"createdAt"</span><span class="p">:</span> <span class="p">{</span> <span class="nt">"gte"</span><span class="p">:</span> <span class="s2">"now-30d/d"</span> <span class="p">}</span> <span class="p">}</span> <span class="p">}</span> <span class="p">],</span>
+  <span class="nt">"should"</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span> <span class="nt">"match"</span><span class="p">:</span> <span class="p">{</span> <span class="nt">"merchantName"</span><span class="p">:</span> <span class="p">{</span> <span class="nt">"query"</span><span class="p">:</span> <span class="s2">"тинькофф"</span><span class="p">,</span> <span class="nt">"boost"</span><span class="p">:</span> <span class="mi">2</span> <span class="p">}</span> <span class="p">}</span> <span class="p">}</span> <span class="p">],</span>
+  <span class="nt">"must_not"</span><span class="p">:[{</span> <span class="nt">"term"</span><span class="p">:</span>  <span class="p">{</span> <span class="nt">"hidden"</span><span class="p">:</span> <span class="kc">true</span> <span class="p">}</span> <span class="p">}</span> <span class="p">]</span>
+<span class="p">}}}</span>
+</code></pre></div>
+
 <p>Правило отсюда простое: всё, что не влияет на релевантность, то есть статусы, диапазоны дат и права доступа, нужно класть в <code>filter</code>, потому что так и быстрее, и результат кешируется.</p>
 <p><code>match</code> отличается от <code>term</code> тем, что <code>match</code> анализирует строку запроса тем же анализатором, что и поле, а <code>term</code> ищет точный терм <strong>без анализа</strong>. Классическая ловушка — <code>term</code> по <code>text</code>-полю: вы ищете «Москва», а в индексе после lowercase лежит «москва», и результат оказывается пустым.</p>
 <p>Дорогие запросы нужно знать в лицо. <code>fuzzy</code> и <code>match</code> с <code>fuzziness: AUTO</code> допускают правки по Дамерау–Левенштейну (<code>AUTO</code> означает 0 правок для коротких слов, 1 для средних и 2 для длинных) и платят за это расширением терма в множество кандидатов по FST, а <code>prefix_length</code> резко удешевляет такой запрос. <code>wildcard</code> с ведущей <code>*</code> обходит весь словарь термов и на больших индексах недопустим, а <code>regexp</code> и <code>script_score</code> вычисляются на каждом документе. Автодополнение поэтому делают не через <code>wildcard</code>, а через <code>search_as_you_type</code> (внутри у него shingles и edge-ngram подполя) или явные <strong>edge n-grams</strong> в анализаторе: платить приходится размером индекса, зато латентность становится предсказуемой.</p>
@@ -1733,10 +1766,11 @@ https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/keyword">E
 <p>Классическая идея TF-IDF в том, что терм важен, если он часто встречается в документе (TF) и редко в коллекции (IDF), а длинные документы при этом штрафуются. Беда TF-IDF в линейном росте веса от частоты: документ, где слово встретилось 100 раз, получал абсурдно высокий вес.</p>
 <p><strong>BM25</strong>, алгоритм по умолчанию начиная с Elasticsearch 5.0, добавляет <strong>насыщение по частоте</strong>, которое задаёт параметр <code>k1</code> (по умолчанию 1.2), так что вклад TF выходит на плато, и <strong>настраиваемую нормализацию по длине</strong> через параметр <code>b</code> (по умолчанию 0.75). На практике это значит, что BM25 устойчивее к «набиванию» ключевыми словами и лучше работает на документах разной длины.</p>
 <p>Влиять на релевантность можно несколькими инструментами: <code>boost</code> на поле или условие, <code>function_score</code>/<code>script_score</code>, чтобы учесть популярность, свежесть или расстояние, <code>multi_match</code> с типами <code>best_fields</code> / <code>most_fields</code> / <code>cross_fields</code> и <code>rank_feature</code>-поля. Отлаживают релевантность через <code>explain</code>, как в примере ниже.</p>
-<pre><code class="language-bash">curl 'localhost:9200/orders/_search?explain=true' -H 'Content-Type: application/json' -d '{
-  &quot;query&quot;: {&quot;match&quot;: {&quot;description&quot;: &quot;перевод&quot;}}, &quot;size&quot;: 1
-}'
-</code></pre>
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>curl <span class="s1">'localhost:9200/orders/_search?explain=true'</span> -H <span class="s1">'Content-Type: application/json'</span> -d <span class="s1">'{</span>
+<span class="s1">  "query": {"match": {"description": "перевод"}}, "size": 1</span>
+<span class="s1">}'</span>
+</code></pre></div>
+
 <p>Такой запрос покажет разложение скора по компонентам BM25 для конкретного документа, а чтобы понять, почему <strong>конкретный</strong> документ не нашёлся, нужно вызвать <code>GET /index/_explain/&lt;id&gt;</code> с тем же запросом.</p>
 <h3 id="116-шардинг-репликация-масштабирование">11.6 Шардинг, репликация, масштабирование</h3>
 <p>Индекс делится на <strong>primary shards</strong>, каждый из которых сам по себе — полноценный индекс Lucene, и их <strong>replicas</strong>. Запись идёт в primary и синхронно реплицируется в реплики (in-sync copies), а поиск обслуживает любая копия. Документ маршрутизируется по формуле <code>shard = hash(_routing) % number_of_primary_shards</code>, где <code>_routing</code> по умолчанию равен <code>_id</code>, и <strong>именно поэтому число primary-шардов у существующего индекса изменить нельзя</strong>: поменяется делитель, а вместе с ним и вся маршрутизация. Изменить его можно только через reindex или, с ограничениями, через <code>_split</code>/<code>_shrink</code>.</p>
@@ -1749,34 +1783,36 @@ https://www.elastic.co/docs/deploy-manage/production-guidance/optimize-performan
 <li><strong>Heap и fielddata.</strong> Heap узла не должен превышать ~31 ГБ (из-за сжатых oops, глава 07, <code>07-memory-and-gc.md</code>) и половины RAM, потому что остальное нужно файловому кешу, где живут сегменты. <code>fielddata: true</code> на <code>text</code>-поле грузит все термы в heap и почти наверняка роняет узел, поэтому вместо него нужно заводить <code>keyword</code>-подполе.</li>
 </ul>
 <p>Ниже пример постраничного обхода через <code>search_after</code>: сортировка идёт по дате и <code>_id</code>, а в <code>search_after</code> передаются значения сортировки последнего документа предыдущей страницы.</p>
-<pre><code class="language-json">{
-  &quot;size&quot;: 20,
-  &quot;query&quot;: {&quot;term&quot;: {&quot;status&quot;: &quot;PAID&quot;}},
-  &quot;sort&quot;: [{&quot;createdAt&quot;: &quot;desc&quot;}, {&quot;_id&quot;: &quot;asc&quot;}],
-  &quot;search_after&quot;: [&quot;2026-09-01T10:00:00Z&quot;, &quot;order-12345&quot;]
-}
-</code></pre>
+<div class="hl" data-lang="JSON"><div class="hl-bar"><span>JSON</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="p">{</span>
+  <span class="nt">"size"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+  <span class="nt">"query"</span><span class="p">:</span> <span class="p">{</span><span class="nt">"term"</span><span class="p">:</span> <span class="p">{</span><span class="nt">"status"</span><span class="p">:</span> <span class="s2">"PAID"</span><span class="p">}},</span>
+  <span class="nt">"sort"</span><span class="p">:</span> <span class="p">[{</span><span class="nt">"createdAt"</span><span class="p">:</span> <span class="s2">"desc"</span><span class="p">},</span> <span class="p">{</span><span class="nt">"_id"</span><span class="p">:</span> <span class="s2">"asc"</span><span class="p">}],</span>
+  <span class="nt">"search_after"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"2026-09-01T10:00:00Z"</span><span class="p">,</span> <span class="s2">"order-12345"</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <h3 id="117-elasticsearch-и-источник-истины">11.7 Elasticsearch и источник истины</h3>
 <p>Elasticsearch нельзя делать основным хранилищем по четырём причинам. У него <strong>нет транзакций и целостности</strong>: атомарна только операция над одним документом, а оптимистичный контроль идёт через <code>if_seq_no</code>/<code>if_primary_term</code>. Он работает в режиме <strong>near-real-time</strong>, поэтому «прочитать своё изменение» без <code>?refresh</code> не гарантировано. Его <strong>модель восстановления</strong> допускает потерю подтверждённых записей при разделении сети, и хотя новая кластерная координация с 7.0 после долгой эпопеи с Jepsen сильно улучшила ситуацию, быть системой записи ES своей целью не ставит. Наконец, его <strong>схема необратима</strong>, и смена типа поля требует reindex.</p>
 <p><strong>Правильный паттерн</strong> выглядит так: источником истины служит PostgreSQL (или Tarantool), ES — производный поисковый индекс, а синхронизация идёт через CDC (Debezium → Kafka → индексатор) или transactional outbox. Индекс можно в любой момент пересобрать из источника, и эта процедура должна регулярно проверяться на практике, а не оставаться теоретической возможностью. Детали outbox и CDC разобраны в главе 31 (<code>31-integration-patterns-consistency.md</code>).</p>
 <h3 id="118-java-клиент">11.8 Java-клиент</h3>
 <p>Из Java с Elasticsearch начиная с 8.x работают через <code>ElasticsearchClient</code> (пакет <code>co.elastic.clients.elasticsearch</code>), который пришёл на смену снятому с поддержки <code>RestHighLevelClient</code>. Его API типобезопасный и построен на строителях и лямбдах, а сериализацию он выполняет через Jackson или JSON-B. Пример ниже собирает клиента и выполняет поиск, в котором полнотекстовое условие сочетается с фильтром по статусу и сортировкой по дате.</p>
-<pre><code class="language-java">ElasticsearchClient es = new ElasticsearchClient(
-    new RestClientTransport(
-        RestClient.builder(HttpHost.create(&quot;http://localhost:9200&quot;)).build(),
-        new JacksonJsonpMapper()));
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">ElasticsearchClient</span> <span class="n">es</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ElasticsearchClient</span><span class="p">(</span>
+    <span class="k">new</span> <span class="n">RestClientTransport</span><span class="p">(</span>
+        <span class="n">RestClient</span><span class="p">.</span><span class="na">builder</span><span class="p">(</span><span class="n">HttpHost</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="s">"http://localhost:9200"</span><span class="p">)).</span><span class="na">build</span><span class="p">(),</span>
+        <span class="k">new</span> <span class="n">JacksonJsonpMapper</span><span class="p">()));</span>
 
-SearchResponse&lt;OrderDoc&gt; resp = es.search(s -&gt; s
-    .index(&quot;orders&quot;)
-    .size(20)
-    .query(q -&gt; q.bool(b -&gt; b
-        .must(m -&gt; m.match(t -&gt; t.field(&quot;description&quot;).query(&quot;перевод&quot;)))
-        .filter(f -&gt; f.term(t -&gt; t.field(&quot;status&quot;).value(&quot;PAID&quot;)))))
-    .sort(so -&gt; so.field(f -&gt; f.field(&quot;createdAt&quot;).order(SortOrder.Desc))),
-    OrderDoc.class);
+<span class="n">SearchResponse</span><span class="o">&lt;</span><span class="n">OrderDoc</span><span class="o">&gt;</span> <span class="n">resp</span> <span class="o">=</span> <span class="n">es</span><span class="p">.</span><span class="na">search</span><span class="p">(</span><span class="n">s</span> <span class="o">-&gt;</span> <span class="n">s</span>
+    <span class="p">.</span><span class="na">index</span><span class="p">(</span><span class="s">"orders"</span><span class="p">)</span>
+    <span class="p">.</span><span class="na">size</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+    <span class="p">.</span><span class="na">query</span><span class="p">(</span><span class="n">q</span> <span class="o">-&gt;</span> <span class="n">q</span><span class="p">.</span><span class="na">bool</span><span class="p">(</span><span class="n">b</span> <span class="o">-&gt;</span> <span class="n">b</span>
+        <span class="p">.</span><span class="na">must</span><span class="p">(</span><span class="n">m</span> <span class="o">-&gt;</span> <span class="n">m</span><span class="p">.</span><span class="na">match</span><span class="p">(</span><span class="n">t</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="p">.</span><span class="na">field</span><span class="p">(</span><span class="s">"description"</span><span class="p">).</span><span class="na">query</span><span class="p">(</span><span class="s">"перевод"</span><span class="p">)))</span>
+        <span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="n">f</span> <span class="o">-&gt;</span> <span class="n">f</span><span class="p">.</span><span class="na">term</span><span class="p">(</span><span class="n">t</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="p">.</span><span class="na">field</span><span class="p">(</span><span class="s">"status"</span><span class="p">).</span><span class="na">value</span><span class="p">(</span><span class="s">"PAID"</span><span class="p">)))))</span>
+    <span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">so</span> <span class="o">-&gt;</span> <span class="n">so</span><span class="p">.</span><span class="na">field</span><span class="p">(</span><span class="n">f</span> <span class="o">-&gt;</span> <span class="n">f</span><span class="p">.</span><span class="na">field</span><span class="p">(</span><span class="s">"createdAt"</span><span class="p">).</span><span class="na">order</span><span class="p">(</span><span class="n">SortOrder</span><span class="p">.</span><span class="na">Desc</span><span class="p">))),</span>
+    <span class="n">OrderDoc</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
 
-resp.hits().hits().forEach(h -&gt; System.out.println(h.score() + &quot; &quot; + h.source()));
-</code></pre>
+<span class="n">resp</span><span class="p">.</span><span class="na">hits</span><span class="p">().</span><span class="na">hits</span><span class="p">().</span><span class="na">forEach</span><span class="p">(</span><span class="n">h</span> <span class="o">-&gt;</span> <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">h</span><span class="p">.</span><span class="na">score</span><span class="p">()</span> <span class="o">+</span> <span class="s">" "</span> <span class="o">+</span> <span class="n">h</span><span class="p">.</span><span class="na">source</span><span class="p">()));</span>
+</code></pre></div>
+
 <p>Spring Data Elasticsearch даёт репозитории и <code>ElasticsearchOperations</code>, и для CRUD и простых запросов этого удобно, но сложный DSL всё равно приходится писать руками. Это нормально, потому что поисковый запрос относится к продуктовой логике, а не к деталям доступа к данным.</p>
 <p><strong>OpenSearch</strong> — форк Elasticsearch 7.10 под Apache 2.0, который сделала AWS после перехода Elastic на SSPL/Elastic License. У него отдельный клиент (<code>org.opensearch.client</code>) и свои плагины, а в облаках, в том числе российских, он встречается чаще. Всё сказанное выше про инвертированный индекс, сегменты, mapping и BM25 справедливо для обоих.</p>
 <hr>
@@ -1794,12 +1830,13 @@ https://cassandra.apache.org/doc/latest/cassandra/developing/cql/ddl.html">та�
 <p><strong>Брать</strong> Cassandra стоит при гигантском потоке записи (сотни тысяч операций в секунду), при гео-распределении с записью в нескольких ЦОДах, когда доступность важнее согласованности, а набор запросов известен заранее и стабилен. <strong>Не брать</strong> её нужно в любом сценарии, где требуются ad-hoc запросы, транзакции, вторичные индексы «по-настоящему», или когда объём помещается в один PostgreSQL.</p>
 <h3 id="1211-путь-записи-и-чтения-в-cassandra">12.1.1 Путь записи и чтения в Cassandra</h3>
 <p>Запись и чтение в Cassandra устроены несимметрично: запись проходит фиксированный маршрут и почти всегда дешева, а чтение собирает строку из нескольких мест и стоит заметно дороже, и каждый участок маршрута даёт свой класс проблем. Схема ниже показывает путь записи от клиента до SSTable и фоновую уплотнение; после неё разобраны свойства записи, чтения, разрешения конфликтов и доставки на отставшие реплики.</p>
-<pre><code>клиент → координатор (любой узел) → по токену partition key выбираются RF реплик
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>клиент → координатор (любой узел) → по токену partition key выбираются RF реплик
                                    → на каждой реплике: commitlog (append) + memtable (память)
                                    → подтверждение по достижении consistency level
 memtable переполнилась / по таймеру → flush → SSTable на диск (immutable)
 фон: compaction сливает SSTable, выбрасывает перезаписанное и просроченные tombstone
-</code></pre>
+</code></pre></div>
+
 <p><strong>Запись всегда дешёвая и всегда «слепая».</strong> Cassandra не читает данные перед записью: <code>UPDATE</code> — та же вставка новой версии ячейки с меткой времени, а <code>DELETE</code> — вставка tombstone. Поэтому разницы между вставкой и обновлением нет, существование строки не проверяется (кроме LWT, о них ниже), и узнать, «изменилось ли что-то», тоже нельзя.</p>
 <p><strong>Чтение дороже.</strong> Координатор опрашивает нужное число реплик, и каждая реплика собирает строку из memtable и всех SSTable, где может лежать эта партиция (лишние отсекаются Bloom-фильтром и min/max токенов), а также из row cache и key cache. Результаты сливаются по правилу «побеждает ячейка с большей меткой времени», а если реплики разошлись, включается <strong>read repair</strong>, и координатор дописывает отставшим актуальную версию.</p>
 <p><strong>Конфликты разрешаются по last-write-wins по метке времени ячейки.</strong> Метку времени ставит клиент или координатор, а значит, рассинхронизация часов между узлами напрямую портит данные: запись с «будущей» меткой времени невозможно перезаписать, пока реальное время её не догонит. Проблема эта вовсе не теоретическая, на кластерах без строгого NTP она встречается регулярно и выглядит так: «обновление не применилось, хотя запрос вернул успех».</p>
@@ -1870,28 +1907,29 @@ https://cassandra.apache.org/doc/latest/cassandra/developing/cql/ddl.html">Cassa
 <p><strong>Партиция не должна быть слишком большой.</strong> Практические ориентиры индустрии таковы: не больше ~100 МБ и ~100 тысяч строк. Большая партиция означает долгое чтение, потому что даже с clustering-ключом приходится читать индексные структуры партиции, тяжёлую уплотнение, перекос по диску между узлами и риск того, что при некоторых операциях одна партиция не поместится в память.</p>
 <p><strong>Партиция не должна быть горячей.</strong> Если ключ партиции — <code>merchant_id</code>, а один мерчант даёт 40% трафика, то 40% запросов уходят на одни и те же RF узлов, каким бы большим ни был кластер. Добавление узлов здесь не помогает вообще, и это самая неприятная особенность: обычно масштабирование можно купить деньгами, а здесь нельзя.</p>
 <p>Лечение в обоих случаях одно и то же — <strong>bucketing</strong>, то есть добавление в partition key искусственной части, которая дробит партицию. Пример ниже показывает таблицу платежей по мерчанту до и после такого дробления по суткам.</p>
-<pre><code class="language-sql">-- плохо: партиция растёт вечно, все записи мерчанта на одних узлах
-CREATE TABLE payments_by_merchant (
-    merchant_id text,
-    created_at  timestamp,
-    payment_id  uuid,
-    amount      decimal,
-    PRIMARY KEY (merchant_id, created_at, payment_id)
-) WITH CLUSTERING ORDER BY (created_at DESC);
+<div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- плохо: партиция растёт вечно, все записи мерчанта на одних узлах</span>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">payments_by_merchant</span> <span class="p">(</span>
+    <span class="n">merchant_id</span> <span class="nb">text</span><span class="p">,</span>
+    <span class="n">created_at</span>  <span class="k">timestamp</span><span class="p">,</span>
+    <span class="n">payment_id</span>  <span class="n">uuid</span><span class="p">,</span>
+    <span class="n">amount</span>      <span class="nb">decimal</span><span class="p">,</span>
+    <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="n">merchant_id</span><span class="p">,</span> <span class="n">created_at</span><span class="p">,</span> <span class="n">payment_id</span><span class="p">)</span>
+<span class="p">)</span> <span class="k">WITH</span> <span class="n">CLUSTERING</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="p">(</span><span class="n">created_at</span> <span class="k">DESC</span><span class="p">);</span>
 
--- лучше: партиция = мерчант + сутки; размер ограничен, нагрузка размазана по дням
-CREATE TABLE payments_by_merchant_day (
-    merchant_id text,
-    day         date,
-    created_at  timestamp,
-    payment_id  uuid,
-    amount      decimal,
-    PRIMARY KEY ((merchant_id, day), created_at, payment_id)
-) WITH CLUSTERING ORDER BY (created_at DESC)
-  AND compaction = {'class':'TimeWindowCompactionStrategy',
-                    'compaction_window_unit':'DAYS',
-                    'compaction_window_size':1};
-</code></pre>
+<span class="c1">-- лучше: партиция = мерчант + сутки; размер ограничен, нагрузка размазана по дням</span>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">payments_by_merchant_day</span> <span class="p">(</span>
+    <span class="n">merchant_id</span> <span class="nb">text</span><span class="p">,</span>
+    <span class="k">day</span>         <span class="nb">date</span><span class="p">,</span>
+    <span class="n">created_at</span>  <span class="k">timestamp</span><span class="p">,</span>
+    <span class="n">payment_id</span>  <span class="n">uuid</span><span class="p">,</span>
+    <span class="n">amount</span>      <span class="nb">decimal</span><span class="p">,</span>
+    <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">((</span><span class="n">merchant_id</span><span class="p">,</span> <span class="k">day</span><span class="p">),</span> <span class="n">created_at</span><span class="p">,</span> <span class="n">payment_id</span><span class="p">)</span>
+<span class="p">)</span> <span class="k">WITH</span> <span class="n">CLUSTERING</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="p">(</span><span class="n">created_at</span> <span class="k">DESC</span><span class="p">)</span>
+  <span class="k">AND</span> <span class="n">compaction</span> <span class="o">=</span> <span class="err">{</span><span class="s1">'class'</span><span class="p">:</span><span class="s1">'TimeWindowCompactionStrategy'</span><span class="p">,</span>
+                    <span class="s1">'compaction_window_unit'</span><span class="p">:</span><span class="s1">'DAYS'</span><span class="p">,</span>
+                    <span class="s1">'compaction_window_size'</span><span class="p">:</span><span class="mi">1</span><span class="err">}</span><span class="p">;</span>
+</code></pre></div>
+
 <p>У bucketing есть цена: запрос за период теперь требует перечислить бакеты (<code>day IN (...)</code> или несколько запросов), то есть приложение обязано знать схему нарезки. Для query-first дизайна это нормально, а для ad-hoc аналитики неприемлемо, и это ещё раз показывает, для чего Cassandra подходит, а для чего нет.</p>
 <p>Диагностируют такие проблемы тремя командами: <code>nodetool tablestats</code> показывает максимальный и средний размер партиции и число SSTable на чтение, <code>nodetool toppartitions</code> — какие партиции горячие прямо сейчас, а <code>nodetool tablehistograms</code> — распределение по числу ячеек и SSTable на чтение.</p>
 <h3 id="1215-consistency-levels-и-lightweight-transactions">12.1.5 Consistency levels и lightweight transactions</h3>
@@ -1939,9 +1977,10 @@ CREATE TABLE payments_by_merchant_day (
 </table>
 <p>Правило <code>R + W &gt; RF</code> гарантирует, что чтение видит последнюю подтверждённую запись. Типовая конфигурация гео-кластера такая: <code>RF=3</code> в каждом ЦОДе и <code>LOCAL_QUORUM</code> и на запись, и на чтение, и тогда внутри ЦОДа гарантия есть, а между ЦОДами данные сходятся асинхронно. <code>EACH_QUORUM</code> на запись даёт гарантию между ЦОДами, но платит за это латентностью и доступностью, потому что падение одного ЦОДа останавливает запись.</p>
 <p>При этом кворум <strong>не</strong> даёт атомарности нескольких строк, изоляции и защиты от сценария «прочитал, изменил, записал». Для последнего есть <strong>lightweight transactions</strong> — <code>IF NOT EXISTS</code> / <code>IF col = value</code>, реализованные через Paxos:</p>
-<pre><code class="language-sql">INSERT INTO accounts (id, email) VALUES (?, ?) IF NOT EXISTS;
-UPDATE accounts SET balance = ? WHERE id = ? IF balance = ?;
-</code></pre>
+<div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">accounts</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">email</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="o">?</span><span class="p">,</span> <span class="o">?</span><span class="p">)</span> <span class="k">IF</span> <span class="k">NOT</span> <span class="k">EXISTS</span><span class="p">;</span>
+<span class="k">UPDATE</span> <span class="n">accounts</span> <span class="k">SET</span> <span class="n">balance</span> <span class="o">=</span> <span class="o">?</span> <span class="k">WHERE</span> <span class="n">id</span> <span class="o">=</span> <span class="o">?</span> <span class="k">IF</span> <span class="n">balance</span> <span class="o">=</span> <span class="o">?</span><span class="p">;</span>
+</code></pre></div>
+
 <p>Цена LWT велика, и её недооценивают. Это четыре round-trip по кворуму вместо одного (prepare/promise, propose/accept, commit и ещё чтение), отдельный уровень <code>serial_consistency</code> (<code>SERIAL</code> или <code>LOCAL_SERIAL</code>), а борьба нескольких клиентов за одну партицию (contention) приводит к «дуэлям» Paxos, в которых прогресс резко падает. Практики приводят такой порядок цифр: LWT в разы медленнее обычной записи, поэтому его используют точечно, например для регистрации уникального email или захвата идентификатора, а не ставят <code>IF</code> «на всякий случай».</p>
 <p><strong>Материализованные представления и вторичные индексы</strong> требуют отдельного разговора о доверии. <code>MATERIALIZED VIEW</code> в Cassandra долго считался экспериментальным, потому что мог рассинхронизироваться с базовой таблицей, а обычные вторичные индексы (<code>CREATE INDEX</code>) при запросе без partition key превращаются в опрос всего кластера. Поэтому практика проектирования остаётся прежней: <strong>под каждый запрос заводят свою таблицу</strong>, а дублирование данных пишет приложение.</p>
 <h3 id="122-clickhouse-колоночная-аналитика">12.2 ClickHouse: колоночная аналитика</h3>
@@ -2307,111 +2346,115 @@ https://www.percona.com/blog/resharding-in-mongodb-5-0/">Percona: Resharding in 
 <p>Этот раздел собирает команды, с которых начинается разбор проблем с Redis, MongoDB, Elasticsearch и Tarantool, когда хранилище «тормозит», теряет данные или ведёт себя непонятно. Для каждого хранилища сначала идёт блок команд с комментариями о том, что каждая показывает, а после него короткий список того, куда смотреть в первую очередь. Команды сгруппированы по задачам: латентность, медленные операции, память, репликация и кластер, поэтому при инциденте удобно идти по группам сверху вниз, а не запускать всё подряд.</p>
 <h3 id="161-redis-valkey">16.1 Redis / Valkey</h3>
 <p>У Redis диагностика почти целиком сводится к <code>redis-cli</code> и секциям <code>INFO</code>: одни команды меряют латентность до сервера и внутри машины, другие показывают медленные команды, память, клиентов и состояние кластера. Блок ниже сгруппирован именно по этим задачам, и обратите внимание на предупреждение у <code>MONITOR</code>: эту команду на проде можно включать только на несколько секунд.</p>
-<pre><code class="language-bash"># Латентность до сервера: непрерывный замер RTT простой команды
-redis-cli --latency            # min/avg/max в мс
-redis-cli --latency-history    # то же, окнами по 15 с
-redis-cli --intrinsic-latency 60   # латентность самой машины (jitter ядра), запускать НА сервере
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Латентность до сервера: непрерывный замер RTT простой команды</span>
+redis-cli --latency            <span class="c1"># min/avg/max в мс</span>
+redis-cli --latency-history    <span class="c1"># то же, окнами по 15 с</span>
+redis-cli --intrinsic-latency <span class="m">60</span>   <span class="c1"># латентность самой машины (jitter ядра), запускать НА сервере</span>
 
-# Медленные команды: всё, что дольше порога (микросекунды!)
-CONFIG SET slowlog-log-slower-than 10000   # 10 мс
-SLOWLOG GET 20
+<span class="c1"># Медленные команды: всё, что дольше порога (микросекунды!)</span>
+CONFIG SET slowlog-log-slower-than <span class="m">10000</span>   <span class="c1"># 10 мс</span>
+SLOWLOG GET <span class="m">20</span>
 SLOWLOG RESET
 
-# Общая картина
-INFO everything            # или по секциям: INFO memory / replication / persistence / stats
-INFO stats                 # keyspace_hits/misses, expired_keys, evicted_keys, total_net_*
-INFO replication           # role, master_link_status, slave_repl_offset, lag
-INFO persistence           # rdb_last_bgsave_status, aof_last_write_status, rdb_changes_since_last_save
-INFO commandstats          # calls, usec_per_call по каждой команде
-INFO latencystats          # перцентили латентности по командам (6.2+)
+<span class="c1"># Общая картина</span>
+INFO everything            <span class="c1"># или по секциям: INFO memory / replication / persistence / stats</span>
+INFO stats                 <span class="c1"># keyspace_hits/misses, expired_keys, evicted_keys, total_net_*</span>
+INFO replication           <span class="c1"># role, master_link_status, slave_repl_offset, lag</span>
+INFO persistence           <span class="c1"># rdb_last_bgsave_status, aof_last_write_status, rdb_changes_since_last_save</span>
+INFO commandstats          <span class="c1"># calls, usec_per_call по каждой команде</span>
+INFO latencystats          <span class="c1"># перцентили латентности по командам (6.2+)</span>
 
-# Память
-MEMORY USAGE mykey SAMPLES 0    # точный размер ключа со всеми элементами
+<span class="c1"># Память</span>
+MEMORY USAGE mykey SAMPLES <span class="m">0</span>    <span class="c1"># точный размер ключа со всеми элементами</span>
 MEMORY DOCTOR
-redis-cli --bigkeys             # крупнейшие ключи по типам (SCAN, безопасно)
-redis-cli --memkeys             # крупнейшие по памяти
+redis-cli --bigkeys             <span class="c1"># крупнейшие ключи по типам (SCAN, безопасно)</span>
+redis-cli --memkeys             <span class="c1"># крупнейшие по памяти</span>
 
-# Кто и что делает прямо сейчас
-CLIENT LIST                 # соединения, возраст, буферы, последняя команда
-redis-cli --stat            # сводка раз в секунду
-MONITOR                     # ВСЕ команды — огромный оверхед, только на несколько секунд
+<span class="c1"># Кто и что делает прямо сейчас</span>
+CLIENT LIST                 <span class="c1"># соединения, возраст, буферы, последняя команда</span>
+redis-cli --stat            <span class="c1"># сводка раз в секунду</span>
+MONITOR                     <span class="c1"># ВСЕ команды — огромный оверхед, только на несколько секунд</span>
 
-# Кластер
+<span class="c1"># Кластер</span>
 redis-cli --cluster check &lt;host&gt;:&lt;port&gt;
-CLUSTER INFO ; CLUSTER SHARDS ; CLUSTER SLOTS
+CLUSTER INFO <span class="p">;</span> CLUSTER SHARDS <span class="p">;</span> CLUSTER SLOTS
 CLUSTER COUNTKEYSINSLOT &lt;slot&gt;
-</code></pre>
+</code></pre></div>
+
 <p>Когда жалуются, что «Redis тормозит», в первую очередь стоит проверить несколько вещей. <code>SLOWLOG</code> покажет, не выполнил ли кто-то тяжёлую команду, <code>latest_fork_usec</code> в <code>INFO persistence</code> — не было ли паузы от снимка, а <code>mem_fragmentation_ratio</code> — не ушла ли память в своп (значение &lt; 1 означает своп!). Затем смотрят <code>blocked_clients</code> и <code>evicted_keys</code>, который растёт, когда кеш переполнен, запускают <code>--intrinsic-latency</code> на самом хосте, чтобы понять, не в железе или ядре ли проблема, а не в Redis, и проверяют THP (<code>cat /sys/kernel/mm/transparent_hugepage/enabled</code>).</p>
 <h3 id="162-mongodb">16.2 MongoDB</h3>
 <p>В MongoDB разбор почти всегда начинается с плана запроса и текущих операций: <code>explain</code> показывает, что запрос реально прочитал, <code>currentOp</code> находит долгие операции, профилировщик собирает медленные запросы, а <code>$indexStats</code> подсказывает, какие индексы вообще используются. Ниже эти команды собраны вместе с командами для реплика-сета и шардирования.</p>
-<pre><code class="language-javascript">// План запроса и реально прочитанное
-db.orders.find({status:&quot;PAID&quot;}).sort({createdAt:-1}).explain(&quot;executionStats&quot;)
-// смотреть: winningPlan.stage (IXSCAN vs COLLSCAN), totalKeysExamined,
-// totalDocsExamined, nReturned, executionTimeMillis, наличие стадии SORT
+<div class="hl" data-lang="JavaScript"><div class="hl-bar"><span>JavaScript</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// План запроса и реально прочитанное</span>
+<span class="nx">db</span><span class="p">.</span><span class="nx">orders</span><span class="p">.</span><span class="nx">find</span><span class="p">({</span><span class="nx">status</span><span class="o">:</span><span class="s2">"PAID"</span><span class="p">}).</span><span class="nx">sort</span><span class="p">({</span><span class="nx">createdAt</span><span class="o">:-</span><span class="mf">1</span><span class="p">}).</span><span class="nx">explain</span><span class="p">(</span><span class="s2">"executionStats"</span><span class="p">)</span>
+<span class="c1">// смотреть: winningPlan.stage (IXSCAN vs COLLSCAN), totalKeysExamined,</span>
+<span class="c1">// totalDocsExamined, nReturned, executionTimeMillis, наличие стадии SORT</span>
 
-db.orders.aggregate([...], {explain: true})
+<span class="nx">db</span><span class="p">.</span><span class="nx">orders</span><span class="p">.</span><span class="nx">aggregate</span><span class="p">([...],</span> <span class="p">{</span><span class="nx">explain</span><span class="o">:</span> <span class="kc">true</span><span class="p">})</span>
 
-// Текущие операции и убийство долгих
-db.currentOp({ &quot;secs_running&quot;: { $gt: 5 }, &quot;active&quot;: true })
-db.killOp(&lt;opid&gt;)
+<span class="c1">// Текущие операции и убийство долгих</span>
+<span class="nx">db</span><span class="p">.</span><span class="nx">currentOp</span><span class="p">({</span> <span class="s2">"secs_running"</span><span class="o">:</span> <span class="p">{</span> <span class="nx">$gt</span><span class="o">:</span> <span class="mf">5</span> <span class="p">},</span> <span class="s2">"active"</span><span class="o">:</span> <span class="kc">true</span> <span class="p">})</span>
+<span class="nx">db</span><span class="p">.</span><span class="nx">killOp</span><span class="p">(</span><span class="o">&lt;</span><span class="nx">opid</span><span class="o">&gt;</span><span class="p">)</span>
 
-// Профилировщик: уровень 1 = только медленные
-db.setProfilingLevel(1, { slowms: 100 })
-db.system.profile.find().sort({ts:-1}).limit(10)
+<span class="c1">// Профилировщик: уровень 1 = только медленные</span>
+<span class="nx">db</span><span class="p">.</span><span class="nx">setProfilingLevel</span><span class="p">(</span><span class="mf">1</span><span class="p">,</span> <span class="p">{</span> <span class="nx">slowms</span><span class="o">:</span> <span class="mf">100</span> <span class="p">})</span>
+<span class="nx">db</span><span class="p">.</span><span class="nx">system</span><span class="p">.</span><span class="nx">profile</span><span class="p">.</span><span class="nx">find</span><span class="p">().</span><span class="nx">sort</span><span class="p">({</span><span class="nx">ts</span><span class="o">:-</span><span class="mf">1</span><span class="p">}).</span><span class="nx">limit</span><span class="p">(</span><span class="mf">10</span><span class="p">)</span>
 
-// Индексы: список и статистика использования
-db.orders.getIndexes()
-db.orders.aggregate([{ $indexStats: {} }])   // accesses.ops — кто реально нужен
+<span class="c1">// Индексы: список и статистика использования</span>
+<span class="nx">db</span><span class="p">.</span><span class="nx">orders</span><span class="p">.</span><span class="nx">getIndexes</span><span class="p">()</span>
+<span class="nx">db</span><span class="p">.</span><span class="nx">orders</span><span class="p">.</span><span class="nx">aggregate</span><span class="p">([{</span> <span class="nx">$indexStats</span><span class="o">:</span> <span class="p">{}</span> <span class="p">}])</span>   <span class="c1">// accesses.ops — кто реально нужен</span>
 
-// Реплика-сет и шардирование
-rs.status()        // состояние узлов, optimeDate, лаг
-db.printSecondaryReplicationInfo()
-sh.status()        // чанки по шардам, jumbo-чанки, состояние балансера
-</code></pre>
+<span class="c1">// Реплика-сет и шардирование</span>
+<span class="nx">rs</span><span class="p">.</span><span class="nx">status</span><span class="p">()</span>        <span class="c1">// состояние узлов, optimeDate, лаг</span>
+<span class="nx">db</span><span class="p">.</span><span class="nx">printSecondaryReplicationInfo</span><span class="p">()</span>
+<span class="nx">sh</span><span class="p">.</span><span class="nx">status</span><span class="p">()</span>        <span class="c1">// чанки по шардам, jumbo-чанки, состояние балансера</span>
+</code></pre></div>
+
 <p>Снаружи состояние mongod показывают <code>mongostat</code> (операции, очередь, доля dirty/used в кеше WiredTiger, netIn/netOut) и <code>mongotop</code> (время по коллекциям). Из метрик в первую очередь нужны <code>wiredTiger.cache</code>, где dirty bytes рядом с порогом означают давление вытеснения (eviction pressure), <code>globalLock.currentQueue</code>, replication lag и page faults.</p>
 <h3 id="163-elasticsearch-opensearch">16.3 Elasticsearch / OpenSearch</h3>
 <p>У Elasticsearch почти вся диагностика доступна через REST API, и команды ниже покрывают пять задач: здоровье кластера и распределение шардов, объяснение скора и поиск причины, по которой документ не нашёлся, проверку анализатора, профилирование запроса и slowlog. Последняя команда показывает статистику thread pool, где растущие <code>rejected</code> означают, что узел перегружен.</p>
-<pre><code class="language-bash"># Здоровье и распределение
-curl 'localhost:9200/_cluster/health?pretty'
-curl 'localhost:9200/_cat/indices?v&amp;s=store.size:desc'
-curl 'localhost:9200/_cat/shards?v&amp;s=store:desc'
-curl 'localhost:9200/_cat/nodes?v&amp;h=name,heap.percent,cpu,load_1m,disk.used_percent'
-curl 'localhost:9200/_cluster/allocation/explain?pretty'   # почему шард не распределён
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Здоровье и распределение</span>
+curl <span class="s1">'localhost:9200/_cluster/health?pretty'</span>
+curl <span class="s1">'localhost:9200/_cat/indices?v&amp;s=store.size:desc'</span>
+curl <span class="s1">'localhost:9200/_cat/shards?v&amp;s=store:desc'</span>
+curl <span class="s1">'localhost:9200/_cat/nodes?v&amp;h=name,heap.percent,cpu,load_1m,disk.used_percent'</span>
+curl <span class="s1">'localhost:9200/_cluster/allocation/explain?pretty'</span>   <span class="c1"># почему шард не распределён</span>
 
-# Почему такой скор / почему документ не нашёлся
-curl 'localhost:9200/orders/_search?explain=true' -H 'Content-Type: application/json' -d '{&quot;query&quot;:{...},&quot;size&quot;:1}'
-curl 'localhost:9200/orders/_explain/order-123' -H 'Content-Type: application/json' -d '{&quot;query&quot;:{...}}'
+<span class="c1"># Почему такой скор / почему документ не нашёлся</span>
+curl <span class="s1">'localhost:9200/orders/_search?explain=true'</span> -H <span class="s1">'Content-Type: application/json'</span> -d <span class="s1">'{"query":{...},"size":1}'</span>
+curl <span class="s1">'localhost:9200/orders/_explain/order-123'</span> -H <span class="s1">'Content-Type: application/json'</span> -d <span class="s1">'{"query":{...}}'</span>
 
-# Как анализируется текст
-curl -XPOST 'localhost:9200/orders/_analyze' -H 'Content-Type: application/json' -d '{&quot;field&quot;:&quot;description&quot;,&quot;text&quot;:&quot;переводы&quot;}'
+<span class="c1"># Как анализируется текст</span>
+curl -XPOST <span class="s1">'localhost:9200/orders/_analyze'</span> -H <span class="s1">'Content-Type: application/json'</span> -d <span class="s1">'{"field":"description","text":"переводы"}'</span>
 
-# Где уходит время внутри запроса (по шардам и по стадиям)
-curl 'localhost:9200/orders/_search' -H 'Content-Type: application/json' -d '{&quot;profile&quot;:true,&quot;query&quot;:{...}}'
+<span class="c1"># Где уходит время внутри запроса (по шардам и по стадиям)</span>
+curl <span class="s1">'localhost:9200/orders/_search'</span> -H <span class="s1">'Content-Type: application/json'</span> -d <span class="s1">'{"profile":true,"query":{...}}'</span>
 
-# Медленные запросы: пороги на уровне индекса
-curl -XPUT 'localhost:9200/orders/_settings' -H 'Content-Type: application/json' -d '{
-  &quot;index.search.slowlog.threshold.query.warn&quot;: &quot;1s&quot;,
-  &quot;index.indexing.slowlog.threshold.index.warn&quot;: &quot;500ms&quot; }'
+<span class="c1"># Медленные запросы: пороги на уровне индекса</span>
+curl -XPUT <span class="s1">'localhost:9200/orders/_settings'</span> -H <span class="s1">'Content-Type: application/json'</span> -d <span class="s1">'{</span>
+<span class="s1">  "index.search.slowlog.threshold.query.warn": "1s",</span>
+<span class="s1">  "index.indexing.slowlog.threshold.index.warn": "500ms" }'</span>
 
-curl 'localhost:9200/_nodes/stats/indices,jvm,thread_pool?pretty'   # rejected в thread_pool = перегруз
-</code></pre>
+curl <span class="s1">'localhost:9200/_nodes/stats/indices,jvm,thread_pool?pretty'</span>   <span class="c1"># rejected в thread_pool = перегруз</span>
+</code></pre></div>
+
 <h3 id="164-tarantool">16.4 Tarantool</h3>
 <p>В Tarantool диагностика выполняется прямо из консоли экземпляра через <code>box.info</code>, <code>box.slab.info()</code> и <code>box.stat()</code>, которые показывают статус и репликацию, устройство памяти и счётчики запросов. Блок ниже перечисляет эти вызовы, а в конце добавляет настройки, которые помогают поймать медленную логику в хранимках.</p>
-<pre><code class="language-lua">-- Внутри консоли (tarantoolctl enter / tt connect)
-box.info                 -- статус, uptime, vclock, replication по каждому узлу, lsn
-box.info.replication     -- лаг и состояние каждого соединения
-box.info.memory()        -- разбивка памяти: data, index, cache, net, lua
-box.slab.info()          -- арена memtx: quota_used_ratio — ключевая метрика
-box.stat()               -- счётчики по типам запросов (SELECT/INSERT/UPDATE), rps
-box.stat.net()           -- сеть: входящие/исходящие байты, соединения
-box.space.accounts:len() -- число кортежей
-box.space.accounts.index.pk:bsize()  -- размер индекса в байтах
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- Внутри консоли (tarantoolctl enter / tt connect)</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">info</span>                 <span class="c1">-- статус, uptime, vclock, replication по каждому узлу, lsn</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">info</span><span class="p">.</span><span class="py">replication</span>     <span class="c1">-- лаг и состояние каждого соединения</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">info</span><span class="p">.</span><span class="nf">memory</span><span class="p">()</span>        <span class="c1">-- разбивка памяти: data, index, cache, net, lua</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">slab</span><span class="p">.</span><span class="nf">info</span><span class="p">()</span>          <span class="c1">-- арена memtx: quota_used_ratio — ключевая метрика</span>
+<span class="nv">box</span><span class="p">.</span><span class="nf">stat</span><span class="p">()</span>               <span class="c1">-- счётчики по типам запросов (SELECT/INSERT/UPDATE), rps</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">stat</span><span class="p">.</span><span class="nf">net</span><span class="p">()</span>           <span class="c1">-- сеть: входящие/исходящие байты, соединения</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span><span class="p">:</span><span class="nf">len</span><span class="p">()</span> <span class="c1">-- число кортежей</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">space</span><span class="p">.</span><span class="py">accounts</span><span class="p">.</span><span class="py">index</span><span class="p">.</span><span class="py">pk</span><span class="p">:</span><span class="nf">bsize</span><span class="p">()</span>  <span class="c1">-- размер индекса в байтах</span>
 
--- Профилирование медленной логики
-require('log').info(...)
-box.cfg{ log_level = 6 }               -- подробный лог
-box.cfg{ too_long_threshold = 0.1 }    -- логировать транзакции дольше 100 мс
-</code></pre>
+<span class="c1">-- Профилирование медленной логики</span>
+<span class="nb">require</span><span class="p">(</span><span class="s1">'log'</span><span class="p">).</span><span class="nf">info</span><span class="p">(...)</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">cfg</span><span class="p">{</span> <span class="nv">log_level</span> <span class="o">=</span> <span class="mi">6</span> <span class="p">}</span>               <span class="c1">-- подробный лог</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">cfg</span><span class="p">{</span> <span class="nv">too_long_threshold</span> <span class="o">=</span> <span class="mf">0.1</span> <span class="p">}</span>    <span class="c1">-- логировать транзакции дольше 100 мс</span>
+</code></pre></div>
+
 <p>Главная метрика для оповещения здесь — <code>quota_used_ratio</code>: когда он подходит к 100%, memtx-арена заканчивается, и вот-вот начнутся ошибки записи. Второй по важности метрикой служит лаг репликации из <code>box.info.replication</code>.</p>
 <hr>
 <h2 id="17-вопросы-на-интервью">17. Вопросы на интервью</h2>

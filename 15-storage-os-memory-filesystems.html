@@ -183,12 +183,14 @@ https://docs.kernel.org/mm/page_tables.html">The Linux Kernel: Page Tables</a>).
 <p>Страничным кэшем (<em>page cache</em>) называют часть оперативной памяти, в которой ядро ОС держит копии страниц файлов, недавно прочитанных или записанных программами. Когда сервис выписок читает шаблон PDF, ядро сначала ищет нужные страницы в страничном кэше и, если находит, копирует их в буфер программы без обращения к диску. Если не находит, читает с диска, кладёт в кэш и только потом отдаёт программе. Запись идёт тем же путём в обратную сторону: <code>write</code> копирует данные в страницу кэша, помечает её как изменённую и возвращает управление, а на диск страница попадёт позже.</p>
 <p>Под страничный кэш Linux отдаёт всю память, которая не занята процессами, и это не утечка, а осознанная политика: неиспользуемая оперативная память ничего не даёт, а заполненная кэшем ускоряет следующее чтение того же файла. Когда процессу нужна память, ядро отбирает у кэша страницы, которые давно не использовались и не изменены, и это стоит почти столько же, сколько взять свободный фрейм. Отсюда знаменитое «на Linux нет свободной памяти»: на сервере, который проработал неделю, колонка <code>free</code> в выводе одноимённой команды почти всегда близка к нулю, а память при этом есть.</p>
 <p>Правильно читать вывод <code>free</code> помогает колонка <code>available</code>. Вот вывод на машине, где проверялись команды этой главы:</p>
-<pre><code class="language-bash">free -h
-</code></pre>
-<pre><code>               total        used        free      shared  buff/cache   available
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>free -h
+</code></pre></div>
+
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>               total        used        free      shared  buff/cache   available
 Mem:            15Gi       2.0Gi        13Gi       160Mi       750Mi        13Gi
 Swap:          4.0Gi          0B       4.0Gi
-</code></pre>
+</code></pre></div>
+
 <p>Колонка <code>buff/cache</code> показывает, сколько памяти сейчас занято страничным кэшем и буферами ядра. Колонка <code>available</code> показывает оценку ядра: сколько памяти можно отдать новым процессам без подкачки, если выбросить из кэша всё, что выбрасывается. В <code>/proc/meminfo</code> этой колонке соответствует строка <code>MemAvailable</code>. На свежей машине <code>free</code> и <code>available</code> почти совпадают; через неделю работы <code>free</code> станет маленьким, а <code>available</code> останется большим, и тревогу нужно поднимать только тогда, когда мала именно <code>available</code>. Подробно о чтении <code>free</code> и <code>/proc/meminfo</code> в работе с JVM говорится в главе 50, раздел 2.3.</p>
 <p>Для backend-разработчика страничный кэш важен и как союзник, и как источник недоразумений. Союзник он потому, что Kafka и PostgreSQL сознательно на него опираются: Kafka почти не держит сообщений в куче JVM и отдаёт потребителям то, что лежит в кэше, а PostgreSQL рассчитывает, что страницы таблиц, не поместившиеся в <code>shared_buffers</code>, найдутся в страничном кэше ОС. Недоразумения возникают с контейнерами: страницы кэша, которые прочитал процесс контейнера, засчитываются в память его группы cgroup, и мониторинг, построенный на «использованной памяти» контейнера без вычета кэша, показывает рост памяти там, где его нет.</p>
 <h3 id="36-грязные-страницы">3.6 Грязные страницы</h3>
@@ -254,34 +256,35 @@ https://man7.org/linux/man-pages/man2/fsync.2.html">fsync(2)</a>). Иначе г
 <p>Вызов <code>fdatasync</code> делает то же самое, но не записывает метаданные, которые не нужны для последующего чтения данных. Изменённое время модификации файла он может оставить в кэше, а изменённый размер файла обязан записать, потому что без правильного размера данные в конце файла не прочитать. Для файла, в который программа перезаписывает блоки на месте, <code>fdatasync</code> экономит запись в журнал файловой системы; для журнала, который растёт при каждой записи, разница меньше, потому что размер меняется каждый раз. В Java оба вызова доступны через <code>FileChannel.force</code>: <code>force(true)</code> соответствует <code>fsync</code>, а <code>force(false)</code> — <code>fdatasync</code>.</p>
 <p>У <code>fsync</code> есть ловушка, о которой в той же странице руководства сказано прямо: вызов для файла не гарантирует, что запись о файле в каталоге тоже дошла до диска, и для этого нужен отдельный <code>fsync</code> для дескриптора самого каталога. Для сервиса, который создаёт файлы реестров, это означает, что после аварии питания новый файл может исчезнуть целиком, хотя его содержимое было синхронизировано. Надёжная замена файла поэтому состоит из четырёх шагов, и пропустить нельзя ни один: записать новое содержимое во временный файл, синхронизировать его, атомарно переименовать временный файл в целевой и синхронизировать каталог.</p>
 <p>Код ниже показывает эти четыре шага на Java 21 для файла реестра операций. Синхронизация каталога через <code>FileChannel.open</code> на каталоге работает в Linux и macOS, а в Windows открыть каталог как канал нельзя, поэтому там шаг пропускается, и NTFS сама журналирует переименование.</p>
-<pre><code class="language-java">import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.*;
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kn">import</span> <span class="nn">java.io.IOException</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.ByteBuffer</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.channels.FileChannel</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">java.nio.file.*</span><span class="p">;</span>
 
-public final class DurableFiles {
+<span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">DurableFiles</span> <span class="p">{</span>
 
-    /** Атомарно и надёжно заменяет содержимое файла реестра. */
-    public static void replace(Path target, byte[] content) throws IOException {
-        Path dir = target.toAbsolutePath().getParent();
-        Path tmp = Files.createTempFile(dir, target.getFileName().toString(), &quot;.tmp&quot;);
-        try (FileChannel ch = FileChannel.open(tmp, StandardOpenOption.WRITE)) {
-            ByteBuffer buf = ByteBuffer.wrap(content);
-            while (buf.hasRemaining()) {
-                ch.write(buf);
-            }
-            ch.force(true);                                     // 1-2: данные и метаданные временного файла на носителе
-        }
-        Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE,
-                   StandardCopyOption.REPLACE_EXISTING);        // 3: атомарное переименование
-        if (!System.getProperty(&quot;os.name&quot;).startsWith(&quot;Windows&quot;)) {
-            try (FileChannel d = FileChannel.open(dir, StandardOpenOption.READ)) {
-                d.force(true);                                  // 4: запись в каталоге на носителе
-            }
-        }
-    }
-}
-</code></pre>
+    <span class="cm">/** Атомарно и надёжно заменяет содержимое файла реестра. */</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">replace</span><span class="p">(</span><span class="n">Path</span> <span class="n">target</span><span class="p">,</span> <span class="kt">byte</span><span class="o">[]</span> <span class="n">content</span><span class="p">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="p">{</span>
+        <span class="n">Path</span> <span class="n">dir</span> <span class="o">=</span> <span class="n">target</span><span class="p">.</span><span class="na">toAbsolutePath</span><span class="p">().</span><span class="na">getParent</span><span class="p">();</span>
+        <span class="n">Path</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">Files</span><span class="p">.</span><span class="na">createTempFile</span><span class="p">(</span><span class="n">dir</span><span class="p">,</span> <span class="n">target</span><span class="p">.</span><span class="na">getFileName</span><span class="p">().</span><span class="na">toString</span><span class="p">(),</span> <span class="s">".tmp"</span><span class="p">);</span>
+        <span class="k">try</span> <span class="p">(</span><span class="n">FileChannel</span> <span class="n">ch</span> <span class="o">=</span> <span class="n">FileChannel</span><span class="p">.</span><span class="na">open</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">StandardOpenOption</span><span class="p">.</span><span class="na">WRITE</span><span class="p">))</span> <span class="p">{</span>
+            <span class="n">ByteBuffer</span> <span class="n">buf</span> <span class="o">=</span> <span class="n">ByteBuffer</span><span class="p">.</span><span class="na">wrap</span><span class="p">(</span><span class="n">content</span><span class="p">);</span>
+            <span class="k">while</span> <span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="na">hasRemaining</span><span class="p">())</span> <span class="p">{</span>
+                <span class="n">ch</span><span class="p">.</span><span class="na">write</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="n">ch</span><span class="p">.</span><span class="na">force</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>                                     <span class="c1">// 1-2: данные и метаданные временного файла на носителе</span>
+        <span class="p">}</span>
+        <span class="n">Files</span><span class="p">.</span><span class="na">move</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">StandardCopyOption</span><span class="p">.</span><span class="na">ATOMIC_MOVE</span><span class="p">,</span>
+                   <span class="n">StandardCopyOption</span><span class="p">.</span><span class="na">REPLACE_EXISTING</span><span class="p">);</span>        <span class="c1">// 3: атомарное переименование</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">System</span><span class="p">.</span><span class="na">getProperty</span><span class="p">(</span><span class="s">"os.name"</span><span class="p">).</span><span class="na">startsWith</span><span class="p">(</span><span class="s">"Windows"</span><span class="p">))</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="p">(</span><span class="n">FileChannel</span> <span class="n">d</span> <span class="o">=</span> <span class="n">FileChannel</span><span class="p">.</span><span class="na">open</span><span class="p">(</span><span class="n">dir</span><span class="p">,</span> <span class="n">StandardOpenOption</span><span class="p">.</span><span class="na">READ</span><span class="p">))</span> <span class="p">{</span>
+                <span class="n">d</span><span class="p">.</span><span class="na">force</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>                                  <span class="c1">// 4: запись в каталоге на носителе</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Атомарность переименования здесь ключевая: в POSIX-системах <code>rename</code> в пределах одной файловой системы либо целиком заменяет старый файл новым, либо не происходит вовсе, так что читатель реестра никогда не увидит наполовину записанный файл. Метод <code>Files.write</code> из стандартной библиотеки ничего из этого не делает: он пишет в страничный кэш и закрывает файл, и после аварии питания файл может оказаться пустым или обрезанным.</p>
 <h3 id="53-синхронная-запись-osync-odsync-и-flushfilebuffers">5.3 Синхронная запись: O_SYNC, O_DSYNC и FlushFileBuffers</h3>
 <p>Синхронной записью называют режим открытия файла, при котором каждый вызов <code>write</code> сам по себе ведёт себя как запись с последующей синхронизацией. В Linux флаг <code>O_SYNC</code> делает каждую запись эквивалентной <code>write</code> плюс <code>fsync</code>, а флаг <code>O_DSYNC</code> — эквивалентной <code>write</code> плюс <code>fdatasync</code>. Выгода по сравнению с явным <code>fsync</code> в том, что ядро может отправить данные накопителю одной командой с флагом FUA, а не записью и отдельным сбросом кэша. В Java те же режимы включают опции <code>StandardOpenOption.SYNC</code> и <code>StandardOpenOption.DSYNC</code> при открытии канала или потока.</p>
@@ -434,12 +437,13 @@ https://learn.microsoft.com/en-us/windows-server/storage/file-server/ntfs-overvi
 <h3 id="87-альтернативные-потоки-данных">8.7 Альтернативные потоки данных</h3>
 <p>Альтернативным потоком данных (<em>alternate data stream</em>, ADS) называют дополнительный именованный атрибут <code>$DATA</code> у файла NTFS, то есть второе, третье и последующие содержимые одного и того же файла. Обычное содержимое файла — это поток без имени, а к именованному потоку обращаются по имени через двоеточие: <code>statement.pdf:meta</code>. Размер файла, который показывают Проводник, <code>dir</code> и Java-метод <code>Files.size</code>, учитывает только основной поток, и именованные потоки в нём не видны.</p>
 <p>Проверить это легко в PowerShell, и опыт ниже, выполненный при подготовке главы, показывает поведение наглядно. В файл записали строку «statement» в основной поток и строку «hidden-part» в поток <code>secret</code>; команда <code>(Get-Item ...).Length</code> вернула 11 байт, то есть только основной поток, а <code>Get-Item -Stream *</code> показала оба потока, <code>:$DATA</code> на 11 байт и <code>secret</code> на 13 байт.</p>
-<pre><code class="language-powershell">Set-Content -Path .\statement.txt -Value &quot;statement&quot;
-Set-Content -Path .\statement.txt -Stream secret -Value &quot;hidden-part&quot;
-(Get-Item .\statement.txt).Length                    # 11
-Get-Item .\statement.txt -Stream * | Select Stream, Length
-Get-Content .\statement.txt -Stream secret           # hidden-part
-</code></pre>
+<div class="hl" data-lang="PowerShell"><div class="hl-bar"><span>PowerShell</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nb">Set-Content</span> <span class="n">-Path</span> <span class="p">.\</span><span class="n">statement</span><span class="p">.</span><span class="n">txt</span> <span class="n">-Value</span> <span class="s2">"statement"</span>
+<span class="nb">Set-Content</span> <span class="n">-Path</span> <span class="p">.\</span><span class="n">statement</span><span class="p">.</span><span class="n">txt</span> <span class="n">-Stream</span> <span class="n">secret</span> <span class="n">-Value</span> <span class="s2">"hidden-part"</span>
+<span class="p">(</span><span class="nb">Get-Item</span> <span class="p">.\</span><span class="n">statement</span><span class="p">.</span><span class="n">txt</span><span class="p">).</span><span class="n">Length</span>                    <span class="c"># 11</span>
+<span class="nb">Get-Item</span> <span class="p">.\</span><span class="n">statement</span><span class="p">.</span><span class="n">txt</span> <span class="n">-Stream</span> <span class="p">*</span> <span class="p">|</span> <span class="nb">Select </span><span class="n">Stream</span><span class="p">,</span> <span class="n">Length</span>
+<span class="nb">Get-Content</span> <span class="p">.\</span><span class="n">statement</span><span class="p">.</span><span class="n">txt</span> <span class="n">-Stream</span> <span class="n">secret</span>           <span class="c"># hidden-part</span>
+</code></pre></div>
+
 <p>Самое известное применение потоков — пометка скачанных файлов. Браузер записывает в поток <code>Zone.Identifier</code> сведения о том, что файл пришёл из интернета, и по этой пометке Windows предупреждает о запуске и блокирует макросы в документах; именно поэтому jar, скачанный архивом из внешнего репозитория, иногда отказывается запускаться, пока его не разблокируют. Две оговорки важны на практике. При копировании на FAT32, exFAT или в Linux альтернативные потоки молча теряются, потому что там их нет. А поскольку содержимое потоков не видно в размере файла, их используют для сокрытия данных, и средства защиты в банке проверяют их отдельно.</p>
 <h3 id="88-сжатие-и-шифрование-в-ntfs">8.8 Сжатие и шифрование в NTFS</h3>
 <p>NTFS умеет прозрачно сжимать и шифровать файлы, так что программа читает и пишет обычные байты, а преобразование выполняет драйвер файловой системы. <strong>Сжатие NTFS</strong> включают для файла или каталога в свойствах или командой <code>compact /c</code>: драйвер сжимает данные блоками по мере записи и распаковывает при чтении. Оно экономит место на текстовых выгрузках, но замедляет случайную запись, потому что изменение байта требует пересжать весь блок, и поэтому файлы баз данных и журналов на сжатых каталогах держать нельзя.</p>
@@ -458,7 +462,7 @@ https://learn.microsoft.com/en-us/windows-server/storage/file-server/ntfs-overvi
 <h3 id="92-inode">9.2 inode</h3>
 <p>Индексным дескриптором (<em>index node</em>, inode) называют структуру файловой системы Unix, которая описывает один файл: его тип, права доступа, владельца и группу, размер, отметки времени, число жёстких ссылок на него и расположение его данных на диске. У каждого inode есть номер, уникальный в пределах файловой системы, и именно номер inode, а не имя, служит настоящим идентификатором файла. Имени в inode нет: имя хранится в каталоге, который сопоставляет имя номеру inode. Если сравнить файловую систему с базой клиентов, то inode — это строка таблицы клиентов с суррогатным ключом, а имя файла — запись в отдельной таблице псевдонимов, которая ссылается на этот ключ.</p>
 <p>Содержимое inode показывает команда <code>stat</code>. Ниже её вывод для файла реестра, созданного при подготовке главы в контейнере Debian:</p>
-<pre><code>  File: registry.csv
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>  File: registry.csv
   Size: 13          Blocks: 8          IO Block: 4096   regular file
 Device: 0,145   Inode: 202         Links: 2
 Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
@@ -466,7 +470,8 @@ Access: 2026-09-26 20:13:40.207641469 +0000
 Modify: 2026-09-26 20:13:40.207641469 +0000
 Change: 2026-09-26 20:13:40.211651651 +0000
  Birth: 2026-09-26 20:13:40.207641469 +0000
-</code></pre>
+</code></pre></div>
+
 <p>В выводе видны все поля inode. <code>Size</code> — логический размер, 13 байт, а <code>Blocks</code> — занятое место в единицах по 512 байт, то есть 4 КиБ, один блок файловой системы. <code>Links: 2</code> означает, что на этот inode ссылаются два имени. Три времени различаются смыслом: <code>Access</code> (atime) — последнее чтение, <code>Modify</code> (mtime) — последнее изменение содержимого, <code>Change</code> (ctime) — последнее изменение самого inode, например прав или числа ссылок; ctime здесь позже mtime, потому что после записи файла к нему добавили вторую ссылку. Строка <code>Birth</code> показывает время создания, которое ext4 и tmpfs хранят, а старые файловые системы — нет.</p>
 <p>В ext4 и других файловых системах семейства ext число inode фиксируется при форматировании, и отсюда один из самых частых инцидентов на Linux-серверах. Команда <code>mkfs.ext4</code> по умолчанию создаёт один inode на каждые 16 КиБ объёма тома ⚠️ значение <code>inode_ratio</code> из <code>/etc/mke2fs.conf</code>, на других дистрибутивах может отличаться, и если на томе хранят миллионы файлов меньше этого размера, inode кончаются раньше места. Тогда любая попытка создать файл завершается ошибкой <code>No space left on device</code>, хотя <code>df -h</code> показывает свободные гигабайты, и понять причину можно только командой <code>df -i</code>. Опыт с такой ситуацией описан в разделе упражнений, а инцидент — в разделе 12.</p>
 <h3 id="93-каталог">9.3 Каталог</h3>
@@ -474,15 +479,17 @@ Change: 2026-09-26 20:13:40.211651651 +0000
 <p>Поиск имени в каталоге дорог, если каталог огромный, и файловые системы решают это индексами. Ранние версии ext хранили записи каталога списком, и поиск в каталоге со ста тысячами файлов означал перебор. ext4 по умолчанию строит для больших каталогов хешированное дерево (<em>htree</em>), а XFS хранит каталоги в B+-деревьях, так что поиск по имени быстрый. Но перечисление каталога, удаление всех его файлов и резервное копирование по-прежнему стоят пропорционально числу файлов, поэтому сервис выписок раскладывает архив по подкаталогам по году, месяцу и дню, а не складывает десять миллионов файлов в один каталог. Ядро дополнительно кэширует результаты поиска в памяти в кэше записей каталогов (<em>dentry cache</em>), о котором речь в 9.10.</p>
 <h3 id="94-жёсткие-и-символические-ссылки">9.4 Жёсткие и символические ссылки</h3>
 <p>Жёсткой ссылкой (<em>hard link</em>) называют дополнительное имя для уже существующего inode, то есть ещё одну запись «имя — номер inode» в каком-либо каталоге. Все имена одного inode равноправны: нет «оригинала» и «ссылки», есть несколько имён одного файла, и счётчик ссылок в inode показывает, сколько их. <strong>Символической ссылкой</strong> (<em>symbolic link</em>, <em>symlink</em>) называют отдельный файл особого типа со своим inode, содержимое которого — путь к другому файлу. Разницу видно в выводе <code>ls -li</code>, где первая колонка — номер inode:</p>
-<pre><code class="language-bash">echo &quot;реестр&quot; &gt; registry.csv
-ln registry.csv registry-hard.csv        # жёсткая ссылка
-ln -s registry.csv registry-sym.csv      # символическая ссылка
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nb">echo</span> <span class="s2">"реестр"</span> &gt; registry.csv
+ln registry.csv registry-hard.csv        <span class="c1"># жёсткая ссылка</span>
+ln -s registry.csv registry-sym.csv      <span class="c1"># символическая ссылка</span>
 ls -li
-</code></pre>
-<pre><code>202 -rw-r--r-- 2 root root 13 Sep 26 20:13 registry.csv
+</code></pre></div>
+
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>202 -rw-r--r-- 2 root root 13 Sep 26 20:13 registry.csv
 202 -rw-r--r-- 2 root root 13 Sep 26 20:13 registry-hard.csv
 203 lrwxrwxrwx 1 root root 12 Sep 26 20:13 registry-sym.csv -&gt; registry.csv
-</code></pre>
+</code></pre></div>
+
 <p>Оба имени жёсткой ссылки показывают один inode 202 и счётчик 2, а символическая ссылка — свой inode 203 и размер 12 байт, ровно длину строки <code>registry.csv</code>. Из этого устройства следуют все различия, которые спрашивают на собеседованиях. Жёсткая ссылка не может вести в другую файловую систему, потому что номер inode уникален только внутри одной, и не может указывать на каталог, чтобы в дереве не возникли циклы. Символическая ссылка может вести куда угодно, даже в несуществующее место, и тогда она становится висячей. Если удалить <code>registry.csv</code>, жёсткая ссылка продолжит работать, потому что inode жив, пока на него есть хоть одно имя, а символическая ссылка сломается, потому что путь, записанный в ней, больше никуда не ведёт.</p>
 <p>Удаление файла в Unix поэтому называется не «удалить», а <strong>отвязать</strong> (<em>unlink</em>): системный вызов удаляет одно имя и уменьшает счётчик ссылок. Место на диске освобождается, только когда выполнены два условия: счётчик ссылок стал нулевым и ни один процесс больше не держит файл открытым. Второе условие — источник знаменитой загадки: администратор удаляет журнал на 200 ГБ командой <code>rm</code>, файл исчезает из каталога, а <code>df</code> показывает, что место не освободилось, потому что процесс сервиса продолжает держать дескриптор и писать в файл, у которого больше нет имени. Как найти такие файлы и освободить место без перезапуска процесса, показано в разделе 12 и в главе 50, раздел 4.6.</p>
 <h3 id="95-права-доступа-в-unix">9.5 Права доступа в Unix</h3>
@@ -565,11 +572,12 @@ https://kafka.apache.org/43/operations/hardware-and-os/">Apache Kafka: Hardware 
 <h3 id="115-чтение-free-vmstat-и-iostat">11.5 Чтение free, vmstat и iostat</h3>
 <p>Три утилиты дают первую картину состояния памяти и дисков сервера, и каждая отвечает на свой вопрос. <code>free</code> отвечает на вопрос, сколько памяти можно ещё отдать процессам, и читать в ней надо колонку <code>available</code>, как объяснено в 3.5. <code>vmstat</code> показывает динамику: что происходило с процессами, памятью, подкачкой и дисками за каждый интервал. <code>iostat</code> из пакета <code>sysstat</code> показывает нагрузку на каждый накопитель отдельно.</p>
 <p>Вывод <code>vmstat 1</code> печатает строку в секунду, и в нём важны несколько групп колонок. Ниже вывод на спокойной машине, где проверялись команды главы:</p>
-<pre><code>procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
  1  0      0 13946372  59196 659012    0    0    89    42 1130    0  0  0 100  0  0  0
  0  0      0 13946048  59196 659164    0    0     0     4 1215 1233  0  0 100  0  0  0
-</code></pre>
+</code></pre></div>
+
 <p>Колонка <code>r</code> показывает число процессов, готовых выполняться, а <code>b</code> — число процессов в непрерываемом ожидании, обычно ввода-вывода; постоянно ненулевое <code>b</code> означает, что процессы стоят на диске. Колонки <code>si</code> и <code>so</code> показывают, сколько килобайтов в секунду читается из подкачки и пишется в неё, и на сервере с JVM или базой они должны быть нулями; любое устойчивое ненулевое значение — признак того, что активные данные вытесняются. Колонки <code>bi</code> и <code>bo</code> показывают блоки, прочитанные с дисков и записанные на них, а <code>wa</code> в группе процессора — долю времени, когда процессор простаивал в ожидании ввода-вывода. Первую строку <code>vmstat</code> считает как среднее с момента загрузки, поэтому смотреть надо со второй.</p>
 <p><code>iostat -x 1</code> показывает для каждого устройства расширенные показатели, и три из них полезнее остальных. Колонки <code>r/s</code> и <code>w/s</code> дают число операций чтения и записи в секунду, а <code>rkB/s</code> и <code>wkB/s</code> — объём; вместе они говорят, мелкие операции идут или крупные. Колонки <code>r_await</code> и <code>w_await</code> показывают среднее время выполнения операции в миллисекундах, включая ожидание в очереди, и именно их сравнивают с задержками из 1.3: <code>w_await</code> в 20 мс на NVMe означает, что устройство перегружено или неисправно. Колонка <code>aqu-sz</code> показывает среднюю длину очереди запросов. Колонка <code>%util</code>, которую часто смотрят первой, показывает долю времени, когда у устройства была хотя бы одна операция в работе, и для SSD и NVMe, выполняющих много операций параллельно, 100 % в ней не означает, что устройство исчерпало возможности. Подробнее о <code>vmstat</code>, <code>pidstat</code> и сопутствующих инструментах говорится в главе 50, раздел 5.3.</p>
 <h3 id="116-тома-в-kubernetes">11.6 Тома в Kubernetes</h3>
@@ -580,13 +588,14 @@ https://kafka.apache.org/43/operations/hardware-and-os/">Apache Kafka: Hardware 
 <h3 id="117-объектное-хранилище-s3-bucket-key-и-чем-оно-не-файловая-система">11.7 Объектное хранилище S3: bucket, key и чем оно не файловая система</h3>
 <p>Запись выписки в хранилище из десяти строк кода выглядит так же, как запись файла, и поэтому к S3 привыкают как к удалённому диску. Это самое дорогое заблуждение в теме: у объектного хранилища другая модель, и почти все его «странности» (нет переименования, нет пустых папок, нет дозаписи) следуют из неё. Подраздел разбирает модель на живом сервере, а затем переходит к тому, что в ней важно для сервиса: согласованность, большие загрузки, временные ссылки, версии и клиент из Java и Kotlin.</p>
 <p>Опыт ставился на S3-совместимом сервере MinIO в кластере kind (как он запускается и почему не официальным образом, разбирает 11.13) через AWS SDK for Java v2 2.57.1. Код лежит в <code>labs/s3-lab/</code>. Сначала положим три выписки по «папкам» и посмотрим, что вернёт сервер.</p>
-<pre><code class="language-java">var put = s3.putObject(b -&gt; b.bucket(&quot;lab-basic&quot;).key(&quot;payments/2026/10/21/stmt-001.csv&quot;)
-        .contentType(&quot;text/csv&quot;).metadata(Map.of(&quot;source&quot;, &quot;acquiring&quot;, &quot;batch&quot;, &quot;42&quot;)),
-        RequestBody.fromBytes(body));
-// ещё два объекта: payments/2026/10/22/stmt-002.csv и payments/2026/11/01/stmt-003.csv
-var l1 = s3.listObjectsV2(b -&gt; b.bucket(&quot;lab-basic&quot;).prefix(&quot;payments/2026/10/&quot;).delimiter(&quot;/&quot;));
-</code></pre>
-<pre><code>PUT ETag=&quot;4f8637f042064806cb8f1762a1172e7f&quot;  md5(тела)=4f8637f042064806cb8f1762a1172e7f
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">var</span> <span class="n">put</span> <span class="o">=</span> <span class="n">s3</span><span class="p">.</span><span class="na">putObject</span><span class="p">(</span><span class="n">b</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="p">.</span><span class="na">bucket</span><span class="p">(</span><span class="s">"lab-basic"</span><span class="p">).</span><span class="na">key</span><span class="p">(</span><span class="s">"payments/2026/10/21/stmt-001.csv"</span><span class="p">)</span>
+        <span class="p">.</span><span class="na">contentType</span><span class="p">(</span><span class="s">"text/csv"</span><span class="p">).</span><span class="na">metadata</span><span class="p">(</span><span class="n">Map</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"source"</span><span class="p">,</span> <span class="s">"acquiring"</span><span class="p">,</span> <span class="s">"batch"</span><span class="p">,</span> <span class="s">"42"</span><span class="p">)),</span>
+        <span class="n">RequestBody</span><span class="p">.</span><span class="na">fromBytes</span><span class="p">(</span><span class="n">body</span><span class="p">));</span>
+<span class="c1">// ещё два объекта: payments/2026/10/22/stmt-002.csv и payments/2026/11/01/stmt-003.csv</span>
+<span class="kd">var</span> <span class="n">l1</span> <span class="o">=</span> <span class="n">s3</span><span class="p">.</span><span class="na">listObjectsV2</span><span class="p">(</span><span class="n">b</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="p">.</span><span class="na">bucket</span><span class="p">(</span><span class="s">"lab-basic"</span><span class="p">).</span><span class="na">prefix</span><span class="p">(</span><span class="s">"payments/2026/10/"</span><span class="p">).</span><span class="na">delimiter</span><span class="p">(</span><span class="s">"/"</span><span class="p">));</span>
+</code></pre></div>
+
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>PUT ETag="4f8637f042064806cb8f1762a1172e7f"  md5(тела)=4f8637f042064806cb8f1762a1172e7f
 HEAD length=22 type=text/csv metadata={batch=42, source=acquiring}
 list prefix=payments/2026/10/ delimiter=/ -&gt; commonPrefixes=[payments/2026/10/21/, payments/2026/10/22/] contents=0
 list prefix=payments/2026/10/ (без delimiter) -&gt; [payments/2026/10/21/stmt-001.csv, payments/2026/10/22/stmt-002.csv]
@@ -594,7 +603,8 @@ list prefix=payments/2026/10/ (без delimiter) -&gt; [payments/2026/10/21/stmt
 после удаления единственного файла: [] (папки a/b/ больше нет)
 DELETE несуществующего: успех, HTTP 204
 GET несуществующего: HTTP 404 NoSuchKey
-</code></pre>
+</code></pre></div>
+
 <p><strong>Из чего состоит модель.</strong> Хранилище делится на <strong>бакеты</strong> (<em>bucket</em>), верхний уровень, у которого есть имя, настройки доступа, версионирование и правила жизненного цикла. Внутри бакета лежат <strong>объекты</strong>, и у каждого есть <strong>ключ</strong> (<em>key</em>), строка, по которой объект находят. Пространство имён плоское. Слова «папка» и «каталог» относятся к удобству клиентов: слэш в ключе обычный символ, а «папка» появляется, когда в запросе списка указывают <code>prefix</code> и <code>delimiter</code>. Сервер тогда сворачивает все ключи с общим началом в элементы <code>commonPrefixes</code>, как показано выше. Кроме тела у объекта есть системные метаданные (тип содержимого, размер, <code>ETag</code>, время изменения) и пользовательские, которые передаются в заголовках <code>x-amz-meta-*</code>. Метаданные нельзя поменять на месте: объект перезаписывают или копируют на тот же ключ.</p>
 <p>Клеппман и Рикомини описывают это как сделку: API у объектного хранилища беднее файлового (чтение и запись целых объектов), зато оно прячет физические машины, само раскладывает данные по ним, и даже при отказе машин или дисков данные не теряются.<sup id="fnref:s15-s3-1"><a class="footnote-ref" href="#fn:s15-s3-1" data-tip="Сноска: Martin Kleppmann, Chris Riccomini, Designing Data-Intensive Applications, 2nd ed., O&#x27;Reilly, гл. 1, с. 15 (раздел про облачные сервисы хранения и их ограниченный API).&amp;#160;&amp;#8617;">2</a></sup> В той же главе про пакетную обработку они перечисляют, чего в объектном хранилище нет: пустых каталогов (удалите последний объект под <code>2025/04/01</code>, и <code>01</code> пропадёт из списка), жёстких и символических ссылок, блокировок, атомарного переименования.<sup id="fnref:s15-s3-2"><a class="footnote-ref" href="#fn:s15-s3-2" data-tip="Сноска: Там же, гл. 11, с. 460–461 (ключ и бакет, префиксный список как ls -R, отсутствие пустых каталогов, ссылок и блокировок, неатомарное переименование; ссылка на «Databases Backed by …">3</a></sup> Три из этих отличий мы увидели в запуске: папка <code>a/b/</code> исчезла вместе с последним файлом, а <code>DELETE</code> несуществующего ключа вернул успех. Остальные разобраны в 11.8.</p>
 <p><strong>Что такое <code>ETag</code>.</strong> Для объекта, загруженного одним <code>PUT</code>, это MD5 тела (в запуске совпало: <code>4f86…2e7f</code>). Полагаться на это нельзя: в документации AWS написано, что <code>ETag</code> может быть, а может не быть MD5, это зависит от способа загрузки и шифрования.<sup id="fnref:s15-s3-3"><a class="footnote-ref" href="#fn:s15-s3-3" data-tip="Сноска: AWS, «Object» (поле ETag), https://docs.aws.amazon.com/AmazonS3/latest/API/API_Object.html.&amp;#160;&amp;#8617;">4</a></sup> Для составных загрузок (11.9) он считается иначе, а при шифровании ключами KMS не связан с содержимым вовсе. Поэтому <code>ETag</code> годится как токен версии («объект не менялся») и непригоден как контрольная сумма; для проверки целостности есть отдельные заголовки с хешами SHA-256 и CRC.</p>
@@ -608,26 +618,30 @@ GET несуществующего: HTTP 404 NoSuchKey
 <h3 id="118-согласованность-s3-условная-запись-и-переименование-без-атомарности">11.8 Согласованность S3, условная запись и переименование без атомарности</h3>
 <p>Практический вопрос про любое хранилище звучит так: если я только что записал данные, увижу ли я их при следующем чтении и в списке? До декабря 2020 года про S3 нужно было отвечать «не всегда», и целое поколение обходных решений (задержки, повторы чтения, внешние индексы ключей) выросло вокруг этого ответа. Сейчас ответ другой, и подраздел показывает его проверкой, а затем разбирает то, что из согласованности не следует: гонку двух писателей и «переименование».</p>
 <p>Проверка простая. Триста новых ключей: после каждого <code>PUT</code> сразу запрашиваем список с префиксом. Триста перезаписей одного ключа: после каждой сразу читаем.</p>
-<pre><code>новых ключей: 300, не попали в list сразу после PUT: 0
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>новых ключей: 300, не попали в list сразу после PUT: 0
 перезаписей одного ключа: 300, GET вернул старое значение: 0
 после DELETE сразу HEAD: HTTP 404 NoSuchKey
-</code></pre>
+</code></pre></div>
+
 <p><strong>Что гарантирует AWS.</strong> Джефф Барр в записи от 1 декабря 2020 года рассказывает, что до этого S3 был «согласованным в конечном счёте» (<em>eventually consistent</em>), а теперь после успешной записи или удаления следующее чтение и список сразу показывают новое состояние.<sup id="fnref:s15-s3-5"><a class="footnote-ref" href="#fn:s15-s3-5" data-tip="Сноска: Jeff Barr, «Amazon S3 Update – Strong Read-After-Write Consistency», AWS News Blog, 1 декабря 2020, https://aws.amazon.com/blogs/aws/amazon-s3-update-strong-read-after-write-consis…">6</a></sup> Страница AWS о согласованности говорит то же: сильная согласованность чтения после записи, включая список, для всех приложений, без изменения производительности и бесплатно.<sup id="fnref:s15-s3-6"><a class="footnote-ref" href="#fn:s15-s3-6" data-tip="Сноска: AWS, «Amazon S3 Strong Consistency», https://aws.amazon.com/s3/consistency/.&amp;#160;&amp;#8617;">7</a></sup> Наш запуск на одном узле MinIO сам по себе об этом ничего не доказывает: на одном узле гонок репликации нет. Он нужен, чтобы увидеть, как выглядит проверка, и убедиться, что сервер, на котором вы тестируете, ведёт себя так же. Для продакшена ссылкой служит документация провайдера, а не опыт.</p>
 <p><strong>Чего согласованность не даёт.</strong> Она не защищает от двух писателей. Если два процесса одновременно записывают один ключ, победит тот, чей запрос закончился позже, и оба получат успех. Для сценария «создать объект, только если его нет» (блокировка выгрузки, маркер закрытия дня, идемпотентная запись квитанции) нужна условная запись: заголовок <code>If-None-Match: *</code> просит сервер отказать, если ключ уже существует, а <code>If-Match: &lt;ETag&gt;</code> разрешает перезапись, только если объект остался таким, каким вы его читали.<sup id="fnref:s15-s3-7"><a class="footnote-ref" href="#fn:s15-s3-7" data-tip="Сноска: AWS, «Add preconditions to S3 operations with conditional requests», https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes.html.&amp;#160;&amp;#8617;">8</a></sup> В запуске:</p>
-<pre><code class="language-java">s3.putObject(b -&gt; b.bucket(&quot;lab-cond&quot;).key(&quot;locks/job-7&quot;).ifNoneMatch(&quot;*&quot;), RequestBody.fromString(&quot;owner=A&quot;));  // успех
-s3.putObject(b -&gt; b.bucket(&quot;lab-cond&quot;).key(&quot;locks/job-7&quot;).ifNoneMatch(&quot;*&quot;), RequestBody.fromString(&quot;owner=B&quot;));  // HTTP 412 PreconditionFailed
-</code></pre>
-<pre><code>первый PUT с If-None-Match: *  -&gt; успех
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">s3</span><span class="p">.</span><span class="na">putObject</span><span class="p">(</span><span class="n">b</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="p">.</span><span class="na">bucket</span><span class="p">(</span><span class="s">"lab-cond"</span><span class="p">).</span><span class="na">key</span><span class="p">(</span><span class="s">"locks/job-7"</span><span class="p">).</span><span class="na">ifNoneMatch</span><span class="p">(</span><span class="s">"*"</span><span class="p">),</span> <span class="n">RequestBody</span><span class="p">.</span><span class="na">fromString</span><span class="p">(</span><span class="s">"owner=A"</span><span class="p">));</span>  <span class="c1">// успех</span>
+<span class="n">s3</span><span class="p">.</span><span class="na">putObject</span><span class="p">(</span><span class="n">b</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="p">.</span><span class="na">bucket</span><span class="p">(</span><span class="s">"lab-cond"</span><span class="p">).</span><span class="na">key</span><span class="p">(</span><span class="s">"locks/job-7"</span><span class="p">).</span><span class="na">ifNoneMatch</span><span class="p">(</span><span class="s">"*"</span><span class="p">),</span> <span class="n">RequestBody</span><span class="p">.</span><span class="na">fromString</span><span class="p">(</span><span class="s">"owner=B"</span><span class="p">));</span>  <span class="c1">// HTTP 412 PreconditionFailed</span>
+</code></pre></div>
+
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>первый PUT с If-None-Match: *  -&gt; успех
 второй PUT с If-None-Match: *  -&gt; HTTP 412 PreconditionFailed
 в объекте: owner=A
 PUT с чужим If-Match -&gt; HTTP 412 PreconditionFailed
 PUT со своим If-Match -&gt; успех, в объекте: owner=A,v2
-</code></pre>
+</code></pre></div>
+
 <p>Это настоящий примитив «сравнить и записать» (<em>compare-and-swap</em>) поверх объекта. Он заменяет отдельную базу для небольших блокировок, но с оговорками: нет срока жизни у блокировки (владелец, упавший с ключом, остаётся навсегда, если не добавить время в тело и не проверять его), и не каждый S3-совместимый сервер поддерживает условия. Тот, на котором вы запускаетесь, нужно проверить тестом, как сделано выше.</p>
 <p><strong>Переименования нет.</strong> Операции <code>rename</code> в протоколе нет, её собирают из <code>CopyObject</code> и <code>DeleteObject</code>. Между двумя вызовами процесс может оборваться:</p>
-<pre><code>после copyObject, до deleteObject: [done/f.csv, incoming/f.csv]
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>после copyObject, до deleteObject: [done/f.csv, incoming/f.csv]
 после deleteObject: [done/f.csv]
-</code></pre>
+</code></pre></div>
+
 <p>Клеппман описывает то же словами: переименование выполняется копированием объекта под новый ключ и удалением старого, а чтобы переименовать «каталог», приходится переименовывать каждый объект по отдельности.<sup id="fnref2:s15-s3-2"><a class="footnote-ref" href="#fn:s15-s3-2" data-tip="Сноска: Там же, гл. 11, с. 460–461 (ключ и бакет, префиксный список как ls -R, отсутствие пустых каталогов, ссылок и блокировок, неатомарное переименование; ссылка на «Databases Backed by …">3</a></sup> У <code>CopyObject</code> есть и предел: одной операцией копируется объект до 5 ГБ, больше требует многочастичной копии.<sup id="fnref:s15-s3-8"><a class="footnote-ref" href="#fn:s15-s3-8" data-tip="Сноска: AWS, «CopyObject», https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html.&amp;#160;&amp;#8617;">9</a></sup> Для обработки входящих выгрузок отсюда следует рабочая схема: не двигать файлы между «папками» <code>incoming/</code> и <code>done/</code>, а вести состояние обработки в базе, ключ объекта сделать неизменяемым, а при необходимости помечать готовое тегом или отдельным маркер-объектом. Конечны в «Инженерии данных» приводит тот же приём в другом контексте: когда набор данных готов, пишется файл-маркер, и читатели ждут именно его.<sup id="fnref:s15-s3-9"><a class="footnote-ref" href="#fn:s15-s3-9" data-tip="Сноска: Bartosz Konieczny, Data Engineering Design Patterns (рус. пер. «Инженерия данных. Паттерны проектирования», АЛИСТ, 2026), гл. 2, с. 55 (файл-маркер готовности набора данных).&amp;#160;…">10</a></sup></p>
 <blockquote class="cb-rare">
 <p><strong><span class="ic">🎲</span> Неочевидно. Задание обработало файл дважды, потому что «перенос в done» не дошёл до конца.</strong> Процесс скопировал <code>incoming/f.csv</code> в <code>done/f.csv</code>, упал, а при перезапуске обработка снова увидела файл в <code>incoming/</code>. Если обработчик не идемпотентен, получится двойная загрузка. Лечится не порядком вызовов (любой порядок оставляет окно), а тем, что идентичность файла (ключ и <code>ETag</code>) записывается в таблицу обработанных одной транзакцией с результатом, как в гл. 29, раздел 7 (идемпотентный получатель).</p>
@@ -637,20 +651,22 @@ PUT со своим If-Match -&gt; успех, в объекте: owner=A,v2
 </blockquote>
 <h3 id="119-большие-загрузки-multipart-upload">11.9 Большие загрузки: multipart upload</h3>
 <p>Многочастичная загрузка (<em>multipart upload</em>) в протоколе S3 отправляет большой объект кусками: каждый кусок можно повторить отдельно, а в конце их склеивают одной командой. Нужна она потому, что выписки за месяц, архив документов или дамп базы не пройдут одним запросом: сеть обрывается, повторять всё с нуля дорого, а держать пятигигабайтное тело в памяти нельзя. Подраздел показывает, как это выглядит на запросах, и две ловушки, из-за которых счёт за хранилище растёт тихо.</p>
-<pre><code class="language-java">var up = s3.createMultipartUpload(b -&gt; b.bucket(&quot;lab-multipart&quot;).key(&quot;big.bin&quot;));
-// три части: 5 МиБ, 5 МиБ, 2 МиБ
-var res = s3.uploadPart(b -&gt; b.bucket(...).key(&quot;big.bin&quot;).uploadId(up.uploadId()).partNumber(num), RequestBody.fromBytes(p));
-// после всех частей:
-s3.completeMultipartUpload(b -&gt; b.bucket(...).key(&quot;big.bin&quot;).uploadId(up.uploadId()).multipartUpload(m -&gt; m.parts(done)));
-</code></pre>
-<pre><code>часть 1: 5 МиБ, ETag=&quot;f4ce2eef33b39bc0bca206386365d4e6&quot;
-часть 2: 5 МиБ, ETag=&quot;121bcc977d9859c4cdaf9f86b1e88975&quot;
-часть 3: 2 МиБ, ETag=&quot;17eff88549898fa2cad15d60cbb0ce48&quot;
-ETag объекта: &quot;704ec3a507a7d6c34ae4204e4fb4a428-3&quot;; md5(склейка md5 частей)-3 = 704ec3a507a7d6c34ae4204e4fb4a428-3
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">var</span> <span class="n">up</span> <span class="o">=</span> <span class="n">s3</span><span class="p">.</span><span class="na">createMultipartUpload</span><span class="p">(</span><span class="n">b</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="p">.</span><span class="na">bucket</span><span class="p">(</span><span class="s">"lab-multipart"</span><span class="p">).</span><span class="na">key</span><span class="p">(</span><span class="s">"big.bin"</span><span class="p">));</span>
+<span class="c1">// три части: 5 МиБ, 5 МиБ, 2 МиБ</span>
+<span class="kd">var</span> <span class="n">res</span> <span class="o">=</span> <span class="n">s3</span><span class="p">.</span><span class="na">uploadPart</span><span class="p">(</span><span class="n">b</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="p">.</span><span class="na">bucket</span><span class="p">(...).</span><span class="na">key</span><span class="p">(</span><span class="s">"big.bin"</span><span class="p">).</span><span class="na">uploadId</span><span class="p">(</span><span class="n">up</span><span class="p">.</span><span class="na">uploadId</span><span class="p">()).</span><span class="na">partNumber</span><span class="p">(</span><span class="n">num</span><span class="p">),</span> <span class="n">RequestBody</span><span class="p">.</span><span class="na">fromBytes</span><span class="p">(</span><span class="n">p</span><span class="p">));</span>
+<span class="c1">// после всех частей:</span>
+<span class="n">s3</span><span class="p">.</span><span class="na">completeMultipartUpload</span><span class="p">(</span><span class="n">b</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="p">.</span><span class="na">bucket</span><span class="p">(...).</span><span class="na">key</span><span class="p">(</span><span class="s">"big.bin"</span><span class="p">).</span><span class="na">uploadId</span><span class="p">(</span><span class="n">up</span><span class="p">.</span><span class="na">uploadId</span><span class="p">()).</span><span class="na">multipartUpload</span><span class="p">(</span><span class="n">m</span> <span class="o">-&gt;</span> <span class="n">m</span><span class="p">.</span><span class="na">parts</span><span class="p">(</span><span class="n">done</span><span class="p">)));</span>
+</code></pre></div>
+
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>часть 1: 5 МиБ, ETag="f4ce2eef33b39bc0bca206386365d4e6"
+часть 2: 5 МиБ, ETag="121bcc977d9859c4cdaf9f86b1e88975"
+часть 3: 2 МиБ, ETag="17eff88549898fa2cad15d60cbb0ce48"
+ETag объекта: "704ec3a507a7d6c34ae4204e4fb4a428-3"; md5(склейка md5 частей)-3 = 704ec3a507a7d6c34ae4204e4fb4a428-3
 часть 3 МиБ не последней: HTTP 400 EntityTooSmall
 незавершённые загрузки: [small.bin]
 после abort: 0
-</code></pre>
+</code></pre></div>
+
 <p><strong>Как это устроено.</strong> Загрузка проходит три шага: <code>CreateMultipartUpload</code> возвращает идентификатор загрузки, <code>UploadPart</code> отправляет часть с номером и возвращает её <code>ETag</code>, <code>CompleteMultipartUpload</code> получает список пар «номер, ETag» и собирает объект. Пока третий шаг не выполнен, объекта в списке нет. Документация AWS требует запомнить номер и <code>ETag</code> каждой части, потому что без них завершить нельзя.<sup id="fnref:s15-s3-10"><a class="footnote-ref" href="#fn:s15-s3-10" data-tip="Сноска: AWS, «Uploading and copying objects using multipart upload in Amazon S3», https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html.&amp;#160;&amp;#8617;">12</a></sup> Пределы в AWS: до 10 000 частей, размер части от 5 МиБ до 5 ГиБ, последняя часть может быть любого размера; отсюда максимальный размер объекта 48,8 ТиБ.<sup id="fnref:s15-s3-11"><a class="footnote-ref" href="#fn:s15-s3-11" data-tip="Сноска: AWS, «Amazon S3 multipart upload limits», https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html.&amp;#160;&amp;#8617;">13</a></sup> Наш сервер отказал в завершении, когда не последняя часть была в 3 МиБ (<code>EntityTooSmall</code>), так что нижний предел проверяется на практике и стоит учитывать его в размере буфера клиента.</p>
 <p><strong><code>ETag</code> составного объекта.</strong> В запуске он равен <code>704ec3…-3</code>: MD5 от склеенных MD5 частей и число частей через дефис. Мы воспроизвели это вычислением на клиенте, и оно совпало. Следствие практическое: <code>ETag</code> объекта зависит от того, как его загрузили, и два одинаковых файла, один раз загруженных целиком, а другой по частям, получат разные <code>ETag</code>. Сравнивать файлы по <code>ETag</code> нельзя, нужны явные контрольные суммы.</p>
 <p><strong>Брошенные загрузки.</strong> Часть, отправленная и не собранная, остаётся на сервере. В списке объектов её нет, но место она занимает и тарифицируется, пока загрузку не завершат или не отменят (<code>AbortMultipartUpload</code>). В запуске <code>listMultipartUploads</code> показал <code>small.bin</code>, а после <code>abort</code> список опустел. AWS поэтому советует настраивать правило жизненного цикла <code>AbortIncompleteMultipartUpload</code>, которое удаляет такие загрузки через заданное число дней.<sup id="fnref:s15-s3-12"><a class="footnote-ref" href="#fn:s15-s3-12" data-tip="Сноска: AWS, «Configuring a bucket lifecycle configuration to delete incomplete multipart uploads», https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpu-abort-incomplete-mpu-lifecycle…">14</a></sup> Об особенности нашего сервера в 11.11.</p>
@@ -686,17 +702,19 @@ ETag объекта: &quot;704ec3a507a7d6c34ae4204e4fb4a428-3&quot;; md5(скл�
 <h3 id="1110-presigned-url-загрузка-и-скачивание-без-прокси-через-приложение">11.10 Presigned URL: загрузка и скачивание без прокси через приложение</h3>
 <p>Клиенту мобильного банка нужно выложить скан паспорта, а гигабайтное тело не должно проходить через сервис: оно займёт потоки, память и трафик ради операции, которая сводится к «положить объект по ключу». Для этого в S3 есть подписанные ссылки: сервис, у которого есть доступ к хранилищу, выписывает клиенту ссылку на одну операцию с одним ключом на ограниченное время, а клиент обращается с ней прямо к хранилищу.</p>
 <p>В схеме Алекса Сюя для сервиса видео это отдельный этап «оптимизации безопасности»: клиент просит у серверов API ссылку, получает её и загружает видео напрямую.<sup id="fnref:s15-s3-13"><a class="footnote-ref" href="#fn:s15-s3-13" data-tip="Сноска: Alex Xu, System Design Interview, рус. пер. «System Design. Подготовка к сложному интервью», Питер, 2022, гл. 14 (проектирование YouTube), с. 267 (предварительно подписанный URL, у…">16</a></sup> Посмотрим, как это выглядит, и что ссылка гарантирует, а чего нет.</p>
-<pre><code class="language-java">var put = presigner.presignPutObject(PutObjectPresignRequest.builder().signatureDuration(Duration.ofMinutes(5))
-        .putObjectRequest(b -&gt; b.bucket(&quot;lab-presign&quot;).key(&quot;uploads/doc-1.pdf&quot;)).build());
-</code></pre>
-<pre><code>URL: http://localhost:59000/lab-presign/uploads/doc-1.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Date=20261021T072122Z&amp;X-Amz-SignedHeaders=host&amp;X-Amz-Credential=...&amp;X-Amz-Expires=300&amp;X-Amz-Signature=...
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">var</span> <span class="n">put</span> <span class="o">=</span> <span class="n">presigner</span><span class="p">.</span><span class="na">presignPutObject</span><span class="p">(</span><span class="n">PutObjectPresignRequest</span><span class="p">.</span><span class="na">builder</span><span class="p">().</span><span class="na">signatureDuration</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofMinutes</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+        <span class="p">.</span><span class="na">putObjectRequest</span><span class="p">(</span><span class="n">b</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="p">.</span><span class="na">bucket</span><span class="p">(</span><span class="s">"lab-presign"</span><span class="p">).</span><span class="na">key</span><span class="p">(</span><span class="s">"uploads/doc-1.pdf"</span><span class="p">)).</span><span class="na">build</span><span class="p">());</span>
+</code></pre></div>
+
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>URL: http://localhost:59000/lab-presign/uploads/doc-1.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Date=20261021T072122Z&amp;X-Amz-SignedHeaders=host&amp;X-Amz-Credential=...&amp;X-Amz-Expires=300&amp;X-Amz-Signature=...
 подписанные заголовки: {host=[localhost:59000]}
 PUT по ссылке без подписи в заголовках: HTTP 200
 GET по ссылке: HTTP 200, тело=PDFDATA
 GET с подменённым ключом: HTTP 403 SignatureDoesNotMatch
 GET по истёкшей через 2,5 с ссылке: HTTP 403 AccessDenied
 повторный PUT по той же ссылке с телом 3 МБ (размер заранее не ограничен): HTTP 200, размер объекта теперь 3000000
-</code></pre>
+</code></pre></div>
+
 <p><strong>Что внутри ссылки.</strong> Подпись по схеме AWS Signature Version 4 лежит в параметрах запроса: алгоритм, время создания, срок жизни в секундах, идентификатор ключа доступа и сама подпись. Подписываются метод, путь (то есть бакет и ключ) и перечисленные заголовки, в нашем случае только <code>host</code>. Поэтому замена ключа в пути ломает подпись (<code>SignatureDoesNotMatch</code>), а после срока сервер отвечает <code>403</code>. Секретный ключ в ссылку не попадает, его знает только тот, кто подписывал. Клиенту хватает обычного HTTP: в опыте загрузку выполнил <code>java.net.http</code> без SDK и без единого заголовка авторизации.</p>
 <p><strong>Сроки.</strong> AWS указывает, что ссылку можно использовать много раз до истечения срока. Если подписывать ключами IAM-пользователя по схеме SigV4, срок может быть до 7 дней, а временные учётные данные ограничивают срок собственной жизнью (то есть ссылка не переживёт сессию роли).<sup id="fnref:s15-s3-14"><a class="footnote-ref" href="#fn:s15-s3-14" data-tip="Сноска: AWS, «Sharing objects with presigned URLs», https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html.&amp;#160;&amp;#8617;">17</a></sup> Ссылку нельзя отозвать по одной: в протоколе нет такой операции. Отозвать можно удалением объекта или сменой ключей, которыми подписывали, что гасит все ссылки сразу.</p>
 <p><strong>Размер не ограничен.</strong> Ссылка на <code>PUT</code> подписывает путь и заголовки, но не размер тела. В опыте та же ссылка приняла сначала 7 байт, потом 3 МБ. Для сценария «загрузка пользователем» это значит, что одной ссылкой можно загрузить объект любого размера. Ограничить размер можно двумя способами, и оба проверены опытом E14 на MinIO.<sup id="fnref:b15-4"><a class="footnote-ref" href="#fn:b15-4" data-tip="Сноска: Запуск автора: MinIO RELEASE.2026-08-04 в Docker, AWS SDK for Java v2 2.57.1 (S3Presigner), загрузка по ссылкам — java.net.http.HttpClient, POST-форма с политикой, подписанной SigV…">15</a></sup></p>
@@ -736,24 +754,27 @@ GET по истёкшей через 2,5 с ссылке: HTTP 403 AccessDenied
 <h3 id="1111-версии-жизненный-цикл-и-пагинация-списка">11.11 Версии, жизненный цикл и пагинация списка</h3>
 <p>Три возможности отвечают на три эксплуатационных вопроса: как вернуть случайно удалённое, как не платить за хранение вечно и как обойти бакет, где миллионы ключей. Все три работают на стороне сервера, но требуют решений от разработчика: что считать версией, когда удалять и как читать список.</p>
 <p><strong>Версионирование.</strong> Включённый на бакете режим превращает каждую перезапись в новую версию, а удаление в добавление маркера удаления (<em>delete marker</em>). Документация AWS так и описывает: при удалении S3 вставляет маркер вместо физического удаления, при перезаписи создаётся новая версия, и предыдущую всегда можно восстановить.<sup id="fnref:s15-s3-15"><a class="footnote-ref" href="#fn:s15-s3-15" data-tip="Сноска: AWS, «Retaining multiple versions of objects with S3 Versioning», https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html.&amp;#160;&amp;#8617;">19</a></sup></p>
-<pre><code>версий: v1=c6648d18… v2=d2ffd99e…
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>версий: v1=c6648d18… v2=d2ffd99e…
 DELETE без versionId: deleteMarker=true
 GET текущей: HTTP 404 NoSuchKey
-GET версии v1: {&quot;daily&quot;:100}
+GET версии v1: {"daily":100}
 list versions: версий=2, маркеров удаления=1
-</code></pre>
+</code></pre></div>
+
 <p>Здесь важны две вещи. Во-первых, «удалённый» объект продолжает занимать место и стоить денег, пока его версии не удалены явно (по <code>versionId</code>) или не истекли по правилу жизненного цикла. Во-вторых, <code>GET</code> без версии вернул <code>404</code>, хотя обе версии на месте: маркер удаления делает текущей «версией» отсутствие объекта. Для конфигов лимитов и справочников, которые правят руками, версионирование полезно как журнал изменений и откат. Для потока выписок оно только удваивает счёт.</p>
 <p><strong>Жизненный цикл.</strong> Правило привязывается к бакету и фильтру (префиксу) и говорит: через столько суток удалить или перенести в более дешёвый класс хранения, прервать брошенные многочастичные загрузки.<sup id="fnref:s15-s3-16"><a class="footnote-ref" href="#fn:s15-s3-16" data-tip="Сноска: AWS, «Managing the lifecycle of objects», https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html.&amp;#160;&amp;#8617;">20</a></sup> В запуске правило с префиксом <code>tmp/</code> и удалением через сутки записалось и прочиталось. Но правило <code>AbortIncompleteMultipartUpload</code> сервер обратно не вернул: в ответе <code>getBucketLifecycleConfiguration</code> оно отсутствовало. Из этого нельзя заключить, что оно не действует (возможно, сервер его не хранит), поэтому для MinIO проверяйте очистку брошенных загрузок отдельным опытом, как в 11.9, а не верьте тому, что конфигурация принята.</p>
 <p><strong>Пагинация.</strong> Один вызов списка возвращает до 1000 ключей.<sup id="fnref:s15-s3-17"><a class="footnote-ref" href="#fn:s15-s3-17" data-tip="Сноска: AWS, «ListObjectsV2», https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html (до 1000 объектов за запрос).&amp;#160;&amp;#8617;">21</a></sup> В запуске 2500 пустых объектов вернулись тремя страницами:</p>
-<pre><code>первая страница: 1000 ключей, isTruncated=true, maxKeys=1000, есть токен продолжения=true
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>первая страница: 1000 ключей, isTruncated=true, maxKeys=1000, есть токен продолжения=true
 через paginator: страниц=3, ключей=2500
 maxKeys=5 startAfter=p/00010: [p/00011, p/00012, p/00013, p/00014, p/00015]
-</code></pre>
+</code></pre></div>
+
 <p>Вызов без цикла читает только первую страницу, и сервис, который «листает» бакет одним вызовом, молча обрабатывает первую тысячу файлов. В SDK для этого есть <code>listObjectsV2Paginator</code>, а в Kotlin его удобно превращать в <code>Sequence</code> (пример в 11.12). Порядок ключей в списке лексикографический (в запуске ключи <code>p/00011…p/00015</code> шли подряд); для остальных символов AWS формулирует правило так: «List results are always returned in UTF-8 binary order», то есть ключи сравниваются побайтно по UTF-8 (<a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/ListingKeysUsingAPIs.html" data-tip="Внешний сайт · docs.aws.amazon.com
 https://docs.aws.amazon.com/AmazonS3/latest/userguide/ListingKeysUsingAPIs.html">Amazon S3 User Guide, Listing object keys programmatically</a>; там же в «Object key sort order» — «lexicographically by their UTF-8 encoded byte values», сверено 2026-10-28). На MinIO RELEASE.2026-08-04 порядок проверен опытом E12 с тринадцатью ключами реестров.<sup id="fnref:b15-2"><a class="footnote-ref" href="#fn:b15-2" data-tip="Сноска: Запуск автора: MinIO RELEASE.2026-08-04 (сборка pgsty/minio, запуск в Docker), AWS SDK for Java v2 2.57.1. Код — labs/s3-lab/src/main/java/S3Lab.java, метод e12, вывод — labs/s3-la…">18</a></sup></p>
-<pre><code>10.csv, 9.csv, Z-2026.csv, été.csv (NFC), z-2026.csv, été.csv (NFD), Б-2026.csv, а-2026.csv,
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>10.csv, 9.csv, Z-2026.csv, été.csv (NFC), z-2026.csv, été.csv (NFD), Б-2026.csv, а-2026.csv,
 е-2026.csv, ё-2026.csv, €.csv, Ａ.csv (U+FF21), 𝔸.csv (U+1D538)
-</code></pre>
+</code></pre></div>
+
 <p>Из этого списка следуют четыре практических вывода. Числа в именах сравниваются как строки, поэтому <code>10.csv</code> идёт раньше <code>9.csv</code>, и номера в ключах дополняют нулями до фиксированной ширины. Заглавные буквы идут раньше строчных и в латинице, и в кириллице (<code>Б</code> раньше <code>а</code>), а <code>ё</code> (U+0451) по кодам стоит после всего основного алфавита <code>а</code>–<code>я</code> (U+0430–U+044F), так что реестр «ёмкость» окажется после «январь». Одинаково выглядящие <code>été</code> в нормализованной форме NFC и в форме NFD с комбинируемым ударением — два разных ключа, поэтому имена файлов от пользователей нормализуют до записи (<code>java.text.Normalizer.normalize(name, Form.NFC)</code>). Наконец, сортировка в Java через <code>String.compareTo</code> сравнивает символы UTF-16 и с порядком S3 расходится: в опыте она поставила <code>𝔸</code> (суррогатная пара начинается с U+D835) раньше полноширинной <code>Ａ</code> (U+FF21), а S3 — наоборот. Код, который сливает списки из S3 с локально отсортированными, сравнивает ключи побайтно: <code>Arrays.compareUnsigned(a.getBytes(UTF_8), b.getBytes(UTF_8))</code>.</p>
 <p>Конечны, описывая задачу, приводит и обратную сторону большого списка: хранение огромного числа маленьких файлов требует более долгого составления списка и более интенсивного ввода-вывода, а естественное решение — хранить меньше файлов, что и делает паттерн «Уплотнитель».<sup id="fnref:s15-s3-18"><a class="footnote-ref" href="#fn:s15-s3-18" data-tip="Сноска: Konieczny, Data Engineering Design Patterns (рус. пер., АЛИСТ, 2026), гл. 2, с. 51 (проблема мелких файлов и паттерн «Уплотнитель»).&amp;#160;&amp;#8617;">22</a></sup> Для потока мелких событий лучше собирать их в пакеты (минуты или мегабайты), чем писать по объекту на событие.</p>
 <blockquote class="cb-rare">
@@ -765,46 +786,50 @@ https://docs.aws.amazon.com/AmazonS3/latest/userguide/ListingKeysUsingAPIs.html"
 <h3 id="1112-клиент-s3-из-java-и-kotlin-настройка-таймауты-повторы">11.12 Клиент S3 из Java и Kotlin: настройка, таймауты, повторы</h3>
 <p>Клиент S3 создаётся одной строкой, и поэтому его редко настраивают, а потом удивляются: зависший запрос блокирует поток на неопределённое время, SDK молча повторяет запись, а на тестовом стенде вместо облака ничего не работает из-за стиля адресации. Подраздел собирает то, что нужно знать про клиент, и показывает обёртку на Kotlin, которая прячет SDK от остального кода.</p>
 <p><strong>Создание клиента для S3-совместимого сервера.</strong></p>
-<pre><code class="language-java">S3Client s3 = S3Client.builder()
-        .endpointOverride(URI.create(&quot;http://localhost:59000&quot;))
-        .region(Region.US_EAST_1)          // регион обязателен для подписи, даже у MinIO
-        .forcePathStyle(true)              // адрес вида host/bucket/key, а не bucket.host/key
-        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(&quot;lab&quot;, &quot;…&quot;)))
-        .build();
-</code></pre>
+<div class="hl" data-lang="Java"><div class="hl-bar"><span>Java</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">S3Client</span> <span class="n">s3</span> <span class="o">=</span> <span class="n">S3Client</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+        <span class="p">.</span><span class="na">endpointOverride</span><span class="p">(</span><span class="n">URI</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="s">"http://localhost:59000"</span><span class="p">))</span>
+        <span class="p">.</span><span class="na">region</span><span class="p">(</span><span class="n">Region</span><span class="p">.</span><span class="na">US_EAST_1</span><span class="p">)</span>          <span class="c1">// регион обязателен для подписи, даже у MinIO</span>
+        <span class="p">.</span><span class="na">forcePathStyle</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>              <span class="c1">// адрес вида host/bucket/key, а не bucket.host/key</span>
+        <span class="p">.</span><span class="na">credentialsProvider</span><span class="p">(</span><span class="n">StaticCredentialsProvider</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="n">AwsBasicCredentials</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="s">"lab"</span><span class="p">,</span> <span class="s">"…"</span><span class="p">)))</span>
+        <span class="p">.</span><span class="na">build</span><span class="p">();</span>
+</code></pre></div>
+
 <p><code>forcePathStyle(true)</code> нужен потому, что по умолчанию SDK строит адрес вида <code>bucket.host/key</code>, и для него DNS должен знать имя <code>bucket.host</code>. У локального MinIO такой записи нет. AWS поддерживает оба стиля, но предупреждает, что адресация через путь будет прекращена в будущем,<sup id="fnref:s15-s3-19"><a class="footnote-ref" href="#fn:s15-s3-19" data-tip="Сноска: AWS, «Virtual hosting of buckets», https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html (оба стиля поддерживаются, адресация через путь будет прекращена в буду…">23</a></sup> так что для облака стиль по умолчанию (виртуальный хост) правильный, а флаг оставляют только для стендов. Выносите его в конфигурацию, а не в код.</p>
 <p><strong>Значения по умолчанию.</strong> Это то, что хочется знать до первого инцидента. Значения сняты запуском из <code>SdkHttpConfigurationOption.GLOBAL_HTTP_DEFAULTS</code> в SDK 2.57.1:</p>
-<pre><code>ConnectionTimeout = PT2S           ConnectionAcquireTimeout = PT10S
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>ConnectionTimeout = PT2S           ConnectionAcquireTimeout = PT10S
 ReadTimeout = PT30S                ConnectionMaxIdleTimeout = PT1M
 WriteTimeout = PT30S               MaxConnections = 50      TcpKeepalive = false
 StandardRetryStrategy.maxAttempts = 3
 ClientOverrideConfiguration.apiCallTimeout() = Optional.empty
-</code></pre>
+</code></pre></div>
+
 <p>Читать это нужно так. Подключение ограничено двумя секундами, а чтение и запись по тридцать; пул держит до 50 соединений и ждёт свободное десять секунд. Повторов стандартная стратегия делает до трёх попыток, всего.<sup id="fnref:s15-s3-20"><a class="footnote-ref" href="#fn:s15-s3-20" data-tip="Сноска: AWS, «Retry behavior in the AWS SDK for Java 2.x», https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/retry-strategy.html (три встроенные стратегии: standard, legacy, …">24</a></sup> Общего ограничения на вызов нет: <code>apiCallTimeout</code> не задан, так что запрос с повторами может длиться, пока хватит терпения у сети. Для сервисов с требованиями по времени задайте <code>apiCallTimeout</code> (на весь вызов с повторами) и <code>apiCallAttemptTimeout</code> (на одну попытку). О том, как складываются таймауты и повторы в цепочке, см. гл. 35.</p>
 <p><strong>Повторы и идемпотентность.</strong> SDK повторяет запросы при сетевых ошибках и ограничении скорости. Для <code>PUT</code> по ключу это безопасно: повтор записывает то же самое. Для <code>CompleteMultipartUpload</code> и для операций с условием нужно думать: повтор успешного, но не дошедшего ответа вернёт ошибку (<code>If-None-Match</code> сработает на собственный предыдущий успех и вернёт <code>412</code>). Обработчик должен различать «ключ уже существует, потому что мы же его создали» и «ключ создал другой», сверяя <code>ETag</code> или владельца в теле.</p>
 <p><strong>Kotlin.</strong> Весь код вокруг клиента стоит убрать за небольшим классом: в сервисе не должно быть ни <code>RequestBody</code>, ни <code>NoSuchKeyException</code>. Вот обёртка из опыта (<code>labs/s3-lab/src/main/kotlin/KtS3.kt</code>):</p>
-<pre><code class="language-kotlin">class ReportStore(private val s3: S3Client, private val bucket: String) {
-    fun put(key: String, bytes: ByteArray, contentType: String = &quot;application/octet-stream&quot;): String =
-        s3.putObject({ it.bucket(bucket).key(key).contentType(contentType) }, RequestBody.fromBytes(bytes)).eTag()
+<div class="hl" data-lang="Kotlin"><div class="hl-bar"><span>Kotlin</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">class</span> <span class="nc">ReportStore</span><span class="p">(</span><span class="kd">private</span> <span class="kd">val</span> <span class="nv">s3</span><span class="p">:</span> <span class="n">S3Client</span><span class="p">,</span> <span class="kd">private</span> <span class="kd">val</span> <span class="nv">bucket</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">fun</span> <span class="nf">put</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">bytes</span><span class="p">:</span> <span class="n">ByteArray</span><span class="p">,</span> <span class="n">contentType</span><span class="p">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="s">"application/octet-stream"</span><span class="p">):</span> <span class="kt">String</span> <span class="o">=</span>
+        <span class="n">s3</span><span class="p">.</span><span class="na">putObject</span><span class="p">({</span> <span class="nb">it</span><span class="p">.</span><span class="na">bucket</span><span class="p">(</span><span class="n">bucket</span><span class="p">).</span><span class="na">key</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="na">contentType</span><span class="p">(</span><span class="n">contentType</span><span class="p">)</span> <span class="p">},</span> <span class="n">RequestBody</span><span class="p">.</span><span class="na">fromBytes</span><span class="p">(</span><span class="n">bytes</span><span class="p">)).</span><span class="na">eTag</span><span class="p">()</span>
 
-    /** Создаёт объект один раз: второй вызов с тем же ключом вернёт false, а не перезапишет. */
-    fun putOnce(key: String, bytes: ByteArray): Boolean = try {
-        s3.putObject({ it.bucket(bucket).key(key).ifNoneMatch(&quot;*&quot;) }, RequestBody.fromBytes(bytes)); true
-    } catch (e: S3Exception) { if (e.statusCode() == 412) false else throw e }
+    <span class="cm">/** Создаёт объект один раз: второй вызов с тем же ключом вернёт false, а не перезапишет. */</span>
+    <span class="kd">fun</span> <span class="nf">putOnce</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">bytes</span><span class="p">:</span> <span class="n">ByteArray</span><span class="p">):</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="k">try</span> <span class="p">{</span>
+        <span class="n">s3</span><span class="p">.</span><span class="na">putObject</span><span class="p">({</span> <span class="nb">it</span><span class="p">.</span><span class="na">bucket</span><span class="p">(</span><span class="n">bucket</span><span class="p">).</span><span class="na">key</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="na">ifNoneMatch</span><span class="p">(</span><span class="s">"*"</span><span class="p">)</span> <span class="p">},</span> <span class="n">RequestBody</span><span class="p">.</span><span class="na">fromBytes</span><span class="p">(</span><span class="n">bytes</span><span class="p">));</span> <span class="kc">true</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">S3Exception</span><span class="p">)</span> <span class="p">{</span> <span class="k">if</span> <span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="na">statusCode</span><span class="p">()</span> <span class="o">==</span> <span class="m">412</span><span class="p">)</span> <span class="kc">false</span> <span class="k">else</span> <span class="k">throw</span> <span class="n">e</span> <span class="p">}</span>
 
-    fun get(key: String): ByteArray? = try {
-        s3.getObjectAsBytes { it.bucket(bucket).key(key) }.asByteArray()
-    } catch (_: NoSuchKeyException) { null }
+    <span class="kd">fun</span> <span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">):</span> <span class="n">ByteArray?</span> <span class="o">=</span> <span class="k">try</span> <span class="p">{</span>
+        <span class="n">s3</span><span class="p">.</span><span class="na">getObjectAsBytes</span> <span class="p">{</span> <span class="nb">it</span><span class="p">.</span><span class="na">bucket</span><span class="p">(</span><span class="n">bucket</span><span class="p">).</span><span class="na">key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="p">}.</span><span class="na">asByteArray</span><span class="p">()</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">NoSuchKeyException</span><span class="p">)</span> <span class="p">{</span> <span class="kc">null</span> <span class="p">}</span>
 
-    fun keys(prefix: String): Sequence&lt;String&gt; =
-        s3.listObjectsV2Paginator { it.bucket(bucket).prefix(prefix) }.contents().asSequence().map { it.key() }
-}
-</code></pre>
-<pre><code>putOnce первый раз -&gt; true
+    <span class="kd">fun</span> <span class="nf">keys</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="kt">String</span><span class="p">):</span> <span class="n">Sequence</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span>
+        <span class="n">s3</span><span class="p">.</span><span class="na">listObjectsV2Paginator</span> <span class="p">{</span> <span class="nb">it</span><span class="p">.</span><span class="na">bucket</span><span class="p">(</span><span class="n">bucket</span><span class="p">).</span><span class="na">prefix</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="p">}.</span><span class="na">contents</span><span class="p">().</span><span class="na">asSequence</span><span class="p">().</span><span class="na">map</span> <span class="p">{</span> <span class="nb">it</span><span class="p">.</span><span class="na">key</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>putOnce первый раз -&gt; true
 putOnce второй раз -&gt; false (в объекте: A)
 keys(bulk/).take(3) -&gt; [bulk/00000, bulk/00001, bulk/00002], всего 2500
 get несуществующего -&gt; null
-</code></pre>
+</code></pre></div>
+
 <p>Отсутствие объекта (<code>404</code>) превращается в <code>null</code>, условный отказ (<code>412</code>) в <code>false</code>, а список превращается в ленивую <code>Sequence</code>, которая берёт следующие страницы по мере чтения (<code>take(3)</code> запросил только первую). Если нужно подменить хранилище в тесте, интерфейс над этим классом делает это без сервера.</p>
 <blockquote class="cb-rare">
 <p><strong><span class="ic">🎲</span> Неочевидно. Сервис завис на выгрузке, потому что у вызова нет общего таймаута.</strong> Хранилище перестало отвечать на часть запросов, и каждая попытка ждала свои тридцать секунд на чтение, после чего SDK повторял её ещё дважды. Один вызов держал поток около полутора минут, а при пуле в 50 соединений и потоках запросов очередь выросла за минуты. Решение: <code>apiCallTimeout</code> порядка секунд, ограниченный пул потоков под операции S3 (разбор изоляции в гл. 35) и метрика времени вызова.</p>
@@ -815,19 +840,20 @@ get несуществующего -&gt; null
 <h3 id="1113-minio-на-стенде-запуск-статус-проекта-и-альтернативы">11.13 MinIO на стенде: запуск, статус проекта и альтернативы</h3>
 <p>MinIO долго был ответом на вопрос «чем заменить S3 на ноутбуке и в закрытом контуре»: один бинарный файл, совместимый API, работает в одном процессе. Поэтому он встречается в docker-compose у половины команд, которые работают с файлами. Здесь стоит знать две вещи: как его поднять для проверки кода и что с ним случилось, потому что инструкции из интернета до сих пор ведут на образы, которых нет.</p>
 <p><strong>Запуск.</strong> Манифест пода в kind:</p>
-<pre><code class="language-yaml">apiVersion: v1
-kind: Pod
-metadata: {name: minio, namespace: s3}
-spec:
-  containers:
-  - name: minio
-    image: pgsty/minio:latest
-    args: [&quot;server&quot;, &quot;/data&quot;, &quot;--console-address&quot;, &quot;:9001&quot;]
-    env:
-    - {name: MINIO_ROOT_USER, value: lab}
-    - {name: MINIO_ROOT_PASSWORD, value: labsecret1}
-    readinessProbe: {httpGet: {path: /minio/health/ready, port: 9000}}
-</code></pre>
+<div class="hl" data-lang="YAML"><div class="hl-bar"><span>YAML</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Pod</span>
+<span class="nt">metadata</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt">name</span><span class="p">:</span> <span class="nv">minio</span><span class="p p-Indicator">,</span><span class="nt"> namespace</span><span class="p">:</span> <span class="nv">s3</span><span class="p p-Indicator">}</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">containers</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">minio</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">pgsty/minio:latest</span>
+    <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"server"</span><span class="p p-Indicator">,</span> <span class="s">"/data"</span><span class="p p-Indicator">,</span> <span class="s">"--console-address"</span><span class="p p-Indicator">,</span> <span class="s">":9001"</span><span class="p p-Indicator">]</span>
+    <span class="nt">env</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="p p-Indicator">{</span><span class="nt">name</span><span class="p">:</span> <span class="nv">MINIO_ROOT_USER</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span> <span class="nv">lab</span><span class="p p-Indicator">}</span>
+    <span class="p p-Indicator">-</span> <span class="p p-Indicator">{</span><span class="nt">name</span><span class="p">:</span> <span class="nv">MINIO_ROOT_PASSWORD</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span> <span class="nv">labsecret1</span><span class="p p-Indicator">}</span>
+    <span class="nt">readinessProbe</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt">httpGet</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt">path</span><span class="p">:</span> <span class="nv">/minio/health/ready</span><span class="p p-Indicator">,</span><span class="nt"> port</span><span class="p">:</span> <span class="nv">9000</span><span class="p p-Indicator">}}</span>
+</code></pre></div>
+
 <p>После <code>kubectl port-forward pod/minio 59000:9000</code> порт 59000 принимает запросы S3. Данные лежат в файловой системе контейнера и пропадают при пересоздании пода, для проверок это то, что нужно. Учётные данные тестовые и в манифесте открытым текстом только потому, что кластер локальный.</p>
 <p><strong>Официального образа больше нет.</strong> Такой же манифест с образом <code>minio/minio:RELEASE.2025-09-07T16-13-09Z</code> (с Docker Hub) завершился ошибкой <code>pull access denied, repository does not exist or may require authorization</code>, а тот же тег с <code>quay.io/minio/minio</code> вернул <code>401 UNAUTHORIZED</code>. Проверено 21 октября 2026 года с узла kind. Причина в статусе проекта: страница <code>github.com/minio/minio</code> показывает баннер «This repository is no longer maintained», репозиторий заархивирован владельцем 25 апреля 2026 года и доступен только для чтения; README сообщает, что предкомпилированных бинарных выпусков community-версии больше не будет, а образ предлагает собирать самим из исходников.<sup id="fnref:s15-s3-21"><a class="footnote-ref" href="#fn:s15-s3-21" data-tip="Сноска: MinIO, репозиторий minio/minio на GitHub, https://github.com/minio/minio (баннер об отсутствии поддержки, архивация 25 апреля 2026 года, отказ от бинарных выпусков community-версии…">27</a></sup> Проект ведёт читателей к платным продуктам AIStor (бесплатная автономная редакция и коммерческая распределённая). Лицензия исходников AGPL-3.0: при сетевом использовании изменённой версии AGPL требует открыть её исходники, и юридическую оценку для вашего продукта делает юрист, а не разработчик ⚠️ не проверено юристом.</p>
 <p><strong>Что использовано здесь.</strong> Образ <code>pgsty/minio:latest</code>: это сообщественный форк (репозиторий <code>github.com/pgsty/silo</code>, создан 25 октября 2025 года, в описании «A MinIO fork maintained by PGSTY»).<sup id="fnref:s15-s3-22"><a class="footnote-ref" href="#fn:s15-s3-22" data-tip="Сноска: pgsty/silo (бывший pgsty/minio), https://github.com/pgsty/silo (форк MinIO); образ pgsty/minio на Docker Hub.&amp;#160;&amp;#8617;">28</a></sup> Версия внутри <code>RELEASE.2026-08-04T00-00-00Z</code>, Go 1.26.5, лицензия AGPLv3 (по выводу <code>minio --version</code>). Это не официальный проект: для лаборатории удобно, для продакшена нужно отдельное решение. Все опыты из 11.7–11.12 шли на нём, поэтому там, где в тексте сказано «этот сервер», речь о нём; поведение AWS приведено по документации.</p>
@@ -963,33 +989,35 @@ spec:
 <p>Диагностикой в этой главе называют набор команд и последовательностей проверок, которые позволяют за несколько минут понять, на каком уровне хранения возникла проблема: в памяти процесса, в памяти ОС, в файловой системе или в накопителе. Команды ниже сгруппированы по этим уровням, и для каждой сказано, на какой вопрос она отвечает. Все команды Linux, кроме <code>iostat</code>, <code>lsof</code>, <code>smartctl</code> и <code>nvme</code>, для которых нужны отдельные пакеты, проверены в контейнере Debian на образе <code>postgres:15</code>; команды Windows проверены в PowerShell 5.1 там, где для них не нужны права администратора.</p>
 <h3 id="141-память">14.1 Память</h3>
 <p>Проверку памяти начинают с вопроса, хватает ли её системе в целом, и только потом переходят к конкретному процессу, потому что нехватка на уровне машины и раздутый процесс лечатся по-разному. Команды ниже идут именно в этом порядке: сначала вся машина, затем подкачка, затем процесс, затем журнал ядра.</p>
-<pre><code class="language-bash">free -h                                   # колонка available: сколько можно отдать без подкачки
-grep -E 'MemAvailable|Dirty|Writeback|Committed_AS|CommitLimit|AnonHugePages' /proc/meminfo
-cat /proc/sys/vm/overcommit_memory        # 0 — эвристика, 1 — всё разрешено, 2 — строгий учёт
-vmstat 1 5                                # si/so должны быть нулями, b — процессы в ожидании диска
-grep -E 'VmRSS|VmSwap' /proc/&lt;pid&gt;/status # резидентная часть процесса и сколько ушло в подкачку
-ps -o pid,rss,min_flt,maj_flt,cmd -p &lt;pid&gt; # малые и большие страничные прерывания процесса
-journalctl -k | grep -i -E 'out of memory|killed process'   # следы OOM killer
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>free -h                                   <span class="c1"># колонка available: сколько можно отдать без подкачки</span>
+grep -E <span class="s1">'MemAvailable|Dirty|Writeback|Committed_AS|CommitLimit|AnonHugePages'</span> /proc/meminfo
+cat /proc/sys/vm/overcommit_memory        <span class="c1"># 0 — эвристика, 1 — всё разрешено, 2 — строгий учёт</span>
+vmstat <span class="m">1</span> <span class="m">5</span>                                <span class="c1"># si/so должны быть нулями, b — процессы в ожидании диска</span>
+grep -E <span class="s1">'VmRSS|VmSwap'</span> /proc/&lt;pid&gt;/status <span class="c1"># резидентная часть процесса и сколько ушло в подкачку</span>
+ps -o pid,rss,min_flt,maj_flt,cmd -p &lt;pid&gt; <span class="c1"># малые и большие страничные прерывания процесса</span>
+journalctl -k <span class="p">|</span> grep -i -E <span class="s1">'out of memory|killed process'</span>   <span class="c1"># следы OOM killer</span>
 cat /sys/kernel/mm/transparent_hugepage/enabled
-</code></pre>
+</code></pre></div>
+
 <p>Результаты этих команд складываются в короткий порядок рассуждения. Если <code>available</code> мала, а <code>si</code> и <code>so</code> ненулевые, машине не хватает памяти, и надо искать, кто её занял, по RSS процессов. Если <code>available</code> велика, а процесс всё равно убит, смотреть надо журнал ядра и лимиты cgroup контейнера, о которых говорится в главе 50, раздел 3.2. Если растёт <code>maj_flt</code> процесса, он ждёт диск там, где ожидал память, и причина — подкачка или отображённые в память файлы, не помещающиеся в кэш.</p>
 <h3 id="142-диски-и-файловые-системы">14.2 Диски и файловые системы</h3>
 <p>Проверку дисков начинают с того, какие устройства и файловые системы вообще есть на машине и с какими опциями они смонтированы, затем смотрят место и inode, затем нагрузку на накопители и процессы, которые её создают, а износ и ошибки накопителя проверяют последним, потому что они объясняют меньшую долю проблем. Команды ниже идут в этом порядке.</p>
-<pre><code class="language-bash">lsblk -f                                  # устройства, разделы, файловые системы, точки монтирования
-lsblk -t                                  # логический и физический размер сектора, выравнивание
-findmnt -o TARGET,SOURCE,FSTYPE,OPTIONS   # опции монтирования: noatime, data=, barrier, discard
-df -h; df -i                              # место и inode — всегда обе команды
-du -xhd1 /var | sort -rh | head           # где занято место в пределах одной файловой системы
-lsof +L1                                  # удалённые, но открытые файлы
-ls -l /proc/&lt;pid&gt;/fd | grep deleted       # то же без lsof, для одного процесса
-iostat -x 1 5                             # r_await/w_await, aqu-sz, r/s, w/s по устройствам
-pidstat -d 1 5                            # какой процесс читает и пишет
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>lsblk -f                                  <span class="c1"># устройства, разделы, файловые системы, точки монтирования</span>
+lsblk -t                                  <span class="c1"># логический и физический размер сектора, выравнивание</span>
+findmnt -o TARGET,SOURCE,FSTYPE,OPTIONS   <span class="c1"># опции монтирования: noatime, data=, barrier, discard</span>
+df -h<span class="p">;</span> df -i                              <span class="c1"># место и inode — всегда обе команды</span>
+du -xhd1 /var <span class="p">|</span> sort -rh <span class="p">|</span> head           <span class="c1"># где занято место в пределах одной файловой системы</span>
+lsof +L1                                  <span class="c1"># удалённые, но открытые файлы</span>
+ls -l /proc/&lt;pid&gt;/fd <span class="p">|</span> grep deleted       <span class="c1"># то же без lsof, для одного процесса</span>
+iostat -x <span class="m">1</span> <span class="m">5</span>                             <span class="c1"># r_await/w_await, aqu-sz, r/s, w/s по устройствам</span>
+pidstat -d <span class="m">1</span> <span class="m">5</span>                            <span class="c1"># какой процесс читает и пишет</span>
 cat /sys/block/nvme0n1/queue/logical_block_size /sys/block/nvme0n1/queue/physical_block_size
-smartctl -a /dev/sda                      # состояние и износ SATA-накопителя
-nvme smart-log /dev/nvme0                 # износ NVMe: поле percentage_used
-/usr/lib/postgresql/15/bin/pg_test_fsync -s 1 -f /data/fsync.test   # реальная цена fsync
-dmesg -T | grep -i -E 'i/o error|remount|ext4-fs error|xfs'          # ошибки ввода-вывода
-</code></pre>
+smartctl -a /dev/sda                      <span class="c1"># состояние и износ SATA-накопителя</span>
+nvme smart-log /dev/nvme0                 <span class="c1"># износ NVMe: поле percentage_used</span>
+/usr/lib/postgresql/15/bin/pg_test_fsync -s <span class="m">1</span> -f /data/fsync.test   <span class="c1"># реальная цена fsync</span>
+dmesg -T <span class="p">|</span> grep -i -E <span class="s1">'i/o error|remount|ext4-fs error|xfs'</span>          <span class="c1"># ошибки ввода-вывода</span>
+</code></pre></div>
+
 <p>Для ошибки <code>No space left on device</code> проверка идёт по фиксированному списку, и порядок в нём важен, потому что первая причина встречается чаще остальных:</p>
 <ol>
 <li><code>df -i</code> — кончились ли inode (11.4).</li>
@@ -1000,16 +1028,17 @@ dmesg -T | grep -i -E 'i/o error|remount|ext4-fs error|xfs'          # ошиб�
 </ol>
 <h3 id="143-windows">14.3 Windows</h3>
 <p>В Windows те же вопросы о памяти, томах и файлах задают другими инструментами, и важнейшие из них доступны без установки дополнительных программ, прямо из PowerShell на ноутбуке разработчика или на сервере. Команды ниже выполняются в PowerShell; <code>fsutil fsinfo</code> требует прав администратора, а остальные работают и без них.</p>
-<pre><code class="language-powershell">Get-Volume                                           # тома, файловые системы, свободное место
-Get-Counter '\Memory\Committed Bytes','\Memory\Commit Limit','\Memory\Available MBytes'
-Get-Counter '\Memory\Pages/sec'                      # интенсивность жёстких страничных прерываний
-Get-Process java | Select-Object Id, WorkingSet64, PagedMemorySize64
-fsutil fsinfo ntfsinfo C:                            # размер кластера и записи MFT (администратор)
-fsutil fsinfo sectorinfo C:                          # логический и физический размер сектора (администратор)
-fsutil file queryCaseSensitiveInfo C:\work\project   # различает ли каталог регистр имён
-Get-Item .\statement.pdf -Stream *                   # альтернативные потоки данных файла
-icacls .\archive                                     # списки управления доступом
-</code></pre>
+<div class="hl" data-lang="PowerShell"><div class="hl-bar"><span>PowerShell</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nb">Get-Volume</span>                                           <span class="c"># тома, файловые системы, свободное место</span>
+<span class="nb">Get-Counter</span> <span class="s1">'\Memory\Committed Bytes'</span><span class="p">,</span><span class="s1">'\Memory\Commit Limit'</span><span class="p">,</span><span class="s1">'\Memory\Available MBytes'</span>
+<span class="nb">Get-Counter</span> <span class="s1">'\Memory\Pages/sec'</span>                      <span class="c"># интенсивность жёстких страничных прерываний</span>
+<span class="nb">Get-Process</span> <span class="n">java</span> <span class="p">|</span> <span class="nb">Select-Object</span> <span class="n">Id</span><span class="p">,</span> <span class="n">WorkingSet64</span><span class="p">,</span> <span class="n">PagedMemorySize64</span>
+<span class="n">fsutil</span> <span class="n">fsinfo</span> <span class="n">ntfsinfo</span> <span class="n">C</span><span class="p">:</span>                            <span class="c"># размер кластера и записи MFT (администратор)</span>
+<span class="n">fsutil</span> <span class="n">fsinfo</span> <span class="n">sectorinfo</span> <span class="n">C</span><span class="p">:</span>                          <span class="c"># логический и физический размер сектора (администратор)</span>
+<span class="n">fsutil</span> <span class="n">file</span> <span class="n">queryCaseSensitiveInfo</span> <span class="n">C</span><span class="p">:\</span><span class="n">work</span><span class="p">\</span><span class="n">project</span>   <span class="c"># различает ли каталог регистр имён</span>
+<span class="nb">Get-Item</span> <span class="p">.\</span><span class="n">statement</span><span class="p">.</span><span class="n">pdf</span> <span class="n">-Stream</span> <span class="p">*</span>                   <span class="c"># альтернативные потоки данных файла</span>
+<span class="n">icacls</span> <span class="p">.\</span><span class="n">archive</span>                                     <span class="c"># списки управления доступом</span>
+</code></pre></div>
+
 <p>Счётчики <code>Committed Bytes</code> и <code>Commit Limit</code> соответствуют строке «Выделено» Диспетчера задач (2.8), <code>WorkingSet64</code> процесса — его рабочему набору, аналогу RSS (3.8). Если JVM на Windows не стартует или падает с сообщением о невозможности выделить физическую память, первым делом сравнивают эти два счётчика и проверяют, не отключён ли файл подкачки.</p>
 <h2 id="15-вопросы-на-интервью">15. Вопросы на интервью</h2>
 <p>Вопросы ниже собраны из собеседований на позиции backend-разработчика в компании, где любят спрашивать устройство ОС, памяти и файловых систем отдельно от Java, в том числе в Яндексе. Ответ на каждый рассчитан на то, чтобы произнести его вслух примерно за минуту, а подробности есть в разделе, на который опирается ответ. Сначала идут вопросы о памяти, затем о дисках и гарантиях записи, затем о файловых системах и в конце — вопросы на стыке с Java.</p>

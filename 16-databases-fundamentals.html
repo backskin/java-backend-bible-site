@@ -34,17 +34,18 @@
 <p>Система управления базами данных (СУБД, <em>database management system</em>, DBMS) — это программа, которая хранит базу данных и выполняет запросы к ней, беря на себя всё, что нужно для правильного совместного доступа: размещение данных на диске, поиск, согласование параллельных изменений, проверку правил, восстановление после сбоя и разграничение прав. Программа-клиент говорит СУБД, <strong>что</strong> ей нужно («найди операции по счёту за март»), а СУБД сама решает, <strong>как</strong> это найти и какие файлы для этого прочитать. Это разделение ответственности главное в понятии СУБД: оно позволяет менять способ хранения, не переписывая программы, которые с данными работают.</p>
 <p>Для Java-разработчика аналогия ближе, чем кажется. Коллекция <code>HashMap</code> тоже хранит данные и тоже ищет их по ключу, но живёт она в памяти одного процесса, пропадает при перезапуске, не защищена от одновременной записи из нескольких потоков и не знает, что значение по ключу должно быть положительным. СУБД решает те же задачи хранения и поиска, но для данных, которые должны пережить сервер, быть доступны сотням процессов на разных машинах и никогда не оказаться в противоречивом состоянии.</p>
 <p>Устроена почти любая СУБД из одних и тех же частей, хотя называются они в разных системах по-разному. Слой приёма запросов разбирает текст запроса и проверяет права, оптимизатор выбирает способ выполнения, а исполнитель по этому способу проходит по данным. Пока исполнитель работает, менеджер транзакций и блокировок следит, чтобы параллельные запросы не мешали друг другу, а менеджер буферов держит в памяти копии страниц с диска. Каждое изменение попадает в журнал, чтобы его можно было повторить после сбоя, а подсистема хранения раскладывает сами данные по файлам. Все эти части по очереди появятся в разделах 4 и 5, а в главе 17 (<code>17-postgresql-internals.md</code>) они разобраны на примере PostgreSQL.</p>
-<pre><code class="language-mermaid">flowchart TB
-    C[&quot;Сервис на Java:&lt;br/&gt;JDBC-драйвер&quot;] --&gt;|&quot;текст запроса&quot;| P[&quot;Разбор запроса&lt;br/&gt;и проверка прав&quot;]
-    P --&gt; O[&quot;Оптимизатор:&lt;br/&gt;выбор плана&quot;]
-    O --&gt; E[&quot;Исполнитель плана&quot;]
-    E &lt;--&gt; T[&quot;Менеджер транзакций&lt;br/&gt;и блокировок&quot;]
-    E &lt;--&gt; B[&quot;Буферный кэш:&lt;br/&gt;страницы в памяти&quot;]
-    B &lt;--&gt; S[&quot;Подсистема хранения:&lt;br/&gt;файлы таблиц и индексов&quot;]
-    E --&gt; W[&quot;Журнал упреждающей записи&quot;]
-    W --&gt; D[(&quot;Диск&quot;)]
+<div class="hl" data-lang="Mermaid"><div class="hl-bar"><span>Mermaid</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>flowchart TB
+    C["Сервис на Java:&lt;br/&gt;JDBC-драйвер"] --&gt;|"текст запроса"| P["Разбор запроса&lt;br/&gt;и проверка прав"]
+    P --&gt; O["Оптимизатор:&lt;br/&gt;выбор плана"]
+    O --&gt; E["Исполнитель плана"]
+    E &lt;--&gt; T["Менеджер транзакций&lt;br/&gt;и блокировок"]
+    E &lt;--&gt; B["Буферный кэш:&lt;br/&gt;страницы в памяти"]
+    B &lt;--&gt; S["Подсистема хранения:&lt;br/&gt;файлы таблиц и индексов"]
+    E --&gt; W["Журнал упреждающей записи"]
+    W --&gt; D[("Диск")]
     S --&gt; D
-</code></pre>
+</code></pre></div>
+
 <p>На схеме видно, что к диску ведут две дороги: одна через буферный кэш к файлам данных, другая через журнал. Почему их две и почему журнал записывается раньше данных, объясняет раздел 4.8, а здесь достаточно запомнить, что это устройство общее для PostgreSQL, Oracle, MySQL и большинства других СУБД.</p>
 <h3 id="13-задачи-субд">1.3 Задачи СУБД</h3>
 <p>Задачи СУБД — это те обязательства, которые система берёт на себя поверх простого хранения байтов в файле, и именно за них её выбирают вместо файла. Задач шесть, и каждую удобно сформулировать как вопрос, на который должна быть ответ. Ниже они перечислены в том порядке, в каком с ними сталкивается самописное хранилище.</p>
@@ -270,21 +271,22 @@ https://github.com/pgvector/pgvector">pgvector</a>, версия 0.8.6, PostgreS
 <h3 id="33-документная-модель">3.3 Документная модель</h3>
 <p>Документная модель (<em>document model</em>) хранит данные как документы, то есть самоописывающие вложенные структуры в формате JSON или его двоичных вариантах, и каждый документ может содержать объекты и массивы внутри себя. Документы собираются в коллекции, но документы одной коллекции не обязаны иметь одинаковые поля. По сути документ — это агрегат из предметно-ориентированного проектирования (глава 33, <code>33-microservices-ddd.md</code>), записанный целиком в одно место.</p>
 <p>Профиль клиента в документной модели выглядит как один документ:</p>
-<pre><code class="language-json">{
-  &quot;_id&quot;: &quot;client-7781&quot;,
-  &quot;fullName&quot;: &quot;Иванов Пётр Сергеевич&quot;,
-  &quot;segment&quot;: &quot;premium&quot;,
-  &quot;contacts&quot;: [
-    {&quot;type&quot;: &quot;phone&quot;, &quot;value&quot;: &quot;+7 900 000-00-00&quot;, &quot;verified&quot;: true},
-    {&quot;type&quot;: &quot;email&quot;, &quot;value&quot;: &quot;dev.team@example.com&quot;, &quot;verified&quot;: false}
-  ],
-  &quot;consents&quot;: {&quot;marketing&quot;: false, &quot;biometrics&quot;: true},
-  &quot;products&quot;: [
-    {&quot;type&quot;: &quot;card&quot;, &quot;masked&quot;: &quot;2200 **** **** 1234&quot;, &quot;status&quot;: &quot;active&quot;},
-    {&quot;type&quot;: &quot;deposit&quot;, &quot;rate&quot;: &quot;16.5&quot;, &quot;status&quot;: &quot;active&quot;}
-  ]
-}
-</code></pre>
+<div class="hl" data-lang="JSON"><div class="hl-bar"><span>JSON</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="p">{</span>
+  <span class="nt">"_id"</span><span class="p">:</span> <span class="s2">"client-7781"</span><span class="p">,</span>
+  <span class="nt">"fullName"</span><span class="p">:</span> <span class="s2">"Иванов Пётр Сергеевич"</span><span class="p">,</span>
+  <span class="nt">"segment"</span><span class="p">:</span> <span class="s2">"premium"</span><span class="p">,</span>
+  <span class="nt">"contacts"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span><span class="nt">"type"</span><span class="p">:</span> <span class="s2">"phone"</span><span class="p">,</span> <span class="nt">"value"</span><span class="p">:</span> <span class="s2">"+7 900 000-00-00"</span><span class="p">,</span> <span class="nt">"verified"</span><span class="p">:</span> <span class="kc">true</span><span class="p">},</span>
+    <span class="p">{</span><span class="nt">"type"</span><span class="p">:</span> <span class="s2">"email"</span><span class="p">,</span> <span class="nt">"value"</span><span class="p">:</span> <span class="s2">"dev.team@example.com"</span><span class="p">,</span> <span class="nt">"verified"</span><span class="p">:</span> <span class="kc">false</span><span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">"consents"</span><span class="p">:</span> <span class="p">{</span><span class="nt">"marketing"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span> <span class="nt">"biometrics"</span><span class="p">:</span> <span class="kc">true</span><span class="p">},</span>
+  <span class="nt">"products"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span><span class="nt">"type"</span><span class="p">:</span> <span class="s2">"card"</span><span class="p">,</span> <span class="nt">"masked"</span><span class="p">:</span> <span class="s2">"2200 **** **** 1234"</span><span class="p">,</span> <span class="nt">"status"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">},</span>
+    <span class="p">{</span><span class="nt">"type"</span><span class="p">:</span> <span class="s2">"deposit"</span><span class="p">,</span> <span class="nt">"rate"</span><span class="p">:</span> <span class="s2">"16.5"</span><span class="p">,</span> <span class="nt">"status"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
 <p>Естественные запросы здесь — прочитать или записать весь агрегат одним обращением: открыть карточку клиента в приложении, обновить согласия, добавить контакт. Всё нужное лежит в одном документе, поэтому СУБД читает одно место на диске и не соединяет таблицы. Документная модель также естественна для данных, структура которых меняется от записи к записи: у разных продуктов разные поля, и новый продукт не требует изменения схемы всей коллекции.</p>
 <p>Больно здесь всё, что идёт поперёк документов. Найти всех клиентов с неподтверждённым телефоном можно, если построить индекс по вложенному полю, но посчитать по продуктам средний баланс в разрезе сегментов уже сложнее, а связи между документами разных коллекций, например операция и два счёта, приходится либо дублировать внутри документов, либо собирать в приложении. Это та же беда, что у иерархической модели IMS в 2.2. Вторая боль — согласованность между документами: изменение одного документа атомарно, а изменение двух требует многодокументной транзакции, которая в документных СУБД обычно дороже и ограниченнее, чем в реляционных.</p>
 <p>Типичные документные СУБД — MongoDB, Couchbase, Amazon DocumentDB, а также PostgreSQL с типом <code>jsonb</code> и индексами GIN, который для многих банковских задач делает отдельную документную базу ненужной. В банке документная модель подходит для профиля клиента, настроек продуктов, анкет и заявок, то есть данных, которые читаются и меняются целиком и не участвуют в денежных расчётах. Устройство MongoDB разобрано в главе 22 (<code>22-nosql-and-inmemory.md</code>).</p>
@@ -296,25 +298,27 @@ https://github.com/pgvector/pgvector">pgvector</a>, версия 0.8.6, PostgreS
 <h3 id="35-модель-широких-колонок">3.5 Модель широких колонок</h3>
 <p>Модель широких колонок (<em>wide-column model</em>) хранит данные в таблицах, где строка идентифицируется ключом из двух частей: ключ раздела (<em>partition key</em>) определяет, на каком сервере и в каком разделе лежат данные, а ключ кластеризации (<em>clustering key</em>) задаёт порядок строк внутри раздела. Внутри одного раздела могут лежать миллионы строк, отсортированных по ключу кластеризации, отсюда слово «широкие». Модель пришла из Bigtable (2.7), а самые известные её представители — Apache Cassandra и совместимая с ней ScyllaDB.</p>
 <p>Журнал операций в этой модели обычно раскладывают так: ключ раздела — пара «счёт и месяц», ключ кластеризации — время операции по убыванию. Тогда все операции одного счёта за месяц лежат в одном разделе на одном наборе реплик, отсортированные от новых к старым, и выписка за месяц читается одним последовательным проходом.</p>
-<pre><code class="language-sql">-- CQL, язык запросов Cassandra: похож на SQL, но работает иначе
-CREATE TABLE operation_by_account (
-    account_id  text,
-    month       text,          -- '2026-09'
-    created_at  timestamp,
-    op_id       uuid,
-    amount      decimal,
-    currency    text,
-    PRIMARY KEY ((account_id, month), created_at, op_id)
-) WITH CLUSTERING ORDER BY (created_at DESC, op_id ASC);
-</code></pre>
+<div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- CQL, язык запросов Cassandra: похож на SQL, но работает иначе</span>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">operation_by_account</span> <span class="p">(</span>
+    <span class="n">account_id</span>  <span class="nb">text</span><span class="p">,</span>
+    <span class="k">month</span>       <span class="nb">text</span><span class="p">,</span>          <span class="c1">-- '2026-09'</span>
+    <span class="n">created_at</span>  <span class="k">timestamp</span><span class="p">,</span>
+    <span class="n">op_id</span>       <span class="n">uuid</span><span class="p">,</span>
+    <span class="n">amount</span>      <span class="nb">decimal</span><span class="p">,</span>
+    <span class="n">currency</span>    <span class="nb">text</span><span class="p">,</span>
+    <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">((</span><span class="n">account_id</span><span class="p">,</span> <span class="k">month</span><span class="p">),</span> <span class="n">created_at</span><span class="p">,</span> <span class="n">op_id</span><span class="p">)</span>
+<span class="p">)</span> <span class="k">WITH</span> <span class="n">CLUSTERING</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="p">(</span><span class="n">created_at</span> <span class="k">DESC</span><span class="p">,</span> <span class="n">op_id</span> <span class="k">ASC</span><span class="p">);</span>
+</code></pre></div>
+
 <p>Естественные запросы — те, что указывают ключ раздела и диапазон по ключу кластеризации: «операции счёта за сентябрь, последние сто». Такие запросы выполняются быстро при любом объёме данных, а запись масштабируется почти линейно с числом серверов, потому что каждая запись идёт в свой раздел и не требует координации с другими.</p>
 <p>Больно всё остальное. Запрос без ключа раздела («все операции больше миллиона рублей за день») требует обойти все разделы на всех серверах, и Cassandra по умолчанию такой запрос отвергает. Соединений нет, поэтому под каждый вид запроса заводят отдельную таблицу с теми же данными, разложенными по другому ключу, и приложение пишет в несколько таблиц сразу. Транзакций над несколькими разделами нет, а согласованность настраивается на каждый запрос уровнем согласованности (<em>consistency level</em>), то есть числом реплик, которые должны ответить. В банке такая модель подходит для журналов событий, истории действий в приложении, телеметрии, но не для денежных остатков. Cassandra кратко разобрана в главе 22 (<code>22-nosql-and-inmemory.md</code>).</p>
 <h3 id="36-графовая-модель">3.6 Графовая модель</h3>
 <p>Графовая модель (<em>graph model</em>) хранит данные как вершины (<em>nodes</em>) и рёбра (<em>edges</em>) между ними, причём и у вершин, и у рёбер есть метки и свойства. Такую разновидность называют графом свойств (<em>property graph</em>). Главная операция в ней — переход от вершины по рёбрам к соседям, и СУБД делает его за время, которое не зависит от общего размера графа, потому что рёбра хранятся рядом с вершиной, а не ищутся по индексу.</p>
 <p>В банке графовая модель естественна для антифрода. Вершинами становятся клиенты, карты, устройства, IP-адреса и телефоны, рёбрами — «клиент владеет картой», «карта использовалась на устройстве», «клиент перевёл клиенту». Типичный вопрос звучит так: связан ли новый получатель перевода с известными мошенниками через общие устройства или телефоны не длиннее трёх шагов. На языке запросов Cypher, который использует Neo4j и на котором основан стандарт GQL, это выглядит так:</p>
-<pre><code class="language-text">MATCH (c:Client {id: $recipientId})-[:USES|OWNS*1..3]-(f:Client {fraud: true})
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>MATCH (c:Client {id: $recipientId})-[:USES|OWNS*1..3]-(f:Client {fraud: true})
 RETURN f.id LIMIT 10
-</code></pre>
+</code></pre></div>
+
 <p>В реляционной модели тот же вопрос превращается в рекурсивный запрос с соединениями на каждом шаге, и на третьем шаге число промежуточных строк может вырасти до миллионов. Графовая СУБД проходит те же три шага по спискам соседей.</p>
 <p>Больно в графовой модели массовые агрегаты по всем данным и распределение по серверам: граф трудно разрезать так, чтобы большинство рёбер оставалось внутри одного сервера, поэтому большие графовые базы масштабируются хуже, чем документные или колоночные. Кроме того, графовые СУБД слабее в транзакционной нагрузке с большим числом мелких записей. Поэтому в банке граф обычно строят как отдельную копию данных для антифрода и расследований, а основные данные остаются в реляционной базе. Типичные СУБД — Neo4j, Amazon Neptune, JanusGraph, NebulaGraph, а в PostgreSQL графовые запросы добавляет расширение Apache AGE.</p>
 <h3 id="37-модель-временных-рядов">3.7 Модель временных рядов</h3>
@@ -480,63 +484,66 @@ https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/DB_BLOCK_SIZ
 <p>Из того, что страница СУБД больше блока файловой системы, вытекает одна тонкая проблема. Страница PostgreSQL в 8 КиБ занимает на диске два блока по 4 КиБ, и если питание пропало посреди её записи, на диске может оказаться половина новой страницы и половина старой. Такую страницу называют разорванной (<em>torn page</em>), и журнал упреждающей записи сам по себе её не исправит, потому что записи журнала описывают изменения относительно целой страницы. PostgreSQL защищается от этого, записывая в журнал полный образ страницы при первом её изменении после контрольной точки (<code>full_page_writes</code>, по умолчанию включён), InnoDB — буфером двойной записи (<em>doublewrite buffer</em>), куда страница сначала пишется целиком. Устройство защиты PostgreSQL разобрано в главе 17 (<code>17-postgresql-internals.md</code>), раздел 5.2.</p>
 <h3 id="52-устройство-страницы">5.2 Устройство страницы</h3>
 <p>Страница с записями переменной длины почти во всех строковых СУБД устроена по одной схеме, которую называют страницей со слотами (<em>slotted page</em>): в начале лежит заголовок, за ним массив указателей на записи, записи заполняют страницу с конца, а между указателями и записями остаётся свободное место. Схема отвечает на вопрос, как хранить на странице фиксированного размера записи разной длины так, чтобы на каждую запись можно было сослаться постоянным адресом.</p>
-<pre><code class="language-text"> 0                                                                   8192
+<div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code> 0                                                                   8192
  +----------+------+------+------+-----&gt;       &lt;-------+------+------+------+
  | Заголовок| ук.1 | ук.2 | ук.3 | ...  свободно  ...  |зап.3 |зап.2 |зап.1 |
  +----------+------+------+------+-----&gt;       &lt;-------+------+------+------+
              pd_lower указывает сюда ^           ^ pd_upper указывает сюда
-</code></pre>
+</code></pre></div>
+
 <p>Заголовок хранит служебные сведения: позицию в журнале, до которой страница была изменена (чтобы при восстановлении понять, нужно ли применять к ней запись журнала), контрольную сумму и две границы свободного места. В PostgreSQL заголовок занимает 24 байта, а границы называются <code>pd_lower</code> (где кончаются указатели) и <code>pd_upper</code> (где начинаются записи). Каждый указатель (<em>line pointer</em>, <em>item pointer</em>) занимает 4 байта и хранит смещение и длину своей записи. Новая запись кладётся непосредственно перед <code>pd_upper</code>, новый указатель — сразу после <code>pd_lower</code>, и страница заполнена, когда границы встречаются.</p>
 <p>Смысл указателей в том, что адрес записи — это пара «номер страницы, номер указателя», а не смещение байта. В PostgreSQL такой адрес называют <code>ctid</code> и записывают как <code>(0,1)</code>: страница 0, указатель 1. Индексы хранят именно этот адрес. Если СУБД при уплотнении страницы передвинет записи внутри неё, она поправит только смещения в указателях, а номера указателей и, значит, адреса в индексах останутся прежними.</p>
 <p>Посмотреть на реальную страницу можно расширением <code>pageinspect</code>. Ниже таблица журнала операций, в которую мы вставили миллион строк в контейнере PostgreSQL 15.17:</p>
-<pre><code class="language-sql">CREATE EXTENSION pageinspect;
-CREATE TABLE operation (
-  id         bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  account_id bigint NOT NULL,
-  amount     numeric(18,2) NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-INSERT INTO operation (account_id, amount, created_at)
-SELECT (random()*100000)::bigint, round((random()*100000)::numeric, 2),
-       now() - (g || ' seconds')::interval
-FROM generate_series(1, 1000000) g;
-VACUUM ANALYZE operation;
+<div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">CREATE</span> <span class="n">EXTENSION</span> <span class="n">pageinspect</span><span class="p">;</span>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="k">operation</span> <span class="p">(</span>
+  <span class="n">id</span>         <span class="nb">bigint</span> <span class="k">GENERATED</span> <span class="n">ALWAYS</span> <span class="k">AS</span> <span class="k">IDENTITY</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+  <span class="n">account_id</span> <span class="nb">bigint</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+  <span class="n">amount</span>     <span class="nb">numeric</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+  <span class="n">created_at</span> <span class="n">timestamptz</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="k">operation</span> <span class="p">(</span><span class="n">account_id</span><span class="p">,</span> <span class="n">amount</span><span class="p">,</span> <span class="n">created_at</span><span class="p">)</span>
+<span class="k">SELECT</span> <span class="p">(</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">100000</span><span class="p">)::</span><span class="nb">bigint</span><span class="p">,</span> <span class="n">round</span><span class="p">((</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">100000</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+       <span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="p">(</span><span class="k">g</span> <span class="o">||</span> <span class="s1">' seconds'</span><span class="p">)::</span><span class="nb">interval</span>
+<span class="k">FROM</span> <span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1000000</span><span class="p">)</span> <span class="k">g</span><span class="p">;</span>
+<span class="k">VACUUM</span> <span class="k">ANALYZE</span> <span class="k">operation</span><span class="p">;</span>
 
-SELECT lower, upper, special, pagesize FROM page_header(get_raw_page('operation', 0));
---  lower | upper | special | pagesize
--- -------+-------+---------+----------
---    512 |   512 |    8192 |     8192
+<span class="k">SELECT</span> <span class="k">lower</span><span class="p">,</span> <span class="k">upper</span><span class="p">,</span> <span class="n">special</span><span class="p">,</span> <span class="n">pagesize</span> <span class="k">FROM</span> <span class="n">page_header</span><span class="p">(</span><span class="n">get_raw_page</span><span class="p">(</span><span class="s1">'operation'</span><span class="p">,</span> <span class="mi">0</span><span class="p">));</span>
+<span class="c1">--  lower | upper | special | pagesize</span>
+<span class="c1">-- -------+-------+---------+----------</span>
+<span class="c1">--    512 |   512 |    8192 |     8192</span>
 
-SELECT lp, lp_off, lp_len, t_ctid FROM heap_page_items(get_raw_page('operation', 0)) LIMIT 3;
---  lp | lp_off | lp_len | t_ctid
--- ----+--------+--------+--------
---   1 |   8136 |     56 | (0,1)
---   2 |   8080 |     56 | (0,2)
---   3 |   8016 |     64 | (0,3)
-</code></pre>
+<span class="k">SELECT</span> <span class="n">lp</span><span class="p">,</span> <span class="n">lp_off</span><span class="p">,</span> <span class="n">lp_len</span><span class="p">,</span> <span class="n">t_ctid</span> <span class="k">FROM</span> <span class="n">heap_page_items</span><span class="p">(</span><span class="n">get_raw_page</span><span class="p">(</span><span class="s1">'operation'</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="k">LIMIT</span> <span class="mi">3</span><span class="p">;</span>
+<span class="c1">--  lp | lp_off | lp_len | t_ctid</span>
+<span class="c1">-- ----+--------+--------+--------</span>
+<span class="c1">--   1 |   8136 |     56 | (0,1)</span>
+<span class="c1">--   2 |   8080 |     56 | (0,2)</span>
+<span class="c1">--   3 |   8016 |     64 | (0,3)</span>
+</code></pre></div>
+
 <p>В выводе видна вся схема. У страницы 0 границы <code>lower</code> и <code>upper</code> совпали на отметке 512, значит, свободного места не осталось. На странице 122 записи: 24 байта заголовка плюс 122 указателя по 4 байта дают ровно 512. Точные числа от запуска к запуску немного меняются, потому что данные случайные, а длина <code>numeric</code> зависит от числа цифр. Повторный запуск тех же запросов на PostgreSQL 18.6 дал на странице 0 записи по 64 байта, 121 запись, <code>lower</code> = 508 и <code>upper</code> = 568: между указателями и записями осталось 60 байт, а новой записи с указателем нужно 68, поэтому страница всё равно заполнена.<sup id="fnref:b16-4"><a class="footnote-ref" href="#fn:b16-4" data-tip="Сноска: Запуск автора: Docker, образ postgres:18 (18.6); запросы — дословно из этого подраздела. Скрипт — labs/db-basics/page.sql, вывод — labs/db-basics/s16-page-18.txt.&amp;#160;&amp;#8617;">1</a></sup> Индекс <code>operation_pkey</code> в том же запуске вышел ровно таким, как ниже в 5.7: корень 412, <code>level</code> = 2. Первая запись лежит в самом конце страницы, со смещения 8136 до 8192, вторая перед ней, и так далее к началу. Длина записи 56–64 байта, хотя полезных данных в строке около 30 байт: остальное занимает заголовок версии строки в 23 байта с выравниванием, в котором PostgreSQL хранит сведения для MVCC (4.7). По всей таблице получилось 8 250 страниц, 64 МБ, в среднем 121 строка на страницу.</p>
 <p>Из устройства страницы вытекают практические вещи, которые встретятся дальше. Строка не может быть больше страницы, поэтому длинные значения СУБД выносит в отдельное хранилище (в PostgreSQL это TOAST, в InnoDB — страницы переполнения). На заполненной странице некуда положить новую версию изменённой строки, поэтому СУБД может оставлять на страницах запас свободного места (параметр <code>fillfactor</code>). А служебные заголовки строк делают узкие таблицы из нескольких чисел в два-три раза больше, чем сумма размеров их столбцов. Подробности для PostgreSQL — в главе 17 (<code>17-postgresql-internals.md</code>), разделы 2.2–2.5.</p>
 <h3 id="53-кучевая-таблица">5.3 Кучевая таблица</h3>
 <p>Кучевая таблица, или куча (<em>heap</em>, <em>heap table</em>), — это способ хранения таблицы, при котором строки лежат в страницах файла без всякого порядка: новая строка кладётся на любую страницу, где есть свободное место, а все индексы, включая индекс первичного ключа, хранятся отдельно и указывают на строки по их физическому адресу. Слово «куча» здесь означает просто неупорядоченное множество и не связано с кучей памяти в JVM. Так хранит таблицы PostgreSQL, так по умолчанию хранит Oracle, и так хранится таблица SQL Server без кластерного индекса: документация Microsoft называет неупорядоченную структуру строк именно кучей (<a href="https://learn.microsoft.com/en-us/sql/relational-databases/indexes/clustered-and-nonclustered-indexes-described" data-tip="Внешний сайт · learn.microsoft.com
 https://learn.microsoft.com/en-us/sql/relational-databases/indexes/clustered-and-nonclus…">Microsoft Learn, Clustered and nonclustered indexes</a>).</p>
-<pre><code class="language-mermaid">flowchart LR
-    subgraph PK[&quot;Индекс первичного ключа (B-дерево)&quot;]
-        K1[&quot;id=1001 -&gt; (0,1)&quot;]
-        K2[&quot;id=1002 -&gt; (57,3)&quot;]
+<div class="hl" data-lang="Mermaid"><div class="hl-bar"><span>Mermaid</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>flowchart LR
+    subgraph PK["Индекс первичного ключа (B-дерево)"]
+        K1["id=1001 -&gt; (0,1)"]
+        K2["id=1002 -&gt; (57,3)"]
     end
-    subgraph IX[&quot;Индекс по счёту (B-дерево)&quot;]
-        A1[&quot;счёт 40817...01 -&gt; (0,1)&quot;]
-        A2[&quot;счёт 40817...02 -&gt; (57,3)&quot;]
+    subgraph IX["Индекс по счёту (B-дерево)"]
+        A1["счёт 40817...01 -&gt; (0,1)"]
+        A2["счёт 40817...02 -&gt; (57,3)"]
     end
-    subgraph H[&quot;Куча: страницы таблицы&quot;]
-        P0[&quot;страница 0: строки (0,1)...(0,122)&quot;]
-        P57[&quot;страница 57: строки (57,1)...(57,121)&quot;]
+    subgraph H["Куча: страницы таблицы"]
+        P0["страница 0: строки (0,1)...(0,122)"]
+        P57["страница 57: строки (57,1)...(57,121)"]
     end
     K1 --&gt; P0
     A1 --&gt; P0
     K2 --&gt; P57
     A2 --&gt; P57
-</code></pre>
+</code></pre></div>
+
 <p>В куче все индексы равноправны: и индекс первичного ключа, и индекс по счёту хранят одинаковый физический адрес строки, и поиск по любому из них стоит одинаково — спуск по индексу и одно чтение страницы кучи. Вставка в кучу дешёвая, потому что СУБД не нужно искать для строки определённое место: она берёт страницу с достаточным свободным местом по карте свободного пространства (в PostgreSQL это <em>free space map</em>) и кладёт строку туда. Строки, вставленные подряд, обычно оказываются на соседних страницах в конце файла.</p>
 <p>Слабое место кучи — изменение строки и чтение диапазона. Если строка при изменении получает новый физический адрес, а в PostgreSQL из-за MVCC так происходит при каждом <code>UPDATE</code>, то новый адрес нужно записать во все индексы таблицы, и таблица с десятью индексами платит десять лишних вставок в индексы за каждое изменение одного столбца. PostgreSQL смягчает это механизмом HOT-обновлений, который разобран в главе 17 (<code>17-postgresql-internals.md</code>), раздел 3.6. А чтение диапазона по индексу («все операции счёта за год») находит в индексе тысячу адресов, которые могут лежать на тысяче разных страниц кучи, и каждая из них читается отдельно.</p>
 <h3 id="54-кластерный-индекс">5.4 Кластерный индекс</h3>
@@ -600,15 +607,16 @@ https://dev.mysql.com/doc/refman/8.4/en/innodb-index-types.html">MySQL 8.4, Clus
 <p>Порядок вставки ключей — это то, в каком порядке новые значения первичного ключа приходят в индекс, и от него зависит, в какие страницы B-дерева попадают вставки. Если ключ растёт монотонно, как последовательность (<code>bigint</code> из <code>SEQUENCE</code> или <code>IDENTITY</code>) или UUID версии 7, в котором старшие биты — это время, то каждая новая запись попадает в самый правый лист дерева. Если ключ случайный, как UUID версии 4, то каждая запись попадает в случайный лист.</p>
 <p>При монотонном ключе все вставки идут в одну и ту же страницу, которая постоянно лежит в буферном кэше. Когда она заполняется, СУБД открывает следующую, а заполненная больше не меняется и спокойно уходит на диск. В памяти нужна одна горячая страница на каждый индекс, запись на диск идёт почти последовательно, страницы заполнены плотно. При случайном ключе горячими становятся все листья индекса сразу: вставка может попасть в любой из них, и пока индекс помещается в буферный кэш, это стоит только лишних разделений страниц, а когда перестаёт помещаться, почти каждая вставка требует прочитать с диска случайную страницу и позже записать её обратно.</p>
 <p>Разницу видно даже на маленькой таблице в PostgreSQL, где случайный ключ влияет только на индекс, а не на всю таблицу. В контейнере PostgreSQL 15.17 мы вставили по миллиону строк в две одинаковые таблицы, отличающиеся только типом первичного ключа:</p>
-<pre><code class="language-sql">CREATE EXTENSION pgstattuple;
-CREATE TABLE op_seq  (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, amount numeric(18,2));
-CREATE TABLE op_uuid (id uuid PRIMARY KEY DEFAULT gen_random_uuid(),       amount numeric(18,2));
-INSERT INTO op_seq(amount)  SELECT 1 FROM generate_series(1, 1000000);  -- 3,4 с
-INSERT INTO op_uuid(amount) SELECT 1 FROM generate_series(1, 1000000);  -- 6,6 с
+<div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">CREATE</span> <span class="n">EXTENSION</span> <span class="n">pgstattuple</span><span class="p">;</span>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">op_seq</span>  <span class="p">(</span><span class="n">id</span> <span class="nb">bigint</span> <span class="k">GENERATED</span> <span class="n">ALWAYS</span> <span class="k">AS</span> <span class="k">IDENTITY</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span> <span class="n">amount</span> <span class="nb">numeric</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span><span class="mi">2</span><span class="p">));</span>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">op_uuid</span> <span class="p">(</span><span class="n">id</span> <span class="n">uuid</span> <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="k">DEFAULT</span> <span class="n">gen_random_uuid</span><span class="p">(),</span>       <span class="n">amount</span> <span class="nb">numeric</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span><span class="mi">2</span><span class="p">));</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">op_seq</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span>  <span class="k">SELECT</span> <span class="mi">1</span> <span class="k">FROM</span> <span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1000000</span><span class="p">);</span>  <span class="c1">-- 3,4 с</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">op_uuid</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span> <span class="k">SELECT</span> <span class="mi">1</span> <span class="k">FROM</span> <span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1000000</span><span class="p">);</span>  <span class="c1">-- 6,6 с</span>
 
-SELECT avg_leaf_density, leaf_fragmentation FROM pgstatindex('op_seq_pkey');   -- 90,06 | 0
-SELECT avg_leaf_density, leaf_fragmentation FROM pgstatindex('op_uuid_pkey');  -- 72,04 | 49,94
-</code></pre>
+<span class="k">SELECT</span> <span class="n">avg_leaf_density</span><span class="p">,</span> <span class="n">leaf_fragmentation</span> <span class="k">FROM</span> <span class="n">pgstatindex</span><span class="p">(</span><span class="s1">'op_seq_pkey'</span><span class="p">);</span>   <span class="c1">-- 90,06 | 0</span>
+<span class="k">SELECT</span> <span class="n">avg_leaf_density</span><span class="p">,</span> <span class="n">leaf_fragmentation</span> <span class="k">FROM</span> <span class="n">pgstatindex</span><span class="p">(</span><span class="s1">'op_uuid_pkey'</span><span class="p">);</span>  <span class="c1">-- 72,04 | 49,94</span>
+</code></pre></div>
+
 <p>Вставка со случайным ключом шла почти вдвое дольше, индекс получился 37,6 МиБ против 21,4 МиБ, листья в среднем заполнены на 72% против 90%, а половина листьев лежит в файле не в порядке ключей.</p>
 <p>Тот же опыт повторён 2026-10-28 на PostgreSQL 18.6, где появилась встроенная функция <code>uuidv7()</code>, и в него добавлена третья таблица <code>op_uuid7</code> с ключом <code>DEFAULT uuidv7()</code>.<sup id="fnref:b16-1"><a class="footnote-ref" href="#fn:b16-1" data-tip="Сноска: Запуск автора: Docker, образы postgres:15 (15.16) и postgres:18 (18.6), расширение pgstattuple. Скрипт — labs/db-basics/pk.sql и run.sh, вывод — labs/db-basics/s16-pk-15.txt и s16-…">3</a></sup></p>
 <table class="rt">
@@ -655,14 +663,15 @@ https://doi.org/10.1007/BF00288683">Bayer, McCreight, 1972</a>),<sup id="fnref:b
 https://doi.org/10.1145/356770.356776">Comer, 1979</a>). Сегодня упорядоченные индексы почти всех реляционных СУБД построены на нём.</p>
 <p>Идея B-дерева в том, чтобы сделать дерево очень широким и поэтому очень низким. Двоичное дерево поиска из миллиарда ключей имеет высоту около 30, и если каждый узел лежит на своей странице диска, поиск требует 30 случайных чтений. В B-дереве каждый внутренний узел хранит сотни ключей-разделителей и столько же ссылок на дочерние страницы, поэтому за одно чтение страницы поиск сужает диапазон не вдвое, а в сотни раз. Число ссылок из одного узла называют ветвлением (<em>fanout</em>), и именно оно определяет высоту дерева.</p>
 <p>На практике почти везде используют вариант, который называют B+-деревом (<em>B+ tree</em>). В нём все ключи с данными или со ссылками на строки хранятся только в листьях, внутренние узлы содержат лишь разделители для навигации, а листья связаны друг с другом в двусвязный список. Первое свойство делает внутренние узлы компактнее и ветвление больше. Второе позволяет читать диапазон ключей, спустившись к его началу и пройдя по листьям направо, не возвращаясь к корню. Индексы PostgreSQL, InnoDB и SQL Server — это B+-деревья, хотя в документации их называют просто B-tree, о чём прямо пишет и документация Microsoft.</p>
-<pre><code class="language-mermaid">flowchart TB
-    R[&quot;Корень: 10 разделителей&lt;br/&gt;..., 100 001, 200 001, ...&quot;]
-    R --&gt; I1[&quot;Внутренний узел: ~290 разделителей&lt;br/&gt;100 001, 100 368, 100 735, ...&quot;]
-    R --&gt; I2[&quot;Внутренний узел&quot;]
-    I1 --&gt; L1[&quot;Лист: ключи 100 001 ... 100 367&lt;br/&gt;каждый со ссылкой на строку&quot;]
-    I1 --&gt; L2[&quot;Лист: ключи 100 368 ... 100 734&quot;]
+<div class="hl" data-lang="Mermaid"><div class="hl-bar"><span>Mermaid</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>flowchart TB
+    R["Корень: 10 разделителей&lt;br/&gt;..., 100 001, 200 001, ..."]
+    R --&gt; I1["Внутренний узел: ~290 разделителей&lt;br/&gt;100 001, 100 368, 100 735, ..."]
+    R --&gt; I2["Внутренний узел"]
+    I1 --&gt; L1["Лист: ключи 100 001 ... 100 367&lt;br/&gt;каждый со ссылкой на строку"]
+    I1 --&gt; L2["Лист: ключи 100 368 ... 100 734"]
     L1 &lt;--&gt; L2
-</code></pre>
+</code></pre></div>
+
 <p>Поиск ключа идёт сверху вниз. СУБД читает корень, двоичным поиском находит среди разделителей нужный промежуток и переходит по ссылке на дочернюю страницу, и так до листа. В листе она находит ключ и ссылку на строку, а если нужен диапазон, идёт дальше по цепочке листьев. Каждый уровень стоит одного чтения страницы, но верхние уровни дерева малы и почти всегда лежат в буферном кэше, так что с диска обычно читается только лист и страница со строкой.</p>
 <h3 id="57-высота-b-дерева">5.7 Высота B-дерева</h3>
 <p>Высота B-дерева (<em>tree height</em>) — это число уровней от корня до листьев, то есть число страниц, которые нужно прочитать, чтобы найти один ключ. Она растёт логарифмически с основанием, равным ветвлению: каждый новый уровень умножает вместимость дерева на число ссылок в узле. Поэтому высоту можно посчитать заранее, зная размер страницы и размер записи индекса.</p>
@@ -701,25 +710,26 @@ https://doi.org/10.1145/356770.356776">Comer, 1979</a>). Сегодня упор
 <p>Таблица показывает потолок, при котором внутренние страницы заполнены полностью. Когда PostgreSQL строит индекс, он заполняет внутренние страницы только на 70% (<code>BTREE_NONLEAF_FILLFACTOR</code>), и в них оказывается около 274 ссылок, а не 400. Поэтому у свежего индекса три уровня вмещают около 27 млн ключей, а не 59 млн. На вывод это не влияет: высота растёт логарифмически, и даже при таком заполнении миллиарду ключей хватает четырёх уровней.</p>
 <p>Отсюда и утверждение, которое любят на собеседованиях: чтобы найти одну строку среди миллиарда, B-дереву хватает трёх-четырёх уровней. Для миллиарда ключей листьев нужно около 2,7 млн, то есть 21 ГиБ, над ними около 6 800 внутренних страниц, над ними 17, и один корень: четыре уровня. Три верхних уровня занимают около 7 тыс. страниц, примерно 53 МиБ, и всегда лежат в памяти, поэтому поиск одной строки стоит одного чтения листа с диска и одного чтения страницы с самой строкой. У InnoDB страница вдвое больше, 16 КиБ, поэтому ветвление внутренних узлов по ключу <code>bigint</code> составляет порядка тысячи, но в листьях лежат целые строки, и их в лист помещается меньше; высота для миллиарда строк получается те же три-четыре уровня.</p>
 <p>Проверить расчёт можно на таблице <code>operation</code> из 5.2 функцией <code>bt_metap</code> расширения <code>pageinspect</code>, которая читает служебную страницу индекса:</p>
-<pre><code class="language-sql">SELECT root, level FROM bt_metap('operation_pkey');
---  root | level
--- ------+-------
---   412 |     2
+<div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">SELECT</span> <span class="n">root</span><span class="p">,</span> <span class="k">level</span> <span class="k">FROM</span> <span class="n">bt_metap</span><span class="p">(</span><span class="s1">'operation_pkey'</span><span class="p">);</span>
+<span class="c1">--  root | level</span>
+<span class="c1">-- ------+-------</span>
+<span class="c1">--   412 |     2</span>
 
-SELECT btpo_level, count(*)
-FROM generate_series(1, (pg_relation_size('operation_pkey')/8192 - 1)::int) b,
-     LATERAL bt_page_stats('operation_pkey', b)
-GROUP BY btpo_level ORDER BY 1;
---  btpo_level | count
--- ------------+-------
---           0 |  2733     -- листья, в среднем 367 записей
---           1 |    10     -- внутренние узлы
---           2 |     1     -- корень, 10 ссылок
+<span class="k">SELECT</span> <span class="n">btpo_level</span><span class="p">,</span> <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="k">FROM</span> <span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="s1">'operation_pkey'</span><span class="p">)</span><span class="o">/</span><span class="mi">8192</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)::</span><span class="nb">int</span><span class="p">)</span> <span class="n">b</span><span class="p">,</span>
+     <span class="k">LATERAL</span> <span class="n">bt_page_stats</span><span class="p">(</span><span class="s1">'operation_pkey'</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">btpo_level</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="mi">1</span><span class="p">;</span>
+<span class="c1">--  btpo_level | count</span>
+<span class="c1">-- ------------+-------</span>
+<span class="c1">--           0 |  2733     -- листья, в среднем 367 записей</span>
+<span class="c1">--           1 |    10     -- внутренние узлы</span>
+<span class="c1">--           2 |     1     -- корень, 10 ссылок</span>
 
-EXPLAIN (ANALYZE, BUFFERS, COSTS OFF) SELECT * FROM operation WHERE id = 523456;
---  Index Scan using operation_pkey on operation (actual time=0.397..0.399 rows=1 loops=1)
---    Buffers: shared hit=3 read=1
-</code></pre>
+<span class="k">EXPLAIN</span> <span class="p">(</span><span class="k">ANALYZE</span><span class="p">,</span> <span class="n">BUFFERS</span><span class="p">,</span> <span class="n">COSTS</span> <span class="k">OFF</span><span class="p">)</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">operation</span> <span class="k">WHERE</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">523456</span><span class="p">;</span>
+<span class="c1">--  Index Scan using operation_pkey on operation (actual time=0.397..0.399 rows=1 loops=1)</span>
+<span class="c1">--    Buffers: shared hit=3 read=1</span>
+</code></pre></div>
+
 <p>Расчёт подтверждён на PostgreSQL 18.6 и миллионе ключей <code>bigint</code>, а функция <code>bt_page_stats</code> показала заполнение каждого уровня.<sup id="fnref:b16-3"><a class="footnote-ref" href="#fn:b16-3" data-tip="Сноска: Запуск автора: Docker, образ postgres:18 (18.6), расширение pageinspect. Скрипт — labs/db-basics/btree.sql, вывод — labs/db-basics/s16-btree-18.txt. Правило деления страницы в прав…">5</a></sup> Корень — страница 412, <code>level = 2</code>, то есть три уровня. Листьев 2733, и в каждом ровно 367 записей: это 90% от вместимости, по умолчанию <code>fillfactor</code> листьев B-дерева. Внутренних страниц 10, в среднем по 274 ссылки (70%), в корне 10 ссылок. Такое заполнение получилось у индекса, который вырос вставками монотонного ключа, и не изменилось после <code>REINDEX</code>: при вставке в правый край PostgreSQL делит страницу по тем же долям, что и при построении индекса, поэтому числа из абзаца выше относятся и к таблицам, растущим обычной вставкой.</p>
 <p>Уровень корня равен 2, то есть дерево из миллиона ключей имеет три уровня: корень, 10 внутренних узлов и 2 733 листа, в среднем по 367 записей в листе, в точности как в расчёте. Корень заполнен всего на 10 ссылок из примерно 400 возможных, поэтому четвёртый уровень появится, только когда таблица вырастет примерно в 40 раз. Поиск одной строки прочитал ровно четыре страницы: корень, внутренний узел, лист индекса и страницу кучи со строкой. Три из них уже были в буферном кэше (<code>hit=3</code>), одна пришла с диска или из страничного кэша ОС (<code>read=1</code>).</p>
 <h3 id="58-вставка-в-b-дерево-и-разделение-страницы">5.8 Вставка в B-дерево и разделение страницы</h3>
@@ -738,13 +748,14 @@ https://doi.org/10.1007/s002360050048">O'Neil et al., 1996</a>). Задача, �
 <li><strong>SSTable.</strong> Когда memtable дорастает до заданного размера, СУБД замораживает её, начинает новую, а замороженную записывает на диск как SSTable (<em>sorted string table</em>, отсортированная таблица строк): неизменяемый файл, в котором записи лежат по порядку ключей, а в конце есть небольшой индекс блоков и фильтр Блума (5.11). После этого журнал для этой части данных больше не нужен.</li>
 <li><strong>Уплотнение.</strong> SSTable-файлов со временем становится много, и фоновый процесс уплотнения (5.10) сливает их в более крупные, выбрасывая устаревшие версии и удалённые ключи.</li>
 </ol>
-<pre><code class="language-mermaid">flowchart LR
-    W[&quot;Запись&quot;] --&gt; J[&quot;Журнал (WAL)&quot;]
-    W --&gt; M[&quot;Memtable в памяти&lt;br/&gt;(отсортирована)&quot;]
-    M --&gt;|&quot;сброс при заполнении&quot;| L0[&quot;Уровень 0:&lt;br/&gt;SSTable, SSTable, SSTable&quot;]
-    L0 --&gt;|&quot;уплотнение&quot;| L1[&quot;Уровень 1:&lt;br/&gt;SSTable без пересечений&quot;]
-    L1 --&gt;|&quot;уплотнение&quot;| L2[&quot;Уровень 2:&lt;br/&gt;в 10 раз больше&quot;]
-</code></pre>
+<div class="hl" data-lang="Mermaid"><div class="hl-bar"><span>Mermaid</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>flowchart LR
+    W["Запись"] --&gt; J["Журнал (WAL)"]
+    W --&gt; M["Memtable в памяти&lt;br/&gt;(отсортирована)"]
+    M --&gt;|"сброс при заполнении"| L0["Уровень 0:&lt;br/&gt;SSTable, SSTable, SSTable"]
+    L0 --&gt;|"уплотнение"| L1["Уровень 1:&lt;br/&gt;SSTable без пересечений"]
+    L1 --&gt;|"уплотнение"| L2["Уровень 2:&lt;br/&gt;в 10 раз больше"]
+</code></pre></div>
+
 <p>Изменение и удаление в LSM-дереве тоже оказываются вставками. Новое значение ключа просто записывается как более свежая версия, а удаление записывается как специальная пометка, которую называют надгробием (<em>tombstone</em>). Старые версии и сам ключ физически исчезают только при уплотнении, когда слияние встречает надгробие и более старые версии под ним.</p>
 <p>Чтение в LSM-дереве дороже, чем в B-дереве, и в этом главная цена структуры. Ключ может лежать в memtable, в любом из SSTable уровня 0 или на любом из нижних уровней, и самое свежее значение находится в самом новом из них. Поэтому СУБД ищет ключ сначала в memtable, затем в SSTable-файлах от новых к старым и останавливается на первом найденном. Без дополнительных ухищрений одно точечное чтение обошло бы десятки файлов, и чтобы этого не случилось, у каждого SSTable есть фильтр Блума, а уплотнение держит число файлов под контролем.</p>
 <p>На LSM-деревьях построены встраиваемые движки LevelDB и RocksDB, Apache Cassandra и ScyllaDB, HBase, движок vinyl в Tarantool, хранилище MyRocks для MySQL и слой хранения многих распределённых SQL-баз: CockroachDB использует движок Pebble, написанный по образцу RocksDB. Ближайший родственник LSM-дерева среди аналитических СУБД — семейство движков MergeTree в ClickHouse. Там нет memtable: каждая вставка сразу становится на диске отдельной отсортированной частью (<em>part</em>), а фоновые слияния объединяют части в более крупные, как уплотнение объединяет SSTable. Отсюда и совет ClickHouse вставлять данные крупными пачками, а не по одной строке: каждая мелкая вставка создаёт часть, которую потом придётся сливать (глава 25, <code>25-analytics-olap.md</code>, раздел 3).</p>
@@ -1270,78 +1281,84 @@ https://postgrespro.ru/products/postgrespro/enterprise">Postgres Pro Enterprise<
 <p>Диагностика базы данных — это набор команд и проверок, которыми подтверждают или опровергают гипотезу о том, какой из механизмов этой главы стал причиной проблемы. Команды ниже сгруппированы по механизмам: физическое хранение, индексы и планы, буферный кэш и контрольные точки, репликация, LSM-хранилища и хранилища в памяти. Большинство примеров даны для PostgreSQL, потому что он основная OLTP-база в книге, но для каждой другой СУБД есть свой аналог, и там, где он важен, приведён и он.</p>
 <h3 id="121-физическое-хранение">12.1 Физическое хранение</h3>
 <p>Диагностика физического хранения отвечает на вопрос, сколько места занимают таблицы и индексы, насколько плотно заполнены страницы и нет ли разбухания от мёртвых версий строк. Начинать разбор медленной таблицы стоит именно с этого, потому что объём, который читает запрос, определяет его время сильнее, чем что-либо ещё.</p>
-<pre><code class="language-sql">-- Размеры таблицы, её индексов и TOAST
-SELECT relname,
-       pg_size_pretty(pg_relation_size(oid))        AS heap,
-       pg_size_pretty(pg_indexes_size(oid))         AS indexes,
-       pg_size_pretty(pg_total_relation_size(oid))  AS total
-FROM pg_class WHERE relname = 'operation';
+<div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- Размеры таблицы, её индексов и TOAST</span>
+<span class="k">SELECT</span> <span class="n">relname</span><span class="p">,</span>
+       <span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="n">oid</span><span class="p">))</span>        <span class="k">AS</span> <span class="n">heap</span><span class="p">,</span>
+       <span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_indexes_size</span><span class="p">(</span><span class="n">oid</span><span class="p">))</span>         <span class="k">AS</span> <span class="n">indexes</span><span class="p">,</span>
+       <span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="n">oid</span><span class="p">))</span>  <span class="k">AS</span> <span class="n">total</span>
+<span class="k">FROM</span> <span class="n">pg_class</span> <span class="k">WHERE</span> <span class="n">relname</span> <span class="o">=</span> <span class="s1">'operation'</span><span class="p">;</span>
 
--- Мёртвые версии строк и время последней очистки
-SELECT relname, n_live_tup, n_dead_tup, last_autovacuum, last_autoanalyze
-FROM pg_stat_user_tables ORDER BY n_dead_tup DESC LIMIT 10;
+<span class="c1">-- Мёртвые версии строк и время последней очистки</span>
+<span class="k">SELECT</span> <span class="n">relname</span><span class="p">,</span> <span class="n">n_live_tup</span><span class="p">,</span> <span class="n">n_dead_tup</span><span class="p">,</span> <span class="n">last_autovacuum</span><span class="p">,</span> <span class="n">last_autoanalyze</span>
+<span class="k">FROM</span> <span class="n">pg_stat_user_tables</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">n_dead_tup</span> <span class="k">DESC</span> <span class="k">LIMIT</span> <span class="mi">10</span><span class="p">;</span>
 
--- Плотность индекса (расширение pgstattuple): ниже ~70% — повод разбираться
-SELECT avg_leaf_density, leaf_fragmentation FROM pgstatindex('operation_pkey');
+<span class="c1">-- Плотность индекса (расширение pgstattuple): ниже ~70% — повод разбираться</span>
+<span class="k">SELECT</span> <span class="n">avg_leaf_density</span><span class="p">,</span> <span class="n">leaf_fragmentation</span> <span class="k">FROM</span> <span class="n">pgstatindex</span><span class="p">(</span><span class="s1">'operation_pkey'</span><span class="p">);</span>
 
--- Высота B-дерева и заполнение страницы (расширение pageinspect)
-SELECT level FROM bt_metap('operation_pkey');
-SELECT lower, upper FROM page_header(get_raw_page('operation', 0));
-</code></pre>
+<span class="c1">-- Высота B-дерева и заполнение страницы (расширение pageinspect)</span>
+<span class="k">SELECT</span> <span class="k">level</span> <span class="k">FROM</span> <span class="n">bt_metap</span><span class="p">(</span><span class="s1">'operation_pkey'</span><span class="p">);</span>
+<span class="k">SELECT</span> <span class="k">lower</span><span class="p">,</span> <span class="k">upper</span> <span class="k">FROM</span> <span class="n">page_header</span><span class="p">(</span><span class="n">get_raw_page</span><span class="p">(</span><span class="s1">'operation'</span><span class="p">,</span> <span class="mi">0</span><span class="p">));</span>
+</code></pre></div>
+
 <p>Если <code>n_dead_tup</code> сравним с <code>n_live_tup</code>, а <code>last_autovacuum</code> давно, очистка не успевает или что-то держит горизонт очистки; разбор причин — в главе 17 (<code>17-postgresql-internals.md</code>), раздел 4. Если плотность индекса низкая, а ключ случайный, причина скорее всего в порядке вставки (5.5).</p>
 <h3 id="122-индексы-и-планы">12.2 Индексы и планы</h3>
 <p>Диагностика индексов и планов отвечает на два вопроса: использует ли основной запрос нужный индекс и какие индексы не использует никто. Оба вопроса решаются по фактам, а не по догадкам: план показывает команда <code>EXPLAIN</code>, а использование индексов накапливается в статистике СУБД, и ниже приведены запросы к обоим источникам.</p>
-<pre><code class="language-sql">-- План с фактическим числом строк и прочитанных страниц
-EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM operation
-WHERE account_id = 42 AND created_at &gt;= now() - interval '30 days';
+<div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- План с фактическим числом строк и прочитанных страниц</span>
+<span class="k">EXPLAIN</span> <span class="p">(</span><span class="k">ANALYZE</span><span class="p">,</span> <span class="n">BUFFERS</span><span class="p">)</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">operation</span>
+<span class="k">WHERE</span> <span class="n">account_id</span> <span class="o">=</span> <span class="mi">42</span> <span class="k">AND</span> <span class="n">created_at</span> <span class="o">&gt;=</span> <span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="nb">interval</span> <span class="s1">'30 days'</span><span class="p">;</span>
 
--- Индексы, которые не использовались с момента сброса статистики
-SELECT relname, indexrelname, idx_scan, pg_size_pretty(pg_relation_size(indexrelid))
-FROM pg_stat_user_indexes WHERE idx_scan = 0 ORDER BY pg_relation_size(indexrelid) DESC;
+<span class="c1">-- Индексы, которые не использовались с момента сброса статистики</span>
+<span class="k">SELECT</span> <span class="n">relname</span><span class="p">,</span> <span class="n">indexrelname</span><span class="p">,</span> <span class="n">idx_scan</span><span class="p">,</span> <span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="n">indexrelid</span><span class="p">))</span>
+<span class="k">FROM</span> <span class="n">pg_stat_user_indexes</span> <span class="k">WHERE</span> <span class="n">idx_scan</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">pg_relation_size</span><span class="p">(</span><span class="n">indexrelid</span><span class="p">)</span> <span class="k">DESC</span><span class="p">;</span>
 
--- Самые тяжёлые запросы по суммарному времени (расширение pg_stat_statements)
-SELECT calls, round(total_exec_time) AS total_ms, shared_blks_read, left(query, 80)
-FROM pg_stat_statements ORDER BY total_exec_time DESC LIMIT 10;
-</code></pre>
+<span class="c1">-- Самые тяжёлые запросы по суммарному времени (расширение pg_stat_statements)</span>
+<span class="k">SELECT</span> <span class="n">calls</span><span class="p">,</span> <span class="n">round</span><span class="p">(</span><span class="n">total_exec_time</span><span class="p">)</span> <span class="k">AS</span> <span class="n">total_ms</span><span class="p">,</span> <span class="n">shared_blks_read</span><span class="p">,</span> <span class="k">left</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="mi">80</span><span class="p">)</span>
+<span class="k">FROM</span> <span class="n">pg_stat_statements</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">total_exec_time</span> <span class="k">DESC</span> <span class="k">LIMIT</span> <span class="mi">10</span><span class="p">;</span>
+</code></pre></div>
+
 <p>В плане смотрят на три вещи: вид доступа к таблице (<code>Seq Scan</code> против <code>Index Scan</code>), расхождение оценки строк (<code>rows</code> в оценке) с фактом (<code>actual rows</code>) и число страниц в строке <code>Buffers</code>. Расхождение оценки с фактом в десятки раз указывает на устаревшую статистику, а большое число <code>read</code> при малом результате — на то, что индекс не подходит под запрос. Чтение планов подробно разобрано в главе 17 (<code>17-postgresql-internals.md</code>), раздел 7.</p>
 <h3 id="123-буферный-кэш-и-контрольные-точки">12.3 Буферный кэш и контрольные точки</h3>
 <p>Диагностика буферного кэша и контрольных точек отвечает на вопрос, обслуживаются ли горячие данные из памяти и не мешает ли фоновая запись страниц основной нагрузке. Резкое падение доли попаданий в кэш во время инцидента почти всегда указывает на запрос, который читает много холодных данных.</p>
-<pre><code class="language-sql">-- Доля чтений страниц таблиц из буферного кэша
-SELECT relname, heap_blks_hit, heap_blks_read,
-       round(100.0 * heap_blks_hit / nullif(heap_blks_hit + heap_blks_read, 0), 2) AS hit_pct
-FROM pg_statio_user_tables ORDER BY heap_blks_read DESC LIMIT 10;
+<div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- Доля чтений страниц таблиц из буферного кэша</span>
+<span class="k">SELECT</span> <span class="n">relname</span><span class="p">,</span> <span class="n">heap_blks_hit</span><span class="p">,</span> <span class="n">heap_blks_read</span><span class="p">,</span>
+       <span class="n">round</span><span class="p">(</span><span class="mi">100</span><span class="p">.</span><span class="mi">0</span> <span class="o">*</span> <span class="n">heap_blks_hit</span> <span class="o">/</span> <span class="k">nullif</span><span class="p">(</span><span class="n">heap_blks_hit</span> <span class="o">+</span> <span class="n">heap_blks_read</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span> <span class="k">AS</span> <span class="n">hit_pct</span>
+<span class="k">FROM</span> <span class="n">pg_statio_user_tables</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">heap_blks_read</span> <span class="k">DESC</span> <span class="k">LIMIT</span> <span class="mi">10</span><span class="p">;</span>
 
--- Контрольные точки по расписанию и вынужденные (PostgreSQL до 16 включительно;
--- в 17 эти счётчики перенесены в pg_stat_checkpointer)
-SELECT checkpoints_timed, checkpoints_req FROM pg_stat_bgwriter;
-</code></pre>
+<span class="c1">-- Контрольные точки по расписанию и вынужденные (PostgreSQL до 16 включительно;</span>
+<span class="c1">-- в 17 эти счётчики перенесены в pg_stat_checkpointer)</span>
+<span class="k">SELECT</span> <span class="n">checkpoints_timed</span><span class="p">,</span> <span class="n">checkpoints_req</span> <span class="k">FROM</span> <span class="n">pg_stat_bgwriter</span><span class="p">;</span>
+</code></pre></div>
+
 <p>Доля попаданий считается накопительно с момента сброса статистики, поэтому смотреть её надо как скорость изменения в метриках, а не как одно число. Если вынужденных контрольных точек (<code>checkpoints_req</code>) много по сравнению с плановыми, журнал за интервал превышает <code>max_wal_size</code>, и его стоит увеличить. В InnoDB аналогичные сведения дают <code>SHOW ENGINE INNODB STATUS</code> (раздел <code>BUFFER POOL AND MEMORY</code>) и счётчики <code>SHOW GLOBAL STATUS LIKE 'Innodb_buffer_pool_read%'</code>, где <code>Innodb_buffer_pool_reads</code> считает чтения, которым пришлось идти на диск.</p>
 <h3 id="124-репликация">12.4 Репликация</h3>
 <p>Диагностика репликации отвечает на вопрос, насколько реплики отстают от ведущего и какие из них синхронные. Эти сведения должны быть в мониторинге постоянно, потому что после переключения их уже не восстановить, а именно по ним решают, можно ли безопасно переключиться на конкретную реплику. Ниже запросы для ведущего и для реплики PostgreSQL и их аналоги в Redis и Tarantool.</p>
-<pre><code class="language-sql">-- На ведущем: состояние каждой реплики и задержки по этапам
-SELECT application_name, state, sync_state,
-       write_lag, flush_lag, replay_lag,
-       pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn) AS replay_bytes_behind
-FROM pg_stat_replication;
+<div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- На ведущем: состояние каждой реплики и задержки по этапам</span>
+<span class="k">SELECT</span> <span class="n">application_name</span><span class="p">,</span> <span class="k">state</span><span class="p">,</span> <span class="n">sync_state</span><span class="p">,</span>
+       <span class="n">write_lag</span><span class="p">,</span> <span class="n">flush_lag</span><span class="p">,</span> <span class="n">replay_lag</span><span class="p">,</span>
+       <span class="n">pg_wal_lsn_diff</span><span class="p">(</span><span class="n">pg_current_wal_lsn</span><span class="p">(),</span> <span class="n">replay_lsn</span><span class="p">)</span> <span class="k">AS</span> <span class="n">replay_bytes_behind</span>
+<span class="k">FROM</span> <span class="n">pg_stat_replication</span><span class="p">;</span>
 
--- На реплике: время последней применённой транзакции
-SELECT now() - pg_last_xact_replay_timestamp() AS replay_delay;
-</code></pre>
+<span class="c1">-- На реплике: время последней применённой транзакции</span>
+<span class="k">SELECT</span> <span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">pg_last_xact_replay_timestamp</span><span class="p">()</span> <span class="k">AS</span> <span class="n">replay_delay</span><span class="p">;</span>
+</code></pre></div>
+
 <p>Столбец <code>sync_state</code> показывает, синхронная реплика (<code>sync</code>, <code>quorum</code>) или асинхронная (<code>async</code>). Если синхронных реплик нет, а переключение автоматическое, конфигурация допускает потерю подтверждённых транзакций (10.3). Запрос на реплике даёт завышенную задержку, когда на ведущем нет новых транзакций, поэтому его показания надо читать вместе с нагрузкой на ведущем. В Redis то же показывает <code>INFO replication</code> (смещения <code>master_repl_offset</code> и <code>slave_repl_offset</code>), в Tarantool — <code>box.info.replication</code> с полями <code>lag</code> и <code>status</code> у каждой реплики.</p>
 <h3 id="125-lsm-хранилища-и-хранилища-в-памяти">12.5 LSM-хранилища и хранилища в памяти</h3>
 <p>Диагностика LSM-хранилищ и хранилищ в памяти отвечает на вопросы, успевает ли уплотнение за записью и как хранилище переживёт перезапуск. Это разные вопросы для разных систем, но оба про то, что происходит в фоне и не видно по задержке отдельного запроса, пока не становится поздно.</p>
-<pre><code class="language-bash"># Cassandra: очередь уплотнений, число SSTable и размер разделов
+<div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Cassandra: очередь уплотнений, число SSTable и размер разделов</span>
 nodetool compactionstats
 nodetool tablestats bank.customer_events
-nodetool tablehistograms bank customer_events   # столбец SSTables: сколько файлов читает запрос
+nodetool tablehistograms bank customer_events   <span class="c1"># столбец SSTables: сколько файлов читает запрос</span>
 
-# Redis / Valkey: состояние снимков и журнала AOF
-redis-cli INFO persistence    # rdb_last_bgsave_status, aof_enabled, aof_last_write_status
-</code></pre>
-<pre><code class="language-lua">-- Tarantool: память движка memtx и состояние реплик
-box.slab.info()          -- quota_used_ratio близко к 100% — память на исходе
-box.info.replication     -- lag и status для каждой реплики
-</code></pre>
+<span class="c1"># Redis / Valkey: состояние снимков и журнала AOF</span>
+redis-cli INFO persistence    <span class="c1"># rdb_last_bgsave_status, aof_enabled, aof_last_write_status</span>
+</code></pre></div>
+
+<div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- Tarantool: память движка memtx и состояние реплик</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">slab</span><span class="p">.</span><span class="nf">info</span><span class="p">()</span>          <span class="c1">-- quota_used_ratio близко к 100% — память на исходе</span>
+<span class="nv">box</span><span class="p">.</span><span class="py">info</span><span class="p">.</span><span class="py">replication</span>     <span class="c1">-- lag и status для каждой реплики</span>
+</code></pre></div>
+
 <p>Для Cassandra тревожные признаки — растущая очередь в <code>compactionstats</code> и высокие процентили числа SSTable на чтение в <code>tablehistograms</code>. Для Redis — ошибка в <code>rdb_last_bgsave_status</code> или <code>aof_last_write_status</code>, означающая, что данные давно не сохранялись. Для Tarantool — <code>quota_used_ratio</code> близко к 100%: вставки скоро начнут получать ошибку выделения памяти.</p>
 <h3 id="126-контрольный-список-при-выборе-субд">12.6 Контрольный список при выборе СУБД</h3>
 <p>Контрольный список при выборе СУБД — это вопросы из раздела 8, сведённые в форму, которую удобно пройти на архитектурном обсуждении до того, как решение принято. Если на какой-то вопрос нет ответа, это не повод отложить список, а повод найти ответ до выбора.</p>
