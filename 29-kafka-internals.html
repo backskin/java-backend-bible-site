@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть VI. Интеграции и сообщения</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/29.svg" width="48" height="48" alt="" loading="lazy">29. Apache Kafka изнутри</h1><div class="meta"><span class="part-tag">Часть VI. Интеграции и сообщения</span><span>72 748 слов</span><span>≈ 6 ч 45 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/29.svg" width="48" height="48" alt="" loading="lazy">29. Apache Kafka изнутри</h1><div class="meta"><span class="part-tag">Часть VI. Интеграции и сообщения</span><span>74 931 слов</span><span>≈ 6 ч 55 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>В финтехе Kafka служит шиной, на которой держатся платежи, антифрод, нотификации и аналитика, поэтому её отказ или тихая потеря сообщений обходится дороже, чем падение любого отдельного сервиса. При этом в большинстве инцидентов с Kafka виноват клиент: разработчик не понимает, как он себя ведёт, и ставит <code>acks=all</code> без <code>min.insync.replicas</code>, фиксирует смещение до обработки, ловит бесконечную перебалансировку из-за <code>max.poll.interval.ms</code> или получает дубли после переназначения партиций. На интервью про Kafka спрашивают почти всегда, и проверяют при этом не знание конфигов, а понимание того, что Kafka — это реплицируемый лог с гарантиями на уровне партиции, а не «очередь с галочкой exactly-once». Эта глава посвящена механике: как байты ложатся на диск, по какому правилу лидер считает запись зафиксированной и какие сочетания настроек действительно приводят к потере данных.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">19 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-kafka-как-распределённый-журнал" data-tip="Раздел этой главы: 1. Kafka как распределённый журнал">1. Kafka как распределённый журнал</a></li><li><a href="#2-устройство-брокера-партиции-сегменты-страничный-кэш" data-tip="Раздел этой главы: 2. Устройство брокера: партиции, сегменты, страничный кэш">2. Устройство брокера: партиции, сегменты, страничный кэш</a></li><li><a href="#3-kraft-кворум-контроллеров-вместо-zookeeper" data-tip="Раздел этой главы: 3. KRaft: кворум контроллеров вместо ZooKeeper">3. KRaft: кворум контроллеров вместо ZooKeeper</a></li><li><a href="#4-репликация-и-сохранность-данных" data-tip="Раздел этой главы: 4. Репликация и сохранность данных">4. Репликация и сохранность данных</a></li><li><a href="#5-производитель-путь-записи-пакетирование-идемпотентность-транзакции" data-tip="Раздел этой главы: 5. Производитель: путь записи, пакетирование, идемпотентность, транзакции">5. Производитель: путь записи, пакетирование, идемпотентность, транзакции</a></li><li><a href="#6-потребитель-группы-перебалансировка-смещения" data-tip="Раздел этой главы: 6. Потребитель: группы, перебалансировка, смещения">6. Потребитель: группы, перебалансировка, смещения</a></li><li><a href="#7-гарантии-доставки" data-tip="Раздел этой главы: 7. Гарантии доставки">7. Гарантии доставки</a></li><li><a href="#8-retention-и-compaction" data-tip="Раздел этой главы: 8. Retention и compaction">8. Retention и compaction</a></li><li><a href="#9-схемы-schema-registry-и-эволюция" data-tip="Раздел этой главы: 9. Схемы: Schema Registry и эволюция">9. Схемы: Schema Registry и эволюция</a></li><li><a href="#10-kafka-streams-ksqldb-и-connect" data-tip="Раздел этой главы: 10. Kafka Streams, ksqlDB и Connect">10. Kafka Streams, ksqlDB и Connect</a></li><li><a href="#11-spring-kafka-на-практике" data-tip="Раздел этой главы: 11. Spring Kafka на практике">11. Spring Kafka на практике</a></li><li><a href="#12-эксплуатация" data-tip="Раздел этой главы: 12. Эксплуатация">12. Эксплуатация</a></li><li><a href="#13-производительность-и-тюнинг" data-tip="Раздел этой главы: 13. Производительность и тюнинг">13. Производительность и тюнинг</a></li><li><a href="#14-разобранные-инциденты" data-tip="Раздел этой главы: 14. Разобранные инциденты">14. Разобранные инциденты</a></li><li><a href="#15-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 15. Ошибки и антипаттерны">15. Ошибки и антипаттерны</a></li><li><a href="#16-диагностика" data-tip="Раздел этой главы: 16. Диагностика">16. Диагностика</a></li><li><a href="#17-вопросы-на-интервью" data-tip="Раздел этой главы: 17. Вопросы на интервью">17. Вопросы на интервью</a></li><li><a href="#18-попробовать-руками" data-tip="Раздел этой главы: 18. Попробовать руками">18. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
@@ -5543,6 +5543,172 @@ java -jar jmxterm.jar -l localhost:9999 -n -v silent <span class="s">&lt;&lt;'CM
 <span class="p">}</span>
 </code></pre></div>
 <p>Третий блок — готовый аудит из инцидента 14.6. Запускать его стоит регулярно, а не после аварии.</p>
+<h3 id="1612-журналы-брокера-и-контроллера">16.12 Журналы брокера и контроллера</h3>
+<p>Журналы брокера — это текстовые файлы, в которые брокер и контроллер Kafka пишут о своих решениях: кто стал лидером, кого огородили, кого убрали из ISR, кто вступил в группу и кому отказали в доступе. Метрики (16.6) показывают, что что-то изменилось, а журнал отвечает, что именно и в каком порядке. Ниже по стенду <code>labs/kafka-cluster3</code> на Kafka 4.3.1 разобрано, какие файлы создаёт образ <code>apache/kafka</code>, как меняются уровни, как в журналах выглядят восемь типовых событий, что искать при инцидентах из раздела 14 и как собирать эти журналы в Kubernetes.<sup id="fnref:b29-logs"><a class="footnote-ref" href="#fn:b29-logs" data-tip="Сноска: Опыты labs/kafka-cluster3/logs_lab.sh (сценарии failover, isr, isrlag, controller, rebalance, quota, unclean, unclean2) и standalone_lab.sh (acl, disk), 2026-10-30: kind, три узла …">52</a></sup></p>
+<p><strong>Файлы.</strong> Брокер в образе <code>apache/kafka:4.3.1</code> запускается с <code>-Dkafka.logs.dir=/opt/kafka/logs</code> и <code>-Dlog4j2.configurationFile=/opt/kafka/config/log4j2.yaml</code>, и в каталоге журналов на стенде оказалось семь файлов:</p>
+<table class="rt">
+<thead>
+<tr>
+<th>Файл</th>
+<th>Логгер и уровень по умолчанию</th>
+<th>Что туда пишется</th>
+<th>Попадает в stdout</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td data-label="Файл"><code>server.log</code></td>
+<td data-label="Логгер и уровень по умолчанию">корневой, INFO</td>
+<td data-label="Что туда пишется">всё, что не выделено в свой файл: ISR партиций (<code>kafka.cluster.Partition</code>), координатор групп, репликация, Raft, журнал сегментов</td>
+<td data-label="Попадает в stdout">да</td>
+</tr>
+<tr>
+<td data-label="Файл"><code>controller.log</code></td>
+<td data-label="Логгер и уровень по умолчанию"><code>org.apache.kafka.controller</code>, INFO</td>
+<td data-label="Что туда пишется">решения контроллера: огораживание брокеров, смена лидеров, unclean-выборы, применённые записи метаданных</td>
+<td data-label="Попадает в stdout">нет</td>
+</tr>
+<tr>
+<td data-label="Файл"><code>state-change.log</code></td>
+<td data-label="Логгер и уровень по умолчанию"><code>state.change.logger</code>, INFO</td>
+<td data-label="Что туда пишется">переходы партиций каждого брокера в лидеры и последователи</td>
+<td data-label="Попадает в stdout">нет</td>
+</tr>
+<tr>
+<td data-label="Файл"><code>kafka-request.log</code></td>
+<td data-label="Логгер и уровень по умолчанию"><code>kafka.request.logger</code> и <code>kafka.network.RequestChannel$</code>, WARN</td>
+<td data-label="Что туда пишется">каждый запрос к брокеру, если поднять уровень до DEBUG</td>
+<td data-label="Попадает в stdout">нет</td>
+</tr>
+<tr>
+<td data-label="Файл"><code>kafka-authorizer.log</code></td>
+<td data-label="Логгер и уровень по умолчанию"><code>kafka.authorizer.logger</code>, INFO</td>
+<td data-label="Что туда пишется">отказы в доступе на INFO, разрешения на DEBUG</td>
+<td data-label="Попадает в stdout">нет</td>
+</tr>
+<tr>
+<td data-label="Файл"><code>log-cleaner.log</code></td>
+<td data-label="Логгер и уровень по умолчанию"><code>LogCleaner</code>, <code>Cleaner</code>, <code>LogCleaner$CleanerThread</code>, INFO</td>
+<td data-label="Что туда пишется">работа потоков сжатия компактных топиков</td>
+<td data-label="Попадает в stdout">нет</td>
+</tr>
+<tr>
+<td data-label="Файл"><code>kafkaServer-gc.log</code></td>
+<td data-label="Логгер и уровень по умолчанию">не log4j: <code>-Xlog:gc*</code>, до 10 файлов по 100 МБ</td>
+<td data-label="Что туда пишется">паузы и циклы сборщика мусора</td>
+<td data-label="Попадает в stdout">нет</td>
+</tr>
+</tbody>
+</table>
+<p class="cap cap-t"><b>Таблица 29.42.</b> Файлы журналов брокера Kafka 4.3.1 в образе apache/kafka.</p>
+<p>Строка во всех файлах log4j имеет вид <code>[%d] %p %m (%c)</code>: время, уровень, сообщение и в скобках имя логгера. По имени логгера в конце строки удобно фильтровать, а префикс в квадратных скобках внутри сообщения, например <code>[QuorumController id=2]</code> или <code>[Partition logs.lag-0 broker=1]</code>, говорит, какой узел и какая партиция. Все файлы log4j ротируются раз в час, и в 08:00 рядом с <code>server.log</code> появились <code>server.log.2026-10-30-07</code>, <code>controller.log.2026-10-30-07</code> и <code>state-change.log.2026-10-30-07</code>. Правила удаления старых файлов в конфигурации образа нет, поэтому почасовые файлы копятся, пока их не удалит кто-то другой. Журнал сборщика мусора ограничен самой JVM десятью файлами.</p>
+<p>Авторы <em>Definitive Guide</em> советуют держать отдельно от основного журнала два логгера, контроллера и квот (<code>kafka.server.ClientQuotaManager</code>), а логгеры сжатия поднимать до DEBUG, потому что у потоков сжатия нет одной метрики здоровья и сбой на одной партиции может молча остановить их все.<sup id="fnref:b29-dg13log"><a class="footnote-ref" href="#fn:b29-dg13log" data-tip="Сноска: G. Shapira, T. Palino, R. Sivaram, K. Petty. Kafka: The Definitive Guide, 2nd ed. O&#x27;Reilly, 2022, гл. 13 «Monitoring», разд. «Logging».&amp;#160;&amp;#8617;">53</a></sup> В 4.x часть этого изменилась: файлы задаёт <code>log4j2.yaml</code> вместо <code>log4j.properties</code>, контроллер пишет под логгером <code>org.apache.kafka.controller</code>, а не <code>kafka.controller</code>, и о квотах на стенде не появилось ни одной строки ни на INFO, ни на DEBUG (это разобрано ниже).</p>
+<p><strong>Как менять уровни.</strong> Итоговый <code>log4j2.yaml</code> при старте собирает класс <code>kafka.docker.KafkaDockerWrapper</code> из шаблона <code>/etc/kafka/docker/log4j2.yaml</code>, файла <code>/mnt/shared/config/log4j2.yaml</code>, если он смонтирован, и переменных окружения. На стенде проверены две переменные: <code>KAFKA_LOG4J_ROOT_LOGLEVEL=WARN</code> меняет корневой уровень, а <code>KAFKA_LOG4J_LOGGERS="kafka.request.logger=DEBUG,org.apache.kafka.controller=DEBUG"</code> — уровни перечисленных логгеров. На работающем брокере уровень меняют без перезапуска:</p>
+<p class="cap cap-c"><b>Листинг 29.134.</b> Уровень логгера брокера на ходу: посмотреть, поднять, вернуть.</p><div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>kafka-configs.sh --bootstrap-server kc-0:9092 --entity-type broker-loggers --entity-name 1 --describe
+kafka-configs.sh --bootstrap-server kc-0:9092 --entity-type broker-loggers --entity-name 1 --alter --add-config kafka.request.logger=DEBUG
+kafka-configs.sh --bootstrap-server kc-0:9092 --entity-type broker-loggers --entity-name 1 --alter --delete-config kafka.request.logger
+</code></pre></div>
+<p><code>--entity-name</code> — это <code>node.id</code> брокера, и менять уровень нужно на каждом брокере отдельно. Уровень, заданный так, живёт до перезапуска: на стенде <code>kafka.request.logger</code> на брокере 1 подняли до DEBUG, брокер перезапустился, и после этого <code>--describe</code> снова показал WARN. Это удобно для расследования, потому что забытый DEBUG не переживёт следующий выкат, но и неудобно, если вы рассчитывали держать подробный журнал долго.</p>
+<p><strong>Как выглядят события.</strong> Каждое событие вызвано на стенде, а ниже приведены строки, по которым его узнают; длинные строки обрезаны.</p>
+<p class="cap cap-c"><b>Листинг 29.135.</b> Опыт 16.12: строки журналов брокера и контроллера при семи типовых событиях.</p><div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code># 1. Отказ брокера: последователи теряют соединение, контроллер огораживает брокер, лидеры переезжают
+kc-1 server.log:       WARN [ReplicaFetcher replicaId=2, leaderId=1, fetcherId=0] Connection to node 1 (kc-0…/10.244.1.12:9092) could not be established. Node may not be available.
+kc-1 controller.log:   INFO [QuorumController id=2] Fencing broker 3 at epoch 10 because its session has timed out.
+kc-1 controller.log:   INFO [QuorumController id=2] handleBrokerFenced: changing 193 partition(s)
+kc-0 state-change.log: INFO [Broker id=1] Leader pay.events-1 … starts at leader epoch 1 from offset 4568 … ISR [1,2] … Previous leader Some(3) …
+kc-1 controller.log:   INFO [QuorumController id=2] The request from broker 3 to unfence has been granted because it has caught up with the offset of its register broker record 10.
+# 2. Сжатие ISR: живой, но медленный последователь (процессор пода урезан до 20m, запись 5 МБ/с)
+kc-0 server.log:       INFO [Partition logs.lag-0 broker=1] Shrinking ISR from 1,3,2 to 1,2. Leader: (highWatermark: 305636, endOffset: 359231). Out of sync replicas: (brokerId: 3, endOffset: 305636, lastCaughtUpTimeMs: …).
+kc-0 server.log:       INFO [Partition logs.lag-0 broker=1] ISR updated to 1,3,2  and version updated to 2
+# 3. Смена активного контроллера KRaft
+kc-0 controller.log:   INFO [QuorumController id=1] In the new epoch 2, the leader is (none).
+kc-2 controller.log:   INFO [QuorumController id=3] Becoming the active controller at epoch 2, next write offset 11108.
+kc-2 controller.log:   INFO [QuorumController id=3] Activated periodic tasks: electPreferred, electUnclean, expireDelegationTokens, …
+# 4. Перебалансировка группы (классический протокол)
+kc-2 server.log:       INFO [GroupCoordinator id=3 topic=__consumer_offsets partition=27] Preparing to rebalance group logs-demo in state PreparingRebalance with old generation 1 (reason: Adding new member console-consumer-0a50… …)
+kc-2 server.log:       INFO [GroupCoordinator id=3 topic=__consumer_offsets partition=27] Stabilized group logs-demo generation 2 with 2 members.
+kc-2 server.log:       INFO [GroupCoordinator id=3 …] [Group logs-demo] Member console-consumer-0a50… has left group through explicit `LeaveGroup` request; client reason: the consumer is being closed
+# 5. Отказ в доступе (StandardAuthorizer, SASL/PLAIN)
+kafka-authorizer.log:  INFO Principal = User:alice is Denied operation = DESCRIBE from host = 127.0.0.1 on resource = Topic:LITERAL:pay.events for request = Metadata with resourceRefCount = 1 based on rule DefaultDeny
+kafka-authorizer.log:  DEBUG Principal = User:alice is Allowed operation = WRITE … for request = Produce … based on rule MatchingAcl(acl=StandardAcl[… principal=User:alice, … operation=WRITE, permissionType=ALLOW])
+# 6. Переполнение диска (каталог данных на tmpfs 48 МБ)
+server.log:            ERROR Error while appending records to pay.events-0 in dir /data/kafka-logs (org.apache.kafka.storage.internals.log.LogDirFailureChannel)
+server.log:            java.io.IOException: No space left on device
+server.log:            WARN [ReplicaManager broker=1] Stopping serving replicas in dir /data/kafka-logs with uuid Some(…) because the log directory has failed.
+server.log:            ERROR Shutdown broker because all log dirs in /data/kafka-logs have failed (kafka.log.LogManager)
+# 7. Unclean-выборы: лидер с единственной синхронной копией упал вместе с каталогом данных
+kc-2 controller.log:   INFO Setting new leader for topicId cCKO…, partition 0 to 2 using an unclean election. Previous partition: PartitionRegistration(replicas=[1, 2], … isr=[1], …)
+kc-2 controller.log:   INFO [QuorumController id=3] UNCLEAN partition change for logs.uncl-0 …: isr: [1] -&gt; [2], leader: 1 -&gt; 2, leaderRecoveryState: RECOVERED -&gt; RECOVERING, leaderEpoch: 0 -&gt; 1, …
+</code></pre></div>
+<p>К этим строкам нужны четыре пояснения. Первое касается отказа брокера: если упавший брокер жив, но не отвечает, контроллер огораживает его, когда истекает <code>broker.session.timeout.ms</code>, на стенде через 8–9 с после заморозки. В KRaft ISR при этом сжимает сам контроллер, и строки <code>Shrinking ISR</code> от лидера не бывает. Она появляется, когда последователь жив и шлёт heartbeat, но отстаёт дольше <code>replica.lag.time.max.ms</code>, как во втором событии. В той же строке видна ещё одна вещь: high watermark стоял на конце журнала медленной реплики, 305 636, то есть пока она числилась в ISR, потребители не видели 53 595 последних записей. Ограничение скорости репликации (<code>follower.replication.throttled.rate</code>) такого отставания не вызвало: оно не действует на реплики, которые уже в ISR, и процессор пришлось урезать по-настоящему.</p>
+<p>Второе пояснение относится к стенду без постоянного тома. Брокер, которого убили <code>kill -9</code>, вернулся с пустым каталогом данных, и контроллер увёл с него лидерство раньше, чем истекла сессия, строкой <code>offline-dir-assignment: changing 193 partition(s)</code>. Лидер кворума при этом записал <code>WARN … Detected non-monotonic update of fetch offset from nodeId … 8383 -&gt; 7690</code>: вернувшийся узел потерял журнал метаданных. В рабочем кластере с томами этих строк при обычном рестарте быть не должно, и если они есть, брокер потерял данные.</p>
+<p>Третье — о unclean-выборах в 4.x. В первом опыте лидера с единственной синхронной копией заморозили, и партиция осталась без лидера с пустым ISR и <code>Elr: 1</code>: Kafka 4.x по умолчанию ведёт список реплик, имеющих право стать лидером (<em>eligible leader replicas</em>, KIP-966), и не выбирает несинхронную реплику, пока кто-то из этого списка может вернуться. Даже при <code>unclean.leader.election.enable=true</code> контроллер написал <code>Periodic task electUnclean generated 0 records</code>, а когда брокер 1 разморозили, он снова стал лидером без потерь. Настоящие unclean-выборы случились, только когда брокер 1 пропал вместе с данными. Смещение конца партиции после них стало 0, то есть 100 записанных сообщений исчезли, а вернувшийся брокер получил <code>handleBrokerUncleanShutdown: changing 189 partition(s)</code>.</p>
+<p>Четвёртое — о квотах. Производитель с <code>client.id=quota-demo</code> и <code>producer_byte_rate=10240</code> упёрся в 10 КБ/с, средняя задержка записи выросла до 56 с, но ни в одном файле не появилось ни строки о квоте, в том числе после подъёма <code>kafka.server.ClientQuotaManager</code> до DEBUG. Превышение квоты видно в журнале запросов: у запросов PRODUCE этого клиента поле <code>throttleTimeMs</code> принимало значения 661, 4520 и 6524 мс. Ещё его видно на клиенте, в метрике <code>produce-throttle-time-avg</code>.</p>
+<p><strong>Журнал запросов на DEBUG.</strong> В 4.x каждая строка <code>kafka-request.log</code> — это JSON с заголовком запроса, самим запросом, ответом, адресом соединения, принципалом и разбивкой времени (<code>totalTimeMs</code>, <code>requestQueueTimeMs</code>, <code>localTimeMs</code>, <code>remoteTimeMs</code>, <code>throttleTimeMs</code>). В примере из <em>Definitive Guide</em> строка ещё имеет вид <code>RequestHeader(apiKey=PRODUCE, …)</code>.<sup id="fnref:b29-dg11"><a class="footnote-ref" href="#fn:b29-dg11" data-tip="Сноска: Там же, гл. 11 «Securing Kafka», разд. «Auditing»: kafka.authorizer.logger (отказы на INFO, разрешения на DEBUG) и kafka.request.logger на DEBUG и TRACE.&amp;#160;&amp;#8617;">54</a></sup> Объём на DEBUG оказался большим даже для учебного кластера. На трёх брокерах без клиентской нагрузки файл рос на 84 МБ в час: каждый последователь шлёт fetch-запрос раз в 500 мс, и каждый попадает в журнал. При записи 1000 сообщений в секунду рост составил около 2 ГБ в час. Поэтому DEBUG включают на одном брокере, на котором воспроизводится проблема, на минуты, и сразу выключают через <code>--delete-config</code>; строки нужного клиента выбирают по <code>"clientId":"…"</code>, а для постоянного наблюдения за временем запросов берут метрики <code>kafka.network:type=RequestMetrics</code> (16.6).</p>
+<p><strong>Что искать при инцидентах раздела 14.</strong> Часть инцидентов видна только на клиенте: лаг при исправном на вид потребителе (14.1), отравленное сообщение (14.3) и полный буфер производителя (14.4) в журналах брокера следов не оставляют, их ищут в журнале приложения и в метриках клиента. Для остальных команды проверены на стенде:</p>
+<table class="rt">
+<thead>
+<tr>
+<th>Инцидент</th>
+<th>Файл</th>
+<th>Строка, которую ищут</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td data-label="Инцидент">14.2 Дубли после перебалансировки</td>
+<td data-label="Файл"><code>server.log</code></td>
+<td data-label="Строка, которую ищут"><code>has left group</code>, <code>Preparing to rebalance</code> и причина в <code>client reason:</code></td>
+</tr>
+<tr>
+<td data-label="Инцидент">14.5 Перекос партиций</td>
+<td data-label="Файл">—</td>
+<td data-label="Строка, которую ищут">в журналах не виден; размер партиций даёт <code>kafka-log-dirs.sh</code> (16.3)</td>
+</tr>
+<tr>
+<td data-label="Инцидент">14.6 Потеря при <code>min.insync.replicas=1</code></td>
+<td data-label="Файл"><code>server.log</code>, <code>controller.log</code></td>
+<td data-label="Строка, которую ищут"><code>Shrinking ISR</code>, <code>Fencing broker</code>, <code>UNCLEAN partition change</code></td>
+</tr>
+<tr>
+<td data-label="Инцидент">14.7 Бесконечная перебалансировка</td>
+<td data-label="Файл"><code>server.log</code></td>
+<td data-label="Строка, которую ищут"><code>Stabilized group &lt;группа&gt; generation N</code> с быстро растущим N</td>
+</tr>
+<tr>
+<td data-label="Инцидент">Брокер упал или завис</td>
+<td data-label="Файл"><code>controller.log</code></td>
+<td data-label="Строка, которую ищут"><code>Fencing broker</code>, <code>unfence has been granted</code></td>
+</tr>
+<tr>
+<td data-label="Инцидент">Отказ по ACL</td>
+<td data-label="Файл"><code>kafka-authorizer.log</code></td>
+<td data-label="Строка, которую ищут"><code>is Denied</code></td>
+</tr>
+</tbody>
+</table>
+<p class="cap cap-t"><b>Таблица 29.43.</b> Что искать в журналах брокера при инцидентах раздела 14.</p>
+<p class="cap cap-c"><b>Листинг 29.136.</b> Поиск строк инцидентов в файлах брокера и в Loki.</p><div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code># в каталоге журналов брокера (/opt/kafka/logs), включая почасовые файлы
+grep -h "Shrinking ISR" server.log*
+grep -h "Fencing broker\|UNCLEAN partition change" controller.log*
+grep -c "Stabilized group logs-demo" server.log*
+grep -hE "\] (ERROR|WARN) " server.log*
+
+# те же вопросы к Loki (LogQL)
+{namespace="kafka3"} |= "UNCLEAN partition change"
+sum(count_over_time({namespace="kafka3"} |= "Preparing to rebalance" [5m]))
+{namespace="kafka3"} |= "Fencing broker" | regexp `Fencing broker (?P&lt;broker&gt;\d+)` | line_format "{{.broker}}"
+sum by (service) (count_over_time({namespace="kafka3"} |~ `\] (ERROR|WARN) ` [30m]))
+</code></pre></div>
+<p>Запросы в Loki проверены на том же стенде после заморозки брокера: <code>Fencing broker</code> нашёлся дважды, <code>Becoming the active controller</code> дважды, <code>Preparing to rebalance</code> шесть раз, а выражение с <code>regexp</code> вытащило номер огороженного брокера, 3. Регулярное выражение в LogQL удобнее писать в обратных кавычках: в строке в двойных кавычках Loki не принимает экранирование <code>\]</code> и отвечает <code>invalid char escape</code>.</p>
+<p><strong>Журналы брокеров в Kubernetes.</strong> Агент сбора логов в Kubernetes читает stdout контейнера, а в stdout в образе <code>apache/kafka</code> идёт только корневой логгер, то есть содержимое <code>server.log</code>. Строки контроллера, смены состояний, авторизации и сжатия остаются в файлах внутри контейнера: они растут без удаления и пропадают вместе с контейнером, а <code>kubectl logs</code> их не показывает. Проще всего это исправить своим <code>log4j2.yaml</code>: в ConfigMap кладут копию файла образа, в которой у нужных логгеров есть второй <code>AppenderRef</code> на <code>STDOUT</code>, и монтируют её в <code>/mnt/shared/config</code>:</p>
+<p class="cap cap-c"><b>Листинг 29.137.</b> Логгер контроллера пишет и в свой файл, и в stdout (фрагмент log4j2.yaml).</p><div class="hl" data-lang="YAML"><div class="hl-bar"><span>YAML</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">"org.apache.kafka.controller"</span>
+      <span class="nt">level</span><span class="p">:</span> <span class="s">"INFO"</span>
+      <span class="nt">additivity</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+      <span class="nt">AppenderRef</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">ref</span><span class="p">:</span> <span class="s">"ControllerAppender"</span>
+      <span class="p p-Indicator">-</span> <span class="nt">ref</span><span class="p">:</span> <span class="s">"STDOUT"</span>
+</code></pre></div>
+<p>На одиночном брокере с таким файлом в stdout попали все 25 строк <code>org.apache.kafka.controller</code>, которые записались в <code>controller.log</code>, а без него ни одной. На кластере <code>kafka3</code> тот же файл подключён через ConfigMap <code>kafka-log4j2</code> (<code>labs/kafka-cluster3/kafka3.yaml</code>), и строки контроллера дошли до Loki через агент. Ошибка отступа в этом YAML останавливает брокер при старте с сообщением <code>error while preparing configs: while parsing a block mapping</code>, поэтому файл стоит проверить на одном поде, прежде чем выкатывать на все. Как устроена сама цепочка от агента до хранилища, в том числе через Kafka, разобрано в главе 52, 2.8.</p>
 <hr>
 <h2 id="17-вопросы-на-интервью">17. Вопросы на интервью</h2>
 <p>Вопросы этого раздела — это 25 тем, которые на интервью про Kafka задают чаще всего: от модели журнала и устройства партиции до репликации, транзакций, перебалансировок и эксплуатации. Два вопроса — ловушки, а последний поведенческий, в формате STAR (<em>Situation, Task, Action, Result</em> — ситуация, задача, действия, результат). Каждый ответ рассчитан на то, чтобы произнести его вслух примерно за минуту, и построен так же, как хороший ответ на собеседовании: сначала суть, потом механизм, потом практическое следствие или граница применимости. Подробности к каждому ответу есть в соответствующих разделах главы, так что, если ответ кажется неполным, стоит вернуться к механике.</p>
@@ -5935,6 +6101,15 @@ https://docs.spring.io/spring-kafka/reference/kafka/serdes.html">https://docs.sp
 <p>Spring for Apache Kafka Reference, «Serialization, Deserialization, and Message Conversion» (<code>ErrorHandlingDeserializer</code>), <a href="https://docs.spring.io/spring-kafka/reference/kafka/serdes.html" data-tip="Внешний сайт · docs.spring.io
 https://docs.spring.io/spring-kafka/reference/kafka/serdes.html">https://docs.spring.io/spring-kafka/reference/kafka/serdes.html</a>. Первичный источник. Страница открывается. Результаты получены запуском автора на встроенном брокере Kafka 4.x (один брокер, три партиции по умолчанию, JDK 21, Windows); тайминги и счётчики зависят от машины и прогона. Проверено: 2026-10-20.&#160;<a class="footnote-backref" href="#fnref:s29-143r" title="Jump back to footnote 51 in the text" data-tip="Назад к тексту">&#8617;</a><a class="footnote-backref" href="#fnref2:s29-143r" title="Jump back to footnote 51 in the text" data-tip="Назад к тексту">&#8617;</a><a class="footnote-backref" href="#fnref3:s29-143r" title="Jump back to footnote 51 in the text" data-tip="Назад к тексту">&#8617;</a></p>
 </li>
+<li id="fn:b29-logs">
+<p>Опыты <code>labs/kafka-cluster3/logs_lab.sh</code> (сценарии <code>failover</code>, <code>isr</code>, <code>isrlag</code>, <code>controller</code>, <code>rebalance</code>, <code>quota</code>, <code>unclean</code>, <code>unclean2</code>) и <code>standalone_lab.sh</code> (<code>acl</code>, <code>disk</code>), 2026-10-30: kind, три узла Kafka 4.3.1 в режиме <code>broker,controller</code>, у подов нет постоянного тома; ACL и переполнение диска — на одиночном брокере <code>apache/kafka:4.3.1</code> в Docker. Выводы — <code>s29-logs-*.txt</code>; запросы к Loki — на цепочке <code>labs/kafka-logs-pipeline</code> (гл. 52, 2.8).&#160;<a class="footnote-backref" href="#fnref:b29-logs" title="Jump back to footnote 52 in the text" data-tip="Назад к тексту">&#8617;</a></p>
+</li>
+<li id="fn:b29-dg13log">
+<p>G. Shapira, T. Palino, R. Sivaram, K. Petty. <em>Kafka: The Definitive Guide</em>, 2nd ed. O'Reilly, 2022, гл. 13 «Monitoring», разд. «Logging».&#160;<a class="footnote-backref" href="#fnref:b29-dg13log" title="Jump back to footnote 53 in the text" data-tip="Назад к тексту">&#8617;</a></p>
+</li>
+<li id="fn:b29-dg11">
+<p>Там же, гл. 11 «Securing Kafka», разд. «Auditing»: <code>kafka.authorizer.logger</code> (отказы на INFO, разрешения на DEBUG) и <code>kafka.request.logger</code> на DEBUG и TRACE.&#160;<a class="footnote-backref" href="#fnref:b29-dg11" title="Jump back to footnote 54 in the text" data-tip="Назад к тексту">&#8617;</a></p>
+</li>
 </ol>
 </div><p class="img-credit">Иллюстрация в шапке: <a href="https://commons.wikimedia.org/wiki/File:Prague_Praha_2014_Holmstad_The_House_at_the_Minute_Minutthuset_-_1.JPG" rel="noopener" data-tip="Внешний сайт · commons.wikimedia.org
 https://commons.wikimedia.org/wiki/File:Prague_Praha_2014_Holmstad_The_House_at_the_Minu…">Дом «У Минуты» на Староместской площади в Праге — здесь жила семья Кафки. Øyvind Holmstad, CC BY-SA 3.0</a></p>
@@ -5942,5 +6117,5 @@ https://commons.wikimedia.org/wiki/File:Prague_Praha_2014_Holmstad_The_House_at_
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-kafka-как-распределённый-журнал">1. Kafka как распределённый журнал</a></li><li><a href="#2-устройство-брокера-партиции-сегменты-страничный-кэш">2. Устройство брокера: партиции, сегменты, страничный кэш</a></li><li><a href="#3-kraft-кворум-контроллеров-вместо-zookeeper">3. KRaft: кворум контроллеров вместо ZooKeeper</a></li><li><a href="#4-репликация-и-сохранность-данных">4. Репликация и сохранность данных</a></li><li><a href="#5-производитель-путь-записи-пакетирование-идемпотентность-транзакции">5. Производитель: путь записи, пакетирование, идемпотентность, транзакции</a></li><li><a href="#6-потребитель-группы-перебалансировка-смещения">6. Потребитель: группы, перебалансировка, смещения</a></li><li><a href="#7-гарантии-доставки">7. Гарантии доставки</a></li><li><a href="#8-retention-и-compaction">8. Retention и compaction</a></li><li><a href="#9-схемы-schema-registry-и-эволюция">9. Схемы: Schema Registry и эволюция</a></li><li><a href="#10-kafka-streams-ksqldb-и-connect">10. Kafka Streams, ksqlDB и Connect</a></li><li><a href="#11-spring-kafka-на-практике">11. Spring Kafka на практике</a></li><li><a href="#12-эксплуатация">12. Эксплуатация</a></li><li><a href="#13-производительность-и-тюнинг">13. Производительность и тюнинг</a></li><li><a href="#14-разобранные-инциденты">14. Разобранные инциденты</a></li><li><a href="#15-ошибки-и-антипаттерны">15. Ошибки и антипаттерны</a></li><li><a href="#16-диагностика">16. Диагностика</a></li><li><a href="#17-вопросы-на-интервью">17. Вопросы на интервью</a></li><li><a href="#18-попробовать-руками">18. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=c64669fa87"></script>
+<script src="app.js?v=39bac95537"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>
