@@ -1537,7 +1537,7 @@ get: null, remove: null, size: 1
 </code></pre></div>
 <p>Обратите внимание на третью строку: после остановки пула память возвращается, потому что вместе с потоком уходит и его <code>ThreadLocalMap</code>. Поэтому тест с одноразовым пулом утечку не обнаружит.<sup id="fnref:s101-habr-tl"><a class="footnote-ref" href="#fn:s101-habr-tl" data-tip="Сноска: Хабр, «ThreadLocal и проблемы с памятью: что вы должны знать», https://habr.com/ru/articles/849796; Хабр, «Утечка памяти с ThreadLocal», https://habr.com/en/companies/maxifier/arti…">12</a></sup></p>
 <blockquote class="cb-ask">
-<p><strong><span class="ic">❓</span> Спрашивают на интервью. Как вообще бывает утечка памяти в языке со сборщиком мусора?</strong> Утечка здесь означает не потерянный объект, а лишний достижимый: объект больше не нужен программе, но по цепочке ссылок от какого-то корня (статического поля, живого потока, зарегистрированного слушателя) до него ещё можно дойти, поэтому сборщик не вправе его убрать. Хороший ответ называет типичные корни: статические коллекции без вытеснения, <code>ThreadLocal</code> в пуле потоков, слушатели без отписки, незакрытые ресурсы с нативной памятью, изменяемые ключи в отображениях. И добавляет, как утечку находят: по «пиле с растущим дном» на графике старого поколения, затем по дампу кучи и дереву доминаторов (10.2).<sup id="fnref:s101-habr-diag"><a class="footnote-ref" href="#fn:s101-habr-diag" data-tip="Сноска: Хабр, «Диагностика утечек памяти в Java», https://habr.com/en/articles/324144. Вторичный источник; признак утечки на графике и анализ дампа кучи. Название страницы проверено, текст…">13</a></sup></p>
+<p><strong><span class="ic">❓</span> Спрашивают на интервью. Как вообще бывает утечка памяти в языке со сборщиком мусора?</strong> Утечка здесь означает не потерянный объект, а лишний достижимый: объект больше не нужен программе, но по цепочке ссылок от какого-то корня (статического поля, живого потока, зарегистрированного слушателя) до него ещё можно дойти, поэтому сборщик не вправе его убрать. Хороший ответ называет типичные корни: статические коллекции без вытеснения, <code>ThreadLocal</code> в пуле потоков, слушатели без отписки, незакрытые ресурсы с нативной памятью, изменяемые ключи в отображениях. И добавляет, как утечку находят: по «пиле с растущим дном» на графике старого поколения, затем по дампу кучи и дереву доминаторов (<a href="#102-поиск-утечки-heap-dump-и-dominator-tree" data-tip="Раздел этой главы: 10.2 Поиск утечки: heap dump и dominator tree">10.2</a>).<sup id="fnref:s101-habr-diag"><a class="footnote-ref" href="#fn:s101-habr-diag" data-tip="Сноска: Хабр, «Диагностика утечек памяти в Java», https://habr.com/en/articles/324144. Вторичный источник; признак утечки на графике и анализ дампа кучи. Название страницы проверено, текст…">13</a></sup></p>
 </blockquote>
 <blockquote class="cb-rare">
 <p><strong><span class="ic">🎲</span> Неочевидно. <code>WeakReference</code> в <code>ThreadLocalMap</code> не спасает от утечки: слабым в отображении хранится ключ, а значение сильное.</strong> Поэтому «<code>ThreadLocal</code> объявлен как нестатическая переменная, значит, будет собран» верно лишь отчасти. Когда ключ собран, запись становится «протухшей», но значение остаётся доступным из отображения, пока отображение само не вычистит такие записи, а чистит оно лениво, только при обращениях к <code>ThreadLocal</code> в том же потоке. Если значение (или цепочка за ним) косвенно ссылается на сам <code>ThreadLocal</code>, ключ не будет собран вообще. Эту деталь обсуждают на Хабре отдельной статьёй.<sup id="fnref2:s101-habr-tl"><a class="footnote-ref" href="#fn:s101-habr-tl" data-tip="Сноска: Хабр, «ThreadLocal и проблемы с памятью: что вы должны знать», https://habr.com/ru/articles/849796; Хабр, «Утечка памяти с ThreadLocal», https://habr.com/en/companies/maxifier/arti…">12</a></sup></p>
@@ -1569,7 +1569,7 @@ https://eclipse.dev/mat/">eclipse.dev/mat</a>), который стал стан
 <li><strong>Leak Suspects Report</strong> строит автоматический отчёт вида «один экземпляр <code>java.util.HashMap</code>, загруженный <code>AppClassLoader</code>, занимает 3.2 ГБ (78 %)», и в половине случаев этого хватает.</li>
 <li><strong>Dominator tree</strong> (дерево доминаторов) служит главным инструментом. Объект A <em>доминирует</em> над B, если все пути от корней к B проходят через A. <strong>Retained size</strong> A — это всё, что будет собрано, если убрать A. Dominator tree сортирует объекты по retained size, так что на вершине оказывается тот, кто держит больше всего. Дальше дерево разворачивают: <code>HashMap</code> → <code>HashMap$Node[]</code> → тысячи <code>Node</code> → ключи и значения. Остаётся посмотреть на ключи (Inspector показывает строку): если там <code>"/api/orders?page=17&amp;size=50"</code>, понятны и источник, и причина.</li>
 <li><strong>Path to GC Roots</strong> (путь до корней; правый клик → <em>exclude weak/soft references</em>) показывает, кто держит эту <code>HashMap</code>: <code>static</code> поле какого класса, <code>ThreadLocal</code> какого потока или поле какого синглтона. MAT покажет и имя потока, и <code>http-nio-8080-exec-3</code> сразу указывает на пул Tomcat.</li>
-<li><strong>Histogram</strong> (гистограмма по классам) с группировкой по загрузчику классов нужна для утечек Metaspace и загрузчиков (10.5), а <strong>OQL</strong> (Object Query Language, SQL-подобный язык запросов к дампу; <code>SELECT * FROM java.lang.String s WHERE s.value.@length &gt; 100000</code>) — для точечных запросов.</li>
+<li><strong>Histogram</strong> (гистограмма по классам) с группировкой по загрузчику классов нужна для утечек Metaspace и загрузчиков (<a href="#105-metaspace-и-classloader-утечки" data-tip="Раздел этой главы: 10.5 Metaspace и classloader-утечки">10.5</a>), а <strong>OQL</strong> (Object Query Language, SQL-подобный язык запросов к дампу; <code>SELECT * FROM java.lang.String s WHERE s.value.@length &gt; 100000</code>) — для точечных запросов.</li>
 </ol>
 <p>При чтении дампа важно различать shallow size, размер самого объекта, и retained size, то есть всё, что он удерживает: <code>HashMap</code> весит 48 байт shallow и 3 ГБ retained.</p>
 <blockquote>
@@ -1950,7 +1950,7 @@ jcmd &lt;pid&gt; VM.native_memory detail.diff        <span class="c1"># то ж�
 <ol>
 <li><code>jvm_memory_used_bytes{area="heap", id=~".*Old Gen"}</code>, причём смотреть надо <strong>не на пилу, а на её дно</strong>. Если дно после каждой mixed/Full сборки много часов монотонно поднимается при стабильном RPS, это утечка. Если дно ровное, а выросла амплитуда, значит просто выросла нагрузка или мусора на запрос стало больше.</li>
 <li><code>rate(jvm_gc_pause_seconds_sum[5m])</code> показывает долю времени в GC. Нормой для G1 на сервисе считается до 2–3 %, с 10 % сервис уже деградирует, а с 30 % практически стоит.</li>
-<li><code>container_memory_working_set_bytes</code> (память контейнера, по которой Kubernetes решает, превышен ли лимит) сравнивают с <code>jvm_memory_committed_bytes{area="heap"}</code>. Расхождение между ними и есть вся память вне кучи. Если растёт именно оно, а куча ровная, дамп снимать бессмысленно (12.7).</li>
+<li><code>container_memory_working_set_bytes</code> (память контейнера, по которой Kubernetes решает, превышен ли лимит) сравнивают с <code>jvm_memory_committed_bytes{area="heap"}</code>. Расхождение между ними и есть вся память вне кучи. Если растёт именно оно, а куча ровная, дамп снимать бессмысленно (<a href="#127-шаг-7-диагностика-без-дампа" data-tip="Раздел этой главы: 12.7 Шаг 7: диагностика без дампа">12.7</a>).</li>
 </ol>
 <p>Всё это сводится в дерево решений, которое стоит держать в рунбуке (инструкции дежурного). Читать его надо сверху вниз, от того, что видно снаружи, до шага маршрута или главы, куда идти дальше:</p>
 <p class="cap cap-c"><b>Листинг 7.39.</b> Дерево симптомов.</p><div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>Симптом
@@ -2333,7 +2333,7 @@ java.util.concurrent.ConcurrentHashMap$Node| 9,117,240| 291,751,680 | 3,120,375,
 <tr>
 <td data-label="Корень в MAT"><code>&lt;Busy Monitor&gt;</code></td>
 <td data-label="Суть">объект, на котором кто-то держит блокировку</td>
-<td data-label="Решение">связать с thread dump (12.6)</td>
+<td data-label="Решение">связать с thread dump (<a href="#126-шаг-6-thread-dump" data-tip="Раздел этой главы: 12.6 Шаг 6: thread dump">12.6</a>)</td>
 </tr>
 <tr>
 <td data-label="Корень в MAT"><code>Finalizer</code> / <code>ReferenceQueue</code></td>
@@ -2428,7 +2428,7 @@ sed -i <span class="s1">'s/^-Xmx.*/-Xmx24g/'</span> MemoryAnalyzer.ini
 <td data-label="Вершина dominator tree">Много <code>ClassLoader</code>, <code>Duplicate Classes</code> показывает один класс от N загрузчиков</td>
 <td data-label="Диагноз">classloader-утечка при hot redeploy или генерации классов во время работы</td>
 <td data-label="Подтверждение"><code>jcmd VM.metaspace</code> растёт, <code>-Xlog:class+load</code> не замолкает после прогрева</td>
-<td data-label="Лечение">не делать hot redeploy в контейнере; чинить удержание loader'а (10.5)</td>
+<td data-label="Лечение">не делать hot redeploy в контейнере; чинить удержание loader'а (<a href="#105-metaspace-и-classloader-утечки" data-tip="Раздел этой главы: 10.5 Metaspace и classloader-утечки">10.5</a>)</td>
 </tr>
 <tr>
 <td data-label="Вершина dominator tree">Долгоживущий бин → <code>List&lt;Listener&gt;</code>/<code>CopyOnWriteArrayList</code> на сотни тысяч</td>
@@ -2440,7 +2440,7 @@ sed -i <span class="s1">'s/^-Xmx.*/-Xmx24g/'</span> MemoryAnalyzer.ini
 <td data-label="Вершина dominator tree"><code>DirectByteBuffer</code> в тысячах экземпляров, при этом куча маленькая</td>
 <td data-label="Диагноз">direct-память: обёртки живут в old, native не освобождается</td>
 <td data-label="Подтверждение"><code>BufferPoolMXBean</code> растёт, NMT <code>Other</code> растёт</td>
-<td data-label="Лечение">пул буферов, <code>PooledByteBufAllocator</code>, <code>-XX:MaxDirectMemorySize</code> явно (9.3)</td>
+<td data-label="Лечение">пул буферов, <code>PooledByteBufAllocator</code>, <code>-XX:MaxDirectMemorySize</code> явно (<a href="#93-off-heap-directbytebuffer-maxdirectmemorysize-и-ffm" data-tip="Раздел этой главы: 9.3 Off-heap: DirectByteBuffer, MaxDirectMemorySize и FFM">9.3</a>)</td>
 </tr>
 <tr>
 <td data-label="Вершина dominator tree">Гигантские <code>char[]</code>/<code>byte[]</code> по 10–200 МБ каждый</td>
@@ -2476,7 +2476,7 @@ sed -i <span class="s1">'s/^-Xmx.*/-Xmx24g/'</span> MemoryAnalyzer.ini
 <td data-label="Вершина dominator tree"><code>FinalReference</code> в очереди на сотни тысяч</td>
 <td data-label="Диагноз">финализаторы не успевают</td>
 <td data-label="Подтверждение"><code>jcmd GC.finalizer_info</code>, растёт очередь</td>
-<td data-label="Лечение">убрать <code>finalize()</code>, <code>Cleaner</code> (9.2)</td>
+<td data-label="Лечение">убрать <code>finalize()</code>, <code>Cleaner</code> (<a href="#92-финализация-и-её-удаление-из-платформы" data-tip="Раздел этой главы: 9.2 Финализация и её удаление из платформы">9.2</a>)</td>
 </tr>
 <tr>
 <td data-label="Вершина dominator tree">Ничего не доминирует, куча равномерно забита бизнес-объектами</td>
@@ -2850,7 +2850,7 @@ grep -oP <span class="s1">'^\[\K[0-9.]+(?=s\])'</span> gc.log <span class="p">|<
 [gc,age] GC(42) - age   2:    7340032 bytes,   26214400 total
 </code></pre></div>
 <p><code>new threshold 2</code> при <code>max threshold 15</code> звучит как приговор. G1 понизил порог до 2, потому что выжившие не помещаются в survivor, и всё, что прожило две сборки, едет в old. Лечить это надо не уменьшением young, а <strong>увеличением</strong>: <code>-XX:G1NewSizePercent=20</code> (по умолчанию 5) даёт объектам время умереть в young.</p>
-<p><strong>6. Есть ли humongous?</strong> Ответ дают <code>grep -c 'G1 Humongous Allocation' gc.log</code> и динамика <code>Humongous regions:</code>. Любое устойчивое ненулевое число — повод искать источник (14.5).</p>
+<p><strong>6. Есть ли humongous?</strong> Ответ дают <code>grep -c 'G1 Humongous Allocation' gc.log</code> и динамика <code>Humongous regions:</code>. Любое устойчивое ненулевое число — повод искать источник (<a href="#145-humongous-объекты-массив-на-16-мб-и-способы-исправления" data-tip="Раздел этой главы: 14.5 Humongous-объекты: массив на 16 МБ и способы исправления">14.5</a>).</p>
 <h3 id="132-типовые-диагнозы-по-gc-логу">13.2 Типовые диагнозы по GC-логу</h3>
 <p>Типовой диагноз по GC-логу — это узнаваемое сочетание признаков в логе, за которым стоит одна причина. Ответы на шесть вопросов из 13.1 складываются в один из восьми таких диагнозов. Ниже они разобраны по одной схеме: признаки, характерные строки, причина и лечение. Два последних диагноза, седьмой и восьмой, вообще не связаны с настройкой самого сборщика.</p>
 <p><strong>Диагноз 1: куче не хватает памяти.</strong> Признаки такие: занятость после сборок стабильно выше 70–80 % от <code>-Xmx</code>, интервал между young-сборками сокращается, <code>Pause Young (Concurrent Start)</code> появляется почти после каждой young, а <code>Pause Full</code> даёт результат <code>3980M-&gt;3900M(4096M)</code>, то есть освобождает 2 %.</p>
@@ -3227,7 +3227,7 @@ asprof -e alloc --alloc 1m -d <span class="m">60</span> -f /tmp/alloc.html &lt;p
 <td data-label="Флаг"><code>G1HeapRegionSize</code></td>
 <td data-label="По умолчанию">эргономика, 1–32 МБ</td>
 <td data-label="Источник">из <code>-Xms</code>/<code>-Xmx</code></td>
-<td data-label="Трогать?">только с гипотезой (14.1)</td>
+<td data-label="Трогать?">только с гипотезой (<a href="#141-выбор-размера-региона" data-tip="Раздел этой главы: 14.1 Выбор размера региона">14.1</a>)</td>
 </tr>
 <tr>
 <td data-label="Флаг"><code>MaxGCPauseMillis</code></td>
@@ -3565,7 +3565,7 @@ https://openjdk.org/jeps/387">JEP 387</a>) Elastic Metaspace возвращае�
 <ul>
 <li><strong>Пулы вместо выделения памяти</strong>: Netty <code>PooledByteBufAllocator</code>, свой пул или <code>ThreadLocal</code>-кэш JDK для копий heap→direct (<code>jdk.nio.maxCachedBufferSize</code>).</li>
 <li><strong>Явный <code>-XX:MaxDirectMemorySize</code> нужен всегда.</strong> По умолчанию он равен <code>-Xmx</code>, то есть бюджет контейнера втихую удваивается.</li>
-<li><strong>Не отключать <code>System.gc()</code> глобально</strong>: <code>Bits.reserveMemory</code> вызывает его при исчерпании лимита как единственный способ освободить буферы (9.3).</li>
+<li><strong>Не отключать <code>System.gc()</code> глобально</strong>: <code>Bits.reserveMemory</code> вызывает его при исчерпании лимита как единственный способ освободить буферы (<a href="#93-off-heap-directbytebuffer-maxdirectmemorysize-и-ffm" data-tip="Раздел этой главы: 9.3 Off-heap: DirectByteBuffer, MaxDirectMemorySize и FFM">9.3</a>).</li>
 <li><strong>Аналог <code>Cleaner</code> в мире FFM</strong> — это <code>Arena.ofAuto()</code>, но лучше брать <code>Arena.ofConfined()</code> в try-with-resources, и тогда освобождение будет детерминированным.</li>
 </ul>
 <h3 id="165-mapped-files">16.5 Mapped files</h3>
@@ -3657,7 +3657,7 @@ https://openjdk.org/jeps/387">JEP 387</a>) Elastic Metaspace возвращае�
 <tr>
 <td data-label="Категория NMT"><code>GC</code></td>
 <td data-label="Нормально (committed)">5–10 % от кучи</td>
-<td data-label="Тревожно">&gt; 15 % — RSet-давление (14.2)</td>
+<td data-label="Тревожно">&gt; 15 % — RSet-давление (<a href="#142-стоимость-remembered-sets" data-tip="Раздел этой главы: 14.2 Стоимость remembered sets">14.2</a>)</td>
 </tr>
 <tr>
 <td data-label="Категория NMT"><code>Compiler</code></td>
@@ -3752,7 +3752,7 @@ https://openjdk.org/jeps/387">JEP 387</a>) Elastic Metaspace возвращае�
 <p>Ошибки и антипаттерны в этом разделе — это то, что раз за разом приводят к проблемам с памятью, и решения, которые выглядят разумно, но делают хуже. Крупные сценарии (утечки, promotion failure, humongous и Metaspace) разобраны в разделе <a href="#10-типовые-проблемы-с-памятью" data-tip="Раздел этой главы: 10. Типовые проблемы с памятью">10</a>, память вне кучи — в 9.3, а контейнер — в разделе <a href="#11-jvm-в-контейнере-heap-и-rss" data-tip="Раздел этой главы: 11. JVM в контейнере: heap и RSS">11</a>. Здесь собраны двадцать восемь пунктов о том, что ломается чаще всего, в том числе по причинам, которые в тех разделах не звучали. Каждый пункт построен по одной схеме: симптом, по которому проблему узнают, причина и лечение. Вторая половина списка в основном касается снятия и разбора дампов, то есть того, как не испортить расследование собственными руками.</p>
 <ol>
 <li>
-<p><strong><code>-Xmx</code>, равный лимиту пода.</strong> <em>Симптом</em>: OOMKilled (exit 137) без единого <code>OutOfMemoryError</code>, и GC-лог обрывается на здоровой young-паузе. <em>Причина</em>: куча составляет лишь часть RSS (11.2), а Metaspace, code cache, стеки, GC-структуры и direct живут за пределами <code>-Xmx</code>. <em>Лечение</em>: <code>-XX:MaxRAMPercentage=60..75</code>, замер RSS под нагрузкой и NMT как арбитр в спорных случаях.</p>
+<p><strong><code>-Xmx</code>, равный лимиту пода.</strong> <em>Симптом</em>: OOMKilled (exit 137) без единого <code>OutOfMemoryError</code>, и GC-лог обрывается на здоровой young-паузе. <em>Причина</em>: куча составляет лишь часть RSS (<a href="#112-состав-rss" data-tip="Раздел этой главы: 11.2 Состав RSS">11.2</a>), а Metaspace, code cache, стеки, GC-структуры и direct живут за пределами <code>-Xmx</code>. <em>Лечение</em>: <code>-XX:MaxRAMPercentage=60..75</code>, замер RSS под нагрузкой и NMT как арбитр в спорных случаях.</p>
 </li>
 <li>
 <p><strong>Ожидание, что спасёт <code>-XX:+UseGCOverheadLimit</code>.</strong> <em>Симптом</em>: сервис не падает, а «залипает», тратя 98 % CPU на GC, и запросы отваливаются по таймауту. <em>Причина</em>: это детектор для Parallel, у G1 он почти не срабатывает, а ZGC вместо него даёт allocation stalls. Флаг ничего не ограничивает, он только превращает агонию в <code>OutOfMemoryError: GC overhead limit exceeded</code>. <em>Лечение</em>: оповещение на долю времени в GC плюс <code>-XX:+ExitOnOutOfMemoryError</code>.</p>
@@ -3766,10 +3766,10 @@ https://bugs.openjdk.org/browse/JDK-8195097">JDK-8195097</a>, Fix Version 11). �
 https://raw.githubusercontent.com/openjdk/jdk/jdk-21-ga/src/hotspot/share/classfile/stri…">stringTable.cpp, jdk-21-ga</a>). Цена <code>intern()</code> на современных JDK — это прежде всего рост самой таблицы и числа живых строк в ней. <em>Лечение</em>: <code>intern()</code> только для конечных множеств (коды валют, имена полей), а для дедупликации строк <code>-XX:+UseStringDeduplication</code>.</p>
 </li>
 <li>
-<p><strong>Огромные <code>byte[]</code> и humongous в G1.</strong> <em>Симптом</em>: растут <code>Humongous regions</code>, среди причин сборок появляется <code>G1 Humongous Allocation</code>, а Full GC случается при 40 % свободной кучи. <em>Причина</em>: массив размером ≥ половины региона идёт мимо TLAB в смежные регионы (4.4); источники у него обычно такие: <code>readAllBytes()</code>, <code>IOUtils.toByteArray()</code>, <code>ArrayList.grow()</code>. <em>Лечение</em>: стриминг и обработка порциями, а <code>-XX:G1HeapRegionSize=8m..16m</code> только как временная мера.</p>
+<p><strong>Огромные <code>byte[]</code> и humongous в G1.</strong> <em>Симптом</em>: растут <code>Humongous regions</code>, среди причин сборок появляется <code>G1 Humongous Allocation</code>, а Full GC случается при 40 % свободной кучи. <em>Причина</em>: массив размером ≥ половины региона идёт мимо TLAB в смежные регионы (<a href="#44-humongous-объекты" data-tip="Раздел этой главы: 4.4 Humongous-объекты">4.4</a>); источники у него обычно такие: <code>readAllBytes()</code>, <code>IOUtils.toByteArray()</code>, <code>ArrayList.grow()</code>. <em>Лечение</em>: стриминг и обработка порциями, а <code>-XX:G1HeapRegionSize=8m..16m</code> только как временная мера.</p>
 </li>
 <li>
-<p><strong><code>ThreadLocal</code> в пуле потоков.</strong> <em>Симптом</em>: куча растёт пропорционально числу потоков, а корнями в MAT оказываются <code>http-nio-8080-exec-N</code>. <em>Причина</em>: ключ хранится по weak-ссылке, значение по strong, а поток пула бессмертен (10.1). <em>Лечение</em>: <code>finally { tl.remove(); }</code> в фильтре и <code>ScopedValue</code> на виртуальных потоках. Отдельная ловушка — <code>ThreadLocal&lt;StringBuilder&gt;</code>: его буфер раздувается до размера самого большого ответа, и эта память умножается на число потоков.</p>
+<p><strong><code>ThreadLocal</code> в пуле потоков.</strong> <em>Симптом</em>: куча растёт пропорционально числу потоков, а корнями в MAT оказываются <code>http-nio-8080-exec-N</code>. <em>Причина</em>: ключ хранится по weak-ссылке, значение по strong, а поток пула бессмертен (<a href="#101-утечки-в-языке-с-gc" data-tip="Раздел этой главы: 10.1 Утечки в языке с GC">10.1</a>). <em>Лечение</em>: <code>finally { tl.remove(); }</code> в фильтре и <code>ScopedValue</code> на виртуальных потоках. Отдельная ловушка — <code>ThreadLocal&lt;StringBuilder&gt;</code>: его буфер раздувается до размера самого большого ответа, и эта память умножается на число потоков.</p>
 </li>
 <li>
 <p><strong>Статические коллекции как «удобное место».</strong> <em>Симптом</em>: retained size одного <code>static</code>-поля занимает половину кучи. <em>Причина</em>: статическое поле живёт, пока жив загрузчик его класса, то есть весь срок жизни процесса. <em>Лечение</em>: правило ревью, по которому изменяемая статика либо имеет фиксированный размер, либо превращается в бин с политикой вытеснения.</p>
@@ -3778,13 +3778,13 @@ https://raw.githubusercontent.com/openjdk/jdk/jdk-21-ga/src/hotspot/share/classf
 <p><strong><code>Collectors.toList()</code> на неограниченной выборке.</strong> <em>Симптом</em>: один запрос кладёт весь сервис. <em>Причина</em>: <code>findAll().stream()...collect(toList())</code> материализует всю таблицу, и то же самое делают <code>getResultList()</code> без пагинации и <code>ResultSet</code> без <code>fetchSize</code>. <em>Лечение</em>: keyset-пагинация (глава <a href="20-advanced-sql.html" data-tip="20. SQL продвинутый и оптимизация">20</a>), потоковая обработка по одному элементу и жёсткий верхний предел с ошибкой 400.</p>
 </li>
 <li>
-<p><strong>Утечка загрузчика классов при hot redeploy.</strong> <em>Симптом</em>: после N редеплоев приходит <code>OutOfMemoryError: Metaspace</code>, а в MAT видны два одинаковых класса от разных загрузчиков. <em>Причина</em>: старый загрузчик держат <code>ThreadLocal</code>-ы, статика JDK (<code>DriverManager</code>, <code>Introspector</code>), живые потоки и JMX-регистрации (10.5). <em>Лечение</em>: в контейнерной модели не делать hot redeploy вовсе, а иначе ставить shutdown hook, который снимает все регистрации.</p>
+<p><strong>Утечка загрузчика классов при hot redeploy.</strong> <em>Симптом</em>: после N редеплоев приходит <code>OutOfMemoryError: Metaspace</code>, а в MAT видны два одинаковых класса от разных загрузчиков. <em>Причина</em>: старый загрузчик держат <code>ThreadLocal</code>-ы, статика JDK (<code>DriverManager</code>, <code>Introspector</code>), живые потоки и JMX-регистрации (<a href="#105-metaspace-и-classloader-утечки" data-tip="Раздел этой главы: 10.5 Metaspace и classloader-утечки">10.5</a>). <em>Лечение</em>: в контейнерной модели не делать hot redeploy вовсе, а иначе ставить shutdown hook, который снимает все регистрации.</p>
 </li>
 <li>
-<p><strong><code>SoftReference</code> как кэш.</strong> <em>Симптом</em>: доля попаданий в кэш (hit ratio) держится на 70 %, затем мгновенно падает в ноль, и нагрузка на БД резко растёт. <em>Причина</em>: soft-ссылки очищаются скопом на последнем Full GC перед OOM, а до этого раздувают old и нагружают Reference Processing (9.1); <code>SoftRefLRUPolicyMSPerMB=1000</code> делает их почти сильными. <em>Лечение</em>: явные размер и TTL (время жизни записи) вместо надежды на GC.</p>
+<p><strong><code>SoftReference</code> как кэш.</strong> <em>Симптом</em>: доля попаданий в кэш (hit ratio) держится на 70 %, затем мгновенно падает в ноль, и нагрузка на БД резко растёт. <em>Причина</em>: soft-ссылки очищаются скопом на последнем Full GC перед OOM, а до этого раздувают old и нагружают Reference Processing (<a href="#91-reference-types-strong-soft-weak-phantom" data-tip="Раздел этой главы: 9.1 Reference types: Strong, Soft, Weak, Phantom">9.1</a>); <code>SoftRefLRUPolicyMSPerMB=1000</code> делает их почти сильными. <em>Лечение</em>: явные размер и TTL (время жизни записи) вместо надежды на GC.</p>
 </li>
 <li>
-<p><strong><code>System.gc()</code> в коде и <code>-XX:+DisableExplicitGC</code> в ответ.</strong> <em>Симптом</em>: секундные Full GC по расписанию или, наоборот, <code>OutOfMemoryError: Direct buffer memory</code> при свободной куче. <em>Причина</em>: у G1 явная сборка означает полное STW-уплотнение, но <code>Bits.reserveMemory</code> использует <code>System.gc()</code> как единственный способ освободить direct-буферы (9.3). <em>Лечение</em>: убрать собственные вызовы, а для чужих (RMI DGC) поставить <code>-XX:+ExplicitGCInvokesConcurrent</code> и <code>sun.rmi.dgc.*.gcInterval</code> вместо глобального отключения.</p>
+<p><strong><code>System.gc()</code> в коде и <code>-XX:+DisableExplicitGC</code> в ответ.</strong> <em>Симптом</em>: секундные Full GC по расписанию или, наоборот, <code>OutOfMemoryError: Direct buffer memory</code> при свободной куче. <em>Причина</em>: у G1 явная сборка означает полное STW-уплотнение, но <code>Bits.reserveMemory</code> использует <code>System.gc()</code> как единственный способ освободить direct-буферы (<a href="#93-off-heap-directbytebuffer-maxdirectmemorysize-и-ffm" data-tip="Раздел этой главы: 9.3 Off-heap: DirectByteBuffer, MaxDirectMemorySize и FFM">9.3</a>). <em>Лечение</em>: убрать собственные вызовы, а для чужих (RMI DGC) поставить <code>-XX:+ExplicitGCInvokesConcurrent</code> и <code>sun.rmi.dgc.*.gcInterval</code> вместо глобального отключения.</p>
 </li>
 <li>
 <p><strong>Direct-буферы без <code>Cleaner</code> и без пула.</strong> <em>Симптом</em>: RSS растёт, heap стабилен, NMT показывает рост <code>Other</code>, а <code>BufferPoolMXBean</code> нет. <em>Причина</em>: Netty выделяет память через <code>allocateDirectNoCleaner</code> мимо счётчика JVM, и то же самое делают свой <code>Unsafe.allocateMemory</code> или FFM <code>Arena</code> без <code>close()</code>. <em>Лечение</em>: <code>PooledByteBufAllocator</code>, <code>Arena.ofConfined()</code> в try-with-resources, явный <code>-Dio.netty.maxDirectMemory</code> и метрики распределителя памяти.</p>
@@ -3796,7 +3796,7 @@ https://raw.githubusercontent.com/openjdk/jdk/jdk-21-ga/src/hotspot/share/classf
 <p><strong>JFR и heap dump на проде без места на диске.</strong> <em>Симптом</em>: инцидент случился, а дампа нет, или дамп забил файловую систему узла и уронил соседние поды. <em>Причина</em>: файл дампа равен занятой куче (8 ГБ — это 8 ГБ и 30–90 с полной остановки), а <code>HeapDumpPath</code> по умолчанию указывает в overlay-ФС контейнера. <em>Лечение</em>: том ёмкостью ≥ 1.5 × <code>Xmx</code>, JFR с <code>maxsize</code>/<code>maxage</code> и оповещение на свободное место.</p>
 </li>
 <li>
-<p><strong><code>MaxGCPauseMillis</code> как «настройка SLA».</strong> <em>Симптом</em>: поставили 20 мс, а p99 стал хуже. <em>Причина</em>: G1 сжимает young до минимума, объекты не успевают умереть, продвижение в old растёт, и mixed-сборки учащаются (4.5). <em>Лечение</em>: цель по паузе, реалистичная для объёма живых данных, а если нужны единицы миллисекунд, это уже смена коллектора.</p>
+<p><strong><code>MaxGCPauseMillis</code> как «настройка SLA».</strong> <em>Симптом</em>: поставили 20 мс, а p99 стал хуже. <em>Причина</em>: G1 сжимает young до минимума, объекты не успевают умереть, продвижение в old растёт, и mixed-сборки учащаются (<a href="#45-evacuation-failure-и-состав-паузы" data-tip="Раздел этой главы: 4.5 Evacuation failure и состав паузы">4.5</a>). <em>Лечение</em>: цель по паузе, реалистичная для объёма живых данных, а если нужны единицы миллисекунд, это уже смена коллектора.</p>
 </li>
 <li>
 <p><strong>Дамп сняли и уронили узел.</strong> <em>Симптом</em>: после снятия heap dump соседние поды получают <code>Evicted</code> с причиной <code>DiskPressure</code>. <em>Причина</em>: <code>HeapDumpPath</code> указывал в записываемый слой образа, то есть в overlayfs на диске узла в общем пуле (12.3.2). <em>Лечение</em>: отдельный том под <code>/dumps</code> размером ≥ 1.5 × <code>Xmx</code>, <code>sizeLimit</code> у <code>emptyDir</code> или PVC и sidecar-выгрузка в объектное хранилище.</p>
@@ -3826,16 +3826,16 @@ https://raw.githubusercontent.com/openjdk/jdk/jdk-21-ga/src/hotspot/share/classf
 <p><strong>MAT с <code>-Xmx</code> по умолчанию.</strong> <em>Симптом</em>: парсинг 6-гигабайтного дампа падает через 20 минут с <code>Java heap space</code>. <em>Причина</em>: в <code>MemoryAnalyzer.ini</code> по умолчанию стоит около 1 ГБ. <em>Лечение</em>: <code>-Xmx</code> порядка 0.5–1 × размера дампа, а для больших дампов headless <code>ParseHeapDump.sh</code> на сервере (12.4.8).</p>
 </li>
 <li>
-<p><strong><code>MaxDirectMemorySize</code> не задан.</strong> <em>Симптом</em>: бюджет контейнера сходится на бумаге, но под всё равно убивают. <em>Причина</em>: по умолчанию лимит direct-памяти равен <code>-Xmx</code>, то есть теоретический потолок процесса вдвое больше ожидаемого. <em>Лечение</em>: задавать его явно и включать в бюджет (16.4).</p>
+<p><strong><code>MaxDirectMemorySize</code> не задан.</strong> <em>Симптом</em>: бюджет контейнера сходится на бумаге, но под всё равно убивают. <em>Причина</em>: по умолчанию лимит direct-памяти равен <code>-Xmx</code>, то есть теоретический потолок процесса вдвое больше ожидаемого. <em>Лечение</em>: задавать его явно и включать в бюджет (<a href="#164-direct-buffers-cleaner-и-отложенное-освобождение-памяти" data-tip="Раздел этой главы: 16.4 Direct buffers, Cleaner и отложенное освобождение памяти">16.4</a>).</p>
 </li>
 <li>
-<p><strong>Metaspace без потолка в контейнере.</strong> <em>Симптом</em>: вместо <code>OutOfMemoryError: Metaspace</code> приходит OOMKilled, и нет ни дампа, ни стека. <em>Причина</em>: <code>MaxMetaspaceSize</code> по умолчанию не ограничен. <em>Лечение</em>: <code>-XX:MaxMetaspaceSize=256..512m</code>, потому что честное исключение лучше SIGKILL (16.1).</p>
+<p><strong>Metaspace без потолка в контейнере.</strong> <em>Симптом</em>: вместо <code>OutOfMemoryError: Metaspace</code> приходит OOMKilled, и нет ни дампа, ни стека. <em>Причина</em>: <code>MaxMetaspaceSize</code> по умолчанию не ограничен. <em>Лечение</em>: <code>-XX:MaxMetaspaceSize=256..512m</code>, потому что честное исключение лучше SIGKILL (<a href="#161-metaspace-и-compressed-class-space" data-tip="Раздел этой главы: 16.1 Metaspace и compressed class space">16.1</a>).</p>
 </li>
 <li>
 <p><strong>Дамп сняли не в тот момент.</strong> <em>Симптом</em>: дамп после рестарта или сразу после старта показывает здоровую кучу. <em>Причина</em>: улику уничтожил рестарт, или дамп сняли до того, как утечка накопилась. <em>Лечение</em>: снимать при заполнении old 70 %+, а лучше снять два дампа с интервалом при одинаковой нагрузке (12.4.7).</p>
 </li>
 <li>
-<p><strong>Увеличили лимит памяти и закрыли инцидент.</strong> <em>Симптом</em>: через неделю всё повторяется, только дамп теперь вдвое больше и снимается вдвое дольше. <em>Причина</em>: утечку не нашли, а лишь отложили. <em>Лечение</em>: увеличивать лимит допустимо только как немедленную меру, с датой в постмортеме, до которой ищут причину (12.8).</p>
+<p><strong>Увеличили лимит памяти и закрыли инцидент.</strong> <em>Симптом</em>: через неделю всё повторяется, только дамп теперь вдвое больше и снимается вдвое дольше. <em>Причина</em>: утечку не нашли, а лишь отложили. <em>Лечение</em>: увеличивать лимит допустимо только как немедленную меру, с датой в постмортеме, до которой ищут причину (<a href="#128-шаг-8-постмортем" data-tip="Раздел этой главы: 12.8 Шаг 8: постмортем">12.8</a>).</p>
 </li>
 </ol>
 <hr>
@@ -3919,7 +3919,7 @@ kubectl <span class="nb">exec</span> &lt;pod&gt; -- cat /dumps/app.hprof.gz &gt;
 kubectl debug -it &lt;pod&gt; --image<span class="o">=</span>eclipse-temurin:21 --target<span class="o">=</span>&lt;container&gt; -- <span class="se">\</span>
   sh -c <span class="s1">'jcmd 1 GC.heap_dump /dumps/app.hprof &amp;&amp; gzip -c /proc/1/root/dumps/app.hprof &gt; /tmp/app.hprof.gz'</span>
 </code></pre></div>
-<p>В последнем приёме путь <code>/dumps/app.hprof</code> интерпретирует целевая JVM, поэтому дамп оказывается в файловой системе приложения (12.2). Отладочный контейнер видит процесс приложения, но не его файловую систему. До файла он добирается через корень процесса 1, <code>/proc/1/root</code> (глава <a href="47-kubernetes-openshift.html" data-tip="47. Kubernetes и OpenShift для разработчика">47</a>). Путь <code>/proc/1/root/dumps/app.hprof</code> прямо в команде <code>jcmd</code> тоже сработал бы, но только потому, что приложение работает как PID 1. Для самой JVM такой путь указывает на её же <code>/dumps</code>, и на другом PID он приведёт не туда.</p>
+<p>В последнем приёме путь <code>/dumps/app.hprof</code> интерпретирует целевая JVM, поэтому дамп оказывается в файловой системе приложения (<a href="#122-шаг-2-снять-данные-с-живого-пода" data-tip="Раздел этой главы: 12.2 Шаг 2: снять данные с живого пода">12.2</a>). Отладочный контейнер видит процесс приложения, но не его файловую систему. До файла он добирается через корень процесса 1, <code>/proc/1/root</code> (глава <a href="47-kubernetes-openshift.html" data-tip="47. Kubernetes и OpenShift для разработчика">47</a>). Путь <code>/proc/1/root/dumps/app.hprof</code> прямо в команде <code>jcmd</code> тоже сработал бы, но только потому, что приложение работает как PID 1. Для самой JVM такой путь указывает на её же <code>/dumps</code>, и на другом PID он приведёт не туда.</p>
 <h3 id="195-паузы-не-связанные-с-gc">19.5 Паузы, не связанные с GC</h3>
 <p>Паузы, не связанные с GC, — это остановки приложения, которых нет в GC-логе или которые в нём выглядят короче, чем были на самом деле. Если паузы есть, а GC-лог их не объясняет, включают <code>-Xlog:safepoint</code> и смотрят на <code>Reaching safepoint</code> (TTSP, 7.1) и имя VM-операции. Чаще всего находятся четыре причины:</p>
 <ul>
@@ -3932,11 +3932,11 @@ kubectl debug -it &lt;pod&gt; --image<span class="o">=</span>eclipse-temurin:21 
 <p>Чеклист «паузы растут, памяти хватает» нужен, когда утечки нет, OOM не приходит, но p99 сервиса ухудшается. Такая картина обманчива: кажется, что раз памяти достаточно, дело в сборщике и его надо настраивать, а на деле причина часто лежит за его пределами, в CPU-квоте, агенте мониторинга или в самом профиле выделений памяти. Восемь шагов ниже идут от проверки того, что виноват именно GC, через разбор фаз и возрастов к поиску причин за пределами сборщика.</p>
 <ol>
 <li>Подтвердить, что это паузы, а не внешняя латентность: сравнить p99 <code>jvm_gc_pause_seconds</code> с p99 сервиса и проверить, совпадают ли всплески по времени.</li>
-<li>Посчитать долю времени в GC за час (13.1); если она меньше 3 %, причину надо искать вне GC.</li>
+<li>Посчитать долю времени в GC за час (<a href="#131-основные-вопросы-к-gc-логу" data-tip="Раздел этой главы: 13.1 Основные вопросы к GC-логу">13.1</a>); если она меньше 3 %, причину надо искать вне GC.</li>
 <li>В <code>-Xlog:gc+phases=debug</code> посмотреть, что доминирует: <code>Object Copy</code> (много живых объектов), <code>Merge/Scan Heap Roots</code> (давление RSet, 14.2) или <code>Post Evacuate</code> (миллионы слабых ссылок).</li>
 <li>В <code>gc+cpu</code> проверить, не выходит ли <code>Real</code> ≫ <code>User</code>/потоки: это CPU throttling, а не GC (13.2, диагноз 7).</li>
 <li>В <code>gc+age=trace</code> посмотреть <code>new threshold</code>: значение 1–2 при максимуме 15 означает premature promotion, и young надо увеличить (<code>G1NewSizePercent</code>).</li>
-<li>Поиск <code>grep 'Humongous\|Evacuation Failure\|Pause Full' gc.log</code> ищет три строки, и каждая из них означает отдельный диагноз (14.5, 13.2).</li>
+<li>Поиск <code>grep 'Humongous\|Evacuation Failure\|Pause Full' gc.log</code> ищет три строки, и каждая из них означает отдельный диагноз (<a href="#145-humongous-объекты-массив-на-16-мб-и-способы-исправления" data-tip="Раздел этой главы: 14.5 Humongous-объекты: массив на 16 МБ и способы исправления">14.5</a>, <a href="#132-типовые-диагнозы-по-gc-логу" data-tip="Раздел этой главы: 13.2 Типовые диагнозы по GC-логу">13.2</a>).</li>
 <li>В <code>-Xlog:safepoint</code> проверить <code>Reaching safepoint</code>: если он измеряется миллисекундами, проблема не в сборке, а в TTSP (раздел <a href="#7-safepoints-и-паузы-вне-gc" data-tip="Раздел этой главы: 7. Safepoints и паузы вне GC">7</a>).</li>
 <li>Если всё чисто, паузы не от GC, и искать надо агент APM с <code>RedefineClasses</code>, <code>/actuator/threaddump</code> из мониторинга или страничные прерывания (большой <code>Sys</code>).</li>
 </ol>
