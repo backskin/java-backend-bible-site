@@ -3,7 +3,7 @@
 <title>49. Service mesh и сетевое взаимодействие — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=c4e04c284b">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=880d52ec6e">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon-small.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Service mesh и сетевое взаимодействие">
 <a class="skip" href="#content">К тексту</a>
@@ -106,7 +106,7 @@ https://kubernetes.io/docs/concepts/cluster-administration/networking/">kubernet
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> <code>kubectl apply -f networkpolicy.yaml</code> с Flannel проходит успешно, объект появляется в API, <code>kubectl get netpol</code> его показывает — и ничего не блокирует. Kubernetes прямо документирует: без сетевого плагина, реализующего NetworkPolicy, создание объекта не имеет эффекта (<a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/concepts/services-networking/network-policies/">kubernetes.io, Network Policies</a>). Это самый коварный вид «безопасности»: аудит зелёный, защиты нет. Проверять надо тестом — подняли под, попробовали <code>curl</code> туда, куда нельзя.</p>
 </blockquote>
-<h3 id="13-mtu-и-оверлей-симптомы-в-java-сервисе">1.3 MTU и оверлей: симптомы в Java-сервисе</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-cni" data-tip="CNI">CNI</a></p><h3 id="13-mtu-и-оверлей-симптомы-в-java-сервисе">1.3 MTU и оверлей: симптомы в Java-сервисе</h3>
 <p>MTU и оверлей — не абстракция. Три симптома, которые стоит уметь связать с сетью:</p>
 <ul>
 <li><strong>Большие ответы (&gt;1 КБ) зависают, маленькие работают.</strong> MTU/фрагментация. Проверка: <code>ping -M do -s 1400 &lt;pod-ip&gt;</code> — если проходит, а <code>-s 1472</code> нет, эффективный MTU меньше 1500.</li>
@@ -114,8 +114,8 @@ https://kubernetes.io/docs/concepts/services-networking/network-policies/">kuber
 <li><strong>Соединения к внешнему API рвутся при скейле кластера</strong> — исчерпание портов SNAT на egress-шлюзе.</li>
 </ul>
 <hr>
-<h2 id="2-service-kube-proxy-и-endpointslice">2. Service, kube-proxy и EndpointSlice</h2>
-<h3 id="21-clusterip">2.1 ClusterIP</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-mtu" data-tip="MTU">MTU</a></p><h2 id="2-service-kube-proxy-и-endpointslice">2. Service, kube-proxy и EndpointSlice</h2>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-service" data-tip="Service">Service</a></p><h3 id="21-clusterip">2.1 ClusterIP</h3>
 <p>ClusterIP — <strong>не адрес чего-либо</strong>. Это виртуальный адрес из <code>service-cluster-ip-range</code>, на который никто не отвечает ARP-ом и который не принадлежит ни одному интерфейсу. Он существует только как ключ в правилах на каждом узле: «пакет на 10.96.0.42:80 → подменить адрес назначения на один из живых подов».</p>
 <p>Кто наполняет эти правила: контроллер эндпоинтов следит за подами, попадающими под селектор Service <strong>и прошедшими readiness</strong>, и пишет их в объекты <code>EndpointSlice</code>. <code>kube-proxy</code> на каждом узле подписан на Service и EndpointSlice и перекладывает их в datapath.</p>
 <p><strong>Замена Endpoints на EndpointSlice.</strong> Старый объект <code>Endpoints</code> хранил все адреса сервиса в одном ресурсе. Сервис на 5000 подов — это объект в несколько мегабайт, и <strong>любое</strong> изменение (один под перезапустился) отправляло весь объект всем watch-подписчикам: каждому kube-proxy на каждом узле, каждому ingress-контроллеру. При скейле это превращалось в шторм на apiserver и etcd. <code>EndpointSlice</code> режет список на куски (по умолчанию до 100 эндпоинтов на срез), и обновляется только затронутый срез. Заодно в срезе появились поля, которых не было в Endpoints: <code>conditions.ready</code> / <code>serving</code> / <code>terminating</code>, <code>zone</code> и <code>nodeName</code> для topology-aware routing, <code>hints</code>.</p>
@@ -185,7 +185,7 @@ https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/">kubern
 <p>Обратная сторона: <strong>headless + mesh — источник классических проблем</strong> (см. ошибку № 14): у Envoy нет одного VIP, на который вешать listener, и конфигурация строится иначе.</p>
 <hr>
 <h2 id="3-dns-в-кластере-coredns-и-ndots5">3. DNS в кластере: CoreDNS и <code>ndots:5</code></h2>
-<h3 id="31-устройство-dns-имён-в-кластере">3.1 Устройство DNS-имён в кластере</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-dns" data-tip="DNS">DNS</a></p><h3 id="31-устройство-dns-имён-в-кластере">3.1 Устройство DNS-имён в кластере</h3>
 <p>Kubelet записывает в <code>/etc/resolv.conf</code> каждого пода (<a href="https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/">kubernetes.io, DNS for Services and Pods</a>):</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>nameserver 10.96.0.10
@@ -285,7 +285,7 @@ curl -s localhost:9153/metrics <span class="p">|</span> grep -E <span class="s1"
 <p>Если в <code>coredns_dns_responses_total{rcode="NXDOMAIN"}</code> доля 70–80 % — это ровно симптом <code>ndots:5</code> с внешними именами.</p>
 <hr>
 <h2 id="4-networkpolicy-ingress-и-egress">4. NetworkPolicy, ingress и egress</h2>
-<h3 id="41-модель-networkpolicy-аддитивный-список-разрешений">4.1 Модель NetworkPolicy: аддитивный список разрешений</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-networkpolicy" data-tip="NetworkPolicy">NetworkPolicy</a></p><h3 id="41-модель-networkpolicy-аддитивный-список-разрешений">4.1 Модель NetworkPolicy: аддитивный список разрешений</h3>
 <p>Три правила, которые нужно понимать буквально (<a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/concepts/services-networking/network-policies/">kubernetes.io, Network Policies</a>):</p>
 <ol>
@@ -439,7 +439,7 @@ https://kubernetes.io/docs/concepts/services-networking/gateway/">kubernetes.io,
 </ul>
 <hr>
 <h2 id="5-балансировка-на-уровнях-l4-и-l7">5. Балансировка на уровнях L4 и L7</h2>
-<h3 id="51-механизм-балансировки-l4-и-l7">5.1 Механизм балансировки L4 и L7</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-l4" data-tip="L4">L4</a>, <a href="A-glossary.html#g-l7" data-tip="L7">L7</a></p><h3 id="51-механизм-балансировки-l4-и-l7">5.1 Механизм балансировки L4 и L7</h3>
 <p><strong>L4-балансировщик</strong> работает с TCP-соединением: смотрит на IP и порт, выбирает бэкенд <strong>один раз при установлении соединения</strong> и дальше просто перекладывает байты. Он не разбирает содержимое, не знает про HTTP-запросы, не может маршрутизировать по заголовку. Именно так работает kube-proxy: DNAT при первом SYN, дальше conntrack.</p>
 <p><strong>L7-балансировщик</strong> терминирует соединение, разбирает протокол и принимает решение <strong>на каждый запрос</strong>: смотрит путь, метод, заголовки, может переписать URI, добавить заголовок, повторить запрос на другом бэкенде, посчитать метрику по коду ответа.</p>
 <h3 id="52-балансировка-l4-для-grpc-и-http2">5.2 Балансировка L4 для gRPC и HTTP/2</h3>
@@ -762,7 +762,7 @@ https://istio.io/latest/docs/ambient/overview/">istio.io, Ambient Mode Overview<
 <p><strong>Cilium Service Mesh.</strong> eBPF-программы в ядре берут на себя L4-часть (идентичность, политики, балансировка, шифрование через WireGuard или IPsec), а для L7 поднимается Envoy <strong>на узел</strong>, а не на под. Идея та же, что в ambient, но реализована на уровне CNI, что убирает один слой абстракции. Минус — Istio-совместимого набора CRD там нет (используется Gateway API и собственные ресурсы), и экосистема (Kiali, готовые дашборды, Flagger-интеграции) слабее.</p>
 <hr>
 <h2 id="8-прокси-envoy">8. Прокси Envoy</h2>
-<h3 id="81-envoy-как-стандарт-data-plane">8.1 Envoy как стандарт data plane</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-envoy" data-tip="Envoy">Envoy</a></p><h3 id="81-envoy-как-стандарт-data-plane">8.1 Envoy как стандарт data plane</h3>
 <p>Envoy — прокси от Lyft, ставший де-факто стандартом data plane. Причины: он написан под динамическую конфигурацию (не reload-конфига, а поток обновлений по gRPC), понимает HTTP/1.1, HTTP/2, HTTP/3 и gRPC нативно, имеет расширяемую цепочку фильтров и подробнейшую статистику. Istio, Consul Connect, Gloo, Contour, Ambassador, AWS App Mesh, Kuma — все используют Envoy как data plane; различаются они control plane.</p>
 <h3 id="82-протоколы-xds">8.2 Протоколы xDS</h3>
 <p>xDS — семейство API, по которым control plane отдаёт конфигурацию прокси. Основные:</p>
@@ -968,7 +968,7 @@ https://istio.io/latest/docs/reference/config/networking/destination-rule/">isti
 <blockquote>
 <p>💡 <strong>На интервью.</strong> «Что такое outlier detection?» — «Пассивный health checking в Envoy: прокси не шлёт отдельных проб, а анализирует реальные ответы и временно выкидывает из балансировки конкретный эндпоинт, который отвечает 5xx подряд или хуже среднего по кластеру. В Istio значения по умолчанию — 5 последовательных 5xx, интервал сканирования 10 секунд, базовое исключение 30 секунд и не более половины эндпоинтов. От circuit breaker он отличается гранулярностью: outlier работает на уровне пода, а circuit breaker в Envoy — это лимиты соединений и запросов на весь кластер, при превышении которых запрос отбивается флагом UO.»</p>
 </blockquote>
-<h3 id="86-повторные-попытки-в-envoy">8.6 Повторные попытки в Envoy</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-outlier-detection" data-tip="Outlier detection">Outlier detection</a></p><h3 id="86-повторные-попытки-в-envoy">8.6 Повторные попытки в Envoy</h3>
 <p>Политика повторов настраивается на маршруте: число попыток, таймаут одной попытки, условия повтора (<code>retryOn</code>), а также <strong>retry budget</strong> — ограничение доли параллельных повторов от общего числа активных запросов. Последнее критично: без бюджета повторы в момент деградации умножают нагрузку и добивают сервис (retry storm — см. главу <a href="35-resilience.html" data-tip="35. Отказоустойчивость">35</a>).</p>
 <p>Условия <code>retryOn</code> в терминах Istio: <code>5xx</code>, <code>gateway-error</code> (502/503/504), <code>connect-failure</code>, <code>refused-stream</code>, <code>retriable-4xx</code> (по умолчанию только 409), <code>reset</code> (разрыв без ответа), <code>retriable-status-codes</code>, <code>retriable-headers</code>, а для gRPC — <code>cancelled</code>, <code>deadline-exceeded</code>, <code>internal</code>, <code>resource-exhausted</code>, <code>unavailable</code>.</p>
 <p><strong>Значение по умолчанию Istio, о котором надо знать:</strong> если политика повторов не задана явно, действует cluster-wide default — <code>attempts: 2</code>, <code>retryOn: connect-failure,refused-stream,unavailable,cancelled</code> (<a href="https://istio.io/latest/docs/reference/config/networking/virtual-service/" data-tip="Внешний сайт · istio.io
@@ -1379,7 +1379,7 @@ https://istio.io/latest/docs/concepts/security/">istio.io, Security</a>):</p>
 </ol>
 <p>Последний пункт заслуживает внимания: приватный ключ рабочей нагрузки <strong>никогда не покидает под и не записывается на диск</strong>. Нет Secret, который можно прочитать через API, нет файла, который утечёт в бэкап. Сертификаты живут часами (по умолчанию порядка 24 часов, обновляются заметно раньше истечения) — украденный сертификат быстро протухает.</p>
 <p>Корневой CA istiod по умолчанию self-signed. В банке это редко подходит: обычно подключают промежуточный CA от корпоративного PKI (Secret <code>cacerts</code> с <code>ca-cert.pem</code>, <code>ca-key.pem</code>, <code>root-cert.pem</code>, <code>cert-chain.pem</code>) или внешний SPIRE / Vault PKI. Детали X.509 и цепочек — глава <a href="41-pki-signatures.html" data-tip="41. PKI, сертификаты, электронная подпись">41</a>.</p>
-<h3 id="102-peerauthentication-и-переход-на-режим-strict">10.2 PeerAuthentication и переход на режим STRICT</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-spiffe" data-tip="SPIFFE">SPIFFE</a></p><h3 id="102-peerauthentication-и-переход-на-режим-strict">10.2 PeerAuthentication и переход на режим STRICT</h3>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">security.istio.io/v1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">PeerAuthentication</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -2617,5 +2617,5 @@ https://commons.wikimedia.org/wiki/File:Rainbow_nets.jpg">Разноцветны
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-сетевая-модель-kubernetes">1. Сетевая модель Kubernetes</a></li><li><a href="#2-service-kube-proxy-и-endpointslice">2. Service, kube-proxy и EndpointSlice</a></li><li><a href="#3-dns-в-кластере-coredns-и-ndots5">3. DNS в кластере: CoreDNS и ndots:5</a></li><li><a href="#4-networkpolicy-ingress-и-egress">4. NetworkPolicy, ingress и egress</a></li><li><a href="#5-балансировка-на-уровнях-l4-и-l7">5. Балансировка на уровнях L4 и L7</a></li><li><a href="#6-назначение-service-mesh">6. Назначение service mesh</a></li><li><a href="#7-sidecar-и-его-альтернативы">7. Sidecar и его альтернативы</a></li><li><a href="#8-прокси-envoy">8. Прокси Envoy</a></li><li><a href="#9-istio-управление-трафиком">9. Istio: управление трафиком</a></li><li><a href="#10-istio-безопасность">10. Istio: безопасность</a></li><li><a href="#11-istio-наблюдаемость-и-progressive-delivery">11. Istio: наблюдаемость и progressive delivery</a></li><li><a href="#12-сравнение-библиотеки-и-mesh">12. Сравнение библиотеки и mesh</a></li><li><a href="#13-другие-mesh-и-смежные-технологии">13. Другие mesh и смежные технологии</a></li><li><a href="#14-ошибки-и-антипаттерны">14. Ошибки и антипаттерны</a></li><li><a href="#15-диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками">17. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=5bb17fb4e6"></script>
+<script src="app.js?v=f34c39d1eb"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

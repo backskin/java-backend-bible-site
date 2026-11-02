@@ -3,7 +3,7 @@
 <title>4. Время, деньги и текст — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=c4e04c284b">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=880d52ec6e">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon-small.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Время, деньги и текст">
 <a class="skip" href="#content">К тексту</a>
@@ -60,7 +60,7 @@
 <p><strong>UTC</strong> (Coordinated Universal Time) задумана как компромисс между ними: секунды в ней атомные, как в TAI, но чтобы UTC не уходила от UT1 больше чем на 0,9 секунды, в неё изредка вставляют <strong>високосную секунду</strong> (leap second). Отсюда и соотношение UTC = TAI − (целое число секунд). На момент написания это смещение равно 37 секундам: последнюю високосную секунду вставили 31 декабря 2016 года, и с тех пор новых не вводили, потому что Земля в последние годы, наоборот, слегка ускорилась. ⚠️ Точное текущее значение смещения TAI−UTC по первичному источнику (IERS Bulletin C) в рамках этой главы не проверялось.</p>
 <p><strong>GMT</strong> (Greenwich Mean Time) сегодня остаётся историческим термином. В обиходе и в HTTP-заголовках его употребляют как синоним UTC, и разница между ними, измеряемая долями секунды, для бэкенда несущественна. В Java <code>ZoneId.of("GMT")</code> и <code>ZoneOffset.UTC</code> дают одинаковое смещение, но объекты это разные: <code>GMT</code> представляет собой <code>ZoneId</code> с идентификатором, а <code>UTC</code> — это <code>ZoneOffset</code>. Суффикс <code>Z</code>, который печатает <code>Instant.toString()</code>, читается как «Zulu» и означает нулевое смещение.</p>
 <p>Из этого вытекает важное практическое следствие. <strong>По RFC 7231 / RFC 9110 дата в HTTP-заголовках (<code>Date</code>, <code>Expires</code>, <code>Last-Modified</code>) обязана заканчиваться литералом <code>GMT</code></strong>, а не <code>UTC</code> и не <code>+0000</code>. Именно поэтому <code>DateTimeFormatter.RFC_1123_DATE_TIME</code> не всегда даёт то, чего ждёт строгий парсер на другой стороне. Он напечатает <code>GMT</code>, если вы передали ему <code>ZoneId.of("GMT")</code>, напечатает <code>GMT</code> и для <code>ZoneOffset.UTC</code>, но для <code>Europe/Moscow</code> выведет <code>+0300</code>, а такое значение в заголовке <code>Date</code> некорректно.</p>
-<h3 id="13-часовые-пояса-и-база-tzdata">1.3 Часовые пояса и база tzdata</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-utc" data-tip="UTC">UTC</a></p><h3 id="13-часовые-пояса-и-база-tzdata">1.3 Часовые пояса и база tzdata</h3>
 <p>2 сентября 2011 года правительство Самоа подписало уведомление, которое на следующий день Артур Дэвид Олсон, создатель базы часовых поясов, процитировал в рассылке проекта tz, предлагая новую версию базы. В уведомлении говорилось, что в этом году страна пропускает пятницу 30 декабря целиком: после 23:59:59 четверга 29-го сразу наступит 00:00:00 субботы 31-го<sup id="fnref:s13-tzlist"><a class="footnote-ref" href="#fn:s13-tzlist" data-tip="Сноска: Arthur David Olson, «proposed time zone package changes (Samoa, Kenya, Uganda, Tanzania)», рассылка tz, 3 сентября 2011, https://mm.icann.org/pipermail/tz/2011-September/008749.htm…">3</a></sup>. Премьер-министр Туилаэпа Саилеле Малиелегаои объяснил переход через линию перемены дат торговлей: Самоа хотела жить в одни рабочие дни с Новой Зеландией, Австралией, Китаем и остальной Азией, а соседнее Американское Самоа осталось на <code>UTC−11:00</code><sup id="fnref:s13-wiki"><a class="footnote-ref" href="#fn:s13-wiki" data-tip="Сноска: «Time in Samoa», Википедия, https://en.wikipedia.org/wiki/Time_in_Samoa. Энциклопедия; объяснение премьер-министра о торговле с Новой Зеландией, Австралией и Азией, Американское Са…">4</a></sup>. У OpenJDK на это ушло отдельное исправление: 15 сентября 2011 года завели ошибку JDK-7091315, потому что компилятор правил <code>javazic</code> неправильно обработал зону <code>Pacific/Apia</code> из tzdata 2011j, где смещение в будущем менялось больше одного раза<sup id="fnref:s13-jdk"><a class="footnote-ref" href="#fn:s13-jdk" data-tip="Сноска: OpenJDK, JDK-7091315 «javazic doesn&#x27;t produce correct excluded list for Pacific/Apia (2011j)», https://bugs.openjdk.org/browse/JDK-7091315. Первичный источник; дата заведения 2011-…">5</a></sup>.</p>
 <p>Что такое пропущенный день для программы, видно на коротком примере. Календарных дней между четвергом и субботой два, а прошло между их полуночами ровно 24 часа, и <code>atStartOfDay</code> для несуществующей пятницы без предупреждения возвращает полночь субботы:</p>
 <p class="cap cap-c"><b>Листинг 4.2.</b> Пропущенный день в tzdata: atStartOfDay возвращает полночь субботы.</p><div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kn">import</span> <span class="nn">java.time.Duration</span><span class="p">;</span>
@@ -176,7 +176,7 @@ https://www.iana.org/time-zones">iana.org/time-zones</a>).</p>
 <ul>
 <li>В окне размазывания <strong>часы вашего сервера расходятся с «настоящим» UTC на величину до 0,5 с</strong>, а если часть флота смотрит на smearing-NTP, а часть на обычный, серверы расходятся между собой до 1 с. Поэтому любая логика, которая сравнивает timestamp'ы с разных машин точнее чем до секунды, в этом окне ломается.</li>
 <li>Смешивать источники времени нельзя, и отсюда правило: весь флот должен ходить в один пул NTP с одинаковой политикой leap second.</li>
-<li>Длительности нужно мерить монотонными часами (<code>System.nanoTime</code>), а не wall clock; подробно об этом говорится в разделе 5.7.</li>
+<li>Длительности нужно мерить монотонными часами (<code>System.nanoTime</code>), а не wall clock; подробно об этом говорится в разделе <a href="#57-монотонное-время-nanotime-и-currenttimemillis" data-tip="Раздел этой главы: 5.7 Монотонное время: nanoTime и currentTimeMillis">5.7</a>.</li>
 </ul>
 <p>В ноябре 2022 года Генеральная конференция по мерам и весам приняла резолюцию, по которой от високосных секунд откажутся не позднее 2035 года, а расхождение UTC и UT1 предполагается допустить до большей величины. ⚠️ Точная формулировка резолюции CGPM по первичному источнику в рамках главы не проверялась.</p>
 <hr>
@@ -233,7 +233,7 @@ https://www.iana.org/time-zones">iana.org/time-zones</a>).</p>
 </tbody>
 </table>
 <p class="cap cap-t"><b>Таблица 4.1.</b> Старые подходы к датам и их оценка.</p>
-<p><strong><code>java.sql.Date</code>, <code>java.sql.Time</code>, <code>java.sql.Timestamp</code></strong> добавляют к этому отдельный слой боли. Все три наследуются от <code>java.util.Date</code> и тем самым нарушают LSP: например, <code>java.sql.Date</code> бросает <code>IllegalArgumentException</code> из <code>getHours()</code>, а <code>Timestamp.equals(Date)</code> несимметричен. Начиная с JDBC 4.2 они больше не нужны, потому что драйвер умеет <code>setObject(i, instant)</code> и <code>getObject(i, Instant.class)</code>; подробнее об этом говорится в разделе 5.2.</p>
+<p><strong><code>java.sql.Date</code>, <code>java.sql.Time</code>, <code>java.sql.Timestamp</code></strong> добавляют к этому отдельный слой боли. Все три наследуются от <code>java.util.Date</code> и тем самым нарушают LSP: например, <code>java.sql.Date</code> бросает <code>IllegalArgumentException</code> из <code>getHours()</code>, а <code>Timestamp.equals(Date)</code> несимметричен. Начиная с JDBC 4.2 они больше не нужны, потому что драйвер умеет <code>setObject(i, instant)</code> и <code>getObject(i, Instant.class)</code>; подробнее об этом говорится в разделе <a href="#52-jdbc-отображение-instant-offsetdatetime-и-настройки-hibernate" data-tip="Раздел этой главы: 5.2 JDBC-отображение: Instant, OffsetDateTime и настройки Hibernate">5.2</a>.</p>
 <h3 id="22-типы-javatime-и-выбор-между-ними">2.2 Типы <code>java.time</code> и выбор между ними</h3>
 <p>Каждый тип <code>java.time</code> отвечает на один вопрос: что именно он хранит и знает ли он о поясе. Если держать эту разницу в голове, выбор типа для поля почти всегда очевиден, поэтому ниже сначала приведена сводная таблица с типичными применениями, а после неё правило выбора из четырёх шагов.</p>
 <table class="rt">
@@ -299,7 +299,7 @@ https://www.iana.org/time-zones">iana.org/time-zones</a>).</p>
 <li>Речь идёт о будущем событии, привязанном к месту, вроде «созвон 3 марта в 10:00 по Москве»? Тогда нужны <strong><code>LocalDateTime</code> и <code>ZoneId</code>, хранимые раздельно</strong>, или <code>ZonedDateTime</code>; почему здесь не подходит <code>Instant</code>, объясняется ниже.</li>
 <li>Если случай не подошёл ни под один из трёх, подумайте ещё раз: скорее всего, это всё-таки один из них.</li>
 </ol>
-<h3 id="23-localdatetime-и-момент-события">2.3 <code>LocalDateTime</code> и момент события</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-instant" data-tip="`Instant`">`Instant`</a></p><h3 id="23-localdatetime-и-момент-события">2.3 <code>LocalDateTime</code> и момент события</h3>
 <p>Самая частая ошибка в схеме БД выглядит так: колонка <code>created_at timestamp</code> без зоны и поле <code>LocalDateTime createdAt</code> в сущности. Такая схема исправно работает годами и ломается при первом из четырёх событий, перечисленных ниже, а после этого испорченные данные уже не восстановить.</p>
 <ul>
 <li><strong>Сервер переезжает в другой дата-центр</strong> с другим системным поясом. Новые записи начинают писаться в другой шкале, старые остаются в прежней, и в таблице оказывается смесь, которую невозможно разделить, потому что признака шкалы в данных нет.</li>
@@ -424,7 +424,7 @@ https://www.iana.org/time-zones">iana.org/time-zones</a>).</p>
 <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">ChronoUnit</span><span class="p">.</span><span class="na">DAYS</span><span class="p">.</span><span class="na">between</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">));</span>         <span class="c1">// 30 — ровно дней</span>
 </code></pre></div>
 <p>Для возраста клиента нужен <code>Period</code>, а точнее <code>Period.between(birthDate, today).getYears()</code>: человеку, родившемуся 29 февраля 2000 года, 28 февраля 2023 года будет 22 года, а 1 марта уже 23. <code>ChronoUnit.YEARS.between</code> даёт для лет тот же ответ и работает быстрее, если кроме лет ничего не нужно.</p>
-<h3 id="32-различие-plusdays1-и-plushours24">3.2 Различие <code>plusDays(1)</code> и <code>plusHours(24)</code></h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-duration" data-tip="`Duration`">`Duration`</a></p><h3 id="32-различие-plusdays1-и-plushours24">3.2 Различие <code>plusDays(1)</code> и <code>plusHours(24)</code></h3>
 <p>Это ключевая ловушка <code>ZonedDateTime</code>, и о ней обязательно спрашивают: в обычный день прибавить сутки и прибавить 24 часа означает одно и то же, а в день перехода на летнее время результаты расходятся на час. Посмотрим на пример в ночь весеннего перехода в Берлине, а затем разберём, откуда берётся разница и какой метод выбирать под какое намерение.</p>
 <p class="cap cap-c"><b>Листинг 4.18.</b> plusDays(1) и plusHours(24) через переход на летнее время.</p><div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="n">ZoneId</span> <span class="n">berlin</span> <span class="o">=</span> <span class="n">ZoneId</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"Europe/Berlin"</span><span class="p">);</span>
 <span class="n">ZonedDateTime</span> <span class="n">before</span> <span class="o">=</span> <span class="n">ZonedDateTime</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">berlin</span><span class="p">);</span>
@@ -674,7 +674,7 @@ noClasses().that().resideInAPackage("..domain..")
 <span class="p">}</span>
 </code></pre></div>
 <p>В PostgreSQL для этого есть родные типы диапазонов: <code>tstzrange(from, to, '[)')</code> вместе с <code>EXCLUDE USING gist (... WITH &amp;&amp;)</code> декларативно запрещает пересечения (подробнее в главе <a href="19-schema-design-migrations.html" data-tip="19. Проектирование схем и миграции">19</a>). Литерал <code>'[)'</code> задаёт именно полуоткрытый интервал, и в PostgreSQL он <strong>используется по умолчанию</strong>.</p>
-<p>Отдельно стоит помнить, что <strong>бизнес-день ≠ 24 часа</strong>. Отчётный день в банке может начинаться в 00:00 по Москве и заканчиваться в момент cut-off, «операционный день» закрывается по регламенту, и всё, что проведено после закрытия, относится уже к следующему дню. Поэтому границы считайте через явный бизнес-календарь (раздел 5.6), а не через <code>atStartOfDay</code>.</p>
+<p>Отдельно стоит помнить, что <strong>бизнес-день ≠ 24 часа</strong>. Отчётный день в банке может начинаться в 00:00 по Москве и заканчиваться в момент cut-off, «операционный день» закрывается по регламенту, и всё, что проведено после закрытия, относится уже к следующему дню. Поэтому границы считайте через явный бизнес-календарь (раздел <a href="#56-бизнес-календари-рабочие-дни-tn-cut-off" data-tip="Раздел этой главы: 5.6 Бизнес-календари: рабочие дни, T+N, cut-off">5.6</a>), а не через <code>atStartOfDay</code>.</p>
 <hr>
 <h2 id="4-форматирование-и-парсинг">4. Форматирование и парсинг</h2>
 <p>Форматирование и парсинг — это граница, на которой значения <code>java.time</code> превращаются в строки и обратно, и именно здесь время уходит в логи, файлы, HTTP-ответы и чужие системы. На этой границе ошибки особенно коварны, потому что строка выглядит правдоподобно даже тогда, когда год в ней неверный или 30 февраля незаметно превратилось в 28-е. Раздел начинается с того, как устроен <code>DateTimeFormatter</code> и какие у него есть готовые константы, затем разбирает буквы паттерна, на которых ошибаются чаще всего, стили разрешения значений (<em>resolver style</em>), влияние локали и номера недель, а заканчивается порядками цифр по производительности.</p>
@@ -941,7 +941,7 @@ https://www.postgresql.org/docs/current/datatype-datetime.html">postgresql.org/d
 <span class="c1">-- 2026-09-21 09:00:00+00     | 2026-09-21 12:00:00     &lt;-- b не изменился</span>
 </code></pre></div>
 <p>В колонке <code>a</code> лежит один и тот же момент, который просто показан по-разному. В колонке <code>b</code> лежит одно и то же число, но его смысл зависит от того, что вы о нём помните.</p>
-<p><strong>Для всего, что является событием, правильный выбор по умолчанию — <code>timestamptz</code>.</strong> <code>timestamp</code> уместен только тогда, когда вы сознательно храните гражданское время, как в таблице <code>meeting</code> из раздела 2.4, а <code>time with time zone</code> документация прямо не рекомендует. Выбор типов и проектирование схемы подробнее разобраны в главе <a href="19-schema-design-migrations.html" data-tip="19. Проектирование схем и миграции">19</a> (<a href="19-schema-design-migrations.html" data-tip="19. Проектирование схем и миграции"><code>19-schema-design-migrations.md</code></a>).</p>
+<p><strong>Для всего, что является событием, правильный выбор по умолчанию — <code>timestamptz</code>.</strong> <code>timestamp</code> уместен только тогда, когда вы сознательно храните гражданское время, как в таблице <code>meeting</code> из раздела <a href="#24-zoneddatetime-для-будущих-событий" data-tip="Раздел этой главы: 2.4 ZonedDateTime для будущих событий">2.4</a>, а <code>time with time zone</code> документация прямо не рекомендует. Выбор типов и проектирование схемы подробнее разобраны в главе <a href="19-schema-design-migrations.html" data-tip="19. Проектирование схем и миграции">19</a> (<a href="19-schema-design-migrations.html" data-tip="19. Проектирование схем и миграции"><code>19-schema-design-migrations.md</code></a>).</p>
 <p>Переводить одно в другое помогает конструкция <code>at time zone</code>, и три типовых запроса с ней выглядят так:</p>
 <p class="cap cap-c"><b>Листинг 4.38.</b> Запросы с at time zone.</p><div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- timestamp -&gt; timestamptz: «истолковать эти часы в такой-то зоне»</span>
 <span class="k">select</span> <span class="k">timestamp</span> <span class="s1">'2026-09-21 12:00'</span> <span class="k">at</span> <span class="k">time</span> <span class="k">zone</span> <span class="s1">'Europe/Moscow'</span><span class="p">;</span>  <span class="c1">-- timestamptz</span>
@@ -1116,9 +1116,9 @@ https://www.rfc-editor.org/rfc/rfc3339">RFC 3339</a>). Выглядит этот
     <span class="p">.</span><span class="na">build</span><span class="p">();</span>
 </code></pre></div>
 <p>Без первого <code>disable</code> Jackson пишет <code>Instant</code> как число секунд с дробной частью (<code>1789045500.123456789</code>), и вы получаете все беды epoch вдобавок к проблемам точности JSON-чисел. Без второго <code>ZonedDateTime</code> при десериализации приводится к зоне контекста преобразователя, по умолчанию UTC, и исходная зона теряется.</p>
-<h3 id="54-сортировка-событий-с-разных-серверов">5.4 Сортировка событий с разных серверов</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-iso" data-tip="ISO">ISO</a></p><h3 id="54-сортировка-событий-с-разных-серверов">5.4 Сортировка событий с разных серверов</h3>
 <p>Часто встречается уверенность, что достаточно поставить timestamp в каждое сообщение и упорядочить события по нему, но это не работает. Часы разных машин никогда не идут точно в ногу, и ниже мы разберём, насколько велико расхождение, какие следствия из него вытекают для порядка, для циклов ожидания и для разрешения конфликтов и чем пользоваться вместо wall clock.</p>
-<p>В хорошей сети NTP держит рассинхронизацию в пределах единиц миллисекунд, в плохой в пределах десятков и сотен миллисекунд, а при сбое NTP или в момент старта VM расхождение может достигать секунд. К этому добавляется smearing в дни високосных секунд (раздел 1.5) и виртуализация, потому что на перегруженном гипервизоре гостевые часы дрейфуют.</p>
+<p>В хорошей сети NTP держит рассинхронизацию в пределах единиц миллисекунд, в плохой в пределах десятков и сотен миллисекунд, а при сбое NTP или в момент старта VM расхождение может достигать секунд. К этому добавляется smearing в дни високосных секунд (раздел <a href="#15-високосные-секунды-и-smearing" data-tip="Раздел этой главы: 1.5 Високосные секунды и smearing">1.5</a>) и виртуализация, потому что на перегруженном гипервизоре гостевые часы дрейфуют.</p>
 <p>Из этого вытекают три следствия:</p>
 <ul>
 <li><strong>Два события, случившиеся на разных машинах в пределах секунды, по wall clock достоверно упорядочить нельзя.</strong></li>
@@ -2705,7 +2705,7 @@ https://en.wikipedia.org/wiki/Largest_remainder_method">Википедия, «La
 https://habr.com/en/articles/39811">Класс Money, Хабр</a>: статья на русском про класс денег (название страницы проверено 2026-10-19).</li>
 <li>Статей на Хабре про <code>allocate</code> в отдельности поиск не вернул.</li>
 </ul>
-<h3 id="84-jsr-354-и-moneta">8.4 JSR-354 и Moneta</h3>
+<p class="xref"><span class="xr-k">Упражнения:</span> <a href="#t-5" data-tip="5. Распределить 100,00 на три части. Реализуйте allocate(int n) из раздела 8.3 и проверьте, что сумма частей равна исходной для n = 3, 7, 11">5</a></p><h3 id="84-jsr-354-и-moneta">8.4 JSR-354 и Moneta</h3>
 <p>JSR-354 — это спецификация Money and Currency API, то есть стандартной модели денег для Java, и вопрос о ней обычно возникает, когда команда решает, писать ли свой <code>Money</code>. Ниже мы посмотрим, что эта спецификация предлагает, как выглядит код на ней и во что обходится зависимость, а в конце дадим рекомендацию.</p>
 <p><strong>В JDK JSR-354 так и не вошла</strong> и остаётся отдельной библиотекой, которая состоит из API <code>javax.money</code> (артефакт <code>javax.money:money-api</code>, версия 1.1) и эталонной реализации <strong>Moneta</strong> (<code>org.javamoney:moneta</code>) (<a href="https://github.com/JavaMoney/jsr354-api" data-tip="Внешний сайт · github.com
 https://github.com/JavaMoney/jsr354-api">github.com/JavaMoney/jsr354-api</a>). Её статус — Maintenance: библиотека стабильна, но активной разработки нет.</p>
@@ -3099,7 +3099,7 @@ https://habr.com/ru/post/946108">Pro Деньги. JSR-354, Хабр</a>: обз
 <li><strong>Сверять нужно по трём осям</strong>: по количеству операций, по сумме и поштучно по бизнес-ключу. Если суммы совпали, а количество операций разное, это две компенсирующие друг друга ошибки, и они хуже одной.</li>
 <li><strong>Допустимое расхождение (tolerance) для сумм в одной валюте должно быть равно 0.</strong> Правило «допустим расхождение в 1 копейку на операцию» лишь прячет системный баг. Tolerance имеет смысл только там, где расхождение объективно: при конвертации валют по разным курсам или при округлении по разным регламентам на стороне контрагента.</li>
 <li><strong>У любого расхождения должно быть объяснение и учётная запись.</strong> Если система умеет «списать разницу на технический счёт», по этому счёту нужна отчётность и оповещение на рост.</li>
-<li><strong>Направление расхождения само по себе информативно.</strong> Систематическое расхождение всегда в одну сторону указывает на ошибку округления (раздел 7.5), а случайное в обе стороны говорит о гонке, дублях или потере сообщений.</li>
+<li><strong>Направление расхождения само по себе информативно.</strong> Систематическое расхождение всегда в одну сторону указывает на ошибку округления (раздел <a href="#75-режимы-округления" data-tip="Раздел этой главы: 7.5 Режимы округления">7.5</a>), а случайное в обе стороны говорит о гонке, дублях или потере сообщений.</li>
 <li><strong>Сверяйте в минорных единицах.</strong> Сравнение <code>numeric</code> из двух систем с разным scale через <code>=</code> даст <code>true</code> для <code>100.00</code> и <code>100.0000</code>, потому что в SQL <code>numeric</code> сравнивается численно, в отличие от <code>BigDecimal.equals</code>, а вот выгрузка в CSV со сравнением строк такого равенства не увидит. Поэтому перед сравнением приводите суммы к <code>long</code> минорных единиц.</li>
 </ol>
 <p>Типовой запрос сверки показывает сразу три вида расхождений: то, что есть у нас и нет у них, то, что есть у них и нет у нас, и строки с разными суммами:</p>
@@ -3851,7 +3851,7 @@ https://github.com/google/re2j">RE2/J</a> — это порт RE2 из Go на J
 </ol>
 <p><strong>Для проектов, которые принимают регулярные выражения от пользователя</strong>, будь то поисковые фильтры, правила маршрутизации или антифрод-правила, правило одно: <strong>только re2j</strong>. Пользовательское регулярное выражение в движке с возвратами — это готовый DoS.</p>
 <p><strong>Для проверки email правило другое: не пишите регулярное выражение.</strong> Возьмите <code>jakarta.validation.constraints.@Email</code>, реализация которого в Hibernate Validator использует проверенный паттерн, или Apache Commons Validator, а окончательной проверкой email всё равно остаётся письмо с кодом.</p>
-<h3 id="113-numberformat-и-локали-в-api">11.3 <code>NumberFormat</code> и локали в API</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-redos" data-tip="ReDoS">ReDoS</a></p><h3 id="113-numberformat-и-локали-в-api">11.3 <code>NumberFormat</code> и локали в API</h3>
 <p><code>NumberFormat</code> форматирует числа для человека по правилам локали, а в разных локалях эти правила различаются так сильно, что одна и та же строка означает разные числа. Поэтому в машинных интерфейсах локализованному форматированию не место, а там, где оно уместно, у <code>NumberFormat</code> есть свои ловушки. Посмотрим сначала, как одно число выглядит в четырёх локалях:</p>
 <p class="cap cap-c"><b>Листинг 4.142.</b> Одно число в четырёх локалях.</p><div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kt">double</span> <span class="n">v</span> <span class="o">=</span> <span class="mf">1234567.89</span><span class="p">;</span>
 <span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">NumberFormat</span><span class="p">.</span><span class="na">getInstance</span><span class="p">(</span><span class="n">Locale</span><span class="p">.</span><span class="na">forLanguageTag</span><span class="p">(</span><span class="s">"ru"</span><span class="p">)).</span><span class="na">format</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
@@ -4137,103 +4137,103 @@ grep -rn <span class="s1">'static.*SimpleDateFormat\|static.*NumberFormat\|stati
 <h2 id="14-вопросы-на-интервью">14. Вопросы на интервью</h2>
 <p>Ниже двадцать пять вопросов, которые по этой главе задают на собеседованиях в банки и финтех, и к каждому дан ответ, рассчитанный на то, чтобы произнести его вслух примерно за минуту. Вопросы идут в порядке главы: первые семь касаются времени, следующие восемь денег и <code>BigDecimal</code>, затем шесть вопросов о строках, Unicode и кодировках, и в конце четыре вопроса на стыке тем: ReDoS, cron в ночь перехода, монотонное время и полуоткрытые интервалы. Все ответы построены по одной схеме: сначала механизм, потом следствие для практики и в конце правило или граница применимости, которой удобно закончить ответ. Заучивать их дословно не нужно, полезнее увидеть в них структуру, потому что интервьюер оценивает, понимаете ли вы механизм, а не сколько фактов успели назвать.</p>
 <ol>
-<li>
+<li id="q-1">
 <p><strong>Чем <code>Instant</code> отличается от <code>LocalDateTime</code>?</strong>
    <code>Instant</code> — это точка на шкале UTC, то есть момент, одинаковый для всех наблюдателей, и внутри у него лежат <code>long</code> секунд и <code>int</code> наносекунд. <code>LocalDateTime</code>, напротив, описывает гражданские дату и время без привязки к месту: «21 сентября, 13:45», но без ответа на вопрос «где». Поэтому из <code>LocalDateTime</code> нельзя получить момент, не добавив зону, и даже с зоной это преобразование в дни перехода на летнее время бывает неоднозначным. Отсюда правило, которым я руководствуюсь: событие всегда хранится как <code>Instant</code>, бизнес-дата как <code>LocalDate</code>, а <code>LocalDateTime</code> уместен, только когда зона действительно не нужна или хранится отдельной колонкой.</p>
 </li>
-<li>
+<li id="q-2">
 <p><strong>В каком типе хранить в базе время события и почему?</strong>
    В PostgreSQL это <code>timestamptz</code>, а в Java <code>Instant</code>. <code>timestamptz</code> занимает 8 байт и хранит момент в UTC, а зону, вопреки названию, не хранит: она применяется только на входе и на выходе по параметру <code>TimeZone</code> сессии. <code>timestamp</code> без зоны хранит «часы на стене» и без предупреждения отбрасывает смещение из входного литерала, поэтому восстановить из него момент потом уже невозможно. Для календарных сущностей, у которых нет времени, подходит <code>date</code>.</p>
 </li>
-<li>
+<li id="q-3">
 <p><strong>Почему для будущей встречи нельзя хранить просто <code>Instant</code>?</strong>
    Потому что так вы сохраните производную величину, а не намерение пользователя. Пользователь имел в виду «10:00 по местному времени», а вы записали момент, посчитанный по сегодняшним правилам пояса. Если до встречи страна изменит правила перехода на летнее время, а это происходит регулярно и решается законодательно, момент останется прежним, зато по местным часам встреча уедет на час. Поэтому правильно хранить <code>LocalDateTime</code> + <code>ZoneId</code>, а <code>Instant</code> держать рядом как кеш для индексации, который пересчитывают при обновлении правил.</p>
 </li>
-<li>
+<li id="q-4">
 <p><strong>Что делает <code>LocalDateTime.atZone()</code> для несуществующего и для неоднозначного времени?</strong>
    Исключения не будет ни в том, ни в другом случае. Если время попало в «пропавший» час весеннего перехода, оно сдвигается вперёд на длину разрыва, так что 02:30 превращается в 03:30. Если оно попало в повторённый час осеннего перехода, выбирается <strong>первый</strong> вариант, то есть более раннее смещение. Когда разница в час критична, надо явно проверять <code>zone.getRules().getValidOffsets(ldt)</code>: пустой список означает разрыв, два элемента означают перекрытие, и тогда вариант выбирают сознательно через <code>withEarlierOffsetAtOverlap</code>/<code>withLaterOffsetAtOverlap</code>.</p>
 </li>
-<li>
+<li id="q-5">
 <p><strong>Чем <code>Duration</code> отличается от <code>Period</code>?</strong>
    <code>Duration</code> описывает машинное время, то есть фиксированное количество секунд и наносекунд на шкале, так что <code>Duration.ofDays(1)</code> — это ровно 86 400 секунд. <code>Period</code> описывает календарный сдвиг из трёх независимых полей, лет, месяцев и дней, и сколько в нём секунд, зависит от даты, к которой его применяют. Поэтому <code>plusDays(1)</code> на <code>ZonedDateTime</code> в день перехода даст 23 или 25 реальных часов, а <code>plus(Duration.ofHours(24))</code> даст ровно сутки. Для TTL и таймаутов я беру <code>Duration</code> на <code>Instant</code>, а для календарных графиков <code>Period</code> или <code>plusMonths</code>.</p>
 </li>
-<li>
+<li id="q-6">
 <p><strong>Что вернёт <code>LocalDate.of(2024,1,31).plusMonths(1)</code> и почему?</strong>
    Вернёт <code>2024-02-29</code>, потому что java.time сначала меняет поле месяца, а потом обрезает день до последнего дня получившегося месяца. Из этого следует, что сложение периодов не ассоциативно: если дважды прибавить по месяцу к 31 января, получится 29 марта, а если сразу прибавить два месяца, то 31 марта. Практический вывод касается графиков платежей: их считают от исходной даты через <code>start.plusMonths(i)</code>, а не накопительным сдвигом, иначе все платежи «прилипнут» к 29-му числу.</p>
 </li>
-<li>
+<li id="q-7">
 <p><strong>Как протестировать код, который зависит от текущего времени?</strong>
    Нужно внедрить <code>java.time.Clock</code> как зависимость и брать время только из него, через <code>clock.instant()</code> и <code>LocalDate.now(clock)</code>. Тогда в тесте можно подставить <code>Clock.fixed(instant, zone)</code> и проверить именно граничные моменты: конец суток, конец месяца, 29 февраля, разрыв и перекрытие при переходе на летнее время. Для сценариев, где время должно идти вперёд, пишут свою изменяемую реализацию <code>Clock</code>, а для интеграционных тестов всего стека вместе с БД используют <code>libfaketime</code> в контейнере. И наконец, запрет на прямые вызовы <code>Instant.now()</code> в доменном слое стоит закрепить архитектурным тестом, иначе кто-нибудь обязательно обойдёт внедрённые часы.</p>
 </li>
-<li>
+<li id="q-8">
 <p><strong>Почему нельзя использовать <code>double</code> для денег?</strong>
    <code>double</code> — это двоичная дробь, а 0,01 в двоичной системе записывается бесконечной периодической дробью, точно так же, как 1/3 в десятичной. Ближайший представимый <code>double</code> для 0.1 равен 0.1000000000000000055511151231257827…, поэтому <code>0.1 + 0.2 != 0.3</code>, а <code>(long)(4.35 * 100)</code> даёт 434. Эта ошибка накапливается на длинных цепочках вычислений и при суммировании миллионов записей, а поскольку сложение <code>double</code> ещё и не ассоциативно, итог зависит от порядка обхода. Поэтому для сумм нужен <code>BigDecimal</code> или целые минорные единицы.</p>
 </li>
-<li>
+<li id="q-9">
 <p><strong>Что вернёт <code>new BigDecimal(0.1)</code> и чем это отличается от <code>BigDecimal.valueOf(0.1)</code>?</strong>
    Конструктор от <code>double</code> переводит <strong>точное</strong> значение, которое лежит в памяти, и вернёт <code>0.1000000000000000055511151231257827021181583404541015625</code>. <code>BigDecimal.valueOf(0.1)</code> действует иначе: он идёт через <code>Double.toString()</code> и даёт <code>0.1</code> со scale 1, то есть «то, что вы видели на экране». Отсюда правило: <code>BigDecimal</code> создают только из <code>String</code> или из <code>long</code>/<code>int</code>, а <code>valueOf</code> допустим, когда <code>double</code> пришёл из чужого API и другого источника нет.</p>
 </li>
-<li>
+<li id="q-10">
 <p><strong>Чем <code>equals</code> отличается от <code>compareTo</code> у <code>BigDecimal</code>?</strong>
     <code>compareTo</code> сравнивает значения численно, так что <code>2.0</code> и <code>2.00</code> для него равны. <code>equals</code> требует совпадения и значения, и представления, то есть scale, поэтому <code>new BigDecimal("2.0").equals(new BigDecimal("2.00"))</code> возвращает <code>false</code>, и хеш-коды у этих объектов тоже разные. Отсюда целый набор багов: в <code>HashSet</code> появляются «дубликаты», <code>assertEquals</code> в тестах падает, <code>contains</code> не находит элемент, а <code>TreeSet</code> схлопывает то, что <code>HashSet</code> не схлопнет. Лечится это нормализацией scale при создании денежного объекта и сравнением через <code>compareTo</code> или <code>signum</code>.</p>
 </li>
-<li>
+<li id="q-11">
 <p><strong>Что произойдёт при <code>new BigDecimal("1").divide(new BigDecimal("3"))</code>?</strong>
     Вылетит <code>ArithmeticException: Non-terminating decimal expansion; no exact representable decimal result</code>, потому что <code>divide</code> с одним аргументом пытается получить точный результат, а у одной трети десятичное разложение бесконечно. Опасно это тем, что падение зависит от данных: деление на 2 пройдёт, а на 3 нет, так что тесты будут зелёными, а баг всплывёт в проде посреди транзакции. Поэтому scale и <code>RoundingMode</code> при делении нужно указывать всегда и явно.</p>
 </li>
-<li>
+<li id="q-12">
 <p><strong>Что такое банковское округление и когда его применять?</strong>
     Банковским называют <code>RoundingMode.HALF_EVEN</code>: при ничьей, то есть когда отбрасывается ровно половина, результат округляется к чётной цифре. При <code>HALF_UP</code> все половинки уходят вверх, и на большом потоке операций накапливается систематическое смещение с ненулевым матожиданием, а <code>HALF_EVEN</code> отправляет их попеременно вверх и вниз, и смещение обнуляется. Но важно понимать, что режим округления — это бизнес-параметр, а не техническое решение: если договор или регламент предписывает округлять «по правилам арифметики», это <code>HALF_UP</code>, и математическая красота банковского округления значения уже не имеет.</p>
 </li>
-<li>
+<li id="q-13">
 <p><strong>Как разделить 100,00 руб. на три части без потери копейки?</strong>
     Считать нужно в минорных единицах: 10000 / 3 = 3333, остаток 1. Всем раздают по 33,33, а одну оставшуюся копейку добавляют первой части, и получается 33,34 + 33,33 + 33,33 = 100,00. Это алгоритм <code>allocate</code> из паттерна Money у Фаулера; при пропорциональном делении веса обрабатываются так же, а остаток распределяется по правилу, например первым получателям или по наибольшим дробным остаткам. Кому достаётся лишняя копейка, решает бизнес, и это решение надо зафиксировать в коде и в документации, потому что иначе при следующем рефакторинге оно незаметно изменится.</p>
 </li>
-<li>
+<li id="q-14">
 <p><strong>Что выбрать: <code>BigDecimal</code> или <code>long</code> минорных единиц?</strong>
     <code>BigDecimal</code> — выбор по умолчанию для бизнес-приложения: у него естественная точность, произвольный scale и прямое отображение на <code>numeric</code>. <code>long</code> минорных единиц нужен на горячих путях, где объём арифметики критичен, потому что он в 10–100 раз быстрее и точен по определению. Но <code>long</code> ломается на валютах с числом знаков, отличным от двух (у JPY — 0, у KWD — 3), на крипте, где у ETH 18 знаков и в <code>long</code> помещается меньше 10 эфиров, и на дробных промежуточных значениях вроде комиссии в 3,5 копейки. Поэтому типичное решение такое: <code>BigDecimal</code> в домене и <code>long</code> внутри высоконагруженного модуля с конвертацией на его границе.</p>
 </li>
-<li>
+<li id="q-15">
 <p><strong>Почему деньги в JSON надо отдавать строкой?</strong>
     Потому что JSON не задаёт точность чисел, и большинство парсеров превращают JSON-число в IEEE 754 double: так делают JavaScript, Go при разборе в <code>interface{}</code> и Python по умолчанию. Даже если вы аккуратно сериализовали <code>BigDecimal</code> как число, потребитель потеряет точность, и вы об этом не узнаете, потому что ошибка появится только в последних знаках. Строка же проходит через любой парсер без изменений и заставляет потребителя разобрать её явно, тем типом, который ему нужен. А на входе нужно включить <code>USE_BIG_DECIMAL_FOR_FLOATS</code>, чтобы и нетипизированный разбор не терял точность.</p>
 </li>
-<li>
+<li id="q-16">
 <p><strong>Почему <code>"👍".length()</code> возвращает 2?</strong>
     Потому что <code>String</code> в Java хранит текст в UTF-16, а <code>length()</code> возвращает число кодовых единиц UTF-16, а не символов. Кодовые точки выше U+FFFF, к которым относится и этот эмодзи, кодируются суррогатной парой из двух <code>char</code>. Символы правильно считать через <code>codePointCount(0, length())</code>, а «то, что пользователь считает одним символом», через <code>BreakIterator.getCharacterInstance</code>, потому что, например, семья 👨‍👩‍👧‍👦 — это 11 кодовых единиц, 7 кодовых точек и всего один графемный кластер.</p>
 </li>
-<li>
+<li id="q-17">
 <p><strong>Что случится, если обрезать строку через <code>substring(0, n)</code> посреди эмодзи?</strong>
     Получится строка с непарным суррогатом, и дальше он начнёт ломать всё, через что пройдёт. При кодировании в UTF-8 он без предупреждения заменится на <code>?</code> (0x3F), потому что по умолчанию <code>CodingErrorAction</code> равно REPLACE; PostgreSQL отвергнет такую последовательность как некорректный UTF-8, а в JSON он сериализуется как <code>\uD83D</code>, и часть парсеров на этом упадёт. Поэтому обрезать нужно по кодовым точкам через <code>offsetByCodePoints</code>, а ещё лучше по графемным кластерам.</p>
 </li>
-<li>
+<li id="q-18">
 <p><strong>Что такое нормализация Unicode и зачем она нужна?</strong>
     Один и тот же видимый символ можно записать разными последовательностями кодовых точек: «é» — это либо U+00E9, либо <code>e</code> с комбинирующим акутом. Нормализация приводит текст к каноническому виду: NFC выполняет композицию и даёт компактную форму, которую рекомендуют для хранения и обмена, NFD выполняет декомпозицию, а NFKC/NFKD дополнительно схлопывают совместимые формы, так что лигатура ﬁ превращается в fi, а полноширинные буквы в обычные. Без нормализации ломаются сравнение, поиск, уникальные индексы и подписи, и два «одинаковых» логина спокойно проходят уникальный индекс. Поэтому нормализовать нужно на границе системы, в NFC, а для ключа уникальности использовать NFKC вместе с приведением регистра.</p>
 </li>
-<li>
+<li id="q-19">
 <p><strong>Чем опасен <code>toLowerCase()</code> без локали?</strong>
     Без аргумента он использует локаль JVM по умолчанию, а в турецкой и азербайджанской локалях <code>I</code> переходит в <code>ı</code> без точки, а <code>i</code> в <code>İ</code>. Поэтому на сервере с <code>LANG=tr_TR</code> выражение <code>"Content-Type".toLowerCase().equals("content-type")</code> возвращает <code>false</code>, и именно так ломались HTTP-парсеры, разбор SQL и проверки расширений файлов. Для машинного сравнения нужен <code>toLowerCase(Locale.ROOT)</code>, а локаль пользователя применяют только при отображении. И стоит помнить, что смена регистра может менять длину строки: <code>ß</code> в верхнем регистре превращается в <code>SS</code>.</p>
 </li>
-<li>
+<li id="q-20">
 <p><strong>Почему <code>String.compareTo</code> не годится для сортировки по алфавиту?</strong>
     Потому что он сравнивает кодовые единицы UTF-16 численно, а числовой порядок не совпадает с алфавитным. В кириллице заглавные (U+0410…) идут раньше строчных (U+0430…), а <code>ё</code> (U+0451) оказывается после <code>я</code> (U+044F), потому что её добавили в блок отдельно; вдобавок для символов выше BMP порядок по кодовым единицам из-за суррогатов расходится с порядком по кодовым точкам. Для человеческого порядка нужен <code>Collator</code> с нужной локалью, а при сортировке большой коллекции ещё и заранее вычисленные <code>CollationKey</code>. И наконец, порядок в приложении и в БД нужно согласовать по правилу сортировки, иначе пагинация даст дубликаты и пропуски.</p>
 </li>
-<li>
+<li id="q-21">
 <p><strong>Что изменилось с кодировками в JDK 18?</strong>
     JEP 400 сделал UTF-8 кодировкой по умолчанию для всех стандартных API, независимо от локали ОС. До этого <code>FileReader</code>, <code>InputStreamReader</code>, <code>Files.readString</code> и остальные брали кодировку из окружения, и один и тот же код читал файл по-разному на ноутбуке и на сервере. Вернуть старое поведение можно флагом <code>-Dfile.encoding=COMPAT</code>, а узнать кодировку окружения через свойство <code>native.encoding</code>, которое есть начиная с JDK 17. Важно помнить две оговорки: <code>System.out</code>/<code>System.err</code> следуют <code>Console.charset()</code>, а не кодировке по умолчанию, а <code>sun.jnu.encoding</code> для имён файлов JEP 400 не менял.</p>
 </li>
-<li>
+<li id="q-22">
 <p><strong>Что такое ReDoS и как от него защититься?</strong>
     <code>java.util.regex</code> — движок с возвратами, и для паттернов с вложенными квантификаторами вроде <code>(a+)+</code> или с перекрывающимися альтернативами число перебираемых вариантов растёт экспоненциально от длины входа. Строка из 30 букв <code>a</code> и одного несовпадающего символа заставляет движок перебрать порядка 2³⁰ разбиений, а это минуты CPU на один запрос, и именно так падали Stack Overflow в 2016 году и Cloudflare в 2019-м. Защищаются несколькими способами: переписывают паттерн, ограничивают длину входа до применения регулярного выражения, используют possessive-квантификаторы (<code>a++</code>) или атомарные группы, оборачивают вход в <code>CharSequence</code> с таймаутом. А для регулярок, которые приходят от пользователя, годится только re2j с его линейным временем.</p>
 </li>
-<li>
+<li id="q-23">
 <p><strong>Что произойдёт с cron-задачей в ночь перехода на летнее время?</strong>
     Задача, запланированная на «пропадающий» час, весной не выполнится, а в повторённый час осенью может выполниться дважды. Конкретное поведение зависит от планировщика: Spring и Quartz ищут следующий триггер строго после предыдущего и повторно не запускают, а системный cron ведёт себя иначе, так что полагаться на «ровно один раз» нельзя. Правильный ответ поэтому не в том, чтобы бороться с планировщиком, а в том, чтобы сделать задачу идемпотентной по бизнес-дате, через уникальный индекс на <code>(job, business_date)</code> и <code>INSERT ... ON CONFLICT DO NOTHING</code>. Дополнительно задачи не стоит планировать на 00:00–04:00 локального времени.</p>
 </li>
-<li>
+<li id="q-24">
 <p><strong>Чем <code>System.nanoTime</code> отличается от <code>currentTimeMillis</code> и когда что использовать?</strong>
     <code>currentTimeMillis</code> — это wall clock: он связан с датой, его корректирует NTP, и поэтому он может пойти назад или скакнуть вперёд. <code>nanoTime</code> — монотонный счётчик от произвольной точки отсчёта, который ни с какой датой не связан, и у каждой JVM эта точка своя. Поэтому длительности, таймауты и дедлайны меряют только через <code>nanoTime</code> и только вычитанием, а переводить его в дату или передавать между процессами бессмысленно. Все таймауты в <code>java.util.concurrent</code> внутри работают на <code>nanoTime</code> и потому корректны при скачке системных часов, а вот <code>Duration.between(startInstant, Instant.now())</code> может дать и отрицательное значение.</p>
 </li>
-<li>
+<li id="q-25">
 <p><strong>Почему временные диапазоны задают как <code>[start, end)</code>, а не через <code>BETWEEN</code>?</strong>
     <code>BETWEEN</code> включает обе границы, поэтому соседние периоды перекрываются, и событие, случившееся ровно в полночь, попадает в оба, а в сверке это дубль. Кроме того, верхняя граница вида <code>23:59:59</code> зависит от точности типа: она теряет всё, что случилось в последнюю секунду с долями, а попытка исправить её через <code>.999999</code> ломается, как только меняется точность колонки. Полуоткрытый интервал от точности не зависит, склеивается без дыр и перекрытий, и его длина просто равна <code>end − start</code>. В PostgreSQL именно такой вид (<code>'[)'</code>) диапазонные типы используют по умолчанию.</p>
 </li>
@@ -4242,40 +4242,40 @@ grep -rn <span class="s1">'static.*SimpleDateFormat\|static.*NumberFormat\|stati
 <h2 id="15-попробовать-руками">15. Попробовать руками</h2>
 <p>Двенадцать упражнений ниже повторяют главные эксперименты главы, и каждое занимает от десяти минут до часа. Каждое построено одинаково: сначала сказано, что сделать, затем после пометки <em>Ожидаемо</em> приведён результат, который вы должны получить, а в конце часто предложен следующий шаг, где тот же эффект нужно воспроизвести или устранить. Первые шесть упражнений касаются времени и денег, следующие три текста, а последние три регулярных выражений, тестирования с <code>Clock</code> и tzdata; если результат разошёлся с ожидаемым, это повод вернуться к соответствующему разделу.</p>
 <ol>
-<li>
+<li id="t-1">
 <p><strong>Измерить накопление ошибки <code>double</code>.</strong> Сложите <code>0.01</code> миллион и десять миллионов раз в <code>double</code> и параллельно в <code>BigDecimal</code>, а затем выведите разность и относительную ошибку. <em>Ожидаемо:</em> на 10⁷ операциях <code>double</code> даст примерно <code>99999.99999200302</code> вместо <code>100000.0</code>, то есть расхождение около 8·10⁻³. После этого проверьте <code>(long)(4.35 * 100)</code>, и вы увидите <code>434</code>. Наконец, сложите массив <code>{1e16, 1.0, -1e16}</code> в двух разных порядках и убедитесь, что получаете <code>0.0</code> и <code>1.0</code>.</p>
 </li>
-<li>
+<li id="t-2">
 <p><strong>Поймать разницу между <code>plusDays(1)</code> и <code>plusHours(24)</code>.</strong> Возьмите <code>ZonedDateTime.of(2024, 3, 30, 12, 0, 0, 0, ZoneId.of("Europe/Berlin"))</code> и примените к нему оба метода. <em>Ожидаемо:</em> получится <code>2024-03-31T12:00+02:00</code> и <code>2024-03-31T13:00+02:00</code>. Повторите то же для осеннего перехода от <code>2024-10-26T12:00</code>, и разница уйдёт в другую сторону, а <code>Duration.between</code> для обоих случаев покажет 23 часа весной и 25 часов осенью.</p>
 </li>
-<li>
+<li id="t-3">
 <p><strong>Разобрать оба DST-бага явно.</strong> Для <code>Europe/Berlin</code> и <code>LocalDateTime.of(2024,3,31,2,30)</code> выведите <code>zone.getRules().getValidOffsets(ldt)</code> и <code>getTransition(ldt).getDuration()</code>, а затем повторите это для <code>2024-10-27T02:30</code>. <em>Ожидаемо:</em> в первом случае будет пустой список и <code>PT1H</code>, во втором два смещения <code>[+02:00, +01:00]</code>. После этого сравните <code>withEarlierOffsetAtOverlap().toInstant()</code> и <code>withLaterOffsetAtOverlap().toInstant()</code>, и разница между ними составит ровно час.</p>
 </li>
-<li>
+<li id="t-4">
 <p><strong>Сравнить <code>equals</code> и <code>compareTo</code> у <code>BigDecimal</code>.</strong> Положите <code>new BigDecimal("2.0")</code> в <code>HashSet</code> и проверьте <code>contains(new BigDecimal("2.00"))</code>, а затем повторите то же с <code>TreeSet</code>. <em>Ожидаемо:</em> для <code>HashSet</code> будет <code>false</code>, для <code>TreeSet</code> <code>true</code>. Если добавить оба значения в каждую коллекцию, в <code>HashSet</code> окажется 2 элемента, а в <code>TreeSet</code> 1. В завершение напишите <code>Money</code> с нормализацией scale в конструкторе и убедитесь, что проблема исчезла.</p>
 </li>
-<li>
-<p><strong>Распределить 100,00 на три части.</strong> Реализуйте <code>allocate(int n)</code> из раздела 8.3 и проверьте, что сумма частей равна исходной для n = 3, 7, 11 и для отрицательных сумм. <em>Ожидаемо:</em> получится <code>[33.34, 33.33, 33.33]</code>, и сумма всегда будет в точности равна исходной. Затем реализуйте <code>allocate(long... weights)</code> и распределите 999,99 в пропорции 95:5, и сумма должна остаться 999,99, а не стать 1000,00.</p>
+<li id="t-5">
+<p><strong>Распределить 100,00 на три части.</strong> Реализуйте <code>allocate(int n)</code> из раздела <a href="#83-распределение-суммы-allocate" data-tip="Раздел этой главы: 8.3 Распределение суммы: allocate">8.3</a> и проверьте, что сумма частей равна исходной для n = 3, 7, 11 и для отрицательных сумм. <em>Ожидаемо:</em> получится <code>[33.34, 33.33, 33.33]</code>, и сумма всегда будет в точности равна исходной. Затем реализуйте <code>allocate(long... weights)</code> и распределите 999,99 в пропорции 95:5, и сумма должна остаться 999,99, а не стать 1000,00.</p>
 </li>
-<li>
+<li id="t-6">
 <p><strong>Замерить систематическую ошибку HALF_UP.</strong> Просуммируйте миллион значений вида <code>x.xx5</code>, округляя каждое сначала через <code>HALF_UP</code>, а потом через <code>HALF_EVEN</code>. <em>Ожидаемо:</em> суммы разойдутся примерно на 2500 единиц последнего разряда в пользу <code>HALF_UP</code>, и это и есть количественный аргумент в пользу банковского округления.</p>
 </li>
-<li>
+<li id="t-7">
 <p><strong>Сломать уникальный индекс двумя визуально одинаковыми строками.</strong> Создайте таблицу с <code>unique (login)</code> и вставьте <code>'josé'</code> и <code>'josé'</code>. <em>Ожидаемо:</em> обе вставки пройдут, <code>select</code> по любому из вариантов найдёт только одну строку, а <code>select count(*)</code> покажет 2. Затем добавьте колонку <code>login_key</code> с <code>normalize(login, nfkc)</code> и <code>lower()</code> и уникальный индекс на неё, и тогда вторая вставка упадёт. В конце проверьте запрос <code>select login from t where not (login is nfc normalized)</code>.</p>
 </li>
-<li>
+<li id="t-8">
 <p><strong>Проверить <code>String.length()</code> на эмодзи.</strong> Выведите <code>length()</code>, <code>codePointCount()</code> и число графемных кластеров через <code>BreakIterator</code> для <code>"👍"</code>, <code>"👨‍👩‍👧‍👦"</code>, <code>"🇷🇺"</code> и <code>"é"</code>. <em>Ожидаемо:</em> получится <code>2/1/1</code>, <code>11/7/1</code>, <code>4/2/1</code>, <code>2/2/1</code>. Затем сделайте <code>substring(0, 1)</code> на эмодзи, запишите результат в UTF-8 через <code>getBytes</code> и посмотрите на байт <code>0x3F</code>, а потом повторите то же с <code>CharsetEncoder</code> и <code>CodingErrorAction.REPORT</code>, и вы получите <code>MalformedInputException</code>.</p>
 </li>
-<li>
+<li id="t-9">
 <p><strong>Воспроизвести турецкую I.</strong> Установите <code>Locale.setDefault(Locale.forLanguageTag("tr"))</code> и проверьте <code>"TITLE".toLowerCase().equals("title")</code> и <code>"Content-Type".toLowerCase().equals("content-type")</code>. <em>Ожидаемо:</em> в обоих случаях будет <code>false</code>. После этого прогоните под этой локалью весь свой слой проверок, и почти наверняка что-нибудь сломается.</p>
 </li>
-<li>
+<li id="t-10">
 <p><strong>Написать ReDoS-паттерн и замерить его.</strong> Скомпилируйте <code>^(a+)+$</code> и прогоните его на строках <code>"a".repeat(n) + "!"</code> для n от 20 до 32 с шагом 2, замеряя время через <code>System.nanoTime</code>. <em>Ожидаемо:</em> время удваивается с каждой прибавкой единицы к n, и при n = 30 это уже секунды, а при n = 34 минуты. Затем замените паттерн на <code>^(a+)++$</code> (possessive), и время станет постоянным, а напоследок подключите <code>com.google.re2j</code> и прогоните исходный паттерн на строке из 100 000 символов, и он отработает мгновенно.</p>
 </li>
-<li>
+<li id="t-11">
 <p><strong>Протестировать бизнес-логику с <code>Clock.fixed</code>.</strong> Возьмите метод, который вычисляет дату валютирования с учётом cut-off, и напишите параметризованный тест с <code>Clock.fixed</code> для пяти случаев: 21:30 UTC 31 декабря в зоне Москвы, где дата переходит через сутки и через год, пятницы после cut-off с переносом на понедельник, 29 февраля високосного года, а также дней разрыва и перекрытия DST в <code>Europe/Berlin</code>. <em>Ожидаемо:</em> хотя бы один из этих тестов покажет баг в существующей реализации.</p>
 </li>
-<li>
+<li id="t-12">
 <p><strong>Проверить tzdata и историю зоны.</strong> Выведите <code>ZoneRulesProvider.getVersions("Europe/Moscow").lastEntry().getKey()</code> в своём приложении и в базовом Docker-образе, а затем выведите все переходы <code>Europe/Moscow</code> после 2009 года через <code>getRules().getTransitions()</code>. <em>Ожидаемо:</em> вы увидите переходы 2010 и 2011 годов (второй на постоянное <code>+04:00</code>) и переход 26 октября 2014 года (на <code>+03:00</code>), а <code>getTransitionRules()</code> окажется пуст. В завершение сравните смещение для <code>2013-07-01</code> и <code>2015-07-01</code>, и получите <code>+04:00</code> и <code>+03:00</code>.</p>
 </li>
 </ol>
@@ -4298,7 +4298,7 @@ https://www.rfc-editor.org/rfc/rfc5545">RFC 5545 — Internet Calendaring and Sc
 https://www.rfc-editor.org/rfc/rfc3339">RFC 3339 — Date and Time on the Internet: Timestamps</a> — первичный источник: ABNF для <code>date-time</code>/<code>full-date</code>/<code>full-time</code>, смысл суффикса <code>Z</code>, различие между <code>-00:00</code> (смещение неизвестно) и <code>Z</code>/<code>+00:00</code>, запись високосной секунды как <code>60</code> и статус профиля ISO 8601 с обязательными полями. Проверено: 2026-09-21.</li><li><a href="https://www.rfc-editor.org/rfc/rfc8259" data-tip="Внешний сайт · rfc-editor.org
 https://www.rfc-editor.org/rfc/rfc8259">RFC 8259 — The JavaScript Object Notation (JSON) Data Interchange Format</a> — первичный источник о том, что стандарт не предъявляет требований к точности чисел и предупреждает об интероперабельности, и о UTF-8 как кодировке обмена. Проверено: 2026-09-21 (по тексту RFC, сверено с практикой парсеров).</li><li><a href="https://www.rfc-editor.org/rfc/rfc9110" data-tip="Внешний сайт · rfc-editor.org
 https://www.rfc-editor.org/rfc/rfc9110">RFC 9110 — HTTP Semantics</a> — первичный источник о формате HTTP-date с обязательным литералом <code>GMT</code>, об отмене правила «ISO-8859-1 по умолчанию для text/*» из RFC 2616 и о семантике параметра <code>charset</code> в <code>Content-Type</code>. Проверено через сводку главы <a href="27-http-and-rest.html" data-tip="27. HTTP и REST">27</a> в FACTS.md: 2026-09-21.</li><li><a href="https://www.rfc-editor.org/rfc/rfc5545" data-tip="Внешний сайт · rfc-editor.org
-https://www.rfc-editor.org/rfc/rfc5545">RFC 5545 — Internet Calendaring and Scheduling Core Object Specification (iCalendar)</a> — первичный источник о модели, в которой событие хранится как локальное время с <code>TZID</code>, а не как момент в UTC; на нём основан раздел 2.4. ⚠️ Текст RFC в рамках главы не открывался, и ссылка приведена как указание на стандарт. Проверено: не проверено.</li></ul></details></li><li class="src-grp"><div class="src-head"><span class="src-host">unicode.org</span> <span class="src-n">5 источников</span></div><div class="src-titles"><a href="https://www.unicode.org/reports/tr15/" data-tip="Внешний сайт · unicode.org
+https://www.rfc-editor.org/rfc/rfc5545">RFC 5545 — Internet Calendaring and Scheduling Core Object Specification (iCalendar)</a> — первичный источник о модели, в которой событие хранится как локальное время с <code>TZID</code>, а не как момент в UTC; на нём основан раздел <a href="#24-zoneddatetime-для-будущих-событий" data-tip="Раздел этой главы: 2.4 ZonedDateTime для будущих событий">2.4</a>. ⚠️ Текст RFC в рамках главы не открывался, и ссылка приведена как указание на стандарт. Проверено: не проверено.</li></ul></details></li><li class="src-grp"><div class="src-head"><span class="src-host">unicode.org</span> <span class="src-n">5 источников</span></div><div class="src-titles"><a href="https://www.unicode.org/reports/tr15/" data-tip="Внешний сайт · unicode.org
 https://www.unicode.org/reports/tr15/">UAX #15: Unicode Normalization Forms</a> · <a href="https://www.unicode.org/reports/tr18/" data-tip="Внешний сайт · unicode.org
 https://www.unicode.org/reports/tr18/">UTS #18: Unicode Regular Expressions</a> · <a href="https://www.unicode.org/versions/latest/" data-tip="Внешний сайт · unicode.org
 https://www.unicode.org/versions/latest/">The Unicode Standard, Chapter 2: General Structure</a> · <a href="https://www.unicode.org/reports/tr39/" data-tip="Внешний сайт · unicode.org
@@ -4472,5 +4472,5 @@ https://commons.wikimedia.org/wiki/File:Prague_old_town_square_panorama.jpg">Б�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-модель-времени-момент-и-календарная-дата">1. Модель времени: момент и календарная дата</a></li><li><a href="#2-javatime-типы-и-правило-выбора">2. java.time: типы и правило выбора</a></li><li><a href="#3-арифметика-времени-и-тестируемость">3. Арифметика времени и тестируемость</a></li><li><a href="#4-форматирование-и-парсинг">4. Форматирование и парсинг</a></li><li><a href="#5-время-в-системе-бд-api-планировщики-монотонность">5. Время в системе: БД, API, планировщики, монотонность</a></li><li><a href="#6-денежные-суммы-и-тип-double">6. Денежные суммы и тип double</a></li><li><a href="#7-устройство-bigdecimal">7. Устройство BigDecimal</a></li><li><a href="#8-модель-денег-минорные-единицы-value-object-мультивалютность">8. Модель денег: минорные единицы, Value Object, мультивалютность</a></li><li><a href="#9-unicode-и-длина-строки">9. Unicode и длина строки</a></li><li><a href="#10-кодировки-байты-и-символы">10. Кодировки: байты и символы</a></li><li><a href="#11-регулярные-выражения-форматирование-чисел-и-i18n">11. Регулярные выражения, форматирование чисел и i18n</a></li><li><a href="#12-ошибки-и-антипаттерны">12. Ошибки и антипаттерны</a></li><li><a href="#13-диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=5bb17fb4e6"></script>
+<script src="app.js?v=f34c39d1eb"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

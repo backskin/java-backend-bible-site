@@ -3,7 +3,7 @@
 <title>50. Linux и сеть для бэкенд-разработчика — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=c4e04c284b">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=880d52ec6e">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon-small.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Linux и сеть для бэкенд-разработчика">
 <a class="skip" href="#content">К тексту</a>
@@ -276,7 +276,7 @@ ionice -c <span class="m">2</span> -n <span class="m">7</span> -p <span class="m
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> <code>ionice</code> работает только с планировщиками ввода-вывода, которые его поддерживают (CFQ/BFQ). На современных ядрах с <code>none</code>/<code>mq-deadline</code> для NVMe класс приоритета фактически игнорируется. Проверить: <code>cat /sys/block/nvme0n1/queue/scheduler</code>.</p>
 </blockquote>
-<p>В контейнерах вместо nice правильнее использовать <code>cpu.weight</code> в cgroup — см. раздел 3.</p>
+<p>В контейнерах вместо nice правильнее использовать <code>cpu.weight</code> в cgroup — см. раздел <a href="#3-cgroups-и-контейнерные-лимиты" data-tip="Раздел этой главы: 3. cgroups и контейнерные лимиты">3</a>.</p>
 <h3 id="15-сигналы">1.5 Сигналы</h3>
 <p>Сигнал — асинхронное уведомление процессу. Номера и действия по умолчанию — из <code>signal(7)</code> (<a href="https://man7.org/linux/man-pages/man7/signal.7.html" data-tip="Внешний сайт · man7.org
 https://man7.org/linux/man-pages/man7/signal.7.html">man7.org</a>):</p>
@@ -567,7 +567,7 @@ VmPTE:      12884 kB      # ~12.6 МБ только на таблицы стра
 <blockquote>
 <p>💡 <strong>На интервью.</strong> «Чем RSS отличается от heap?» Формулировка: heap — это область, которой управляет GC, её размер задаётся <code>-Xmx</code> и виден в <code>jcmd GC.heap_info</code>. RSS — это вся физическая память процесса: heap плюс metaspace, code cache, стеки потоков (по умолчанию 1 МБ виртуально на поток), GC-структуры (карты, remembered sets — у G1 это порядка нескольких процентов от heap), direct byte buffers, нативные выделения памяти JNI и библиотек, арены malloc, mmap-нутые файлы. Нормальный коэффициент RSS/Xmx для серверного приложения — 1.3–1.6. Если RSS/Xmx &gt; 2, надо разбираться.</p>
 </blockquote>
-<h3 id="22-карта-памяти-в-smaps-и-smapsrollup">2.2 Карта памяти в <code>smaps</code> и <code>smaps_rollup</code></h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-rss" data-tip="RSS">RSS</a></p><h3 id="22-карта-памяти-в-smaps-и-smapsrollup">2.2 Карта памяти в <code>smaps</code> и <code>smaps_rollup</code></h3>
 <p><code>/proc/&lt;pid&gt;/smaps</code> расписывает каждое отображение:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>7f2a40000000-7f2a80000000 rw-p 00000000 00:00 0
 Size:            1048576 kB
@@ -824,7 +824,7 @@ cat /proc/12345/oom_score_adj    <span class="c1"># корректировка</
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> Если в Kubernetes под перезапустился с <code>exitCode: 137</code> и <code>reason: OOMKilled</code>, это <strong>не</strong> <code>OutOfMemoryError</code>. Heap dump не появится, shutdown hooks не выполнятся, в логах приложения — обрыв на полуслове. Диагностика: смотреть <code>container_memory_working_set_bytes</code> в метриках и сравнивать с <code>-Xmx</code> + non-heap. Почти всегда причина — non-heap: metaspace, direct buffers, потоки или нативные выделения памяти, о которых забыли при расчёте <code>MaxRAMPercentage</code>. Расчёт — глава <a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений">46</a>.</p>
 </blockquote>
-<h3 id="27-арены-glibc-malloc-и-рост-rss-без-роста-кучи">2.7 Арены glibc malloc и рост RSS без роста кучи</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-oom" data-tip="OOM">OOM</a></p><h3 id="27-арены-glibc-malloc-и-рост-rss-без-роста-кучи">2.7 Арены glibc malloc и рост RSS без роста кучи</h3>
 <p>Классический инцидент: heap стабильно 2 ГБ по метрикам JVM, метаспейс 200 МБ, а RSS процесса растёт неделями и доходит до 8 ГБ. Native memory leak? Часто — нет. Часто это <strong>арены glibc</strong>.</p>
 <p>Механизм. <code>malloc</code> в glibc, чтобы не сериализовать все выделения памяти на одном мьютексе, создаёт несколько независимых «арен» — областей, каждая со своим локом. Поток при первой выделения памяти привязывается к арене. Если все арены заняты, создаётся новая, пока не достигнут лимит. Лимит по умолчанию — <strong>8 × число ядер</strong> на 64-битных системах. На машине с 32 ядрами это 256 арен.</p>
 <p>Каждая арена (кроме главной) резервирует область через <code>mmap</code> кратно 64 МБ и <strong>не возвращает её ядру целиком</strong>, даже когда память освобождена: glibc держит освобождённые фрагменты для повторно использования и возвращает страницы системе только при выполнении довольно жёстких условий (непрерывный свободный хвост сверху арены больше <code>M_TRIM_THRESHOLD</code>). Результат — фрагментация: полезных данных мало, RSS большой.</p>
@@ -1284,7 +1284,7 @@ diff /tmp/fd-t0 /tmp/fd-t1
      42 ESTAB      10.20.7.8:9092
 </code></pre></div>
 
-<p>2841 соединений в <code>CLOSE-WAIT</code> к одному адресу — это конкретный HTTP-клиент, который не закрывает ответы. См. раздел 6.4 и инцидент 9.5.</p>
+<p>2841 соединений в <code>CLOSE-WAIT</code> к одному адресу — это конкретный HTTP-клиент, который не закрывает ответы. См. раздел <a href="#64-состояние-closewait" data-tip="Раздел этой главы: 6.4 Состояние CLOSE_WAIT">6.4</a> и инцидент 9.5.</p>
 <p><strong>Шаг 5. Найти место в коде.</strong> Сопоставить адрес с клиентом в приложении. Если непонятно — включить <code>-Djdk.net.debug</code> не поможет, лучше взять async-profiler в режиме нативных вызовов или простой JFR:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>jcmd <span class="m">12345</span> JFR.start <span class="nv">name</span><span class="o">=</span>fdleak <span class="nv">settings</span><span class="o">=</span>profile <span class="nv">duration</span><span class="o">=</span>120s <span class="nv">filename</span><span class="o">=</span>/tmp/fd.jfr
 <span class="c1"># в JFR есть события jdk.SocketRead / jdk.SocketWrite / jdk.FileRead с стеками</span>
@@ -2204,7 +2204,7 @@ nstat -az <span class="p">|</span> grep -i syncookie
 </code></pre></div>
 
 <p>Цена SYN cookies: теряются TCP-опции, согласуемые в SYN (частично восстанавливаются через timestamps), окно ограничено. Для нормальной работы это не режим, а аварийный клапан. Ненулевой <code>SyncookiesSent</code> на внутреннем сервисе — не атака, а перегрузка: SYN queue переполнилась от легитимного трафика.</p>
-<h3 id="66-два-механизма-keep-alive">6.6 Два механизма keep-alive</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-syn" data-tip="SYN">SYN</a></p><h3 id="66-два-механизма-keep-alive">6.6 Два механизма keep-alive</h3>
 <p>Слово «keep-alive» означает две совершенно разные вещи, и их постоянно смешивают.</p>
 <table class="rt">
 <thead>
@@ -2293,7 +2293,7 @@ sysctl net.ipv4.tcp_keepalive_probes   <span class="c1"># 9    — скольк�
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> <code>TCP_NODELAY=true</code> на соединении, по которому идёт поток мелких сообщений (например, много <code>flush()</code> в лог-агент), даёт взрыв числа пакетов и нагрузку на сеть. Правило: <code>TCP_NODELAY</code> для request-response с низкой latency, буферизация в приложении — для потоковых нагрузок.</p>
 </blockquote>
-<h3 id="68-буферы-окно-tcp-и-произведение-полосы-на-задержку-bdp">6.8 Буферы, окно TCP и произведение полосы на задержку (BDP)</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-ack" data-tip="ACK">ACK</a></p><h3 id="68-буферы-окно-tcp-и-произведение-полосы-на-задержку-bdp">6.8 Буферы, окно TCP и произведение полосы на задержку (BDP)</h3>
 <p>Пропускная способность TCP ограничена не только шириной канала, но и размером окна:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>максимальная пропускная способность = размер окна / RTT
 </code></pre></div>
@@ -2422,7 +2422,7 @@ sysctl -w net.core.default_qdisc<span class="o">=</span>fq          <span class=
 <tr>
 <td data-label="Фаза">Разрешение имени в DNS (если не в кеше)</td>
 <td data-label="Стоимость">1–2 RTT до распознавателя + возможные таймауты</td>
-<td data-label="Комментарий">См. раздел 7</td>
+<td data-label="Комментарий">См. раздел <a href="#7-dns" data-tip="Раздел этой главы: 7. DNS">7</a></td>
 </tr>
 <tr>
 <td data-label="Фаза">TCP handshake</td>
@@ -2469,7 +2469,7 @@ sysctl -w net.core.default_qdisc<span class="o">=</span>fq          <span class=
 </ol>
 <hr>
 <h2 id="7-dns">7. DNS</h2>
-<h3 id="71-порядок-разрешения-имени">7.1 Порядок разрешения имени</h3>
+<p class="xref"><span class="xr-k">Словарь:</span> <a href="A-glossary.html#g-dns" data-tip="DNS">DNS</a></p><h3 id="71-порядок-разрешения-имени">7.1 Порядок разрешения имени</h3>
 <p>Когда Java вызывает <code>InetAddress.getByName("db.prod.internal")</code>, происходит следующая цепочка. Знать её нужно целиком, потому что сломаться может любое звено.</p>
 <p><strong>Шаг 1. <code>/etc/nsswitch.conf</code></strong> — определяет источники и порядок:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>hosts: files dns myhostname
@@ -3891,7 +3891,7 @@ python3 -c <span class="s2">"</span>
 <p><strong><code>THP enabled=always</code> + <code>defrag=always</code>.</strong> Симптом: необъяснимые всплески latency в 99.9-перцентиле. Причина: синхронная дефрагментация в момент выделения памяти. Лечение: <code>madvise</code> + <code>-XX:+UseTransparentHugePages</code> + <code>-XX:+AlwaysPreTouch</code>.</p>
 </li>
 <li>
-<p><strong>Путать <code>OutOfMemoryError</code>, OOM killer и OOMKilled.</strong> Симптом: ищут утечку в heap dump, а его нет, потому что процесс убит <code>SIGKILL</code>. Лечение: таблица в разделе 2.6; смотреть <code>dmesg -T | grep -i oom</code> и <code>memory.events</code>.</p>
+<p><strong>Путать <code>OutOfMemoryError</code>, OOM killer и OOMKilled.</strong> Симптом: ищут утечку в heap dump, а его нет, потому что процесс убит <code>SIGKILL</code>. Лечение: таблица в разделе <a href="#26-три-вида-oom" data-tip="Раздел этой главы: 2.6 Три вида OOM">2.6</a>; смотреть <code>dmesg -T | grep -i oom</code> и <code>memory.events</code>.</p>
 </li>
 <li>
 <p><strong>Оставлять <code>MALLOC_ARENA_MAX</code> по умолчанию в контейнере.</strong> Симптом: RSS растёт на десятки МБ в сутки при стабильном heap. Причина: glibc считает арены от числа ядер <strong>хоста</strong>, а не от квоты. Лечение: <code>MALLOC_ARENA_MAX=2..4</code>.</p>
@@ -4353,5 +4353,5 @@ https://commons.wikimedia.org/wiki/File:Gentoo_Penguins_travelling_to_the_beach_
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-процессы-и-их-жизненный-цикл">1. Процессы и их жизненный цикл</a></li><li><a href="#2-память-процесса">2. Память процесса</a></li><li><a href="#3-cgroups-и-контейнерные-лимиты">3. cgroups и контейнерные лимиты</a></li><li><a href="#4-файловые-дескрипторы-и-ввод-вывод">4. Файловые дескрипторы и ввод-вывод</a></li><li><a href="#5-cpu-и-планировщик">5. CPU и планировщик</a></li><li><a href="#6-tcp-в-работе-бэкенда">6. TCP в работе бэкенда</a></li><li><a href="#7-dns">7. DNS</a></li><li><a href="#8-инструменты-диагностики">8. Инструменты диагностики</a></li><li><a href="#9-разобранные-инциденты">9. Разобранные инциденты</a></li><li><a href="#10-командная-оболочка-для-разработчика">10. Командная оболочка для разработчика</a></li><li><a href="#11-ошибки-и-антипаттерны">11. Ошибки и антипаттерны</a></li><li><a href="#12-диагностика-чеклисты">12. Диагностика: чеклисты</a></li><li><a href="#13-вопросы-на-интервью">13. Вопросы на интервью</a></li><li><a href="#14-попробовать-руками">14. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=5bb17fb4e6"></script>
+<script src="app.js?v=f34c39d1eb"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

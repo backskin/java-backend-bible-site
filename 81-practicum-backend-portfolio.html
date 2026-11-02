@@ -3,7 +3,7 @@
 <title>81. Практикум I: платёжный сервис-портфолио на домашнем стенде — Java Backend Bible</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=c4e04c284b">
+<link rel="preload" href="fonts/ptserif-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="fonts/ptsans-cyr-400.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="style.css?v=880d52ec6e">
 <script>try{var t=localStorage.getItem('jbb-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('jbb-code-theme')==='light')document.documentElement.setAttribute('data-code','light');if(localStorage.getItem('jbb-code-wrap')==='1')document.documentElement.setAttribute('data-wrap','1');var z=parseFloat(localStorage.getItem('jbb-zoom'));if(z>0.5&&z<2)document.documentElement.style.setProperty('--zoom',z);}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#132d52"><link rel="icon" href="icons/icon-small.svg" type="image/svg+xml"><link rel="icon" href="icons/icon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Java Bible"></head><body data-title="Практикум I: платёжный сервис-портфолио на домашнем стенде">
 <a class="skip" href="#content">К тексту</a>
@@ -41,7 +41,7 @@
 <div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>mvn <span class="nb">test</span>
 </code></pre></div>
 
-<p>На машине автора (Windows, Docker Desktop) полный прогон занимает около двух минут, из которых полторы уходит на опыт с взаимоблокировками из раздела 2.5. Если плагина Kotlin <code>allopen</code> в сборке нет, как здесь, классы, на которые Spring вешает прокси, объявляют <code>open</code>: сервис с <code>@Transactional</code> и его методы. Класс приложения помечен <code>@SpringBootApplication(proxyBeanMethods = false)</code> и потому может оставаться закрытым.</p>
+<p>На машине автора (Windows, Docker Desktop) полный прогон занимает около двух минут, из которых полторы уходит на опыт с взаимоблокировками из раздела <a href="#25-ловушка-которую-нашёл-запуск" data-tip="Раздел этой главы: 2.5 Ловушка, которую нашёл запуск">2.5</a>. Если плагина Kotlin <code>allopen</code> в сборке нет, как здесь, классы, на которые Spring вешает прокси, объявляют <code>open</code>: сервис с <code>@Transactional</code> и его методы. Класс приложения помечен <code>@SpringBootApplication(proxyBeanMethods = false)</code> и потому может оставаться закрытым.</p>
 <h3 id="22-схема-остаток-перевод-и-двойная-запись">2.2 Схема: остаток, перевод и двойная запись</h3>
 <p>Схема из трёх таблиц повторяет то, что разобрано в главе <a href="18-transactions-isolation-locking.html" data-tip="18. Транзакции, изоляция, блокировки">18</a> и в приложении E2, но с ограничениями, которые защищают инварианты на уровне базы, а не только кода.</p>
 <div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">account</span> <span class="p">(</span>
@@ -111,7 +111,7 @@
 </code></pre></div>
 
 <p>Первый шаг решает идемпотентность средствами базы. <code>INSERT ... ON CONFLICT DO NOTHING RETURNING id</code> либо создаёт перевод и возвращает его <code>id</code>, либо ничего не возвращает, если ключ уже занят. Важно поведение при одновременных запросах с одним ключом: вторая транзакция не проскакивает мимо, а ждёт на уникальном индексе, пока первая не зафиксируется или не откатится. Если первая зафиксировалась, вставка второй ничего не делает, и <code>replay</code> читает уже созданный перевод, сверяя параметры: тот же ключ с другой суммой — ошибка клиента, и сервис бросает <code>IdempotencyConflictException</code>. Если первая откатилась, например из-за нехватки средств, ключ освобождается вместе с ней, и исправленный запрос проходит.</p>
-<p>Второй шаг блокирует оба счёта в порядке возрастания <code>id</code>, чтобы перевод A→B и встречный B→A брали блокировки в одном порядке и не запирали друг друга (глава <a href="08-concurrency.html" data-tip="8. Многопоточность">08</a>, раздел 9.3; глава <a href="18-transactions-isolation-locking.html" data-tip="18. Транзакции, изоляция, блокировки">18</a>, раздел 9). Режим блокировки вынесен в настройку <code>wallet.lock-mode</code> ради опыта из раздела 2.5, а по умолчанию это <code>NO KEY UPDATE</code>, и почему именно он, объясняет тот же опыт. Третий шаг проверяет остаток уже под блокировкой, когда его никто не изменит до конца транзакции, и проводит две проводки.</p>
+<p>Второй шаг блокирует оба счёта в порядке возрастания <code>id</code>, чтобы перевод A→B и встречный B→A брали блокировки в одном порядке и не запирали друг друга (глава <a href="08-concurrency.html" data-tip="8. Многопоточность">08</a>, раздел <a href="08-concurrency.html#93-взаимная-блокировка-deadlock" data-tip="8. Многопоточность · 9.3 Взаимная блокировка (deadlock)">9.3</a>; глава <a href="18-transactions-isolation-locking.html" data-tip="18. Транзакции, изоляция, блокировки">18</a>, раздел <a href="18-transactions-isolation-locking.html#9-взаимоблокировки-и-таймауты" data-tip="18. Транзакции, изоляция, блокировки · 9. Взаимоблокировки и таймауты">9</a>). Режим блокировки вынесен в настройку <code>wallet.lock-mode</code> ради опыта из раздела <a href="#25-ловушка-которую-нашёл-запуск" data-tip="Раздел этой главы: 2.5 Ловушка, которую нашёл запуск">2.5</a>, а по умолчанию это <code>NO KEY UPDATE</code>, и почему именно он, объясняет тот же опыт. Третий шаг проверяет остаток уже под блокировкой, когда его никто не изменит до конца транзакции, и проводит две проводки.</p>
 <h3 id="24-тесты-и-что-они-показали">2.4 Тесты и что они показали</h3>
 <p>Тесты поднимают контейнер PostgreSQL через <code>@Testcontainers</code> и <code>@ServiceConnection</code>, и Spring Boot сам подставляет адрес, логин и пароль контейнера в <code>DataSource</code>. Перед каждым тестом таблицы очищаются и создаются два счёта по 1000 рублей. Шесть тестов проверяют шесть свойств перевода, и в таблице ниже рядом с каждым стоит результат запуска.</p>
 <table class="rt">
@@ -157,7 +157,7 @@
 </table>
 <p>Последние два теста и есть то, что стоит показывать на собеседовании: они превращают слова «перевод идемпотентен и не ловит взаимоблокировок» в число, полученное на настоящем PostgreSQL.</p>
 <h3 id="25-ловушка-которую-нашёл-запуск">2.5 Ловушка, которую нашёл запуск</h3>
-<p>В первой версии кода второй шаг блокировал счета <code>FOR UPDATE</code>, как пишут в большинстве примеров, и нагрузочный тест упал с <code>PessimisticLockingFailureException: ERROR: deadlock detected</code>, хотя порядок захвата был одинаковым. Причина в первом шаге. Вставка в <code>transfer</code> проверяет два внешних ключа на <code>account</code>, и проверка внешнего ключа ставит на каждую родительскую строку блокировку <code>FOR KEY SHARE</code> (глава <a href="18-transactions-isolation-locking.html" data-tip="18. Транзакции, изоляция, блокировки">18</a>, раздел 7). К моменту второго шага обе встречные транзакции уже держат <code>KEY SHARE</code> на обоих счетах. <code>FOR UPDATE</code> с чужим <code>KEY SHARE</code> несовместим, поэтому первая транзакция ждёт, пока вторая отпустит свою разделяемую блокировку, а вторая ждёт того же от первой, и PostgreSQL через секунду (<code>deadlock_timeout</code>) откатывает одну из них. Упорядочивание тут не помогает, потому что разделяемые блокировки уже взяты обеими транзакциями в обоих местах.</p>
+<p>В первой версии кода второй шаг блокировал счета <code>FOR UPDATE</code>, как пишут в большинстве примеров, и нагрузочный тест упал с <code>PessimisticLockingFailureException: ERROR: deadlock detected</code>, хотя порядок захвата был одинаковым. Причина в первом шаге. Вставка в <code>transfer</code> проверяет два внешних ключа на <code>account</code>, и проверка внешнего ключа ставит на каждую родительскую строку блокировку <code>FOR KEY SHARE</code> (глава <a href="18-transactions-isolation-locking.html" data-tip="18. Транзакции, изоляция, блокировки">18</a>, раздел <a href="18-transactions-isolation-locking.html#7-строчные-блокировки" data-tip="18. Транзакции, изоляция, блокировки · 7. Строчные блокировки">7</a>). К моменту второго шага обе встречные транзакции уже держат <code>KEY SHARE</code> на обоих счетах. <code>FOR UPDATE</code> с чужим <code>KEY SHARE</code> несовместим, поэтому первая транзакция ждёт, пока вторая отпустит свою разделяемую блокировку, а вторая ждёт того же от первой, и PostgreSQL через секунду (<code>deadlock_timeout</code>) откатывает одну из них. Упорядочивание тут не помогает, потому что разделяемые блокировки уже взяты обеими транзакциями в обоих местах.</p>
 <p>Опыт <code>ForUpdateDeadlockTest</code> воспроизводит это специально: тот же сервис с <code>wallet.lock-mode=UPDATE</code>, сто встречных переводов в восемь потоков.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>FOR UPDATE: 100 встречных переводов, успешно 2, взаимоблокировок 98, 98085 мс
 400 встречных переводов в 8 потоков: 1580 мс
@@ -581,31 +581,31 @@
 </ul>
 <h2 id="14-вопросы-на-интервью">14. Вопросы на интервью</h2>
 <ol>
-<li>Почему в платёжном сервисе нельзя использовать <code>double</code> и <code>float</code>?</li>
-<li>Что такое идемпотентность и почему она критична для переводов?</li>
-<li>Как вы будете обеспечивать отсутствие двойного списания при повторном запросе?</li>
-<li>Что такое transactional outbox и почему это лучше прямой отправки в Kafka?</li>
-<li>Как вы защищаете проект от race condition при параллельных переводах?</li>
-<li>Что проверяется в тестах для платёжной системы: только happy path или и повторная операция?</li>
-<li>Почему в ledger/оконечные записи и баланс — это не одно и то же?</li>
-<li>Как можно показать, что проект устойчив к падению Kafka или DB?</li>
-<li>Что такое <code>PESSIMISTIC_WRITE</code> и когда его лучше использовать вместо optimistic locking?</li>
-<li>Как оценить нагрузочную способность сервиса на 1000 rps?</li>
-<li>Почему для проекта в финансовой сфере важны observability, retry policy и idempotency key?</li>
-<li>Как вы оформите repo, чтобы проект можно было показать на интервью и использовать в портфолио?</li>
+<li id="q-1">Почему в платёжном сервисе нельзя использовать <code>double</code> и <code>float</code>?</li>
+<li id="q-2">Что такое идемпотентность и почему она критична для переводов?</li>
+<li id="q-3">Как вы будете обеспечивать отсутствие двойного списания при повторном запросе?</li>
+<li id="q-4">Что такое transactional outbox и почему это лучше прямой отправки в Kafka?</li>
+<li id="q-5">Как вы защищаете проект от race condition при параллельных переводах?</li>
+<li id="q-6">Что проверяется в тестах для платёжной системы: только happy path или и повторная операция?</li>
+<li id="q-7">Почему в ledger/оконечные записи и баланс — это не одно и то же?</li>
+<li id="q-8">Как можно показать, что проект устойчив к падению Kafka или DB?</li>
+<li id="q-9">Что такое <code>PESSIMISTIC_WRITE</code> и когда его лучше использовать вместо optimistic locking?</li>
+<li id="q-10">Как оценить нагрузочную способность сервиса на 1000 rps?</li>
+<li id="q-11">Почему для проекта в финансовой сфере важны observability, retry policy и idempotency key?</li>
+<li id="q-12">Как вы оформите repo, чтобы проект можно было показать на интервью и использовать в портфолио?</li>
 </ol>
 <h2 id="15-попробовать-руками">15. Попробовать руками</h2>
 <ol>
-<li><strong>Запустите проект локально</strong> с Docker Compose. Проверьте, что PostgreSQL и Kafka стартуют, а сервис успешно подключается к ним.</li>
-<li><strong>Выполните два перевода</strong> с одним и тем же <code>requestId</code> и убедитесь, что второй признан повторным.</li>
-<li><strong>Проведите race-condition test</strong>: запустите несколько параллельных переводов с одинакового счета и проверьте, что баланс не ушёл ниже нуля.</li>
-<li><strong>Остановите Kafka</strong> на пару минут и проверьте, что outbox продолжает сохранять события, а relay их потом отправляет после восстановления.</li>
-<li><strong>Проведите нагрузочный тест</strong> через k6 на 20–50 RPS и соберите <code>p95</code> latency и ошибки.</li>
-<li><strong>Проверьте Grafana</strong>: видны ли метрики по переводам, outbox и ошибкам.</li>
-<li><strong>Создайте README</strong> с архитектурой, командами запуска и описанием дизайна.</li>
-<li><strong>Добавьте миграции</strong> и покажите, что схема сохраняется и не ломается при повторном старте контейнеров.</li>
-<li><strong>Поиграйте с <code>Resilience4j</code></strong>: принудительно отключите зависимость и посмотрите, как сервис переходит в fallback.</li>
-<li><strong>Сделайте небольшой ADR</strong> на важное решение: “Почему outbox и почему именно <code>BigDecimal</code>”.</li>
+<li id="t-1"><strong>Запустите проект локально</strong> с Docker Compose. Проверьте, что PostgreSQL и Kafka стартуют, а сервис успешно подключается к ним.</li>
+<li id="t-2"><strong>Выполните два перевода</strong> с одним и тем же <code>requestId</code> и убедитесь, что второй признан повторным.</li>
+<li id="t-3"><strong>Проведите race-condition test</strong>: запустите несколько параллельных переводов с одинакового счета и проверьте, что баланс не ушёл ниже нуля.</li>
+<li id="t-4"><strong>Остановите Kafka</strong> на пару минут и проверьте, что outbox продолжает сохранять события, а relay их потом отправляет после восстановления.</li>
+<li id="t-5"><strong>Проведите нагрузочный тест</strong> через k6 на 20–50 RPS и соберите <code>p95</code> latency и ошибки.</li>
+<li id="t-6"><strong>Проверьте Grafana</strong>: видны ли метрики по переводам, outbox и ошибкам.</li>
+<li id="t-7"><strong>Создайте README</strong> с архитектурой, командами запуска и описанием дизайна.</li>
+<li id="t-8"><strong>Добавьте миграции</strong> и покажите, что схема сохраняется и не ломается при повторном старте контейнеров.</li>
+<li id="t-9"><strong>Поиграйте с <code>Resilience4j</code></strong>: принудительно отключите зависимость и посмотрите, как сервис переходит в fallback.</li>
+<li id="t-10"><strong>Сделайте небольшой ADR</strong> на важное решение: “Почему outbox и почему именно <code>BigDecimal</code>”.</li>
 </ol>
 <h2 id="16-главное">16. Главное</h2>
 <p>Платёжный сервис в портфолио — это не “чуть-чуть логики и JSON”, а ясная демонстрация того, как backend-разработчик мыслит про состояние, транзакции, интеграции и устойчивость. В нём нужно показать не только то, что код работает, но и то, что вы понимаете бизнес-ограничения: деньги не могут быть “потеряны”, повторный запрос должен быть безопасным, события не теряются, а проект можно обслуживать и понимать в реальной жизни.</p>
@@ -642,5 +642,5 @@ https://commons.wikimedia.org/wiki/File:Metal_bench_plane_with_shavings.jpg">Р�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-цель-проекта">1. Цель проекта</a></li><li><a href="#2-лабораторная-1-ядро-кошелька-проверенное-запуском">2. Лабораторная 1: ядро кошелька, проверенное запуском</a></li><li><a href="#3-архитектура-и-контракт-домена">3. Архитектура и контракт домена</a></li><li><a href="#4-транзакции-и-блокировки-где-и-почему-они-нужны">4. Транзакции и блокировки: где и почему они нужны</a></li><li><a href="#5-transactional-outbox-и-kafka">5. Transactional outbox и Kafka</a></li><li><a href="#6-kafka-и-его-практическая-роль-в-проекте">6. Kafka и его практическая роль в проекте</a></li><li><a href="#7-docker-ci-и-локальный-стенд">7. Docker, CI и локальный стенд</a></li><li><a href="#8-testcontainers-и-интеграционные-тесты">8. Testcontainers и интеграционные тесты</a></li><li><a href="#9-resilience4j-отказоустойчивость-и-chaos">9. Resilience4j, отказоустойчивость и chaos</a></li><li><a href="#10-observability-prometheus-grafana-tracing">10. Observability: Prometheus, Grafana, Tracing</a></li><li><a href="#11-нагрузочное-тестирование">11. Нагрузочное тестирование</a></li><li><a href="#12-оформление-проекта-в-репозитории">12. Оформление проекта в репозитории</a></li><li><a href="#13-ошибки-и-антипаттерны">13. Ошибки и антипаттерны</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#16-главное">16. Главное</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=5bb17fb4e6"></script>
+<script src="app.js?v=f34c39d1eb"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>
