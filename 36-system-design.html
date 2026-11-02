@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть VII. Архитектура</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/36.svg" width="48" height="48" alt="" loading="lazy">36. System Design: метод и разборы</h1><div class="meta"><span class="part-tag">Часть VII. Архитектура</span><span>42 683 слов</span><span>≈ 3 ч 55 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/36.svg" width="48" height="48" alt="" loading="lazy">36. System Design: метод и разборы</h1><div class="meta"><span class="part-tag">Часть VII. Архитектура</span><span>42 680 слов</span><span>≈ 3 ч 55 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>System design остаётся единственной секцией интервью, где проверяют не знание API, а умение держать в голове систему целиком: её данные, нагрузку, отказы и деньги. На работе нужна та же самая способность, потому что неверно выбранный ключ шардирования или забытая идемпотентность оборачиваются кварталами переделки, а не часами рефакторинга. В финтехе цена такой ошибки ещё и осязаема: это двойное списание, расхождение в сверке или простой платёжного канала. Поэтому эта глава задумана не как каталог технологий (он собран в главах <a href="17-postgresql-internals.html" data-tip="17. PostgreSQL изнутри">17</a>–<a href="30-other-brokers.html" data-tip="30. Другие брокеры: RabbitMQ, NATS, Pulsar, ActiveMQ">30</a>), а как <strong>метод</strong>, который позволяет за 45 минут у доски пройти путь от размытого «спроектируй перевод денег» до схемы данных, контракта API и честного списка компромиссов. К методу приложены десять разобранных задач, на которых он отработан вплоть до DDL.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">11 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-метод-решения-задачи-system-design" data-tip="Раздел этой главы: 1. Метод решения задачи system design">1. Метод решения задачи system design</a></li><li><a href="#2-оценочные-расчёты-back-of-envelope" data-tip="Раздел этой главы: 2. Оценочные расчёты (back-of-envelope)">2. Оценочные расчёты (back-of-envelope)</a></li><li><a href="#3-каталог-строительных-блоков" data-tip="Раздел этой главы: 3. Каталог строительных блоков">3. Каталог строительных блоков</a></li><li><a href="#4-разборы-задач" data-tip="Раздел этой главы: 4. Разборы задач">4. Разборы задач</a></li><li><a href="#5-углублённые-темы-на-интервью" data-tip="Раздел этой главы: 5. Углублённые темы на интервью">5. Углублённые темы на интервью</a></li><li><a href="#6-дизайн-в-реальной-работе" data-tip="Раздел этой главы: 6. Дизайн в реальной работе">6. Дизайн в реальной работе</a></li><li><a href="#7-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 7. Ошибки и антипаттерны">7. Ошибки и антипаттерны</a></li><li><a href="#8-диагностика-чеклист-к-собственному-дизайну" data-tip="Раздел этой главы: 8. Диагностика: чеклист к собственному дизайну">8. Диагностика: чеклист к собственному дизайну</a></li><li><a href="#9-вопросы-на-интервью" data-tip="Раздел этой главы: 9. Вопросы на интервью">9. Вопросы на интервью</a></li><li><a href="#10-попробовать-руками" data-tip="Раздел этой главы: 10. Попробовать руками">10. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
@@ -604,49 +604,49 @@ https://jdbc.postgresql.org/documentation/use/">pgjdbc/use</a>) дают 30–60
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Очередь (RabbitMQ, SQS, JMS)</th>
 <th>Лог (Kafka, Pulsar, Redis Streams)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Модель</td>
+<td data-label="Критерий">Модель</td>
 <td data-label="Очередь (RabbitMQ, SQS, JMS)">сообщение удаляется после ack</td>
 <td data-label="Лог (Kafka, Pulsar, Redis Streams)">запись остаётся до истечения retention</td>
 </tr>
 <tr>
-<td data-label="">Потребители</td>
+<td data-label="Критерий">Потребители</td>
 <td data-label="Очередь (RabbitMQ, SQS, JMS)">конкурируют за сообщения</td>
 <td data-label="Лог (Kafka, Pulsar, Redis Streams)">у каждого своя позиция (offset)</td>
 </tr>
 <tr>
-<td data-label="">Порядок</td>
+<td data-label="Критерий">Порядок</td>
 <td data-label="Очередь (RabbitMQ, SQS, JMS)">в пределах очереди, ломается при нескольких параллельных потребителях</td>
 <td data-label="Лог (Kafka, Pulsar, Redis Streams)">строгий в пределах партиции</td>
 </tr>
 <tr>
-<td data-label="">Перечитать</td>
+<td data-label="Критерий">Перечитать</td>
 <td data-label="Очередь (RabbitMQ, SQS, JMS)">нельзя</td>
 <td data-label="Лог (Kafka, Pulsar, Redis Streams)">можно, сдвинув смещение</td>
 </tr>
 <tr>
-<td data-label="">Масштаб потребителя</td>
+<td data-label="Критерий">Масштаб потребителя</td>
 <td data-label="Очередь (RabbitMQ, SQS, JMS)">добавляй потребителей</td>
 <td data-label="Лог (Kafka, Pulsar, Redis Streams)">ограничен числом партиций</td>
 </tr>
 <tr>
-<td data-label="">Роутинг</td>
+<td data-label="Критерий">Роутинг</td>
 <td data-label="Очередь (RabbitMQ, SQS, JMS)">богатый (exchange, binding, headers)</td>
 <td data-label="Лог (Kafka, Pulsar, Redis Streams)">по ключу в партицию</td>
 </tr>
 <tr>
-<td data-label="">Задержка сообщения</td>
+<td data-label="Критерий">Задержка сообщения</td>
 <td data-label="Очередь (RabbitMQ, SQS, JMS)">штатная (TTL + DLX, delayed exchange)</td>
 <td data-label="Лог (Kafka, Pulsar, Redis Streams)">нет из коробки</td>
 </tr>
 <tr>
-<td data-label="">Приоритеты</td>
+<td data-label="Критерий">Приоритеты</td>
 <td data-label="Очередь (RabbitMQ, SQS, JMS)">есть</td>
 <td data-label="Лог (Kafka, Pulsar, Redis Streams)">нет</td>
 </tr>
@@ -980,44 +980,44 @@ https://docs.stripe.com/api/idempotent_requests">Stripe</a>).</p>
 <tr>
 <th>Отказ</th>
 <th>Поведение</th>
-<th>Что заранее заложено</th>
+<th>Заложено заранее</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Отказ">Primary PostgreSQL</td>
 <td data-label="Поведение">failover на синхронную реплику, 10–60 с недоступности записи</td>
-<td data-label="Что заранее заложено">синхронная реплика в другой AZ, health-check, автоматический failover (Patroni)</td>
+<td data-label="Заложено заранее">синхронная реплика в другой AZ, health-check, автоматический failover (Patroni)</td>
 </tr>
 <tr>
 <td data-label="Отказ">Read replica</td>
 <td data-label="Поведение">чтение уходит на primary, растёт нагрузка</td>
-<td data-label="Что заранее заложено">флаг «читать с primary», запас по CPU</td>
+<td data-label="Заложено заранее">флаг «читать с primary», запас по CPU</td>
 </tr>
 <tr>
 <td data-label="Отказ">Kafka</td>
 <td data-label="Поведение">outbox копится, события не уходят</td>
-<td data-label="Что заранее заложено">outbox не блокирует перевод; оповещение на глубину outbox; после восстановления — догоняющая публикация</td>
+<td data-label="Заложено заранее">outbox не блокирует перевод; оповещение на глубину outbox; после восстановления — догоняющая публикация</td>
 </tr>
 <tr>
 <td data-label="Отказ">Outbox publisher</td>
 <td data-label="Поведение">то же</td>
-<td data-label="Что заранее заложено">несколько экземпляров с <code>SKIP LOCKED</code>, идемпотентность по ключу события</td>
+<td data-label="Заложено заранее">несколько экземпляров с <code>SKIP LOCKED</code>, идемпотентность по ключу события</td>
 </tr>
 <tr>
 <td data-label="Отказ">Redis (кеш баланса)</td>
 <td data-label="Поведение">чтение идёт в БД, рост латентности</td>
-<td data-label="Что заранее заложено">кеш опционален, circuit breaker перед ним</td>
+<td data-label="Заложено заранее">кеш опционален, circuit breaker перед ним</td>
 </tr>
 <tr>
 <td data-label="Отказ">Сервис уведомлений</td>
 <td data-label="Поведение">события копятся в Kafka</td>
-<td data-label="Что заранее заложено">retention 7 дней покрывает почти любой простой</td>
+<td data-label="Заложено заранее">retention 7 дней покрывает почти любой простой</td>
 </tr>
 <tr>
 <td data-label="Отказ">Полная потеря AZ</td>
 <td data-label="Поведение">трафик на вторую AZ</td>
-<td data-label="Что заранее заложено">stateless в двух AZ, БД с синхронной репликой</td>
+<td data-label="Заложено заранее">stateless в двух AZ, БД с синхронной репликой</td>
 </tr>
 </tbody>
 </table>
@@ -2473,34 +2473,34 @@ GET  /v1/preferences  / PUT /v1/preferences
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>on write</th>
 <th>on read</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Запись</td>
+<td data-label="Критерий">Запись</td>
 <td data-label="on write">дорого: N вставок на событие</td>
 <td data-label="on read">дёшево: 1 вставка</td>
 </tr>
 <tr>
-<td data-label="">Чтение</td>
+<td data-label="Критерий">Чтение</td>
 <td data-label="on write">дёшево: выборка по одному ключу</td>
 <td data-label="on read">дорого: join по подпискам + merge</td>
 </tr>
 <tr>
-<td data-label="">Хранилище</td>
+<td data-label="Критерий">Хранилище</td>
 <td data-label="on write">N копий</td>
 <td data-label="on read">1 копия</td>
 </tr>
 <tr>
-<td data-label="">Поведение при «звезде»</td>
+<td data-label="Критерий">Поведение при «звезде»</td>
 <td data-label="on write">катастрофа: 1 событие → 1 млн вставок</td>
 <td data-label="on read">нормально</td>
 </tr>
 <tr>
-<td data-label="">Задержка появления</td>
+<td data-label="Критерий">Задержка появления</td>
 <td data-label="on write">секунды после записи</td>
 <td data-label="on read">нулевая</td>
 </tr>
@@ -2747,7 +2747,7 @@ GET /v1/suggest?q=мол&amp;limit=10
 <p><strong>Псевдонимы вместо переиндексации на месте.</strong> Полная перестройка идёт в новый индекс <code>products-v42</code>, и после проверки псевдоним <code>products</code> атомарно переключается на него. Это даёт откат за секунду и переиндексацию без деградации поиска. На время массовой заливки ставят <code>refresh_interval: -1</code> и <code>number_of_replicas: 0</code>, а потом возвращают прежние значения.</p>
 <p><strong>Ранжирование — это не только BM25.</strong> Elasticsearch по умолчанию использует BM25 (с версии 5.0), но чистая текстовая релевантность даёт в коммерции плохую выдачу, и нужен <code>function_score</code> с бустами по наличию, популярности, марже и свежести. Правило здесь такое: <strong>веса хранятся как конфигурация, а не как код</strong>, и каждое их изменение проверяется на офлайн-наборе размеченных запросов (nDCG, MRR), а не «на глаз».</p>
 <p><strong>Кеш выдачи.</strong> Топ-500 запросов дают 30–50 % трафика, поэтому их результат (страница 1 без персонализации) кешируют целиком на 1–5 минут. Ключ кеша обязан включать все параметры фильтрации, иначе пользователь получит выдачу от чужого фильтра, и это классическая ошибка.</p>
-<p><strong>Чего делать не надо:</strong> искать полнотекстом в PostgreSQL, если на миллионах записей нужны фасеты, релевантность и нечёткий поиск. <code>pg_trgm</code> и <code>tsvector</code> отлично работают до сотен тысяч строк и в простых сценариях (порог схожести <code>pg_trgm.similarity_threshold</code> по умолчанию 0,3), но фасетные агрегации и настройка ранжирования в них неудобны.</p>
+<p><strong>Запреты:</strong> искать полнотекстом в PostgreSQL, если на миллионах записей нужны фасеты, релевантность и нечёткий поиск. <code>pg_trgm</code> и <code>tsvector</code> отлично работают до сотен тысяч строк и в простых сценариях (порог схожести <code>pg_trgm.similarity_threshold</code> по умолчанию 0,3), но фасетные агрегации и настройка ранжирования в них неудобны.</p>
 <h4>Узкие места, отказы и вопросы интервьюера</h4>
 <p>Узких мест и отказов здесь четыре, а после них — два вопроса, которыми интервьюер проверяет выбор поискового движка и отношение к лагу индексации.</p>
 <ul>
@@ -2929,7 +2929,7 @@ cp1251, прочитанный как cp1252: «Èâàíîâ È.È.» (без о
 </table>
 <p><strong>Логические шарды.</strong> Ключевой приём состоит в том, чтобы сразу завести N логических шардов (например, 1024) и отображать их на M физических узлов. Тогда «решардинг» сводится к перемещению логических шардов между узлами, а не к пересчёту ключей, тогда как без этого приёма добавление узла к 4 существующим означает переливку 80 % данных.</p>
 <p><strong>Горячий шард.</strong> Диагностируют его по метрикам RPS, латентности и размера <strong>в разрезе шарда</strong>, и такой разрез обязателен, потому что в среднем по кластеру перекос не виден. Лечат горячий шард тем, что выносят горячий ключ на отдельный узел, добавляют для этого ключа второй уровень разбиения (<code>{hot_key}#0..15</code>) или кешируют его.</p>
-<p><strong>Что ломается при шардировании:</strong> межшардовые соединения, глобальные уникальные индексы (уникальность гарантируется только внутри шарда, поэтому нужен либо ключ, включающий шард, либо отдельный сервис уникальности), <code>ORDER BY ... LIMIT</code> по всем шардам (нужен merge на уровне приложения), автоинкременты, агрегаты и транзакции. Каждое из этих ограничений приходится обходить кодом, и в этом главная скрытая цена шардирования.</p>
+<p><strong>Поломки при шардировании:</strong> межшардовые соединения, глобальные уникальные индексы (уникальность гарантируется только внутри шарда, поэтому нужен либо ключ, включающий шард, либо отдельный сервис уникальности), <code>ORDER BY ... LIMIT</code> по всем шардам (нужен merge на уровне приложения), автоинкременты, агрегаты и транзакции. Каждое из этих ограничений приходится обходить кодом, и в этом главная скрытая цена шардирования.</p>
 <h3 id="52-кеш-стратегия">5.2 Кеш-стратегия</h3>
 <p>Кеш-стратегия — это ответ на пять вопросов о кеше, и на интервью удобнее всего отвечать на них в одном и том же порядке: <strong>что кешируем → где → как сбрасываем → что при промахе → что при отказе кеша</strong>. Такой порядок не даёт забыть последний вопрос, который интервьюеры любят больше всего и который кандидаты чаще всего пропускают.</p>
 <ul>
@@ -3443,5 +3443,5 @@ https://commons.wikimedia.org/wiki/File:Hong_Kong_skylines_(Hong_Kong_Island)_20
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-метод-решения-задачи-system-design">1. Метод решения задачи system design</a></li><li><a href="#2-оценочные-расчёты-back-of-envelope">2. Оценочные расчёты (back-of-envelope)</a></li><li><a href="#3-каталог-строительных-блоков">3. Каталог строительных блоков</a></li><li><a href="#4-разборы-задач">4. Разборы задач</a></li><li><a href="#5-углублённые-темы-на-интервью">5. Углублённые темы на интервью</a></li><li><a href="#6-дизайн-в-реальной-работе">6. Дизайн в реальной работе</a></li><li><a href="#7-ошибки-и-антипаттерны">7. Ошибки и антипаттерны</a></li><li><a href="#8-диагностика-чеклист-к-собственному-дизайну">8. Диагностика: чеклист к собственному дизайну</a></li><li><a href="#9-вопросы-на-интервью">9. Вопросы на интервью</a></li><li><a href="#10-попробовать-руками">10. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

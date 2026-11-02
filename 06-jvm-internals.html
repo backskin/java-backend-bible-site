@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть II. Платформа JVM</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/06.svg" width="48" height="48" alt="" loading="lazy">6. JVM изнутри</h1><div class="meta"><span class="part-tag">Часть II. Платформа JVM</span><span>39 709 слов</span><span>≈ 3 ч 40 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/06.svg" width="48" height="48" alt="" loading="lazy">6. JVM изнутри</h1><div class="meta"><span class="part-tag">Часть II. Платформа JVM</span><span>39 696 слов</span><span>≈ 3 ч 40 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>Backend на JVM не укладывается в схему «написал на Java, скомпилировал, и оно работает»: между вашим кодом и процессором стоят три исполнителя (интерпретатор, C1 и C2), и именно они решают, что и как будет выполняться, опираясь на профиль реального трафика. Их решениями объясняется, почему сервис после деплоя первые минуты отвечает в 5–10 раз медленнее, почему p99 внезапно подскакивает после «безобидного» рефакторинга с интерфейсами, почему через год работы в логе появляется <code>CodeCache is full. Compiler has been disabled</code> и почему горячий перезапуск приложения в контейнере оставляет в Metaspace классы, которые никто уже не использует. На интервью уровня senior про JVM спрашивают не ради теории: по ответам про tiered compilation, встраивание и деоптимизацию проверяют, умеет ли человек читать поведение системы, а не только её код.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">17 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-загрузка-классов" data-tip="Раздел этой главы: 1. Загрузка классов">1. Загрузка классов</a></li><li><a href="#2-class-файл-байткод-и-фрейм" data-tip="Раздел этой главы: 2. Class-файл, байткод и фрейм">2. Class-файл, байткод и фрейм</a></li><li><a href="#3-от-интерпретатора-к-c2-tiered-compilation" data-tip="Раздел этой главы: 3. От интерпретатора к C2: tiered compilation">3. От интерпретатора к C2: tiered compilation</a></li><li><a href="#4-профиль-исполнения-для-jit" data-tip="Раздел этой главы: 4. Профиль исполнения для JIT">4. Профиль исполнения для JIT</a></li><li><a href="#5-оптимизации-c2" data-tip="Раздел этой главы: 5. Оптимизации C2">5. Оптимизации C2</a></li><li><a href="#6-спекуляции-и-деоптимизация" data-tip="Раздел этой главы: 6. Спекуляции и деоптимизация">6. Спекуляции и деоптимизация</a></li><li><a href="#7-code-cache" data-tip="Раздел этой главы: 7. Code cache">7. Code cache</a></li><li><a href="#8-jmm-и-оптимизации-компилятора" data-tip="Раздел этой главы: 8. JMM и оптимизации компилятора">8. JMM и оптимизации компилятора</a></li><li><a href="#9-jit-friendly-код-и-микробенчмарки" data-tip="Раздел этой главы: 9. JIT-friendly код и микробенчмарки">9. JIT-friendly код и микробенчмарки</a></li><li><a href="#10-graal-jit-leyden-и-aot-кэш" data-tip="Раздел этой главы: 10. Graal JIT, Leyden и AOT-кэш">10. Graal JIT, Leyden и AOT-кэш</a></li><li><a href="#11-исполнение-кода-в-jvm-сквозной-пример" data-tip="Раздел этой главы: 11. Исполнение кода в JVM: сквозной пример">11. Исполнение кода в JVM: сквозной пример</a></li><li><a href="#12-разобранные-инциденты" data-tip="Раздел этой главы: 12. Разобранные инциденты">12. Разобранные инциденты</a></li><li><a href="#13-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 13. Ошибки и антипаттерны">13. Ошибки и антипаттерны</a></li><li><a href="#14-диагностика" data-tip="Раздел этой главы: 14. Диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью" data-tip="Раздел этой главы: 15. Вопросы на интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками" data-tip="Раздел этой главы: 16. Попробовать руками">16. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
@@ -120,29 +120,29 @@ F init
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th><code>ClassNotFoundException</code></th>
 <th><code>NoClassDefFoundError</code></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Тип</td>
+<td data-label="Критерий">Тип</td>
 <td data-label="ClassNotFoundException">checked <code>Exception</code></td>
 <td data-label="NoClassDefFoundError"><code>Error</code> (подкласс <code>LinkageError</code>)</td>
 </tr>
 <tr>
-<td data-label="">Кто бросает</td>
+<td data-label="Критерий">Кто бросает</td>
 <td data-label="ClassNotFoundException">загрузчик: <code>Class.forName</code>, <code>ClassLoader.loadClass</code>, <code>ClassLoader.findSystemClass</code></td>
 <td data-label="NoClassDefFoundError">JVM при <strong>резолюции символической ссылки</strong> из байткода (<code>new</code>, <code>invoke*</code>, <code>getstatic</code>, <code>checkcast</code>)</td>
 </tr>
 <tr>
-<td data-label="">Смысл</td>
+<td data-label="Критерий">Смысл</td>
 <td data-label="ClassNotFoundException">«меня явно попросили найти класс по имени, и я его не нашёл»; обычно это динамическая загрузка: JDBC-драйвер, плагин, класс из конфига, <code>Class.forName(props.get("handler"))</code></td>
 <td data-label="NoClassDefFoundError">«компилятор этот класс знал, а среда выполнения его не видит»: либо класса действительно нет, либо он есть, но его <strong>инициализация уже провалилась</strong></td>
 </tr>
 <tr>
-<td data-label="">Что делать</td>
+<td data-label="Критерий">Что делать</td>
 <td data-label="ClassNotFoundException">проверить имя (бинарное, с <code>$</code> для вложенных) и то, что jar лежит в classpath того загрузчика, из которого вызвали</td>
 <td data-label="NoClassDefFoundError">сравнить classpath сборки и среды выполнения; проверить, не было ли раньше <code>ExceptionInInitializerError</code></td>
 </tr>
@@ -183,28 +183,28 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ClassLoad
 <thead>
 <tr>
 <th>Загрузчик</th>
-<th>Как получить</th>
-<th>Что загружает</th>
+<th>Получение</th>
+<th>Загружает</th>
 <th>Представление</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Загрузчик">Bootstrap</td>
-<td data-label="Как получить">никак (в API это <code>null</code>)</td>
-<td data-label="Что загружает"><code>java.base</code>, <code>java.logging</code>, <code>java.desktop</code>, <code>jdk.management</code> и другие ядровые модули</td>
+<td data-label="Получение">никак (в API это <code>null</code>)</td>
+<td data-label="Загружает"><code>java.base</code>, <code>java.logging</code>, <code>java.desktop</code>, <code>jdk.management</code> и другие ядровые модули</td>
 <td data-label="Представление">нативный код HotSpot</td>
 </tr>
 <tr>
 <td data-label="Загрузчик">Platform</td>
-<td data-label="Как получить"><code>ClassLoader.getPlatformClassLoader()</code></td>
-<td data-label="Что загружает">модули Java SE/JDK, которым не нужны полные привилегии: <code>java.sql</code>, <code>java.scripting</code>, <code>jdk.crypto.ec</code>, <code>jdk.charsets</code></td>
+<td data-label="Получение"><code>ClassLoader.getPlatformClassLoader()</code></td>
+<td data-label="Загружает">модули Java SE/JDK, которым не нужны полные привилегии: <code>java.sql</code>, <code>java.scripting</code>, <code>jdk.crypto.ec</code>, <code>jdk.charsets</code></td>
 <td data-label="Представление"><code>jdk.internal.loader.ClassLoaders$PlatformClassLoader</code></td>
 </tr>
 <tr>
 <td data-label="Загрузчик">Application (system)</td>
-<td data-label="Как получить"><code>ClassLoader.getSystemClassLoader()</code></td>
-<td data-label="Что загружает">classpath, module path приложения, JDK-инструменты</td>
+<td data-label="Получение"><code>ClassLoader.getSystemClassLoader()</code></td>
+<td data-label="Загружает">classpath, module path приложения, JDK-инструменты</td>
 <td data-label="Представление"><code>ClassLoaders$AppClassLoader</code></td>
 </tr>
 </tbody>
@@ -240,7 +240,7 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ClassLoad
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th><code>Class.forName(String)</code></th>
 <th><code>Class.forName(String, boolean, ClassLoader)</code></th>
 <th><code>loader.loadClass(String)</code></th>
@@ -248,31 +248,31 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ClassLoad
 </thead>
 <tbody>
 <tr>
-<td data-label="">Загрузчик</td>
+<td data-label="Критерий">Загрузчик</td>
 <td data-label="Class.forName(String)"><em>caller's class loader</em>, то есть загрузчик класса, из которого вызвали</td>
 <td data-label="Class.forName(String, boolean, ClassLoader)">указанный явно</td>
 <td data-label="loader.loadClass(String)">указанный явно (сам объект)</td>
 </tr>
 <tr>
-<td data-label="">Инициализация</td>
+<td data-label="Критерий">Инициализация</td>
 <td data-label="Class.forName(String)"><strong>да</strong>, выполняет <code>&lt;clinit&gt;</code></td>
 <td data-label="Class.forName(String, boolean, ClassLoader)">по флагу</td>
 <td data-label="loader.loadClass(String)"><strong>нет</strong>, только load + link</td>
 </tr>
 <tr>
-<td data-label="">Возвращает</td>
+<td data-label="Критерий">Возвращает</td>
 <td data-label="Class.forName(String)"><code>Class&lt;?&gt;</code></td>
 <td data-label="Class.forName(String, boolean, ClassLoader)"><code>Class&lt;?&gt;</code></td>
 <td data-label="loader.loadClass(String)"><code>Class&lt;?&gt;</code></td>
 </tr>
 <tr>
-<td data-label="">Ошибка</td>
+<td data-label="Критерий">Ошибка</td>
 <td data-label="Class.forName(String)"><code>ClassNotFoundException</code></td>
 <td data-label="Class.forName(String, boolean, ClassLoader)">то же</td>
 <td data-label="loader.loadClass(String)">то же</td>
 </tr>
 <tr>
-<td data-label="">Доступ</td>
+<td data-label="Критерий">Доступ</td>
 <td data-label="Class.forName(String)">public API</td>
 <td data-label="Class.forName(String, boolean, ClassLoader)">public API</td>
 <td data-label="loader.loadClass(String)"><code>loadClass(String)</code> public, <code>loadClass(String, boolean)</code> protected</td>
@@ -299,51 +299,51 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ClassLoad
 <table class="rt">
 <thead>
 <tr>
-<th>Где</th>
+<th>Место</th>
 <th>Модель</th>
-<th>Зачем</th>
+<th>Назначение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="Где">Сервлет-контейнер (Tomcat <code>WebappClassLoader</code>, Jetty)</td>
+<td data-label="Место">Сервлет-контейнер (Tomcat <code>WebappClassLoader</code>, Jetty)</td>
 <td data-label="Модель">child-first с parent-first списком (<code>jakarta.*</code>, <code>org.apache.*</code>)</td>
-<td data-label="Зачем">изоляция веб-приложений друг от друга и от контейнера; hot redeploy без перезапуска JVM</td>
+<td data-label="Назначение">изоляция веб-приложений друг от друга и от контейнера; hot redeploy без перезапуска JVM</td>
 </tr>
 <tr>
-<td data-label="Где">WebLogic/WildFly (EAR)</td>
+<td data-label="Место">WebLogic/WildFly (EAR)</td>
 <td data-label="Модель">иерархия EAR → WAR/EJB, <code>jboss-deployment-structure.xml</code></td>
-<td data-label="Зачем">изоляция модулей внутри одного развёртывания, см. главу <a href="21-oracle-and-legacy.html" data-tip="21. Oracle и унаследованные корпоративные системы">21</a> (<a href="21-oracle-and-legacy.html" data-tip="21. Oracle и унаследованные корпоративные системы"><code>21-oracle-and-legacy.md</code></a>)</td>
+<td data-label="Назначение">изоляция модулей внутри одного развёртывания, см. главу <a href="21-oracle-and-legacy.html" data-tip="21. Oracle и унаследованные корпоративные системы">21</a> (<a href="21-oracle-and-legacy.html" data-tip="21. Oracle и унаследованные корпоративные системы"><code>21-oracle-and-legacy.md</code></a>)</td>
 </tr>
 <tr>
-<td data-label="Где">Spring Boot fat jar (<code>LaunchedClassLoader</code>)</td>
+<td data-label="Место">Spring Boot fat jar (<code>LaunchedClassLoader</code>)</td>
 <td data-label="Модель">parent-first, но вложенные jar из <code>BOOT-INF/lib</code> читаются без распаковки</td>
-<td data-label="Зачем">один исполняемый артефакт</td>
+<td data-label="Назначение">один исполняемый артефакт</td>
 </tr>
 <tr>
-<td data-label="Где">OSGi (Equinox, Felix)</td>
+<td data-label="Место">OSGi (Equinox, Felix)</td>
 <td data-label="Модель">граф, а не дерево: делегация по <code>Import-Package</code></td>
-<td data-label="Зачем">версионированные бандлы, несколько версий одной библиотеки одновременно</td>
+<td data-label="Назначение">версионированные бандлы, несколько версий одной библиотеки одновременно</td>
 </tr>
 <tr>
-<td data-label="Где">Плагины (IDE, Jenkins, Kafka Connect, Trino, Presto)</td>
+<td data-label="Место">Плагины (IDE, Jenkins, Kafka Connect, Trino, Presto)</td>
 <td data-label="Модель">child-first + список shared-пакетов API</td>
-<td data-label="Зачем">плагин со своими зависимостями, которые не конфликтуют с хостом</td>
+<td data-label="Назначение">плагин со своими зависимостями, которые не конфликтуют с хостом</td>
 </tr>
 <tr>
-<td data-label="Где">Hot reload (JRebel, DCEVM, Spring Boot DevTools)</td>
+<td data-label="Место">Hot reload (JRebel, DCEVM, Spring Boot DevTools)</td>
 <td data-label="Модель"><code>RestartClassLoader</code>: классы приложения в отдельном загрузчике, библиотеки в родительском</td>
-<td data-label="Зачем">пересоздать загрузчик приложения за миллисекунды вместо перезапуска JVM</td>
+<td data-label="Назначение">пересоздать загрузчик приложения за миллисекунды вместо перезапуска JVM</td>
 </tr>
 <tr>
-<td data-label="Где">Скриптовые движки (Groovy, Nashorn/GraalJS, JRuby)</td>
+<td data-label="Место">Скриптовые движки (Groovy, Nashorn/GraalJS, JRuby)</td>
 <td data-label="Модель">новый загрузчик на каждый скомпилированный скрипт</td>
-<td data-label="Зачем">изоляция и возможность выгрузки</td>
+<td data-label="Назначение">изоляция и возможность выгрузки</td>
 </tr>
 <tr>
-<td data-label="Где">Генерация прокси (ByteBuddy, CGLIB, Javassist, Hibernate)</td>
+<td data-label="Место">Генерация прокси (ByteBuddy, CGLIB, Javassist, Hibernate)</td>
 <td data-label="Модель"><code>defineClass</code> в загрузчик целевого класса или hidden class</td>
-<td data-label="Зачем">динамические подклассы, AOP, ленивые прокси</td>
+<td data-label="Назначение">динамические подклассы, AOP, ленивые прокси</td>
 </tr>
 </tbody>
 </table>
@@ -749,7 +749,7 @@ https://openjdk.org/jeps/483">JEP 483</a>), выносят на этап сбо�
 <th class="num">Уровень</th>
 <th>Исполнитель</th>
 <th>Профилирование</th>
-<th>Когда</th>
+<th>Применение</th>
 </tr>
 </thead>
 <tbody>
@@ -757,31 +757,31 @@ https://openjdk.org/jeps/483">JEP 483</a>), выносят на этап сбо�
 <td data-label="Уровень" class="num">0</td>
 <td data-label="Исполнитель">интерпретатор</td>
 <td data-label="Профилирование">полное (счётчики + типы, после разгона)</td>
-<td data-label="Когда">старт любого метода</td>
+<td data-label="Применение">старт любого метода</td>
 </tr>
 <tr>
 <td data-label="Уровень" class="num">1</td>
 <td data-label="Исполнитель">C1</td>
 <td data-label="Профилирование">нет</td>
-<td data-label="Когда"><em>тривиальные</em> методы (геттеры, <code>MaxTrivialSize</code> = 6 байт) или методы, которые C2 отказался компилировать; финальное состояние</td>
+<td data-label="Применение"><em>тривиальные</em> методы (геттеры, <code>MaxTrivialSize</code> = 6 байт) или методы, которые C2 отказался компилировать; финальное состояние</td>
 </tr>
 <tr>
 <td data-label="Уровень" class="num">2</td>
 <td data-label="Исполнитель">C1</td>
 <td data-label="Профилирование">только счётчики вызовов и back-edge</td>
-<td data-label="Когда">когда очередь C2 переполнена: чтобы быстро уйти с 0 и не тратить время на полный профиль</td>
+<td data-label="Применение">когда очередь C2 переполнена: чтобы быстро уйти с 0 и не тратить время на полный профиль</td>
 </tr>
 <tr>
 <td data-label="Уровень" class="num">3</td>
 <td data-label="Исполнитель">C1</td>
 <td data-label="Профилирование">полное (счётчики + MDO: типы, ветвления)</td>
-<td data-label="Когда">основной путь; код на 25–35 % медленнее уровня 1 из-за сбора профиля</td>
+<td data-label="Применение">основной путь; код на 25–35 % медленнее уровня 1 из-за сбора профиля</td>
 </tr>
 <tr>
 <td data-label="Уровень" class="num">4</td>
 <td data-label="Исполнитель">C2</td>
 <td data-label="Профилирование">нет</td>
-<td data-label="Когда">финальное состояние для горячих методов</td>
+<td data-label="Применение">финальное состояние для горячих методов</td>
 </tr>
 </tbody>
 </table>
@@ -910,50 +910,50 @@ https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html">java, Java 2
 <p><code>-XX:TieredStopAtLevel=1</code> оставляет только C1 без профилирования: метод уходит в компиляцию по порогу уровня 1 и остаётся там навсегда. Выигрыш от этого в том, что компиляция занимает доли миллисекунды вместо десятков, профилирование ничего не стоит, code cache расходуется в разы меньше, и компиляторные потоки заняты меньше. Потерять же придётся escape analysis, встраивание по профилю, девиртуализацию по типу приёмника, векторизацию и встроенные функции C2, так что пиковая производительность на вычислительном коде падает в 2–5 раз, а на IO-bound коде потеря часто остаётся в пределах 10–20 %.</p>
 <p>Такой выбор правилен для CLI-утилит и однократных задач длительностью до нескольких секунд: миграций Flyway/Liquibase, запущенных отдельным процессом, генераторов, <code>jlink</code>-образов для инструментов. Он же хорош для unit-тестов в CI, где Maven Surefire с <code>argLine=-XX:TieredStopAtLevel=1 -XX:+UseSerialGC</code> на большом проекте сокращает время прогона на 20–40 %, потому что каждый форк JVM не тратит время на C2, и для локального запуска Spring Boot при разработке. А вот для любого сервиса, который живёт дольше минуты, такой выбор будет ошибкой. Подробнее о настройке старта в контейнере рассказывает глава <a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений">46</a> (<a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений"><code>46-docker-jvm.md</code></a>).</p>
 <p><code>-XX:-TieredCompilation</code>, то есть только C2, как в «server mode» до JDK 8, — противоположная крайность. Без C1 метод остаётся в интерпретаторе до <code>CompileThreshold=10000</code>, а потом сразу получает лучший код. Прогрев от этого удлиняется, зато в стационарном режиме code cache меньше, потому что нет уровней 2–3, и нет промежуточной ступеньки с медленным кодом C1. Оправдан такой режим для процессов, где важен исключительно пик после долгого прогрева, вроде числодробилок и многочасовых пакетов, а также для экономии code cache в очень больших приложениях. Заметьте, что при <code>-XX:-TieredCompilation</code> значение <code>ReservedCodeCacheSize</code> по умолчанию падает с 240 до 48 МБ.</p>
-<p><strong>Почему первые запросы медленные: разложение по слагаемым.</strong> Таблица раскладывает время медленных запросов типичного сервиса на Spring Boot в первые 60 секунд под трафиком, и для каждого слагаемого указывает его вклад и способ лечения:</p>
+<p><strong>Медленные первые запросы: разложение по слагаемым.</strong> Таблица раскладывает время медленных запросов типичного сервиса на Spring Boot в первые 60 секунд под трафиком, и для каждого слагаемого указывает его вклад и способ лечения:</p>
 <table class="rt">
 <thead>
 <tr>
 <th>Слагаемое</th>
 <th>Вклад</th>
-<th>Чем лечится</th>
+<th>Лечение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Слагаемое">Загрузка + верификация + связывание классов на пути запроса (Jackson, Hibernate proxy, Spring AOP)</td>
 <td data-label="Вклад">секунды на первых запросах</td>
-<td data-label="Чем лечится">AOT-кэш / CDS (§10.2)</td>
+<td data-label="Лечение">AOT-кэш / CDS (§10.2)</td>
 </tr>
 <tr>
 <td data-label="Слагаемое">Связывание <code>invokedynamic</code>: лямбды, конкатенация, <code>MethodHandle</code>-цепочки</td>
 <td data-label="Вклад">сотни мс суммарно</td>
-<td data-label="Чем лечится">AOT-кэш, меньше уникальных лямбд на пути старта</td>
+<td data-label="Лечение">AOT-кэш, меньше уникальных лямбд на пути старта</td>
 </tr>
 <tr>
 <td data-label="Слагаемое">Интерпретация до уровня 3 (первые ~200 вызовов каждого метода)</td>
 <td data-label="Вклад">10–50× замедление на этих вызовах</td>
-<td data-label="Чем лечится">ничем, кроме прогрева</td>
+<td data-label="Лечение">ничем, кроме прогрева</td>
 </tr>
 <tr>
 <td data-label="Слагаемое">Код уровня 3 до достижения порога уровня 4 (следующие ~5000 вызовов)</td>
 <td data-label="Вклад">2–5× замедление</td>
-<td data-label="Чем лечится">JEP 515 (профили в AOT-кэше)</td>
+<td data-label="Лечение">JEP 515 (профили в AOT-кэше)</td>
 </tr>
 <tr>
 <td data-label="Слагаемое">Ожидание в очереди C2 при массовом прогреве</td>
 <td data-label="Вклад">десятки секунд при cpu limit = 1</td>
-<td data-label="Чем лечится">больше CPU на старте, <code>CICompilerCount</code></td>
+<td data-label="Лечение">больше CPU на старте, <code>CICompilerCount</code></td>
 </tr>
 <tr>
 <td data-label="Слагаемое">Первые деоптимизации (unstable_if на первых редких ветках)</td>
 <td data-label="Вклад">единицы мс каждая</td>
-<td data-label="Чем лечится">ничем, это норма</td>
+<td data-label="Лечение">ничем, это норма</td>
 </tr>
 <tr>
 <td data-label="Слагаемое">Холодные кэши: JIT-код не в iTLB, данные не в L3, пулы соединений пусты, JPA-метамодель не построена</td>
 <td data-label="Вклад">зависит</td>
-<td data-label="Чем лечится">прогревочные запросы</td>
+<td data-label="Лечение">прогревочные запросы</td>
 </tr>
 </tbody>
 </table>
@@ -979,29 +979,29 @@ https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html">java, Java 2
 <tr>
 <th>Наблюдение</th>
 <th>Название</th>
-<th>Что делает C2</th>
+<th>Действие C2</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Наблюдение">один класс</td>
 <td data-label="Название">мономорфный</td>
-<td data-label="Что делает C2">guard <code>klass == X</code> + прямой вызов или встраивание; при промахе — uncommon trap</td>
+<td data-label="Действие C2">guard <code>klass == X</code> + прямой вызов или встраивание; при промахе — uncommon trap</td>
 </tr>
 <tr>
 <td data-label="Наблюдение">два класса</td>
 <td data-label="Название">биморфный</td>
-<td data-label="Что делает C2">два guard-а + два встраивания; при промахе — trap или виртуальный вызов</td>
+<td data-label="Действие C2">два guard-а + два встраивания; при промахе — trap или виртуальный вызов</td>
 </tr>
 <tr>
 <td data-label="Наблюдение">три и более, один доминирует ≥ 90 % (<code>TypeProfileMajorReceiverPercent</code>)</td>
 <td data-label="Название">мегаморфный с major receiver</td>
-<td data-label="Что делает C2">встраивание доминирующего + виртуальный вызов для остальных</td>
+<td data-label="Действие C2">встраивание доминирующего + виртуальный вызов для остальных</td>
 </tr>
 <tr>
 <td data-label="Наблюдение">три и более без доминанты</td>
 <td data-label="Название">мегаморфный</td>
-<td data-label="Что делает C2">виртуальный вызов через vtable/itable, <strong>без встраивания</strong></td>
+<td data-label="Действие C2">виртуальный вызов через vtable/itable, <strong>без встраивания</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1179,41 +1179,41 @@ https://openjdk.org/jeps/508">JEP 508</a>, десятый инкубатор в 
 <table class="rt">
 <thead>
 <tr>
-<th>Что</th>
+<th>Предмет</th>
 <th>Константа для C2?</th>
-<th>Почему</th>
+<th>Объяснение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="Что"><code>static final int N = 100;</code></td>
+<td data-label="Предмет"><code>static final int N = 100;</code></td>
 <td data-label="Константа для C2?"><strong>да</strong>, значение вкомпилировано ещё javac</td>
-<td data-label="Почему">constant variable, <code>ldc</code>/<code>bipush</code> в байткоде</td>
+<td data-label="Объяснение">constant variable, <code>ldc</code>/<code>bipush</code> в байткоде</td>
 </tr>
 <tr>
-<td data-label="Что"><code>static final String S = "abc";</code></td>
+<td data-label="Предмет"><code>static final String S = "abc";</code></td>
 <td data-label="Константа для C2?"><strong>да</strong>, там же</td>
-<td data-label="Почему">то же</td>
+<td data-label="Объяснение">то же</td>
 </tr>
 <tr>
-<td data-label="Что"><code>static final Config C = load();</code></td>
+<td data-label="Предмет"><code>static final Config C = load();</code></td>
 <td data-label="Константа для C2?"><strong>да, значение ссылки</strong> после инициализации класса</td>
-<td data-label="Почему">C2 читает поле из <code>InstanceKlass</code> и знает: оно неизменно после <code>&lt;clinit&gt;</code>, так как запись в <code>static final</code> вне <code>&lt;clinit&gt;</code> запрещена верификатором</td>
+<td data-label="Объяснение">C2 читает поле из <code>InstanceKlass</code> и знает: оно неизменно после <code>&lt;clinit&gt;</code>, так как запись в <code>static final</code> вне <code>&lt;clinit&gt;</code> запрещена верификатором</td>
 </tr>
 <tr>
-<td data-label="Что"><code>private final int n;</code> (поле экземпляра)</td>
+<td data-label="Предмет"><code>private final int n;</code> (поле экземпляра)</td>
 <td data-label="Константа для C2?"><strong>нет</strong> в общем случае</td>
-<td data-label="Почему">рефлексия и <code>Unsafe</code> могут его переписать; C2 читает поле как обычное</td>
+<td data-label="Объяснение">рефлексия и <code>Unsafe</code> могут его переписать; C2 читает поле как обычное</td>
 </tr>
 <tr>
-<td data-label="Что"><code>final</code> поле <code>record</code>-а</td>
+<td data-label="Предмет"><code>final</code> поле <code>record</code>-а</td>
 <td data-label="Константа для C2?"><strong>да</strong>, если объект — константа</td>
-<td data-label="Почему">trusted finals: records, hidden classes и <code>java.lang.invoke</code> считаются надёжными</td>
+<td data-label="Объяснение">trusted finals: records, hidden classes и <code>java.lang.invoke</code> считаются надёжными</td>
 </tr>
 <tr>
-<td data-label="Что">поле, помеченное <code>@Stable</code> (внутреннее JDK)</td>
+<td data-label="Предмет">поле, помеченное <code>@Stable</code> (внутреннее JDK)</td>
 <td data-label="Константа для C2?"><strong>да</strong> после первой ненулевой записи</td>
-<td data-label="Почему">механизм для <code>List.of</code>, <code>Integer.valueOf</code> кэша, <code>MethodHandle</code></td>
+<td data-label="Объяснение">механизм для <code>List.of</code>, <code>Integer.valueOf</code> кэша, <code>MethodHandle</code></td>
 </tr>
 </tbody>
 </table>
@@ -1328,7 +1328,7 @@ phase2 2.881792E11
 <p>Разбирать вопрос «почему мой метод медленный» нужно в определённом порядке. Сначала профилировщик показывает горячий метод, затем вы получаете его дерево встраивания и идёте по нему сверху вниз до первого узла с отказом на горячем пути. Причину этого отказа вы сопоставляете с таблицей из §5.1, устраняете её, то есть уменьшаете метод, разделяете горячее и холодное или убираете мегаморфизм, и перепроверяете результат. Всё, что делают без такого разбора, остаётся гаданием.</p>
 <h2 id="6-спекуляции-и-деоптимизация">6. Спекуляции и деоптимизация</h2>
 <p>Спекуляция (<em>speculation</em>) — это оптимизация, которую C2 делает в расчёте на то, что наблюдаемое в профиле поведение сохранится, а деоптимизация (<em>deoptimization</em>) — механизм отката, который выбрасывает такой код и возвращает исполнение в интерпретатор, когда расчёт не оправдался. Именно эта пара объясняет, почему скомпилированный код бывает таким быстрым и почему через час работы сервис вдруг на минуту замедляется без видимых причин. Раздел разбирает, как устроен uncommon trap и что он делает с потоком, какие бывают причины и действия деоптимизации, какими лимитами C2 ограничивает спекуляции и как деоптимизацию вызывают события извне метода: загрузка классов и JVMTI (<em>JVM Tool Interface</em>, программный интерфейс, через который отладчики, профилировщики и агенты управляют JVM).</p>
-<h3 id="61-что-такое-uncommon-trap">6.1 Что такое uncommon trap</h3>
+<h3 id="61-uncommon-trap">6.1 Uncommon trap</h3>
 <p>Uncommon trap — это переход из скомпилированного кода в среду выполнения, которая выполняется, когда одна из гипотез компилятора оказалась неверной. Дело в том, что C2 компилирует не программу, а <strong>гипотезу о программе</strong>: «тип приёмника здесь всегда <code>ArrayList</code>», «эта ветка не исполняется», «этот <code>checkcast</code> не падает», «у этого класса нет подклассов», «эта ссылка не бывает <code>null</code>». Каждая такая гипотеза делает код проще и быстрее, но требует <strong>guard-а</strong>, то есть проверки, что она всё ещё верна. Если guard не проходит, продолжать скомпилированный код не может, потому что инструкций для «другого» случая в нём просто нет, и тогда выполняется <strong>uncommon trap</strong>, переход в среду выполнения (<code>Deoptimization::uncommon_trap</code>). Этот переход в среду выполнения делает по порядку четыре вещи:</p>
 <ol>
 <li>Останавливает поток на текущем машинном фрейме и по debug info (scope descriptors) восстанавливает <strong>абстрактное состояние JVM</strong>, то есть локалы, operand stack и мониторы, для <em>всех</em> виртуальных фреймов, встроенных в этот nmethod, так что один машинный фрейм может развернуться в пять интерпретаторных.</li>
@@ -1575,7 +1575,7 @@ https://openjdk.org/projects/galahad/">Project Galahad</a>). Практичес�
 <tr>
 <th>JDK</th>
 <th>JEP</th>
-<th>Что даёт</th>
+<th>Польза</th>
 </tr>
 </thead>
 <tbody>
@@ -1583,31 +1583,31 @@ https://openjdk.org/projects/galahad/">Project Galahad</a>). Практичес�
 <td data-label="JDK">5–10</td>
 <td data-label="JEP">CDS/AppCDS (<a href="https://openjdk.org/jeps/310" data-tip="Внешний сайт · openjdk.org
 https://openjdk.org/jeps/310">JEP 310</a>)</td>
-<td data-label="Что даёт">архив распарсенных классов, отображаемый в память (<code>-Xshare</code>, <code>-XX:SharedArchiveFile</code>); JDK 19+ — <code>-XX:+AutoCreateSharedArchive</code></td>
+<td data-label="Польза">архив распарсенных классов, отображаемый в память (<code>-Xshare</code>, <code>-XX:SharedArchiveFile</code>); JDK 19+ — <code>-XX:+AutoCreateSharedArchive</code></td>
 </tr>
 <tr>
 <td data-label="JDK">24</td>
 <td data-label="JEP"><a href="https://openjdk.org/jeps/483" data-tip="Внешний сайт · openjdk.org
 https://openjdk.org/jeps/483">JEP 483</a> AOT Class Loading &amp; Linking</td>
-<td data-label="Что даёт">AOT-кэш с <strong>загруженными и слинкованными</strong> классами; тренировочный запуск <code>-XX:AOTMode=record -XX:AOTConfiguration=app.aotconf</code>, затем <code>-XX:AOTMode=create -XX:AOTCache=app.aot</code>, в проде <code>-XX:AOTCache=app.aot</code>. Spring PetClinic: старт 4,49 с → 2,60 с</td>
+<td data-label="Польза">AOT-кэш с <strong>загруженными и слинкованными</strong> классами; тренировочный запуск <code>-XX:AOTMode=record -XX:AOTConfiguration=app.aotconf</code>, затем <code>-XX:AOTMode=create -XX:AOTCache=app.aot</code>, в проде <code>-XX:AOTCache=app.aot</code>. Spring PetClinic: старт 4,49 с → 2,60 с</td>
 </tr>
 <tr>
 <td data-label="JDK">25</td>
 <td data-label="JEP"><a href="https://openjdk.org/jeps/514" data-tip="Внешний сайт · openjdk.org
 https://openjdk.org/jeps/514">JEP 514</a> AOT Command-Line Ergonomics</td>
-<td data-label="Что даёт">одна команда <code>-XX:AOTCacheOutput=app.aot</code> создаёт кэш из тренировочного запуска без промежуточного шага</td>
+<td data-label="Польза">одна команда <code>-XX:AOTCacheOutput=app.aot</code> создаёт кэш из тренировочного запуска без промежуточного шага</td>
 </tr>
 <tr>
 <td data-label="JDK">25</td>
 <td data-label="JEP"><a href="https://openjdk.org/jeps/515" data-tip="Внешний сайт · openjdk.org
 https://openjdk.org/jeps/515">JEP 515</a> AOT Method Profiling</td>
-<td data-label="Что даёт">в кэш пишутся <strong>профили MDO</strong> из тренировочного запуска, при старте C2 сразу получает профиль без разгона: пример со стримами 90 мс → 73 мс, кэш вырос на ~2,5 %</td>
+<td data-label="Польза">в кэш пишутся <strong>профили MDO</strong> из тренировочного запуска, при старте C2 сразу получает профиль без разгона: пример со стримами 90 мс → 73 мс, кэш вырос на ~2,5 %</td>
 </tr>
 <tr>
 <td data-label="JDK">28 (proposed)</td>
 <td data-label="JEP"><a href="https://openjdk.org/jeps/544" data-tip="Внешний сайт · openjdk.org
 https://openjdk.org/jeps/544">JEP 544</a> AOT Code Compilation</td>
-<td data-label="Что даёт">в кэш пишется <strong>машинный код C1/C2</strong>, при старте он используется сразу; AOT и JIT код совместимы (те же компиляторы), при расхождении с профилем — обычная деоптимизация; заявлено −65…−80 % времени старта и −75 % времени warmup</td>
+<td data-label="Польза">в кэш пишется <strong>машинный код C1/C2</strong>, при старте он используется сразу; AOT и JIT код совместимы (те же компиляторы), при расхождении с профилем — обычная деоптимизация; заявлено −65…−80 % времени старта и −75 % времени warmup</td>
 </tr>
 </tbody>
 </table>
@@ -1805,7 +1805,7 @@ https://openjdk.org/jeps/544">JEP 544</a> AOT Code Compilation</td>
 477  185       4       Demo::total (33 bytes)
 </code></pre></div>
 <p><strong>Цена.</strong> Одиночная деоптимизация стоит микросекунды, а дорого обходится другое. Между 476 и 477 мс метод исполнялся интерпретатором, а новый код C2 уже не так хорош: в нём проверка типа на каждой итерации, и <code>k</code> больше нельзя безусловно вынести из цикла, потому что в ветке <code>Fixed</code> этого поля нет. На синтетике разница составляет единицы процентов, но на реальном сервисе, где таких методов сотни, каждый подобный инцидент означает от секунд до десятков секунд повышенной латентности.</p>
-<p><strong>Что произошло бы с третьим типом.</strong> После появления третьей реализации call site становится мегаморфным, потому что при <code>TypeProfileWidth=2</code> слотов только два, и третий тип уходит в «прочие». Если ни один тип не набирает <code>TypeProfileMajorReceiverPercent=90</code>, C2 перестаёт встраивать вовсе и оставляет вызов через itable. Скорость цикла при этом падает не на «стоимость вызова» (1–3 нс), а на всё, что после встраивания было возможно: вынос <code>k</code>, устранение проверок границ, unrolling. На этом примере мономорфный вариант быстрее мегаморфного в 5–15 раз, и это типичный порядок.</p>
+<p><strong>Третий тип.</strong> После появления третьей реализации call site становится мегаморфным, потому что при <code>TypeProfileWidth=2</code> слотов только два, и третий тип уходит в «прочие». Если ни один тип не набирает <code>TypeProfileMajorReceiverPercent=90</code>, C2 перестаёт встраивать вовсе и оставляет вызов через itable. Скорость цикла при этом падает не на «стоимость вызова» (1–3 нс), а на всё, что после встраивания было возможно: вынос <code>k</code>, устранение проверок границ, unrolling. На этом примере мономорфный вариант быстрее мегаморфного в 5–15 раз, и это типичный порядок.</p>
 <h3 id="117-сводка-этапов-исполнения">11.7 Сводка этапов исполнения</h3>
 <p>Таблица сводит весь путь метода <code>total</code> в одну картину: на какой миллисекунде от старта наступает каждая стадия, кто в это время исполняет код и какую скорость это даёт по порядку величины относительно интерпретатора. За таблицей сформулированы три вывода, ради которых стоило проходить весь пример.</p>
 <table class="rt">
@@ -1813,7 +1813,7 @@ https://openjdk.org/jeps/544">JEP 544</a> AOT Code Compilation</td>
 <tr>
 <th>Стадия</th>
 <th class="num">Время от старта</th>
-<th>Что исполняется</th>
+<th>Исполнение</th>
 <th>Скорость (порядок)</th>
 </tr>
 </thead>
@@ -1821,43 +1821,43 @@ https://openjdk.org/jeps/544">JEP 544</a> AOT Code Compilation</td>
 <tr>
 <td data-label="Стадия">Первые вызовы</td>
 <td data-label="Время от старта" class="num">0–50 мс</td>
-<td data-label="Что исполняется">интерпретатор, резолюция, счётчики</td>
+<td data-label="Исполнение">интерпретатор, резолюция, счётчики</td>
 <td data-label="Скорость (порядок)">1×</td>
 </tr>
 <tr>
 <td data-label="Стадия">~400-й вызов</td>
 <td data-label="Время от старта" class="num"></td>
-<td data-label="Что исполняется">заводится MDO, начинается профилирование типов</td>
+<td data-label="Исполнение">заводится MDO, начинается профилирование типов</td>
 <td data-label="Скорость (порядок)">0,8×</td>
 </tr>
 <tr>
 <td data-label="Стадия">OSR на уровне 3</td>
 <td data-label="Время от старта" class="num">56 мс</td>
-<td data-label="Что исполняется">C1 с инструментацией, вход в середину цикла</td>
+<td data-label="Исполнение">C1 с инструментацией, вход в середину цикла</td>
 <td data-label="Скорость (порядок)">5–10×</td>
 </tr>
 <tr>
 <td data-label="Стадия">Обычная компиляция уровня 3</td>
 <td data-label="Время от старта" class="num">57 мс</td>
-<td data-label="Что исполняется">C1 с инструментацией</td>
+<td data-label="Исполнение">C1 с инструментацией</td>
 <td data-label="Скорость (порядок)">5–10×</td>
 </tr>
 <tr>
 <td data-label="Стадия">Уровень 4</td>
 <td data-label="Время от старта" class="num">63 мс</td>
-<td data-label="Что исполняется">C2: встраивание, LICM, RCE, unrolling</td>
+<td data-label="Исполнение">C2: встраивание, LICM, RCE, unrolling</td>
 <td data-label="Скорость (порядок)">30–60×</td>
 </tr>
 <tr>
 <td data-label="Стадия">Деоптимизация</td>
 <td data-label="Время от старта" class="num">476 мс</td>
-<td data-label="Что исполняется">интерпретатор, одна итерация</td>
+<td data-label="Исполнение">интерпретатор, одна итерация</td>
 <td data-label="Скорость (порядок)">1×</td>
 </tr>
 <tr>
 <td data-label="Стадия">Перекомпиляция уровня 4</td>
 <td data-label="Время от старта" class="num">477 мс</td>
-<td data-label="Что исполняется">C2 с биморфным guard</td>
+<td data-label="Исполнение">C2 с биморфным guard</td>
 <td data-label="Скорость (порядок)">20–40×</td>
 </tr>
 </tbody>
@@ -2041,64 +2041,64 @@ https://bugs.openjdk.org/browse/JDK-8290025">JDK-8290025</a>), а флаги п�
 <table class="rt">
 <thead>
 <tr>
-<th>Что смотреть</th>
+<th>Показатель</th>
 <th>Флаг / команда</th>
 <th>Замечания</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="Что смотреть">Какие методы и когда компилируются, деоптимизации</td>
+<td data-label="Показатель">Какие методы и когда компилируются, деоптимизации</td>
 <td data-label="Флаг / команда"><code>-XX:+PrintCompilation</code></td>
 <td data-label="Замечания">stdout, безопасен для прода на короткое время; формат — §3.6</td>
 </tr>
 <tr>
-<td data-label="Что смотреть">Решения по встраиванию</td>
+<td data-label="Показатель">Решения по встраиванию</td>
 <td data-label="Флаг / команда"><code>-XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining</code></td>
 <td data-label="Замечания">много вывода; фильтровать через <code>-XX:CompileCommand=PrintInlining,com/acme/*.*</code> (JDK 17+: <code>-XX:CompileCommand=option,com/acme/Hot.calc,PrintInlining</code>)</td>
 </tr>
 <tr>
-<td data-label="Что смотреть">Полный лог компиляции для JITWatch</td>
+<td data-label="Показатель">Полный лог компиляции для JITWatch</td>
 <td data-label="Флаг / команда"><code>-XX:+UnlockDiagnosticVMOptions -XX:+LogCompilation -XX:LogFile=hotspot.log</code></td>
 <td data-label="Замечания">XML, десятки МБ за минуты; включает встраивание, деопт, escape analysis</td>
 </tr>
 <tr>
-<td data-label="Что смотреть">Ассемблер nmethod</td>
+<td data-label="Показатель">Ассемблер nmethod</td>
 <td data-label="Флаг / команда"><code>-XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly</code> + <code>CompileCommand=print,...</code></td>
 <td data-label="Замечания">требует библиотеку <code>hsdis</code> в <code>lib/</code> JDK; без неё печатает hex</td>
 </tr>
 <tr>
-<td data-label="Что смотреть">Деоптимизации</td>
+<td data-label="Показатель">Деоптимизации</td>
 <td data-label="Флаг / команда"><code>-Xlog:deoptimization=debug</code> (JDK 17+); <code>-XX:+UnlockDiagnosticVMOptions -XX:+TraceDeoptimization</code></td>
 <td data-label="Замечания">причина, action, метод, bci</td>
 </tr>
 <tr>
-<td data-label="Что смотреть">Загрузка/выгрузка классов</td>
+<td data-label="Показатель">Загрузка/выгрузка классов</td>
 <td data-label="Флаг / команда"><code>-Xlog:class+load=info</code>, <code>-Xlog:class+unload=info</code>, <code>-Xlog:class+init=info</code></td>
 <td data-label="Замечания"><code>class+load</code> показывает источник (jar/<code>shared objects file</code>) — полезно для дубликатов и проверки CDS</td>
 </tr>
 <tr>
-<td data-label="Что смотреть">JPMS-доступ</td>
+<td data-label="Показатель">JPMS-доступ</td>
 <td data-label="Флаг / команда"><code>-Xlog:module+access=info</code></td>
 <td data-label="Замечания">что именно нужно открыть <code>--add-opens</code></td>
 </tr>
 <tr>
-<td data-label="Что смотреть">Code cache при старте/переполнении</td>
+<td data-label="Показатель">Code cache при старте/переполнении</td>
 <td data-label="Флаг / команда"><code>-XX:+PrintCodeCache</code> (при выходе), <code>-XX:+PrintCodeCacheOnCompilation</code></td>
 <td data-label="Замечания"></td>
 </tr>
 <tr>
-<td data-label="Что смотреть">Отключить/сузить компиляцию для проверки гипотезы</td>
+<td data-label="Показатель">Отключить/сузить компиляцию для проверки гипотезы</td>
 <td data-label="Флаг / команда"><code>-XX:CompileCommand=exclude,...</code>, <code>dontinline</code>, <code>inline</code>, <code>compileonly</code></td>
 <td data-label="Замечания">не для прода; для локализации регрессии — заменить подозреваемый метод интерпретацией</td>
 </tr>
 <tr>
-<td data-label="Что смотреть">Сдвинуть пороги</td>
+<td data-label="Показатель">Сдвинуть пороги</td>
 <td data-label="Флаг / команда"><code>-XX:CompileThresholdScaling=0.1</code></td>
 <td data-label="Замечания">форсировать раннюю компиляцию в тестах</td>
 </tr>
 <tr>
-<td data-label="Что смотреть">Все действующие флаги</td>
+<td data-label="Показатель">Все действующие флаги</td>
 <td data-label="Флаг / команда"><code>-XX:+PrintFlagsFinal</code> или <code>jcmd &lt;pid&gt; VM.flags -all</code></td>
 <td data-label="Замечания">сверять <code>ReservedCodeCacheSize</code>, <code>CICompilerCount</code>, <code>UseAES*</code> на конкретной машине</td>
 </tr>
@@ -2185,37 +2185,37 @@ java -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -XX:+PrintF
 <thead>
 <tr>
 <th>Событие</th>
-<th>Что даёт</th>
+<th>Польза</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Событие"><code>jdk.Compilation</code></td>
-<td data-label="Что даёт">метод, уровень, длительность компиляции, размер байткода и нативного кода, был ли OSR</td>
+<td data-label="Польза">метод, уровень, длительность компиляции, размер байткода и нативного кода, был ли OSR</td>
 </tr>
 <tr>
 <td data-label="Событие"><code>jdk.CompilerInlining</code></td>
-<td data-label="Что даёт">решения о встраивании (выключено по умолчанию — включать точечно, объём огромный)</td>
+<td data-label="Польза">решения о встраивании (выключено по умолчанию — включать точечно, объём огромный)</td>
 </tr>
 <tr>
 <td data-label="Событие"><code>jdk.Deoptimization</code></td>
-<td data-label="Что даёт">причина, action, метод, bci, номер инструкции (JDK 17+)</td>
+<td data-label="Польза">причина, action, метод, bci, номер инструкции (JDK 17+)</td>
 </tr>
 <tr>
 <td data-label="Событие"><code>jdk.CompilerStatistics</code></td>
-<td data-label="Что даёт">накопительно: число компиляций, ошибок, суммарное время</td>
+<td data-label="Польза">накопительно: число компиляций, ошибок, суммарное время</td>
 </tr>
 <tr>
 <td data-label="Событие"><code>jdk.CodeCacheStatistics</code> / <code>jdk.CodeCacheConfiguration</code> / <code>jdk.CodeCacheFull</code></td>
-<td data-label="Что даёт">заполнение по сегментам, конфигурация, факт переполнения</td>
+<td data-label="Польза">заполнение по сегментам, конфигурация, факт переполнения</td>
 </tr>
 <tr>
 <td data-label="Событие"><code>jdk.CompilerQueueUtilization</code></td>
-<td data-label="Что даёт">длина очередей C1/C2 (JDK 21+)</td>
+<td data-label="Польза">длина очередей C1/C2 (JDK 21+)</td>
 </tr>
 <tr>
 <td data-label="Событие"><code>jdk.ClassLoad</code> / <code>jdk.ClassDefine</code> / <code>jdk.ClassUnload</code></td>
-<td data-label="Что даёт">динамика загрузки и генерации классов</td>
+<td data-label="Польза">динамика загрузки и генерации классов</td>
 </tr>
 </tbody>
 </table>
@@ -2433,5 +2433,5 @@ https://commons.wikimedia.org/wiki/File:Clock_Cogs.jpg">Шестерни час�
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-загрузка-классов">1. Загрузка классов</a></li><li><a href="#2-class-файл-байткод-и-фрейм">2. Class-файл, байткод и фрейм</a></li><li><a href="#3-от-интерпретатора-к-c2-tiered-compilation">3. От интерпретатора к C2: tiered compilation</a></li><li><a href="#4-профиль-исполнения-для-jit">4. Профиль исполнения для JIT</a></li><li><a href="#5-оптимизации-c2">5. Оптимизации C2</a></li><li><a href="#6-спекуляции-и-деоптимизация">6. Спекуляции и деоптимизация</a></li><li><a href="#7-code-cache">7. Code cache</a></li><li><a href="#8-jmm-и-оптимизации-компилятора">8. JMM и оптимизации компилятора</a></li><li><a href="#9-jit-friendly-код-и-микробенчмарки">9. JIT-friendly код и микробенчмарки</a></li><li><a href="#10-graal-jit-leyden-и-aot-кэш">10. Graal JIT, Leyden и AOT-кэш</a></li><li><a href="#11-исполнение-кода-в-jvm-сквозной-пример">11. Исполнение кода в JVM: сквозной пример</a></li><li><a href="#12-разобранные-инциденты">12. Разобранные инциденты</a></li><li><a href="#13-ошибки-и-антипаттерны">13. Ошибки и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

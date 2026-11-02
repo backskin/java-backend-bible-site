@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть VI. Интеграции и сообщения</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/27.svg" width="48" height="48" alt="" loading="lazy">27. HTTP и REST</h1><div class="meta"><span class="part-tag">Часть VI. Интеграции и сообщения</span><span>49 684 слов</span><span>≈ 4 ч 35 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/27.svg" width="48" height="48" alt="" loading="lazy">27. HTTP и REST</h1><div class="meta"><span class="part-tag">Часть VI. Интеграции и сообщения</span><span>49 661 слов</span><span>≈ 4 ч 35 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>Именно на уровне HTTP в финтехе теряется больше всего денег. Платёж, проведённый второй раз после таймаута, клиент, который не умеет обработать <code>429</code>, интеграция с offset-пагинацией, дублирующая строки при повторном запросе, и «всегда 200, а ошибка в поле <code>error</code>», из-за которой мониторинг три месяца рисовал зелёный график, — всё это ошибки не бизнес-логики, а обращения с протоколом. Протокол кажется простым ровно до той минуты, когда нужно объяснить, почему POST нельзя повторять без ключа идемпотентности, чем 401 отличается от 403, а <code>422</code> от <code>400</code>, и почему HTTP/2 избавляет от head-of-line blocking не до конца. На интервью эта тема служит лакмусовой бумажкой: кандидат либо рассуждает в терминах контракта и семантики (safe / idempotent / cacheable, коды статусов как контракт для повторов и оповещений), либо «делает REST», то есть гоняет JSON поверх POST с глаголами в URL. В этой главе протокол и дизайн API разобраны <strong>независимо от фреймворка</strong>, а всё, что касается Spring (<code>@ControllerAdvice</code>, <code>ProblemDetail</code>, <code>RestClient</code>, springdoc), вынесено в главу <a href="14-spring-web.html" data-tip="14. Spring Web: MVC и WebFlux">14</a> (<a href="14-spring-web.html" data-tip="14. Spring Web: MVC и WebFlux"><code>14-spring-web.md</code></a>).</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">18 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-http-как-протокол" data-tip="Раздел этой главы: 1. HTTP как протокол">1. HTTP как протокол</a></li><li><a href="#2-семантика-методов" data-tip="Раздел этой главы: 2. Семантика методов">2. Семантика методов</a></li><li><a href="#3-коды-статусов-как-контракт" data-tip="Раздел этой главы: 3. Коды статусов как контракт">3. Коды статусов как контракт</a></li><li><a href="#4-идемпотентность-на-практике" data-tip="Раздел этой главы: 4. Идемпотентность на практике">4. Идемпотентность на практике</a></li><li><a href="#5-ошибки-rfc-9457-problem-details" data-tip="Раздел этой главы: 5. Ошибки: RFC 9457 Problem Details">5. Ошибки: RFC 9457 Problem Details</a></li><li><a href="#6-дизайн-ресурсов-и-коллекций" data-tip="Раздел этой главы: 6. Дизайн ресурсов и коллекций">6. Дизайн ресурсов и коллекций</a></li><li><a href="#7-версионирование-и-эволюция-api" data-tip="Раздел этой главы: 7. Версионирование и эволюция API">7. Версионирование и эволюция API</a></li><li><a href="#8-контракт-openapi-31" data-tip="Раздел этой главы: 8. Контракт: OpenAPI 3.1">8. Контракт: OpenAPI 3.1</a></li><li><a href="#9-основные-заголовки-http" data-tip="Раздел этой главы: 9. Основные заголовки HTTP">9. Основные заголовки HTTP</a></li><li><a href="#10-клиентская-сторона-таймауты-дедлайны-пулы" data-tip="Раздел этой главы: 10. Клиентская сторона: таймауты, дедлайны, пулы">10. Клиентская сторона: таймауты, дедлайны, пулы</a></li><li><a href="#11-минимальные-требования-к-безопасности-api" data-tip="Раздел этой главы: 11. Минимальные требования к безопасности API">11. Минимальные требования к безопасности API</a></li><li><a href="#12-архитектурный-стиль-rest" data-tip="Раздел этой главы: 12. Архитектурный стиль REST">12. Архитектурный стиль REST</a></li><li><a href="#13-разобранные-инциденты" data-tip="Раздел этой главы: 13. Разобранные инциденты">13. Разобранные инциденты</a></li><li><a href="#14-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 14. Ошибки и антипаттерны">14. Ошибки и антипаттерны</a></li><li><a href="#15-диагностика" data-tip="Раздел этой главы: 15. Диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью" data-tip="Раздел этой главы: 16. Вопросы на интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками" data-tip="Раздел этой главы: 17. Попробовать руками">17. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
@@ -464,7 +464,7 @@ https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a> задаёт для к
 <blockquote>
 <p>💡 <strong>На интервью.</strong> «Идемпотентность — свойство эффекта, а не ответа. PUT идемпотентен, потому что повторная запись того же представления оставляет ресурс в том же состоянии. DELETE идемпотентен, потому что после второго вызова ресурса по-прежнему нет, и то, что второй ответ 404, а не 204, идемпотентности не нарушает. POST не идемпотентен, потому что каждый вызов создаёт новый ресурс, и именно поэтому для его повтора нужен прикладной ключ идемпотентности.»</p>
 </blockquote>
-<p><strong>Почему это не академия.</strong> Идемпотентность — это контракт со всеми, кто может повторить запрос: с клиентской библиотекой, которая повторяет вызовы, с прокси, с service mesh (Envoy по умолчанию повторяет только идемпотентные запросы) и с очередью задач. Каждый из них повторяет запрос, полагаясь на объявленную семантику метода. Если метод объявлен идемпотентным, а на деле повтор меняет результат, первый же механизм повтора создаст дубль.</p>
+<p><strong>Практическая сторона.</strong> Идемпотентность — это контракт со всеми, кто может повторить запрос: с клиентской библиотекой, которая повторяет вызовы, с прокси, с service mesh (Envoy по умолчанию повторяет только идемпотентные запросы) и с очередью задач. Каждый из них повторяет запрос, полагаясь на объявленную семантику метода. Если метод объявлен идемпотентным, а на деле повтор меняет результат, первый же механизм повтора создаст дубль.</p>
 <p><strong>Запуск.</strong> Повторы запросов к демо-сервису платежей:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>POST /payments {amount:10}   -&gt; 201 Created, Location: /payments/1
 POST /payments {amount:10}   -&gt; 201 Created, Location: /payments/2     (второй платёж)
@@ -509,7 +509,7 @@ https://www.rfc-editor.org/rfc/rfc6902.html">RFC 6902</a>) с медиа-тип�
 </code></pre></div>
 
 <p>Операция <code>test</code> гарантирует, что заблокирован будет только активный клиент, а путь <code>/tags/-</code> добавляет элемент в конец массива.</p>
-<p><strong>Что выбирать.</strong> JSON Merge Patch подходит для 90% API, которые просто создают, читают, меняют и удаляют записи (такие API называют CRUD, от <em>create, read, update, delete</em>): он читаем, его поддерживает любой клиент, и его легко проверять. JSON Patch берут тогда, когда нужны точечные операции над массивами, атомарность нескольких изменений или проверка перед записью. Обработчик патча выбирается по медиа-типу, и на незнакомый формат сервер обязан ответить <code>415</code>.</p>
+<p><strong>Выбор.</strong> JSON Merge Patch подходит для 90% API, которые просто создают, читают, меняют и удаляют записи (такие API называют CRUD, от <em>create, read, update, delete</em>): он читаем, его поддерживает любой клиент, и его легко проверять. JSON Patch берут тогда, когда нужны точечные операции над массивами, атомарность нескольких изменений или проверка перед записью. Обработчик патча выбирается по медиа-типу, и на незнакомый формат сервер обязан ответить <code>415</code>.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> Самый частый баг PATCH в Java — неотличимость «поле отсутствует» от «поле = null». <code>record ClientPatch(String email, String middleName)</code> после десериализации <code>{"email":"x"}</code> даст <code>middleName == null</code>, и вы сотрёте клиенту отчество. Лечится это <code>Optional</code>-обёртками с <code>JsonNullable</code> (библиотека <code>openapi-jackson-databind-nullable</code>), либо разбором в <code>JsonNode</code>/<code>Map</code> с явной проверкой <code>containsKey</code>, либо сочетанием <code>@JsonInclude</code> с собственным типом-обёрткой, у которого есть флаг <code>isPresent</code>.</p>
 </blockquote>
@@ -702,35 +702,35 @@ POST /payments   {not json                          -&gt; 400 "Failed to read re
 <thead>
 <tr>
 <th>Код</th>
-<th>Кто типично ставит</th>
-<th>Что произошло</th>
-<th>Куда смотреть первым делом</th>
+<th>Обычно ставит</th>
+<th>Последствие</th>
+<th>Первый шаг</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Код"><strong>500</strong></td>
-<td data-label="Кто типично ставит">само приложение</td>
-<td data-label="Что произошло">необработанное исключение в обработчике</td>
-<td data-label="Куда смотреть первым делом">лог приложения по <code>traceId</code></td>
+<td data-label="Обычно ставит">само приложение</td>
+<td data-label="Последствие">необработанное исключение в обработчике</td>
+<td data-label="Первый шаг">лог приложения по <code>traceId</code></td>
 </tr>
 <tr>
 <td data-label="Код"><strong>502 Bad Gateway</strong></td>
-<td data-label="Кто типично ставит">nginx/Envoy/ALB/ingress</td>
-<td data-label="Что произошло">вышестоящий сервер вернул мусор, разорвал соединение, не ответил вовсе, отдал слишком большие заголовки</td>
-<td data-label="Куда смотреть первым делом">лог прокси: <code>upstream prematurely closed connection</code>, <code>upstream sent too big header</code></td>
+<td data-label="Обычно ставит">nginx/Envoy/ALB/ingress</td>
+<td data-label="Последствие">вышестоящий сервер вернул мусор, разорвал соединение, не ответил вовсе, отдал слишком большие заголовки</td>
+<td data-label="Первый шаг">лог прокси: <code>upstream prematurely closed connection</code>, <code>upstream sent too big header</code></td>
 </tr>
 <tr>
 <td data-label="Код"><strong>503 Service Unavailable</strong></td>
-<td data-label="Кто типично ставит">балансировщик <strong>или</strong> приложение</td>
-<td data-label="Что произошло">у балансировщика нет здоровых вышестоящих серверов; либо приложение само защищается (load shedding, readiness=false)</td>
-<td data-label="Куда смотреть первым делом">список эндпоинтов/health-чеков; метрика readiness</td>
+<td data-label="Обычно ставит">балансировщик <strong>или</strong> приложение</td>
+<td data-label="Последствие">у балансировщика нет здоровых вышестоящих серверов; либо приложение само защищается (load shedding, readiness=false)</td>
+<td data-label="Первый шаг">список эндпоинтов/health-чеков; метрика readiness</td>
 </tr>
 <tr>
 <td data-label="Код"><strong>504 Gateway Timeout</strong></td>
-<td data-label="Кто типично ставит">прокси/балансировщик</td>
-<td data-label="Что произошло">вышестоящий сервер не ответил за <code>proxy_read_timeout</code> / idle timeout ALB</td>
-<td data-label="Куда смотреть первым делом">p99 вышестоящего сервера и значение таймаута прокси</td>
+<td data-label="Обычно ставит">прокси/балансировщик</td>
+<td data-label="Последствие">вышестоящий сервер не ответил за <code>proxy_read_timeout</code> / idle timeout ALB</td>
+<td data-label="Первый шаг">p99 вышестоящего сервера и значение таймаута прокси</td>
 </tr>
 </tbody>
 </table>
@@ -1362,7 +1362,7 @@ https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-except
 <li><strong>Курсор должен быть непрозрачным.</strong> Отдают base64url (вариант Base64, безопасный для URL) от JSON <code>{"createdAt":"...","id":"..."}</code> и, желательно, отпечаток параметров запроса (сортировки и фильтров). Отпечаток позволяет поймать попытку продолжить листание с другим фильтром и ответить <code>400</code>. Подписывать курсор ради «безопасности», если в нём нет чувствительных данных, незачем. Но и класть туда персональные данные (<em>personally identifiable information</em>, PII) нельзя, потому что курсоры попадают в логи и в историю браузера.</li>
 </ul>
 <p>Платят за keyset тем, что нельзя прыгнуть на страницу 57 и нельзя показать «страница 3 из 148». Если продукту это действительно нужно, offset оставляют для интерфейса (с жёстким лимитом на глубину, например 10 000), а для API интеграций берут keyset.</p>
-<p><strong>Как отдавать ссылки на следующую страницу.</strong> Способов два, и оба встречаются в публичных API.</p>
+<p><strong>Ссылки на следующую страницу.</strong> Способов два, и оба встречаются в публичных API.</p>
 <p>Первый — <em>заголовок <code>Link</code></em> (<a href="https://www.rfc-editor.org/rfc/rfc8288.html" data-tip="Внешний сайт · rfc-editor.org
 https://www.rfc-editor.org/rfc/rfc8288.html">RFC 8288</a>) с грамматикой <code>link-value = "&lt;" URI-Reference "&gt;" *( OWS ";" OWS link-param )</code>. Параметр <code>rel</code> в нём называет смысл ссылки (<code>next</code>, <code>first</code>), обязателен и не может повторяться в одном link-value. Выглядит это так:</p>
 <div class="hl" data-lang="HTTP"><div class="hl-bar"><span>HTTP</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
@@ -1523,7 +1523,7 @@ https://www.postgresql.org/docs/15/queries-limit.html">PostgreSQL 15, «LIMIT an
 <th>Модель</th>
 <th>Код</th>
 <th>Поведение</th>
-<th>Когда</th>
+<th>Применение</th>
 </tr>
 </thead>
 <tbody>
@@ -1531,19 +1531,19 @@ https://www.postgresql.org/docs/15/queries-limit.html">PostgreSQL 15, «LIMIT an
 <td data-label="Модель">All-or-nothing</td>
 <td data-label="Код">201 / 422</td>
 <td data-label="Поведение">одна транзакция, любая ошибка откатывает всё</td>
-<td data-label="Когда">когда пакет — это одна бизнес-операция (реестр платежей)</td>
+<td data-label="Применение">когда пакет — это одна бизнес-операция (реестр платежей)</td>
 </tr>
 <tr>
 <td data-label="Модель">Best-effort</td>
 <td data-label="Код">200 (или 207)</td>
 <td data-label="Поведение">каждый элемент обрабатывается независимо, в теле — массив результатов</td>
-<td data-label="Когда">массовые импорты, независимые элементы</td>
+<td data-label="Применение">массовые импорты, независимые элементы</td>
 </tr>
 <tr>
 <td data-label="Модель">Async</td>
 <td data-label="Код">202</td>
 <td data-label="Поведение">пакет принят, статус по ссылке</td>
-<td data-label="Когда">большие пакеты (тысячи элементов)</td>
+<td data-label="Применение">большие пакеты (тысячи элементов)</td>
 </tr>
 </tbody>
 </table>
@@ -1747,7 +1747,7 @@ Accept: application/vnd.bank.v3+json  -&gt; 406
 <blockquote class="cb-ask">
 <p><strong><span class="ic">❓</span> Спрашивают на интервью. Как вы версионируете API и какие у способов подводные камни?</strong> Путь (<code>/v1/</code>) проще всего маршрутизировать и видно в логах, но он версионирует весь API; заголовок и медиа-тип оставляют URI стабильным, но невидимы в логах и требуют <code>Vary: Accept</code> для кэшей. В запуске версионирование по медиа-типу заработало в Spring одной аннотацией <code>produces</code>, а выбор версии для клиента без <code>Accept</code> оказался случайным.<sup id="fnref2:s27-7"><a class="footnote-ref" href="#fn:s27-7" data-tip="Сноска: Spring Framework Reference, «Mapping Requests» (атрибут produces), https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-requestmapping.html. Первичный ис…">11</a></sup></p>
 </blockquote>
-<h3 id="72-что-такое-breaking-change">7.2 Что такое breaking change</h3>
+<h3 id="72-breaking-change">7.2 Breaking change</h3>
 <p>Несовместимое, или ломающее, изменение (<em>breaking change</em>) — это изменение, после которого корректно написанный существующий клиент перестаёт работать. Вопрос о том, что именно сюда относится, важнее выбора способа версионирования: большая часть поломок у интеграторов случается не при выходе новой версии, а при «безобидной» правке старой. Ниже дан полный список для REST/JSON — сначала того, что ломает, затем того, что не ломает, — и отдельно разобрана тонкость с перечислениями (enum).</p>
 <p><strong>Ломает (нужна мажорная версия, или изменение недопустимо):</strong></p>
 <ul>
@@ -1939,7 +1939,7 @@ oasdiff breaking <span class="se">\</span>
 
 <p>Вывод <code>changelog</code> полезно публиковать в примечаниях к выпуску (<em>release notes</em>), чтобы интеграторам не приходилось сравнивать YAML глазами.</p>
 <p><strong>Spectral</strong> — это линтер, который проверяет спецификацию по набору правил (<em>ruleset</em>). Базовый набор (<code>spectral:oas</code>) ловит формальные ошибки, но настоящую ценность дают <strong>собственные</strong> правила, в которых закодированы ваши правила проектирования: «все пути в kebab-case», «у каждого эндпоинта есть <code>operationId</code>», «у каждой изменяющей операции описан ответ 422 с <code>Problem</code>», «у POST есть параметр <code>Idempotency-Key</code>», «нет <code>type: object</code> без <code>properties</code>». Однажды написанный набор правил заменяет половину API-ревью.</p>
-<p><strong>Где хранить спецификацию.</strong> Хорошо работает такая комбинация. Источник истины лежит в репозитории сервиса, рядом с кодом, так что один запрос на слияние (<em>pull request</em>, PR) меняет и то и другое. А CI при слиянии в main публикует спецификацию в общий реестр (Backstage, SwaggerHub, внутренний портал). Отдельный контрактный репозиторий на все API удобен для централизованного управления, но заставляет на каждое изменение координировать два репозитория.</p>
+<p><strong>Хранение спецификации.</strong> Хорошо работает такая комбинация. Источник истины лежит в репозитории сервиса, рядом с кодом, так что один запрос на слияние (<em>pull request</em>, PR) меняет и то и другое. А CI при слиянии в main публикует спецификацию в общий реестр (Backstage, SwaggerHub, внутренний портал). Отдельный контрактный репозиторий на все API удобен для централизованного управления, но заставляет на каждое изменение координировать два репозитория.</p>
 <p>С тестированием здесь связь прямая: спецификация не гарантирует, что реализация ей соответствует. Это задача контрактных тестов (Pact, Spring Cloud Contract) и валидации запросов и ответов по схеме в интеграционных тестах — глава <a href="43-testing.html" data-tip="43. Тестирование">43</a> (<a href="43-testing.html" data-tip="43. Тестирование"><code>43-testing.md</code></a>).</p>
 <p><strong>Запуск.</strong> Практически работающий CI-гейт на контракт: тест на <code>swagger-request-validator</code> 2.44.9 (проверяет реальный ответ приложения по схеме из <code>payments.yaml</code>) подключён в сборку Maven и падает, если ответ не соответствует спецификации. Четыре сценария на «честной» реализации прошли, на черновике ИИ тот же тест дал <code>НАРУШЕНИЙ КОНТРАКТА 1</code> на <code>POST</code> (статус <code>200</code> не описан для пути <code>/payments</code>) и на <code>GET</code> (пустое тело при описанной схеме), а после исправления статуса вывел уже три нарушения на одном ответе:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>validation.response.status.unknown: Response status 200 not defined for path '/payments'.
@@ -2014,7 +2014,7 @@ HEAD /payments/1    -&gt; 200, ETag: "4", Content-Type: application/json   (те
 <h3 id="92-компрессия">9.2 Компрессия</h3>
 <p>Компрессия — это сжатие тела ответа, о котором клиент и сервер договариваются парой заголовков: <code>Accept-Encoding: gzip, br, zstd</code> в запросе и <code>Content-Encoding: gzip</code> в ответе. JSON сжимается в 5–10 раз, поэтому на ответе в 200 КБ сжатие экономит больше, чем тратит процессорного времени. Но бывает, что сжимать не надо или даже опасно, и ниже разобраны оба случая.</p>
 <p>Алгоритмы различаются так. gzip поддерживается везде и дёшев. brotli (<code>br</code>) сжимает лучше при сопоставимой скорости распаковки, но в серверной Java доступен только через сторонние библиотеки. zstd быстрее при близком коэффициенте сжатия, но в API-клиентах встречается редко. Поэтому практичный выбор — <code>gzip</code> для API и <code>br</code> дополнительно для браузерного трафика на границе сети, причём сжимать лучше на пограничном прокси (nginx/Envoy), а не в приложении.</p>
-<p><strong>Когда не сжимать.</strong> Сжатие не нужно в трёх случаях: на маленьких телах, потому что при размере меньше порога в 1–2 КБ накладные расходы превышают выигрыш; на уже сжатом содержимом (JPEG, zip, видео); во внутрикластерном трафике, где процессор дороже сети. Опасно оно при риске атак <strong>BREACH/CRIME</strong>, которые извлекают секрет по размеру сжатого ответа. Если в сжимаемом ответе рядом оказываются секрет (например, токен защиты от подделки межсайтовых запросов, CSRF-токен) и данные, которые контролирует пользователь, атакующий меняет свои данные и по длине ответа угадывает секрет по символу.</p>
+<p><strong>Без сжатия.</strong> Сжатие не нужно в трёх случаях: на маленьких телах, потому что при размере меньше порога в 1–2 КБ накладные расходы превышают выигрыш; на уже сжатом содержимом (JPEG, zip, видео); во внутрикластерном трафике, где процессор дороже сети. Опасно оно при риске атак <strong>BREACH/CRIME</strong>, которые извлекают секрет по размеру сжатого ответа. Если в сжимаемом ответе рядом оказываются секрет (например, токен защиты от подделки межсайтовых запросов, CSRF-токен) и данные, которые контролирует пользователь, атакующий меняет свои данные и по длине ответа угадывает секрет по символу.</p>
 <h3 id="93-content-length-и-transfer-encoding-chunked">9.3 <code>Content-Length</code> и <code>Transfer-Encoding: chunked</code></h3>
 <p><code>Content-Length</code> и <code>Transfer-Encoding: chunked</code> — это два способа сообщить получателю, где кончается тело (1.1, 1.7), и выбор между ними определяется тем, известна ли длина ответа заранее. Когда <code>Content-Length</code> известен, клиент видит прогресс, может отвергнуть слишком большое тело, а соединение легко повторно используется. <code>chunked</code> нужен, когда длину заранее не знает никто — при потоковой выгрузке из БД или генерации на лету. Платят за chunked трижды: клиент не знает размера и не может показать прогресс, некоторые прокси буферизуют весь ответ и сводят потоковую передачу на нет, а в цепочке появляется зазор для контрабанды запросов (см. 1.1).</p>
 <p>Для Java отсюда следует практический вывод. Если вы отдаёте ответ потоком через <code>StreamingResponseBody</code> или <code>ResponseBodyEmitter</code>, это chunked, и нужно убедиться, что nginx его не буферизует (<code>proxy_buffering off</code>) и что таймауты по всей цепочке больше времени генерации.</p>
@@ -2114,76 +2114,76 @@ https://www.rfc-editor.org/rfc/rfc9111.html">RFC 9111</a>. Ниже разобр
 <thead>
 <tr>
 <th>Директива</th>
-<th>Кто читает</th>
-<th>Что означает точно</th>
+<th>Читатель</th>
+<th>Точный смысл</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Директива"><code>max-age=N</code></td>
-<td data-label="Кто читает">все кэши</td>
-<td data-label="Что означает точно">ответ свеж N секунд с момента генерации</td>
+<td data-label="Читатель">все кэши</td>
+<td data-label="Точный смысл">ответ свеж N секунд с момента генерации</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>s-maxage=N</code></td>
-<td data-label="Кто читает">только общие</td>
-<td data-label="Что означает точно">переопределяет <code>max-age</code> и <code>Expires</code> для общих кэшей</td>
+<td data-label="Читатель">только общие</td>
+<td data-label="Точный смысл">переопределяет <code>max-age</code> и <code>Expires</code> для общих кэшей</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>no-cache</code></td>
-<td data-label="Кто читает">все</td>
-<td data-label="Что означает точно"><strong>хранить можно</strong>, но повторно использовать нельзя без валидации на origin</td>
+<td data-label="Читатель">все</td>
+<td data-label="Точный смысл"><strong>хранить можно</strong>, но повторно использовать нельзя без валидации на origin</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>no-store</code></td>
-<td data-label="Кто читает">все</td>
-<td data-label="Что означает точно"><strong>хранить нельзя</strong> вообще, ни на диске, ни в памяти</td>
+<td data-label="Читатель">все</td>
+<td data-label="Точный смысл"><strong>хранить нельзя</strong> вообще, ни на диске, ни в памяти</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>private</code></td>
-<td data-label="Кто читает">все</td>
-<td data-label="Что означает точно">хранить может только приватный кэш (браузер), общий — нет</td>
+<td data-label="Читатель">все</td>
+<td data-label="Точный смысл">хранить может только приватный кэш (браузер), общий — нет</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>public</code></td>
-<td data-label="Кто читает">все</td>
-<td data-label="Что означает точно">хранить можно даже там, где по умолчанию нельзя (например, при <code>Authorization</code>)</td>
+<td data-label="Читатель">все</td>
+<td data-label="Точный смысл">хранить можно даже там, где по умолчанию нельзя (например, при <code>Authorization</code>)</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>must-revalidate</code></td>
-<td data-label="Кто читает">все</td>
-<td data-label="Что означает точно">протухший ответ отдавать <strong>запрещено</strong> даже при недоступности origin</td>
+<td data-label="Читатель">все</td>
+<td data-label="Точный смысл">протухший ответ отдавать <strong>запрещено</strong> даже при недоступности origin</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>proxy-revalidate</code></td>
-<td data-label="Кто читает">только общие</td>
-<td data-label="Что означает точно">то же, но требование только к общим кэшам</td>
+<td data-label="Читатель">только общие</td>
+<td data-label="Точный смысл">то же, но требование только к общим кэшам</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>immutable</code></td>
-<td data-label="Кто читает">браузеры</td>
-<td data-label="Что означает точно">ресурс не изменится за время свежести; браузер не шлёт валидацию даже при F5 (расширение, не в RFC 9111)</td>
+<td data-label="Читатель">браузеры</td>
+<td data-label="Точный смысл">ресурс не изменится за время свежести; браузер не шлёт валидацию даже при F5 (расширение, не в RFC 9111)</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>no-transform</code></td>
-<td data-label="Кто читает">прокси</td>
-<td data-label="Что означает точно">не пережимать картинки, не минифицировать</td>
+<td data-label="Читатель">прокси</td>
+<td data-label="Точный смысл">не пережимать картинки, не минифицировать</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>must-understand</code></td>
-<td data-label="Кто читает">все</td>
-<td data-label="Что означает точно">хранить, только если кэш понимает семантику этого кода</td>
+<td data-label="Читатель">все</td>
+<td data-label="Точный смысл">хранить, только если кэш понимает семантику этого кода</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>stale-while-revalidate=N</code></td>
-<td data-label="Кто читает">общие</td>
-<td data-label="Что означает точно">ещё N секунд после протухания можно отдавать старое, обновляя в фоне (<a href="https://www.rfc-editor.org/rfc/rfc5861.html" data-tip="Внешний сайт · rfc-editor.org
+<td data-label="Читатель">общие</td>
+<td data-label="Точный смысл">ещё N секунд после протухания можно отдавать старое, обновляя в фоне (<a href="https://www.rfc-editor.org/rfc/rfc5861.html" data-tip="Внешний сайт · rfc-editor.org
 https://www.rfc-editor.org/rfc/rfc5861.html">RFC 5861</a>)</td>
 </tr>
 <tr>
 <td data-label="Директива"><code>stale-if-error=N</code></td>
-<td data-label="Кто читает">общие и клиенты</td>
-<td data-label="Что означает точно">при ошибке (500/502/503/504 или обрыве) отдавать старое ещё N секунд (RFC 5861)</td>
+<td data-label="Читатель">общие и клиенты</td>
+<td data-label="Точный смысл">при ошибке (500/502/503/504 или обрыве) отдавать старое ещё N секунд (RFC 5861)</td>
 </tr>
 </tbody>
 </table>
@@ -2255,29 +2255,29 @@ https://www.rfc-editor.org/rfc/rfc5861.html">RFC 5861</a>)</td>
 <thead>
 <tr>
 <th>Таймаут</th>
-<th>Что ограничивает</th>
+<th>Ограничение</th>
 <th>Типовое значение (внутри ДЦ)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Таймаут"><strong>connect</strong></td>
-<td data-label="Что ограничивает">установку TCP (+TLS)</td>
+<td data-label="Ограничение">установку TCP (+TLS)</td>
 <td data-label="Типовое значение (внутри ДЦ)">200–500 мс</td>
 </tr>
 <tr>
 <td data-label="Таймаут"><strong>read (socket)</strong></td>
-<td data-label="Что ограничивает">паузу между байтами ответа</td>
+<td data-label="Ограничение">паузу между байтами ответа</td>
 <td data-label="Типовое значение (внутри ДЦ)">1–5 с</td>
 </tr>
 <tr>
 <td data-label="Таймаут"><strong>write</strong></td>
-<td data-label="Что ограничивает">отправку тела</td>
+<td data-label="Ограничение">отправку тела</td>
 <td data-label="Типовое значение (внутри ДЦ)">1–5 с</td>
 </tr>
 <tr>
 <td data-label="Таймаут"><strong>total (request)</strong></td>
-<td data-label="Что ограничивает">весь вызов от начала до последнего байта</td>
+<td data-label="Ограничение">весь вызов от начала до последнего байта</td>
 <td data-label="Типовое значение (внутри ДЦ)">равен бюджету операции</td>
 </tr>
 </tbody>
@@ -2689,7 +2689,7 @@ curl -i -X PATCH -H <span class="s2">"If-Match: \"999\""</span> -H <span class="
 <p><strong>Чтение журналов доступа.</strong> Журнал доступа (<em>access log</em>) — это строка на каждый обработанный запрос, которую пишет сервер или прокси. Полезный формат такой строки включает код, длительность (upstream и общую), метод, <strong>нормализованный</strong> путь (шаблон, а не путь с id, иначе число различных значений метки, построенной по пути, взрывается), размер ответа, версию протокола, <code>traceparent</code> и API-ключ клиента. По такому логу обычно смотрят долю 5xx и p99 по эндпоинтам, топ клиентов по 429, долю мутирующих запросов без <code>Idempotency-Key</code> и обращения к депрекированным путям в разрезе клиентов.</p>
 <p><strong>Воспроизведение таймаутов.</strong> Таймауты проверяют, искусственно замедляя сеть или сервер, и способов для этого три. Можно поставить между приложением и заглушкой Toxiproxy с «токсинами» (<em>toxics</em>, видами помех) <code>latency</code>, <code>timeout</code>, <code>bandwidth</code>, <code>slow_close</code>. Можно выполнить в контейнере <code>tc qdisc add dev eth0 root netem delay 3000ms</code>: модуль ядра Linux netem добавит задержку всем пакетам. Можно взять WireMock с <code>withFixedDelay</code>/<code>withChunkedDribbleDelay</code>; последний вариант проверяет именно разницу между read- и общим таймаутом, потому что байты идут, но медленно. Проверять нужно оба сценария — «сервер не ответил вовсе» и «сервер ответил, но ответ потерялся». Второй воспроизводят обрывом соединения после обработки, и именно он ловит отсутствие идемпотентности.</p>
 <hr>
-<p><strong>Кто закрыл соединение и когда.</strong> Половина HTTP-инцидентов сводится к вопросу, кто первым послал FIN (10.7), и ответить на него помогают счётчики состояний сокетов из утилиты <code>ss</code>:</p>
+<p><strong>Закрытие соединения.</strong> Половина HTTP-инцидентов сводится к вопросу, кто первым послал FIN (10.7), и ответить на него помогают счётчики состояний сокетов из утилиты <code>ss</code>:</p>
 <div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>ss -tan state close-wait <span class="p">|</span> wc -l        <span class="c1"># мы получили FIN, но не закрыли: утечка или полуживые соединения</span>
 ss -tan state time-wait  <span class="p">|</span> wc -l        <span class="c1"># мы закрывали: много — значит соединения не переиспользуются</span>
 ss -tni dst <span class="m">10</span>.42.3.17 <span class="p">|</span> head -20       <span class="c1"># rtt, окно перегрузки cwnd и повторные передачи до конкретного узла</span>
@@ -2697,7 +2697,7 @@ netstat -s <span class="p">|</span> grep -i retrans            <span class="c1">
 </code></pre></div>
 
 <p>Если на клиенте растёт <code>CLOSE_WAIT</code>, это почти всегда рассинхрон keep-alive (10.7). <code>TIME_WAIT</code> — состояние, в котором сокет несколько десятков секунд ждёт после закрытия со своей стороны, и если таких сокетов много, соединения создаются на каждом запросе, то есть пул не работает.</p>
-<p><strong>Что на самом деле видит сервер.</strong> Это показывают журнал доступа и <code>/actuator/metrics</code> — эндпоинт Spring Boot Actuator с метриками приложения. В Prometheus долю 5xx, p99 по шаблонам путей и состояние клиентского пула смотрят такими запросами:</p>
+<p><strong>Взгляд сервера.</strong> Это показывают журнал доступа и <code>/actuator/metrics</code> — эндпоинт Spring Boot Actuator с метриками приложения. В Prometheus долю 5xx, p99 по шаблонам путей и состояние клиентского пула смотрят такими запросами:</p>
 <div class="hl" data-lang="Bash"><div class="hl-bar"><span>Bash</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Доля 5xx и p99 по шаблонам путей (Prometheus)</span>
 sum by <span class="o">(</span>uri, status<span class="o">)</span> <span class="o">(</span>rate<span class="o">(</span>http_server_requests_seconds_count<span class="o">{</span><span class="nv">status</span><span class="o">=</span>~<span class="s2">"5.."</span><span class="o">}[</span>5m<span class="o">]))</span>
 histogram_quantile<span class="o">(</span><span class="m">0</span>.99, sum by <span class="o">(</span>le, uri<span class="o">)</span> <span class="o">(</span>rate<span class="o">(</span>http_server_requests_seconds_bucket<span class="o">[</span>5m<span class="o">])))</span>
@@ -3081,5 +3081,5 @@ https://commons.wikimedia.org/wiki/File:Amsterdam_-_Canal_-_0316.jpg">Канал
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-http-как-протокол">1. HTTP как протокол</a></li><li><a href="#2-семантика-методов">2. Семантика методов</a></li><li><a href="#3-коды-статусов-как-контракт">3. Коды статусов как контракт</a></li><li><a href="#4-идемпотентность-на-практике">4. Идемпотентность на практике</a></li><li><a href="#5-ошибки-rfc-9457-problem-details">5. Ошибки: RFC 9457 Problem Details</a></li><li><a href="#6-дизайн-ресурсов-и-коллекций">6. Дизайн ресурсов и коллекций</a></li><li><a href="#7-версионирование-и-эволюция-api">7. Версионирование и эволюция API</a></li><li><a href="#8-контракт-openapi-31">8. Контракт: OpenAPI 3.1</a></li><li><a href="#9-основные-заголовки-http">9. Основные заголовки HTTP</a></li><li><a href="#10-клиентская-сторона-таймауты-дедлайны-пулы">10. Клиентская сторона: таймауты, дедлайны, пулы</a></li><li><a href="#11-минимальные-требования-к-безопасности-api">11. Минимальные требования к безопасности API</a></li><li><a href="#12-архитектурный-стиль-rest">12. Архитектурный стиль REST</a></li><li><a href="#13-разобранные-инциденты">13. Разобранные инциденты</a></li><li><a href="#14-ошибки-и-антипаттерны">14. Ошибки и антипаттерны</a></li><li><a href="#15-диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками">17. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

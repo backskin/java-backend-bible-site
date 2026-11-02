@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть VI. Интеграции и сообщения</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/28.svg" width="48" height="48" alt="" loading="lazy">28. gRPC, JSON-RPC, WebSocket, GraphQL, XML и SOAP</h1><div class="meta"><span class="part-tag">Часть VI. Интеграции и сообщения</span><span>40 422 слов</span><span>≈ 3 ч 45 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/28.svg" width="48" height="48" alt="" loading="lazy">28. gRPC, JSON-RPC, WebSocket, GraphQL, XML и SOAP</h1><div class="meta"><span class="part-tag">Часть VI. Интеграции и сообщения</span><span>40 410 слов</span><span>≈ 3 ч 45 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>REST поверх JSON стал выбором по умолчанию, но универсальным ответом он от этого не сделался. Когда между сервисами идёт 50 тысяч вызовов в секунду, выбор между protobuf и JSON превращается в выбор между тремя и восемью подами. Когда мобильное приложение собирает витрину из семи микросервисов, GraphQL может сэкономить команде BFF месяцы работы, а может открыть DoS-уязвимость, если никто не подумал об ограничении сложности запроса. А когда интеграция с НСПК или кредитным бюро идёт по SOAP с WS-Security, предложение «давайте сделаем REST» просто некому адресовать. На интервью эту тему затрагивают почти всегда и спрашивают примерно так: «чем gRPC лучше REST», «что такое дедлайн и чем он отличается от таймаута», «почему весь ваш gRPC-трафик ушёл в один под», «как развивать proto-схему, не останавливая сервис». Эта глава посвящена альтернативам REST: как они устроены, во что обходятся и по каким признакам между ними выбирать.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">17 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-пространство-решений" data-tip="Раздел этой главы: 1. Пространство решений">1. Пространство решений</a></li><li><a href="#2-protocol-buffers" data-tip="Раздел этой главы: 2. Protocol Buffers">2. Protocol Buffers</a></li><li><a href="#3-grpc-транспорт-и-виды-вызовов" data-tip="Раздел этой главы: 3. gRPC: транспорт и виды вызовов">3. gRPC: транспорт и виды вызовов</a></li><li><a href="#4-дедлайны-отмена-статусы-ошибки" data-tip="Раздел этой главы: 4. Дедлайны, отмена, статусы, ошибки">4. Дедлайны, отмена, статусы, ошибки</a></li><li><a href="#5-grpc-в-эксплуатации" data-tip="Раздел этой главы: 5. gRPC в эксплуатации">5. gRPC в эксплуатации</a></li><li><a href="#6-grpc-в-java-и-spring-boot" data-tip="Раздел этой главы: 6. gRPC в Java и Spring Boot">6. gRPC в Java и Spring Boot</a></li><li><a href="#7-json-rpc-20" data-tip="Раздел этой главы: 7. JSON-RPC 2.0">7. JSON-RPC 2.0</a></li><li><a href="#8-websocket" data-tip="Раздел этой главы: 8. WebSocket">8. WebSocket</a></li><li><a href="#9-graphql" data-tip="Раздел этой главы: 9. GraphQL">9. GraphQL</a></li><li><a href="#10-xml-и-xsd" data-tip="Раздел этой главы: 10. XML и XSD">10. XML и XSD</a></li><li><a href="#11-soap-и-wsdl" data-tip="Раздел этой главы: 11. SOAP и WSDL">11. SOAP и WSDL</a></li><li><a href="#12-выбор-протокола" data-tip="Раздел этой главы: 12. Выбор протокола">12. Выбор протокола</a></li><li><a href="#13-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 13. Ошибки и антипаттерны">13. Ошибки и антипаттерны</a></li><li><a href="#14-диагностика" data-tip="Раздел этой главы: 14. Диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью" data-tip="Раздел этой главы: 15. Вопросы на интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками" data-tip="Раздел этой главы: 16. Попробовать руками">16. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
@@ -229,7 +229,7 @@ https://protobuf.dev/programming-guides/proto3/">proto3 guide</a>).</p>
 <li>Если номер неизвестен, парсер пропускает поле по wire type и (в proto3 с версии 3.5) сохраняет его в unknown fields, чтобы не потерять при обратной сериализации.</li>
 <li>Если номер известен, а wire type не совпал, результатом будет ошибка парсинга или незаметная порча данных.</li>
 </ul>
-<p><strong>Что делать можно</strong> — эти изменения остаются совместимыми по wire format в обе стороны:</p>
+<p><strong>Допустимо</strong> — эти изменения остаются совместимыми по wire format в обе стороны:</p>
 <ol>
 <li><strong>Добавить новое поле с новым номером.</strong> Старый код его пропустит, а новый увидит значение по умолчанию (default), и на этой операции держится вся эволюция схемы.</li>
 <li><strong>Удалить поле</strong>, но только если его номер сразу же попадает в <code>reserved</code>.</li>
@@ -239,7 +239,7 @@ https://protobuf.dev/programming-guides/proto3/">proto3 guide</a>).</p>
 <li><strong>Сделать одиночное поле членом нового <code>oneof</code></strong>, если в этом oneof не будет других полей.</li>
 <li><strong>Заменить <code>optional</code> на обычное поле или обратно</strong> в proto3: по проводу это совместимо, потому что меняется только отслеживание presence в коде.</li>
 </ol>
-<p><strong>Что делать нельзя:</strong></p>
+<p><strong>Запреты:</strong></p>
 <ol>
 <li><strong>Повторно использовать номер поля.</strong> Это главная катастрофа: старый сервис отправит в поле 5 данные со старым смыслом, а новый прочитает их как данные с новым. Если wire type совпал (а у <code>int32</code> и <code>bool</code> он совпадает), ошибки не будет вовсе, будут только незаметно неправильные данные, и в финтехе это выглядит как статус платежа, прочитанный как сумма.</li>
 <li><strong>Менять тип поля на несовместимый по wire type.</strong> Замена <code>string</code> (LEN) на <code>int64</code> (VARINT) даст ошибку парсинга, а замена <code>int32</code> на <code>sint32</code> даст незаметно неправильные числа из-за zigzag.</li>
@@ -390,7 +390,7 @@ https://docs.spring.io/spring-boot/reference/io/grpc.html">Spring Boot gRPC</a>)
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Protobuf</th>
 <th>Avro</th>
 <th>JSON</th>
@@ -398,43 +398,43 @@ https://docs.spring.io/spring-boot/reference/io/grpc.html">Spring Boot gRPC</a>)
 </thead>
 <tbody>
 <tr>
-<td data-label="">Схема на проводе</td>
+<td data-label="Критерий">Схема на проводе</td>
 <td data-label="Protobuf">нет (только schema id)</td>
 <td data-label="Avro">нет (только schema id)</td>
 <td data-label="JSON">нет схемы вообще</td>
 </tr>
 <tr>
-<td data-label="">Эволюция</td>
+<td data-label="Критерий">Эволюция</td>
 <td data-label="Protobuf">по номерам полей</td>
 <td data-label="Avro">по именам + <code>default</code>/aliases</td>
 <td data-label="JSON">никак</td>
 </tr>
 <tr>
-<td data-label="">Удаление обязательного поля</td>
+<td data-label="Критерий">Удаление обязательного поля</td>
 <td data-label="Protobuf">нет понятия обязательного</td>
 <td data-label="Avro">требует <code>default</code> у читателя</td>
 <td data-label="JSON">—</td>
 </tr>
 <tr>
-<td data-label="">Reader/writer schema resolution</td>
+<td data-label="Критерий">Reader/writer schema resolution</td>
 <td data-label="Protobuf">нет (парсер один)</td>
 <td data-label="Avro">да, полноценная</td>
 <td data-label="JSON">—</td>
 </tr>
 <tr>
-<td data-label="">Размер</td>
+<td data-label="Критерий">Размер</td>
 <td data-label="Protobuf">~ равно Avro, чуть больше</td>
 <td data-label="Avro">чуть компактнее (нет тегов)</td>
 <td data-label="JSON">2.5–8× больше (см. 2.8)</td>
 </tr>
 <tr>
-<td data-label="">Кодогенерация в Java</td>
+<td data-label="Критерий">Кодогенерация в Java</td>
 <td data-label="Protobuf">отличная</td>
 <td data-label="Avro">хорошая (SpecificRecord)</td>
 <td data-label="JSON">не нужна</td>
 </tr>
 <tr>
-<td data-label="">Экосистема вне JVM</td>
+<td data-label="Критерий">Экосистема вне JVM</td>
 <td data-label="Protobuf">шире</td>
 <td data-label="Avro">уже</td>
 <td data-label="JSON">универсальна</td>
@@ -1117,94 +1117,94 @@ https://grpc.io/docs/guides/status-codes/">gRPC status codes</a>), и полов
 <tr>
 <th>Код</th>
 <th class="num">№</th>
-<th>Когда</th>
+<th>Применение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Код"><code>OK</code></td>
 <td data-label="№" class="num">0</td>
-<td data-label="Когда">успех</td>
+<td data-label="Применение">успех</td>
 </tr>
 <tr>
 <td data-label="Код"><code>CANCELLED</code></td>
 <td data-label="№" class="num">1</td>
-<td data-label="Когда">операция отменена (обычно клиентом)</td>
+<td data-label="Применение">операция отменена (обычно клиентом)</td>
 </tr>
 <tr>
 <td data-label="Код"><code>UNKNOWN</code></td>
 <td data-label="№" class="num">2</td>
-<td data-label="Когда">необработанное исключение на сервере — <strong>сигнал бага</strong>, не норма</td>
+<td data-label="Применение">необработанное исключение на сервере — <strong>сигнал бага</strong>, не норма</td>
 </tr>
 <tr>
 <td data-label="Код"><code>INVALID_ARGUMENT</code></td>
 <td data-label="№" class="num">3</td>
-<td data-label="Когда">аргумент плох <strong>независимо от состояния системы</strong></td>
+<td data-label="Применение">аргумент плох <strong>независимо от состояния системы</strong></td>
 </tr>
 <tr>
 <td data-label="Код"><code>DEADLINE_EXCEEDED</code></td>
 <td data-label="№" class="num">4</td>
-<td data-label="Когда">дедлайн истёк</td>
+<td data-label="Применение">дедлайн истёк</td>
 </tr>
 <tr>
 <td data-label="Код"><code>NOT_FOUND</code></td>
 <td data-label="№" class="num">5</td>
-<td data-label="Когда">сущность не найдена</td>
+<td data-label="Применение">сущность не найдена</td>
 </tr>
 <tr>
 <td data-label="Код"><code>ALREADY_EXISTS</code></td>
 <td data-label="№" class="num">6</td>
-<td data-label="Когда">конфликт создания</td>
+<td data-label="Применение">конфликт создания</td>
 </tr>
 <tr>
 <td data-label="Код"><code>PERMISSION_DENIED</code></td>
 <td data-label="№" class="num">7</td>
-<td data-label="Когда">аутентифицирован, но не авторизован</td>
+<td data-label="Применение">аутентифицирован, но не авторизован</td>
 </tr>
 <tr>
 <td data-label="Код"><code>RESOURCE_EXHAUSTED</code></td>
 <td data-label="№" class="num">8</td>
-<td data-label="Когда">квота, rate limit, слишком большое сообщение</td>
+<td data-label="Применение">квота, rate limit, слишком большое сообщение</td>
 </tr>
 <tr>
 <td data-label="Код"><code>FAILED_PRECONDITION</code></td>
 <td data-label="№" class="num">9</td>
-<td data-label="Когда">система не в том состоянии; повтор без изменения состояния бесполезен</td>
+<td data-label="Применение">система не в том состоянии; повтор без изменения состояния бесполезен</td>
 </tr>
 <tr>
 <td data-label="Код"><code>ABORTED</code></td>
 <td data-label="№" class="num">10</td>
-<td data-label="Когда">конфликт concurrent-доступа (оптимистичная блокировка, transaction abort)</td>
+<td data-label="Применение">конфликт concurrent-доступа (оптимистичная блокировка, transaction abort)</td>
 </tr>
 <tr>
 <td data-label="Код"><code>OUT_OF_RANGE</code></td>
 <td data-label="№" class="num">11</td>
-<td data-label="Когда">вышли за корректный диапазон; <strong>состояние может измениться</strong></td>
+<td data-label="Применение">вышли за корректный диапазон; <strong>состояние может измениться</strong></td>
 </tr>
 <tr>
 <td data-label="Код"><code>UNIMPLEMENTED</code></td>
 <td data-label="№" class="num">12</td>
-<td data-label="Когда">метод не реализован/не существует</td>
+<td data-label="Применение">метод не реализован/не существует</td>
 </tr>
 <tr>
 <td data-label="Код"><code>INTERNAL</code></td>
 <td data-label="№" class="num">13</td>
-<td data-label="Когда">сломан инвариант, ошибка самого фреймворка/сериализации</td>
+<td data-label="Применение">сломан инвариант, ошибка самого фреймворка/сериализации</td>
 </tr>
 <tr>
 <td data-label="Код"><code>UNAVAILABLE</code></td>
 <td data-label="№" class="num">14</td>
-<td data-label="Когда">сервис недоступен, временно</td>
+<td data-label="Применение">сервис недоступен, временно</td>
 </tr>
 <tr>
 <td data-label="Код"><code>DATA_LOSS</code></td>
 <td data-label="№" class="num">15</td>
-<td data-label="Когда">невосстановимая потеря данных</td>
+<td data-label="Применение">невосстановимая потеря данных</td>
 </tr>
 <tr>
 <td data-label="Код"><code>UNAUTHENTICATED</code></td>
 <td data-label="№" class="num">16</td>
-<td data-label="Когда">нет или некорректны учётные данные</td>
+<td data-label="Применение">нет или некорректны учётные данные</td>
 </tr>
 </tbody>
 </table>
@@ -1261,7 +1261,7 @@ https://grpc.io/docs/guides/retry/">gRPC retry</a>). Оговорка при э�
 <thead>
 <tr>
 <th>Статус</th>
-<th>Когда возвращать (сервер)</th>
+<th>Применение (сервер)</th>
 <th>Повтор</th>
 <th>Условие</th>
 </tr>
@@ -1269,97 +1269,97 @@ https://grpc.io/docs/guides/retry/">gRPC retry</a>). Оговорка при э�
 <tbody>
 <tr>
 <td data-label="Статус"><code>CANCELLED</code></td>
-<td data-label="Когда возвращать (сервер)">не возвращать вручную; приходит сам</td>
+<td data-label="Применение (сервер)">не возвращать вручную; приходит сам</td>
 <td data-label="Повтор">❌</td>
 <td data-label="Условие">клиент уже ушёл</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>UNKNOWN</code></td>
-<td data-label="Когда возвращать (сервер)">никогда сознательно</td>
+<td data-label="Применение (сервер)">никогда сознательно</td>
 <td data-label="Повтор">❌</td>
 <td data-label="Условие">это ваш баг, повтор его не вылечит</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>INVALID_ARGUMENT</code></td>
-<td data-label="Когда возвращать (сервер)">валидация формата, пустой обязательный аргумент</td>
+<td data-label="Применение (сервер)">валидация формата, пустой обязательный аргумент</td>
 <td data-label="Повтор">❌</td>
 <td data-label="Условие">те же аргументы дадут то же</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>DEADLINE_EXCEEDED</code></td>
-<td data-label="Когда возвращать (сервер)">не возвращать вручную</td>
+<td data-label="Применение (сервер)">не возвращать вручную</td>
 <td data-label="Повтор">⚠️</td>
 <td data-label="Условие"><strong>только идемпотентные</strong>: операция могла выполниться</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>NOT_FOUND</code></td>
-<td data-label="Когда возвращать (сервер)">сущности нет</td>
+<td data-label="Применение (сервер)">сущности нет</td>
 <td data-label="Повтор">⚠️</td>
 <td data-label="Условие">обычно нет; да — если это read-after-write через реплику с лагом</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>ALREADY_EXISTS</code></td>
-<td data-label="Когда возвращать (сервер)">повторное создание с тем же ключом</td>
+<td data-label="Применение (сервер)">повторное создание с тем же ключом</td>
 <td data-label="Повтор">❌</td>
 <td data-label="Условие">но это <strong>успех</strong> для идемпотентного клиента: обработать как «уже создано»</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>PERMISSION_DENIED</code></td>
-<td data-label="Когда возвращать (сервер)">авторизация не прошла</td>
+<td data-label="Применение (сервер)">авторизация не прошла</td>
 <td data-label="Повтор">❌</td>
 <td data-label="Условие"></td>
 </tr>
 <tr>
 <td data-label="Статус"><code>RESOURCE_EXHAUSTED</code></td>
-<td data-label="Когда возвращать (сервер)">rate limit, квота, превышен размер сообщения</td>
+<td data-label="Применение (сервер)">rate limit, квота, превышен размер сообщения</td>
 <td data-label="Повтор">⚠️</td>
 <td data-label="Условие"><strong>с backoff и уважением <code>RetryInfo</code></strong>; при превышении размера — никогда</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>FAILED_PRECONDITION</code></td>
-<td data-label="Когда возвращать (сервер)">состояние системы не позволяет</td>
+<td data-label="Применение (сервер)">состояние системы не позволяет</td>
 <td data-label="Повтор">❌</td>
 <td data-label="Условие">до изменения состояния</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>ABORTED</code></td>
-<td data-label="Когда возвращать (сервер)">конфликт оптимистичной блокировки, serialization failure</td>
+<td data-label="Применение (сервер)">конфликт оптимистичной блокировки, serialization failure</td>
 <td data-label="Повтор">✅</td>
 <td data-label="Условие">на уровне бизнес-транзакции: перечитать, повторить</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>OUT_OF_RANGE</code></td>
-<td data-label="Когда возвращать (сервер)">вышли за границу, которая может сдвинуться</td>
+<td data-label="Применение (сервер)">вышли за границу, которая может сдвинуться</td>
 <td data-label="Повтор">⚠️</td>
 <td data-label="Условие">позже — может сработать</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>UNIMPLEMENTED</code></td>
-<td data-label="Когда возвращать (сервер)">метода нет, кодек не поддержан</td>
+<td data-label="Применение (сервер)">метода нет, кодек не поддержан</td>
 <td data-label="Повтор">❌</td>
 <td data-label="Условие">сигнал рассинхрона версий или сжатия (см. 3.6)</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>INTERNAL</code></td>
-<td data-label="Когда возвращать (сервер)">сломан инвариант, ошибка сериализации</td>
+<td data-label="Применение (сервер)">сломан инвариант, ошибка сериализации</td>
 <td data-label="Повтор">❌</td>
 <td data-label="Условие"></td>
 </tr>
 <tr>
 <td data-label="Статус"><code>UNAVAILABLE</code></td>
-<td data-label="Когда возвращать (сервер)">сервис не готов, дренаж, нет соединения</td>
+<td data-label="Применение (сервер)">сервис не готов, дренаж, нет соединения</td>
 <td data-label="Повтор">✅</td>
 <td data-label="Условие">канонический статус для повтора</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>DATA_LOSS</code></td>
-<td data-label="Когда возвращать (сервер)">невосстановимая потеря</td>
+<td data-label="Применение (сервер)">невосстановимая потеря</td>
 <td data-label="Повтор">❌</td>
 <td data-label="Условие">эскалация человеку</td>
 </tr>
 <tr>
 <td data-label="Статус"><code>UNAUTHENTICATED</code></td>
-<td data-label="Когда возвращать (сервер)">нет/некорректный токен</td>
+<td data-label="Применение (сервер)">нет/некорректный токен</td>
 <td data-label="Повтор">⚠️</td>
 <td data-label="Условие">один раз после обновления токена, не в цикле</td>
 </tr>
@@ -2207,7 +2207,7 @@ id — объект                    -&gt; 200 | {"jsonrpc":"2.0","error":{"co
 <p>Спецификация JSON-RPC не описывает ни схему методов, ни типы параметров, и контракт приходится договаривать отдельно. Для этого существует OpenRPC — формат описания методов JSON-RPC в духе OpenAPI: имена методов, параметры со схемами JSON Schema, результаты и ошибки, а по описанию можно генерировать документацию и клиентов (по сайту проекта, в опыте не проверялось). Если OpenRPC не принят, контракт держат хотя бы в виде схем JSON для параметров и результатов и проверяют ими сообщения в тестах обеих сторон.</p>
 <p>Версии методов в JSON-RPC меняют добавлением, как и в любом протоколе без согласования схем. Новый необязательный параметр старый сервер должен игнорировать, а не отвергать, и это стоит записать в контракт явно. Несовместимое изменение оформляют новым методом (<code>loyalty.commit2</code> или <code>v2.loyalty.commit</code>), а старый оставляют, пока его вызывают, и считают вызовы старого метода по метрикам: кассовое ПО обновляется месяцами, и в сети одновременно живут три-четыре его версии.</p>
 <p>Эксплуатационные правила вытекают из предыдущих подразделов. Метрики считают по методам и кодам ошибок JSON-RPC, а не по статусам HTTP. Каждый изменяющий метод принимает ключ идемпотентности, а клиент повторяет вызов с тем же ключом. Размер пакета ограничен, а его обработка — параллельная или последовательная — записана в контракт. Внутренние ошибки возвращаются клиенту кодом −32603 без подробностей: стек вызовов и тексты исключений уходят в журнал сервера, иначе они рассказывают постороннему об устройстве сервиса. Наконец, за одним адресом <code>/rpc</code> теряются права доступа по адресам, которые привычно настраивают в шлюзе и Spring Security, поэтому права проверяют по имени метода внутри диспетчера.</p>
-<h3 id="77-когда-брать-json-rpc">7.7 Когда брать JSON-RPC</h3>
+<h3 id="77-применение-json-rpc">7.7 Применение JSON-RPC</h3>
 <p>JSON-RPC уместен, когда модель «вызвать операцию» естественнее модели ресурсов, обе стороны контролирует одна или две тесно связанные команды, а простота отладки важнее строгого контракта. Кассовое ПО, процессинговые шлюзы, внутренние служебные интерфейсы, протоколы инструментов вроде LSP и MCP — его законная территория. Особенно хорош он поверх WebSocket, где даёт двусторонний вызов методов без собственного формата сообщений.</p>
 <p>Против него говорят три вещи, и все они выросли из краткости спецификации. Схемы и генерации клиентов нет, если не принят OpenRPC. Кэширование HTTP не работает, потому что все вызовы идут методом <code>POST</code> на один адрес. Инфраструктура, которая привыкла к REST, — шлюзы, мониторинг, права по адресам — видит один адрес и один статус. Поэтому для публичного API с десятками внешних потребителей лучше REST с OpenAPI, а для нагруженного обмена между своими сервисами со строгим контрактом и потоками — gRPC (разделы 2–6).</p>
 <blockquote class="cb-ask">
@@ -2215,7 +2215,7 @@ id — объект                    -&gt; 200 | {"jsonrpc":"2.0","error":{"co
 </blockquote>
 <h2 id="8-websocket">8. WebSocket</h2>
 <p>WebSocket — протокол поверх одного TCP-соединения, по которому клиент и сервер обмениваются сообщениями в обе стороны в любой момент, не дожидаясь запроса. Соединение начинается как обычный запрос HTTP и затем переключается на другой протокол, поэтому проходит через те же порты 80 и 443, балансировщики и межсетевые экраны. Нужен он там, где новость рождается на сервере и её надо доставить человеку за доли секунды: статус платежа, курс валюты, положение вагона, сообщение в чате. У HTTP с этим трудность в самой модели: говорить первым может только клиент, и все способы «позвать» клиента с сервера поверх обычного HTTP так или иначе остаются обходными. Раздел начинается с того, зачем серверу говорить первым и какие для этого есть средства, затем разбирает рукопожатие и кадры протокола байт за байтом, а потом на сквозном примере диспетчерской карты показывает то, на чём WebSocket ломается в эксплуатации: параллельную запись в сессию, медленного клиента, обрывы связи, переподключение, масштабирование и безопасность.</p>
-<h3 id="81-когда-сервер-должен-заговорить-первым">8.1 Когда сервер должен заговорить первым</h3>
+<h3 id="81-инициатива-сервера">8.1 Инициатива сервера</h3>
 <p>Пусть бухгалтер ООО «Северный лес» отправил в интернет-банке платёжное поручение, и банк проводит его в несколько шагов: проверка лимитов, антифрод, проводка в АБС, отправка в расчётную систему. Статус меняется на сервере три-четыре раза за минуту, и бухгалтер хочет видеть его без кнопки «обновить». Простейшее решение — опрос (<em>polling</em>): страница раз в несколько секунд спрашивает сервер, не изменился ли статус. Оно работает, но почти все ответы пустые, а задержка доставки равна в среднем половине периода опроса: при опросе раз в 5 секунд новость в среднем лежит 2,5 секунды, а сократить период значит умножить число пустых запросов.<sup id="fnref:s28-ws-1"><a class="footnote-ref" href="#fn:s28-ws-1" data-tip="Сноска: Алекс Сюй, System Design. Подготовка к сложному интервью, СПб.: Питер, 2022, гл. 12 «Проектирование системы мгновенного обмена сообщениями», с. 200–206: опрос, длинный опрос и его …">12</a></sup></p>
 <p>Длинный опрос (<em>long polling</em>) исправляет пустые ответы: сервер держит запрос открытым, пока не появится новость или не истечёт тайм-аут, и только тогда отвечает, после чего клиент сразу шлёт следующий запрос. Задержка становится почти нулевой, но у приёма остаются свои слабости. Сервер должен помнить, кто ждёт, хотя HTTP-серверы обычно не хранят состояние, и при балансировке по кругу новость может прийти на узел, у которого нет открытого запроса нужного клиента. Кроме того, сервер плохо видит, что клиент отключился, а у неактивного пользователя соединения истекают и переоткрываются впустую.<sup id="fnref2:s28-ws-1"><a class="footnote-ref" href="#fn:s28-ws-1" data-tip="Сноска: Алекс Сюй, System Design. Подготовка к сложному интервью, СПб.: Питер, 2022, гл. 12 «Проектирование системы мгновенного обмена сообщениями», с. 200–206: опрос, длинный опрос и его …">12</a></sup></p>
 <p>Server-Sent Events (SSE) — стандартный для браузеров способ получать поток событий от сервера по одному долгому ответу HTTP с типом <code>text/event-stream</code>. Каждое событие несёт текст, имя и необязательный идентификатор, и при обрыве браузер сам переподключается, передавая в заголовке <code>Last-Event-ID</code> номер последнего полученного события. SSE хорош тем, что остаётся обычным HTTP, но поток в нём однонаправленный: всё, что клиент хочет сказать серверу, идёт отдельными запросами.<sup id="fnref:s28-ws-2"><a class="footnote-ref" href="#fn:s28-ws-2" data-tip="Сноска: Josh Juneau, Tarun Telang, Java EE to Jakarta EE 10 Recipes, Apress, 2022, рецепты 13-5 и 13-6, с. 526–530: Server-Sent Events в Jakarta RESTful Web Services, SseEventSink, SseBroa…">13</a></sup></p>
@@ -2226,7 +2226,7 @@ id — объект                    -&gt; 200 | {"jsonrpc":"2.0","error":{"co
 <th>Способ</th>
 <th>Направление</th>
 <th>Задержка доставки</th>
-<th>Что держит сервер</th>
+<th>Состояние сервера</th>
 <th>Подводные камни</th>
 </tr>
 </thead>
@@ -2235,28 +2235,28 @@ id — объект                    -&gt; 200 | {"jsonrpc":"2.0","error":{"co
 <td data-label="Способ">Опрос</td>
 <td data-label="Направление">клиент → сервер</td>
 <td data-label="Задержка доставки">до периода опроса</td>
-<td data-label="Что держит сервер">ничего</td>
+<td data-label="Состояние сервера">ничего</td>
 <td data-label="Подводные камни">пустые ответы, нагрузка растёт с частотой</td>
 </tr>
 <tr>
 <td data-label="Способ">Длинный опрос</td>
 <td data-label="Направление">сервер → клиент через ответ</td>
 <td data-label="Задержка доставки">почти нулевая</td>
-<td data-label="Что держит сервер">ждущие запросы</td>
+<td data-label="Состояние сервера">ждущие запросы</td>
 <td data-label="Подводные камни">переоткрытие по тайм-ауту, узел без нужного запроса</td>
 </tr>
 <tr>
 <td data-label="Способ">SSE</td>
 <td data-label="Направление">сервер → клиент</td>
 <td data-label="Задержка доставки">почти нулевая</td>
-<td data-label="Что держит сервер">открытые ответы</td>
+<td data-label="Состояние сервера">открытые ответы</td>
 <td data-label="Подводные камни">только текст, только от сервера, лимит соединений HTTP/1.1 в браузере</td>
 </tr>
 <tr>
 <td data-label="Способ">WebSocket</td>
 <td data-label="Направление">обе стороны</td>
 <td data-label="Задержка доставки">почти нулевая</td>
-<td data-label="Что держит сервер">открытые сессии</td>
+<td data-label="Состояние сервера">открытые сессии</td>
 <td data-label="Подводные камни">своё состояние на сервере, прокси и тайм-ауты простоя, переподключение</td>
 </tr>
 </tbody>
@@ -2301,49 +2301,49 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
 <tr>
 <th class="num">Код</th>
 <th>Значение</th>
-<th>Когда встречается</th>
+<th>Встречается</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Код" class="num">1000</td>
 <td data-label="Значение">нормальное закрытие</td>
-<td data-label="Когда встречается">клиент или сервер закончил работу</td>
+<td data-label="Встречается">клиент или сервер закончил работу</td>
 </tr>
 <tr>
 <td data-label="Код" class="num">1001</td>
 <td data-label="Значение">уход</td>
-<td data-label="Когда встречается">сервер останавливается, вкладка закрывается, истёк тайм-аут простоя</td>
+<td data-label="Встречается">сервер останавливается, вкладка закрывается, истёк тайм-аут простоя</td>
 </tr>
 <tr>
 <td data-label="Код" class="num">1002</td>
 <td data-label="Значение">ошибка протокола</td>
-<td data-label="Когда встречается">кадр без маски, неверный формат</td>
+<td data-label="Встречается">кадр без маски, неверный формат</td>
 </tr>
 <tr>
 <td data-label="Код" class="num">1006</td>
 <td data-label="Значение">ненормальное закрытие</td>
-<td data-label="Когда встречается">соединение оборвалось без кадра закрытия; <strong>по сети никогда не передаётся</strong></td>
+<td data-label="Встречается">соединение оборвалось без кадра закрытия; <strong>по сети никогда не передаётся</strong></td>
 </tr>
 <tr>
 <td data-label="Код" class="num">1008</td>
 <td data-label="Значение">нарушение политики</td>
-<td data-label="Когда встречается">не прошёл проверку прав, неверный источник</td>
+<td data-label="Встречается">не прошёл проверку прав, неверный источник</td>
 </tr>
 <tr>
 <td data-label="Код" class="num">1009</td>
 <td data-label="Значение">слишком большое сообщение</td>
-<td data-label="Когда встречается">превышен лимит размера</td>
+<td data-label="Встречается">превышен лимит размера</td>
 </tr>
 <tr>
 <td data-label="Код" class="num">1011</td>
 <td data-label="Значение">внутренняя ошибка сервера</td>
-<td data-label="Когда встречается">исключение в обработчике</td>
+<td data-label="Встречается">исключение в обработчике</td>
 </tr>
 <tr>
 <td data-label="Код" class="num">1013</td>
 <td data-label="Значение">попробуйте позже</td>
-<td data-label="Когда встречается">сервер перегружен или отключает отстающего клиента</td>
+<td data-label="Встречается">сервер перегружен или отключает отстающего клиента</td>
 </tr>
 </tbody>
 </table>
@@ -2660,7 +2660,7 @@ https://docs.spring.io/spring-graphql/reference/">Spring for GraphQL</a>):</p>
 <span class="nt">&lt;/waybill&gt;</span>
 </code></pre></div>
 
-<h3 id="103-что-проверяет-схема">10.3 Что проверяет схема</h3>
+<h3 id="103-проверки-схемы">10.3 Проверки схемы</h3>
 <p>Схема накладной строится из простых типов, которые ограничивают значения, и сложных типов, которые задают состав элементов. Простой тип сужает встроенный тип XSD гранями (<em>facets</em>): шаблоном, длиной, перечислением, числом знаков, границами. Так в схеме описаны номер вагона, ИНН, масса в тоннах и вид отправки:<sup id="fnref2:s28-xml-2"><a class="footnote-ref" href="#fn:s28-xml-2" data-tip="Сноска: Запуск автора 2026-10-26: labs/xml, JDK 21.0.10 (встроенные JAXP, Xerces и StAX), Jakarta XML Binding 4.0.2 и реализация JAXB 4.0.7; классы SchemaLab, JaxbLab, SecurityLab, StreamL…">20</a></sup></p>
 <div class="hl" data-lang="XML"><div class="hl-bar"><span>XML</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nt">&lt;xs:simpleType</span> <span class="na">name=</span><span class="s">"WagonNumber"</span><span class="nt">&gt;</span>
     <span class="nt">&lt;xs:restriction</span> <span class="na">base=</span><span class="s">"xs:string"</span><span class="nt">&gt;&lt;xs:pattern</span> <span class="na">value=</span><span class="s">"[0-9]{8}"</span><span class="nt">/&gt;&lt;/xs:restriction&gt;</span>
@@ -2839,29 +2839,29 @@ https://www.w3.org/TR/soap12-part1/">W3C SOAP 1.2 Part 1</a>). При этом S
 <thead>
 <tr>
 <th>Элемент</th>
-<th>Что описывает</th>
+<th>Содержание</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Элемент"><code>types</code></td>
-<td data-label="Что описывает">XSD-схемы всех сообщений — строгая типизация с ограничениями (<code>pattern</code>, <code>minInclusive</code>, <code>maxLength</code>, <code>enumeration</code>)</td>
+<td data-label="Содержание">XSD-схемы всех сообщений — строгая типизация с ограничениями (<code>pattern</code>, <code>minInclusive</code>, <code>maxLength</code>, <code>enumeration</code>)</td>
 </tr>
 <tr>
 <td data-label="Элемент"><code>message</code></td>
-<td data-label="Что описывает">логическое сообщение как набор частей</td>
+<td data-label="Содержание">логическое сообщение как набор частей</td>
 </tr>
 <tr>
 <td data-label="Элемент"><code>portType</code></td>
-<td data-label="Что описывает">абстрактный интерфейс: набор <code>operation</code> с input/output/fault</td>
+<td data-label="Содержание">абстрактный интерфейс: набор <code>operation</code> с input/output/fault</td>
 </tr>
 <tr>
 <td data-label="Элемент"><code>binding</code></td>
-<td data-label="Что описывает">как <code>portType</code> кладётся на протокол: SOAP 1.1/1.2, style <code>document</code>/<code>rpc</code>, use <code>literal</code>/<code>encoded</code></td>
+<td data-label="Содержание">как <code>portType</code> кладётся на протокол: SOAP 1.1/1.2, style <code>document</code>/<code>rpc</code>, use <code>literal</code>/<code>encoded</code></td>
 </tr>
 <tr>
 <td data-label="Элемент"><code>service</code> / <code>port</code></td>
-<td data-label="Что описывает">конкретный endpoint URL</td>
+<td data-label="Содержание">конкретный endpoint URL</td>
 </tr>
 </tbody>
 </table>
@@ -3588,5 +3588,5 @@ https://commons.wikimedia.org/wiki/File:Power_Lines-1310042,_Dingle_Peninsula,_C
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-пространство-решений">1. Пространство решений</a></li><li><a href="#2-protocol-buffers">2. Protocol Buffers</a></li><li><a href="#3-grpc-транспорт-и-виды-вызовов">3. gRPC: транспорт и виды вызовов</a></li><li><a href="#4-дедлайны-отмена-статусы-ошибки">4. Дедлайны, отмена, статусы, ошибки</a></li><li><a href="#5-grpc-в-эксплуатации">5. gRPC в эксплуатации</a></li><li><a href="#6-grpc-в-java-и-spring-boot">6. gRPC в Java и Spring Boot</a></li><li><a href="#7-json-rpc-20">7. JSON-RPC 2.0</a></li><li><a href="#8-websocket">8. WebSocket</a></li><li><a href="#9-graphql">9. GraphQL</a></li><li><a href="#10-xml-и-xsd">10. XML и XSD</a></li><li><a href="#11-soap-и-wsdl">11. SOAP и WSDL</a></li><li><a href="#12-выбор-протокола">12. Выбор протокола</a></li><li><a href="#13-ошибки-и-антипаттерны">13. Ошибки и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

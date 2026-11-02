@@ -15,10 +15,10 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть V. Хранилища и обработка данных</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/22.svg" width="48" height="48" alt="" loading="lazy">22. NoSQL и in-memory хранилища</h1><div class="meta"><span class="part-tag">Часть V. Хранилища и обработка данных</span><span>39 986 слов</span><span>≈ 3 ч 40 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/22.svg" width="48" height="48" alt="" loading="lazy">22. NoSQL и in-memory хранилища</h1><div class="meta"><span class="part-tag">Часть V. Хранилища и обработка данных</span><span>39 969 слов</span><span>≈ 3 ч 40 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>В финтехе почти всегда есть PostgreSQL, и почти всегда рядом с ним стоит Redis, ElasticSearch или Tarantool, потому что реляционная база не вытягивает то латентность, то профиль записи, то поиск по тексту. Каждое из этих хранилищ получает своё преимущество, отказываясь от какой-то гарантии, и цена этого отказа почти всегда всплывает в инциденте: <code>KEYS *</code> на 8 секунд останавливает продакшн, после <code>kill -9</code> Redis теряет записи за последнюю секунду, ElasticSearch незаметно становится источником истины и расходится с базой, а неудачно выбранный shard key в MongoDB нельзя поменять, не переливая коллекцию целиком. На интервью эту тему любят как раз потому, что по ней сразу видно, понимает ли кандидат механизм (LSM, hash slots, инвертированный индекс, fork+COW) или просто перечисляет названия продуктов. Эта глава рассказывает, как хранилища устроены внутри и где честно проходят границы их применимости.</p>
 </details>
-<nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">19 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-классификация-по-модели-данных-и-по-способу-хранения" data-tip="Раздел этой главы: 1. Классификация: по модели данных и по способу хранения">1. Классификация: по модели данных и по способу хранения</a></li><li><a href="#2-b-tree-и-lsm-tree" data-tip="Раздел этой главы: 2. B-tree и LSM-tree">2. B-tree и LSM-tree</a></li><li><a href="#3-redis-модель-исполнения" data-tip="Раздел этой главы: 3. Redis: модель исполнения">3. Redis: модель исполнения</a></li><li><a href="#4-redis-внутреннее-устройство-структур-данных" data-tip="Раздел этой главы: 4. Redis: внутреннее устройство структур данных">4. Redis: внутреннее устройство структур данных</a></li><li><a href="#5-redis-память-ttl-и-вытеснение" data-tip="Раздел этой главы: 5. Redis: память, TTL и вытеснение">5. Redis: память, TTL и вытеснение</a></li><li><a href="#6-redis-durability-репликация-и-топологии" data-tip="Раздел этой главы: 6. Redis: durability, репликация и топологии">6. Redis: durability, репликация и топологии</a></li><li><a href="#7-redis-атомарность-и-типовые-паттерны" data-tip="Раздел этой главы: 7. Redis: атомарность и типовые паттерны">7. Redis: атомарность и типовые паттерны</a></li><li><a href="#8-redis-из-java-клиенты-сериализация-эксплуатация" data-tip="Раздел этой главы: 8. Redis из Java: клиенты, сериализация, эксплуатация">8. Redis из Java: клиенты, сериализация, эксплуатация</a></li><li><a href="#9-mongodb" data-tip="Раздел этой главы: 9. MongoDB">9. MongoDB</a></li><li><a href="#10-tarantool" data-tip="Раздел этой главы: 10. Tarantool">10. Tarantool</a></li><li><a href="#11-elasticsearch-и-opensearch" data-tip="Раздел этой главы: 11. Elasticsearch и OpenSearch">11. Elasticsearch и OpenSearch</a></li><li><a href="#12-cassandrascylladb-и-clickhouse" data-tip="Раздел этой главы: 12. Cassandra/ScyllaDB и ClickHouse">12. Cassandra/ScyllaDB и ClickHouse</a></li><li><a href="#13-как-выбирать-хранилище" data-tip="Раздел этой главы: 13. Как выбирать хранилище">13. Как выбирать хранилище</a></li><li><a href="#14-разобранные-инциденты" data-tip="Раздел этой главы: 14. Разобранные инциденты">14. Разобранные инциденты</a></li><li><a href="#15-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 15. Ошибки и антипаттерны">15. Ошибки и антипаттерны</a></li><li><a href="#16-диагностика" data-tip="Раздел этой главы: 16. Диагностика">16. Диагностика</a></li><li><a href="#17-вопросы-на-интервью" data-tip="Раздел этой главы: 17. Вопросы на интервью">17. Вопросы на интервью</a></li><li><a href="#18-попробовать-руками" data-tip="Раздел этой главы: 18. Попробовать руками">18. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
+<nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">19 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-классификация-по-модели-данных-и-по-способу-хранения" data-tip="Раздел этой главы: 1. Классификация: по модели данных и по способу хранения">1. Классификация: по модели данных и по способу хранения</a></li><li><a href="#2-b-tree-и-lsm-tree" data-tip="Раздел этой главы: 2. B-tree и LSM-tree">2. B-tree и LSM-tree</a></li><li><a href="#3-redis-модель-исполнения" data-tip="Раздел этой главы: 3. Redis: модель исполнения">3. Redis: модель исполнения</a></li><li><a href="#4-redis-внутреннее-устройство-структур-данных" data-tip="Раздел этой главы: 4. Redis: внутреннее устройство структур данных">4. Redis: внутреннее устройство структур данных</a></li><li><a href="#5-redis-память-ttl-и-вытеснение" data-tip="Раздел этой главы: 5. Redis: память, TTL и вытеснение">5. Redis: память, TTL и вытеснение</a></li><li><a href="#6-redis-durability-репликация-и-топологии" data-tip="Раздел этой главы: 6. Redis: durability, репликация и топологии">6. Redis: durability, репликация и топологии</a></li><li><a href="#7-redis-атомарность-и-типовые-паттерны" data-tip="Раздел этой главы: 7. Redis: атомарность и типовые паттерны">7. Redis: атомарность и типовые паттерны</a></li><li><a href="#8-redis-из-java-клиенты-сериализация-эксплуатация" data-tip="Раздел этой главы: 8. Redis из Java: клиенты, сериализация, эксплуатация">8. Redis из Java: клиенты, сериализация, эксплуатация</a></li><li><a href="#9-mongodb" data-tip="Раздел этой главы: 9. MongoDB">9. MongoDB</a></li><li><a href="#10-tarantool" data-tip="Раздел этой главы: 10. Tarantool">10. Tarantool</a></li><li><a href="#11-elasticsearch-и-opensearch" data-tip="Раздел этой главы: 11. Elasticsearch и OpenSearch">11. Elasticsearch и OpenSearch</a></li><li><a href="#12-cassandrascylladb-и-clickhouse" data-tip="Раздел этой главы: 12. Cassandra/ScyllaDB и ClickHouse">12. Cassandra/ScyllaDB и ClickHouse</a></li><li><a href="#13-выбор-хранилища" data-tip="Раздел этой главы: 13. Выбор хранилища">13. Выбор хранилища</a></li><li><a href="#14-разобранные-инциденты" data-tip="Раздел этой главы: 14. Разобранные инциденты">14. Разобранные инциденты</a></li><li><a href="#15-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 15. Ошибки и антипаттерны">15. Ошибки и антипаттерны</a></li><li><a href="#16-диагностика" data-tip="Раздел этой главы: 16. Диагностика">16. Диагностика</a></li><li><a href="#17-вопросы-на-интервью" data-tip="Раздел этой главы: 17. Вопросы на интервью">17. Вопросы на интервью</a></li><li><a href="#18-попробовать-руками" data-tip="Раздел этой главы: 18. Попробовать руками">18. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
 <h2 id="1-классификация-по-модели-данных-и-по-способу-хранения">1. Классификация: по модели данных и по способу хранения</h2>
 <p>Слово «NoSQL» ничего не описывает, кроме отрицания, поэтому для разговора о хранилищах нужны две другие оси, ортогональные друг другу: <strong>какую модель данных видит приложение</strong> и <strong>как байты лежат на диске</strong>. Эти оси действительно независимы, и одно и то же сочетание встречается в самых разных продуктах: MongoDB хранит документы в B-tree, Cassandra держит wide-column поверх LSM, а Tarantool умеет и то и другое, потому что memtx держит данные в B+*-дереве в оперативной памяти, а vinyl пишет их в LSM. Ниже мы пройдём по каждой оси отдельно, а затем честно перечислим причины уходить от реляционной базы и причины этого не делать.</p>
 <h3 id="11-классификация-по-модели-данных">1.1 Классификация по модели данных</h3>
@@ -29,8 +29,8 @@
 <th>Модель</th>
 <th>Примеры</th>
 <th>Единица доступа</th>
-<th>Что даёт</th>
-<th>Чего нет</th>
+<th>Польза</th>
+<th>Отсутствует</th>
 </tr>
 </thead>
 <tbody>
@@ -38,50 +38,50 @@
 <td data-label="Модель">Key-value</td>
 <td data-label="Примеры">Redis, Valkey, Memcached, DynamoDB</td>
 <td data-label="Единица доступа">ключ → непрозрачное значение</td>
-<td data-label="Что даёт">O(1) доступ, минимум накладных расходов</td>
-<td data-label="Чего нет">запросов по значению, join</td>
+<td data-label="Польза">O(1) доступ, минимум накладных расходов</td>
+<td data-label="Отсутствует">запросов по значению, join</td>
 </tr>
 <tr>
 <td data-label="Модель">Документная</td>
 <td data-label="Примеры">MongoDB, Couchbase, DocumentDB</td>
 <td data-label="Единица доступа">документ (BSON/JSON) по <code>_id</code> или индексу</td>
-<td data-label="Что даёт">гибкая схема, вложенность, частичные обновления</td>
-<td data-label="Чего нет">настоящих join, схемных гарантий</td>
+<td data-label="Польза">гибкая схема, вложенность, частичные обновления</td>
+<td data-label="Отсутствует">настоящих join, схемных гарантий</td>
 </tr>
 <tr>
 <td data-label="Модель">Wide-column</td>
 <td data-label="Примеры">Cassandra, ScyllaDB, HBase, Bigtable</td>
 <td data-label="Единица доступа">партиция → строки с clustering-порядком</td>
-<td data-label="Что даёт">линейная запись, гео-распределение</td>
-<td data-label="Чего нет">ad-hoc запросов, агрегатов, join</td>
+<td data-label="Польза">линейная запись, гео-распределение</td>
+<td data-label="Отсутствует">ad-hoc запросов, агрегатов, join</td>
 </tr>
 <tr>
 <td data-label="Модель">Графовая</td>
 <td data-label="Примеры">Neo4j, JanusGraph, ArangoDB</td>
 <td data-label="Единица доступа">вершина/ребро, обход</td>
-<td data-label="Что даёт">обходы переменной глубины за константу на шаг</td>
-<td data-label="Чего нет">масштабирования обхода между шардами</td>
+<td data-label="Польза">обходы переменной глубины за константу на шаг</td>
+<td data-label="Отсутствует">масштабирования обхода между шардами</td>
 </tr>
 <tr>
 <td data-label="Модель">Поисковая</td>
 <td data-label="Примеры">Elasticsearch, OpenSearch, Solr</td>
 <td data-label="Единица доступа">документ + инвертированный индекс</td>
-<td data-label="Что даёт">полнотекст, релевантность, агрегации по фасетам</td>
-<td data-label="Чего нет">транзакций, роли источника истины</td>
+<td data-label="Польза">полнотекст, релевантность, агрегации по фасетам</td>
+<td data-label="Отсутствует">транзакций, роли источника истины</td>
 </tr>
 <tr>
 <td data-label="Модель">Time-series</td>
 <td data-label="Примеры">TimescaleDB, Prometheus TSDB, InfluxDB, VictoriaMetrics</td>
 <td data-label="Единица доступа">(метрика, метки, время) → значение</td>
-<td data-label="Что даёт">сжатие рядов, downsampling, оконные функции по времени</td>
-<td data-label="Чего нет">произвольной реляционной модели</td>
+<td data-label="Польза">сжатие рядов, downsampling, оконные функции по времени</td>
+<td data-label="Отсутствует">произвольной реляционной модели</td>
 </tr>
 <tr>
 <td data-label="Модель">In-memory с логикой</td>
 <td data-label="Примеры">Tarantool, Hazelcast, Ignite</td>
 <td data-label="Единица доступа">спейс/кеш + код рядом с данными</td>
-<td data-label="Что даёт">латентность в десятки микросекунд</td>
-<td data-label="Чего нет">привычной экосистемы и простого найма</td>
+<td data-label="Польза">латентность в десятки микросекунд</td>
+<td data-label="Отсутствует">привычной экосистемы и простого найма</td>
 </tr>
 </tbody>
 </table>
@@ -324,34 +324,34 @@ XAUTOCLAIM payments:events grp worker-2 <span class="m">60000</span> <span class
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Pub/Sub</th>
 <th>Streams</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Хранение</td>
+<td data-label="Критерий">Хранение</td>
 <td data-label="Pub/Sub">нет, fire-and-forget</td>
 <td data-label="Streams">лог в памяти (+ persistence)</td>
 </tr>
 <tr>
-<td data-label="">Отключился подписчик</td>
+<td data-label="Критерий">Отключился подписчик</td>
 <td data-label="Pub/Sub">сообщения потеряны</td>
 <td data-label="Streams">догонит по ID</td>
 </tr>
 <tr>
-<td data-label="">Подтверждения</td>
+<td data-label="Критерий">Подтверждения</td>
 <td data-label="Pub/Sub">нет</td>
 <td data-label="Streams"><code>XACK</code> + PEL</td>
 </tr>
 <tr>
-<td data-label="">Группы с балансировкой</td>
+<td data-label="Критерий">Группы с балансировкой</td>
 <td data-label="Pub/Sub">нет (все получают всё)</td>
 <td data-label="Streams">есть</td>
 </tr>
 <tr>
-<td data-label="">Повторная обработка</td>
+<td data-label="Критерий">Повторная обработка</td>
 <td data-label="Pub/Sub">невозможна</td>
 <td data-label="Streams"><code>XRANGE</code> с любого ID</td>
 </tr>
@@ -460,37 +460,37 @@ https://raw.githubusercontent.com/redis/redis/unstable/redis.conf">redis.conf</a
 <thead>
 <tr>
 <th>Политика</th>
-<th>Что делает</th>
+<th>Действие</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Политика"><code>noeviction</code></td>
-<td data-label="Что делает">ничего не вытесняет, записи получают ошибку OOM (чтения работают)</td>
+<td data-label="Действие">ничего не вытесняет, записи получают ошибку OOM (чтения работают)</td>
 </tr>
 <tr>
 <td data-label="Политика"><code>allkeys-lru</code></td>
-<td data-label="Что делает">вытесняет по приближённому LRU среди всех ключей</td>
+<td data-label="Действие">вытесняет по приближённому LRU среди всех ключей</td>
 </tr>
 <tr>
 <td data-label="Политика"><code>volatile-lru</code></td>
-<td data-label="Что делает">то же, но только среди ключей с TTL</td>
+<td data-label="Действие">то же, но только среди ключей с TTL</td>
 </tr>
 <tr>
 <td data-label="Политика"><code>allkeys-lfu</code></td>
-<td data-label="Что делает">по приближённому LFU среди всех</td>
+<td data-label="Действие">по приближённому LFU среди всех</td>
 </tr>
 <tr>
 <td data-label="Политика"><code>volatile-lfu</code></td>
-<td data-label="Что делает">по LFU среди ключей с TTL</td>
+<td data-label="Действие">по LFU среди ключей с TTL</td>
 </tr>
 <tr>
 <td data-label="Политика"><code>allkeys-random</code> / <code>volatile-random</code></td>
-<td data-label="Что делает">случайно</td>
+<td data-label="Действие">случайно</td>
 </tr>
 <tr>
 <td data-label="Политика"><code>volatile-ttl</code></td>
-<td data-label="Что делает">ключ с ближайшим истечением</td>
+<td data-label="Действие">ключ с ближайшим истечением</td>
 </tr>
 </tbody>
 </table>
@@ -590,39 +590,39 @@ https://valkey.io/topics/cluster-spec/">Valkey: cluster spec</a>). Таблиц�
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Sentinel</th>
 <th>Cluster</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Шардирование</td>
+<td data-label="Критерий">Шардирование</td>
 <td data-label="Sentinel">нет</td>
 <td data-label="Cluster">да, 16384 слота</td>
 </tr>
 <tr>
-<td data-label="">Объём</td>
+<td data-label="Критерий">Объём</td>
 <td data-label="Sentinel">ограничен одним узлом</td>
 <td data-label="Cluster">сумма узлов</td>
 </tr>
 <tr>
-<td data-label="">Multi-key</td>
+<td data-label="Критерий">Multi-key</td>
 <td data-label="Sentinel">без ограничений</td>
 <td data-label="Cluster">только в пределах одного слота</td>
 </tr>
 <tr>
-<td data-label="">Транзакции/Lua</td>
+<td data-label="Критерий">Транзакции/Lua</td>
 <td data-label="Sentinel">без ограничений</td>
 <td data-label="Cluster">все ключи в одном слоте</td>
 </tr>
 <tr>
-<td data-label="">Клиент</td>
+<td data-label="Критерий">Клиент</td>
 <td data-label="Sentinel">обычный + discovery через Sentinel</td>
 <td data-label="Cluster">cluster-aware, держит карту слотов</td>
 </tr>
 <tr>
-<td data-label="">Сложность эксплуатации</td>
+<td data-label="Критерий">Сложность эксплуатации</td>
 <td data-label="Sentinel">ниже</td>
 <td data-label="Cluster">заметно выше</td>
 </tr>
@@ -745,7 +745,7 @@ SET lock:order:42 &lt;random-token&gt; NX PX <span class="m">30000</span>
 <span class="p">}</span>
 </code></pre></div>
 
-<p><strong>Почему этого всё равно недостаточно для корректности.</strong> Мартин Клеппманн разобрал Redlock и сформулировал к нему три претензии (<a href="https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html" data-tip="Внешний сайт · martin.kleppmann.com
+<p><strong>Недостаточность для корректности.</strong> Мартин Клеппманн разобрал Redlock и сформулировал к нему три претензии (<a href="https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html" data-tip="Внешний сайт · martin.kleppmann.com
 https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html">How to do distributed locking</a>):</p>
 <ol>
 <li><strong>Нет fencing-токенов.</strong> Клиент может уйти в паузу из-за GC, page fault или вытеснения с CPU, блокировка за это время истечёт по TTL, её возьмёт другой клиент, и оба будут считать себя владельцами. Защищает от этого только монотонно растущий токен, который передаётся в хранилище, чтобы хранилище отвергало запись со старым токеном, а Redlock монотонных токенов не выдаёт.</li>
@@ -840,7 +840,7 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Jedis</th>
 <th>Lettuce</th>
 <th>Redisson</th>
@@ -848,31 +848,31 @@ EXPIRE rl:<span class="o">{</span>user42<span class="o">}</span>:1737460020 <spa
 </thead>
 <tbody>
 <tr>
-<td data-label="">Транспорт</td>
+<td data-label="Критерий">Транспорт</td>
 <td data-label="Jedis">блокирующие сокеты</td>
 <td data-label="Lettuce">Netty, неблокирующий</td>
 <td data-label="Redisson">Netty</td>
 </tr>
 <tr>
-<td data-label="">Потокобезопасность</td>
+<td data-label="Критерий">Потокобезопасность</td>
 <td data-label="Jedis">объект <code>Jedis</code> <strong>не</strong> потокобезопасен → пул</td>
 <td data-label="Lettuce">одно соединение разделяется потоками</td>
 <td data-label="Redisson">разделяемое соединение</td>
 </tr>
 <tr>
-<td data-label="">API</td>
+<td data-label="Критерий">API</td>
 <td data-label="Jedis">синхронный</td>
 <td data-label="Lettuce">sync / async (<code>RedisFuture</code>) / reactive (Reactor)</td>
 <td data-label="Redisson">высокоуровневые распределённые объекты</td>
 </tr>
 <tr>
-<td data-label="">Уровень</td>
+<td data-label="Критерий">Уровень</td>
 <td data-label="Jedis">«команды Redis 1:1»</td>
 <td data-label="Lettuce">«команды Redis 1:1»</td>
 <td data-label="Redisson">«java.util.concurrent поверх Redis»</td>
 </tr>
 <tr>
-<td data-label="">Топологии</td>
+<td data-label="Критерий">Топологии</td>
 <td data-label="Jedis">standalone, sentinel, cluster</td>
 <td data-label="Lettuce">standalone, sentinel, cluster, master-replica</td>
 <td data-label="Redisson">+ replicated, proxy, multi-cluster</td>
@@ -939,34 +939,34 @@ https://github.com/redis/redis">redis/redis на GitHub</a>). В ответ на
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Embedding (вложить)</th>
 <th>Referencing (ссылка)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Чтение</td>
+<td data-label="Критерий">Чтение</td>
 <td data-label="Embedding (вложить)">одно обращение, всё вместе</td>
 <td data-label="Referencing (ссылка)">нужен <code>$lookup</code> или второй запрос</td>
 </tr>
 <tr>
-<td data-label="">Запись</td>
+<td data-label="Критерий">Запись</td>
 <td data-label="Embedding (вложить)">атомарна в пределах документа</td>
 <td data-label="Referencing (ссылка)">нужны транзакции или согласованность «потом»</td>
 </tr>
 <tr>
-<td data-label="">Рост</td>
+<td data-label="Критерий">Рост</td>
 <td data-label="Embedding (вложить)">ограничен 16 МБ на документ</td>
 <td data-label="Referencing (ссылка)">не ограничен</td>
 </tr>
 <tr>
-<td data-label="">Дубли</td>
+<td data-label="Критерий">Дубли</td>
 <td data-label="Embedding (вложить)">данные копируются, обновление в N мест</td>
 <td data-label="Referencing (ссылка)">одна копия</td>
 </tr>
 <tr>
-<td data-label="">Когда</td>
+<td data-label="Критерий">Когда</td>
 <td data-label="Embedding (вложить)">отношение «один-к-немногим», читается вместе, меняется вместе</td>
 <td data-label="Referencing (ссылка)">«один-ко-многим/многим-ко-многим», независимая жизнь, безграничный рост</td>
 </tr>
@@ -1289,7 +1289,7 @@ https://www.tarantool.io/en/doc/latest/concepts/engines/memtx/">Tarantool docs: 
 <tr>
 <th>Тип индекса</th>
 <th>Структура</th>
-<th>Что умеет</th>
+<th>Возможности</th>
 <th>Порядок расхода памяти</th>
 </tr>
 </thead>
@@ -1297,25 +1297,25 @@ https://www.tarantool.io/en/doc/latest/concepts/engines/memtx/">Tarantool docs: 
 <tr>
 <td data-label="Тип индекса"><code>TREE</code></td>
 <td data-label="Структура">B+*-дерево</td>
-<td data-label="Что умеет">равенство, диапазоны, сортировка, итерация <code>GT/GE/LT/LE</code>, частичный ключ</td>
+<td data-label="Возможности">равенство, диапазоны, сортировка, итерация <code>GT/GE/LT/LE</code>, частичный ключ</td>
 <td data-label="Порядок расхода памяти">~ десятки байт на кортеж на индекс</td>
 </tr>
 <tr>
 <td data-label="Тип индекса"><code>HASH</code></td>
 <td data-label="Структура">открытая хеш-таблица</td>
-<td data-label="Что умеет"><strong>только</strong> полное равенство по всем частям ключа; всегда уникален</td>
+<td data-label="Возможности"><strong>только</strong> полное равенство по всем частям ключа; всегда уникален</td>
 <td data-label="Порядок расхода памяти">меньше TREE, быстрее на точечном доступе</td>
 </tr>
 <tr>
 <td data-label="Тип индекса"><code>BITSET</code></td>
 <td data-label="Структура">битовые маски</td>
-<td data-label="Что умеет">поиск по подмножеству битов (<code>ANY_SET</code>, <code>ALL_SET</code>)</td>
+<td data-label="Возможности">поиск по подмножеству битов (<code>ANY_SET</code>, <code>ALL_SET</code>)</td>
 <td data-label="Порядок расхода памяти">зависит от плотности масок</td>
 </tr>
 <tr>
 <td data-label="Тип индекса"><code>RTREE</code></td>
 <td data-label="Структура">R-дерево</td>
-<td data-label="Что умеет">пространственные запросы (<code>NEIGHBOR</code>, <code>OVERLAPS</code>)</td>
+<td data-label="Возможности">пространственные запросы (<code>NEIGHBOR</code>, <code>OVERLAPS</code>)</td>
 <td data-label="Порядок расхода памяти">дороже TREE</td>
 </tr>
 </tbody>
@@ -1486,41 +1486,41 @@ https://www.tarantool.io/en/doc/latest/concepts/sharding/vshard_admin/">Tarantoo
 <table class="rt">
 <thead>
 <tr>
-<th>Что</th>
-<th>Как ведёт себя</th>
-<th>Что делать</th>
+<th>Предмет</th>
+<th>Поведение</th>
+<th>Решение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="Что">Целые числа</td>
-<td data-label="Как ведёт себя">Lua-число — double; целые за пределами 2^53 теряют точность при неаккуратной обработке</td>
-<td data-label="Что делать">явно использовать <code>unsigned</code>/<code>integer</code> в формате спейса, в Java — <code>Long</code>, не <code>Double</code></td>
+<td data-label="Предмет">Целые числа</td>
+<td data-label="Поведение">Lua-число — double; целые за пределами 2^53 теряют точность при неаккуратной обработке</td>
+<td data-label="Решение">явно использовать <code>unsigned</code>/<code>integer</code> в формате спейса, в Java — <code>Long</code>, не <code>Double</code></td>
 </tr>
 <tr>
-<td data-label="Что"><code>nil</code> в середине списка</td>
-<td data-label="Как ведёт себя">в Lua таблица с <code>nil</code> обрывается — аргументы после <code>nil</code> «исчезают»</td>
-<td data-label="Что делать">вместо <code>nil</code> передавать <code>box.NULL</code> (в Java — <code>null</code> внутри <code>List</code>, драйвер маппит его в <code>msgpack nil</code>)</td>
+<td data-label="Предмет"><code>nil</code> в середине списка</td>
+<td data-label="Поведение">в Lua таблица с <code>nil</code> обрывается — аргументы после <code>nil</code> «исчезают»</td>
+<td data-label="Решение">вместо <code>nil</code> передавать <code>box.NULL</code> (в Java — <code>null</code> внутри <code>List</code>, драйвер маппит его в <code>msgpack nil</code>)</td>
 </tr>
 <tr>
-<td data-label="Что">Отсутствующее поле vs NULL</td>
-<td data-label="Как ведёт себя"><code>nil</code> (нет поля) и <code>box.NULL</code> (поле есть, значение пустое) — разные вещи</td>
-<td data-label="Что делать">договориться на уровне контракта хранимки и проверять <code>== box.NULL</code></td>
+<td data-label="Предмет">Отсутствующее поле vs NULL</td>
+<td data-label="Поведение"><code>nil</code> (нет поля) и <code>box.NULL</code> (поле есть, значение пустое) — разные вещи</td>
+<td data-label="Решение">договориться на уровне контракта хранимки и проверять <code>== box.NULL</code></td>
 </tr>
 <tr>
-<td data-label="Что">Дробные деньги</td>
-<td data-label="Как ведёт себя"><code>double</code> в MsgPack — потеря точности</td>
-<td data-label="Что делать">хранить копейки как целое; либо <code>decimal</code> (Tarantool 2.3+) и <code>BigDecimal</code> на стороне Java (глава <a href="04-time-money-text.html" data-tip="4. Время, деньги и текст">04</a>, <a href="04-time-money-text.html" data-tip="4. Время, деньги и текст"><code>04-time-money-text.md</code></a>)</td>
+<td data-label="Предмет">Дробные деньги</td>
+<td data-label="Поведение"><code>double</code> в MsgPack — потеря точности</td>
+<td data-label="Решение">хранить копейки как целое; либо <code>decimal</code> (Tarantool 2.3+) и <code>BigDecimal</code> на стороне Java (глава <a href="04-time-money-text.html" data-tip="4. Время, деньги и текст">04</a>, <a href="04-time-money-text.html" data-tip="4. Время, деньги и текст"><code>04-time-money-text.md</code></a>)</td>
 </tr>
 <tr>
-<td data-label="Что">Дата/время</td>
-<td data-label="Как ведёт себя">нет типа «дата» в старых версиях; <code>datetime</code> появился в 2.10</td>
-<td data-label="Что делать">хранить epoch-миллисекунды как <code>unsigned</code>, либо использовать <code>datetime</code> и проверить поддержку в версии драйвера</td>
+<td data-label="Предмет">Дата/время</td>
+<td data-label="Поведение">нет типа «дата» в старых версиях; <code>datetime</code> появился в 2.10</td>
+<td data-label="Решение">хранить epoch-миллисекунды как <code>unsigned</code>, либо использовать <code>datetime</code> и проверить поддержку в версии драйвера</td>
 </tr>
 <tr>
-<td data-label="Что">UUID</td>
-<td data-label="Как ведёт себя">есть тип <code>uuid</code> (2.4+), но не все версии драйвера мапят его прозрачно</td>
-<td data-label="Что делать">проверить round-trip тестом, иначе получишь строку вместо UUID</td>
+<td data-label="Предмет">UUID</td>
+<td data-label="Поведение">есть тип <code>uuid</code> (2.4+), но не все версии драйвера мапят его прозрачно</td>
+<td data-label="Решение">проверить round-trip тестом, иначе получишь строку вместо UUID</td>
 </tr>
 </tbody>
 </table>
@@ -1542,7 +1542,7 @@ https://www.tarantool.io/en/doc/latest/concepts/sharding/vshard_admin/">Tarantoo
 <p><strong>Ошибки.</strong> Драйвер отдаёт ошибки сервера как исключения с кодом Tarantool: <code>ER_READONLY</code> означает, что узел стал репликой, <code>ER_TUPLE_FOUND</code> — нарушение уникальности, <code>ER_MEMORY_ISSUE</code> — кончилась арена, а <code>ER_TRANSACTION_CONFLICT</code> — конфликт MVCC. Повторять запрос имеет смысл только при <code>ER_READONLY</code> (после смены лидера), при таймаутах и при конфликтах MVCC, а повторять его при <code>ER_MEMORY_ISSUE</code> бессмысленно и даже вредно.</p>
 <h3 id="1016-банковская-витрина-данных-на-tarantool">10.16 Банковская витрина данных на Tarantool</h3>
 <p>Типовой сценарий, ради которого Tarantool обычно и появляется в банке, выглядит так: есть десяток систем-источников (АБС, CRM, скоринг, справочники, МДМ) и есть канал, которому нужен агрегированный профиль клиента за единицы миллисекунд при десятках тысяч запросов в секунду. Ходить в источники по цепочке нельзя, потому что суммарная латентность и связность получаются неприемлемыми, и поэтому строят <strong>витрину</strong>, то есть денормализованный агрегат в памяти, который читается за один вызов. Ниже разобрано, как витрину наливают, как перезаливают без даунтайма и как держат её согласованной с источниками.</p>
-<p><strong>Как наливают.</strong> Потоков налива два, и нужны оба.</p>
+<p><strong>Наполнение.</strong> Потоков налива два, и нужны оба.</p>
 <ol>
 <li><strong>Инкрементальный поток</strong> приходит через CDC из источников (Debezium → Kafka → потребитель → Tarantool) или напрямую событиями от систем. Потребитель вызывает хранимку <code>upsert_profile(client_id, part, payload, source_lsn)</code>, которая обновляет <strong>свою часть</strong> профиля и не трогает чужие. Главное требование здесь — <strong>идемпотентность</strong>: каждое сообщение несёт версию или LSN источника, и хранимка применяет его, только если версия больше уже сохранённой. Это защищает и от повторной доставки, ведь Kafka даёт at-least-once, и от переупорядочивания сообщений. Так выглядит сама хранимка:</li>
 </ol>
@@ -1563,7 +1563,7 @@ https://www.tarantool.io/en/doc/latest/concepts/sharding/vshard_admin/">Tarantoo
 <ol start="2">
 <li><strong>Полный перезалив (reload)</strong> — процедура, которая собирает витрину с нуля из источников. Она нужна не для удобства, а как условие эксплуатации: витрина обязана быть <strong>производной</strong>, то есть восстановимой, и если перезалить её невозможно, вы построили не витрину, а второй источник истины со всеми вытекающими последствиями (та же ошибка в Elasticsearch разобрана в §11.7).</li>
 </ol>
-<p><strong>Как делают перезалив без простоя.</strong> Приём здесь тот же, что с псевдонимами (<em>aliases</em>) в Elasticsearch: данные пишут в теневой спейс, а затем атомарно переключаются на него. Последовательность шагов показана в комментариях к коду.</p>
+<p><strong>Перезалив без простоя.</strong> Приём здесь тот же, что с псевдонимами (<em>aliases</em>) в Elasticsearch: данные пишут в теневой спейс, а затем атомарно переключаются на него. Последовательность шагов показана в комментариях к коду.</p>
 <div class="hl" data-lang="Lua"><div class="hl-bar"><span>Lua</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">-- 1. создать теневой спейс с той же схемой и индексами</span>
 <span class="c1">-- 2. залить в него полный срез (батчами, с yield)</span>
 <span class="c1">-- 3. атомарно переключить "активный" указатель</span>
@@ -1577,7 +1577,7 @@ https://www.tarantool.io/en/doc/latest/concepts/sharding/vshard_admin/">Tarantoo
 </code></pre></div>
 
 <p>Цену этого приёма нужно знать заранее: в момент перезалива в памяти живут <strong>две копии</strong> данных, поэтому арену приходится планировать с запасом ×2 или лить перезалив на отдельный набор узлов и переключать трафик на уровне роутеров.</p>
-<p><strong>Как держат согласованность с источником.</strong> Асинхронная витрина всегда отстаёт, так что вопрос не в том, «как не отстать», а в том, как понять, что расхождение вышло за допустимые пределы. На практике работает такой набор мер:</p>
+<p><strong>Согласованность с источником.</strong> Асинхронная витрина всегда отстаёт, так что вопрос не в том, «как не отстать», а в том, как понять, что расхождение вышло за допустимые пределы. На практике работает такой набор мер:</p>
 <ul>
 <li><strong>Версия и лаг на каждой записи.</strong> В каждой части профиля хранятся поля <code>src_version</code> и <code>updated_at</code>, по ним строят метрику «максимальный возраст записи по каждому источнику» и ставят на неё оповещение.</li>
 <li><strong>Регулярная сверка (reconciliation).</strong> Раз в сутки сверяют контрольные суммы по срезам: источник считает <code>count</code> и агрегат (например, хеш от отсортированных <code>(id, version)</code>) по диапазонам ключей, витрина считает то же самое, расхождения выгружаются в отчёт и доливаются точечно. Это дешевле полного перезалива и ловит «тихие» потери.</li>
@@ -1691,34 +1691,34 @@ https://www.elastic.co/docs/manage-data/data-store/near-real-time-search">Elasti
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th><code>text</code></th>
 <th><code>keyword</code></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Анализируется</td>
+<td data-label="Критерий">Анализируется</td>
 <td data-label="text">да, разбивается на термы</td>
 <td data-label="keyword">нет, целиком одно значение</td>
 </tr>
 <tr>
-<td data-label="">Полнотекст (<code>match</code>)</td>
+<td data-label="Критерий">Полнотекст (<code>match</code>)</td>
 <td data-label="text">да</td>
 <td data-label="keyword">по сути нет</td>
 </tr>
 <tr>
-<td data-label="">Точное совпадение (<code>term</code>)</td>
+<td data-label="Критерий">Точное совпадение (<code>term</code>)</td>
 <td data-label="text">почти никогда не работает как ожидаешь</td>
 <td data-label="keyword">да</td>
 </tr>
 <tr>
-<td data-label="">Сортировка, агрегации</td>
+<td data-label="Критерий">Сортировка, агрегации</td>
 <td data-label="text">нет (нужен fielddata — опасно)</td>
 <td data-label="keyword">да</td>
 </tr>
 <tr>
-<td data-label="">Применение</td>
+<td data-label="Критерий">Применение</td>
 <td data-label="text">описания, комментарии, тела писем</td>
 <td data-label="keyword">id, email, hostname, статусы, теги</td>
 </tr>
@@ -1847,45 +1847,45 @@ memtable переполнилась / по таймеру → flush → SSTable 
 <thead>
 <tr>
 <th>Стратегия</th>
-<th>Как сливает</th>
+<th>Слияние</th>
 <th>Read amp</th>
 <th>Write amp</th>
 <th>Space amp</th>
-<th>Когда брать</th>
+<th>Применение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Стратегия"><strong>STCS</strong> (size-tiered)</td>
-<td data-label="Как сливает">копит SSTable похожего размера (по умолчанию 4 штуки) и сливает в один большой</td>
+<td data-label="Слияние">копит SSTable похожего размера (по умолчанию 4 штуки) и сливает в один большой</td>
 <td data-label="Read amp">высокая: строка может лежать во многих SSTable</td>
 <td data-label="Write amp">низкая</td>
 <td data-label="Space amp">высокая: во время слияния нужно место под результат, до ~2×</td>
-<td data-label="Когда брать">запись доминирует, чтения по свежим данным</td>
+<td data-label="Применение">запись доминирует, чтения по свежим данным</td>
 </tr>
 <tr>
 <td data-label="Стратегия"><strong>LCS</strong> (leveled)</td>
-<td data-label="Как сливает">уровни, каждый в 10× больше предыдущего (<code>fanout_size 10</code>), SSTable по 160 МБ, внутри уровня диапазоны не пересекаются</td>
+<td data-label="Слияние">уровни, каждый в 10× больше предыдущего (<code>fanout_size 10</code>), SSTable по 160 МБ, внутри уровня диапазоны не пересекаются</td>
 <td data-label="Read amp">низкая: <strong>не более одного SSTable на уровень</strong></td>
 <td data-label="Write amp">высокая: строка переписывается при каждом подъёме уровня</td>
 <td data-label="Space amp">низкая, порядка 10% диска</td>
-<td data-label="Когда брать">чтения доминируют, много перезаписей одних и тех же строк</td>
+<td data-label="Применение">чтения доминируют, много перезаписей одних и тех же строк</td>
 </tr>
 <tr>
 <td data-label="Стратегия"><strong>TWCS</strong> (time window)</td>
-<td data-label="Как сливает">группирует SSTable по временным окнам, внутри окна STCS, между окнами не сливает</td>
+<td data-label="Слияние">группирует SSTable по временным окнам, внутри окна STCS, между окнами не сливает</td>
 <td data-label="Read amp">зависит от числа окон в запросе</td>
 <td data-label="Write amp">низкая</td>
 <td data-label="Space amp">низкая</td>
-<td data-label="Когда брать">ряды с TTL: целое окно удаляется файлом целиком</td>
+<td data-label="Применение">ряды с TTL: целое окно удаляется файлом целиком</td>
 </tr>
 <tr>
 <td data-label="Стратегия"><strong>UCS</strong> (unified)</td>
-<td data-label="Как сливает">параметризованная схема, покрывающая поведение STCS и LCS одним семейством настроек</td>
+<td data-label="Слияние">параметризованная схема, покрывающая поведение STCS и LCS одним семейством настроек</td>
 <td data-label="Read amp">настраивается</td>
 <td data-label="Write amp">настраивается</td>
 <td data-label="Space amp">настраивается</td>
-<td data-label="Когда брать">рекомендуется как стратегия по умолчанию для большинства нагрузок в актуальных версиях</td>
+<td data-label="Применение">рекомендуется как стратегия по умолчанию для большинства нагрузок в актуальных версиях</td>
 </tr>
 </tbody>
 </table>
@@ -1991,7 +1991,7 @@ https://cassandra.apache.org/doc/latest/cassandra/developing/cql/ddl.html">Cassa
 <h3 id="123-time-series">12.3 Time-series</h3>
 <p>Хранилища временных рядов опираются на общие свойства таких данных: время монотонно растёт, ряды хорошо сжимаются (delta-of-delta для меток времени и XOR для значений по схеме Gorilla), запись идёт «в хвост», а чтение — диапазонами. <strong>TimescaleDB</strong> работает расширением PostgreSQL с гипертаблицами, сжатием и continuous aggregates, и в этом её главный плюс: вы остаётесь в SQL и в своей экосистеме. <strong>Prometheus TSDB</strong> — локальное хранилище мониторинга, не предназначенное для долгого хранения, а долгосрочное хранение закрывают <strong>VictoriaMetrics</strong>/<strong>Thanos</strong>/<strong>Mimir</strong>, и подробно они разобраны в главе <a href="51-observability.html" data-tip="51. Observability">51</a> (<a href="51-observability.html" data-tip="51. Observability"><code>51-observability.md</code></a>). Если же ряды продуктовые, а не мониторинговые, первыми кандидатами стоит рассматривать TimescaleDB или партиционированную по времени таблицу с BRIN-индексом (глава <a href="17-postgresql-internals.html" data-tip="17. PostgreSQL изнутри">17</a>, <a href="17-postgresql-internals.html" data-tip="17. PostgreSQL изнутри"><code>17-postgresql-internals.md</code></a>).</p>
 <hr>
-<h2 id="13-как-выбирать-хранилище">13. Как выбирать хранилище</h2>
+<h2 id="13-выбор-хранилища">13. Выбор хранилища</h2>
 <p>Выбор хранилища — это решение, которое потом годами обходится команде в эксплуатацию, бэкапы, экспертизу и сверку данных, поэтому принимать его стоит по измеренным ограничениям, а не по ощущению, что реляционная база «не потянет». Этот раздел сводит всё, что было разобрано выше, в практический инструмент: сначала список вопросов, на которые нужно ответить до выбора, затем сводные таблицы соответствия задач и хранилищ, правило «сначала PostgreSQL» и цена, которую платят за каждое новое хранилище. В конце разобраны типовые траектории, когда NoSQL берут по инерции и потом возвращаются обратно, и то, как рассказывать об этом на интервью.</p>
 <h3 id="131-критерии-выбора-хранилища">13.1 Критерии выбора хранилища</h3>
 <p>Прежде чем сравнивать продукты, нужно сформулировать требования так, чтобы по ним можно было проверить любого кандидата. Ниже семь вопросов, от объёма и профиля нагрузки до эксплуатации и восстановления, и если хотя бы на один из них нет ответа, выбирать хранилище ещё рано: сравнение продуктов без этих ответов сводится к обмену мнениями.</p>
@@ -2012,7 +2012,7 @@ https://cassandra.apache.org/doc/latest/cassandra/developing/cql/ddl.html">Cassa
 <th>Задача</th>
 <th>Первый выбор</th>
 <th>Альтернатива</th>
-<th>Чего не делать</th>
+<th>Запрещено</th>
 </tr>
 </thead>
 <tbody>
@@ -2020,91 +2020,91 @@ https://cassandra.apache.org/doc/latest/cassandra/developing/cql/ddl.html">Cassa
 <td data-label="Задача">Транзакционные данные, деньги, справочники</td>
 <td data-label="Первый выбор">PostgreSQL</td>
 <td data-label="Альтернатива">—</td>
-<td data-label="Чего не делать">Mongo, Redis, ES</td>
+<td data-label="Запрещено">Mongo, Redis, ES</td>
 </tr>
 <tr>
 <td data-label="Задача">Кеш горячих данных</td>
 <td data-label="Первый выбор">Redis/Valkey (<code>allkeys-lru</code>)</td>
 <td data-label="Альтернатива">Caffeine локально (гл. 23)</td>
-<td data-label="Чего не делать">ставить <code>noeviction</code> и ждать OOM</td>
+<td data-label="Запрещено">ставить <code>noeviction</code> и ждать OOM</td>
 </tr>
 <tr>
 <td data-label="Задача">Сессии</td>
 <td data-label="Первый выбор">Redis (<code>noeviction</code>, AOF)</td>
 <td data-label="Альтернатива">PostgreSQL при малом объёме</td>
-<td data-label="Чего не делать">Redis без persistence и без плана «что если упал»</td>
+<td data-label="Запрещено">Redis без persistence и без плана «что если упал»</td>
 </tr>
 <tr>
 <td data-label="Задача">Распределённая блокировка «для эффективности»</td>
 <td data-label="Первый выбор">Redis <code>SET NX PX</code> + токен</td>
 <td data-label="Альтернатива">advisory lock в PostgreSQL</td>
-<td data-label="Чего не делать">считать это гарантией корректности</td>
+<td data-label="Запрещено">считать это гарантией корректности</td>
 </tr>
 <tr>
 <td data-label="Задача">Блокировка «для корректности»</td>
 <td data-label="Первый выбор">транзакция и уникальный индекс в БД</td>
 <td data-label="Альтернатива">etcd/ZooKeeper + fencing</td>
-<td data-label="Чего не делать">Redlock</td>
+<td data-label="Запрещено">Redlock</td>
 </tr>
 <tr>
 <td data-label="Задача">Rate limiting</td>
 <td data-label="Первый выбор">Redis + Lua (token bucket)</td>
 <td data-label="Альтернатива">локальный лимитер (гл. 35)</td>
-<td data-label="Чего не делать">считать без атомарности</td>
+<td data-label="Запрещено">считать без атомарности</td>
 </tr>
 <tr>
 <td data-label="Задача">Очередь задач</td>
 <td data-label="Первый выбор">PostgreSQL <code>SKIP LOCKED</code> (до тысяч/с)</td>
 <td data-label="Альтернатива">Redis Streams, RabbitMQ, Kafka</td>
-<td data-label="Чего не делать"><code>LPUSH</code>+<code>BRPOP</code> там, где нельзя терять</td>
+<td data-label="Запрещено"><code>LPUSH</code>+<code>BRPOP</code> там, где нельзя терять</td>
 </tr>
 <tr>
 <td data-label="Задача">Событийный лог, интеграция сервисов</td>
 <td data-label="Первый выбор">Kafka (гл. 29)</td>
 <td data-label="Альтернатива">Redis Streams при малом объёме</td>
-<td data-label="Чего не делать">pub/sub Redis</td>
+<td data-label="Запрещено">pub/sub Redis</td>
 </tr>
 <tr>
 <td data-label="Задача">Полнотекстовый поиск, фасеты</td>
 <td data-label="Первый выбор">Elasticsearch/OpenSearch</td>
 <td data-label="Альтернатива">PostgreSQL FTS при простых требованиях</td>
-<td data-label="Чего не делать">делать ES источником истины</td>
+<td data-label="Запрещено">делать ES источником истины</td>
 </tr>
 <tr>
 <td data-label="Задача">Каталог с разнородными атрибутами</td>
 <td data-label="Первый выбор">PostgreSQL <code>jsonb</code> + GIN</td>
 <td data-label="Альтернатива">MongoDB</td>
-<td data-label="Чего не делать">Mongo «потому что JSON»</td>
+<td data-label="Запрещено">Mongo «потому что JSON»</td>
 </tr>
 <tr>
 <td data-label="Задача">Огромный поток записи, гео-распределение</td>
 <td data-label="Первый выбор">Cassandra/ScyllaDB</td>
 <td data-label="Альтернатива">—</td>
-<td data-label="Чего не делать">Cassandra на 100 ГБ данных</td>
+<td data-label="Запрещено">Cassandra на 100 ГБ данных</td>
 </tr>
 <tr>
 <td data-label="Задача">Аналитика и отчёты</td>
 <td data-label="Первый выбор">ClickHouse</td>
 <td data-label="Альтернатива">PostgreSQL + партиционирование</td>
-<td data-label="Чего не делать">OLAP-запросы на OLTP-базе</td>
+<td data-label="Запрещено">OLAP-запросы на OLTP-базе</td>
 </tr>
 <tr>
 <td data-label="Задача">Метрики и ряды</td>
 <td data-label="Первый выбор">Prometheus/VictoriaMetrics (гл. 51)</td>
 <td data-label="Альтернатива">TimescaleDB</td>
-<td data-label="Чего не делать">хранить метрики в основной БД</td>
+<td data-label="Запрещено">хранить метрики в основной БД</td>
 </tr>
 <tr>
 <td data-label="Задача">Витрина с латентностью в мс и логикой</td>
 <td data-label="Первый выбор">Tarantool</td>
 <td data-label="Альтернатива">Redis + сервис</td>
-<td data-label="Чего не делать">Tarantool без команды, которая его знает</td>
+<td data-label="Запрещено">Tarantool без команды, которая его знает</td>
 </tr>
 <tr>
 <td data-label="Задача">Граф связей, обходы 3+ уровней</td>
 <td data-label="Первый выбор">Neo4j</td>
 <td data-label="Альтернатива">рекурсивный CTE в PostgreSQL (гл. 20)</td>
-<td data-label="Чего не делать">эмулировать обход N+1 запросами</td>
+<td data-label="Запрещено">эмулировать обход N+1 запросами</td>
 </tr>
 </tbody>
 </table>
@@ -2122,58 +2122,58 @@ https://cassandra.apache.org/doc/latest/cassandra/developing/cql/ddl.html">Cassa
 <tr>
 <th>Форма задачи</th>
 <th>Ложится на</th>
-<th>Почему</th>
-<th>Где ломается</th>
+<th>Объяснение</th>
+<th>Слабое место</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Форма задачи">Доступ строго по известному ключу, значение непрозрачно</td>
 <td data-label="Ложится на">key-value</td>
-<td data-label="Почему">нет индексов, нет накладных расходов, O(1)</td>
-<td data-label="Где ломается">любой запрос «найди по полю»</td>
+<td data-label="Объяснение">нет индексов, нет накладных расходов, O(1)</td>
+<td data-label="Слабое место">любой запрос «найди по полю»</td>
 </tr>
 <tr>
 <td data-label="Форма задачи">Агрегат, читаемый и пишущийся целиком, гибкие атрибуты</td>
 <td data-label="Ложится на">документная</td>
-<td data-label="Почему">один round-trip, частичные обновления, индексы по вложенным полям</td>
-<td data-label="Где ломается">связи между агрегатами, транзакции поперёк документов</td>
+<td data-label="Объяснение">один round-trip, частичные обновления, индексы по вложенным полям</td>
+<td data-label="Слабое место">связи между агрегатами, транзакции поперёк документов</td>
 </tr>
 <tr>
 <td data-label="Форма задачи">Известный набор запросов, гигантский поток записи, гео</td>
 <td data-label="Ложится на">wide-column</td>
-<td data-label="Почему">линейная запись, тюнингуемая согласованность</td>
-<td data-label="Где ломается">ad-hoc запросы, удаления, агрегаты</td>
+<td data-label="Объяснение">линейная запись, тюнингуемая согласованность</td>
+<td data-label="Слабое место">ad-hoc запросы, удаления, агрегаты</td>
 </tr>
 <tr>
 <td data-label="Форма задачи">Обходы связей переменной глубины</td>
 <td data-label="Ложится на">графовая</td>
-<td data-label="Почему">обход — константа на шаг вместо join на каждый уровень</td>
-<td data-label="Где ломается">шардирование графа, объём</td>
+<td data-label="Объяснение">обход — константа на шаг вместо join на каждый уровень</td>
+<td data-label="Слабое место">шардирование графа, объём</td>
 </tr>
 <tr>
 <td data-label="Форма задачи">Полнотекст, фасеты, релевантность</td>
 <td data-label="Ложится на">поисковая</td>
-<td data-label="Почему">инвертированный индекс, скоринг, агрегации</td>
-<td data-label="Где ломается">роль источника истины, транзакции</td>
+<td data-label="Объяснение">инвертированный индекс, скоринг, агрегации</td>
+<td data-label="Слабое место">роль источника истины, транзакции</td>
 </tr>
 <tr>
 <td data-label="Форма задачи">Ряды «время → значение», агрегаты по окнам</td>
 <td data-label="Ложится на">time-series</td>
-<td data-label="Почему">сжатие рядов, downsampling, retention</td>
-<td data-label="Где ломается">произвольные связи</td>
+<td data-label="Объяснение">сжатие рядов, downsampling, retention</td>
+<td data-label="Слабое место">произвольные связи</td>
 </tr>
 <tr>
 <td data-label="Форма задачи">Сложные аналитические агрегаты по миллиардам строк</td>
 <td data-label="Ложится на">колоночная</td>
-<td data-label="Почему">читаются только нужные колонки, векторизация</td>
-<td data-label="Где ломается">точечные обновления, OLTP</td>
+<td data-label="Объяснение">читаются только нужные колонки, векторизация</td>
+<td data-label="Слабое место">точечные обновления, OLTP</td>
 </tr>
 <tr>
 <td data-label="Форма задачи">Всё остальное, особенно с инвариантами между сущностями</td>
 <td data-label="Ложится на">реляционная</td>
-<td data-label="Почему">транзакции, целостность, планировщик, ad-hoc</td>
-<td data-label="Где ломается">экстремальные латентность и объём</td>
+<td data-label="Объяснение">транзакции, целостность, планировщик, ad-hoc</td>
+<td data-label="Слабое место">экстремальные латентность и объём</td>
 </tr>
 </tbody>
 </table>
@@ -2182,37 +2182,37 @@ https://cassandra.apache.org/doc/latest/cassandra/developing/cql/ddl.html">Cassa
 <thead>
 <tr>
 <th>Признак в требованиях</th>
-<th>Что отпадает</th>
+<th>Отпадает</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Признак в требованиях">«Деньги/проводки/остатки»</td>
-<td data-label="Что отпадает">всё, где нет честных транзакций: Redis, ES, ClickHouse, Cassandra без LWT</td>
+<td data-label="Отпадает">всё, где нет честных транзакций: Redis, ES, ClickHouse, Cassandra без LWT</td>
 </tr>
 <tr>
 <td data-label="Признак в требованиях">«Отчёты по произвольным срезам»</td>
-<td data-label="Что отпадает">Cassandra, Redis, Tarantool</td>
+<td data-label="Отпадает">Cassandra, Redis, Tarantool</td>
 </tr>
 <tr>
 <td data-label="Признак в требованиях">«Данные должны пережить падение узла без потерь»</td>
-<td data-label="Что отпадает">Redis с настройками по умолчанию, любой кеш</td>
+<td data-label="Отпадает">Redis с настройками по умолчанию, любой кеш</td>
 </tr>
 <tr>
 <td data-label="Признак в требованиях">«Схема меняется каждую неделю»</td>
-<td data-label="Что отпадает">Cassandra (query-first дизайн — это фиксированные запросы), ES (смена типа = reindex)</td>
+<td data-label="Отпадает">Cassandra (query-first дизайн — это фиксированные запросы), ES (смена типа = reindex)</td>
 </tr>
 <tr>
 <td data-label="Признак в требованиях">«Нужен поиск по подстроке в середине»</td>
-<td data-label="Что отпадает">всё, кроме поисковых движков и trigram-индексов PostgreSQL</td>
+<td data-label="Отпадает">всё, кроме поисковых движков и trigram-индексов PostgreSQL</td>
 </tr>
 <tr>
 <td data-label="Признак в требованиях">«Объём 50 ТБ с ростом»</td>
-<td data-label="Что отпадает">одиночный PostgreSQL, memtx Tarantool</td>
+<td data-label="Отпадает">одиночный PostgreSQL, memtx Tarantool</td>
 </tr>
 <tr>
 <td data-label="Признак в требованиях">«Команда из четырёх человек, дежурства нет»</td>
-<td data-label="Что отпадает">всё, кроме managed-сервисов и того, что уже эксплуатируется</td>
+<td data-label="Отпадает">всё, кроме managed-сервисов и того, что уже эксплуатируется</td>
 </tr>
 </tbody>
 </table>
@@ -2693,8 +2693,8 @@ https://raw.githubusercontent.com/valkey-io/valkey/unstable/src/intset.h">intset
 https://raw.githubusercontent.com/redis/redis/unstable/src/config.c">config.c в исходниках Redis</a> — первичный источник о кодировках intset <code>INTSET_ENC_INT16/32/64</code> (2, 4 и 8 байт) и о встроенных порогах <code>hash-max-listpack-entries</code> 512, <code>list-max-listpack-size</code> −2, <code>set-max-intset-entries</code> 512, <code>set-max-listpack-entries</code> 128 (в <code>config.c</code> Valkey значения те же). Проверено: 2026-09-24.</li></ul><p class="img-credit">Иллюстрация в шапке: <a href="https://commons.wikimedia.org/wiki/File:Meadow-flower-poppy-wild-poppies_(24300179966).jpg" rel="noopener" data-tip="Внешний сайт · commons.wikimedia.org
 https://commons.wikimedia.org/wiki/File:Meadow-flower-poppy-wild-poppies_(24300179966).jpg">Полевые маки и травы на фоне летнего неба. www.Pixel.la Free Stock Photos, CC0</a></p>
 </article></main>
-<aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-классификация-по-модели-данных-и-по-способу-хранения">1. Классификация: по модели данных и по способу хранения</a></li><li><a href="#2-b-tree-и-lsm-tree">2. B-tree и LSM-tree</a></li><li><a href="#3-redis-модель-исполнения">3. Redis: модель исполнения</a></li><li><a href="#4-redis-внутреннее-устройство-структур-данных">4. Redis: внутреннее устройство структур данных</a></li><li><a href="#5-redis-память-ttl-и-вытеснение">5. Redis: память, TTL и вытеснение</a></li><li><a href="#6-redis-durability-репликация-и-топологии">6. Redis: durability, репликация и топологии</a></li><li><a href="#7-redis-атомарность-и-типовые-паттерны">7. Redis: атомарность и типовые паттерны</a></li><li><a href="#8-redis-из-java-клиенты-сериализация-эксплуатация">8. Redis из Java: клиенты, сериализация, эксплуатация</a></li><li><a href="#9-mongodb">9. MongoDB</a></li><li><a href="#10-tarantool">10. Tarantool</a></li><li><a href="#11-elasticsearch-и-opensearch">11. Elasticsearch и OpenSearch</a></li><li><a href="#12-cassandrascylladb-и-clickhouse">12. Cassandra/ScyllaDB и ClickHouse</a></li><li><a href="#13-как-выбирать-хранилище">13. Как выбирать хранилище</a></li><li><a href="#14-разобранные-инциденты">14. Разобранные инциденты</a></li><li><a href="#15-ошибки-и-антипаттерны">15. Ошибки и антипаттерны</a></li><li><a href="#16-диагностика">16. Диагностика</a></li><li><a href="#17-вопросы-на-интервью">17. Вопросы на интервью</a></li><li><a href="#18-попробовать-руками">18. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
+<aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-классификация-по-модели-данных-и-по-способу-хранения">1. Классификация: по модели данных и по способу хранения</a></li><li><a href="#2-b-tree-и-lsm-tree">2. B-tree и LSM-tree</a></li><li><a href="#3-redis-модель-исполнения">3. Redis: модель исполнения</a></li><li><a href="#4-redis-внутреннее-устройство-структур-данных">4. Redis: внутреннее устройство структур данных</a></li><li><a href="#5-redis-память-ttl-и-вытеснение">5. Redis: память, TTL и вытеснение</a></li><li><a href="#6-redis-durability-репликация-и-топологии">6. Redis: durability, репликация и топологии</a></li><li><a href="#7-redis-атомарность-и-типовые-паттерны">7. Redis: атомарность и типовые паттерны</a></li><li><a href="#8-redis-из-java-клиенты-сериализация-эксплуатация">8. Redis из Java: клиенты, сериализация, эксплуатация</a></li><li><a href="#9-mongodb">9. MongoDB</a></li><li><a href="#10-tarantool">10. Tarantool</a></li><li><a href="#11-elasticsearch-и-opensearch">11. Elasticsearch и OpenSearch</a></li><li><a href="#12-cassandrascylladb-и-clickhouse">12. Cassandra/ScyllaDB и ClickHouse</a></li><li><a href="#13-выбор-хранилища">13. Выбор хранилища</a></li><li><a href="#14-разобранные-инциденты">14. Разобранные инциденты</a></li><li><a href="#15-ошибки-и-антипаттерны">15. Ошибки и антипаттерны</a></li><li><a href="#16-диагностика">16. Диагностика</a></li><li><a href="#17-вопросы-на-интервью">17. Вопросы на интервью</a></li><li><a href="#18-попробовать-руками">18. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

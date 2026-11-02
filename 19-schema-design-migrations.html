@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть IV. Базы данных</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/19.svg" width="48" height="48" alt="" loading="lazy">19. Проектирование схем и миграции</h1><div class="meta"><span class="part-tag">Часть IV. Базы данных</span><span>38 806 слов</span><span>≈ 3 ч 35 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/19.svg" width="48" height="48" alt="" loading="lazy">19. Проектирование схем и миграции</h1><div class="meta"><span class="part-tag">Часть IV. Базы данных</span><span>38 789 слов</span><span>≈ 3 ч 35 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>Схема базы данных живёт дольше любой другой части системы: код переписывают за квартал, а схему тащат за собой десятилетие. Поэтому ошибку в типе колонки — <code>double</code> под деньги, <code>timestamp</code> без часового пояса, UUIDv4 в роли первичного ключа на таблице в 500 млн строк — рефакторингом уже не исправить, её исправляют миграцией на живом проде под нагрузкой. Сама миграция, сделанная неаккуратно, превращается в <code>ALTER TABLE</code>, который встал в очередь за одним долгим <code>SELECT</code> и заблокировал всю таблицу на 40 минут, — классический способ уронить платёжный сервис в пятницу вечером. На интервью в финтехе эту тему спрашивают всегда, потому что один вопрос проверяет сразу три навыка: умение моделировать данные, знание внутренностей PostgreSQL и опыт эксплуатации.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">18 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-проектирование-таблиц-по-доменной-модели" data-tip="Раздел этой главы: 1. Проектирование таблиц по доменной модели">1. Проектирование таблиц по доменной модели</a></li><li><a href="#2-ключи" data-tip="Раздел этой главы: 2. Ключи">2. Ключи</a></li><li><a href="#3-типы-данных-postgresql" data-tip="Раздел этой главы: 3. Типы данных PostgreSQL">3. Типы данных PostgreSQL</a></li><li><a href="#4-null-и-трёхзначная-логика" data-tip="Раздел этой главы: 4. NULL и трёхзначная логика">4. NULL и трёхзначная логика</a></li><li><a href="#5-ограничения-целостности" data-tip="Раздел этой главы: 5. Ограничения целостности">5. Ограничения целостности</a></li><li><a href="#6-паттерны-хранения" data-tip="Раздел этой главы: 6. Паттерны хранения">6. Паттерны хранения</a></li><li><a href="#7-секционирование" data-tip="Раздел этой главы: 7. Секционирование">7. Секционирование</a></li><li><a href="#8-инструменты-миграций-liquibase-и-flyway" data-tip="Раздел этой главы: 8. Инструменты миграций: Liquibase и Flyway">8. Инструменты миграций: Liquibase и Flyway</a></li><li><a href="#9-zero-downtime-миграции-expand-migrate-contract" data-tip="Раздел этой главы: 9. Zero-downtime миграции: expand → migrate → contract">9. Zero-downtime миграции: expand → migrate → contract</a></li><li><a href="#10-ddl-и-очередь-блокировок" data-tip="Раздел этой главы: 10. DDL и очередь блокировок">10. DDL и очередь блокировок</a></li><li><a href="#11-миграции-данных-большого-объёма" data-tip="Раздел этой главы: 11. Миграции данных большого объёма">11. Миграции данных большого объёма</a></li><li><a href="#12-откат-и-тестирование-миграций" data-tip="Раздел этой главы: 12. Откат и тестирование миграций">12. Откат и тестирование миграций</a></li><li><a href="#13-разобранные-инциденты" data-tip="Раздел этой главы: 13. Разобранные инциденты">13. Разобранные инциденты</a></li><li><a href="#14-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 14. Ошибки и антипаттерны">14. Ошибки и антипаттерны</a></li><li><a href="#15-диагностика" data-tip="Раздел этой главы: 15. Диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью" data-tip="Раздел этой главы: 16. Вопросы на интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками" data-tip="Раздел этой главы: 17. Попробовать руками">17. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
@@ -619,22 +619,22 @@ https://www.postgresql.org/docs/17/ddl-constraints.html">Constraints</a>).</p>
 <table class="rt">
 <thead>
 <tr>
-<th>Кто пишет</th>
-<th>Как</th>
+<th>Автор</th>
+<th>Способ</th>
 <th>Плюсы</th>
 <th>Минусы</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="Кто пишет">БД, <code>DEFAULT now()</code> + триггер на update</td>
-<td data-label="Как"><code>created_at timestamptz NOT NULL DEFAULT now()</code></td>
+<td data-label="Автор">БД, <code>DEFAULT now()</code> + триггер на update</td>
+<td data-label="Способ"><code>created_at timestamptz NOT NULL DEFAULT now()</code></td>
 <td data-label="Плюсы">Единое время, работает для любого клиента</td>
 <td data-label="Минусы">Триггер на каждое обновление; <code>now()</code> = время начала транзакции</td>
 </tr>
 <tr>
-<td data-label="Кто пишет">Приложение (JPA <code>@CreatedDate</code>/<code>@LastModifiedDate</code>)</td>
-<td data-label="Как">Spring Data Auditing</td>
+<td data-label="Автор">Приложение (JPA <code>@CreatedDate</code>/<code>@LastModifiedDate</code>)</td>
+<td data-label="Способ">Spring Data Auditing</td>
 <td data-label="Плюсы">Нет триггеров, видно в сущности</td>
 <td data-label="Минусы">Расходится при разъезде часов на подах; обходится прямым SQL</td>
 </tr>
@@ -695,46 +695,46 @@ https://www.postgresql.org/docs/17/ddl-constraints.html">Constraints</a>).</p>
 <thead>
 <tr>
 <th>Тип</th>
-<th>Что делает</th>
-<th>Когда применять</th>
+<th>Действие</th>
+<th>Применение</th>
 <th>Цена</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Тип">SCD 0</td>
-<td data-label="Что делает">Значение фиксируется при создании и не меняется</td>
-<td data-label="Когда применять">Снимки в документах: цена в позиции заказа</td>
+<td data-label="Действие">Значение фиксируется при создании и не меняется</td>
+<td data-label="Применение">Снимки в документах: цена в позиции заказа</td>
 <td data-label="Цена">Нет истории изменений источника</td>
 </tr>
 <tr>
 <td data-label="Тип">SCD 1</td>
-<td data-label="Что делает">Перезапись на месте, история не хранится</td>
-<td data-label="Когда применять">Опечатки, технические поля, всё, где прошлое не нужно</td>
+<td data-label="Действие">Перезапись на месте, история не хранится</td>
+<td data-label="Применение">Опечатки, технические поля, всё, где прошлое не нужно</td>
 <td data-label="Цена">Прошлое утрачено безвозвратно</td>
 </tr>
 <tr>
 <td data-label="Тип">SCD 2</td>
-<td data-label="Что делает">Новая строка на каждое изменение + период действия</td>
-<td data-label="Когда применять">Ставки, тарифы, адреса, статусы контрагентов</td>
+<td data-label="Действие">Новая строка на каждое изменение + период действия</td>
+<td data-label="Применение">Ставки, тарифы, адреса, статусы контрагентов</td>
 <td data-label="Цена">Все запросы обрастают фильтром по периоду</td>
 </tr>
 <tr>
 <td data-label="Тип">SCD 3</td>
-<td data-label="Что делает">Колонка <code>previous_value</code> рядом с текущим</td>
-<td data-label="Когда применять">Нужно «предыдущее значение» и только оно</td>
+<td data-label="Действие">Колонка <code>previous_value</code> рядом с текущим</td>
+<td data-label="Применение">Нужно «предыдущее значение» и только оно</td>
 <td data-label="Цена">Глубина ровно 1</td>
 </tr>
 <tr>
 <td data-label="Тип">SCD 4</td>
-<td data-label="Что делает">Текущее — в основной таблице, история — в отдельной</td>
-<td data-label="Когда применять">Горячее чтение текущего + редкое чтение истории</td>
+<td data-label="Действие">Текущее — в основной таблице, история — в отдельной</td>
+<td data-label="Применение">Горячее чтение текущего + редкое чтение истории</td>
 <td data-label="Цена">Две таблицы, синхронизация</td>
 </tr>
 <tr>
 <td data-label="Тип">SCD 6</td>
-<td data-label="Что делает">Гибрид 1+2+3: в строке истории лежит и текущее значение</td>
-<td data-label="Когда применять">Отчётность «как было» и «как стало» в одном запросе</td>
+<td data-label="Действие">Гибрид 1+2+3: в строке истории лежит и текущее значение</td>
+<td data-label="Применение">Отчётность «как было» и «как стало» в одном запросе</td>
 <td data-label="Цена">Денормализация, обновление всех строк сущности</td>
 </tr>
 </tbody>
@@ -974,54 +974,54 @@ https://github.com/pgpartman/pg_partman">pg_partman</a>). Настройка д�
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Liquibase</th>
 <th>Flyway</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Журнал</td>
+<td data-label="Критерий">Журнал</td>
 <td data-label="Liquibase"><code>DATABASECHANGELOG</code></td>
 <td data-label="Flyway"><code>flyway_schema_history</code></td>
 </tr>
 <tr>
-<td data-label="">Блокировка</td>
+<td data-label="Критерий">Блокировка</td>
 <td data-label="Liquibase"><code>DATABASECHANGELOGLOCK</code> (таблица-флаг)</td>
 <td data-label="Flyway">блокировка на таблице истории / advisory lock</td>
 </tr>
 <tr>
-<td data-label="">Форматы</td>
+<td data-label="Критерий">Форматы</td>
 <td data-label="Liquibase">XML, YAML, JSON, SQL (formatted SQL)</td>
 <td data-label="Flyway">SQL, Java</td>
 </tr>
 <tr>
-<td data-label="">Единица</td>
+<td data-label="Критерий">Единица</td>
 <td data-label="Liquibase">changeset (<code>id</code> + <code>author</code> + путь файла)</td>
 <td data-label="Flyway">миграция с версией в имени файла</td>
 </tr>
 <tr>
-<td data-label="">Идентичность</td>
+<td data-label="Критерий">Идентичность</td>
 <td data-label="Liquibase"><code>author:id</code> + путь к changelog-файлу</td>
 <td data-label="Flyway">версия (<code>V1_2__desc.sql</code>)</td>
 </tr>
 <tr>
-<td data-label="">Повторный прогон при изменении</td>
+<td data-label="Критерий">Повторный прогон при изменении</td>
 <td data-label="Liquibase"><code>runOnChange</code>, <code>runAlways</code></td>
 <td data-label="Flyway">repeatable-миграции <code>R__*.sql</code></td>
 </tr>
 <tr>
-<td data-label="">Откат</td>
+<td data-label="Критерий">Откат</td>
 <td data-label="Liquibase"><code>rollback</code>-блок, частично автогенерируемый</td>
 <td data-label="Flyway"><code>U__*.sql</code> (undo), в платной редакции</td>
 </tr>
 <tr>
-<td data-label="">Условная логика</td>
+<td data-label="Критерий">Условная логика</td>
 <td data-label="Liquibase"><code>contexts</code>, <code>labels</code>, <code>preConditions</code>, <code>dbms</code></td>
 <td data-label="Flyway">placeholders, callbacks, конфигурация окружения</td>
 </tr>
 <tr>
-<td data-label="">Абстракция от диалекта</td>
+<td data-label="Критерий">Абстракция от диалекта</td>
 <td data-label="Liquibase">да (XML-теги → DDL под СУБД)</td>
 <td data-label="Flyway">нет, пишете SQL под свою СУБД</td>
 </tr>
@@ -1076,8 +1076,8 @@ https://documentation.red-gate.com/flyway/flyway-concepts/migrations">Flyway, Mi
 <p>Так вы получаете инфраструктуру Liquibase вместе с читаемостью Flyway, и на код-ревью видно ровно тот SQL, который уйдёт на прод.</p>
 <h3 id="85-хранение-ревью-и-генерация-миграций">8.5 Хранение, ревью и генерация миграций</h3>
 <p>Миграции — такой же код, как и всё остальное, и к ним применимы те же вопросы: где они лежат, кто и по какому списку их проверяет и можно ли их сгенерировать автоматически. Ответы на первые два вопроса простые, а на третий — отрицательный, и ниже разобрано, почему.</p>
-<p><strong>Где хранить.</strong> Миграции лежат в репозитории сервиса, которому принадлежит схема, в той же ветке и в том же PR, что и код. Отдельный «репозиторий миграций» гарантирует, что версии кода и схемы разойдутся.</p>
-<p><strong>Как проверять на ревью.</strong> У рецензента должен быть чек-лист из восьми вопросов:</p>
+<p><strong>Хранение.</strong> Миграции лежат в репозитории сервиса, которому принадлежит схема, в той же ветке и в том же PR, что и код. Отдельный «репозиторий миграций» гарантирует, что версии кода и схемы разойдутся.</p>
+<p><strong>Проверка на ревью.</strong> У рецензента должен быть чек-лист из восьми вопросов:</p>
 <ol>
 <li>Какие блокировки берёт каждый оператор и на какое время?</li>
 <li>Есть ли <code>SET lock_timeout</code> в начале?</li>
@@ -1088,7 +1088,7 @@ https://documentation.red-gate.com/flyway/flyway-concepts/migrations">Flyway, Mi
 <li>Есть ли backfill данных, и вынесен ли он из DDL-миграции?</li>
 <li>Оценено ли время выполнения на объёмах прода?</li>
 </ol>
-<p><strong>Почему не генерировать из сущностей.</strong> <code>hibernate.hbm2ddl.auto=update</code> и «сгенерируй diff по сущностям» дают DDL, корректный синтаксически, но опасный в эксплуатации. Генератор не знает ни про <code>CONCURRENTLY</code>, ни про <code>NOT VALID</code>, ни про порядок expand/contract, ни про backfill, ни про то, что колонку нельзя удалять одновременно с деплоем. К тому же его результат не воспроизводим, потому что зависит от текущего состояния базы, с которой снимали diff. Генерацию допустимо использовать только для <strong>черновика</strong>, который человек потом переписывает руками. На проде <code>hbm2ddl.auto</code> должен стоять в <code>validate</code> (или <code>none</code>), и <code>validate</code> здесь как раз полезен: он падает на старте, если схема разошлась с сущностями.</p>
+<p><strong>Против генерации из сущностей.</strong> <code>hibernate.hbm2ddl.auto=update</code> и «сгенерируй diff по сущностям» дают DDL, корректный синтаксически, но опасный в эксплуатации. Генератор не знает ни про <code>CONCURRENTLY</code>, ни про <code>NOT VALID</code>, ни про порядок expand/contract, ни про backfill, ни про то, что колонку нельзя удалять одновременно с деплоем. К тому же его результат не воспроизводим, потому что зависит от текущего состояния базы, с которой снимали diff. Генерацию допустимо использовать только для <strong>черновика</strong>, который человек потом переписывает руками. На проде <code>hbm2ddl.auto</code> должен стоять в <code>validate</code> (или <code>none</code>), и <code>validate</code> здесь как раз полезен: он падает на старте, если схема разошлась с сущностями.</p>
 <hr>
 <h3 id="86-контрольные-суммы-liquibase-и-их-расхождение">8.6 Контрольные суммы Liquibase и их расхождение</h3>
 <p>Контрольная сумма — единственное, что удерживает команду от правки уже применённых миграций, поэтому понимать её механику нужно до того, как она впервые разойдётся на проде. Ниже разобрано, как сумма вычисляется и хранится, что означает её версия, какие бывают причины расхождения и какими средствами Liquibase позволяет с ними справиться, от точечного <code>validCheckSum</code> до опасного <code>clearCheckSums</code>.</p>
@@ -1190,7 +1190,7 @@ https://documentation.red-gate.com/fd/repair-277578892.html">Flyway, Repair</a>)
 <thead>
 <tr>
 <th>Вариант</th>
-<th>Как</th>
+<th>Способ</th>
 <th>Плюсы</th>
 <th>Минусы</th>
 </tr>
@@ -1198,31 +1198,31 @@ https://documentation.red-gate.com/fd/repair-277578892.html">Flyway, Repair</a>)
 <tbody>
 <tr>
 <td data-label="Вариант">Каждый под при старте (<code>spring.liquibase.enabled=true</code>)</td>
-<td data-label="Как">Миграция в <code>ApplicationContext</code></td>
+<td data-label="Способ">Миграция в <code>ApplicationContext</code></td>
 <td data-label="Плюсы">Ничего не надо настраивать</td>
 <td data-label="Минусы">N-1 подов ждут лок; долгая миграция срывает <code>startupProbe</code>; лок залипает при OOM-kill</td>
 </tr>
 <tr>
 <td data-label="Вариант"><code>initContainer</code></td>
-<td data-label="Как">Отдельный контейнер перед основным</td>
+<td data-label="Способ">Отдельный контейнер перед основным</td>
 <td data-label="Плюсы">Миграция отделена от приложения</td>
 <td data-label="Минусы">Выполняется на <strong>каждом</strong> поде — та же конкуренция за лок, просто раньше</td>
 </tr>
 <tr>
 <td data-label="Вариант">Kubernetes <code>Job</code> (или Helm hook <code>pre-upgrade</code>)</td>
-<td data-label="Как">Одноразовый под до раскатки Deployment</td>
+<td data-label="Способ">Одноразовый под до раскатки Deployment</td>
 <td data-label="Плюсы">Ровно один исполнитель; повторы через <code>backoffLimit</code>; логи отдельно</td>
 <td data-label="Минусы">Нужна оркестрация: Deployment не должен стартовать раньше успеха Job</td>
 </tr>
 <tr>
 <td data-label="Вариант">Стадия конвейера CI/CD</td>
-<td data-label="Как"><code>liquibase update</code> из исполнителя до <code>kubectl apply</code></td>
+<td data-label="Способ"><code>liquibase update</code> из исполнителя до <code>kubectl apply</code></td>
 <td data-label="Плюсы">Виден результат в конвейере, можно вставить approve и dry-run</td>
 <td data-label="Минусы">Исполнителю нужен сетевой доступ к БД (в банке это отдельная история)</td>
 </tr>
 <tr>
 <td data-label="Вариант">Выделенный «мигратор»-лидер</td>
-<td data-label="Как">Один под берёт advisory lock и мигрирует</td>
+<td data-label="Способ">Один под берёт advisory lock и мигрирует</td>
 <td data-label="Плюсы">Работает без внешней оркестрации</td>
 <td data-label="Минусы">Самый сложный код, самая трудная отладка</td>
 </tr>
@@ -1493,75 +1493,75 @@ https://www.postgresql.org/docs/17/sql-altertable.html">ALTER TABLE</a>).</p>
 <thead>
 <tr>
 <th>Шаг</th>
-<th>Что делаем со схемой</th>
-<th>Какие версии кода в кластере</th>
-<th>Что делает старшая версия</th>
-<th>Что делает младшая</th>
+<th>Изменение схемы</th>
+<th>Версии кода в кластере</th>
+<th>Старшая версия</th>
+<th>Младшая версия</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Шаг">0</td>
-<td data-label="Что делаем со схемой">—</td>
-<td data-label="Какие версии кода в кластере">только v1</td>
-<td data-label="Что делает старшая версия">—</td>
-<td data-label="Что делает младшая">читает и пишет <code>merchant_ref</code></td>
+<td data-label="Изменение схемы">—</td>
+<td data-label="Версии кода в кластере">только v1</td>
+<td data-label="Старшая версия">—</td>
+<td data-label="Младшая версия">читает и пишет <code>merchant_ref</code></td>
 </tr>
 <tr>
 <td data-label="Шаг">1 (expand)</td>
-<td data-label="Что делаем со схемой"><code>ADD COLUMN merchant_id bigint</code> (nullable), индекс <code>CONCURRENTLY</code>, FK <code>NOT VALID</code></td>
-<td data-label="Какие версии кода в кластере">только v1</td>
-<td data-label="Что делает старшая версия">—</td>
-<td data-label="Что делает младшая">v1 не знает о колонке, вставляет NULL — работает</td>
+<td data-label="Изменение схемы"><code>ADD COLUMN merchant_id bigint</code> (nullable), индекс <code>CONCURRENTLY</code>, FK <code>NOT VALID</code></td>
+<td data-label="Версии кода в кластере">только v1</td>
+<td data-label="Старшая версия">—</td>
+<td data-label="Младшая версия">v1 не знает о колонке, вставляет NULL — работает</td>
 </tr>
 <tr>
 <td data-label="Шаг">2 (деплой v2)</td>
-<td data-label="Что делаем со схемой">—</td>
-<td data-label="Какие версии кода в кластере">v1 + v2</td>
-<td data-label="Что делает старшая версия">v2 пишет <strong>обе</strong> колонки, читает <code>merchant_ref</code></td>
-<td data-label="Что делает младшая">v1 пишет только <code>merchant_ref</code>, читает её же</td>
+<td data-label="Изменение схемы">—</td>
+<td data-label="Версии кода в кластере">v1 + v2</td>
+<td data-label="Старшая версия">v2 пишет <strong>обе</strong> колонки, читает <code>merchant_ref</code></td>
+<td data-label="Младшая версия">v1 пишет только <code>merchant_ref</code>, читает её же</td>
 </tr>
 <tr>
 <td data-label="Шаг">3 (backfill)</td>
-<td data-label="Что делаем со схемой">пакеты заполняют <code>merchant_id</code> там, где он NULL</td>
-<td data-label="Какие версии кода в кластере">только v2</td>
-<td data-label="Что делает старшая версия">—</td>
-<td data-label="Что делает младшая">—</td>
+<td data-label="Изменение схемы">пакеты заполняют <code>merchant_id</code> там, где он NULL</td>
+<td data-label="Версии кода в кластере">только v2</td>
+<td data-label="Старшая версия">—</td>
+<td data-label="Младшая версия">—</td>
 </tr>
 <tr>
 <td data-label="Шаг">4 (сверка)</td>
-<td data-label="Что делаем со схемой"><code>count(*) WHERE merchant_id IS NULL AND merchant_ref IS NOT NULL</code> = 0 несколько циклов</td>
-<td data-label="Какие версии кода в кластере">только v2</td>
-<td data-label="Что делает старшая версия">—</td>
-<td data-label="Что делает младшая">—</td>
+<td data-label="Изменение схемы"><code>count(*) WHERE merchant_id IS NULL AND merchant_ref IS NOT NULL</code> = 0 несколько циклов</td>
+<td data-label="Версии кода в кластере">только v2</td>
+<td data-label="Старшая версия">—</td>
+<td data-label="Младшая версия">—</td>
 </tr>
 <tr>
 <td data-label="Шаг">5 (деплой v2r)</td>
-<td data-label="Что делаем со схемой">—</td>
-<td data-label="Какие версии кода в кластере">v2 + v2r</td>
-<td data-label="Что делает старшая версия">v2r читает <code>merchant_id</code>, пишет обе</td>
-<td data-label="Что делает младшая">v2 читает <code>merchant_ref</code>, пишет обе</td>
+<td data-label="Изменение схемы">—</td>
+<td data-label="Версии кода в кластере">v2 + v2r</td>
+<td data-label="Старшая версия">v2r читает <code>merchant_id</code>, пишет обе</td>
+<td data-label="Младшая версия">v2 читает <code>merchant_ref</code>, пишет обе</td>
 </tr>
 <tr>
 <td data-label="Шаг">6</td>
-<td data-label="Что делаем со схемой"><code>VALIDATE CONSTRAINT</code>, <code>SET NOT NULL</code> через <code>CHECK</code></td>
-<td data-label="Какие версии кода в кластере">только v2r</td>
-<td data-label="Что делает старшая версия">—</td>
-<td data-label="Что делает младшая">—</td>
+<td data-label="Изменение схемы"><code>VALIDATE CONSTRAINT</code>, <code>SET NOT NULL</code> через <code>CHECK</code></td>
+<td data-label="Версии кода в кластере">только v2r</td>
+<td data-label="Старшая версия">—</td>
+<td data-label="Младшая версия">—</td>
 </tr>
 <tr>
 <td data-label="Шаг">7 (деплой v3)</td>
-<td data-label="Что делаем со схемой">—</td>
-<td data-label="Какие версии кода в кластере">v2r + v3</td>
-<td data-label="Что делает старшая версия">v3 читает и пишет только <code>merchant_id</code></td>
-<td data-label="Что делает младшая">v2r пишет обе — не мешает</td>
+<td data-label="Изменение схемы">—</td>
+<td data-label="Версии кода в кластере">v2r + v3</td>
+<td data-label="Старшая версия">v3 читает и пишет только <code>merchant_id</code></td>
+<td data-label="Младшая версия">v2r пишет обе — не мешает</td>
 </tr>
 <tr>
 <td data-label="Шаг">8 (contract)</td>
-<td data-label="Что делаем со схемой"><code>DROP COLUMN merchant_ref</code> (сначала снять <code>NOT NULL</code>/<code>DEFAULT</code>)</td>
-<td data-label="Какие версии кода в кластере">только v3</td>
-<td data-label="Что делает старшая версия">—</td>
-<td data-label="Что делает младшая">—</td>
+<td data-label="Изменение схемы"><code>DROP COLUMN merchant_ref</code> (сначала снять <code>NOT NULL</code>/<code>DEFAULT</code>)</td>
+<td data-label="Версии кода в кластере">только v3</td>
+<td data-label="Старшая версия">—</td>
+<td data-label="Младшая версия">—</td>
 </tr>
 </tbody>
 </table>
@@ -1709,7 +1709,7 @@ https://www.postgresql.org/docs/17/sql-altertable.html">ALTER TABLE</a>).</p>
 <li>Удаляете или переименовываете что-либо — эта версия кода уже нигде не работает?</li>
 <li>Меняете тип — совместим ли он с тем, как старый код читает значение через JDBC? <code>int</code> → <code>bigint</code> безопасен для чтения в <code>long</code>, но <code>getInt()</code> в старом коде переполнится на больших значениях.</li>
 </ol>
-<p><strong>Что делать, когда откатывают код, а схему нет.</strong> Это штатная ситуация: релиз v3 выкатили, поймали баг в бизнес-логике и откатились на v2, а схема осталась в состоянии «после expand». Именно ради этого случая expand-фазу делают аддитивной: v2 ничего не знает про <code>merchant_id</code>, но и существовать ему не мешает. Правило формулируется так: <strong>откат кода никогда не должен требовать отката схемы.</strong> Если ваш план миграции ломается при откате кода, неверен план, а не откат.</p>
+<p><strong>Откат кода без отката схемы.</strong> Это штатная ситуация: релиз v3 выкатили, поймали баг в бизнес-логике и откатились на v2, а схема осталась в состоянии «после expand». Именно ради этого случая expand-фазу делают аддитивной: v2 ничего не знает про <code>merchant_id</code>, но и существовать ему не мешает. Правило формулируется так: <strong>откат кода никогда не должен требовать отката схемы.</strong> Если ваш план миграции ломается при откате кода, неверен план, а не откат.</p>
 <p>Нарушается это правило в одном вырожденном случае — когда миграция <strong>удаляет</strong> что-то в том же релизе, что и код. Тогда откатить код без восстановления данных из бэкапа уже невозможно, и защита здесь только процессная: contract-миграции проходят отдельный чек-лист и не едут в одном релизе с изменениями логики.</p>
 <p>Всё сказанное удобно свести в <strong>чек-лист релиза с миграцией</strong>, который реально висит в шаблоне PR:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>[ ] Миграция аддитивна (expand) — или явно помечена как contract с датой предыдущей фазы
@@ -2622,7 +2622,7 @@ https://github.com/github/gh-ost">gh-ost</a>), и из этого вытекаю
 <hr>
 <h2 id="15-диагностика">15. Диагностика</h2>
 <p>Этот раздел отвечает на два вопроса: как понять, что происходит с миграцией прямо сейчас, и как заранее убедиться, что она не повесит прод. Сначала идут отдельные диагностические запросы — кто кого блокирует, какие транзакции мешают DDL, сколько займёт миграция, какие индексы и ограничения остались недоделанными, — и к каждому сказано, что в его выдаче искать. За ними следуют четыре чеклиста по симптомам: миграция висит, после миграции всё стало медленнее, схема разошлась между окружениями и предполётная проверка перед любой миграцией.</p>
-<p><strong>Кто кого блокирует прямо сейчас.</strong> Это первый запрос при зависшей миграции: он показывает для каждого активного бэкенда, сколько длится его транзакция, чего он ждёт и кто его держит.</p>
+<p><strong>Текущие блокировки.</strong> Это первый запрос при зависшей миграции: он показывает для каждого активного бэкенда, сколько длится его транзакция, чего он ждёт и кто его держит.</p>
 <div class="hl" data-lang="SQL"><div class="hl-bar"><span>SQL</span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">SELECT</span> <span class="n">a</span><span class="p">.</span><span class="n">pid</span><span class="p">,</span> <span class="n">a</span><span class="p">.</span><span class="k">state</span><span class="p">,</span> <span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">a</span><span class="p">.</span><span class="n">xact_start</span> <span class="k">AS</span> <span class="n">xact_age</span><span class="p">,</span>
        <span class="n">a</span><span class="p">.</span><span class="n">wait_event_type</span><span class="p">,</span> <span class="n">a</span><span class="p">.</span><span class="n">wait_event</span><span class="p">,</span>
        <span class="k">cardinality</span><span class="p">(</span><span class="n">pg_blocking_pids</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">pid</span><span class="p">))</span> <span class="k">AS</span> <span class="n">blockers</span><span class="p">,</span>
@@ -2983,5 +2983,5 @@ https://commons.wikimedia.org/wiki/File:Flock_of_royal_spoonbills_flying_against
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-проектирование-таблиц-по-доменной-модели">1. Проектирование таблиц по доменной модели</a></li><li><a href="#2-ключи">2. Ключи</a></li><li><a href="#3-типы-данных-postgresql">3. Типы данных PostgreSQL</a></li><li><a href="#4-null-и-трёхзначная-логика">4. NULL и трёхзначная логика</a></li><li><a href="#5-ограничения-целостности">5. Ограничения целостности</a></li><li><a href="#6-паттерны-хранения">6. Паттерны хранения</a></li><li><a href="#7-секционирование">7. Секционирование</a></li><li><a href="#8-инструменты-миграций-liquibase-и-flyway">8. Инструменты миграций: Liquibase и Flyway</a></li><li><a href="#9-zero-downtime-миграции-expand-migrate-contract">9. Zero-downtime миграции: expand → migrate → contract</a></li><li><a href="#10-ddl-и-очередь-блокировок">10. DDL и очередь блокировок</a></li><li><a href="#11-миграции-данных-большого-объёма">11. Миграции данных большого объёма</a></li><li><a href="#12-откат-и-тестирование-миграций">12. Откат и тестирование миграций</a></li><li><a href="#13-разобранные-инциденты">13. Разобранные инциденты</a></li><li><a href="#14-ошибки-и-антипаттерны">14. Ошибки и антипаттерны</a></li><li><a href="#15-диагностика">15. Диагностика</a></li><li><a href="#16-вопросы-на-интервью">16. Вопросы на интервью</a></li><li><a href="#17-попробовать-руками">17. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

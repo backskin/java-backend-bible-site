@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть VIII. Безопасность</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/40.svg" width="48" height="48" alt="" loading="lazy">40. Криптография для бэкенд-разработчика</h1><div class="meta"><span class="part-tag">Часть VIII. Безопасность</span><span>43 083 слов</span><span>≈ 4 ч 00 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/40.svg" width="48" height="48" alt="" loading="lazy">40. Криптография для бэкенд-разработчика</h1><div class="meta"><span class="part-tag">Часть VIII. Безопасность</span><span>43 060 слов</span><span>≈ 4 ч 00 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>Криптографическая ошибка не видна в мониторинге: система работает, тесты зелёные, а данные тем временем уже можно прочитать. В бэкенде инцидент почти никогда не связан со взломом AES — его вызывает повторённый nonce в GCM, <code>Random</code> вместо <code>SecureRandom</code> в генераторе токенов сброса пароля, сравнение подписи webhook через <code>equals</code>, проверка сертификата, которую отключили, «чтобы заработало в тестовом контуре», или закрытый ключ, который в итоге доехал до git. На интервью в финтехе криптографию спрашивают не ради формул: интервьюер проверяет, понимает ли кандидат, чем MAC отличается от подписи, зачем нужен AEAD, почему пароли нельзя хранить под SHA-256 и где физически лежит ключ. Поэтому эта глава посвящена применению: как пользоваться JCA так, чтобы не изобретать своё и не повторять давно известные ошибки.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">12 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-модель-угроз-и-базовые-свойства" data-tip="Раздел этой главы: 1. Модель угроз и базовые свойства">1. Модель угроз и базовые свойства</a></li><li><a href="#2-случайность" data-tip="Раздел этой главы: 2. Случайность">2. Случайность</a></li><li><a href="#3-хеш-функции-и-пароли" data-tip="Раздел этой главы: 3. Хеш-функции и пароли">3. Хеш-функции и пароли</a></li><li><a href="#4-mac-aead-и-симметричное-шифрование" data-tip="Раздел этой главы: 4. MAC, AEAD и симметричное шифрование">4. MAC, AEAD и симметричное шифрование</a></li><li><a href="#5-асимметричная-криптография" data-tip="Раздел этой главы: 5. Асимметричная криптография">5. Асимметричная криптография</a></li><li><a href="#6-tls" data-tip="Раздел этой главы: 6. TLS">6. TLS</a></li><li><a href="#7-управление-ключами" data-tip="Раздел этой главы: 7. Управление ключами">7. Управление ключами</a></li><li><a href="#8-криптографическая-архитектура-jdk-jcajce" data-tip="Раздел этой главы: 8. Криптографическая архитектура JDK (JCA/JCE)">8. Криптографическая архитектура JDK (JCA/JCE)</a></li><li><a href="#9-постквантовая-криптография" data-tip="Раздел этой главы: 9. Постквантовая криптография">9. Постквантовая криптография</a></li><li><a href="#10-разобранные-инциденты" data-tip="Раздел этой главы: 10. Разобранные инциденты">10. Разобранные инциденты</a></li><li><a href="#11-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 11. Ошибки и антипаттерны">11. Ошибки и антипаттерны</a></li><li><a href="#12-диагностика" data-tip="Раздел этой главы: 12. Диагностика">12. Диагностика</a></li></ol></div></nav>
@@ -29,35 +29,35 @@
 <thead>
 <tr>
 <th>Свойство</th>
-<th>Что гарантирует</th>
-<th>Чем обеспечивается</th>
-<th>Что НЕ даёт</th>
+<th>Гарантии</th>
+<th>Средство</th>
+<th>Не даёт</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Свойство">Конфиденциальность</td>
-<td data-label="Что гарантирует">Противник не прочитает содержимое</td>
-<td data-label="Чем обеспечивается">Симметричное шифрование (AES-GCM, ChaCha20-Poly1305), асимметричное (RSA-OAEP, гибридные схемы)</td>
-<td data-label="Что НЕ даёт">Не защищает от подмены, если режим без аутентификации</td>
+<td data-label="Гарантии">Противник не прочитает содержимое</td>
+<td data-label="Средство">Симметричное шифрование (AES-GCM, ChaCha20-Poly1305), асимметричное (RSA-OAEP, гибридные схемы)</td>
+<td data-label="Не даёт">Не защищает от подмены, если режим без аутентификации</td>
 </tr>
 <tr>
 <td data-label="Свойство">Целостность</td>
-<td data-label="Что гарантирует">Данные не изменены по пути</td>
-<td data-label="Чем обеспечивается">Хеш + защищённый канал, MAC (HMAC), AEAD-тег</td>
-<td data-label="Что НЕ даёт">Сам по себе хеш ничего не даёт, если противник может его переписать</td>
+<td data-label="Гарантии">Данные не изменены по пути</td>
+<td data-label="Средство">Хеш + защищённый канал, MAC (HMAC), AEAD-тег</td>
+<td data-label="Не даёт">Сам по себе хеш ничего не даёт, если противник может его переписать</td>
 </tr>
 <tr>
 <td data-label="Свойство">Аутентичность источника</td>
-<td data-label="Что гарантирует">Сообщение пришло от того, у кого есть ключ</td>
-<td data-label="Чем обеспечивается">MAC (симметрично), цифровая подпись (асимметрично)</td>
-<td data-label="Что НЕ даёт">MAC не отвечает на вопрос «кто именно из двоих»</td>
+<td data-label="Гарантии">Сообщение пришло от того, у кого есть ключ</td>
+<td data-label="Средство">MAC (симметрично), цифровая подпись (асимметрично)</td>
+<td data-label="Не даёт">MAC не отвечает на вопрос «кто именно из двоих»</td>
 </tr>
 <tr>
 <td data-label="Свойство">Неотказуемость</td>
-<td data-label="Что гарантирует">Отправитель не сможет отпереться</td>
-<td data-label="Чем обеспечивается">Только цифровая подпись асимметричным ключом</td>
-<td data-label="Что НЕ даёт">Ни MAC, ни AEAD неотказуемости не дают</td>
+<td data-label="Гарантии">Отправитель не сможет отпереться</td>
+<td data-label="Средство">Только цифровая подпись асимметричным ключом</td>
+<td data-label="Не даёт">Ни MAC, ни AEAD неотказуемости не дают</td>
 </tr>
 </tbody>
 </table>
@@ -234,25 +234,25 @@ https://pages.nist.gov/800-63-3/sp800-63b.html">SP 800-63B §5.1.1.2</a>)</p>
 <table class="rt">
 <thead>
 <tr>
-<th>Что настраивают</th>
-<th>Чем</th>
+<th>Настройка</th>
+<th>Средство</th>
 <th>На что влияет</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="Что настраивают">Алгоритм по умолчанию для <code>new SecureRandom()</code></td>
-<td data-label="Чем">Порядок провайдеров в <code>java.security</code></td>
+<td data-label="Настройка">Алгоритм по умолчанию для <code>new SecureRandom()</code></td>
+<td data-label="Средство">Порядок провайдеров в <code>java.security</code></td>
 <td data-label="На что влияет">Какая реализация раскручивает seed</td>
 </tr>
 <tr>
-<td data-label="Что настраивают">Источник seed</td>
-<td data-label="Чем"><code>securerandom.source</code> / <code>-Djava.security.egd</code></td>
+<td data-label="Настройка">Источник seed</td>
+<td data-label="Средство"><code>securerandom.source</code> / <code>-Djava.security.egd</code></td>
 <td data-label="На что влияет">Откуда берутся стартовые байты</td>
 </tr>
 <tr>
-<td data-label="Что настраивают">Что вернёт <code>getInstanceStrong()</code></td>
-<td data-label="Чем"><code>securerandom.strongAlgorithms</code></td>
+<td data-label="Настройка">Что вернёт <code>getInstanceStrong()</code></td>
+<td data-label="Средство"><code>securerandom.strongAlgorithms</code></td>
 <td data-label="На что влияет">Может быть блокирующим</td>
 </tr>
 </tbody>
@@ -314,7 +314,7 @@ jshell -q <span class="s">&lt;&lt;'JSH'</span>
 <table class="rt">
 <thead>
 <tr>
-<th>Что генерируем</th>
+<th>Результат генерации</th>
 <th class="num">Бит энтропии</th>
 <th class="num">Байт</th>
 <th>Кодирование</th>
@@ -323,56 +323,56 @@ jshell -q <span class="s">&lt;&lt;'JSH'</span>
 </thead>
 <tbody>
 <tr>
-<td data-label="Что генерируем">Соль для KDF</td>
+<td data-label="Результат генерации">Соль для KDF</td>
 <td data-label="Бит энтропии" class="num">128</td>
 <td data-label="Байт" class="num">16</td>
 <td data-label="Кодирование">внутри PHC-строки</td>
 <td data-label="Длина строки" class="num">—</td>
 </tr>
 <tr>
-<td data-label="Что генерируем">Nonce AES-GCM</td>
+<td data-label="Результат генерации">Nonce AES-GCM</td>
 <td data-label="Бит энтропии" class="num">96</td>
 <td data-label="Байт" class="num">12</td>
 <td data-label="Кодирование">префикс blob'а</td>
 <td data-label="Длина строки" class="num">—</td>
 </tr>
 <tr>
-<td data-label="Что генерируем">Код подтверждения (SMS/OTP), короткоживущий</td>
+<td data-label="Результат генерации">Код подтверждения (SMS/OTP), короткоживущий</td>
 <td data-label="Бит энтропии" class="num">~20 (6 цифр)</td>
 <td data-label="Байт" class="num">—</td>
 <td data-label="Кодирование">цифры</td>
 <td data-label="Длина строки" class="num">6</td>
 </tr>
 <tr>
-<td data-label="Что генерируем">CSRF-токен</td>
+<td data-label="Результат генерации">CSRF-токен</td>
 <td data-label="Бит энтропии" class="num">128</td>
 <td data-label="Байт" class="num">16</td>
 <td data-label="Кодирование">Base64url</td>
 <td data-label="Длина строки" class="num">22</td>
 </tr>
 <tr>
-<td data-label="Что генерируем">Session id, ключ идемпотентности</td>
+<td data-label="Результат генерации">Session id, ключ идемпотентности</td>
 <td data-label="Бит энтропии" class="num">128</td>
 <td data-label="Байт" class="num">16</td>
 <td data-label="Кодирование">Base64url</td>
 <td data-label="Длина строки" class="num">22</td>
 </tr>
 <tr>
-<td data-label="Что генерируем">Токен сброса пароля, приглашение</td>
+<td data-label="Результат генерации">Токен сброса пароля, приглашение</td>
 <td data-label="Бит энтропии" class="num">256</td>
 <td data-label="Байт" class="num">32</td>
 <td data-label="Кодирование">Base64url</td>
 <td data-label="Длина строки" class="num">43</td>
 </tr>
 <tr>
-<td data-label="Что генерируем">API-ключ, долгоживущий секрет интеграции</td>
+<td data-label="Результат генерации">API-ключ, долгоживущий секрет интеграции</td>
 <td data-label="Бит энтропии" class="num">256</td>
 <td data-label="Байт" class="num">32</td>
 <td data-label="Кодирование">Base64url + префикс вида <code>sk_live_</code></td>
 <td data-label="Длина строки" class="num">43 + префикс</td>
 </tr>
 <tr>
-<td data-label="Что генерируем">Ключ HMAC для webhook</td>
+<td data-label="Результат генерации">Ключ HMAC для webhook</td>
 <td data-label="Бит энтропии" class="num">256</td>
 <td data-label="Байт" class="num">32</td>
 <td data-label="Кодирование">Base64 в секрет-хранилище</td>
@@ -426,7 +426,7 @@ jshell -q <span class="s">&lt;&lt;'JSH'</span>
 <th>Функция</th>
 <th>Выход</th>
 <th>Статус на 2026</th>
-<th>Где встречается</th>
+<th>Встречается</th>
 </tr>
 </thead>
 <tbody>
@@ -434,37 +434,37 @@ jshell -q <span class="s">&lt;&lt;'JSH'</span>
 <td data-label="Функция">MD5</td>
 <td data-label="Выход">128 бит</td>
 <td data-label="Статус на 2026">Сломана: коллизии за секунды, chosen-prefix коллизии</td>
-<td data-label="Где встречается">Контрольные суммы артефактов, старые API, ETag</td>
+<td data-label="Встречается">Контрольные суммы артефактов, старые API, ETag</td>
 </tr>
 <tr>
 <td data-label="Функция">SHA-1</td>
 <td data-label="Выход">160 бит</td>
 <td data-label="Статус на 2026">Сломана: SHAttered (2017), chosen-prefix SHAmbles (2020)</td>
-<td data-label="Где встречается">Git (объектные id, мигрирует на SHA-256), старые сертификаты</td>
+<td data-label="Встречается">Git (объектные id, мигрирует на SHA-256), старые сертификаты</td>
 </tr>
 <tr>
 <td data-label="Функция">SHA-256 / SHA-512</td>
 <td data-label="Выход">256 / 512</td>
 <td data-label="Статус на 2026">Рабочая лошадка, рекомендуется</td>
-<td data-label="Где встречается">TLS, подписи, HMAC, деривация</td>
+<td data-label="Встречается">TLS, подписи, HMAC, деривация</td>
 </tr>
 <tr>
 <td data-label="Функция">SHA-512/256</td>
 <td data-label="Выход">256</td>
 <td data-label="Статус на 2026">Быстрее SHA-256 на 64-битных CPU, иммунна к length extension</td>
-<td data-label="Где встречается">Редко, но есть в JDK</td>
+<td data-label="Встречается">Редко, но есть в JDK</td>
 </tr>
 <tr>
 <td data-label="Функция">SHA-3 (Keccak)</td>
 <td data-label="Выход">224–512</td>
 <td data-label="Статус на 2026">Стандарт FIPS 202, другая конструкция (sponge)</td>
-<td data-label="Где встречается">Страховка на случай слома SHA-2</td>
+<td data-label="Встречается">Страховка на случай слома SHA-2</td>
 </tr>
 <tr>
 <td data-label="Функция">BLAKE2b / BLAKE3</td>
 <td data-label="Выход">до 512</td>
 <td data-label="Статус на 2026">Быстрее SHA-2, не в JDK (нужен Bouncy Castle)</td>
-<td data-label="Где встречается">Argon2 внутри, дедупликация, контрольные суммы</td>
+<td data-label="Встречается">Argon2 внутри, дедупликация, контрольные суммы</td>
 </tr>
 </tbody>
 </table>
@@ -510,24 +510,24 @@ jshell -q <span class="s">&lt;&lt;'JSH'</span>
 <tr>
 <th>Механизм</th>
 <th>От чего защищает</th>
-<th>Где хранится</th>
+<th>Хранение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Механизм"><strong>Соль</strong> (salt)</td>
 <td data-label="От чего защищает">Радужные таблицы, параллельный перебор всех пользователей разом, одинаковые хеши у одинаковых паролей</td>
-<td data-label="Где хранится">Рядом с хешем, в открытом виде, уникальная на пользователя (≥ 16 байт из <code>SecureRandom</code>)</td>
+<td data-label="Хранение">Рядом с хешем, в открытом виде, уникальная на пользователя (≥ 16 байт из <code>SecureRandom</code>)</td>
 </tr>
 <tr>
 <td data-label="Механизм"><strong>Работа</strong> (KDF: итерации, память)</td>
 <td data-label="От чего защищает">Перебор по словарю после утечки БД</td>
-<td data-label="Где хранится">В параметрах алгоритма, в самой строке хеша</td>
+<td data-label="Хранение">В параметрах алгоритма, в самой строке хеша</td>
 </tr>
 <tr>
 <td data-label="Механизм"><strong>Перец</strong> (pepper)</td>
 <td data-label="От чего защищает">Утечку только БД (SQL-инъекция, украденный дамп) — без секрета хеши бесполезны</td>
-<td data-label="Где хранится">Вне БД: HSM, Vault, переменная окружения приложения; общий на все пароли</td>
+<td data-label="Хранение">Вне БД: HSM, Vault, переменная окружения приложения; общий на все пароли</td>
 </tr>
 </tbody>
 </table>
@@ -1178,39 +1178,39 @@ https://docs.spring.io/spring-security/reference/features/authentication/passwor
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>HMAC (MAC)</th>
 <th>Цифровая подпись (RSA/ECDSA/Ed25519)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Ключи</td>
+<td data-label="Критерий">Ключи</td>
 <td data-label="HMAC (MAC)">Один общий секрет</td>
 <td data-label="Цифровая подпись (RSA/ECDSA/Ed25519)">Пара: приватный подписывает, публичный проверяет</td>
 </tr>
 <tr>
-<td data-label="">Кто может проверить</td>
+<td data-label="Критерий">Кто может проверить</td>
 <td data-label="HMAC (MAC)">Только тот, у кого тот же секрет</td>
 <td data-label="Цифровая подпись (RSA/ECDSA/Ed25519)">Кто угодно</td>
 </tr>
 <tr>
-<td data-label="">Кто может создать</td>
+<td data-label="Критерий">Кто может создать</td>
 <td data-label="HMAC (MAC)"><strong>Обе стороны</strong></td>
 <td data-label="Цифровая подпись (RSA/ECDSA/Ed25519)">Только владелец приватного ключа</td>
 </tr>
 <tr>
-<td data-label="">Неотказуемость</td>
+<td data-label="Критерий">Неотказуемость</td>
 <td data-label="HMAC (MAC)"><strong>Нет</strong></td>
 <td data-label="Цифровая подпись (RSA/ECDSA/Ed25519)">Да</td>
 </tr>
 <tr>
-<td data-label="">Скорость</td>
+<td data-label="Критерий">Скорость</td>
 <td data-label="HMAC (MAC)">Микросекунды, ~ГБ/с</td>
 <td data-label="Цифровая подпись (RSA/ECDSA/Ed25519)">0.05–5 мс на операцию</td>
 </tr>
 <tr>
-<td data-label="">Размер</td>
+<td data-label="Критерий">Размер</td>
 <td data-label="HMAC (MAC)">32 байта</td>
 <td data-label="Цифровая подпись (RSA/ECDSA/Ed25519)">64 (Ed25519) – 512 (RSA-4096) байт</td>
 </tr>
@@ -1287,34 +1287,34 @@ https://www.rfc-editor.org/rfc/rfc8439">RFC 8439</a>) — второй масс�
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>AES-GCM</th>
 <th>ChaCha20-Poly1305</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Скорость на x86-64/ARM с аппаратным AES</td>
+<td data-label="Критерий">Скорость на x86-64/ARM с аппаратным AES</td>
 <td data-label="AES-GCM">Быстрее (AES-NI + PCLMULQDQ), ГБ/с</td>
 <td data-label="ChaCha20-Poly1305">Медленнее</td>
 </tr>
 <tr>
-<td data-label="">Скорость без аппаратного AES</td>
+<td data-label="Критерий">Скорость без аппаратного AES</td>
 <td data-label="AES-GCM">Медленно и <strong>уязвимо к кэш-таймингу</strong> в софтовой реализации</td>
 <td data-label="ChaCha20-Poly1305">Быстро, constant-time по конструкции</td>
 </tr>
 <tr>
-<td data-label="">Чувствительность к повтору nonce</td>
+<td data-label="Критерий">Чувствительность к повтору nonce</td>
 <td data-label="AES-GCM">Катастрофа</td>
 <td data-label="ChaCha20-Poly1305">Катастрофа (та же природа)</td>
 </tr>
 <tr>
-<td data-label="">Поддержка в JDK</td>
+<td data-label="Критерий">Поддержка в JDK</td>
 <td data-label="AES-GCM">Всюду</td>
 <td data-label="ChaCha20-Poly1305">С JDK 11</td>
 </tr>
 <tr>
-<td data-label="">FIPS</td>
+<td data-label="Критерий">FIPS</td>
 <td data-label="AES-GCM">Да</td>
 <td data-label="ChaCha20-Poly1305">Нет</td>
 </tr>
@@ -1334,7 +1334,7 @@ https://www.rfc-editor.org/rfc/rfc8452">RFC 8452</a>), режим, устойч�
 <hr>
 <h3 id="47-повтор-nonce-и-iv">4.7 Повтор nonce и IV</h3>
 <p>Повтор nonce занимает первое место по соотношению между тем, как легко его допустить, и тем, во что он обходится. Тесты его не ловят, мониторинг не видит, и проявляется он лишь тогда, когда кто-то сравнит два шифротекста. Ниже разберём по шагам, что именно ломается в GCM при повторе, откуда берутся лимиты на число сообщений и на объём под одним ключом и какими пятью способами повтор возникает в реальном коде.</p>
-<p><strong>Что именно ломается в GCM.</strong> GCM шифрует в режиме CTR и аутентифицирует через GHASH. Гамма вырабатывается как <code>AES_K(J0+1), AES_K(J0+2), ...</code>, где <code>J0</code> выводится из nonce, поэтому одинаковый nonce под одним ключом даёт <strong>побитово одинаковую гамму</strong>, а дальше работает простая алгебра, показанная на схеме.</p>
+<p><strong>Поломка GCM.</strong> GCM шифрует в режиме CTR и аутентифицирует через GHASH. Гамма вырабатывается как <code>AES_K(J0+1), AES_K(J0+2), ...</code>, где <code>J0</code> выводится из nonce, поэтому одинаковый nonce под одним ключом даёт <strong>побитово одинаковую гамму</strong>, а дальше работает простая алгебра, показанная на схеме.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>C1 = P1 ⊕ S      (S — гамма)
 C2 = P2 ⊕ S
 C1 ⊕ C2 = P1 ⊕ P2      ← ключ не нужен
@@ -1347,34 +1347,34 @@ C1 ⊕ C2 = P1 ⊕ P2      ← ключ не нужен
 <thead>
 <tr>
 <th>Стратегия</th>
-<th>Как</th>
+<th>Способ</th>
 <th>Лимит</th>
-<th>Когда брать</th>
+<th>Применение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Стратегия">Случайный 96-битный</td>
-<td data-label="Как">12 байт из <code>SecureRandom</code> на каждое шифрование</td>
+<td data-label="Способ">12 байт из <code>SecureRandom</code> на каждое шифрование</td>
 <td data-label="Лимит">~2^32 сообщений на ключ</td>
-<td data-label="Когда брать">По умолчанию: несколько экземпляров, нет общего состояния</td>
+<td data-label="Применение">По умолчанию: несколько экземпляров, нет общего состояния</td>
 </tr>
 <tr>
 <td data-label="Стратегия">Счётчик</td>
-<td data-label="Как"><code>nonce = instance_id (4 байта) ‖ counter (8 байт)</code></td>
+<td data-label="Способ"><code>nonce = instance_id (4 байта) ‖ counter (8 байт)</code></td>
 <td data-label="Лимит">2^64 на экземпляр, но требует персистентного счётчика</td>
-<td data-label="Когда брать">Один писатель, есть надёжное состояние</td>
+<td data-label="Применение">Один писатель, есть надёжное состояние</td>
 </tr>
 <tr>
 <td data-label="Стратегия">Детерминированный/SIV</td>
-<td data-label="Как">AES-GCM-SIV: nonce участвует, но повтор не фатален</td>
+<td data-label="Способ">AES-GCM-SIV: nonce участвует, но повтор не фатален</td>
 <td data-label="Лимит">2^32 сообщений по 8 ГиБ при случайных nonce (<a href="https://www.rfc-editor.org/rfc/rfc8452" data-tip="Внешний сайт · rfc-editor.org
 https://www.rfc-editor.org/rfc/rfc8452">RFC 8452</a>)</td>
-<td data-label="Когда брать">Нельзя гарантировать уникальность (несколько экземпляров + рестарты)</td>
+<td data-label="Применение">Нельзя гарантировать уникальность (несколько экземпляров + рестарты)</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Откуда берётся лимит 2^32 сообщений.</strong> Его даёт парадокс дней рождения: если случайно выбирать из <code>N = 2^96</code> значений, вероятность хотя бы одной коллизии после <code>q</code> выборок приблизительно равна <code>q²/(2N)</code>. Подставим целевую вероятность <code>2^-32</code> — стандартную границу, которую принимают в анализах NIST.</p>
+<p><strong>Происхождение лимита 2^32 сообщений.</strong> Его даёт парадокс дней рождения: если случайно выбирать из <code>N = 2^96</code> значений, вероятность хотя бы одной коллизии после <code>q</code> выборок приблизительно равна <code>q²/(2N)</code>. Подставим целевую вероятность <code>2^-32</code> — стандартную границу, которую принимают в анализах NIST.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>q² / (2 · 2^96) = 2^-32
 q² = 2^65
 q  = 2^32.5 ≈ 6·10^9
@@ -1383,7 +1383,7 @@ q  = 2^32.5 ≈ 6·10^9
 <p>Правило «не более ~4·10^9 шифрований под одним ключом» лежит ниже этого результата с запасом и совпадает с нормой SP 800-38D (раздел 8.3): при случайных IV общее число вызовов шифрования под одним ключом не должно превышать <code>2^32 ≈ 4,3·10^9</code>, а сама граница <code>2^-32</code> взята из требования уникальности IV в разделе 8 того же стандарта. Пересчитать его под свою терпимость к риску просто: <code>q = sqrt(2 · 2^96 · p)</code>. Если нужна вероятность <code>p = 2^-64</code>, то есть практически невозможное событие, выйдет <code>q = 2^16.5 ≈ 92 000</code>, и при такой параноидальной границе один ключ живёт совсем недолго; правильный ответ тогда — не мучиться, а генерировать DEK на запись или на партицию (раздел 7.3).</p>
 <p>В бизнес-величинах это выглядит так: 4·10^9 шифрований соответствуют 1000 операций в секунду на протяжении <strong>46 суток</strong>. Значит, сервис, который шифрует каждое сообщение в очереди при 5 000 RPS, обязан ротировать ключ примерно раз в девять дней, и если в дизайне этого нет, лимит будет превышен незаметно.</p>
 <p><strong>Второй лимит — на объём под одним ключом.</strong> SP 800-38D ограничивает одно обращение к GCM величиной <code>2^39 − 256</code> бит открытого текста (≈ 64 ГиБ), и это ограничение вытекает из 32-битного счётчика блоков: при блоке в 16 байт <code>2^32</code> блоков дают <code>2^36</code> байт, из которых вычитаются два блока по 128 бит (отсюда <code>− 256</code> бит). Если выйти за эту границу, счётчик переполнится и гамма начнёт повторяться внутри одного сообщения. JCA этого не допустит, но если вы шифруете 100-гигабайтный бэкап, его придётся резать на фрагменты, каждый со своим nonce, а лучше и со своим DEK, и включать номер фрагмента в AAD, чтобы фрагменты нельзя было переставить или выбросить.</p>
-<p><strong>Как повтор возникает в реальном коде.</strong> Почти всегда одним из пяти способов.</p>
+<p><strong>Повтор в реальном коде.</strong> Почти всегда одним из пяти способов.</p>
 <ol>
 <li>Константа: <code>private static final byte[] IV = new byte[12];</code>, заведённая «чтобы тесты были детерминированными».</li>
 <li>Nonce, выведенный из данных, например <code>iv = sha256(recordId)[0..12]</code>. Выглядит он «уникально», но при обновлении записи тот же id даёт тот же nonce, и новое значение шифруется старой гаммой.</li>
@@ -1925,34 +1925,34 @@ https://docs.oracle.com/en/java/javase/21/security/java-secure-socket-extension-
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Truststore</th>
 <th>Keystore</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Что лежит</td>
+<td data-label="Критерий">Что лежит</td>
 <td data-label="Truststore">Сертификаты CA, которым мы <strong>доверяем</strong></td>
 <td data-label="Keystore"><strong>Наш</strong> приватный ключ + цепочка сертификатов</td>
 </tr>
 <tr>
-<td data-label="">Кому нужен</td>
+<td data-label="Критерий">Кому нужен</td>
 <td data-label="Truststore">Клиенту (всегда), серверу (только при mTLS)</td>
 <td data-label="Keystore">Серверу (всегда), клиенту (только при mTLS)</td>
 </tr>
 <tr>
-<td data-label="">Секретность</td>
+<td data-label="Критерий">Секретность</td>
 <td data-label="Truststore">Публичные данные</td>
 <td data-label="Keystore">Строго секретно</td>
 </tr>
 <tr>
-<td data-label="">По умолчанию в JDK</td>
+<td data-label="Критерий">По умолчанию в JDK</td>
 <td data-label="Truststore"><code>$JAVA_HOME/lib/security/cacerts</code> (пароль <code>changeit</code>)</td>
 <td data-label="Keystore">Нет</td>
 </tr>
 <tr>
-<td data-label="">Свойства</td>
+<td data-label="Критерий">Свойства</td>
 <td data-label="Truststore"><code>-Djavax.net.ssl.trustStore</code>, <code>trustStorePassword</code>, <code>trustStoreType</code></td>
 <td data-label="Keystore"><code>-Djavax.net.ssl.keyStore</code>, <code>keyStorePassword</code></td>
 </tr>
@@ -2106,7 +2106,7 @@ https://openjdk.org/jeps/527">JEP 527</a>).</li>
 <li><strong>Блок <code>Consuming server Certificate</code>.</strong> Пересчитайте сертификаты: должен прийти лист <strong>и все промежуточные</strong>. Один сертификат при непубличном CA — это будущий <code>PKIX path building failed</code>.</li>
 </ol>
 <p>Дополнительные флаги полезно знать по отдельности. <code>ssl:handshake:verbose</code> добавляет разбор полей, <code>ssl:record:plaintext</code> печатает <strong>содержимое</strong> записей, и включать его можно только в отладочном контуре, потому что там видны пароли и токены, <code>ssl:session</code> показывает повторно использование сессий, а <code>all</code> включает всё сразу и генерирует мегабайты. В проде <code>javax.net.debug</code> включать нельзя, и дело не только в объёме: он пишет в <code>stdout</code> синхронно и способен в разы ухудшить латентность.</p>
-<p><strong>Что изменилось для отладки в TLS 1.3.</strong> В 1.2 всё после ServerHello, включая сертификат сервера, летело открытым текстом, и связка <code>tcpdump</code> + Wireshark показывала цепочку и параметры без всякого доступа к серверу. В 1.3 после ServerHello <strong>всё зашифровано</strong> ключами рукопожатия, и в дампе видны только ClientHello, ServerHello и затем непрозрачные записи. Из этого следуют три вещи. Во-первых, анализ по сетевому дампу ограничен ClientHello и ServerHello: SNI (пока не включён ECH), версии, группы и cipher suite. Во-вторых, для полноценного разбора нужен либо <code>javax.net.debug</code> на клиенте, либо экспорт секретов сессии через <code>SSLKEYLOGFILE</code> с подгрузкой в Wireshark. В-третьих, оповещения об ошибках тоже шифруются, поэтому о том, что «сервер вернул <code>certificate_unknown</code>», вы узнаете из лога JSSE, а не из дампа.</p>
+<p><strong>Отладка в TLS 1.3.</strong> В 1.2 всё после ServerHello, включая сертификат сервера, летело открытым текстом, и связка <code>tcpdump</code> + Wireshark показывала цепочку и параметры без всякого доступа к серверу. В 1.3 после ServerHello <strong>всё зашифровано</strong> ключами рукопожатия, и в дампе видны только ClientHello, ServerHello и затем непрозрачные записи. Из этого следуют три вещи. Во-первых, анализ по сетевому дампу ограничен ClientHello и ServerHello: SNI (пока не включён ECH), версии, группы и cipher suite. Во-вторых, для полноценного разбора нужен либо <code>javax.net.debug</code> на клиенте, либо экспорт секретов сессии через <code>SSLKEYLOGFILE</code> с подгрузкой в Wireshark. В-третьих, оповещения об ошибках тоже шифруются, поэтому о том, что «сервер вернул <code>certificate_unknown</code>», вы узнаете из лога JSSE, а не из дампа.</p>
 <h3 id="68-mtls-между-spring-сервисами-через-ssl-bundles">6.8 mTLS между Spring-сервисами через SSL Bundles</h3>
 <p>SSL Bundles — механизм Spring Boot 3.1+, который описывает хранилища ключей и сертификатов декларативно, так что один и тот же <code>SslBundles</code> повторно используют и встроенный сервер, и HTTP-клиенты. Рецепт ниже собирает на нём mTLS между двумя сервисами целиком, от YAML до извлечения личности клиента в контроллере. Как выпускать сами сертификаты и как устроен CA, разобрано в главе <a href="41-pki-signatures.html" data-tip="41. PKI, сертификаты, электронная подпись">41</a> (<a href="41-pki-signatures.html" data-tip="41. PKI, сертификаты, электронная подпись"><code>41-pki-signatures.md</code></a>), а здесь мы считаем, что у нас уже есть <code>ca.crt</code>, пара <code>server.crt</code>/<code>server.key</code> и пара <code>client.crt</code>/<code>client.key</code>.</p>
 <p>Конфигурация сервера (<code>payments-service</code>) задаёт бандл с собственной парой и с CA, которому сервер доверяет как выпускающему клиентские сертификаты.</p>
@@ -2194,7 +2194,7 @@ https://openjdk.org/jeps/527">JEP 527</a>).</li>
 <th>Способ</th>
 <th>Плюсы</th>
 <th>Минусы</th>
-<th>Когда брать</th>
+<th>Применение</th>
 </tr>
 </thead>
 <tbody>
@@ -2202,19 +2202,19 @@ https://openjdk.org/jeps/527">JEP 527</a>).</li>
 <td data-label="Способ">Свой truststore = копия <code>cacerts</code> + корпоративный CA, подключается <code>-Djavax.net.ssl.trustStore</code></td>
 <td data-label="Плюсы">Явно, версионируемо, не зависит от базового образа</td>
 <td data-label="Минусы">Надо пересобирать при обновлении публичных корней; легко забыть на новом стенде</td>
-<td data-label="Когда брать">По умолчанию для приложений</td>
+<td data-label="Применение">По умолчанию для приложений</td>
 </tr>
 <tr>
 <td data-label="Способ">Импорт CA прямо в <code>$JAVA_HOME/lib/security/cacerts</code> образа</td>
 <td data-label="Плюсы">Ничего не надо передавать приложению</td>
 <td data-label="Минусы">Смывается при обновлении базового образа JDK; правится во время выполнения — значит, невоспроизводимо</td>
-<td data-label="Когда брать">Только если делается на этапе сборки образа и покрыто тестом</td>
+<td data-label="Применение">Только если делается на этапе сборки образа и покрыто тестом</td>
 </tr>
 <tr>
 <td data-label="Способ"><code>SSLContext</code> в коде с кастомным <code>TrustManager</code>, доверяющим и <code>cacerts</code>, и корпоративному CA</td>
 <td data-label="Плюсы">Точечно, только для нужного клиента; не влияет на остальное</td>
 <td data-label="Минусы">Больше кода; легко скатиться в <code>TrustAllManager</code></td>
-<td data-label="Когда брать">Одна интеграция с экзотическим CA</td>
+<td data-label="Применение">Одна интеграция с экзотическим CA</td>
 </tr>
 </tbody>
 </table>
@@ -2265,75 +2265,75 @@ https://docs.oracle.com/en/java/javase/25/security/java-secure-socket-extension-
 <thead>
 <tr>
 <th>Сообщение / симптом</th>
-<th>Что произошло</th>
-<th>Где чинить</th>
+<th>Последствие</th>
+<th>Место исправления</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Сообщение / симптом"><code>sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target</code> (он же <code>PKIX path building failed</code>)</td>
-<td data-label="Что произошло">Не построилась цепочка: нет корня в truststore <strong>или</strong> сервер не прислал промежуточные</td>
-<td data-label="Где чинить">Сначала <code>openssl s_client -showcerts</code>: один сертификат → чинить сервер; несколько → добавить корень в свой truststore</td>
+<td data-label="Последствие">Не построилась цепочка: нет корня в truststore <strong>или</strong> сервер не прислал промежуточные</td>
+<td data-label="Место исправления">Сначала <code>openssl s_client -showcerts</code>: один сертификат → чинить сервер; несколько → добавить корень в свой truststore</td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом"><code>No subject alternative DNS name matching &lt;host&gt; found</code></td>
-<td data-label="Что произошло">Hostname verification: имени нет в SAN</td>
-<td data-label="Где чинить">Выпустить сертификат с нужным SAN; при подключении по IP — нужен SAN типа <code>IP:10.0.0.5</code> либо подключаться по имени</td>
+<td data-label="Последствие">Hostname verification: имени нет в SAN</td>
+<td data-label="Место исправления">Выпустить сертификат с нужным SAN; при подключении по IP — нужен SAN типа <code>IP:10.0.0.5</code> либо подключаться по имени</td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом"><code>No subject alternative names present</code></td>
-<td data-label="Что произошло">В сертификате вообще нет SAN (только CN)</td>
-<td data-label="Где чинить">Перевыпустить с SAN; поддержка CN как имени хоста в JDK и браузерах прекращена</td>
+<td data-label="Последствие">В сертификате вообще нет SAN (только CN)</td>
+<td data-label="Место исправления">Перевыпустить с SAN; поддержка CN как имени хоста в JDK и браузерах прекращена</td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом"><code>Received fatal alert: handshake_failure</code></td>
-<td data-label="Что произошло">Не пересеклись версии, cipher suites или группы; часто — <code>jdk.tls.disabledAlgorithms</code> после обновления JDK</td>
-<td data-label="Где чинить">Сравнить <code>Produced ClientHello</code> и возможности сервера (<code>nmap --script ssl-enum-ciphers</code>); проверить эффективное значение <code>jdk.tls.disabledAlgorithms</code></td>
+<td data-label="Последствие">Не пересеклись версии, cipher suites или группы; часто — <code>jdk.tls.disabledAlgorithms</code> после обновления JDK</td>
+<td data-label="Место исправления">Сравнить <code>Produced ClientHello</code> и возможности сервера (<code>nmap --script ssl-enum-ciphers</code>); проверить эффективное значение <code>jdk.tls.disabledAlgorithms</code></td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом"><code>Received fatal alert: certificate_unknown</code></td>
-<td data-label="Что произошло">Пир не смог обработать/принять предъявленный сертификат: чаще всего при mTLS сервер не доверяет CA клиента или клиент прислал лист без цепочки</td>
-<td data-label="Где чинить">Проверить, что keystore содержит <strong>цепочку</strong>, а не только лист; что CA клиента есть в truststore сервера</td>
+<td data-label="Последствие">Пир не смог обработать/принять предъявленный сертификат: чаще всего при mTLS сервер не доверяет CA клиента или клиент прислал лист без цепочки</td>
+<td data-label="Место исправления">Проверить, что keystore содержит <strong>цепочку</strong>, а не только лист; что CA клиента есть в truststore сервера</td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом"><code>Received fatal alert: bad_certificate</code></td>
-<td data-label="Что произошло">Клиентский сертификат отвергнут (истёк, отозван, не тот EKU)</td>
-<td data-label="Где чинить">Проверить срок и <code>Extended Key Usage: clientAuth</code></td>
+<td data-label="Последствие">Клиентский сертификат отвергнут (истёк, отозван, не тот EKU)</td>
+<td data-label="Место исправления">Проверить срок и <code>Extended Key Usage: clientAuth</code></td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом"><code>Received fatal alert: unrecognized_name</code></td>
-<td data-label="Что произошло">SNI не совпал с тем, что знает сервер</td>
-<td data-label="Где чинить">Подключаться по имени, а не по IP; проверить <code>server_name</code> в ClientHello</td>
+<td data-label="Последствие">SNI не совпал с тем, что знает сервер</td>
+<td data-label="Место исправления">Подключаться по имени, а не по IP; проверить <code>server_name</code> в ClientHello</td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом"><code>Received fatal alert: protocol_version</code></td>
-<td data-label="Что произошло">Сервер не умеет предложенные версии (или наоборот)</td>
-<td data-label="Где чинить">Проверить <code>enabled-protocols</code> и <code>jdk.tls.client.protocols</code></td>
+<td data-label="Последствие">Сервер не умеет предложенные версии (или наоборот)</td>
+<td data-label="Место исправления">Проверить <code>enabled-protocols</code> и <code>jdk.tls.client.protocols</code></td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом"><code>javax.net.ssl.SSLHandshakeException: Received fatal alert: unexpected_message</code></td>
-<td data-label="Что произошло">Часто — TLS-инспектирующий прокси или попытка TLS к plain-порту</td>
-<td data-label="Где чинить">Проверить, куда реально идёт соединение (<code>ss -tnp</code>, <code>traceroute</code>)</td>
+<td data-label="Последствие">Часто — TLS-инспектирующий прокси или попытка TLS к plain-порту</td>
+<td data-label="Место исправления">Проверить, куда реально идёт соединение (<code>ss -tnp</code>, <code>traceroute</code>)</td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом"><code>java.security.cert.CertificateExpiredException</code></td>
-<td data-label="Что произошло">Срок вышел</td>
-<td data-label="Где чинить">Метрика «дней до истечения» + оповещение за 30 дней, а не реакция постфактум</td>
+<td data-label="Последствие">Срок вышел</td>
+<td data-label="Место исправления">Метрика «дней до истечения» + оповещение за 30 дней, а не реакция постфактум</td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом"><code>Certificates does not conform to algorithm constraints</code></td>
-<td data-label="Что произошло">Алгоритм цепочки запрещён <code>jdk.certpath.disabledAlgorithms</code> (SHA-1, RSA &lt; 1024)</td>
-<td data-label="Где чинить">Перевыпустить сертификат; точечное послабление — только временно и изолированно</td>
+<td data-label="Последствие">Алгоритм цепочки запрещён <code>jdk.certpath.disabledAlgorithms</code> (SHA-1, RSA &lt; 1024)</td>
+<td data-label="Место исправления">Перевыпустить сертификат; точечное послабление — только временно и изолированно</td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом">Соединение висит и падает по таймауту, в логе пусто</td>
-<td data-label="Что произошло">Не TLS: межсетевой экран/секьюрити-группа дропает пакеты</td>
-<td data-label="Где чинить"><code>openssl s_client</code> с того же пода; проверять сеть, а не сертификаты</td>
+<td data-label="Последствие">Не TLS: межсетевой экран/секьюрити-группа дропает пакеты</td>
+<td data-label="Место исправления"><code>openssl s_client</code> с того же пода; проверять сеть, а не сертификаты</td>
 </tr>
 <tr>
 <td data-label="Сообщение / симптом"><code>Illegal key size</code></td>
-<td data-label="Что произошло">Древняя JRE без unlimited policy</td>
-<td data-label="Где чинить">JDK ≥ 8u161 либо policy-файлы</td>
+<td data-label="Последствие">Древняя JRE без unlimited policy</td>
+<td data-label="Место исправления">JDK ≥ 8u161 либо policy-файлы</td>
 </tr>
 </tbody>
 </table>
@@ -2378,49 +2378,49 @@ diff &lt;<span class="o">(</span>docker run --rm old-image cat /opt/java/openjdk
 <thead>
 <tr>
 <th>Этап</th>
-<th>Что должно быть</th>
+<th>Требование</th>
 <th>Типичный провал</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Этап">Генерация</td>
-<td data-label="Что должно быть">CSPRNG, правильная длина, генерация <strong>там, где ключ будет жить</strong> (в HSM/KMS ключ не должен покидать устройство)</td>
+<td data-label="Требование">CSPRNG, правильная длина, генерация <strong>там, где ключ будет жить</strong> (в HSM/KMS ключ не должен покидать устройство)</td>
 <td data-label="Типичный провал">Ключ сгенерирован на ноутбуке разработчика и переслан в мессенджере</td>
 </tr>
 <tr>
 <td data-label="Этап">Распространение</td>
-<td data-label="Что должно быть">Канал с аутентификацией и шифрованием; секрет-менеджер, не файл</td>
+<td data-label="Требование">Канал с аутентификацией и шифрованием; секрет-менеджер, не файл</td>
 <td data-label="Типичный провал">Ключ в <code>application.yml</code>, в переменной CI, в тикете Jira</td>
 </tr>
 <tr>
 <td data-label="Этап">Хранение</td>
-<td data-label="Что должно быть">Отдельно от данных, которые он защищает; с контролем доступа и аудитом</td>
+<td data-label="Требование">Отдельно от данных, которые он защищает; с контролем доступа и аудитом</td>
 <td data-label="Типичный провал">Ключ в той же БД, рядом с шифротекстом</td>
 </tr>
 <tr>
 <td data-label="Этап">Использование</td>
-<td data-label="Что должно быть">Минимальные права, ограничение операций, отдельный ключ на назначение</td>
+<td data-label="Требование">Минимальные права, ограничение операций, отдельный ключ на назначение</td>
 <td data-label="Типичный провал">Один «главный ключ» на всю систему для всего</td>
 </tr>
 <tr>
 <td data-label="Этап">Ротация</td>
-<td data-label="Что должно быть">По расписанию и по инциденту; версионирование шифротекста</td>
+<td data-label="Требование">По расписанию и по инциденту; версионирование шифротекста</td>
 <td data-label="Типичный провал">Ротации нет вообще; либо есть, но расшифровать старое нечем</td>
 </tr>
 <tr>
 <td data-label="Этап">Отзыв</td>
-<td data-label="Что должно быть">Возможность немедленно запретить ключ</td>
+<td data-label="Требование">Возможность немедленно запретить ключ</td>
 <td data-label="Типичный провал">Нет механизма; «просто перевыпустим» занимает неделю</td>
 </tr>
 <tr>
 <td data-label="Этап">Уничтожение</td>
-<td data-label="Что должно быть">Гарантированное стирание всех копий, включая бэкапы</td>
+<td data-label="Требование">Гарантированное стирание всех копий, включая бэкапы</td>
 <td data-label="Типичный провал">Ключ жив в снимке и в бэкапе за прошлый год</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Где ключ не должен лежать никогда.</strong> В git — даже в приватном и даже «временно», потому что история хранится вечно. В образе контейнера, потому что ключ получит любой, кто вытянул образ. В переменных окружения в открытом виде, потому что они видны в <code>/proc/&lt;pid&gt;/environ</code>, в <code>docker inspect</code>, в дампе краша и в логах старта Spring Boot при <code>DEBUG</code> на <code>Environment</code>. В логах, куда достаточно одного <code>log.debug("headers={}", headers)</code>, чтобы <code>Authorization</code> оказался в Kibana. В тикетах, вики и переписке, откуда он расходится по людям. И в клиентском приложении: мобильное приложение и SPA — не место для секрета, потому что оттуда его можно извлечь всегда.</p>
+<p><strong>Запретные места для ключа.</strong> В git — даже в приватном и даже «временно», потому что история хранится вечно. В образе контейнера, потому что ключ получит любой, кто вытянул образ. В переменных окружения в открытом виде, потому что они видны в <code>/proc/&lt;pid&gt;/environ</code>, в <code>docker inspect</code>, в дампе краша и в логах старта Spring Boot при <code>DEBUG</code> на <code>Environment</code>. В логах, куда достаточно одного <code>log.debug("headers={}", headers)</code>, чтобы <code>Authorization</code> оказался в Kibana. В тикетах, вики и переписке, откуда он расходится по людям. И в клиентском приложении: мобильное приложение и SPA — не место для секрета, потому что оттуда его можно извлечь всегда.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно: «мы же удалили коммит».</strong> Закрытый ключ, который попал в git и был удалён следующим коммитом, остаётся в истории, в форках, в кешах CI, в зеркалах и в индексах ботов, которые сканируют GitHub на ключи в реальном времени, так что счёт идёт на минуты. Единственно корректная реакция — считать ключ скомпрометированным и <strong>немедленно ротировать</strong>, а переписывание истории остаётся второстепенной гигиеной.</p>
 </blockquote>
@@ -2642,7 +2642,7 @@ keytool -list -keystore fields.p12 -storetype PKCS12 -storepass <span class="s2"
 </code></pre></div>
 
 <p>Прод здесь спасают четыре вещи. Первая — маленькая порция и короткие транзакции, потому что длинная транзакция на миллион строк раздувает WAL, задерживает <code>VACUUM</code> и держит блокировки. Вторая — отдельная транзакция на каждую запись, чтобы сбой на одной строке не откатывал весь пакет. Третья — рубильник <code>rotationEnabled</code>, который дежурный выключает одной командой. Четвёртая — метрика скорости, по которой считается ETA. По порядку величин 500 строк в секунду дают 43 млн записей в сутки, так что любая реальная таблица перешифровывается за часы или дни без заметной нагрузки, и гнать быстрее незачем: вы соревнуетесь не со временем, а с риском.</p>
-<p><strong>Когда уничтожать старый ключ.</strong> Только когда выполнены все три условия. Во-первых, число записей со старым key id равно нулю <strong>во всех</strong> таблицах, включая архивные и аудитные. Во-вторых, все бэкапы со старым шифротекстом либо перешифрованы, либо признаны неактуальными, и именно здесь чаще всего выясняется, что ключ придётся хранить ещё пять лет из-за срока хранения бэкапов. В-третьих, прошёл отчётный период, в течение которого могли всплыть записи из очередей, dead-letter и файловых выгрузок. До этого момента ключ переводят в состояние «только расшифровка»: в Vault это <code>min_decryption_version</code>, а в своём keyring ключ просто перестают выбирать как текущий.</p>
+<p><strong>Уничтожение старого ключа.</strong> Только когда выполнены все три условия. Во-первых, число записей со старым key id равно нулю <strong>во всех</strong> таблицах, включая архивные и аудитные. Во-вторых, все бэкапы со старым шифротекстом либо перешифрованы, либо признаны неактуальными, и именно здесь чаще всего выясняется, что ключ придётся хранить ещё пять лет из-за срока хранения бэкапов. В-третьих, прошёл отчётный период, в течение которого могли всплыть записи из очередей, dead-letter и файловых выгрузок. До этого момента ключ переводят в состояние «только расшифровка»: в Vault это <code>min_decryption_version</code>, а в своём keyring ключ просто перестают выбирать как текущий.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно: перешифровка ломает поиск.</strong> Если рядом с зашифрованным столбцом есть blind index (7.8), то при смене <strong>индексного</strong> ключа его придётся пересчитать целиком, и пока идёт пересчёт, поиск по таблице будет находить не всё. Ключ шифрования и ключ индекса ротируются <strong>независимо</strong>, и для индексного ключа нужна отдельная процедура с двойной записью: сначала добавляют второй индексный столбец и заполняют его, затем поиск начинает смотреть в оба, и только потом старый столбец удаляют.</p>
 </blockquote>
@@ -3082,7 +3082,7 @@ https://pages.nist.gov/800-63-3/sp800-63b.html">NIST SP 800-63B</a> прямо �
 <hr>
 <h2 id="12-диагностика">12. Диагностика</h2>
 <p>Диагностика криптографических проблем почти всегда сводится к одному вопросу: что на самом деле происходит, а не что написано в конфигурации. Раздел собран как набор команд по областям — TLS-соединение со стороны сервера и JVM, содержимое хранилищ, политики JDK, энтропия в контейнере, поиск утёкших секретов и профилирование, — а в конце идут три чеклиста: для неработающей TLS-интеграции, для ревью кода на криптографические ошибки и для проверки шифрования данных в БД. Команды можно копировать как есть, подставив свои хосты и пути, а комментарии в них подсказывают, на что смотреть в выводе.</p>
-<p><strong>Что реально согласовано в TLS-соединении.</strong> Первым делом стоит посмотреть на соединение глазами сервера: какую версию и шифр он выбрал, какую группу для обмена ключами использовал и сколько сертификатов прислал.</p>
+<p><strong>Фактически согласованные параметры TLS-соединения.</strong> Первым делом стоит посмотреть на соединение глазами сервера: какую версию и шифр он выбрал, какую группу для обмена ключами использовал и сколько сертификатов прислал.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>openssl s_client -connect api.partner.ru:443 -servername api.partner.ru -showcerts &lt; /dev/null
 <span class="c1"># смотреть: Protocol, Cipher, Server Temp Key (группа обмена), Verify return code,</span>
 <span class="c1"># число сертификатов в цепочке (должен быть лист + промежуточные)</span>
@@ -3096,7 +3096,7 @@ grep -E <span class="s2">"Produced ClientHello|Consuming ServerHello|PKIX|No sub
 </code></pre></div>
 
 <p>Найденную в логе строку сопоставляют с причиной следующим образом. <code>PKIX path building failed</code> означает, что в truststore нет корня или сервер не прислал промежуточные сертификаты. <code>No subject alternative DNS name matching X found</code> указывает на hostname verification: сертификат выпущен не на тот домен, или вы подключаетесь по IP. <code>handshake_failure</code> говорит о том, что не пересеклись версии, шифры или группы, и часто виноват <code>jdk.tls.disabledAlgorithms</code>. <code>bad_certificate</code> при mTLS значит, что сервер не доверяет CA клиента или клиент не отправил сертификат, а при <code>certificate_unknown</code> проверьте, что keystore действительно содержит цепочку, а не только лист.</p>
-<p><strong>Что в хранилищах.</strong> Следующий шаг — убедиться, что в keystore и truststore лежит то, что вы думаете: нужные записи, цепочка, SAN и сроки действия.</p>
+<p><strong>Хранилища.</strong> Следующий шаг — убедиться, что в keystore и truststore лежит то, что вы думаете: нужные записи, цепочка, SAN и сроки действия.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>keytool -list -v -keystore service.p12 -storetype PKCS12 -storepass <span class="s2">"</span><span class="nv">$PASS</span><span class="s2">"</span>
 keytool -list -keystore <span class="s2">"</span><span class="nv">$JAVA_HOME</span><span class="s2">/lib/security/cacerts"</span> -storepass changeit <span class="p">|</span> grep -ci <span class="s2">"trustedCertEntry"</span>
 openssl x509 -in cert.pem -noout -text <span class="p">|</span> grep -A2 <span class="s2">"Subject Alternative Name"</span>
@@ -3181,5 +3181,5 @@ https://commons.wikimedia.org/wiki/File:Old_Key.JPG">Старинный лату
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-модель-угроз-и-базовые-свойства">1. Модель угроз и базовые свойства</a></li><li><a href="#2-случайность">2. Случайность</a></li><li><a href="#3-хеш-функции-и-пароли">3. Хеш-функции и пароли</a></li><li><a href="#4-mac-aead-и-симметричное-шифрование">4. MAC, AEAD и симметричное шифрование</a></li><li><a href="#5-асимметричная-криптография">5. Асимметричная криптография</a></li><li><a href="#6-tls">6. TLS</a></li><li><a href="#7-управление-ключами">7. Управление ключами</a></li><li><a href="#8-криптографическая-архитектура-jdk-jcajce">8. Криптографическая архитектура JDK (JCA/JCE)</a></li><li><a href="#9-постквантовая-криптография">9. Постквантовая криптография</a></li><li><a href="#10-разобранные-инциденты">10. Разобранные инциденты</a></li><li><a href="#11-ошибки-и-антипаттерны">11. Ошибки и антипаттерны</a></li><li><a href="#12-диагностика">12. Диагностика</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

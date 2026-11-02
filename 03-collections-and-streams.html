@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть I. Язык</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/03.svg" width="48" height="48" alt="" loading="lazy">3. Коллекции и Stream API под капотом</h1><div class="meta"><span class="part-tag">Часть I. Язык</span><span>51 161 слов</span><span>≈ 4 ч 45 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/03.svg" width="48" height="48" alt="" loading="lazy">3. Коллекции и Stream API под капотом</h1><div class="meta"><span class="part-tag">Часть I. Язык</span><span>51 151 слов</span><span>≈ 4 ч 45 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>Коллекции составляют 80 % структур данных любого бэкенда: на них держится каждый список в DTO, каждый кэш и каждая группировка в отчёте. Ошибки в этой области не валят сборку исключением на CI, а всплывают позже, когда вырастают данные: квадратичной сложностью O(n²) на проде, <code>ConcurrentModificationException</code> раз в неделю в 3 ночи, утечкой памяти через <code>HashMap</code> с изменяемым ключом или параллельным стримом, который занял весь общий <code>ForkJoinPool</code> и остановил сервис. Поэтому на интервью senior-уровня про коллекции спрашивают не «что такое HashMap», а «что произойдёт при resize, пока другой поток читает», «почему <code>Collectors.toList()</code> и <code>Stream.toList()</code> ведут себя по-разному» и «когда <code>parallelStream()</code> сделает только хуже». Глава собирает механизмы, цифры и формулировки, с которыми на такие вопросы можно отвечать уверенно.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">16 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-иерархия-и-контракты" data-tip="Раздел этой главы: 1. Иерархия и контракты">1. Иерархия и контракты</a></li><li><a href="#2-списки-и-очереди" data-tip="Раздел этой главы: 2. Списки и очереди">2. Списки и очереди</a></li><li><a href="#3-устройство-hashmap" data-tip="Раздел этой главы: 3. Устройство HashMap">3. Устройство HashMap</a></li><li><a href="#4-специализированные-map-и-set" data-tip="Раздел этой главы: 4. Специализированные Map и Set">4. Специализированные Map и Set</a></li><li><a href="#5-неизменяемость-view-и-fail-fast-итераторы" data-tip="Раздел этой главы: 5. Неизменяемость, view и fail-fast итераторы">5. Неизменяемость, view и fail-fast итераторы</a></li><li><a href="#6-concurrent-коллекции-обзор" data-tip="Раздел этой главы: 6. Concurrent-коллекции (обзор)">6. Concurrent-коллекции (обзор)</a></li><li><a href="#7-spliterator-и-устройство-stream-pipeline" data-tip="Раздел этой главы: 7. Spliterator и устройство stream pipeline">7. Spliterator и устройство stream pipeline</a></li><li><a href="#8-collectors-и-reduce" data-tip="Раздел этой главы: 8. Collectors и reduce">8. Collectors и reduce</a></li><li><a href="#9-параллельные-стримы" data-tip="Раздел этой главы: 9. Параллельные стримы">9. Параллельные стримы</a></li><li><a href="#10-примитивные-стримы-optional-gatherers-производительность" data-tip="Раздел этой главы: 10. Примитивные стримы, Optional, Gatherers, производительность">10. Примитивные стримы, Optional, Gatherers, производительность</a></li><li><a href="#11-разобранные-инциденты" data-tip="Раздел этой главы: 11. Разобранные инциденты">11. Разобранные инциденты</a></li><li><a href="#12-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 12. Ошибки и антипаттерны">12. Ошибки и антипаттерны</a></li><li><a href="#13-диагностика" data-tip="Раздел этой главы: 13. Диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью" data-tip="Раздел этой главы: 14. Вопросы на интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками" data-tip="Раздел этой главы: 15. Попробовать руками">15. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
@@ -208,44 +208,44 @@ https://shipilev.net/jvm/objects-inside-out/">Shipilёv, Java Objects Inside Out
 <thead>
 <tr>
 <th>Структура</th>
-<th>Что хранится на элемент</th>
+<th>Данные на элемент</th>
 <th>Байт/элемент (compressed oops)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Структура"><code>ArrayList</code> (плотно упакованный, после <code>trimToSize</code>)</td>
-<td data-label="Что хранится на элемент">1 ссылка в <code>Object[]</code></td>
+<td data-label="Данные на элемент">1 ссылка в <code>Object[]</code></td>
 <td data-label="Байт/элемент (compressed oops)"><strong>4</strong> (+ 16 байт заголовка массива на весь список + 24 байта сам объект <code>ArrayList</code>)</td>
 </tr>
 <tr>
 <td data-label="Структура"><code>ArrayList</code> после роста (в среднем ~25 % slack)</td>
-<td data-label="Что хранится на элемент">ссылка + пустые слоты</td>
+<td data-label="Данные на элемент">ссылка + пустые слоты</td>
 <td data-label="Байт/элемент (compressed oops)"><strong>≈ 5–6</strong></td>
 </tr>
 <tr>
 <td data-label="Структура"><code>LinkedList.Node</code></td>
-<td data-label="Что хранится на элемент">заголовок 12 + <code>item</code> 4 + <code>next</code> 4 + <code>prev</code> 4 = 24</td>
+<td data-label="Данные на элемент">заголовок 12 + <code>item</code> 4 + <code>next</code> 4 + <code>prev</code> 4 = 24</td>
 <td data-label="Байт/элемент (compressed oops)"><strong>24</strong> (+ 32 байта сам <code>LinkedList</code>)</td>
 </tr>
 <tr>
 <td data-label="Структура"><code>HashMap.Node</code></td>
-<td data-label="Что хранится на элемент">12 + <code>hash</code> 4 + <code>key</code> 4 + <code>value</code> 4 + <code>next</code> 4 = 28 → 32</td>
+<td data-label="Данные на элемент">12 + <code>hash</code> 4 + <code>key</code> 4 + <code>value</code> 4 + <code>next</code> 4 = 28 → 32</td>
 <td data-label="Байт/элемент (compressed oops)"><strong>32</strong> + слот в <code>table</code> (4 / load factor ≈ 5–8)</td>
 </tr>
 <tr>
 <td data-label="Структура"><code>HashMap.TreeNode</code></td>
-<td data-label="Что хранится на элемент">Node + <code>parent, left, right, prev</code> 16 + <code>red</code> 1 = 45 → 48</td>
+<td data-label="Данные на элемент">Node + <code>parent, left, right, prev</code> 16 + <code>red</code> 1 = 45 → 48</td>
 <td data-label="Байт/элемент (compressed oops)"><strong>48</strong></td>
 </tr>
 <tr>
 <td data-label="Структура"><code>LinkedHashMap.Entry</code></td>
-<td data-label="Что хранится на элемент">Node + <code>before, after</code> 8 = 36 → 40</td>
+<td data-label="Данные на элемент">Node + <code>before, after</code> 8 = 36 → 40</td>
 <td data-label="Байт/элемент (compressed oops)"><strong>40</strong></td>
 </tr>
 <tr>
 <td data-label="Структура"><code>TreeMap.Entry</code></td>
-<td data-label="Что хранится на элемент">12 + <code>key, value, left, right, parent</code> 20 + <code>color</code> 1 = 33 → 40</td>
+<td data-label="Данные на элемент">12 + <code>key, value, left, right, parent</code> 20 + <code>color</code> 1 = 33 → 40</td>
 <td data-label="Байт/элемент (compressed oops)"><strong>40</strong></td>
 </tr>
 </tbody>
@@ -871,34 +871,34 @@ https://github.com/openjdk/jdk21u/blob/master/src/java.base/share/classes/java/u
 <thead>
 <tr>
 <th>Библиотека</th>
-<th>Что даёт</th>
+<th>Польза</th>
 <th>Trade-off</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Библиотека"><strong>Eclipse Collections</strong></td>
-<td data-label="Что даёт"><code>IntObjectHashMap</code>, <code>LongLongHashMap</code>, <code>IntHashSet</code>, богатый API (примитивные стримоподобные операции)</td>
+<td data-label="Польза"><code>IntObjectHashMap</code>, <code>LongLongHashMap</code>, <code>IntHashSet</code>, богатый API (примитивные стримоподобные операции)</td>
 <td data-label="Trade-off">самый большой jar и API-поверхность; своя иерархия типов, не <code>java.util</code></td>
 </tr>
 <tr>
 <td data-label="Библиотека"><strong>fastutil</strong></td>
-<td data-label="Что даёт">полный набор <code>Int2ObjectOpenHashMap</code>, <code>Long2LongOpenHashMap</code>, огромные массивы (<code>BigArrays</code>, &gt; 2³¹)</td>
+<td data-label="Польза">полный набор <code>Int2ObjectOpenHashMap</code>, <code>Long2LongOpenHashMap</code>, огромные массивы (<code>BigArrays</code>, &gt; 2³¹)</td>
 <td data-label="Trade-off">гигантский jar (десятки МБ; берите нужные модули или shade); открытая адресация</td>
 </tr>
 <tr>
 <td data-label="Библиотека"><strong>HPPC</strong> (Carrot Search)</td>
-<td data-label="Что даёт">минималистичные примитивные отображения/множества/списки</td>
+<td data-label="Польза">минималистичные примитивные отображения/множества/списки</td>
 <td data-label="Trade-off">скромный API, ставка на скорость и простоту</td>
 </tr>
 <tr>
 <td data-label="Библиотека"><strong>Koloboke</strong></td>
-<td data-label="Что даёт">генерируемые примитивные коллекции, реализуют <code>java.util</code>-интерфейсы</td>
+<td data-label="Польза">генерируемые примитивные коллекции, реализуют <code>java.util</code>-интерфейсы</td>
 <td data-label="Trade-off">проект давно без активных релизов</td>
 </tr>
 <tr>
 <td data-label="Библиотека"><strong>Agrona</strong> (<code>Int2ObjectHashMap</code>)</td>
-<td data-label="Что даёт">low-latency коллекции, off-heap буферы</td>
+<td data-label="Польза">low-latency коллекции, off-heap буферы</td>
 <td data-label="Trade-off">ниша HFT/messaging, специфичный API</td>
 </tr>
 </tbody>
@@ -1162,7 +1162,7 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurren
 <th>Структура</th>
 <th>Границы</th>
 <th>Замки</th>
-<th>Когда</th>
+<th>Применение</th>
 </tr>
 </thead>
 <tbody>
@@ -1171,49 +1171,49 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurren
 <td data-label="Структура">кольцевой буфер</td>
 <td data-label="Границы">обязательно ограничена</td>
 <td data-label="Замки">один <code>ReentrantLock</code> + 2 <code>Condition</code> (<code>notEmpty/notFull</code>), опционально fair</td>
-<td data-label="Когда">простые producer-consumer с backpressure, предсказуемая память</td>
+<td data-label="Применение">простые producer-consumer с backpressure, предсказуемая память</td>
 </tr>
 <tr>
 <td data-label="Класс"><code>LinkedBlockingQueue</code></td>
 <td data-label="Структура">связный список</td>
 <td data-label="Границы">опционально (по умолчанию <code>Integer.MAX_VALUE</code>)</td>
 <td data-label="Замки">два замка (<code>putLock</code>, <code>takeLock</code>) — producer и consumer не мешают друг другу</td>
-<td data-label="Когда"><code>Executors.newFixedThreadPool</code> (неограниченная — OOM при перегрузке)</td>
+<td data-label="Применение"><code>Executors.newFixedThreadPool</code> (неограниченная — OOM при перегрузке)</td>
 </tr>
 <tr>
 <td data-label="Класс"><code>SynchronousQueue</code></td>
 <td data-label="Структура">без буфера</td>
 <td data-label="Границы">0</td>
 <td data-label="Замки">handoff, lock-free</td>
-<td data-label="Когда"><code>Executors.newCachedThreadPool</code>; каждая задача — либо сразу в поток, либо новый поток</td>
+<td data-label="Применение"><code>Executors.newCachedThreadPool</code>; каждая задача — либо сразу в поток, либо новый поток</td>
 </tr>
 <tr>
 <td data-label="Класс"><code>PriorityBlockingQueue</code></td>
 <td data-label="Структура">куча</td>
 <td data-label="Границы">неограниченная</td>
 <td data-label="Замки">один замок</td>
-<td data-label="Когда">задачи с приоритетом; <code>put</code> никогда не блокирует</td>
+<td data-label="Применение">задачи с приоритетом; <code>put</code> никогда не блокирует</td>
 </tr>
 <tr>
 <td data-label="Класс"><code>DelayQueue</code></td>
 <td data-label="Структура"><code>PriorityQueue&lt;Delayed&gt;</code></td>
 <td data-label="Границы">неограниченная</td>
 <td data-label="Замки">один замок</td>
-<td data-label="Когда">отложенные задачи, TTL-очистка, повторы с задержкой</td>
+<td data-label="Применение">отложенные задачи, TTL-очистка, повторы с задержкой</td>
 </tr>
 <tr>
 <td data-label="Класс"><code>LinkedTransferQueue</code></td>
 <td data-label="Структура">dual queue</td>
 <td data-label="Границы">неограниченная</td>
 <td data-label="Замки">lock-free</td>
-<td data-label="Когда"><code>transfer()</code> — ждать, пока потребитель заберёт</td>
+<td data-label="Применение"><code>transfer()</code> — ждать, пока потребитель заберёт</td>
 </tr>
 <tr>
 <td data-label="Класс"><code>ConcurrentLinkedQueue</code> (не Blocking)</td>
 <td data-label="Структура">Michael–Scott lock-free</td>
 <td data-label="Границы">неограниченная</td>
 <td data-label="Замки">CAS</td>
-<td data-label="Когда">когда блокировать нельзя, а <code>size()</code> — O(n)</td>
+<td data-label="Применение">когда блокировать нельзя, а <code>size()</code> — O(n)</td>
 </tr>
 </tbody>
 </table>
@@ -1566,82 +1566,82 @@ https://openjdk.org/jeps/401">JEP 401: Value Objects (Preview)</a>, по сос�
 <thead>
 <tr>
 <th>Сценарий</th>
-<th>Что брать</th>
-<th>Почему не альтернатива</th>
+<th>Выбор</th>
+<th>Недостаток альтернативы</th>
 <th>Критерий переключения</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Сценарий">Отображение, читают и пишут много потоков</td>
-<td data-label="Что брать"><code>ConcurrentHashMap</code></td>
-<td data-label="Почему не альтернатива"><code>synchronizedMap</code> — один монитор на всё отображение: каждый <code>get</code> сериализуется; на 16 потоках это пропускная способность одного</td>
+<td data-label="Выбор"><code>ConcurrentHashMap</code></td>
+<td data-label="Недостаток альтернативы"><code>synchronizedMap</code> — один монитор на всё отображение: каждый <code>get</code> сериализуется; на 16 потоках это пропускная способность одного</td>
 <td data-label="Критерий переключения">Всегда, если отображение разделяемое и горячее</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Отображение, доступ редкий, важно простота</td>
-<td data-label="Что брать"><code>Collections.synchronizedMap</code></td>
-<td data-label="Почему не альтернатива">CHM тоже подойдёт, но <code>synchronizedMap</code> даёт атомарность нескольких операций через <code>synchronized (map) { ... }</code>, чего CHM не умеет</td>
+<td data-label="Выбор"><code>Collections.synchronizedMap</code></td>
+<td data-label="Недостаток альтернативы">CHM тоже подойдёт, но <code>synchronizedMap</code> даёт атомарность нескольких операций через <code>synchronized (map) { ... }</code>, чего CHM не умеет</td>
 <td data-label="Критерий переключения">Если нужна атомарность <strong>композиции</strong> операций, а отображение холодное</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Отображение под своей блокировкой (<code>HashMap</code> + <code>ReentrantLock</code>)</td>
-<td data-label="Что брать">когда транзакция охватывает несколько ключей или несколько структур</td>
-<td data-label="Почему не альтернатива">CHM атомарен только по одному ключу; <code>putAll</code>, <code>clear</code>, «проверить размер и вставить» — не атомарны</td>
+<td data-label="Выбор">когда транзакция охватывает несколько ключей или несколько структур</td>
+<td data-label="Недостаток альтернативы">CHM атомарен только по одному ключу; <code>putAll</code>, <code>clear</code>, «проверить размер и вставить» — не атомарны</td>
 <td data-label="Критерий переключения">Когда инвариант связывает больше одного ключа</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Отображение с порядком ключей, многопоточное</td>
-<td data-label="Что брать"><code>ConcurrentSkipListMap</code></td>
-<td data-label="Почему не альтернатива"><code>Collections.synchronizedSortedMap(new TreeMap&lt;&gt;())</code> — один монитор; CHM порядка не даёт</td>
+<td data-label="Выбор"><code>ConcurrentSkipListMap</code></td>
+<td data-label="Недостаток альтернативы"><code>Collections.synchronizedSortedMap(new TreeMap&lt;&gt;())</code> — один монитор; CHM порядка не даёт</td>
 <td data-label="Критерий переключения">Нужны <code>floorKey</code>/<code>subMap</code>/<code>firstEntry</code> под конкуренцией. Помните: <code>size()</code> — O(n), обход всей структуры</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Список слушателей / обработчиков / конфигурация</td>
-<td data-label="Что брать"><code>CopyOnWriteArrayList</code></td>
-<td data-label="Почему не альтернатива">CHM-<code>newKeySet</code> даст порядок случайный; <code>synchronizedList</code> заставит блокироваться на чтении</td>
+<td data-label="Выбор"><code>CopyOnWriteArrayList</code></td>
+<td data-label="Недостаток альтернативы">CHM-<code>newKeySet</code> даст порядок случайный; <code>synchronizedList</code> заставит блокироваться на чтении</td>
 <td data-label="Критерий переключения"><strong>Критерий применимости точный:</strong> запись копирует весь массив за O(n), значит амортизированная стоимость приемлема, только когда чтений на <strong>два-три порядка</strong> больше записей и размер списка — десятки-сотни. Ориентир: сотни тысяч чтений на одну запись, запись реже раза в секунду</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Множество, многопоточное, с частыми записями</td>
-<td data-label="Что брать"><code>ConcurrentHashMap.newKeySet()</code></td>
-<td data-label="Почему не альтернатива"><code>CopyOnWriteArraySet</code> — O(n) <code>contains</code> при каждом <code>add</code> плюс копирование: на тысячах элементов это квадрат</td>
+<td data-label="Выбор"><code>ConcurrentHashMap.newKeySet()</code></td>
+<td data-label="Недостаток альтернативы"><code>CopyOnWriteArraySet</code> — O(n) <code>contains</code> при каждом <code>add</code> плюс копирование: на тысячах элементов это квадрат</td>
 <td data-label="Критерий переключения">Всегда, кроме read-mostly-реестров</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Очередь producer–consumer с backpressure</td>
-<td data-label="Что брать"><code>ArrayBlockingQueue(n)</code></td>
-<td data-label="Почему не альтернатива"><code>LinkedBlockingQueue()</code> без границы — отложенный OOM: очередь растёт, пока не кончится куча</td>
+<td data-label="Выбор"><code>ArrayBlockingQueue(n)</code></td>
+<td data-label="Недостаток альтернативы"><code>LinkedBlockingQueue()</code> без границы — отложенный OOM: очередь растёт, пока не кончится куча</td>
 <td data-label="Критерий переключения">Когда важна предсказуемая память: кольцевой буфер, ноль выделений памяти на элемент</td>
 </tr>
 <tr>
 <td data-label="Сценарий">То же, но producer и consumer оба горячие</td>
-<td data-label="Что брать"><code>LinkedBlockingQueue(n)</code></td>
-<td data-label="Почему не альтернатива"><code>ArrayBlockingQueue</code> использует <strong>один</strong> <code>ReentrantLock</code> на голову и хвост — producer и consumer конкурируют между собой</td>
+<td data-label="Выбор"><code>LinkedBlockingQueue(n)</code></td>
+<td data-label="Недостаток альтернативы"><code>ArrayBlockingQueue</code> использует <strong>один</strong> <code>ReentrantLock</code> на голову и хвост — producer и consumer конкурируют между собой</td>
 <td data-label="Критерий переключения">Два раздельных замка (<code>putLock</code>/<code>takeLock</code>) снимают эту конкуренцию; цена — <code>Node</code> (24 байта мусора) на каждый элемент</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Прямая передача «задача — свободному потоку»</td>
-<td data-label="Что брать"><code>SynchronousQueue</code></td>
-<td data-label="Почему не альтернатива">Буфера нет вообще: <code>offer</code> возвращает <code>false</code>, если никто не ждёт</td>
+<td data-label="Выбор"><code>SynchronousQueue</code></td>
+<td data-label="Недостаток альтернативы">Буфера нет вообще: <code>offer</code> возвращает <code>false</code>, если никто не ждёт</td>
 <td data-label="Критерий переключения">Основа <code>newCachedThreadPool</code>. Даёт мгновенный отказ вместо накопления очереди — то, что нужно, когда очередь в принципе вредна</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Передача с подтверждением «взяли»</td>
-<td data-label="Что брать"><code>LinkedTransferQueue</code></td>
-<td data-label="Почему не альтернатива"><code>transfer(e)</code> блокирует, пока потребитель не заберёт элемент; <code>BlockingQueue.put</code> возвращается сразу после постановки в очередь</td>
+<td data-label="Выбор"><code>LinkedTransferQueue</code></td>
+<td data-label="Недостаток альтернативы"><code>transfer(e)</code> блокирует, пока потребитель не заберёт элемент; <code>BlockingQueue.put</code> возвращается сразу после постановки в очередь</td>
 <td data-label="Критерий переключения">Когда producer должен знать, что элемент обработан, а не только принят</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Очередь без блокировок, размер не нужен</td>
-<td data-label="Что брать"><code>ConcurrentLinkedQueue</code></td>
-<td data-label="Почему не альтернатива">Не <code>BlockingQueue</code>: <code>take()</code> нет, потребителю придётся крутиться или парковаться самому</td>
+<td data-label="Выбор"><code>ConcurrentLinkedQueue</code></td>
+<td data-label="Недостаток альтернативы">Не <code>BlockingQueue</code>: <code>take()</code> нет, потребителю придётся крутиться или парковаться самому</td>
 <td data-label="Критерий переключения">Когда блокировать нельзя вообще (например, внутри обработчика в реактивной цепочке операторов, глава <a href="11-reactive.html" data-tip="11. Реактивное программирование">11</a>, <a href="11-reactive.html" data-tip="11. Реактивное программирование"><code>11-reactive.md</code></a>). <code>size()</code> — O(n), не использовать для метрик</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Счётчик под высокой конкуренцией</td>
-<td data-label="Что брать"><code>LongAdder</code></td>
-<td data-label="Почему не альтернатива"><code>AtomicLong</code> на 16 потоках — все CAS'ы бьются в одну кэш-линию</td>
+<td data-label="Выбор"><code>LongAdder</code></td>
+<td data-label="Недостаток альтернативы"><code>AtomicLong</code> на 16 потоках — все CAS'ы бьются в одну кэш-линию</td>
 <td data-label="Критерий переключения">Глава 08, раздел 3.4</td>
 </tr>
 </tbody>
@@ -1704,58 +1704,58 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Spliterat
 <tr>
 <th>Характеристика</th>
 <th>Смысл</th>
-<th>Кто выставляет</th>
-<th>Что оптимизирует</th>
+<th>Источник</th>
+<th>Оптимизация</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Характеристика"><code>SIZED</code></td>
 <td data-label="Смысл"><code>estimateSize()</code> — точное число</td>
-<td data-label="Кто выставляет"><code>ArrayList</code>, массивы, <code>HashMap</code>, <code>IntStream.range</code></td>
-<td data-label="Что оптимизирует"><code>toArray</code>/<code>toList</code> выделяют массив нужного размера сразу; <code>count()</code> не обходит элементы</td>
+<td data-label="Источник"><code>ArrayList</code>, массивы, <code>HashMap</code>, <code>IntStream.range</code></td>
+<td data-label="Оптимизация"><code>toArray</code>/<code>toList</code> выделяют массив нужного размера сразу; <code>count()</code> не обходит элементы</td>
 </tr>
 <tr>
 <td data-label="Характеристика"><code>SUBSIZED</code></td>
 <td data-label="Смысл">все потомки <code>trySplit</code> тоже <code>SIZED</code></td>
-<td data-label="Кто выставляет"><code>ArrayList</code>, массивы, <code>range</code></td>
-<td data-label="Что оптимизирует">параллельный <code>toArray</code> пишет в один массив по смещениям без merge</td>
+<td data-label="Источник"><code>ArrayList</code>, массивы, <code>range</code></td>
+<td data-label="Оптимизация">параллельный <code>toArray</code> пишет в один массив по смещениям без merge</td>
 </tr>
 <tr>
 <td data-label="Характеристика"><code>ORDERED</code></td>
 <td data-label="Смысл">есть encounter order</td>
-<td data-label="Кто выставляет"><code>List</code>, <code>LinkedHashSet</code>, <code>SortedSet</code>, массивы</td>
-<td data-label="Что оптимизирует">сохранение порядка в <code>forEachOrdered</code>, <code>limit</code>, <code>findFirst</code>; <strong>отсутствие</strong> — свобода для <code>distinct</code>/<code>limit</code> в параллели</td>
+<td data-label="Источник"><code>List</code>, <code>LinkedHashSet</code>, <code>SortedSet</code>, массивы</td>
+<td data-label="Оптимизация">сохранение порядка в <code>forEachOrdered</code>, <code>limit</code>, <code>findFirst</code>; <strong>отсутствие</strong> — свобода для <code>distinct</code>/<code>limit</code> в параллели</td>
 </tr>
 <tr>
 <td data-label="Характеристика"><code>SORTED</code></td>
 <td data-label="Смысл">элементы отсортированы (<code>getComparator()</code>)</td>
-<td data-label="Кто выставляет"><code>TreeSet</code>, <code>SortedSet</code>, после <code>sorted()</code></td>
-<td data-label="Что оптимизирует">повторный <code>sorted()</code> с тем же порядком пропускается</td>
+<td data-label="Источник"><code>TreeSet</code>, <code>SortedSet</code>, после <code>sorted()</code></td>
+<td data-label="Оптимизация">повторный <code>sorted()</code> с тем же порядком пропускается</td>
 </tr>
 <tr>
 <td data-label="Характеристика"><code>DISTINCT</code></td>
 <td data-label="Смысл">нет <code>equals</code>-дубликатов</td>
-<td data-label="Кто выставляет"><code>Set</code></td>
-<td data-label="Что оптимизирует"><code>distinct()</code> становится no-op</td>
+<td data-label="Источник"><code>Set</code></td>
+<td data-label="Оптимизация"><code>distinct()</code> становится no-op</td>
 </tr>
 <tr>
 <td data-label="Характеристика"><code>NONNULL</code></td>
 <td data-label="Смысл">нет <code>null</code></td>
-<td data-label="Кто выставляет"><code>ConcurrentHashMap</code>, <code>ArrayDeque</code>, <code>List.of</code></td>
-<td data-label="Что оптимизирует">пропуск null-проверок</td>
+<td data-label="Источник"><code>ConcurrentHashMap</code>, <code>ArrayDeque</code>, <code>List.of</code></td>
+<td data-label="Оптимизация">пропуск null-проверок</td>
 </tr>
 <tr>
 <td data-label="Характеристика"><code>IMMUTABLE</code></td>
 <td data-label="Смысл">источник не меняется структурно</td>
-<td data-label="Кто выставляет"><code>List.of</code>, <code>Arrays.asList</code> (?), <code>IntStream.range</code></td>
-<td data-label="Что оптимизирует">не нужна проверка на CME</td>
+<td data-label="Источник"><code>List.of</code>, <code>Arrays.asList</code> (?), <code>IntStream.range</code></td>
+<td data-label="Оптимизация">не нужна проверка на CME</td>
 </tr>
 <tr>
 <td data-label="Характеристика"><code>CONCURRENT</code></td>
 <td data-label="Смысл">источник можно менять из нескольких потоков</td>
-<td data-label="Кто выставляет"><code>ConcurrentHashMap</code>, <code>ConcurrentLinkedQueue</code></td>
-<td data-label="Что оптимизирует">non-interference не требуется</td>
+<td data-label="Источник"><code>ConcurrentHashMap</code>, <code>ConcurrentLinkedQueue</code></td>
+<td data-label="Оптимизация">non-interference не требуется</td>
 </tr>
 </tbody>
 </table>
@@ -1956,7 +1956,7 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/Co
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th><code>Collectors.toList()</code> (Java 8)</th>
 <th><code>Stream.toList()</code> (Java 16)</th>
 <th><code>Collectors.toUnmodifiableList()</code> (Java 10)</th>
@@ -1964,31 +1964,31 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/Co
 </thead>
 <tbody>
 <tr>
-<td data-label="">Тип результата</td>
+<td data-label="Критерий">Тип результата</td>
 <td data-label="Collectors.toList() (Java 8)">«no guarantees on the type, mutability» — фактически <code>ArrayList</code></td>
 <td data-label="Stream.toList() (Java 16)"><strong>unmodifiable</strong> (<code>UnsupportedOperationException</code> на мутаторах)</td>
 <td data-label="Collectors.toUnmodifiableList() (Java 10)">unmodifiable</td>
 </tr>
 <tr>
-<td data-label=""><code>null</code>-элементы</td>
+<td data-label="Критерий"><code>null</code>-элементы</td>
 <td data-label="Collectors.toList() (Java 8)">допустимы</td>
 <td data-label="Stream.toList() (Java 16)"><strong>допустимы</strong></td>
 <td data-label="Collectors.toUnmodifiableList() (Java 10)"><code>NullPointerException</code></td>
 </tr>
 <tr>
-<td data-label="">Реализация</td>
+<td data-label="Критерий">Реализация</td>
 <td data-label="Collectors.toList() (Java 8)"><code>ArrayList::new</code> + <code>add</code>, рост ×1.5 при неизвестном размере</td>
 <td data-label="Stream.toList() (Java 16)"><code>toArray()</code> → <code>Arrays.asList</code> → <code>unmodifiableList</code> (javadoc); для <code>SIZED</code> — массив ровно нужного размера без промежуточных копий</td>
 <td data-label="Collectors.toUnmodifiableList() (Java 10)">как <code>toList</code> + <code>List.copyOf</code></td>
 </tr>
 <tr>
-<td data-label="">Память</td>
+<td data-label="Критерий">Память</td>
 <td data-label="Collectors.toList() (Java 8)">slack до 33 %</td>
 <td data-label="Stream.toList() (Java 16)">плотно</td>
 <td data-label="Collectors.toUnmodifiableList() (Java 10)">плотно</td>
 </tr>
 <tr>
-<td data-label="">Когда</td>
+<td data-label="Критерий">Когда</td>
 <td data-label="Collectors.toList() (Java 8)">нужен изменяемый список (редко)</td>
 <td data-label="Stream.toList() (Java 16)"><strong>по умолчанию</strong> для возврата из метода</td>
 <td data-label="Collectors.toUnmodifiableList() (Java 10)">когда <code>null</code> недопустим и нужна <code>List.of</code>-семантика</td>
@@ -2054,7 +2054,7 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/pa
 <hr>
 <h2 id="9-параллельные-стримы">9. Параллельные стримы</h2>
 <p>Параллельный стрим (<em>parallel stream</em>) — это стрим, который делит источник на части и обрабатывает их одновременно на нескольких потоках, а результаты сливает. Он обещает ускорение одним вызовом <code>parallel()</code>, но в серверном бэкенде гораздо чаще вредит, чем помогает. Причин три: все такие стримы исполняются в одном общем пуле на всю JVM, выигрыш появляется только при большом объёме работы, нагружающей процессор (CPU-bound), и хорошо делимом источнике, а блокирующий вызов внутри лямбды способен остановить весь экземпляр сервиса. Раздел начинается с того, как <code>parallel()</code> исполняется изнутри, затем разбирает модель NQ, по которой оценивают, окупится ли параллельность, и объясняет, почему в параллельном стриме нельзя делать I/O. Дальше речь идёт об исключениях и потере контекста потока, а в конце о том, как запустить стрим в собственном пуле и где у этого приёма границы.</p>
-<h3 id="91-как-исполняется-parallel">9.1 Как исполняется <code>parallel()</code></h3>
+<h3 id="91-исполнение-parallel">9.1 Исполнение <code>parallel()</code></h3>
 <p>Вызов <code>parallel()</code> (или <code>parallelStream()</code> у коллекции) переключает весь конвейер в параллельный режим, в котором терминальная операция выполняется деревом задач в пуле <code>ForkJoinPool</code>. Технически метод выставляет на конвейер один-единственный флаг, поэтому параллельной становится вся цепочка целиком, а не её часть «с этого места». Отсюда же следует, что <code>sequential()</code> в конце цепочки отменит <code>parallel()</code> в начале, потому что побеждает <strong>последний</strong> вызов.</p>
 <p>На терминальной операции конвейер превращается в <code>ForkJoinTask</code> (<code>AbstractTask</code> → <code>ReduceTask</code>/<code>ForEachTask</code>/<code>FindTask</code>) — задачу пула fork/join, которая умеет делить себя на подзадачи (fork) и ждать их результатов (join). Задача рекурсивно вызывает <code>spliterator.trySplit()</code>, пока <code>estimateSize()</code> не станет меньше <strong>целевого размера</strong> <code>sizeThreshold = max(1, estimateSize / (parallelism × 4))</code>, где константа <code>LEAF_TARGET</code> равна <code>ForkJoinPool.getCommonPoolParallelism() &lt;&lt; 2</code>. Листья дерева выполняются как обычные последовательные конвейеры над своими частями источника, а их результаты сливаются <code>combiner</code>-ами вверх по дереву задач.</p>
 <p>Все стримы, для которых пул не задан явно, исполняются в <strong><code>ForkJoinPool.commonPool()</code></strong>, единственном на JVM общем пуле с параллелизмом <code>Runtime.availableProcessors() - 1</code>. Единица вычитается потому, что вызывающий поток тоже участвует в работе, а в контейнере с квотой CPU параллелизм считается по квоте (см. главу <a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений">46</a>). Настроить этот пул можно только глобально, через <code>-Djava.util.concurrent.ForkJoinPool.common.parallelism=N</code>, и задать свой параллелизм отдельному стриму нельзя.</p>
@@ -2069,45 +2069,45 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/pa
 <thead>
 <tr>
 <th>Фактор</th>
-<th>Почему</th>
-<th>Как понять</th>
+<th>Объяснение</th>
+<th>Признак</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Фактор">Плохой <code>trySplit</code> источника</td>
-<td data-label="Почему"><code>LinkedList</code>, <code>iterate</code>, <code>lines()</code> делятся пакетами через буферизацию на вызывающем потоке (7.2)</td>
-<td data-label="Как понять"><code>spliterator().hasCharacteristics(SUBSIZED)</code> → <code>false</code></td>
+<td data-label="Объяснение"><code>LinkedList</code>, <code>iterate</code>, <code>lines()</code> делятся пакетами через буферизацию на вызывающем потоке (7.2)</td>
+<td data-label="Признак"><code>spliterator().hasCharacteristics(SUBSIZED)</code> → <code>false</code></td>
 </tr>
 <tr>
 <td data-label="Фактор">Stateful-операции на ORDERED</td>
-<td data-label="Почему"><code>sorted</code>, <code>distinct</code>, <code>limit</code>, <code>skip</code> — барьеры с буферизацией и синхронизацией</td>
-<td data-label="Как понять">есть ли <code>sorted</code>/<code>limit</code> в pipeline</td>
+<td data-label="Объяснение"><code>sorted</code>, <code>distinct</code>, <code>limit</code>, <code>skip</code> — барьеры с буферизацией и синхронизацией</td>
+<td data-label="Признак">есть ли <code>sorted</code>/<code>limit</code> в pipeline</td>
 </tr>
 <tr>
 <td data-label="Фактор">Дорогой <code>combiner</code></td>
-<td data-label="Почему"><code>groupingBy</code>/<code>toMap</code>/<code>toSet</code> сливают отображения, <code>joining</code> — StringBuilder'ы; <code>toList</code> дёшев (SIZED → один массив)</td>
-<td data-label="Как понять">коллектор без <code>CONCURRENT</code> + большее отображение</td>
+<td data-label="Объяснение"><code>groupingBy</code>/<code>toMap</code>/<code>toSet</code> сливают отображения, <code>joining</code> — StringBuilder'ы; <code>toList</code> дёшев (SIZED → один массив)</td>
+<td data-label="Признак">коллектор без <code>CONCURRENT</code> + большее отображение</td>
 </tr>
 <tr>
 <td data-label="Фактор">Упаковка</td>
-<td data-label="Почему"><code>Stream&lt;Integer&gt;</code> вместо <code>IntStream</code> — выделения памяти на каждый элемент, GC-давление растёт с потоками</td>
-<td data-label="Как понять">профиль выделений памяти</td>
+<td data-label="Объяснение"><code>Stream&lt;Integer&gt;</code> вместо <code>IntStream</code> — выделения памяти на каждый элемент, GC-давление растёт с потоками</td>
+<td data-label="Признак">профиль выделений памяти</td>
 </tr>
 <tr>
 <td data-label="Фактор">Ложное разделение (false sharing)</td>
-<td data-label="Почему">счётчики/аккумуляторы разных потоков в одной cache line</td>
-<td data-label="Как понять"><code>@Contended</code>, <code>LongAdder</code> вместо <code>AtomicLong</code></td>
+<td data-label="Объяснение">счётчики/аккумуляторы разных потоков в одной cache line</td>
+<td data-label="Признак"><code>@Contended</code>, <code>LongAdder</code> вместо <code>AtomicLong</code></td>
 </tr>
 <tr>
 <td data-label="Фактор">Amdahl</td>
-<td data-label="Почему">последовательная часть (источник, merge, финальная обработка) ограничивает ускорение: при 10 % последовательного кода максимум ×10 на бесконечном числе ядер</td>
-<td data-label="Как понять">профиль: сколько времени в <code>forEachRemaining</code> листьев vs в merge</td>
+<td data-label="Объяснение">последовательная часть (источник, merge, финальная обработка) ограничивает ускорение: при 10 % последовательного кода максимум ×10 на бесконечном числе ядер</td>
+<td data-label="Признак">профиль: сколько времени в <code>forEachRemaining</code> листьев vs в merge</td>
 </tr>
 <tr>
 <td data-label="Фактор">Загруженность машины</td>
-<td data-label="Почему">common pool делит ядра с HTTP-потоками, GC, другими стримами; на нагруженном сервере параллельных ядер нет</td>
-<td data-label="Как понять">utilization &gt; 70 % → параллель в запросах вредна</td>
+<td data-label="Объяснение">common pool делит ядра с HTTP-потоками, GC, другими стримами; на нагруженном сервере параллельных ядер нет</td>
+<td data-label="Признак">utilization &gt; 70 % → параллель в запросах вредна</td>
 </tr>
 </tbody>
 </table>
@@ -2197,8 +2197,8 @@ https://openjdk.org/jeps/506">JEP 506</a>) — неизменяемое знач
     <span class="n">pool</span><span class="p">.</span><span class="na">shutdown</span><span class="p">();</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><strong>Почему это работает.</strong> <code>parallelStream()</code> форкает подзадачи через <code>ForkJoinTask.fork()</code>, а <code>fork()</code> кладёт задачу в очередь <strong>текущего</strong> рабочего потока. Когда терминальная операция выполняется внутри <code>pool.submit(...)</code>, текущим потоком оказывается worker вашего <code>pool</code>, поэтому все подзадачи стрима остаются в нём и в common pool не попадают. Это следствие реализации <code>ForkJoinTask</code>, а не гарантия API.</p>
-<p><strong>Где ломается.</strong> Слабых мест у приёма пять. (1) Он официально не документирован: Stream API нигде не обещает исполняться в пуле вызывающего worker'а, и поведение может измениться. (2) Он не изолирует полностью, потому что операции, которые сами явно обращаются к common pool, туда и пойдут. (3) Он не спасает от блокировок: I/O в лямбде точно так же займёт worker, только теперь страдает ваш пул, а не общий, что лучше, но проблему не решает. (4) <code>ManagedBlocker</code> стримы по-прежнему не используют, так что компенсировать блокировку дополнительными потоками пул не будет. (5) Создавать пул на каждый вызов дорого, поэтому изолированный пул делают долгоживущим и используют повторно.</p>
+<p><strong>Обоснование.</strong> <code>parallelStream()</code> форкает подзадачи через <code>ForkJoinTask.fork()</code>, а <code>fork()</code> кладёт задачу в очередь <strong>текущего</strong> рабочего потока. Когда терминальная операция выполняется внутри <code>pool.submit(...)</code>, текущим потоком оказывается worker вашего <code>pool</code>, поэтому все подзадачи стрима остаются в нём и в common pool не попадают. Это следствие реализации <code>ForkJoinTask</code>, а не гарантия API.</p>
+<p><strong>Слабое место.</strong> Слабых мест у приёма пять. (1) Он официально не документирован: Stream API нигде не обещает исполняться в пуле вызывающего worker'а, и поведение может измениться. (2) Он не изолирует полностью, потому что операции, которые сами явно обращаются к common pool, туда и пойдут. (3) Он не спасает от блокировок: I/O в лямбде точно так же займёт worker, только теперь страдает ваш пул, а не общий, что лучше, но проблему не решает. (4) <code>ManagedBlocker</code> стримы по-прежнему не используют, так что компенсировать блокировку дополнительными потоками пул не будет. (5) Создавать пул на каждый вызов дорого, поэтому изолированный пул делают долгоживущим и используют повторно.</p>
 <p><strong>Честная рекомендация.</strong> Если нужен контролируемый параллелизм, обычно правильнее взять не параллельный стрим, а явный <code>ExecutorService</code>, то есть собственный платформенный пул для задач, нагружающих процессор, или <code>newVirtualThreadPerTaskExecutor()</code> для I/O, вместе с <code>invokeAll</code>/<code>CompletableFuture</code>. Тогда пул, его размер и обработка ошибок видны прямо в коде, и вы сами решаете, как они устроены. Трюк с <code>pool.submit(parallelStream)</code> уместен как локальная оптимизация горячего пакетного участка с CPU-bound лямбдой, и рядом с ним должен стоять комментарий о том, что он опирается на недокументированное поведение. Стратегически же правильной заменой для задачи «разложить работу по потокам с внятными границами и отменой» служит structured concurrency (глава <a href="02-modern-java.html" data-tip="2. Современная Java 17→25">02</a>).</p>
 <hr>
 <h2 id="10-примитивные-стримы-optional-gatherers-производительность">10. Примитивные стримы, Optional, Gatherers, производительность</h2>
@@ -2322,44 +2322,44 @@ https://openjdk.org/jeps/485">JEP 485</a>, финализированный в J
 <tr>
 <th>Сценарий</th>
 <th>Цикл vs стрим</th>
-<th>Почему</th>
+<th>Объяснение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Сценарий"><code>int[]</code>/<code>List&lt;Integer&gt;</code> 10–1000 элементов, простая арифметика</td>
 <td data-label="Цикл vs стрим">цикл в 2–10× быстрее</td>
-<td data-label="Почему">стрим: ~5–10 объектов на построение pipeline, мегаморфные вызовы <code>Sink.accept</code>, упаковка в <code>Stream&lt;Integer&gt;</code>; цикл — регистр и инкремент</td>
+<td data-label="Объяснение">стрим: ~5–10 объектов на построение pipeline, мегаморфные вызовы <code>Sink.accept</code>, упаковка в <code>Stream&lt;Integer&gt;</code>; цикл — регистр и инкремент</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Те же данные, <code>IntStream</code></td>
 <td data-label="Цикл vs стрим">разница 1–2×, часто в пределах шума</td>
-<td data-label="Почему">C2 встраивает цепочку, если call-site мономорфный (один и тот же стрим в одном месте); <code>IntStream.range().sum()</code> → почти цикл</td>
+<td data-label="Объяснение">C2 встраивает цепочку, если call-site мономорфный (один и тот же стрим в одном месте); <code>IntStream.range().sum()</code> → почти цикл</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Миллионы элементов, дорогой <code>map</code> (парсинг, вызов метода)</td>
 <td data-label="Цикл vs стрим">одинаково</td>
-<td data-label="Почему">стоимость в лямбде, overhead pipeline амортизирован</td>
+<td data-label="Объяснение">стоимость в лямбде, overhead pipeline амортизирован</td>
 </tr>
 <tr>
 <td data-label="Сценарий"><code>filter → map → collect(toList)</code> над объектами</td>
 <td data-label="Цикл vs стрим">стрим 1.2–2× медленнее на маленьких, равен на больших</td>
-<td data-label="Почему"><code>ArrayList</code> рост в <code>toList()</code> vs пре-сайзинг в цикле; <code>Stream.toList()</code> на <code>SIZED</code> без фильтра — без роста</td>
+<td data-label="Объяснение"><code>ArrayList</code> рост в <code>toList()</code> vs пре-сайзинг в цикле; <code>Stream.toList()</code> на <code>SIZED</code> без фильтра — без роста</td>
 </tr>
 <tr>
 <td data-label="Сценарий"><code>sorted().limit(k)</code></td>
 <td data-label="Цикл vs стрим">цикл с <code>PriorityQueue</code> в разы быстрее и O(k) памяти</td>
-<td data-label="Почему">стрим сортирует всё (7.4)</td>
+<td data-label="Объяснение">стрим сортирует всё (7.4)</td>
 </tr>
 <tr>
 <td data-label="Сценарий"><code>flatMap</code></td>
 <td data-label="Цикл vs стрим">до Java 10 — не ленивый, буферизовал (JDK-8075939); с Java 10 — ленивый, но всё равно стрим-на-элемент</td>
-<td data-label="Почему"><code>mapMulti</code> (Java 16) для 0–2 результатов на элемент дешевле: без вложенного стрима</td>
+<td data-label="Объяснение"><code>mapMulti</code> (Java 16) для 0–2 результатов на элемент дешевле: без вложенного стрима</td>
 </tr>
 <tr>
 <td data-label="Сценарий">Горячий цикл в latency-critical коде (торговый движок, сериализация)</td>
 <td data-label="Цикл vs стрим">цикл</td>
-<td data-label="Почему">выделения памяти pipeline = GC-давление, непредсказуемое встраивание</td>
+<td data-label="Объяснение">выделения памяти pipeline = GC-давление, непредсказуемое встраивание</td>
 </tr>
 </tbody>
 </table>
@@ -2627,7 +2627,7 @@ jfr print --events jdk.ObjectAllocationSample /tmp/rec.jfr <span class="p">|</sp
 <p>Worker'ы, которые сидят в <code>SocketRead</code>, <code>SQLExecute</code>, <code>Object.wait</code> или <code>park</code>, означают блокирующий I/O внутри параллельного стрима (ошибка 9). Число worker'ов не превышает <code>availableProcessors - 1</code>, и проверить, сколько процессоров видит JVM в контейнере, можно через <code>jshell&gt; Runtime.getRuntime().availableProcessors()</code> или <code>java -XX:+PrintFlagsFinal -version | grep ActiveProcessorCount</code>. Параллелизм самого пула возвращает <code>ForkJoinPool.getCommonPoolParallelism()</code>.</p>
 <p><strong>Fail-fast и гонки — что смотреть в стеке CME.</strong> Стек <code>ConcurrentModificationException</code> показывает, кто обнаружил изменение коллекции, но не того, кто её изменил. Когда исключение прилетает из <code>HashMap$HashIterator.nextNode</code> или <code>ArrayList$Itr.next</code>, верхний кадр вашего кода указывает на <strong>итератор</strong>. Если стек однопоточный и модификация происходит в том же методе, это ошибка 7. Если нет, перед вами гонка, и искать её надо не флагами JVM: <code>-Djdk.tracePinnedThreads</code> здесь не поможет, потому что он относится к виртуальным потокам. Для гонок в коллекциях нужно прочитать код владельца коллекции и найти второго писателя, а в тестах воспроизвести гонку через jcstress, инструмент OpenJDK для стресс-тестов многопоточного кода (глава <a href="08-concurrency.html" data-tip="8. Многопоточность">08</a>), или просто перейти на <code>ConcurrentHashMap</code>.</p>
 <p><strong>Проверка контрактов в тестах.</strong> Контракты <code>equals/hashCode</code> и компараторов нарушаются незаметно (раздел 1), поэтому проверять их надо тестами, а не надеяться на исключение в продакшене. <code>EqualsVerifier</code> (<code>nl.jqno.equalsverifier</code>) одним вызовом <code>EqualsVerifier.forClass(X.class).verify()</code> проверяет <code>equals/hashCode</code> на рефлексивность, симметричность, транзитивность, согласованность и <code>null</code>-безопасность. Компараторы проверяют property-based тестом, то есть тестом, который проверяет свойство на множестве случайных входов (jqwik, глава <a href="43-testing.html" data-tip="43. Тестирование">43</a>): на свойство <code>sign(cmp(a,b)) == -sign(cmp(b,a))</code> и транзитивность на случайных тройках. Вдобавок сортируют список из 64+ случайных элементов, чтобы TimSort успел бросить <code>Comparison method violates its general contract</code>.</p>
-<p><strong>Что знает стрим о себе.</strong> Прежде чем ставить <code>parallel()</code>, полезно посмотреть <code>spliterator().characteristics()</code> и <code>estimateSize()</code>, чтобы понять, хорошо ли источник делится. <code>StreamSupport</code>/<code>AbstractPipeline</code> флаги напрямую не показывают. Но <code>spliterator()</code> работает как терминальная операция и возвращает сплитератор с флагами <strong>после</strong> всех операций, так что по нему видно, сохранился ли <code>SIZED</code> после <code>filter</code> (нет) и <code>ORDERED</code> после <code>unordered()</code> (тоже нет).</p>
+<p><strong>Сведения стрима о себе.</strong> Прежде чем ставить <code>parallel()</code>, полезно посмотреть <code>spliterator().characteristics()</code> и <code>estimateSize()</code>, чтобы понять, хорошо ли источник делится. <code>StreamSupport</code>/<code>AbstractPipeline</code> флаги напрямую не показывают. Но <code>spliterator()</code> работает как терминальная операция и возвращает сплитератор с флагами <strong>после</strong> всех операций, так что по нему видно, сохранился ли <code>SIZED</code> после <code>filter</code> (нет) и <code>ORDERED</code> после <code>unordered()</code> (тоже нет).</p>
 <p><strong>Статический анализ.</strong> Статический анализатор находит ошибки по исходному коду, без запуска, и многие ошибки этой главы он ловит автоматически. Error Prone ловит <code>CollectionIncompatibleType</code> (<code>list.remove(Object)</code> с аргументом не того типа), <code>ModifiedButNotUsed</code>, <code>StreamResourceLeak</code> (<code>Files.lines</code> без close) и <code>MutableConstantField</code>. SpotBugs находит <code>EQ_COMPARETO_USE_OBJECT_EQUALS</code>, <code>HE_EQUALS_NO_HASHCODE</code> и <code>DMI_ENTRY_SETS_MAY_REUSE_ENTRY_OBJECTS</code>. В SonarQube полезны правила S2864 («entrySet вместо keySet+get») и S3958 («стрим без терминальной операции», в котором ничего не выполнится), а подробнее об этих инструментах рассказывает глава <a href="44-code-review-quality.html" data-tip="44. Код-ревью и качество кода">44</a>.</p>
 <h3 id="чеклист-сервис-встал-а-cpu-низкий">Чеклист «сервис встал, а CPU низкий»</h3>
 <p>Сервис, который перестал отвечать при низком CPU, почти наверняка не считает, а ждёт, и в контексте этой главы первым подозреваемым оказывается истощённый common pool. Четыре шага ниже проверяют эту гипотезу и ведут к лечению. Идти по ним стоит именно в этом порядке, потому что каждый следующий шаг опирается на результат предыдущего.</p>
@@ -2919,5 +2919,5 @@ https://commons.wikimedia.org/wiki/File:Spring-creek-rocks_-_West_Virginia_-_For
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-иерархия-и-контракты">1. Иерархия и контракты</a></li><li><a href="#2-списки-и-очереди">2. Списки и очереди</a></li><li><a href="#3-устройство-hashmap">3. Устройство HashMap</a></li><li><a href="#4-специализированные-map-и-set">4. Специализированные Map и Set</a></li><li><a href="#5-неизменяемость-view-и-fail-fast-итераторы">5. Неизменяемость, view и fail-fast итераторы</a></li><li><a href="#6-concurrent-коллекции-обзор">6. Concurrent-коллекции (обзор)</a></li><li><a href="#7-spliterator-и-устройство-stream-pipeline">7. Spliterator и устройство stream pipeline</a></li><li><a href="#8-collectors-и-reduce">8. Collectors и reduce</a></li><li><a href="#9-параллельные-стримы">9. Параллельные стримы</a></li><li><a href="#10-примитивные-стримы-optional-gatherers-производительность">10. Примитивные стримы, Optional, Gatherers, производительность</a></li><li><a href="#11-разобранные-инциденты">11. Разобранные инциденты</a></li><li><a href="#12-ошибки-и-антипаттерны">12. Ошибки и антипаттерны</a></li><li><a href="#13-диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть VIII. Безопасность</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/42.svg" width="48" height="48" alt="" loading="lazy">42. Безопасность приложений, OAuth2/OIDC, Keycloak</h1><div class="meta"><span class="part-tag">Часть VIII. Безопасность</span><span>39 411 слов</span><span>≈ 3 ч 40 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/42.svg" width="48" height="48" alt="" loading="lazy">42. Безопасность приложений, OAuth2/OIDC, Keycloak</h1><div class="meta"><span class="part-tag">Часть VIII. Безопасность</span><span>39 389 слов</span><span>≈ 3 ч 40 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>Идентификация и управление доступом — единственная подсистема, где одна ошибка обходится ровно во столько же, сколько вся система: стоит утечь <code>client_secret</code> или пропустить проверку <code>aud</code>, и весь остальной периметр перестаёт что-либо защищать. В банке IAM к тому же находится под надзором регулятора: каждый вход и каждая выдача токена обязаны попадать в аудит, а step-up перед платежом нужно уметь доказать задним числом. На интервью эта тема быстро показывает зрелость кандидата. Junior расскажет про «логин через Keycloak», а senior объяснит, чем <code>id_token</code> отличается от access token, почему JWT нельзя отозвать и почему <code>sessions</code>-кеш с одним владельцем теряет сессии, когда под перезапускается. Поэтому глава посвящена механике: что именно происходит на каждом шаге каждого потока, что именно Keycloak хранит у себя и в каком месте всё это обычно рвётся.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">16 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-устройство-oauth-20-и-oidc" data-tip="Раздел этой главы: 1. Устройство OAuth 2.0 и OIDC">1. Устройство OAuth 2.0 и OIDC</a></li><li><a href="#2-токены-формат-жизненный-цикл-отзыв" data-tip="Раздел этой главы: 2. Токены: формат, жизненный цикл, отзыв">2. Токены: формат, жизненный цикл, отзыв</a></li><li><a href="#3-keycloak-модель-конфигурации" data-tip="Раздел этой главы: 3. Keycloak: модель конфигурации">3. Keycloak: модель конфигурации</a></li><li><a href="#4-keycloak-аутентификация-mfa-федерация-spi" data-tip="Раздел этой главы: 4. Keycloak: аутентификация, MFA, федерация, SPI">4. Keycloak: аутентификация, MFA, федерация, SPI</a></li><li><a href="#5-keycloak-в-эксплуатации" data-tip="Раздел этой главы: 5. Keycloak в эксплуатации">5. Keycloak в эксплуатации</a></li><li><a href="#6-модели-авторизации" data-tip="Раздел этой главы: 6. Модели авторизации">6. Модели авторизации</a></li><li><a href="#7-owasp-top-102025-в-java-бэкенде" data-tip="Раздел этой главы: 7. OWASP Top 10:2025 в Java-бэкенде">7. OWASP Top 10:2025 в Java-бэкенде</a></li><li><a href="#8-секреты-и-цепочка-поставки-a03" data-tip="Раздел этой главы: 8. Секреты и цепочка поставки (A03)">8. Секреты и цепочка поставки (A03)</a></li><li><a href="#9-защита-api" data-tip="Раздел этой главы: 9. Защита API">9. Защита API</a></li><li><a href="#10-процессы-безопасности" data-tip="Раздел этой главы: 10. Процессы безопасности">10. Процессы безопасности</a></li><li><a href="#11-разобранные-инциденты" data-tip="Раздел этой главы: 11. Разобранные инциденты">11. Разобранные инциденты</a></li><li><a href="#12-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 12. Ошибки и антипаттерны">12. Ошибки и антипаттерны</a></li><li><a href="#13-диагностика" data-tip="Раздел этой главы: 13. Диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью" data-tip="Раздел этой главы: 14. Вопросы на интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками" data-tip="Раздел этой главы: 15. Попробовать руками">15. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
@@ -28,30 +28,30 @@ https://www.rfc-editor.org/rfc/rfc6749">RFC 6749</a>) определяет че�
 <thead>
 <tr>
 <th>Роль</th>
-<th>Кто это в типичном банке</th>
-<th>Что делает</th>
+<th>Роль в банке</th>
+<th>Действие</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Роль">Resource owner</td>
-<td data-label="Кто это в типичном банке">Клиент банка (человек)</td>
-<td data-label="Что делает">Даёт согласие на доступ</td>
+<td data-label="Роль в банке">Клиент банка (человек)</td>
+<td data-label="Действие">Даёт согласие на доступ</td>
 </tr>
 <tr>
 <td data-label="Роль">Client</td>
-<td data-label="Кто это в типичном банке">SPA, мобильное приложение, BFF, другой микросервис</td>
-<td data-label="Что делает">Запрашивает токен и ходит с ним в API</td>
+<td data-label="Роль в банке">SPA, мобильное приложение, BFF, другой микросервис</td>
+<td data-label="Действие">Запрашивает токен и ходит с ним в API</td>
 </tr>
 <tr>
 <td data-label="Роль">Authorization Server (AS)</td>
-<td data-label="Кто это в типичном банке">Keycloak</td>
-<td data-label="Что делает">Аутентифицирует, выдаёт токены</td>
+<td data-label="Роль в банке">Keycloak</td>
+<td data-label="Действие">Аутентифицирует, выдаёт токены</td>
 </tr>
 <tr>
 <td data-label="Роль">Resource Server (RS)</td>
-<td data-label="Кто это в типичном банке"><code>payments-api</code>, <code>accounts-api</code></td>
-<td data-label="Что делает">Проверяет токен и решает, пускать ли</td>
+<td data-label="Роль в банке"><code>payments-api</code>, <code>accounts-api</code></td>
+<td data-label="Действие">Проверяет токен и решает, пускать ли</td>
 </tr>
 </tbody>
 </table>
@@ -115,29 +115,29 @@ https://www.rfc-editor.org/rfc/rfc7636">RFC 7636</a>) даже confidential-кл
 <thead>
 <tr>
 <th>Параметр</th>
-<th>Где живёт</th>
-<th>Что закрывает</th>
-<th>Где проверяется</th>
+<th>Размещение</th>
+<th>Защищает от</th>
+<th>Место проверки</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Параметр"><code>state</code></td>
-<td data-label="Где живёт">Запрос авторизации → перенаправление обратно</td>
-<td data-label="Что закрывает"><strong>CSRF на callback</strong>: атакующий заставляет браузер жертвы дёрнуть <code>/callback?code=&lt;код атакующего&gt;</code></td>
-<td data-label="Где проверяется">Клиент сверяет со значением в своей сессии</td>
+<td data-label="Размещение">Запрос авторизации → перенаправление обратно</td>
+<td data-label="Защищает от"><strong>CSRF на callback</strong>: атакующий заставляет браузер жертвы дёрнуть <code>/callback?code=&lt;код атакующего&gt;</code></td>
+<td data-label="Место проверки">Клиент сверяет со значением в своей сессии</td>
 </tr>
 <tr>
 <td data-label="Параметр"><code>nonce</code></td>
-<td data-label="Где живёт">Запрос авторизации → claim внутри <code>id_token</code></td>
-<td data-label="Что закрывает"><strong>Replay <code>id_token</code></strong>: повторное предъявление ранее выданного id_token</td>
-<td data-label="Где проверяется">Клиент сверяет <code>id_token.nonce</code> со значением в сессии</td>
+<td data-label="Размещение">Запрос авторизации → claim внутри <code>id_token</code></td>
+<td data-label="Защищает от"><strong>Replay <code>id_token</code></strong>: повторное предъявление ранее выданного id_token</td>
+<td data-label="Место проверки">Клиент сверяет <code>id_token.nonce</code> со значением в сессии</td>
 </tr>
 <tr>
 <td data-label="Параметр">PKCE</td>
-<td data-label="Где живёт"><code>code_challenge</code> → <code>code_verifier</code> на <code>/token</code></td>
-<td data-label="Что закрывает">Перехват и инъекция <strong>кода</strong></td>
-<td data-label="Где проверяется">AS сверяет хеш</td>
+<td data-label="Размещение"><code>code_challenge</code> → <code>code_verifier</code> на <code>/token</code></td>
+<td data-label="Защищает от">Перехват и инъекция <strong>кода</strong></td>
+<td data-label="Место проверки">AS сверяет хеш</td>
 </tr>
 </tbody>
 </table>
@@ -419,7 +419,7 @@ https://datatracker.ietf.org/doc/rfc9700/">RFC 9700</a> (январь 2025, BCP)
 <tr>
 <th>Ослабление</th>
 <th>Пример регистрации</th>
-<th>Что подставит атакующий</th>
+<th>Подмена атакующим</th>
 <th>Итог</th>
 </tr>
 </thead>
@@ -427,25 +427,25 @@ https://datatracker.ietf.org/doc/rfc9700/">RFC 9700</a> (январь 2025, BCP)
 <tr>
 <td data-label="Ослабление">Префиксное сравнение</td>
 <td data-label="Пример регистрации"><code>https://app.bank.ru/cb</code></td>
-<td data-label="Что подставит атакующий"><code>https://app.bank.ru/cb.evil.com/</code></td>
+<td data-label="Подмена атакующим"><code>https://app.bank.ru/cb.evil.com/</code></td>
 <td data-label="Итог">Код уезжает на чужой домен</td>
 </tr>
 <tr>
 <td data-label="Ослабление">Вайлдкард в поддомене</td>
 <td data-label="Пример регистрации"><code>https://*.bank.ru/cb</code></td>
-<td data-label="Что подставит атакующий"><code>https://xss-lab.bank.ru/cb</code> (любой забытый поддомен)</td>
+<td data-label="Подмена атакующим"><code>https://xss-lab.bank.ru/cb</code> (любой забытый поддомен)</td>
 <td data-label="Итог">Код у того, кто контролирует поддомен</td>
 </tr>
 <tr>
 <td data-label="Ослабление">Вайлдкард в пути</td>
 <td data-label="Пример регистрации"><code>https://app.bank.ru/*</code></td>
-<td data-label="Что подставит атакующий"><code>https://app.bank.ru/legacy/redirect?to=evil</code></td>
+<td data-label="Подмена атакующим"><code>https://app.bank.ru/legacy/redirect?to=evil</code></td>
 <td data-label="Итог">Код улетает через <strong>открытое перенаправление</strong> внутри вашего же приложения</td>
 </tr>
 <tr>
 <td data-label="Ослабление">Игнор фрагмента/квери</td>
 <td data-label="Пример регистрации"><code>https://app.bank.ru/cb</code></td>
-<td data-label="Что подставит атакующий"><code>https://app.bank.ru/cb?next=//evil</code></td>
+<td data-label="Подмена атакующим"><code>https://app.bank.ru/cb?next=//evil</code></td>
 <td data-label="Итог">Зависит от приложения, часто утечка через Referer</td>
 </tr>
 </tbody>
@@ -474,44 +474,44 @@ https://www.rfc-editor.org/rfc/rfc9126">RFC 9126</a>, Pushed Authorization Reque
 <table class="rt">
 <thead>
 <tr>
-<th>Что</th>
+<th>Предмет</th>
 <th>OAuth 2.0 (RFC 6749)</th>
 <th>OAuth 2.1 (draft)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="Что">PKCE</td>
+<td data-label="Предмет">PKCE</td>
 <td data-label="OAuth 2.0 (RFC 6749)">Опционален, введён отдельным RFC 7636</td>
 <td data-label="OAuth 2.1 (draft)"><strong>Обязателен</strong> для клиентов code flow; исключение — confidential-клиент с корректно реализованным OIDC <code>nonce</code>, которому PKCE по-прежнему RECOMMENDED</td>
 </tr>
 <tr>
-<td data-label="Что">Implicit (<code>response_type=token</code>)</td>
+<td data-label="Предмет">Implicit (<code>response_type=token</code>)</td>
 <td data-label="OAuth 2.0 (RFC 6749)">Есть</td>
 <td data-label="OAuth 2.1 (draft)"><strong>Удалён</strong></td>
 </tr>
 <tr>
-<td data-label="Что">ROPC (<code>grant_type=password</code>)</td>
+<td data-label="Предмет">ROPC (<code>grant_type=password</code>)</td>
 <td data-label="OAuth 2.0 (RFC 6749)">Есть</td>
 <td data-label="OAuth 2.1 (draft)"><strong>Удалён</strong></td>
 </tr>
 <tr>
-<td data-label="Что"><code>redirect_uri</code></td>
+<td data-label="Предмет"><code>redirect_uri</code></td>
 <td data-label="OAuth 2.0 (RFC 6749)">Допускается частичное сравнение</td>
 <td data-label="OAuth 2.1 (draft)">Только <strong>exact string matching</strong> (исключение — loopback-порт нативных приложений)</td>
 </tr>
 <tr>
-<td data-label="Что">Bearer-токен в query string</td>
+<td data-label="Предмет">Bearer-токен в query string</td>
 <td data-label="OAuth 2.0 (RFC 6749)">Разрешён RFC 6750</td>
 <td data-label="OAuth 2.1 (draft)"><strong>Запрещён</strong>, только заголовок <code>Authorization</code></td>
 </tr>
 <tr>
-<td data-label="Что">Refresh-токены для public-клиентов</td>
+<td data-label="Предмет">Refresh-токены для public-клиентов</td>
 <td data-label="OAuth 2.0 (RFC 6749)">Разрешены без условий</td>
 <td data-label="OAuth 2.1 (draft)">Требуется <strong>sender-constrained</strong> либо <strong>одноразовые с ротацией</strong></td>
 </tr>
 <tr>
-<td data-label="Что">Native apps, browser apps</td>
+<td data-label="Предмет">Native apps, browser apps</td>
 <td data-label="OAuth 2.0 (RFC 6749)">В отдельных BCP</td>
 <td data-label="OAuth 2.1 (draft)">Втянуты в основной документ</td>
 </tr>
@@ -529,40 +529,40 @@ https://www.rfc-editor.org/rfc/rfc9126">RFC 9126</a>, Pushed Authorization Reque
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>JWT (self-contained)</th>
 <th>Opaque + introspection</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Проверка на RS</td>
+<td data-label="Критерий">Проверка на RS</td>
 <td data-label="JWT (self-contained)">Локально: подпись + claims, ~50–200 мкс</td>
 <td data-label="Opaque + introspection">Сетевой вызов в AS (<a href="https://www.rfc-editor.org/rfc/rfc7662" data-tip="Внешний сайт · rfc-editor.org
 https://www.rfc-editor.org/rfc/rfc7662">RFC 7662</a>)</td>
 </tr>
 <tr>
-<td data-label="">Нагрузка на AS</td>
+<td data-label="Критерий">Нагрузка на AS</td>
 <td data-label="JWT (self-contained)">Только JWKS раз в N часов</td>
 <td data-label="Opaque + introspection">Каждый запрос (или кеш с TTL)</td>
 </tr>
 <tr>
-<td data-label="">Отзыв</td>
+<td data-label="Критерий">Отзыв</td>
 <td data-label="JWT (self-contained)"><strong>Невозможен</strong> до <code>exp</code></td>
 <td data-label="Opaque + introspection">Мгновенный</td>
 </tr>
 <tr>
-<td data-label="">Размер</td>
+<td data-label="Критерий">Размер</td>
 <td data-label="JWT (self-contained)">0.7–4 КБ в каждом запросе</td>
 <td data-label="Opaque + introspection">~40 байт</td>
 </tr>
 <tr>
-<td data-label="">Утечка данных</td>
+<td data-label="Критерий">Утечка данных</td>
 <td data-label="JWT (self-contained)">Claims читаются base64 кем угодно</td>
 <td data-label="Opaque + introspection">Ничего не видно</td>
 </tr>
 <tr>
-<td data-label="">Отказоустойчивость</td>
+<td data-label="Критерий">Отказоустойчивость</td>
 <td data-label="JWT (self-contained)">RS живёт при мёртвом AS</td>
 <td data-label="Opaque + introspection">AS — SPOF на каждый запрос</td>
 </tr>
@@ -716,59 +716,59 @@ https://www.rfc-editor.org/rfc/rfc9449">RFC 9449</a>): клиент генери
 <tr>
 <th class="num">#</th>
 <th>Проверка</th>
-<th>Что ломается без неё</th>
+<th>Без неё</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="#" class="num">1</td>
 <td data-label="Проверка"><code>typ</code>/формат: это compact JWS из трёх частей</td>
-<td data-label="Что ломается без неё">Мусор доходит до парсера claims</td>
+<td data-label="Без неё">Мусор доходит до парсера claims</td>
 </tr>
 <tr>
 <td data-label="#" class="num">2</td>
 <td data-label="Проверка"><code>alg</code> <strong>из белого списка</strong> (RS256/ES256/PS256), а не из токена</td>
-<td data-label="Что ломается без неё"><code>alg: none</code>, RS256→HS256 confusion</td>
+<td data-label="Без неё"><code>alg: none</code>, RS256→HS256 confusion</td>
 </tr>
 <tr>
 <td data-label="#" class="num">3</td>
 <td data-label="Проверка"><code>kid</code> есть в JWKS issuer'а; ключ получен <strong>только</strong> с <code>jwks_uri</code> из discovery</td>
-<td data-label="Что ломается без неё">Доверие <code>jku</code>/<code>x5u</code> из заголовка = подпись чужим ключом</td>
+<td data-label="Без неё">Доверие <code>jku</code>/<code>x5u</code> из заголовка = подпись чужим ключом</td>
 </tr>
 <tr>
 <td data-label="#" class="num">4</td>
 <td data-label="Проверка">Подпись корректна</td>
-<td data-label="Что ломается без неё">Всё</td>
+<td data-label="Без неё">Всё</td>
 </tr>
 <tr>
 <td data-label="#" class="num">5</td>
 <td data-label="Проверка"><code>iss</code> <strong>строго равен</strong> ожидаемому</td>
-<td data-label="Что ломается без неё">Токен чужого realm/экземпляра</td>
+<td data-label="Без неё">Токен чужого realm/экземпляра</td>
 </tr>
 <tr>
 <td data-label="#" class="num">6</td>
 <td data-label="Проверка"><code>aud</code> содержит мой идентификатор (и/или <code>azp</code> == ожидаемый клиент)</td>
-<td data-label="Что ломается без неё">Token confusion (2.5)</td>
+<td data-label="Без неё">Token confusion (2.5)</td>
 </tr>
 <tr>
 <td data-label="#" class="num">7</td>
 <td data-label="Проверка"><code>exp</code> &gt; now − skew, <code>nbf</code> ≤ now + skew, разумный <code>iat</code></td>
-<td data-label="Что ломается без неё">Вечные токены</td>
+<td data-label="Без неё">Вечные токены</td>
 </tr>
 <tr>
 <td data-label="#" class="num">8</td>
 <td data-label="Проверка"><code>scope</code>/роли соответствуют эндпоинту</td>
-<td data-label="Что ломается без неё">Горизонтальное и вертикальное повышение прав</td>
+<td data-label="Без неё">Горизонтальное и вертикальное повышение прав</td>
 </tr>
 <tr>
 <td data-label="#" class="num">9</td>
 <td data-label="Проверка">Для sender-constrained — <code>cnf</code> против TLS-сертификата или DPoP-proof</td>
-<td data-label="Что ломается без неё">Bearer-кража работает</td>
+<td data-label="Без неё">Bearer-кража работает</td>
 </tr>
 <tr>
 <td data-label="#" class="num">10</td>
 <td data-label="Проверка">Для чувствительных операций — <code>acr</code> и свежесть <code>auth_time</code></td>
-<td data-label="Что ломается без неё">Step-up превращается в формальность</td>
+<td data-label="Без неё">Step-up превращается в формальность</td>
 </tr>
 </tbody>
 </table>
@@ -879,7 +879,7 @@ https://www.keycloak.org/downloads">keycloak.org/downloads</a>). Дистриб�
 <thead>
 <tr>
 <th>Комбинация</th>
-<th>Что это</th>
+<th>Суть</th>
 <th><code>Client authentication</code></th>
 <th><code>Standard flow</code></th>
 <th><code>Service accounts</code></th>
@@ -888,28 +888,28 @@ https://www.keycloak.org/downloads">keycloak.org/downloads</a>). Дистриб�
 <tbody>
 <tr>
 <td data-label="Комбинация">Public</td>
-<td data-label="Что это">SPA, мобильное приложение</td>
+<td data-label="Суть">SPA, мобильное приложение</td>
 <td data-label="Client authentication">Off</td>
 <td data-label="Standard flow">On</td>
 <td data-label="Service accounts">недоступно</td>
 </tr>
 <tr>
 <td data-label="Комбинация">Confidential</td>
-<td data-label="Что это">BFF, серверное приложение</td>
+<td data-label="Суть">BFF, серверное приложение</td>
 <td data-label="Client authentication">On</td>
 <td data-label="Standard flow">On</td>
 <td data-label="Service accounts">опционально</td>
 </tr>
 <tr>
 <td data-label="Комбинация">Bearer-only (исторически)</td>
-<td data-label="Что это">Ресурс-сервер, который только проверяет токены</td>
+<td data-label="Суть">Ресурс-сервер, который только проверяет токены</td>
 <td data-label="Client authentication">On</td>
 <td data-label="Standard flow">Off</td>
 <td data-label="Service accounts">Off</td>
 </tr>
 <tr>
 <td data-label="Комбинация">Service-account-only</td>
-<td data-label="Что это">Фоновый сервис, машинный доступ</td>
+<td data-label="Суть">Фоновый сервис, машинный доступ</td>
 <td data-label="Client authentication">On</td>
 <td data-label="Standard flow">Off</td>
 <td data-label="Service accounts">On</td>
@@ -922,30 +922,30 @@ https://www.keycloak.org/downloads">keycloak.org/downloads</a>). Дистриб�
 <thead>
 <tr>
 <th>Способ</th>
-<th>Как работает</th>
-<th>Где ломается</th>
+<th>Механизм</th>
+<th>Слабое место</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Способ"><code>client_secret_basic</code> / <code>_post</code></td>
-<td data-label="Как работает">Общий секрет в заголовке <code>Authorization: Basic</code> или в теле</td>
-<td data-label="Где ломается">Секрет надо где-то хранить, он ездит по сети, он один на всех экземпляров, его ротация — простой</td>
+<td data-label="Механизм">Общий секрет в заголовке <code>Authorization: Basic</code> или в теле</td>
+<td data-label="Слабое место">Секрет надо где-то хранить, он ездит по сети, он один на всех экземпляров, его ротация — простой</td>
 </tr>
 <tr>
 <td data-label="Способ"><code>private_key_jwt</code> (<em>Signed JWT</em>)</td>
-<td data-label="Как работает">Клиент подписывает короткоживущий JWT (<code>iss</code>=<code>sub</code>=<code>client_id</code>, <code>aud</code>=token endpoint, <code>jti</code>, <code>exp</code>) своим приватным ключом; Keycloak проверяет публичным из JWKS клиента</td>
-<td data-label="Где ломается">Нужно управление ключами клиента; часы клиента должны быть в норме</td>
+<td data-label="Механизм">Клиент подписывает короткоживущий JWT (<code>iss</code>=<code>sub</code>=<code>client_id</code>, <code>aud</code>=token endpoint, <code>jti</code>, <code>exp</code>) своим приватным ключом; Keycloak проверяет публичным из JWKS клиента</td>
+<td data-label="Слабое место">Нужно управление ключами клиента; часы клиента должны быть в норме</td>
 </tr>
 <tr>
 <td data-label="Способ"><code>client_secret_jwt</code></td>
-<td data-label="Как работает">То же, но HMAC на общем секрете</td>
-<td data-label="Где ломается">Секрет всё ещё общий — половина выигрыша теряется</td>
+<td data-label="Механизм">То же, но HMAC на общем секрете</td>
+<td data-label="Слабое место">Секрет всё ещё общий — половина выигрыша теряется</td>
 </tr>
 <tr>
 <td data-label="Способ"><code>tls_client_auth</code> (<em>X509</em>)</td>
-<td data-label="Как работает">mTLS: клиент предъявляет сертификат, Keycloak сверяет subject DN по маске</td>
-<td data-label="Где ломается">Нужна PKI до каждого клиента и корректный проброс сертификата через прокси</td>
+<td data-label="Механизм">mTLS: клиент предъявляет сертификат, Keycloak сверяет subject DN по маске</td>
+<td data-label="Слабое место">Нужна PKI до каждого клиента и корректный проброс сертификата через прокси</td>
 </tr>
 </tbody>
 </table>
@@ -1047,7 +1047,7 @@ https://www.keycloak.org/downloads">keycloak.org/downloads</a>). Дистриб�
 </tr>
 </tbody>
 </table>
-<p><strong>Как роль физически попадает в claim.</strong> Роли не появляются в токене сами по себе: их туда кладёт преобразователь <em>User Realm Role</em> или <em>User Client Role</em>, который живёт во встроенном client scope <code>roles</code>. Если кто-то, обычно пытаясь уменьшить токен, снимет с клиента client scope <code>roles</code>, роли полностью исчезнут из токена, и приложение начнёт отвечать 403 на всё подряд. Это первый пункт чеклиста «403 — почему» в его расширенном виде.</p>
+<p><strong>Путь роли в claim.</strong> Роли не появляются в токене сами по себе: их туда кладёт преобразователь <em>User Realm Role</em> или <em>User Client Role</em>, который живёт во встроенном client scope <code>roles</code>. Если кто-то, обычно пытаясь уменьшить токен, снимет с клиента client scope <code>roles</code>, роли полностью исчезнут из токена, и приложение начнёт отвечать 403 на всё подряд. Это первый пункт чеклиста «403 — почему» в его расширенном виде.</p>
 <p><strong>Audience mapper и почему без него ничего не работает.</strong> Ресурс-сервер обязан проверять <code>aud</code> (2.5), а Keycloak по умолчанию кладёт туда только <code>account</code>. Значит, каждому API нужен свой client scope с преобразователем Audience, и этот scope назначают тем клиентам, которым доступ разрешён. На схеме видно, как это выглядит для платёжного API:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>client scope "payments-access"
    ├── Audience mapper  → aud += "payments-api"
@@ -1058,7 +1058,7 @@ https://www.keycloak.org/downloads">keycloak.org/downloads</a>). Дистриб�
 </code></pre></div>
 
 <p>Ценность этой схемы не только в том, что <code>aud</code> можно проверить. <strong>Список клиентов, которым назначен scope, и есть документированный ответ на вопрос «кто ходит в мой API»</strong>, и никакой разбор логов задним числом его не заменит.</p>
-<p><strong>Чего не делать в преобразователях.</strong> Script mapper, то есть JS внутри Keycloak, требует включения feature <code>scripts</code>, выполняется при каждой выдаче токена, не версионируется вместе с кодом и по сути исполняет произвольный код внутри вашего AS, поэтому скомпрометировать его — значит скомпрометировать всю IAM. Если встроенных преобразователей для вашей логики не хватает, пишите <strong>кастомный protocol mapper на Java</strong> (4.7): его хотя бы собирают, тестируют и хранят в git.</p>
+<p><strong>Запреты для преобразователей.</strong> Script mapper, то есть JS внутри Keycloak, требует включения feature <code>scripts</code>, выполняется при каждой выдаче токена, не версионируется вместе с кодом и по сути исполняет произвольный код внутри вашего AS, поэтому скомпрометировать его — значит скомпрометировать всю IAM. Если встроенных преобразователей для вашей логики не хватает, пишите <strong>кастомный protocol mapper на Java</strong> (4.7): его хотя бы собирают, тестируют и хранят в git.</p>
 <h3 id="39-ключи-realm-jwks-и-ротация">3.9 Ключи realm, JWKS и ротация</h3>
 <p>Ключи realm подписывают все выдаваемые токены, а ресурс-серверы проверяют подпись по публичным ключам из JWKS, поэтому ошибка в ротации ключей кладёт сразу все сервисы, которые принимают токены. Realm держит несколько key providers, у каждого свой приоритет и своё состояние; для каждого алгоритма активен <strong>ровно один</strong> ключ, с наибольшим приоритетом, но в JWKS отдаются все ключи, помеченные как enabled. Ниже разобраны состояния ключа, правильный порядок ротации, команды для инвентаризации и особый случай HMAC-ключа.</p>
 <p>В таблице видно главное: пассивный ключ уже не подписывает новые токены, но всё ещё отдаётся в JWKS.</p>
@@ -1068,7 +1068,7 @@ https://www.keycloak.org/downloads">keycloak.org/downloads</a>). Дистриб�
 <th>Состояние</th>
 <th>Подписывает новые токены</th>
 <th>Отдаётся в JWKS</th>
-<th>Зачем</th>
+<th>Назначение</th>
 </tr>
 </thead>
 <tbody>
@@ -1076,19 +1076,19 @@ https://www.keycloak.org/downloads">keycloak.org/downloads</a>). Дистриб�
 <td data-label="Состояние">Active</td>
 <td data-label="Подписывает новые токены">да</td>
 <td data-label="Отдаётся в JWKS">да</td>
-<td data-label="Зачем">текущий рабочий ключ</td>
+<td data-label="Назначение">текущий рабочий ключ</td>
 </tr>
 <tr>
 <td data-label="Состояние">Passive (enabled, active=Off)</td>
 <td data-label="Подписывает новые токены">нет</td>
 <td data-label="Отдаётся в JWKS"><strong>да</strong></td>
-<td data-label="Зачем">проверка ранее выданных токенов</td>
+<td data-label="Назначение">проверка ранее выданных токенов</td>
 </tr>
 <tr>
 <td data-label="Состояние">Disabled</td>
 <td data-label="Подписывает новые токены">нет</td>
 <td data-label="Отдаётся в JWKS">нет</td>
-<td data-label="Зачем">фактически удалён из обращения</td>
+<td data-label="Назначение">фактически удалён из обращения</td>
 </tr>
 </tbody>
 </table>
@@ -1115,54 +1115,54 @@ curl -s -H <span class="s2">"Authorization: Bearer </span><span class="nv">$ADMI
 <thead>
 <tr>
 <th>Параметр</th>
-<th>Что ограничивает</th>
+<th>Ограничение</th>
 <th>Типовое значение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Параметр"><code>SSO Session Idle</code></td>
-<td data-label="Что ограничивает">Простой SSO-сессии</td>
+<td data-label="Ограничение">Простой SSO-сессии</td>
 <td data-label="Типовое значение">30 мин</td>
 </tr>
 <tr>
 <td data-label="Параметр"><code>SSO Session Max</code></td>
-<td data-label="Что ограничивает">Абсолютный потолок сессии</td>
+<td data-label="Ограничение">Абсолютный потолок сессии</td>
 <td data-label="Типовое значение">10 ч</td>
 </tr>
 <tr>
 <td data-label="Параметр"><code>Client Session Idle</code> / <code>Max</code></td>
-<td data-label="Что ограничивает">То же на уровне отдельного клиента (если задано — перекрывает)</td>
+<td data-label="Ограничение">То же на уровне отдельного клиента (если задано — перекрывает)</td>
 <td data-label="Типовое значение">наследует realm</td>
 </tr>
 <tr>
 <td data-label="Параметр"><code>Access Token Lifespan</code></td>
-<td data-label="Что ограничивает">Жизнь access-токена</td>
+<td data-label="Ограничение">Жизнь access-токена</td>
 <td data-label="Типовое значение">1–5 мин</td>
 </tr>
 <tr>
 <td data-label="Параметр"><code>Access Token Lifespan For Implicit Flow</code></td>
-<td data-label="Что ограничивает">legacy, игнорируйте</td>
+<td data-label="Ограничение">legacy, игнорируйте</td>
 <td data-label="Типовое значение">—</td>
 </tr>
 <tr>
 <td data-label="Параметр"><code>Client Login Timeout</code></td>
-<td data-label="Что ограничивает">Время на обмен кода на токен</td>
+<td data-label="Ограничение">Время на обмен кода на токен</td>
 <td data-label="Типовое значение">1 мин</td>
 </tr>
 <tr>
 <td data-label="Параметр"><code>Login timeout</code> / <code>Login action timeout</code></td>
-<td data-label="Что ограничивает">Время на прохождение формы логина</td>
+<td data-label="Ограничение">Время на прохождение формы логина</td>
 <td data-label="Типовое значение">30 мин / 5 мин</td>
 </tr>
 <tr>
 <td data-label="Параметр"><code>Offline Session Idle</code> / <code>Max</code></td>
-<td data-label="Что ограничивает">Жизнь offline-токенов</td>
+<td data-label="Ограничение">Жизнь offline-токенов</td>
 <td data-label="Типовое значение">30 дней</td>
 </tr>
 <tr>
 <td data-label="Параметр"><code>Refresh Token Max Reuse</code></td>
-<td data-label="Что ограничивает">Допуск на повторно использование</td>
+<td data-label="Ограничение">Допуск на повторно использование</td>
 <td data-label="Типовое значение">0</td>
 </tr>
 </tbody>
@@ -1223,7 +1223,7 @@ https://www.keycloak.org/docs/latest/server_admin/index.html">Server Administrat
 </code></pre></div>
 
 <p>Без проверки свежести <code>auth_time</code> уровень «gold» остался бы в токене на весь срок SSO-сессии, и step-up превратился бы в одноразовый ритуал в начале рабочего дня.</p>
-<p><strong>Какой взять второй фактор.</strong> OTP (TOTP/HOTP) встроен в Keycloak, как и <strong>WebAuthn / Passkeys</strong>: для них есть executions <code>WebAuthn Authenticator</code> и <code>WebAuthn Passwordless Authenticator</code> и required actions <code>webauthn-register</code> и <code>webauthn-register-passwordless</code>. Passkey с ключом, привязанным к устройству, — единственный практичный фактор, устойчивый к фишингу, потому что подпись привязана к origin, и поддельный сайт её не получит. <strong>Recovery codes</strong> в Keycloak реализованы как required action <code>Recovery Authentication Codes</code>, и без них не обойтись: если запасного пути нет, потеря телефона оборачивается обращением в поддержку, поддержка — социальной инженерией, а социальная инженерия — дырой.</p>
+<p><strong>Выбор второго фактора.</strong> OTP (TOTP/HOTP) встроен в Keycloak, как и <strong>WebAuthn / Passkeys</strong>: для них есть executions <code>WebAuthn Authenticator</code> и <code>WebAuthn Passwordless Authenticator</code> и required actions <code>webauthn-register</code> и <code>webauthn-register-passwordless</code>. Passkey с ключом, привязанным к устройству, — единственный практичный фактор, устойчивый к фишингу, потому что подпись привязана к origin, и поддельный сайт её не получит. <strong>Recovery codes</strong> в Keycloak реализованы как required action <code>Recovery Authentication Codes</code>, и без них не обойтись: если запасного пути нет, потеря телефона оборачивается обращением в поддержку, поддержка — социальной инженерией, а социальная инженерия — дырой.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> Реальный уровень вашей MFA определяет процедура её сброса в поддержке. Если оператор колл-центра может снять OTP по паспортным данным, которые лежат в любой утёкшей базе, MFA у вас фактически нет. Сброс должен требовать той же степени уверенности, что и сам фактор.</p>
 </blockquote>
@@ -1404,29 +1404,29 @@ https://www.keycloak.org/docs/latest/server_development/index.html">Server Devel
 <thead>
 <tr>
 <th>Статья</th>
-<th>Что конкретно</th>
+<th>Подробности</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Статья">Сборка под версию</td>
-<td data-label="Что конкретно"><code>provider</code> API не имеет гарантий совместимости: апгрейд Keycloak = пересборка + правка сигнатур</td>
+<td data-label="Подробности"><code>provider</code> API не имеет гарантий совместимости: апгрейд Keycloak = пересборка + правка сигнатур</td>
 </tr>
 <tr>
 <td data-label="Статья">Интеграционные тесты</td>
-<td data-label="Что конкретно">Testcontainers с реальным образом Keycloak, импортом realm и прохождением flow по HTTP; юнит-тесты почти бесполезны</td>
+<td data-label="Подробности">Testcontainers с реальным образом Keycloak, импортом realm и прохождением flow по HTTP; юнит-тесты почти бесполезны</td>
 </tr>
 <tr>
 <td data-label="Статья">Блокировка апгрейда</td>
-<td data-label="Что конкретно">Если провайдер не собирается под новую версию, вы не обновляетесь — включая security-патчи самого Keycloak</td>
+<td data-label="Подробности">Если провайдер не собирается под новую версию, вы не обновляетесь — включая security-патчи самого Keycloak</td>
 </tr>
 <tr>
 <td data-label="Статья">Диагностика</td>
-<td data-label="Что конкретно">Ошибка в SPI выглядит как «Keycloak не работает»; разделять приходится по логам с <code>org.keycloak.authentication:DEBUG</code></td>
+<td data-label="Подробности">Ошибка в SPI выглядит как «Keycloak не работает»; разделять приходится по логам с <code>org.keycloak.authentication:DEBUG</code></td>
 </tr>
 <tr>
 <td data-label="Статья">Владелец</td>
-<td data-label="Что конкретно">Нужен человек, который помнит, зачем это написано, через три года</td>
+<td data-label="Подробности">Нужен человек, который помнит, зачем это написано, через три года</td>
 </tr>
 </tbody>
 </table>
@@ -1747,7 +1747,7 @@ kubectl cp keycloak-0:/tmp/retail.json ./realm-export/retail.json
 <li><strong>Доменный слой</strong> охраняет инварианты, которые нельзя нарушить ни при каком вызове: лимиты, принцип четырёх глаз.</li>
 <li><strong>БД</strong> служит страховкой через RLS (6.7).</li>
 </ul>
-<p><strong>Почему нельзя доверять фронтенду.</strong> Фронтенд — это код, который выполняется на устройстве атакующего, и скрытая кнопка не мешает отправить HTTP-запрос вручную. Фронтенд прячет кнопки <strong>ради удобства</strong>, а не ради безопасности, и бэкенд обязан вернуть 403 на тот же запрос независимо от того, что показывает интерфейс. На интервью это удобно сформулировать так: «клиентская проверка — это UX, серверная — это безопасность; если у вас есть только первая, второй у вас нет».</p>
+<p><strong>Недоверие к фронтенду.</strong> Фронтенд — это код, который выполняется на устройстве атакующего, и скрытая кнопка не мешает отправить HTTP-запрос вручную. Фронтенд прячет кнопки <strong>ради удобства</strong>, а не ради безопасности, и бэкенд обязан вернуть 403 на тот же запрос независимо от того, что показывает интерфейс. На интервью это удобно сформулировать так: «клиентская проверка — это UX, серверная — это безопасность; если у вас есть только первая, второй у вас нет».</p>
 <p>Отдельный вектор атаки — <strong>обход через внутренний API</strong>. Публичный <code>/api/v1/transfers</code> проверяет права, а внутренний <code>/internal/transfers</code> для вызовов сервис-сервис не проверяет, «он же во внутренней сети». Потом кто-нибудь пробрасывает его через Ingress «на пять минут для отладки», и так он и остаётся навсегда. Поэтому внутренние API должны требовать аутентификацию (mTLS или client_credentials-токен с собственным <code>aud</code>) точно так же, как внешние.</p>
 <h3 id="65-keycloak-authorization-services">6.5 Keycloak Authorization Services</h3>
 <p>Keycloak Authorization Services позволяют Keycloak работать не только сервером авторизации, но и PDP — точкой, которая принимает решения о доступе. Модель строится по цепочке <strong>resources → scopes → policies → permissions</strong> и поддерживает UMA 2.0: ресурс-сервер спрашивает Keycloak, можно ли субъекту S выполнить scope X над ресурсом R (grant type <code>urn:ietf:params:oauth:grant-type:uma-ticket</code>), и получает RPT-токен со списком разрешений. Вопрос не в том, умеет ли это Keycloak, а в том, когда это оправдано.</p>
@@ -1797,34 +1797,34 @@ kubectl cp keycloak-0:/tmp/retail.json ./realm-export/retail.json
 <thead>
 <tr>
 <th>Объект</th>
-<th>Что это</th>
+<th>Суть</th>
 <th>Пример</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Объект">Resource</td>
-<td data-label="Что это">То, что защищаем; имеет тип, URI, владельца и набор scopes</td>
+<td data-label="Суть">То, что защищаем; имеет тип, URI, владельца и набор scopes</td>
 <td data-label="Пример"><code>Отчёт #42</code>, тип <code>urn:reports:report</code></td>
 </tr>
 <tr>
 <td data-label="Объект">Scope</td>
-<td data-label="Что это">Действие над ресурсом</td>
+<td data-label="Суть">Действие над ресурсом</td>
 <td data-label="Пример"><code>report:view</code>, <code>report:export</code></td>
 </tr>
 <tr>
 <td data-label="Объект">Policy</td>
-<td data-label="Что это">Условие: роль, группа, пользователь, клиент, время, JS, агрегат</td>
+<td data-label="Суть">Условие: роль, группа, пользователь, клиент, время, JS, агрегат</td>
 <td data-label="Пример">«роль <code>analyst</code> И рабочее время»</td>
 </tr>
 <tr>
 <td data-label="Объект">Permission</td>
-<td data-label="Что это">Связка «ресурс (или тип ресурса) + scopes + политики»</td>
+<td data-label="Суть">Связка «ресурс (или тип ресурса) + scopes + политики»</td>
 <td data-label="Пример">«на тип <code>report</code> scope <code>export</code> действует политика X»</td>
 </tr>
 <tr>
 <td data-label="Объект">Decision strategy</td>
-<td data-label="Что это">Как агрегируются политики: <code>Unanimous</code> / <code>Affirmative</code> / <code>Consensus</code></td>
+<td data-label="Суть">Как агрегируются политики: <code>Unanimous</code> / <code>Affirmative</code> / <code>Consensus</code></td>
 <td data-label="Пример">—</td>
 </tr>
 </tbody>
@@ -2169,8 +2169,8 @@ https://cyclonedx.org/specification/overview/">cyclonedx.org</a>). Помимо 
 <tr>
 <th>Класс</th>
 <th>Инструменты</th>
-<th>Что находит</th>
-<th>Чего не найдёт никогда</th>
+<th>Находит</th>
+<th>Не найдёт</th>
 <th>Характер шума</th>
 </tr>
 </thead>
@@ -2178,49 +2178,49 @@ https://cyclonedx.org/specification/overview/">cyclonedx.org</a>). Помимо 
 <tr>
 <td data-label="Класс"><strong>SCA</strong></td>
 <td data-label="Инструменты">OWASP Dependency-Check, Snyk, Trivy, Dependabot/Renovate, Dependency-Track</td>
-<td data-label="Что находит">Известные CVE в прямых и транзитивных зависимостях, устаревшие версии, лицензии</td>
-<td data-label="Чего не найдёт никогда">Уязвимость в вашем коде; 0-day</td>
+<td data-label="Находит">Известные CVE в прямых и транзитивных зависимостях, устаревшие версии, лицензии</td>
+<td data-label="Не найдёт">Уязвимость в вашем коде; 0-day</td>
 <td data-label="Характер шума">Сопоставление по CPE даёт ложные совпадения по имени; уязвимый код может быть недостижим из приложения</td>
 </tr>
 <tr>
 <td data-label="Класс"><strong>SAST</strong></td>
 <td data-label="Инструменты">Semgrep, SpotBugs+FindSecBugs, SonarQube, CodeQL</td>
-<td data-label="Что находит">Паттерны в исходниках: конкатенация SQL, отключённая проверка TLS, слабый ГПСЧ, path traversal, <code>enableDefaultTyping</code></td>
-<td data-label="Чего не найдёт никогда">Логические дыры (IDOR, отсутствующая проверка владения), ошибки конфигурации среды выполнения</td>
+<td data-label="Находит">Паттерны в исходниках: конкатенация SQL, отключённая проверка TLS, слабый ГПСЧ, path traversal, <code>enableDefaultTyping</code></td>
+<td data-label="Не найдёт">Логические дыры (IDOR, отсутствующая проверка владения), ошибки конфигурации среды выполнения</td>
 <td data-label="Характер шума">Не видит контекста: не знает, что данные уже проверены выше по стеку</td>
 </tr>
 <tr>
 <td data-label="Класс"><strong>DAST</strong></td>
 <td data-label="Инструменты">OWASP ZAP, Burp</td>
-<td data-label="Что находит">Реально достижимые дыры на работающем стенде: XSS, открытые эндпоинты, отсутствующие заголовки, часть инъекций</td>
-<td data-label="Чего не найдёт никогда">Всё, что за аутентификацией и сложным состоянием, если не научить ходить по флоу; бизнес-логику</td>
+<td data-label="Находит">Реально достижимые дыры на работающем стенде: XSS, открытые эндпоинты, отсутствующие заголовки, часть инъекций</td>
+<td data-label="Не найдёт">Всё, что за аутентификацией и сложным состоянием, если не научить ходить по флоу; бизнес-логику</td>
 <td data-label="Характер шума">Ложные срабатывания на отличиях ответов; медленный</td>
 </tr>
 <tr>
 <td data-label="Класс"><strong>IAST и проверка во время выполнения</strong></td>
 <td data-label="Инструменты">агенты (Contrast и аналоги)</td>
-<td data-label="Что находит">То же, что DAST, но с трассировкой до строки кода</td>
-<td data-label="Чего не найдёт никогда">Не покрытый тестами код</td>
+<td data-label="Находит">То же, что DAST, но с трассировкой до строки кода</td>
+<td data-label="Не найдёт">Не покрытый тестами код</td>
 <td data-label="Характер шума">Требует нагрузочного/функционального трафика</td>
 </tr>
 <tr>
 <td data-label="Класс"><strong>Секреты</strong></td>
 <td data-label="Инструменты">gitleaks, trufflehog</td>
-<td data-label="Что находит">Ключи и токены в коде и истории</td>
-<td data-label="Чего не найдёт никогда">Секрет, которого нет в git (в переменных CI)</td>
+<td data-label="Находит">Ключи и токены в коде и истории</td>
+<td data-label="Не найдёт">Секрет, которого нет в git (в переменных CI)</td>
 <td data-label="Характер шума">Много шума без <code>--only-verified</code></td>
 </tr>
 <tr>
 <td data-label="Класс"><strong>Контейнеры</strong></td>
 <td data-label="Инструменты">Trivy, Grype</td>
-<td data-label="Что находит">CVE в базовом образе и в пакетах ОС</td>
-<td data-label="Чего не найдёт никогда">Дыры в приложении</td>
+<td data-label="Находит">CVE в базовом образе и в пакетах ОС</td>
+<td data-label="Не найдёт">Дыры в приложении</td>
 <td data-label="Характер шума">Уязвимости в пакетах, которых во время выполнения нет</td>
 </tr>
 </tbody>
 </table>
 <p>Три вещи не найдёт ни один сканер, и поэтому они остаются на людях: <strong>IDOR и вообще любая авторизация</strong> (инструмент не знает, кому какой объект принадлежит), <strong>бизнес-логика</strong> (двойное списание, обход лимитов) и <strong>дизайн</strong> (A06). Отсюда формула: сканеры закрывают известное, а всё остальное закрывают ревью и threat modeling.</p>
-<p><strong>Что рассказать на интервью о процессе.</strong> Ответ «у нас стоит SonarQube» слабый, а сильный ответ описывает процесс из шести частей:</p>
+<p><strong>Рассказ о процессе на интервью.</strong> Ответ «у нас стоит SonarQube» слабый, а сильный ответ описывает процесс из шести частей:</p>
 <ol>
 <li><strong>Инвентарь.</strong> SBOM (CycloneDX) генерируется на каждой сборке и складывается в Dependency-Track, так что на вопрос «где у нас библиотека X версии Y» отвечает запрос, а не обход команд.</li>
 <li><strong>Градация блокировок.</strong> Новые находки в диффе блокируют PR, а старые лежат в бэклоге с дедлайнами по severity (например, critical — 7 дней, high — 30, medium — квартал). Конвейер не должен краснеть постоянно, иначе его перестают читать.</li>
@@ -2241,34 +2241,34 @@ https://cyclonedx.org/specification/overview/">cyclonedx.org</a>). Помимо 
 <thead>
 <tr>
 <th>Ключ</th>
-<th>Что ловит</th>
+<th>Обнаруживает</th>
 <th>Слабость</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Ключ">IP</td>
-<td data-label="Что ловит">Грубый перебор с одной машины</td>
+<td data-label="Обнаруживает">Грубый перебор с одной машины</td>
 <td data-label="Слабость">NAT (положите целое отделение), ботнет и резидентные прокси обходят</td>
 </tr>
 <tr>
 <td data-label="Ключ"><code>sub</code> пользователя</td>
-<td data-label="Что ловит">Злоупотребление легальным аккаунтом</td>
+<td data-label="Обнаруживает">Злоупотребление легальным аккаунтом</td>
 <td data-label="Слабость">Требует аутентификации — не работает на <code>/login</code></td>
 </tr>
 <tr>
 <td data-label="Ключ"><code>client_id</code></td>
-<td data-label="Что ловит">Сломанный интегратор</td>
+<td data-label="Обнаруживает">Сломанный интегратор</td>
 <td data-label="Слабость">Не различает его клиентов</td>
 </tr>
 <tr>
 <td data-label="Ключ">Отпечаток устройства</td>
-<td data-label="Что ловит">Credential stuffing</td>
+<td data-label="Обнаруживает">Credential stuffing</td>
 <td data-label="Слабость">Подделывается</td>
 </tr>
 <tr>
 <td data-label="Ключ">Логин из тела запроса</td>
-<td data-label="Что ловит">Перебор пароля одного аккаунта</td>
+<td data-label="Обнаруживает">Перебор пароля одного аккаунта</td>
 <td data-label="Слабость">Атакующий меняет логины (спрей)</td>
 </tr>
 </tbody>
@@ -2443,25 +2443,25 @@ https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html"
 <table class="rt rt-2">
 <thead>
 <tr>
-<th>Кто</th>
+<th>Участник</th>
 <th>За что отвечает</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="Кто">Разработка</td>
+<td data-label="Участник">Разработка</td>
 <td data-label="За что отвечает">Безопасный код, проверки авторизации, валидация, обработка находок, threat model фичи</td>
 </tr>
 <tr>
-<td data-label="Кто">ИБ (AppSec)</td>
+<td data-label="Участник">ИБ (AppSec)</td>
 <td data-label="За что отвечает">Стандарты и чеклисты, инструменты и их настройка, обучение, экспертиза в спорных случаях, pentest/bug bounty</td>
 </tr>
 <tr>
-<td data-label="Кто">Платформа/SRE</td>
+<td data-label="Участник">Платформа/SRE</td>
 <td data-label="За что отвечает">Периметр, сеть, секреты, образы, admission-политики, патчинг базовой инфраструктуры</td>
 </tr>
 <tr>
-<td data-label="Кто">Владелец продукта</td>
+<td data-label="Участник">Владелец продукта</td>
 <td data-label="За что отвечает">Принятие риска (письменно), приоритет задач безопасности</td>
 </tr>
 </tbody>
@@ -2967,5 +2967,5 @@ https://commons.wikimedia.org/wiki/File:Erinaceus_roumanicus_2020_G2.jpg">Бел
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-устройство-oauth-20-и-oidc">1. Устройство OAuth 2.0 и OIDC</a></li><li><a href="#2-токены-формат-жизненный-цикл-отзыв">2. Токены: формат, жизненный цикл, отзыв</a></li><li><a href="#3-keycloak-модель-конфигурации">3. Keycloak: модель конфигурации</a></li><li><a href="#4-keycloak-аутентификация-mfa-федерация-spi">4. Keycloak: аутентификация, MFA, федерация, SPI</a></li><li><a href="#5-keycloak-в-эксплуатации">5. Keycloak в эксплуатации</a></li><li><a href="#6-модели-авторизации">6. Модели авторизации</a></li><li><a href="#7-owasp-top-102025-в-java-бэкенде">7. OWASP Top 10:2025 в Java-бэкенде</a></li><li><a href="#8-секреты-и-цепочка-поставки-a03">8. Секреты и цепочка поставки (A03)</a></li><li><a href="#9-защита-api">9. Защита API</a></li><li><a href="#10-процессы-безопасности">10. Процессы безопасности</a></li><li><a href="#11-разобранные-инциденты">11. Разобранные инциденты</a></li><li><a href="#12-ошибки-и-антипаттерны">12. Ошибки и антипаттерны</a></li><li><a href="#13-диагностика">13. Диагностика</a></li><li><a href="#14-вопросы-на-интервью">14. Вопросы на интервью</a></li><li><a href="#15-попробовать-руками">15. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

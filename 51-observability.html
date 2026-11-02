@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть X. Эксплуатация</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/51.svg" width="48" height="48" alt="" loading="lazy">51. Observability</h1><div class="meta"><span class="part-tag">Часть X. Эксплуатация</span><span>43 936 слов</span><span>≈ 4 ч 05 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/51.svg" width="48" height="48" alt="" loading="lazy">51. Observability</h1><div class="meta"><span class="part-tag">Часть X. Эксплуатация</span><span>43 901 слов</span><span>≈ 4 ч 05 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>В финтехе инцидент стоит денег в самом буквальном смысле: пока платёжный сервис отдаёт 500, каждая минута оборачивается непроведёнными транзакциями и звонками в поддержку. Команда, которая чинит инцидент за 8 минут, почти никогда не отличается от команды, которая чинит его за 2 часа, качеством кода — разница в том, видна ли система изнутри. Observability как раз и отвечает на вопрос, можно ли разобраться в поломке, которую никто не предвидел, не выкатывая новый релиз с дополнительными логами. Senior-кандидатов об этом спрашивают на интервью обязательно и жёстко: кардинальность метрик, разница между histogram и summary, что такое error budget, на что ставить оповещение и как искать причину роста p99, — по ответам на эти вопросы сразу видно, работал человек в проде или только читал о нём. К тому же знания из этой главы пригодятся уже в первый рабочий день на новом проекте, чего не скажешь почти ни о какой другой теме книги.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">17 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-мониторинг-и-наблюдаемость-observability" data-tip="Раздел этой главы: 1. Мониторинг и наблюдаемость (observability)">1. Мониторинг и наблюдаемость (observability)</a></li><li><a href="#2-структурное-логирование" data-tip="Раздел этой главы: 2. Структурное логирование">2. Структурное логирование</a></li><li><a href="#3-метрики" data-tip="Раздел этой главы: 3. Метрики">3. Метрики</a></li><li><a href="#4-язык-запросов-promql" data-tip="Раздел этой главы: 4. Язык запросов PromQL">4. Язык запросов PromQL</a></li><li><a href="#5-трассировка" data-tip="Раздел этой главы: 5. Трассировка">5. Трассировка</a></li><li><a href="#6-sli-slo-и-бюджет-ошибок" data-tip="Раздел этой главы: 6. SLI, SLO и бюджет ошибок">6. SLI, SLO и бюджет ошибок</a></li><li><a href="#7-оповещение-и-постмортемы" data-tip="Раздел этой главы: 7. Оповещение и постмортемы">7. Оповещение и постмортемы</a></li><li><a href="#8-профилирование-в-проде" data-tip="Раздел этой главы: 8. Профилирование в проде">8. Профилирование в проде</a></li><li><a href="#9-наблюдаемость-в-эксплуатации" data-tip="Раздел этой главы: 9. Наблюдаемость в эксплуатации">9. Наблюдаемость в эксплуатации</a></li><li><a href="#10-сквозной-разбор-инцидента-по-сигналам" data-tip="Раздел этой главы: 10. Сквозной разбор инцидента по сигналам">10. Сквозной разбор инцидента по сигналам</a></li><li><a href="#11-стоимость-сигналов-и-дисциплина-инструментации" data-tip="Раздел этой главы: 11. Стоимость сигналов и дисциплина инструментации">11. Стоимость сигналов и дисциплина инструментации</a></li><li><a href="#12-разобранные-инциденты" data-tip="Раздел этой главы: 12. Разобранные инциденты">12. Разобранные инциденты</a></li><li><a href="#13-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 13. Ошибки и антипаттерны">13. Ошибки и антипаттерны</a></li><li><a href="#14-диагностика" data-tip="Раздел этой главы: 14. Диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью" data-tip="Раздел этой главы: 15. Вопросы на интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками" data-tip="Раздел этой главы: 16. Попробовать руками">16. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
@@ -488,54 +488,54 @@ https://docs.spring.io/spring-boot/reference/features/logging.html">Spring Boot 
 <thead>
 <tr>
 <th>Поле</th>
-<th>Зачем</th>
+<th>Назначение</th>
 <th>Типичная ошибка</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Поле"><code>@timestamp</code></td>
-<td data-label="Зачем">ISO-8601 <strong>с часовым поясом или в UTC</strong>, миллисекунды минимум</td>
+<td data-label="Назначение">ISO-8601 <strong>с часовым поясом или в UTC</strong>, миллисекунды минимум</td>
 <td data-label="Типичная ошибка">локальное время без зоны; после перевода часов события идут не по порядку</td>
 </tr>
 <tr>
 <td data-label="Поле"><code>level</code></td>
-<td data-label="Зачем">фильтрация и оповещения</td>
+<td data-label="Назначение">фильтрация и оповещения</td>
 <td data-label="Типичная ошибка">уровень как часть message</td>
 </tr>
 <tr>
 <td data-label="Поле"><code>logger</code></td>
-<td data-label="Зачем">какой класс</td>
+<td data-label="Назначение">какой класс</td>
 <td data-label="Типичная ошибка">пишут только <code>message</code></td>
 </tr>
 <tr>
 <td data-label="Поле"><code>thread</code></td>
-<td data-label="Зачем">корреляция в многопоточке, поиск залипших пулов</td>
+<td data-label="Назначение">корреляция в многопоточке, поиск залипших пулов</td>
 <td data-label="Типичная ошибка">выбрасывают «для экономии»</td>
 </tr>
 <tr>
 <td data-label="Поле"><code>message</code></td>
-<td data-label="Зачем">человекочитаемый текст</td>
+<td data-label="Назначение">человекочитаемый текст</td>
 <td data-label="Типичная ошибка">конкатенация значений в текст вместо отдельных полей</td>
 </tr>
 <tr>
 <td data-label="Поле"><code>trace_id</code>, <code>span_id</code></td>
-<td data-label="Зачем">связь с трассой</td>
+<td data-label="Назначение">связь с трассой</td>
 <td data-label="Типичная ошибка">нет вообще — главная беда</td>
 </tr>
 <tr>
 <td data-label="Поле"><code>service</code>, <code>version</code>, <code>env</code></td>
-<td data-label="Зачем">различить экземпляры и релизы</td>
+<td data-label="Назначение">различить экземпляры и релизы</td>
 <td data-label="Типичная ошибка">version нет, и невозможно сказать, ошибки только у нового релиза или у всех</td>
 </tr>
 <tr>
 <td data-label="Поле"><code>host</code>/<code>pod</code></td>
-<td data-label="Зачем">найти конкретный экземпляр</td>
+<td data-label="Назначение">найти конкретный экземпляр</td>
 <td data-label="Типичная ошибка">обычно добавляет агент/оператор — проверьте, что добавляет</td>
 </tr>
 <tr>
 <td data-label="Поле"><code>error.type</code>, <code>error.stack_trace</code></td>
-<td data-label="Зачем">отдельными полями, не внутри message</td>
+<td data-label="Назначение">отдельными полями, не внутри message</td>
 <td data-label="Типичная ошибка">трассировка стека склеена в message → нельзя сгруппировать по типу исключения</td>
 </tr>
 </tbody>
@@ -565,7 +565,7 @@ https://opentelemetry.io/docs/specs/semconv/">OpenTelemetry Semantic Conventions
 </code></pre></div>
 
 <p>Если убрать <code>finally { MDC.clear(); }</code>, поток вернётся в пул Tomcat с чужим <code>tenant</code>, и следующий запрос будет залогирован с неправильным арендатором. Это не теоретическая утечка, а регулярный источник «мистических» записей в логах.</p>
-<p><strong>Где MDC теряется:</strong></p>
+<p><strong>Потеря MDC:</strong></p>
 <ol>
 <li><strong>В другом потоке.</strong> <code>@Async</code>, <code>CompletableFuture.supplyAsync</code> и ручной <code>ExecutorService</code> выполняют задачу в новом потоке, где MDC пуст. Лечится это обёрткой-декоратором, которая снимает копию контекста в вызывающем потоке и восстанавливает её в рабочем, а после выполнения возвращает прежнее состояние:</li>
 </ol>
@@ -601,7 +601,7 @@ https://opentelemetry.io/docs/specs/semconv/">OpenTelemetry Semantic Conventions
 <tr>
 <th>Уровень</th>
 <th>Смысл</th>
-<th>Кто реагирует</th>
+<th>Реагирует</th>
 <th>Примеры</th>
 </tr>
 </thead>
@@ -609,31 +609,31 @@ https://opentelemetry.io/docs/specs/semconv/">OpenTelemetry Semantic Conventions
 <tr>
 <td data-label="Уровень"><code>ERROR</code></td>
 <td data-label="Смысл">Система не смогла сделать то, что должна была, и <strong>это требует действия человека</strong></td>
-<td data-label="Кто реагирует">дежурный (возможно, через оповещение)</td>
+<td data-label="Реагирует">дежурный (возможно, через оповещение)</td>
 <td data-label="Примеры">не удалось записать в БД после всех повторных попыток; отвалился обязательный внешний сервис; невосстановимая ошибка потребителя</td>
 </tr>
 <tr>
 <td data-label="Уровень"><code>WARN</code></td>
 <td data-label="Смысл">Что-то пошло не по основному пути, но система справилась</td>
-<td data-label="Кто реагирует">посмотреть при разборе</td>
+<td data-label="Реагирует">посмотреть при разборе</td>
 <td data-label="Примеры">сработал повтор запроса; circuit breaker открылся; деградировали на кэш</td>
 </tr>
 <tr>
 <td data-label="Уровень"><code>INFO</code></td>
 <td data-label="Смысл">Значимое бизнес-событие или событие жизненного цикла</td>
-<td data-label="Кто реагирует">никто, читается при расследовании</td>
+<td data-label="Реагирует">никто, читается при расследовании</td>
 <td data-label="Примеры">«платёж авторизован», «потребитель подписался», «конфиг загружен»</td>
 </tr>
 <tr>
 <td data-label="Уровень"><code>DEBUG</code></td>
 <td data-label="Смысл">Детали для отладки конкретной проблемы</td>
-<td data-label="Кто реагирует">включается точечно во время выполнения</td>
+<td data-label="Реагирует">включается точечно во время выполнения</td>
 <td data-label="Примеры">тело запроса (замаскированное), решение роутера</td>
 </tr>
 <tr>
 <td data-label="Уровень"><code>TRACE</code></td>
 <td data-label="Смысл">Совсем подробно, обычно библиотечное</td>
-<td data-label="Кто реагирует">почти никогда</td>
+<td data-label="Реагирует">почти никогда</td>
 <td data-label="Примеры">wire-логи HTTP-клиента</td>
 </tr>
 </tbody>
@@ -655,7 +655,7 @@ https://opentelemetry.io/docs/specs/semconv/">OpenTelemetry Semantic Conventions
 <li><strong>PAN</strong> (номер карты) в открытом виде, CVV/CVC — <strong>вообще никогда, даже замаскированными</strong> (по PCI DSS CVV после авторизации запрещено хранить в любом виде), трек-данные магнитной полосы, PIN-блоки;</li>
 <li>персональные данные в таком объёме, который позволяет идентифицировать субъекта: ФИО + паспорт, номер телефона + адрес, СНИЛС, ИНН физлица. В РФ это регулирует 152-ФЗ: логи, в которых есть ПДн, становятся ИСПДн со всеми требованиями к хранению, доступу, локализации и срокам, и гораздо проще не класть туда ПДн вовсе.</li>
 </ul>
-<p><strong>Что класть вместо этого:</strong> суррогатные идентификаторы (<code>customer_id</code> из вашей БД), необратимый хеш с солью (<code>phone_hash</code>), маскированные значения (<code>card_mask=427683******1234</code> — правила PCI DSS допускают отображать первые шесть и последние четыре цифры) и токенизированные ссылки на секреты.</p>
+<p><strong>Замена:</strong> суррогатные идентификаторы (<code>customer_id</code> из вашей БД), необратимый хеш с солью (<code>phone_hash</code>), маскированные значения (<code>card_mask=427683******1234</code> — правила PCI DSS допускают отображать первые шесть и последние четыре цифры) и токенизированные ссылки на секреты.</p>
 <p>Маскирование строят сразу в трёх местах, потому что одного рубежа мало. Первый из них — доменный тип, у которого безопасный <code>toString()</code> не даёт номеру карты попасть в лог даже по неосторожности:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">public</span> <span class="kd">record</span> <span class="nc">CardRef</span><span class="p">(</span><span class="n">String</span> <span class="n">masked</span><span class="p">,</span> <span class="n">String</span> <span class="n">panToken</span><span class="p">)</span> <span class="p">{</span>
     <span class="kd">public</span> <span class="kd">static</span> <span class="n">CardRef</span> <span class="nf">of</span><span class="p">(</span><span class="n">String</span> <span class="n">pan</span><span class="p">)</span> <span class="p">{</span>
@@ -733,44 +733,44 @@ curl -X POST localhost:8080/actuator/loggers/com.bank.payments.acquirer <span cl
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Elasticsearch / OpenSearch</th>
 <th>Grafana Loki</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Что индексируется</td>
+<td data-label="Критерий">Что индексируется</td>
 <td data-label="Elasticsearch / OpenSearch">все поля документа (инвертированный индекс)</td>
 <td data-label="Grafana Loki"><strong>только метки</strong> потока (<code>app</code>, <code>env</code>, <code>pod</code>, <code>level</code>)</td>
 </tr>
 <tr>
-<td data-label="">Как ищется по телу</td>
+<td data-label="Критерий">Как ищется по телу</td>
 <td data-label="Elasticsearch / OpenSearch">мгновенно, по индексу</td>
 <td data-label="Grafana Loki">перебором (grep) по порциям, попавшим в выбранные метки и окно</td>
 </tr>
 <tr>
-<td data-label="">Хранилище</td>
+<td data-label="Критерий">Хранилище</td>
 <td data-label="Elasticsearch / OpenSearch">диски узлов (hot/warm/cold), реплики</td>
 <td data-label="Grafana Loki">объектное хранилище (S3/GCS/MinIO) + индекс меток</td>
 </tr>
 <tr>
-<td data-label="">Цена на ТБ</td>
+<td data-label="Критерий">Цена на ТБ</td>
 <td data-label="Elasticsearch / OpenSearch">высокая (индекс + <code>_source</code> + реплики + RAM под кластер)</td>
 <td data-label="Grafana Loki">существенно ниже (сжатые порции в объектном хранилище)</td>
 </tr>
 <tr>
-<td data-label="">Язык</td>
+<td data-label="Критерий">Язык</td>
 <td data-label="Elasticsearch / OpenSearch">Query DSL / KQL / Lucene</td>
 <td data-label="Grafana Loki">LogQL (селектор меток + фильтры + агрегации)</td>
 </tr>
 <tr>
-<td data-label="">Аналитика по логам</td>
+<td data-label="Критерий">Аналитика по логам</td>
 <td data-label="Elasticsearch / OpenSearch">сильная (агрегации, ML-задания)</td>
 <td data-label="Grafana Loki">базовая (<code>rate</code>, <code>sum by</code>, <code>unwrap</code>, метрики из логов)</td>
 </tr>
 <tr>
-<td data-label="">Главный риск</td>
+<td data-label="Критерий">Главный риск</td>
 <td data-label="Elasticsearch / OpenSearch">стоимость и операционная сложность кластера</td>
 <td data-label="Grafana Loki">взрыв кардинальности меток → тысячи мелких потоков и деградация</td>
 </tr>
@@ -836,25 +836,25 @@ https://grafana.com/docs/loki/latest/get-started/labels/">Grafana Loki, Labels</
 <thead>
 <tr>
 <th>Ситуация</th>
-<th>Что логировать</th>
+<th>Содержимое журнала</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Ситуация">Ожидаемый бизнес-отказ (недостаточно средств, неверный код)</td>
-<td data-label="Что логировать">INFO, без исключения вообще, исход — в поле и в счётчик</td>
+<td data-label="Содержимое журнала">INFO, без исключения вообще, исход — в поле и в счётчик</td>
 </tr>
 <tr>
 <td data-label="Ситуация">Ожидаемая техническая ошибка с известной причиной (<code>SocketTimeoutException</code> к партнёру)</td>
-<td data-label="Что логировать">WARN, класс + сообщение + адрес, <strong>без стека</strong> — стек всегда одинаковый и бесполезный</td>
+<td data-label="Содержимое журнала">WARN, класс + сообщение + адрес, <strong>без стека</strong> — стек всегда одинаковый и бесполезный</td>
 </tr>
 <tr>
 <td data-label="Ситуация">Неожиданное исключение (<code>NullPointerException</code>, <code>IllegalStateException</code>, ошибка десериализации)</td>
-<td data-label="Что логировать">ERROR с полным стеком: здесь стек и есть вся информация</td>
+<td data-label="Содержимое журнала">ERROR с полным стеком: здесь стек и есть вся информация</td>
 </tr>
 <tr>
 <td data-label="Ситуация">Исключение, обёрнутое несколько раз</td>
-<td data-label="Что логировать"><code>rootCauseFirst=true</code> плюс <code>maxDepthPerThrowable</code> — первопричина в начале, длина ограничена</td>
+<td data-label="Содержимое журнала"><code>rootCauseFirst=true</code> плюс <code>maxDepthPerThrowable</code> — первопричина в начале, длина ограничена</td>
 </tr>
 </tbody>
 </table>
@@ -1004,39 +1004,39 @@ https://docs.micrometer.io/micrometer/reference/concepts/histogram-quantiles.htm
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Histogram</th>
 <th>Summary</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Где считается квантиль</td>
+<td data-label="Критерий">Где считается квантиль</td>
 <td data-label="Histogram">в запросе (<code>histogram_quantile</code>)</td>
 <td data-label="Summary">в приложении</td>
 </tr>
 <tr>
-<td data-label="">Агрегируется по экземплярам/тегам</td>
+<td data-label="Критерий">Агрегируется по экземплярам/тегам</td>
 <td data-label="Histogram"><strong>да</strong></td>
 <td data-label="Summary"><strong>нет</strong></td>
 </tr>
 <tr>
-<td data-label="">Точность</td>
+<td data-label="Критерий">Точность</td>
 <td data-label="Histogram">зависит от бакетов (интерполяция внутри бакета)</td>
 <td data-label="Summary">выше для заданных квантилей</td>
 </tr>
 <tr>
-<td data-label="">Стоимость по рядам</td>
+<td data-label="Критерий">Стоимость по рядам</td>
 <td data-label="Histogram">1 ряд на бакет + <code>_sum</code> + <code>_count</code></td>
 <td data-label="Summary">1 ряд на квантиль + <code>_sum</code> + <code>_count</code></td>
 </tr>
 <tr>
-<td data-label="">Можно ли задать квантиль постфактум</td>
+<td data-label="Критерий">Можно ли задать квантиль постфактум</td>
 <td data-label="Histogram">да, любой</td>
 <td data-label="Summary">нет, только заранее заданные</td>
 </tr>
 <tr>
-<td data-label="">Стоимость CPU в приложении</td>
+<td data-label="Критерий">Стоимость CPU в приложении</td>
 <td data-label="Histogram">низкая (инкремент счётчиков)</td>
 <td data-label="Summary">выше (структура для оценки квантилей)</td>
 </tr>
@@ -1109,40 +1109,40 @@ https://prometheus.io/docs/prometheus/latest/querying/functions/">Prometheus: hi
 <thead>
 <tr>
 <th>Нельзя</th>
-<th>Почему</th>
-<th>Что вместо</th>
+<th>Объяснение</th>
+<th>Замена</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Нельзя"><code>user_id</code>, <code>account_id</code>, <code>card_id</code></td>
-<td data-label="Почему">неограниченный рост</td>
-<td data-label="Что вместо">атрибут в трассе/логе</td>
+<td data-label="Объяснение">неограниченный рост</td>
+<td data-label="Замена">атрибут в трассе/логе</td>
 </tr>
 <tr>
 <td data-label="Нельзя"><code>trace_id</code>, <code>request_id</code></td>
-<td data-label="Почему">уникален у каждого запроса — худший случай</td>
-<td data-label="Что вместо">exemplar</td>
+<td data-label="Объяснение">уникален у каждого запроса — худший случай</td>
+<td data-label="Замена">exemplar</td>
 </tr>
 <tr>
 <td data-label="Нельзя">URL с path-параметрами (<code>/api/orders/8812</code>)</td>
-<td data-label="Почему">ряд на каждое поручение</td>
-<td data-label="Что вместо">шаблон пути <code>/api/orders/{id}</code></td>
+<td data-label="Объяснение">ряд на каждое поручение</td>
+<td data-label="Замена">шаблон пути <code>/api/orders/{id}</code></td>
 </tr>
 <tr>
 <td data-label="Нельзя">текст сообщения об ошибке</td>
-<td data-label="Почему">«Connection to 10.2.3.44:5432 refused» — новый ряд на каждый IP</td>
-<td data-label="Что вместо">класс ошибки: <code>error=connection_refused</code></td>
+<td data-label="Объяснение">«Connection to 10.2.3.44:5432 refused» — новый ряд на каждый IP</td>
+<td data-label="Замена">класс ошибки: <code>error=connection_refused</code></td>
 </tr>
 <tr>
 <td data-label="Нельзя">timestamp, версия сборки с хешем коммита</td>
-<td data-label="Почему">растёт с каждым деплоем</td>
-<td data-label="Что вместо"><code>version</code> семантическая</td>
+<td data-label="Объяснение">растёт с каждым деплоем</td>
+<td data-label="Замена"><code>version</code> семантическая</td>
 </tr>
 <tr>
 <td data-label="Нельзя">email, телефон</td>
-<td data-label="Почему">и кардинальность, и ПДн</td>
-<td data-label="Что вместо">хеш в логе, не в метрике</td>
+<td data-label="Объяснение">и кардинальность, и ПДн</td>
+<td data-label="Замена">хеш в логе, не в метрике</td>
 </tr>
 </tbody>
 </table>
@@ -1206,49 +1206,49 @@ https://sre.google/sre-book/monitoring-distributed-systems/">SRE Book, Monitorin
 <tr>
 <th>Категория</th>
 <th>Метрики</th>
-<th>Почему именно они</th>
+<th>Обоснование</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Категория">HTTP-сервер</td>
 <td data-label="Метрики"><code>http_server_requests_seconds</code> (count/bucket/sum) по <code>uri</code>, <code>method</code>, <code>status</code>, <code>outcome</code></td>
-<td data-label="Почему именно они">RED целиком из одной метрики</td>
+<td data-label="Обоснование">RED целиком из одной метрики</td>
 </tr>
 <tr>
 <td data-label="Категория">HTTP-клиенты</td>
 <td data-label="Метрики"><code>http_client_requests_seconds</code> по <code>client_name</code>, <code>uri</code>, <code>status</code></td>
-<td data-label="Почему именно они">локализация «тормозит не мы, а партнёр»</td>
+<td data-label="Обоснование">локализация «тормозит не мы, а партнёр»</td>
 </tr>
 <tr>
 <td data-label="Категория">JVM</td>
 <td data-label="Метрики"><code>jvm_memory_used_bytes</code>, <code>jvm_gc_pause_seconds</code>, <code>jvm_threads_live</code>, <code>jvm_threads_states</code>, <code>process_cpu_usage</code>, <code>jvm_classes_loaded</code></td>
-<td data-label="Почему именно они">первый ответ на «почему тормозит» (детали GC — гл. 07)</td>
+<td data-label="Обоснование">первый ответ на «почему тормозит» (детали GC — гл. 07)</td>
 </tr>
 <tr>
 <td data-label="Категория">Пул БД</td>
 <td data-label="Метрики"><code>hikaricp_connections_active</code>, <code>_idle</code>, <code>_pending</code>, <code>_timeout_total</code>, <code>hikaricp_connections_acquire_seconds</code></td>
-<td data-label="Почему именно они">см. ниже</td>
+<td data-label="Обоснование">см. ниже</td>
 </tr>
 <tr>
 <td data-label="Категория">Kafka</td>
 <td data-label="Метрики">лаг потребителя, <code>kafka_consumer_fetch_manager_*</code></td>
-<td data-label="Почему именно они">детали — гл. 29 (<a href="29-kafka-internals.html" data-tip="29. Apache Kafka изнутри"><code>29-kafka-internals.md</code></a>)</td>
+<td data-label="Обоснование">детали — гл. 29 (<a href="29-kafka-internals.html" data-tip="29. Apache Kafka изнутри"><code>29-kafka-internals.md</code></a>)</td>
 </tr>
 <tr>
 <td data-label="Категория">Resilience4j</td>
 <td data-label="Метрики">состояния breaker, доля отказов</td>
-<td data-label="Почему именно они">детали — гл. 35 (<a href="35-resilience.html" data-tip="35. Отказоустойчивость"><code>35-resilience.md</code></a>)</td>
+<td data-label="Обоснование">детали — гл. 35 (<a href="35-resilience.html" data-tip="35. Отказоустойчивость"><code>35-resilience.md</code></a>)</td>
 </tr>
 <tr>
 <td data-label="Категория">Кэш</td>
 <td data-label="Метрики">hit ratio, размер, evictions</td>
-<td data-label="Почему именно они">гл. 23 (<a href="23-caching.html" data-tip="23. Кэширование"><code>23-caching.md</code></a>)</td>
+<td data-label="Обоснование">гл. 23 (<a href="23-caching.html" data-tip="23. Кэширование"><code>23-caching.md</code></a>)</td>
 </tr>
 <tr>
 <td data-label="Категория">Бизнес</td>
 <td data-label="Метрики"><code>payments_total{outcome}</code>, <code>payment_amount_total</code>, «успешных платежей в минуту»</td>
-<td data-label="Почему именно они">см. ниже</td>
+<td data-label="Обоснование">см. ниже</td>
 </tr>
 </tbody>
 </table>
@@ -1372,7 +1372,7 @@ https://docs.spring.io/spring-boot/reference/actuator/metrics.html">Spring Boot 
 <p><strong>Исход и причина — разные теги.</strong> <code>outcome</code> даёт SLI («доля технических отказов»), а <code>reason</code> — диагностику («выросли именно <code>psp_timeout</code>»). Число значений <code>reason</code> обязано быть конечным и определяться <strong>вашим</strong> перечислением, а не текстом от партнёра: <code>reason</code>, взятый из строки ответа эквайрера, прямо ведёт к взрыву кардинальности, потому что однажды партнёр начнёт возвращать код с идентификатором транзакции внутри.</p>
 <p><strong>Время до финального статуса не совпадает с latency HTTP.</strong> Платёж 3-D Secure уходит на страницу банка и возвращается через 40 секунд, а СБП подтверждается пушем в мобильное приложение, хотя HTTP-запрос авторизации при этом занял 120 мс и по техническим метрикам выглядит идеально. Деградацию реального пользовательского опыта ловит именно время от создания до финального статуса. Измеряют его <code>Timer</code>, который останавливают в момент прихода финального события — часто в потребителе, в другом потоке, а иногда и в другом сервисе; в последнем случае это <code>Timer.record(Duration.between(created, now))</code> по данным из БД.</p>
 <p><strong>Очередь незавершённых — самый ранний индикатор.</strong> <code>payments.pending</code> (старше 5 минут) растёт раньше, чем падает доля успешных: пока платежи «висят», доля отказов ещё не выросла, но деньги уже не проводятся. Это saturation бизнес-процесса — тот самый четвёртый золотой сигнал, только применённый не к CPU, а к домену.</p>
-<p><strong>Где остановиться.</strong> Соблазн превратить метрики в аналитику вроде «среднего чека по регионам и типам карт» надо гасить сразу. Критерий такой: метрика существует, только если по ней есть <strong>оповещение или панель в runbook</strong>. Разрез по регионам × типам карт × каналам даёт 5 × 8 × 4 = 160 комбинаций на каждую метрику; такие разрезы нужны аналитике и должны считаться в хранилище по событиям (гл. 25, <a href="25-analytics-olap.html" data-tip="25. Аналитические хранилища, витрины и OLAP"><code>25-analytics-olap.md</code></a>), а не в Prometheus. Метрики служат оперативному реагированию, а аналитика — решениям, у которых горизонт больше пяти минут.</p>
+<p><strong>Предел.</strong> Соблазн превратить метрики в аналитику вроде «среднего чека по регионам и типам карт» надо гасить сразу. Критерий такой: метрика существует, только если по ней есть <strong>оповещение или панель в runbook</strong>. Разрез по регионам × типам карт × каналам даёт 5 × 8 × 4 = 160 комбинаций на каждую метрику; такие разрезы нужны аналитике и должны считаться в хранилище по событиям (гл. 25, <a href="25-analytics-olap.html" data-tip="25. Аналитические хранилища, витрины и OLAP"><code>25-analytics-olap.md</code></a>), а не в Prometheus. Метрики служат оперативному реагированию, а аналитика — решениям, у которых горизонт больше пяти минут.</p>
 <p><strong>Про <code>@Timed</code> и <code>@Counted</code> честно.</strong> Обеим аннотациям нужны бины <code>TimedAspect</code>/<code>CountedAspect</code> (Boot 4 регистрирует их сам только при <code>management.observations.annotations.enabled=true</code> и AspectJ в classpath, а по умолчанию свойство выключено, так что без него бины надо объявить вручную), и работают обе через AOP-прокси. Поэтому и ограничения у них те же, что у <code>@Transactional</code>: они не срабатывают при самовызове (<code>this.method()</code>), на <code>private</code>/<code>final</code>-методах, а на CGLIB-прокси — и на <code>final</code>-классах. Вдобавок <code>@Timed</code> по умолчанию <strong>не публикует гистограмму</strong>, и без <code>@Timed(histogram = true)</code> или <code>percentiles</code> посчитать p99 на дашборде не получится. Самая неприятная деталь в том, что на аннотированном методе, который бросил исключение, <code>TimedAspect</code> добавляет тег <code>exception</code> с <strong>именем класса исключения</strong>, и экзотические исключения внезапно порождают новые ряды. Объявляются бины так:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="nd">@Bean</span> <span class="n">TimedAspect</span> <span class="nf">timedAspect</span><span class="p">(</span><span class="n">MeterRegistry</span> <span class="n">registry</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="k">new</span> <span class="n">TimedAspect</span><span class="p">(</span><span class="n">registry</span><span class="p">);</span> <span class="p">}</span>
 <span class="nd">@Bean</span> <span class="n">CountedAspect</span> <span class="nf">countedAspect</span><span class="p">(</span><span class="n">MeterRegistry</span> <span class="n">registry</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="k">new</span> <span class="n">CountedAspect</span><span class="p">(</span><span class="n">registry</span><span class="p">);</span> <span class="p">}</span>
@@ -1656,7 +1656,7 @@ https://opentelemetry.io/docs/concepts/sampling/">OTel, Sampling</a>).</p>
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Jaeger</th>
 <th>Grafana Tempo</th>
 <th>Zipkin</th>
@@ -1664,31 +1664,31 @@ https://opentelemetry.io/docs/concepts/sampling/">OTel, Sampling</a>).</p>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Хранилище</td>
+<td data-label="Критерий">Хранилище</td>
 <td data-label="Jaeger">Cassandra/Elasticsearch/Badger</td>
 <td data-label="Grafana Tempo">объектное (S3/GCS)</td>
 <td data-label="Zipkin">ES/Cassandra/MySQL</td>
 </tr>
 <tr>
-<td data-label="">Индексация</td>
+<td data-label="Критерий">Индексация</td>
 <td data-label="Jaeger">по service/operation/tags</td>
 <td data-label="Grafana Tempo"><strong>только по trace_id</strong> (+ TraceQL по метаданным)</td>
 <td data-label="Zipkin">по тегам</td>
 </tr>
 <tr>
-<td data-label="">Стоимость</td>
+<td data-label="Критерий">Стоимость</td>
 <td data-label="Jaeger">выше (индекс)</td>
 <td data-label="Grafana Tempo">низкая</td>
 <td data-label="Zipkin">средняя</td>
 </tr>
 <tr>
-<td data-label="">Поиск по атрибутам</td>
+<td data-label="Критерий">Поиск по атрибутам</td>
 <td data-label="Jaeger">да</td>
 <td data-label="Grafana Tempo">TraceQL, но эффективнее при известном trace_id</td>
 <td data-label="Zipkin">да</td>
 </tr>
 <tr>
-<td data-label="">Типовой сценарий</td>
+<td data-label="Критерий">Типовой сценарий</td>
 <td data-label="Jaeger">самостоятельный поиск трасс</td>
 <td data-label="Grafana Tempo">«пришли из метрики/лога по trace_id»</td>
 <td data-label="Zipkin">старые системы</td>
@@ -1696,7 +1696,7 @@ https://opentelemetry.io/docs/concepts/sampling/">OTel, Sampling</a>).</p>
 </tbody>
 </table>
 <p>Tempo устроен по той же логике, что и Loki: не индексировать то, что можно найти по ссылке. Это дёшево и отлично работает, <strong>если</strong> у вас настроена связка exemplars/логи → trace_id, а без неё трассу вы не найдёте вообще.</p>
-<p><strong>Как читать waterfall.</strong> Диаграмма показывает спаны горизонтальными полосами, где длина означает длительность, а отступ — вложенность. Искать на ней стоит вот что, и именно в таком порядке:</p>
+<p><strong>Чтение waterfall.</strong> Диаграмма показывает спаны горизонтальными полосами, где длина означает длительность, а отступ — вложенность. Искать на ней стоит вот что, и именно в таком порядке:</p>
 <ol>
 <li><strong>Одна длинная полоса среди коротких</strong> означает, что узкое место найдено, и дальше смотрят её атрибуты (<code>db.query.text</code>, <code>server.address</code>).</li>
 <li><strong>Промежуток (gap) между спанами</strong> — это время, которое не покрыла инструментация: ожидание в очереди пула потоков, GC-пауза, сериализация, ожидание соединения. Это самое ценное наблюдение, потому что gap говорит о времени, потраченном там, куда вы не смотрите. Типичный виновник — ожидание соединения из Hikari.</li>
@@ -1860,7 +1860,7 @@ https://github.com/open-telemetry/opentelemetry-java/blob/main/context/src/main/
 <p><strong>5. Kafka-потребитель.</strong> Механика разобрана в 5.6, а здесь важен другой вопрос — <strong>где контекст теряется даже при правильной инструментации</strong>. Типовая цепочка выглядит так: <code>@KafkaListener</code> принял сообщение и восстановил контекст, затем положил задачу в свой <code>ExecutorService</code> для параллельной обработки, и на этом шаге контекст потерялся. Другой вариант: слушатель получил пакет, создал на него один спан, а внутри обрабатывает записи в <code>parallelStream()</code>, и контекст есть только в главном потоке. <code>parallelStream()</code> вообще заслуживает отдельного упоминания, потому что работает на <code>commonPool</code>, куда не уезжают ни MDC, ни OTel-контекст.</p>
 <p><strong>6. Виртуальные потоки.</strong> Хорошая новость в том, что <code>ThreadLocal</code> на виртуальных потоках работает так же, как на платформенных, но из этого следует и то, что наследуется при создании потока только <code>InheritableThreadLocal</code>, а контекст OpenTelemetry (<code>ThreadLocalContextStorage</code>) и MDC Logback (<code>LogbackMDCAdapter</code>) лежат в обычном <code>ThreadLocal</code> и в новый поток сами не переходят. Плохих новостей три. Во-первых, виртуальных потоков миллион, и каждый несёт копию MDC-карты, так что килобайт в MDC превращается в гигабайт мусора (гл. 08, <a href="08-concurrency.html" data-tip="8. Многопоточность"><code>08-concurrency.md</code></a>). Во-вторых, <code>StructuredTaskScope</code> порождает подзадачи, и в них наследуются привязки <code>ScopedValue</code> (<a href="https://openjdk.org/jeps/505" data-tip="Внешний сайт · openjdk.org
 https://openjdk.org/jeps/505">JEP 505</a>), но <strong>обратной</strong> передачи нет, поэтому спан, открытый в подзадаче, надо закрывать в ней же. В-третьих, если вы перевели пул платформенных потоков на <code>Executors.newVirtualThreadPerTaskExecutor()</code>, обёртка <code>Context.taskWrapping</code> никуда не делась и по-прежнему нужна: оборачивать надо и новый executor.</p>
-<p><strong>Как проверить, что контекст не теряется.</strong> Есть дешёвый способ, которому не нужен бэкенд трассировки: включить вывод <code>trace_id</code>/<code>span_id</code> в паттерн лога и прогнать сценарий. Если во всех строках одного запроса, включая асинхронные, стоит один и тот же <code>trace_id</code>, контекст цел. С этого же и начинается диагностика, потому что <strong>лог показывает потерю контекста раньше и дешевле, чем waterfall</strong>. В интеграционном тесте то же самое проверяется одной проверкой:</p>
+<p><strong>Проверка сохранности контекста.</strong> Есть дешёвый способ, которому не нужен бэкенд трассировки: включить вывод <code>trace_id</code>/<code>span_id</code> в паттерн лога и прогнать сценарий. Если во всех строках одного запроса, включая асинхронные, стоит один и тот же <code>trace_id</code>, контекст цел. С этого же и начинается диагностика, потому что <strong>лог показывает потерю контекста раньше и дешевле, чем waterfall</strong>. В интеграционном тесте то же самое проверяется одной проверкой:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1">// быстрый ассерт в интеграционном тесте</span>
 <span class="n">String</span> <span class="n">traceId</span> <span class="o">=</span> <span class="n">Span</span><span class="p">.</span><span class="na">current</span><span class="p">().</span><span class="na">getSpanContext</span><span class="p">().</span><span class="na">getTraceId</span><span class="p">();</span>
 <span class="n">assertThat</span><span class="p">(</span><span class="n">traceId</span><span class="p">).</span><span class="na">isNotEqualTo</span><span class="p">(</span><span class="s">"00000000000000000000000000000000"</span><span class="p">);</span>   <span class="c1">// INVALID</span>
@@ -1917,8 +1917,8 @@ https://github.com/open-telemetry/opentelemetry.io/blob/main/content/en/docs/zer
 </code></pre></div>
 
 <p>Три решения в этом YAML стоит проговорить отдельно.</p>
-<p><strong>Почему <code>METRICS_EXPORTER=none</code>.</strong> Если у вас уже есть Micrometer и скрейп Prometheus, включённый OTLP-экспорт метрик даст вторую копию тех же данных в другой форме и с другими именами, и вы будете платить дважды и спорить, какая панель правильная. Путь для метрик выбирают один и осознанно.</p>
-<p><strong>Почему у приложения <code>parentbased_always_on</code>.</strong> Это обязательное условие для tail sampling: приложение обязано слать всё, а решение принимает Collector (5.5). Если же вы используете head-based, здесь будет стоять <code>parentbased_traceidratio</code> с <code>OTEL_TRACES_SAMPLER_ARG</code>.</p>
+<p><strong>Выбор <code>METRICS_EXPORTER=none</code>.</strong> Если у вас уже есть Micrometer и скрейп Prometheus, включённый OTLP-экспорт метрик даст вторую копию тех же данных в другой форме и с другими именами, и вы будете платить дважды и спорить, какая панель правильная. Путь для метрик выбирают один и осознанно.</p>
+<p><strong><code>parentbased_always_on</code> у приложения.</strong> Это обязательное условие для tail sampling: приложение обязано слать всё, а решение принимает Collector (5.5). Если же вы используете head-based, здесь будет стоять <code>parentbased_traceidratio</code> с <code>OTEL_TRACES_SAMPLER_ARG</code>.</p>
 <p><strong><code>OTEL_BSP_*</code></strong> управляет BatchSpanProcessor'ом: размером очереди, размером пакета и таймаутом экспорта. Когда Collector недоступен или медленный, очередь переполняется, и спаны <strong>без уведомления отбрасываются</strong>. Это нормальное поведение, потому что телеметрия не должна ронять приложение, но именно оно объясняет жалобу «часть трасс пропадает под нагрузкой». Прежде чем искать потерю контекста, стоит посмотреть на метрику <code>otel_sdk_exporter_span_exported</code>/<code>_dropped</code> (или её эквивалент в вашей версии SDK). ⚠️ Точные имена метрик самонаблюдения SDK различаются между версиями — уточняйте по своей.</p>
 <h3 id="512-пропагаторы-и-миграция-с-sleuth-и-zipkin">5.12 Пропагаторы и миграция с Sleuth и Zipkin</h3>
 <p><code>TextMapPropagator</code> — это компонент, который превращает контекст в заголовки и обратно, и от его настройки зависит, поймут ли друг друга сервисы, которые говорят на разных форматах трассировки. Настраивается он через <code>OTEL_PROPAGATORS</code> списком через запятую, а допустимые значения такие: <code>tracecontext</code> (W3C), <code>baggage</code>, <code>b3</code>, <code>b3multi</code>, <code>jaeger</code>, <code>ottrace</code>, <code>xray</code> и <code>none</code>, причём по умолчанию действует пара <code>tracecontext,baggage</code>, а <code>jaeger</code> и <code>ottrace</code> спецификация помечает как устаревшие. Ниже разобран порядок миграции с Sleuth на OTel без слепых зон и отдельная ловушка на стыке <code>sampled</code>-бита и tail sampling.</p>
@@ -1988,7 +1988,7 @@ https://github.com/open-telemetry/opentelemetry.io/blob/main/content/en/docs/zer
 <p>В зрелой схеме SLO считают по метрикам gateway, а синтетика и RUM служат перекрёстной проверкой и ловят ситуацию, когда бэкенд зелёный, а сервис мёртв.</p>
 <h3 id="62-цель-уровня-обслуживания-slo">6.2 Цель уровня обслуживания (SLO)</h3>
 <p><strong>SLO (Service Level Objective)</strong> — это целевое значение SLI за окно, обычно 28 или 30 дней. Путают его обычно с SLA, хотя SLA — внешнее юридическое обязательство с деньгами за нарушение, а SLO — внутренняя цель, и она <strong>всегда строже</strong> SLA, иначе о нарушении SLA вы узнаете одновременно с юристами. Ниже разобрано, почему цель никогда не ставят в 100 % и сколько недоступности допускает каждая девятка.</p>
-<p><strong>Почему не 100 %.</strong> Причин три, и все практические:</p>
+<p><strong>Не 100 %.</strong> Причин три, и все практические:</p>
 <ol>
 <li>Ваши зависимости (облако, банк-партнёр, ЦОД) не дают 100 %, а ваш SLO не может быть выше произведения SLO зависимостей на критическом пути.</li>
 <li>Пользователь не заметит разницы между 99,99 % и 100 %, потому что его собственный Wi-Fi работает хуже.</li>
@@ -2000,39 +2000,39 @@ https://github.com/open-telemetry/opentelemetry.io/blob/main/content/en/docs/zer
 <tr>
 <th class="num">SLO</th>
 <th>Допустимая недоступность за 30 дней</th>
-<th>Что это значит</th>
+<th>Смысл</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="SLO" class="num">99 %</td>
 <td data-label="Допустимая недоступность за 30 дней">7 ч 12 мин</td>
-<td data-label="Что это значит">«двухчасовой инцидент раз в месяц — норма»</td>
+<td data-label="Смысл">«двухчасовой инцидент раз в месяц — норма»</td>
 </tr>
 <tr>
 <td data-label="SLO" class="num">99,5 %</td>
 <td data-label="Допустимая недоступность за 30 дней">3 ч 36 мин</td>
-<td data-label="Что это значит"></td>
+<td data-label="Смысл"></td>
 </tr>
 <tr>
 <td data-label="SLO" class="num">99,9 %</td>
 <td data-label="Допустимая недоступность за 30 дней"><strong>43 мин 12 с</strong></td>
-<td data-label="Что это значит">реалистично для хорошей команды с ручным реагированием</td>
+<td data-label="Смысл">реалистично для хорошей команды с ручным реагированием</td>
 </tr>
 <tr>
 <td data-label="SLO" class="num">99,95 %</td>
 <td data-label="Допустимая недоступность за 30 дней">21 мин 36 с</td>
-<td data-label="Что это значит">нужен автоматический откат</td>
+<td data-label="Смысл">нужен автоматический откат</td>
 </tr>
 <tr>
 <td data-label="SLO" class="num">99,99 %</td>
 <td data-label="Допустимая недоступность за 30 дней"><strong>4 мин 19 с</strong></td>
-<td data-label="Что это значит">нужна автоматика, мультизональность, никакого ручного реагирования</td>
+<td data-label="Смысл">нужна автоматика, мультизональность, никакого ручного реагирования</td>
 </tr>
 <tr>
 <td data-label="SLO" class="num">99,999 %</td>
 <td data-label="Допустимая недоступность за 30 дней">26 с</td>
-<td data-label="Что это значит">вы не успеете даже прочитать оповещение</td>
+<td data-label="Смысл">вы не успеете даже прочитать оповещение</td>
 </tr>
 </tbody>
 </table>
@@ -2300,7 +2300,7 @@ https://sre.google/sre-book/monitoring-distributed-systems/">SRE Book, Monitorin
 <h3 id="75-постмортем-без-поиска-виноватых">7.5 Постмортем без поиска виноватых</h3>
 <p>Постмортем — это «письменная фиксация инцидента, его влияния, предпринятых действий, коренных причин и последующих шагов по предотвращению повторения» (<a href="https://sre.google/sre-book/postmortem-culture/" data-tip="Внешний сайт · sre.google
 https://sre.google/sre-book/postmortem-culture/">SRE Book, Postmortem Culture</a>). Его ценность целиком зависит от того, насколько честно люди рассказывают, что делали, поэтому ниже разобрано, когда постмортем обязателен, что значит «без обвинений», почему человеческая ошибка — не причина, как устроен документ и что делать с action items. Триггеры обязательного постмортема стоит зафиксировать в регламенте: видимая пользователю деградация сверх порога, <strong>любая</strong> потеря данных, вмешательство дежурного (откат, переключение трафика), время устранения сверх порога и отказ мониторинга, когда проблему обнаружил человек, а не система.</p>
-<p><strong>Что значит «без обвинений».</strong> В книге это сформулировано так: постмортем исходит из того, что все участники действовали с добрыми намерениями и делали правильные вещи <strong>исходя из той информации, которая у них была</strong>. Поэтому вопрос звучит не «кто ошибся», а «почему в тот момент неверное действие выглядело разумным». Дело тут не в благодушии: в культуре поиска виноватых люди перестают сообщать о проблемах и о своих ошибках, и вы теряете именно те данные, ради которых постмортем и пишется.</p>
+<p><strong>Смысл «без обвинений».</strong> В книге это сформулировано так: постмортем исходит из того, что все участники действовали с добрыми намерениями и делали правильные вещи <strong>исходя из той информации, которая у них была</strong>. Поэтому вопрос звучит не «кто ошибся», а «почему в тот момент неверное действие выглядело разумным». Дело тут не в благодушии: в культуре поиска виноватых люди перестают сообщать о проблемах и о своих ошибках, и вы теряете именно те данные, ради которых постмортем и пишется.</p>
 <p><strong>«Человеческая ошибка» — не причина, а симптом.</strong> Если инженер выполнил на проде <code>DELETE</code> без <code>WHERE</code>, вопросы надо задавать такие: почему у него был прямой доступ к проду? почему не было подтверждения? почему не было транзакции с проверкой количества строк? почему не было бэкапа с проверенным восстановлением? почему процедура требовала ручного SQL вместо скрипта? Каждый из этих вопросов даёт action item, а «провести беседу с сотрудником» не даёт ничего, потому что следующий человек ошибётся точно так же.</p>
 <p><strong>Структура документа</strong> состоит из девяти частей:</p>
 <ol>
@@ -2358,7 +2358,7 @@ https://sre.google/sre-book/postmortem-culture/">SRE Book, Postmortem Culture</a
 </code></pre></div>
 
 <p>Ограничения у этого приёма честно такие: сдвиг на неделю ломается на праздниках, распродажах и после релиза, который изменил профиль нагрузки, а кроме того, он «помнит» прошлый инцидент — если неделю назад было падение, сегодняшнее сравнение покажет рост. Поэтому такое оповещение делают уровня <code>ticket</code> или комбинируют с абсолютным нижним порогом.</p>
-<p><strong>Чего не надо делать с оповещениями, чтобы они «не шумели»:</strong></p>
+<p><strong>Запреты для «тихих» оповещений:</strong></p>
 <ul>
 <li><strong>Поднимать порог до уровня, на котором оповещение не срабатывает никогда.</strong> Это не настройка, а удаление, которое сохраняет иллюзию контроля.</li>
 <li><strong>Ставить <code>for: 30m</code> на пользовательский симптом.</strong> Полчаса отказа платежей — не «выдержка», а инцидент, о котором вы узнаете из соцсетей.</li>
@@ -2509,7 +2509,7 @@ asprof -d <span class="m">60</span> -e wall -t -f /tmp/wall.html <span class="m"
 <tr>
 <th class="num">#</th>
 <th>Шаг</th>
-<th>Что смотреть</th>
+<th>Показатель</th>
 <th>Красный флаг</th>
 </tr>
 </thead>
@@ -2517,61 +2517,61 @@ asprof -d <span class="m">60</span> -e wall -t -f /tmp/wall.html <span class="m"
 <tr>
 <td data-label="#" class="num">1</td>
 <td data-label="Шаг">Поды</td>
-<td data-label="Что смотреть"><code>kubectl get pods -w</code>, все Ready, рестартов 0</td>
+<td data-label="Показатель"><code>kubectl get pods -w</code>, все Ready, рестартов 0</td>
 <td data-label="Красный флаг">CrashLoopBackOff, OOMKilled, рестарты &gt; 0</td>
 </tr>
 <tr>
 <td data-label="#" class="num">2</td>
 <td data-label="Шаг">Версия</td>
-<td data-label="Что смотреть">метка <code>version</code> в метриках, <code>/actuator/info</code></td>
+<td data-label="Показатель">метка <code>version</code> в метриках, <code>/actuator/info</code></td>
 <td data-label="Красный флаг">часть подов на старой версии дольше 5 минут</td>
 </tr>
 <tr>
 <td data-label="#" class="num">3</td>
 <td data-label="Шаг">Health</td>
-<td data-label="Что смотреть">readiness зелёный на всех подах</td>
+<td data-label="Показатель">readiness зелёный на всех подах</td>
 <td data-label="Красный флаг">флапающий readiness</td>
 </tr>
 <tr>
 <td data-label="#" class="num">4</td>
 <td data-label="Шаг">Error rate</td>
-<td data-label="Что смотреть"><code>sum by (version) (rate(...{status=~"5.."}[2m]))</code></td>
+<td data-label="Показатель"><code>sum by (version) (rate(...{status=~"5.."}[2m]))</code></td>
 <td data-label="Красный флаг">у новой версии заметно выше, чем у старой</td>
 </tr>
 <tr>
 <td data-label="#" class="num">5</td>
 <td data-label="Шаг">Latency</td>
-<td data-label="Что смотреть">p99 по версиям</td>
+<td data-label="Показатель">p99 по версиям</td>
 <td data-label="Красный флаг">рост p99 &gt; 30 % относительно старой версии</td>
 </tr>
 <tr>
 <td data-label="#" class="num">6</td>
 <td data-label="Шаг">Saturation</td>
-<td data-label="Что смотреть"><code>hikaricp_connections_pending</code>, CPU throttling, heap after GC</td>
+<td data-label="Показатель"><code>hikaricp_connections_pending</code>, CPU throttling, heap after GC</td>
 <td data-label="Красный флаг">pending &gt; 0, throttling растёт, heap не падает после GC</td>
 </tr>
 <tr>
 <td data-label="#" class="num">7</td>
 <td data-label="Шаг">Лаг Kafka</td>
-<td data-label="Что смотреть">лаг групп потребителей сервиса</td>
+<td data-label="Показатель">лаг групп потребителей сервиса</td>
 <td data-label="Красный флаг">лаг монотонно растёт 3 минуты подряд</td>
 </tr>
 <tr>
 <td data-label="#" class="num">8</td>
 <td data-label="Шаг">Логи</td>
-<td data-label="Что смотреть">новые типы ошибок: <code>topk(10, ...)</code> по <code>error.type</code> за 5 минут</td>
+<td data-label="Показатель">новые типы ошибок: <code>topk(10, ...)</code> по <code>error.type</code> за 5 минут</td>
 <td data-label="Красный флаг">появился класс исключения, которого не было</td>
 </tr>
 <tr>
 <td data-label="#" class="num">9</td>
 <td data-label="Шаг">Бизнес-метрика</td>
-<td data-label="Что смотреть">платежи в минуту против <code>offset 1w</code></td>
+<td data-label="Показатель">платежи в минуту против <code>offset 1w</code></td>
 <td data-label="Красный флаг">падение &gt; 10 % без объяснения</td>
 </tr>
 <tr>
 <td data-label="#" class="num">10</td>
 <td data-label="Шаг">Решение</td>
-<td data-label="Что смотреть">откат или продолжаем</td>
+<td data-label="Показатель">откат или продолжаем</td>
 <td data-label="Красный флаг">любой красный флаг из 4/5/7/9 → откат</td>
 </tr>
 </tbody>
@@ -2645,7 +2645,7 @@ asprof -d <span class="m">60</span> -e wall -t -f /tmp/wall.html <span class="m"
 </code></pre></div>
 
 <p>Пока обе версии обслуживают трафик одновременно, у вас есть честный A/B-тест, потому что внешние условия для них одинаковые. В этом и состоит главный аргумент за канареечный или rolling-деплой с паузой против «выкатили всё за 40 секунд».</p>
-<p><strong>Как отличить плохой релиз от совпадения.</strong> Для этого есть четыре проверки, перечисленные по убыванию силы:</p>
+<p><strong>Плохой релиз или совпадение.</strong> Для этого есть четыре проверки, перечисленные по убыванию силы:</p>
 <ol>
 <li><strong>Разрез по версии.</strong> Если деградация только у новой версии, виноват релиз, а если у обеих одинаково — внешняя причина.</li>
 <li><strong>Разрез по зависимости.</strong> Если выросла латентность вызовов к партнёру или к БД у <strong>всех</strong> версий и, желательно, у соседних сервисов, ваш релиз ни при чём.</li>
@@ -2657,51 +2657,51 @@ asprof -d <span class="m">60</span> -e wall -t -f /tmp/wall.html <span class="m"
 <thead>
 <tr>
 <th>Регрессия</th>
-<th>Когда проявится</th>
+<th>Проявление</th>
 <th>Ранний индикатор, доступный сразу</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Регрессия">Утечка памяти</td>
-<td data-label="Когда проявится">часы</td>
+<td data-label="Проявление">часы</td>
 <td data-label="Ранний индикатор, доступный сразу">нижняя огибающая <code>jvm_gc_live_data_size_bytes</code> после первых полных сборок</td>
 </tr>
 <tr>
 <td data-label="Регрессия">Утечка соединений/дескрипторов</td>
-<td data-label="Когда проявится">десятки минут</td>
+<td data-label="Проявление">десятки минут</td>
 <td data-label="Ранний индикатор, доступный сразу"><code>hikaricp_connections_active</code> не возвращается к базовому уровню между всплесками</td>
 </tr>
 <tr>
 <td data-label="Регрессия">Деградация на холодном кэше</td>
-<td data-label="Когда проявится">после инвалидации/следующего деплоя</td>
+<td data-label="Проявление">после инвалидации/следующего деплоя</td>
 <td data-label="Ранний индикатор, доступный сразу">hit ratio кэша не вышел на прежний уровень</td>
 </tr>
 <tr>
 <td data-label="Регрессия">Медленная миграция БД</td>
-<td data-label="Когда проявится">при росте объёма</td>
+<td data-label="Проявление">при росте объёма</td>
 <td data-label="Ранний индикатор, доступный сразу">план запроса и время самых частых запросов (гл. 17)</td>
 </tr>
 <tr>
 <td data-label="Регрессия">Рост кардинальности метрик</td>
-<td data-label="Когда проявится">часы, до падения Prometheus</td>
+<td data-label="Проявление">часы, до падения Prometheus</td>
 <td data-label="Ранний индикатор, доступный сразу"><code>scrape_samples_scraped</code> по вашей цели сразу после деплоя</td>
 </tr>
 <tr>
 <td data-label="Регрессия">Новый шумный лог</td>
-<td data-label="Когда проявится">сутки, до заполнения диска</td>
+<td data-label="Проявление">сутки, до заполнения диска</td>
 <td data-label="Ранний индикатор, доступный сразу">объём логов сервиса в байт/с сразу после деплоя</td>
 </tr>
 </tbody>
 </table>
 <p>Две последние строки прямо вытекают из темы этой главы: <strong>релиз может сломать не сервис, а контур наблюдения</strong>. Поэтому в чеклист после деплоя входят две «мета-панели» — сколько рядов стал отдавать сервис и сколько байт логов он пишет. Если прирост измеряется разами, стоит посмотреть диф инструментации, даже когда функционально всё хорошо.</p>
-<p><strong>Что записать в runbook релиза.</strong> Критерии отката формулируют заранее и в цифрах (9.2), и к ним стоит добавить ещё два, о которых обычно забывают: (а) если новая версия не берёт трафик в течение 2 минут, её откатывают; (б) если объём логов или число рядов метрик вырос более чем вдвое, это не повод для отката, но повод для обязательной задачи до конца дня, иначе через сутки это станет инцидентом контура.</p>
+<p><strong>Runbook релиза.</strong> Критерии отката формулируют заранее и в цифрах (9.2), и к ним стоит добавить ещё два, о которых обычно забывают: (а) если новая версия не берёт трафик в течение 2 минут, её откатывают; (б) если объём логов или число рядов метрик вырос более чем вдвое, это не повод для отката, но повод для обязательной задачи до конца дня, иначе через сутки это станет инцидентом контура.</p>
 <hr>
 <h2 id="10-сквозной-разбор-инцидента-по-сигналам">10. Сквозной разбор инцидента по сигналам</h2>
 <p>До сих пор сигналы разбирались по отдельности, но пользу они приносят только вместе, и умение пройти по связке «метрика → трасса → лог → профиль» отличает инженера, который разбирает инцидент за 20 минут, от инженера, которому на это нужно три часа. Сквозной разбор — это как раз такой проход от оповещения до причины, где каждый шаг опирается на результат предыдущего. Ниже три сценария разобраны целиком, с конкретными запросами и с явным указанием, какой <strong>следующий вопрос</strong> порождает каждый шаг, а в конце выведена общая схема, которая повторяется во всех трёх.</p>
 <h3 id="101-сценарий-а-рост-p99-на-эндпоинте-платежа">10.1 Сценарий А: рост p99 на эндпоинте платежа</h3>
 <p>Первый сценарий — классический рост латентности на платёжном эндпоинте, где причина в итоге оказывается снаружи, у партнёра, но нашими же настройками усилена втрое. На нём хорошо видно, как агрегаты сужают круг поиска, в какой момент нужен переход к конкретному запросу и зачем после трассы ещё смотреть логи.</p>
-<p><strong>Что пришло.</strong> Сработало оповещение <code>PaymentApiLatencySLOBurn</code>: доля запросов быстрее 500 мс упала ниже 99 %, burn rate 14,4 на окне 1 ч / 5 мин. В сообщении есть ссылка на дашборд и runbook.</p>
+<p><strong>Входные данные.</strong> Сработало оповещение <code>PaymentApiLatencySLOBurn</code>: доля запросов быстрее 500 мс упала ниже 99 %, burn rate 14,4 на окне 1 ч / 5 мин. В сообщении есть ссылка на дашборд и runbook.</p>
 <p><strong>Шаг 1. Подтвердить симптом и очертить границы.</strong> Открываем RED-панель сервиса и первым делом выясняем, затронуты все эндпоинты или один:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">topk</span><span class="o">(</span><span class="mi">5</span><span class="p">,</span> <span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.99</span><span class="p">,</span>
   <span class="k">sum</span> <span class="k">by</span> <span class="o">(</span><span class="nv">le</span><span class="p">,</span> <span class="nv">uri</span><span class="o">)</span> <span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">http_server_requests_seconds_bucket</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">"</span><span class="s">payment-api</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))))</span>
@@ -2757,7 +2757,7 @@ asprof -d <span class="m">60</span> -e wall -t -f /tmp/wall.html <span class="m"
 <p>Стоит отметить, какой сигнал что дал: <strong>метрика</strong> сказала, что сломалось и насколько, <strong>exemplar</strong> дал переход к конкретному случаю, <strong>трасса</strong> локализовала звено, <strong>атрибуты спана</strong> сузили круг до канала, а <strong>лог</strong> объяснил механику усиления. Ни один из них в одиночку ответа не давал.</p>
 <h3 id="102-сценарий-б-рост-лага-потребителя">10.2 Сценарий Б: рост лага потребителя</h3>
 <p>Второй сценарий касается асинхронной обработки: потребитель Kafka отстаёт, и клиент не видит статус своего платежа. Здесь главную роль играет разрез по партициям, а причина оказывается в размере отдельных сообщений, которые блокируют обработку. Ниже видно, как от формы графика лага перейти к притоку и оттоку, от них — к конкретным партициям, а от партиций — к «отравленному» сообщению.</p>
-<p><strong>Что пришло.</strong> Сработало оповещение по симптому: задержка обработки события превысила 5 минут. Это не «лаг &gt; 1000», а именно время до обработки, то есть то, что чувствует клиент, который не видит статус платежа.</p>
+<p><strong>Входные данные.</strong> Сработало оповещение по симптому: задержка обработки события превысила 5 минут. Это не «лаг &gt; 1000», а именно время до обработки, то есть то, что чувствует клиент, который не видит статус платежа.</p>
 <p><strong>Шаг 1. Лаг растёт монотонно или пилой?</strong> Пила соответствует нормальному профилю пакетной обработки — накопили и разгребли, — а монотонный рост означает, что потребитель не справляется или встал. Различить их помогают сам лаг и его производная:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">sum</span> <span class="k">by</span> <span class="o">(</span><span class="nv">consumergroup</span><span class="p">,</span> <span class="nv">topic</span><span class="o">)</span> <span class="o">(</span><span class="nv">kafka_consumergroup_lag</span><span class="p">{</span><span class="nl">consumergroup</span><span class="o">=</span><span class="p">"</span><span class="s">settlement-worker</span><span class="p">"}</span><span class="o">)</span>
 <span class="c1"># производная: успеваем ли вообще</span>
@@ -2801,7 +2801,7 @@ asprof -d <span class="m">60</span> -e wall -t -f /tmp/wall.html <span class="m"
 <p><strong>Шаг 7. Смягчение и лечение.</strong> Немедленно можно увеличить таймаут для этого типа сообщений, либо отправить проблемные сообщения в DLQ и разобрать их отдельно, либо ограничить размер пакета на стороне производителя. В долгосрочной перспективе нужны лимит на размер сообщения на входе, отдельный топик для «крупных» операций, метрика распределения размера сообщений (<code>DistributionSummary</code>) и оповещение на рост p99 обработки, а не только на лаг. Механика DLQ и повторных попыток в Kafka разобрана в гл. 29 (<a href="29-kafka-internals.html" data-tip="29. Apache Kafka изнутри"><code>29-kafka-internals.md</code></a>) и 28.</p>
 <h3 id="103-сценарий-в-ошибки-500-на-2-запросов">10.3 Сценарий В: ошибки 500 на 2 % запросов</h3>
 <p>Третий сценарий — небольшая, но устойчивая доля ошибок, которую легко не заметить на глаз и которая при этом быстро съедает бюджет. Здесь решающим оказывается разрез по подам, а корнем — внешний вызов внутри транзакции, который держит соединения с БД. Ниже показано, как от группировки ошибок перейти к конкретным подам, классу исключения, пулу соединений и дампу потоков.</p>
-<p><strong>Что пришло.</strong> Сработал burn-rate оповещение по SLI доступности. 2 % — мало для глаза, но много для бюджета: при SLO 99,9 % такая доля съедает месячный бюджет за сутки.</p>
+<p><strong>Входные данные.</strong> Сработал burn-rate оповещение по SLI доступности. 2 % — мало для глаза, но много для бюджета: при SLO 99,9 % такая доля съедает месячный бюджет за сутки.</p>
 <p><strong>Шаг 1. Кто и где.</strong> Первым запросом группируем ошибки по эндпоинтам и статусам:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="k">topk</span><span class="o">(</span><span class="mi">10</span><span class="p">,</span> <span class="k">sum</span> <span class="k">by</span> <span class="o">(</span><span class="nv">uri</span><span class="p">,</span> <span class="nv">status</span><span class="o">)</span> <span class="o">(</span>
   <span class="kr">rate</span><span class="o">(</span><span class="nv">http_server_requests_seconds_count</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">"</span><span class="s">payment-api</span><span class="p">",</span><span class="nl">status</span><span class="o">=~</span><span class="p">"</span><span class="s">5..</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)))</span>
@@ -2889,53 +2889,53 @@ kubectl <span class="nb">exec</span> payment-api-7d9f-xyz -- jcmd <span class="m
 <table class="rt rt-2">
 <thead>
 <tr>
-<th>Что видим в диффе</th>
+<th>В диффе</th>
 <th>Вопрос проверяющего</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="Что видим в диффе">Новый тег/атрибут метрики</td>
+<td data-label="В диффе">Новый тег/атрибут метрики</td>
 <td data-label="Вопрос проверяющего">Сколько уникальных значений в худшем случае? Не идентификатор ли это?</td>
 </tr>
 <tr>
-<td data-label="Что видим в диффе"><code>log.error(...)</code></td>
+<td data-label="В диффе"><code>log.error(...)</code></td>
 <td data-label="Вопрос проверяющего">Это требует действия человека ночью? Если нет — <code>WARN</code>/<code>INFO</code> плюс счётчик</td>
 </tr>
 <tr>
-<td data-label="Что видим в диффе"><code>log.info</code> в цикле или на каждый шаг</td>
+<td data-label="В диффе"><code>log.info</code> в цикле или на каждый шаг</td>
 <td data-label="Вопрос проверяющего">Сколько строк в секунду это даст на пике?</td>
 </tr>
 <tr>
-<td data-label="Что видим в диффе">Логирование объекта целиком (<code>{}</code>, <code>obj</code>)</td>
+<td data-label="В диффе">Логирование объекта целиком (<code>{}</code>, <code>obj</code>)</td>
 <td data-label="Вопрос проверяющего">Что в <code>toString()</code>? Нет ли там PAN, телефона, токена?</td>
 </tr>
 <tr>
-<td data-label="Что видим в диффе">Новый <code>ExecutorService</code> / <code>@Async</code></td>
+<td data-label="В диффе">Новый <code>ExecutorService</code> / <code>@Async</code></td>
 <td data-label="Вопрос проверяющего">Переносится ли контекст (OTel + MDC)? Есть ли <code>TaskDecorator</code>?</td>
 </tr>
 <tr>
-<td data-label="Что видим в диффе"><code>catch (Exception e) { log.error("error", e); }</code></td>
+<td data-label="В диффе"><code>catch (Exception e) { log.error("error", e); }</code></td>
 <td data-label="Вопрос проверяющего">Полный стек на каждый бизнес-отказ? Что будет при 1000/с?</td>
 </tr>
 <tr>
-<td data-label="Что видим в диффе">Новый внешний вызов</td>
+<td data-label="В диффе">Новый внешний вызов</td>
 <td data-label="Вопрос проверяющего">Есть ли таймаут, метрика клиента, спан? Попадёт ли URL с id в тег?</td>
 </tr>
 <tr>
-<td data-label="Что видим в диффе">Новый эндпоинт</td>
+<td data-label="В диффе">Новый эндпоинт</td>
 <td data-label="Вопрос проверяющего">Шаблон пути в метрике (<code>{id}</code>), а не сырой путь?</td>
 </tr>
 <tr>
-<td data-label="Что видим в диффе">Ручной <code>Span</code>/<code>Observation</code></td>
+<td data-label="В диффе">Ручной <code>Span</code>/<code>Observation</code></td>
 <td data-label="Вопрос проверяющего">Есть ли <code>finally { span.end() }</code> и закрытие <code>Scope</code>?</td>
 </tr>
 <tr>
-<td data-label="Что видим в диффе">Изменение имени метрики</td>
+<td data-label="В диффе">Изменение имени метрики</td>
 <td data-label="Вопрос проверяющего">Кто ещё на неё ссылается — дашборды, правила, recording rules?</td>
 </tr>
 <tr>
-<td data-label="Что видим в диффе">Новая зависимость с своим пулом</td>
+<td data-label="В диффе">Новая зависимость с своим пулом</td>
 <td data-label="Вопрос проверяющего">Экспортирует ли она метрики? Видны ли её очереди?</td>
 </tr>
 </tbody>
@@ -2991,7 +2991,7 @@ kubectl <span class="nb">exec</span> payment-api-7d9f-xyz -- jcmd <span class="m
 <p><strong>Причина.</strong> Асинхронная граница осталась без передачи контекста. Хуже того, путь шёл через outbox: сообщение писалось в таблицу в транзакции, а релей вычитывал его и отправлял, так что даже инструментированный производитель не спас бы контекст исходного HTTP-запроса — он всё равно потерялся бы на границе «БД → релей».</p>
 <p><strong>Лечение.</strong> Сделали два шага. Первый — ручной <code>TextMapPropagator.inject</code> в <code>record.headers()</code> в производителе (код в 5.6). Второй, более важный, — колонка <code>trace_context</code> в outbox-таблице, куда при записи сохраняется сериализованный <code>traceparent</code>; релей при отправке восстанавливает контекст из строки и продолжает трассу. В потребителе добавили <code>extract</code> и <code>makeCurrent</code>, а для пакетом обработки — один спан на пакет со <code>links</code> на трассы сообщений.</p>
 <p><strong>Профилактика.</strong> (1) Считать передачу контекста частью контракта топика: если топик межсервисный, <code>traceparent</code> в заголовках обязателен, и это проверяет контрактный тест. (2) Проверять в интеграционном тесте, что заголовок доезжает. (3) В outbox заранее закладывать колонку под контекст, потому что это дешевле, чем миграция под нагрузкой.</p>
-<p><strong>Чего делать не стоило.</strong> Первой идеей было положить <code>trace_id</code> в тело сообщения отдельным полем. Это работает, но ломает совместимость схемы, требует менять всех потребителей и не даёт связи parent-child, потому что бэкенд трассировки о вашем поле ничего не знает. Правильное место для контекста — заголовки.</p>
+<p><strong>Ошибки.</strong> Первой идеей было положить <code>trace_id</code> в тело сообщения отдельным полем. Это работает, но ломает совместимость схемы, требует менять всех потребителей и не даёт связи parent-child, потому что бэкенд трассировки о вашем поле ничего не знает. Правильное место для контекста — заголовки.</p>
 <h3 id="125-оповещение-на-cpu-будило-дежурного-месяц-а-реальная-деградация-прошла-незамеченной">12.5 Оповещение на CPU будило дежурного месяц, а реальная деградация прошла незамеченной</h3>
 <p>Пятый случай — alert fatigue в чистом виде: причинное оповещение на CPU месяцами будило дежурных впустую, а настоящий отказ прошёл мимо него. Он показывает, как переход на симптомные оповещения и регулярная ревизия правил меняют и число пейджей, и скорость, с которой дежурный реагирует на оставшиеся.</p>
 <p><strong>Симптом.</strong> Правило <code>avg CPU &gt; 80 % for 5m</code> срабатывало по 3–5 раз за ночь, потому что ночной расчёт комиссий честно загружал процессор. Дежурные привыкли и подтверждали оповещение не глядя. Через месяц сервис два часа отдавал 500-ки примерно на 4 % запросов из-за исчерпания пула соединений, но CPU при этом был 15 %, оповещение не сработало, и инцидент обнаружил менеджер поддержки по росту обращений.</p>
@@ -2999,7 +2999,7 @@ kubectl <span class="nb">exec</span> payment-api-7d9f-xyz -- jcmd <span class="m
 <p><strong>Причина</strong> оказалась двойной. Оповещение строилось на причинах (CPU, память), а не на симптомах, а alert fatigue сделал бесполезными даже работающие оповещения, потому что доверие к каналу было потеряно.</p>
 <p><strong>Лечение.</strong> CPU-оповещение удалили целиком, оставив метрику на дашборде. Ввели два симптомных правила — burn-rate по SLI доступности (окна из 6.4) и burn-rate по SLI латентности. Добавили одно «раннее» причинное оповещение с явным обоснованием — <code>hikaricp_connections_pending &gt; 0 for 2m</code> уровня <code>ticket</code>, потому что он даёт фору в 10 минут и в runbook для него есть однозначное действие.</p>
 <p><strong>Профилактика.</strong> Раз в квартал проводить ревизию оповещений по данным: сколько раз правило сработало и сколько раз потребовало действия. Правило, у которого полезных срабатываний меньше 20 %, либо переделывают, либо удаляют. Кроме того, нужна метрика «доля инцидентов, обнаруженных не мониторингом»: именно она сделала проблему видимой для руководства и дала время на переделку оповещения.</p>
-<p><strong>Что оказалось неожиданным.</strong> После удаления шумных оповещений число пейджей упало в семь раз, а среднее время реакции на оставшиеся сократилось с 11 минут до 2. Дежурный, который получает один пейдж за смену, реагирует на него всерьёз.</p>
+<p><strong>Неожиданное.</strong> После удаления шумных оповещений число пейджей упало в семь раз, а среднее время реакции на оставшиеся сократилось с 11 минут до 2. Дежурный, который получает один пейдж за смену, реагирует на него всерьёз.</p>
 <h3 id="126-логи-с-полным-стеком-на-каждый-бизнес-отказ-заняли-диск-и-бюджет">12.6 Логи с полным стеком на каждый бизнес-отказ заняли диск и бюджет</h3>
 <p>Шестой случай показывает, как один сервис, моделирующий бизнес-отказ исключением, уронил логирование всей платформы. Из него выведено практическое правило о том, когда стек в логе нужен, а когда нет, и набор мер — оповещение на объём, выборка повторов, квоты, — которые не дают одному виновнику положить общий контур.</p>
 <p><strong>Симптом.</strong> Ночью сработал оповещение на заполнение диска на узлах кластера. Одновременно Elasticsearch перешёл в read-only, потому что сработал watermark, и логи перестали приниматься от всех сервисов — один сервис уронил логирование всей платформы.</p>
@@ -3421,5 +3421,5 @@ https://commons.wikimedia.org/wiki/File:The_telescope_domes_of_Rolf_Chini_Cerro_
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-мониторинг-и-наблюдаемость-observability">1. Мониторинг и наблюдаемость (observability)</a></li><li><a href="#2-структурное-логирование">2. Структурное логирование</a></li><li><a href="#3-метрики">3. Метрики</a></li><li><a href="#4-язык-запросов-promql">4. Язык запросов PromQL</a></li><li><a href="#5-трассировка">5. Трассировка</a></li><li><a href="#6-sli-slo-и-бюджет-ошибок">6. SLI, SLO и бюджет ошибок</a></li><li><a href="#7-оповещение-и-постмортемы">7. Оповещение и постмортемы</a></li><li><a href="#8-профилирование-в-проде">8. Профилирование в проде</a></li><li><a href="#9-наблюдаемость-в-эксплуатации">9. Наблюдаемость в эксплуатации</a></li><li><a href="#10-сквозной-разбор-инцидента-по-сигналам">10. Сквозной разбор инцидента по сигналам</a></li><li><a href="#11-стоимость-сигналов-и-дисциплина-инструментации">11. Стоимость сигналов и дисциплина инструментации</a></li><li><a href="#12-разобранные-инциденты">12. Разобранные инциденты</a></li><li><a href="#13-ошибки-и-антипаттерны">13. Ошибки и антипаттерны</a></li><li><a href="#14-диагностика">14. Диагностика</a></li><li><a href="#15-вопросы-на-интервью">15. Вопросы на интервью</a></li><li><a href="#16-попробовать-руками">16. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

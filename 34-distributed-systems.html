@@ -15,7 +15,7 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть VII. Архитектура</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/34.svg" width="48" height="48" alt="" loading="lazy">34. Распределённые системы</h1><div class="meta"><span class="part-tag">Часть VII. Архитектура</span><span>36 636 слов</span><span>≈ 3 ч 25 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/34.svg" width="48" height="48" alt="" loading="lazy">34. Распределённые системы</h1><div class="meta"><span class="part-tag">Часть VII. Архитектура</span><span>36 610 слов</span><span>≈ 3 ч 25 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>Любая промышленная система в финтехе распределена: у платёжного сервиса есть база данных с репликой, кэш, брокер сообщений и шлюз в НСПК (Национальную систему платёжных карт), и как только процессов становится больше одного, появляются частичные отказы. Почти все «мистические» инциденты сводятся к одной причине: деньги списали дважды, баланс не сошёлся, клиент не видит только что созданный платёж, два экземпляра планировщика разослали одни и те же уведомления. Корень в том, что вызов может не дойти, дойти дважды или вернуть ответ через минуту, а отличить упавший узел от медленного невозможно в принципе. Эта глава закладывает теоретический фундамент, но каждую идею доводит до строчки кода или настройки, которую из неё следует написать. На собеседованиях уровня senior эти вопросы задают всегда: попросят объяснить теорему CAP своими словами, определить линеаризуемость, рассказать, почему доставку «ровно один раз» (<em>exactly-once</em>) считают мифом, зачем нужен fencing token и как работает Raft.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">14 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-модель-распределённой-системы" data-tip="Раздел этой главы: 1. Модель распределённой системы">1. Модель распределённой системы</a></li><li><a href="#2-время-и-порядок" data-tip="Раздел этой главы: 2. Время и порядок">2. Время и порядок</a></li><li><a href="#3-модели-согласованности" data-tip="Раздел этой главы: 3. Модели согласованности">3. Модели согласованности</a></li><li><a href="#4-репликация-и-шардирование" data-tip="Раздел этой главы: 4. Репликация и шардирование">4. Репликация и шардирование</a></li><li><a href="#5-консенсус" data-tip="Раздел этой главы: 5. Консенсус">5. Консенсус</a></li><li><a href="#6-распределённые-блокировки-и-координация" data-tip="Раздел этой главы: 6. Распределённые блокировки и координация">6. Распределённые блокировки и координация</a></li><li><a href="#7-гарантии-доставки-и-идемпотентность" data-tip="Раздел этой главы: 7. Гарантии доставки и идемпотентность">7. Гарантии доставки и идемпотентность</a></li><li><a href="#8-наблюдаемость-распределённых-систем" data-tip="Раздел этой главы: 8. Наблюдаемость распределённых систем">8. Наблюдаемость распределённых систем</a></li><li><a href="#9-свод-практических-правил" data-tip="Раздел этой главы: 9. Свод практических правил">9. Свод практических правил</a></li><li><a href="#10-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 10. Ошибки и антипаттерны">10. Ошибки и антипаттерны</a></li><li><a href="#11-диагностика-распределённого-инцидента" data-tip="Раздел этой главы: 11. Диагностика распределённого инцидента">11. Диагностика распределённого инцидента</a></li><li><a href="#12-вопросы-на-интервью" data-tip="Раздел этой главы: 12. Вопросы на интервью">12. Вопросы на интервью</a></li><li><a href="#13-попробовать-руками" data-tip="Раздел этой главы: 13. Попробовать руками">13. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
@@ -57,49 +57,49 @@ https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html">How 
 <tr>
 <th class="num">#</th>
 <th>Заблуждение</th>
-<th>Что оно ломает в Java-коде</th>
+<th>Последствия для Java-кода</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="#" class="num">1</td>
 <td data-label="Заблуждение">Сеть надёжна</td>
-<td data-label="Что оно ломает в Java-коде"><code>RestClient</code> без повторов → 0.1 % запросов теряются незаметно; без ключа идемпотентности повтор дублирует</td>
+<td data-label="Последствия для Java-кода"><code>RestClient</code> без повторов → 0.1 % запросов теряются незаметно; без ключа идемпотентности повтор дублирует</td>
 </tr>
 <tr>
 <td data-label="#" class="num">2</td>
 <td data-label="Заблуждение">Задержка равна нулю</td>
-<td data-label="Что оно ломает в Java-коде">Вызов в цикле по 500 элементам (N+1 по сети) → 500 × 20 мс = 10 с; нужен пакетный эндпоинт</td>
+<td data-label="Последствия для Java-кода">Вызов в цикле по 500 элементам (N+1 по сети) → 500 × 20 мс = 10 с; нужен пакетный эндпоинт</td>
 </tr>
 <tr>
 <td data-label="#" class="num">3</td>
 <td data-label="Заблуждение">Пропускная способность бесконечна</td>
-<td data-label="Что оно ломает в Java-коде">Ответ 5 МБ JSON на каждый запрос; забыли пагинацию и компрессию</td>
+<td data-label="Последствия для Java-кода">Ответ 5 МБ JSON на каждый запрос; забыли пагинацию и компрессию</td>
 </tr>
 <tr>
 <td data-label="#" class="num">4</td>
 <td data-label="Заблуждение">Сеть безопасна</td>
-<td data-label="Что оно ломает в Java-коде">Внутренний трафик без mTLS, «мы же в VPC» (см. главу <a href="40-cryptography.html" data-tip="40. Криптография для бэкенд-разработчика">40</a>, <a href="40-cryptography.html" data-tip="40. Криптография для бэкенд-разработчика"><code>40-cryptography.md</code></a>)</td>
+<td data-label="Последствия для Java-кода">Внутренний трафик без mTLS, «мы же в VPC» (см. главу <a href="40-cryptography.html" data-tip="40. Криптография для бэкенд-разработчика">40</a>, <a href="40-cryptography.html" data-tip="40. Криптография для бэкенд-разработчика"><code>40-cryptography.md</code></a>)</td>
 </tr>
 <tr>
 <td data-label="#" class="num">5</td>
 <td data-label="Заблуждение">Топология неизменна</td>
-<td data-label="Что оно ломает в Java-коде">Захардкоженный IP или закэшированный навсегда DNS (если в JVM <code>networkaddress.cache.ttl</code> равен <code>-1</code>, адрес кэшируется навсегда; так бывает, если значение задано явно или JVM запущена с менеджером безопасности, а без него по умолчанию адрес кэшируется 30 с)</td>
+<td data-label="Последствия для Java-кода">Захардкоженный IP или закэшированный навсегда DNS (если в JVM <code>networkaddress.cache.ttl</code> равен <code>-1</code>, адрес кэшируется навсегда; так бывает, если значение задано явно или JVM запущена с менеджером безопасности, а без него по умолчанию адрес кэшируется 30 с)</td>
 </tr>
 <tr>
 <td data-label="#" class="num">6</td>
 <td data-label="Заблуждение">Администратор один</td>
-<td data-label="Что оно ломает в Java-коде">Смежная команда меняет таймаут на балансировщике, ваш клиентский таймаут больше — вы получаете 502 вместо ответа</td>
+<td data-label="Последствия для Java-кода">Смежная команда меняет таймаут на балансировщике, ваш клиентский таймаут больше — вы получаете 502 вместо ответа</td>
 </tr>
 <tr>
 <td data-label="#" class="num">7</td>
 <td data-label="Заблуждение">Транспорт бесплатен</td>
-<td data-label="Что оно ломает в Java-коде">Сериализация/десериализация JSON — заметная доля CPU; отсюда protobuf (глава <a href="28-grpc-jsonrpc-graphql-soap.html" data-tip="28. gRPC, JSON-RPC, WebSocket, GraphQL, XML и SOAP">28</a>)</td>
+<td data-label="Последствия для Java-кода">Сериализация/десериализация JSON — заметная доля CPU; отсюда protobuf (глава <a href="28-grpc-jsonrpc-graphql-soap.html" data-tip="28. gRPC, JSON-RPC, WebSocket, GraphQL, XML и SOAP">28</a>)</td>
 </tr>
 <tr>
 <td data-label="#" class="num">8</td>
 <td data-label="Заблуждение">Сеть однородна</td>
-<td data-label="Что оно ломает в Java-коде">MTU, прокси, HTTP/2 у одних и HTTP/1.1 у других, разные версии TLS</td>
+<td data-label="Последствия для Java-кода">MTU, прокси, HTTP/2 у одних и HTTP/1.1 у других, разные версии TLS</td>
 </tr>
 </tbody>
 </table>
@@ -142,30 +142,30 @@ https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html">How 
 <thead>
 <tr>
 <th>Модель</th>
-<th>Что может делать узел</th>
-<th>Где встречается</th>
+<th>Возможности узла</th>
+<th>Встречается</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Модель"><strong>Crash-stop (fail-stop)</strong></td>
-<td data-label="Что может делать узел">Останавливается навсегда</td>
-<td data-label="Где встречается">Упрощение для учебных алгоритмов</td>
+<td data-label="Возможности узла">Останавливается навсегда</td>
+<td data-label="Встречается">Упрощение для учебных алгоритмов</td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Crash-recovery</strong></td>
-<td data-label="Что может делать узел">Падает и возвращается, теряя память, но сохраняя диск</td>
-<td data-label="Где встречается">Реальность: pod перезапустился, JVM упала по OOM</td>
+<td data-label="Возможности узла">Падает и возвращается, теряя память, но сохраняя диск</td>
+<td data-label="Встречается">Реальность: pod перезапустился, JVM упала по OOM</td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Omission</strong></td>
-<td data-label="Что может делать узел">Теряет отдельные входящие/исходящие сообщения</td>
-<td data-label="Где встречается">Потери пакетов, переполнение очередей, разделение сети</td>
+<td data-label="Возможности узла">Теряет отдельные входящие/исходящие сообщения</td>
+<td data-label="Встречается">Потери пакетов, переполнение очередей, разделение сети</td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Byzantine</strong></td>
-<td data-label="Что может делать узел">Может врать: слать противоречивые сообщения</td>
-<td data-label="Где встречается">Блокчейны, недоверенные участники, битая память/диск</td>
+<td data-label="Возможности узла">Может врать: слать противоречивые сообщения</td>
+<td data-label="Встречается">Блокчейны, недоверенные участники, битая память/диск</td>
 </tr>
 </tbody>
 </table>
@@ -319,7 +319,7 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/System.ht
 <span class="n">events</span><span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">Comparator</span><span class="p">.</span><span class="na">comparingLong</span><span class="p">(</span><span class="n">Event</span><span class="p">::</span><span class="n">aggregateVersion</span><span class="p">));</span>
 </code></pre></div>
 
-<p><strong>Что использовать вместо часов.</strong> Это главный практический вывод подраздела. Вариантов пять, от самого частого к самому редкому.</p>
+<p><strong>Замена часам.</strong> Это главный практический вывод подраздела. Вариантов пять, от самого частого к самому редкому.</p>
 <ol>
 <li><strong>Версия агрегата.</strong> Агрегат — это группа данных с одним владельцем, которую меняют как целое, например счёт со своими проводками. Версия агрегата — монотонный счётчик, который увеличивают при каждом изменении (строка в БД с <code>version</code>, оптимистичная блокировка JPA <code>@Version</code>). Он даёт строгий порядок в пределах агрегата, а большего обычно и не нужно.</li>
 <li><strong>Ключ партиционирования.</strong> Если все события по одному счёту идут в одну партицию Kafka, их порядок гарантирует брокер (см. главу <a href="29-kafka-internals.html" data-tip="29. Apache Kafka изнутри">29</a>), а порядок между разными счетами бизнесу, как правило, не нужен.</li>
@@ -570,29 +570,29 @@ https://jepsen.io/consistency/models/causal">jepsen.io/consistency/models/causal
 <thead>
 <tr>
 <th>Гарантия</th>
-<th>Что обещает</th>
+<th>Обещание</th>
 <th>Баг, если её нет</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Гарантия"><strong>Read your writes</strong></td>
-<td data-label="Что обещает">Своя запись видна в своих последующих чтениях</td>
+<td data-label="Обещание">Своя запись видна в своих последующих чтениях</td>
 <td data-label="Баг, если её нет">Создал платёж → перенаправление на список → платежа нет. «Кнопка не работает», клиент жмёт второй раз</td>
 </tr>
 <tr>
 <td data-label="Гарантия"><strong>Monotonic reads</strong></td>
-<td data-label="Что обещает">Чтения не «едут назад» во времени</td>
+<td data-label="Обещание">Чтения не «едут назад» во времени</td>
 <td data-label="Баг, если её нет">Обновил страницу — платёж есть; обновил ещё раз (попал на другую реплику) — платежа нет. «Мигающие» данные</td>
 </tr>
 <tr>
 <td data-label="Гарантия"><strong>Monotonic writes</strong></td>
-<td data-label="Что обещает">Свои записи применяются в порядке отправки</td>
+<td data-label="Обещание">Свои записи применяются в порядке отправки</td>
 <td data-label="Баг, если её нет">Отправил «изменить лимит на 100 000», потом «на 50 000»; применились в обратном порядке — лимит 100 000</td>
 </tr>
 <tr>
 <td data-label="Гарантия"><strong>Writes follow reads</strong></td>
-<td data-label="Что обещает">Запись, сделанная после чтения, видна везде не раньше прочитанного</td>
+<td data-label="Обещание">Запись, сделанная после чтения, видна везде не раньше прочитанного</td>
 <td data-label="Баг, если её нет">Ответ в треде виден раньше исходного комментария</td>
 </tr>
 </tbody>
@@ -853,82 +853,82 @@ https://jepsen.io/consistency">jepsen.io/consistency</a>. Полностью д�
 <thead>
 <tr>
 <th>Модель</th>
-<th>Что гарантирует</th>
-<th>Чем платите</th>
+<th>Гарантии</th>
+<th>Издержки</th>
 <th>Доступность при partition</th>
-<th>Где встречается</th>
+<th>Встречается</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Модель"><strong>Strict serializability</strong></td>
-<td data-label="Что гарантирует">Сериализуемость транзакций + согласованность с реальным временем</td>
-<td data-label="Чем платите">Консенсус на каждую транзакцию + (для глобальности) ожидание по часам</td>
+<td data-label="Гарантии">Сериализуемость транзакций + согласованность с реальным временем</td>
+<td data-label="Издержки">Консенсус на каждую транзакцию + (для глобальности) ожидание по часам</td>
 <td data-label="Доступность при partition">нет</td>
-<td data-label="Где встречается">Spanner, FoundationDB; CockroachDB по умолчанию даёт <code>SERIALIZABLE</code> без устаревших чтений («no stale reads»), но strict serializability официально не обещает из-за аномалии causal reverse</td>
+<td data-label="Встречается">Spanner, FoundationDB; CockroachDB по умолчанию даёт <code>SERIALIZABLE</code> без устаревших чтений («no stale reads»), но strict serializability официально не обещает из-за аномалии causal reverse</td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Linearizability</strong></td>
-<td data-label="Что гарантирует">Один объект ведёт себя как единственная копия; подтверждённое видно всем немедленно</td>
-<td data-label="Чем платите">Кворумный раунд или консенсус на каждую операцию</td>
+<td data-label="Гарантии">Один объект ведёт себя как единственная копия; подтверждённое видно всем немедленно</td>
+<td data-label="Издержки">Кворумный раунд или консенсус на каждую операцию</td>
 <td data-label="Доступность при partition">нет</td>
-<td data-label="Где встречается">etcd, ZooKeeper (запись и <code>sync</code>+чтение), Cassandra LWT, <code>SELECT ... FOR UPDATE</code> на лидере</td>
+<td data-label="Встречается">etcd, ZooKeeper (запись и <code>sync</code>+чтение), Cassandra LWT, <code>SELECT ... FOR UPDATE</code> на лидере</td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Serializability</strong></td>
-<td data-label="Что гарантирует">Транзакции эквивалентны какому-то последовательному порядку</td>
-<td data-label="Чем платите">Блокировки или SSI-конфликты и откаты</td>
+<td data-label="Гарантии">Транзакции эквивалентны какому-то последовательному порядку</td>
+<td data-label="Издержки">Блокировки или SSI-конфликты и откаты</td>
 <td data-label="Доступность при partition">нет (для многообъектной)</td>
-<td data-label="Где встречается">PostgreSQL <code>SERIALIZABLE</code>, см. главу <a href="18-transactions-isolation-locking.html" data-tip="18. Транзакции, изоляция, блокировки">18</a></td>
+<td data-label="Встречается">PostgreSQL <code>SERIALIZABLE</code>, см. главу <a href="18-transactions-isolation-locking.html" data-tip="18. Транзакции, изоляция, блокировки">18</a></td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Sequential consistency</strong></td>
-<td data-label="Что гарантирует">Единый порядок операций, одинаковый у всех, но без привязки к реальному времени</td>
-<td data-label="Чем платите">Порядок доставки, отставание чтений</td>
+<td data-label="Гарантии">Единый порядок операций, одинаковый у всех, но без привязки к реальному времени</td>
+<td data-label="Издержки">Порядок доставки, отставание чтений</td>
 <td data-label="Доступность при partition">нет</td>
-<td data-label="Где встречается">ZooKeeper (чтения), реплицированные логи</td>
+<td data-label="Встречается">ZooKeeper (чтения), реплицированные логи</td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Causal consistency (+)</strong></td>
-<td data-label="Что гарантирует">Причинно связанные операции все видят в одном порядке</td>
-<td data-label="Чем платите">Перенос метаданных причинности (токен/вектор)</td>
+<td data-label="Гарантии">Причинно связанные операции все видят в одном порядке</td>
+<td data-label="Издержки">Перенос метаданных причинности (токен/вектор)</td>
 <td data-label="Доступность при partition"><strong>sticky available</strong></td>
-<td data-label="Где встречается">MongoDB causal sessions, COPS/Eiger, «causal+» в академии</td>
+<td data-label="Встречается">MongoDB causal sessions, COPS/Eiger, «causal+» в академии</td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Read-your-writes</strong></td>
-<td data-label="Что гарантирует">Свои записи видны в своих чтениях</td>
-<td data-label="Чем платите">Липкость сессии или токен позиции</td>
+<td data-label="Гарантии">Свои записи видны в своих чтениях</td>
+<td data-label="Издержки">Липкость сессии или токен позиции</td>
 <td data-label="Доступность при partition">sticky available</td>
-<td data-label="Где встречается">Маршрутизация на лидера, <code>afterClusterTime</code></td>
+<td data-label="Встречается">Маршрутизация на лидера, <code>afterClusterTime</code></td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Monotonic reads</strong></td>
-<td data-label="Что гарантирует">Чтения не «едут назад»</td>
-<td data-label="Чем платите">Липкость к реплике или запоминание максимума</td>
+<td data-label="Гарантии">Чтения не «едут назад»</td>
+<td data-label="Издержки">Липкость к реплике или запоминание максимума</td>
 <td data-label="Доступность при partition">sticky available</td>
-<td data-label="Где встречается">Sticky-сессия на балансировщике</td>
+<td data-label="Встречается">Sticky-сессия на балансировщике</td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Monotonic writes</strong></td>
-<td data-label="Что гарантирует">Свои записи применяются в порядке отправки</td>
-<td data-label="Чем платите">Последовательная отправка либо порядковый номер клиента</td>
+<td data-label="Гарантии">Свои записи применяются в порядке отправки</td>
+<td data-label="Издержки">Последовательная отправка либо порядковый номер клиента</td>
 <td data-label="Доступность при partition">sticky available</td>
-<td data-label="Где встречается">Один производитель на ключ, идемпотентный производитель Kafka</td>
+<td data-label="Встречается">Один производитель на ключ, идемпотентный производитель Kafka</td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Writes follow reads</strong></td>
-<td data-label="Что гарантирует">Запись, сделанная после чтения, не опережает прочитанное</td>
-<td data-label="Чем платите">Перенос зависимости чтения в запись</td>
+<td data-label="Гарантии">Запись, сделанная после чтения, не опережает прочитанное</td>
+<td data-label="Издержки">Перенос зависимости чтения в запись</td>
 <td data-label="Доступность при partition">sticky available</td>
-<td data-label="Где встречается">Causal-сессии</td>
+<td data-label="Встречается">Causal-сессии</td>
 </tr>
 <tr>
 <td data-label="Модель"><strong>Eventual consistency</strong></td>
-<td data-label="Что гарантирует">Реплики сходятся, если записи прекратятся</td>
-<td data-label="Чем платите">Ничем — и ничего не обещает в промежутке</td>
+<td data-label="Гарантии">Реплики сходятся, если записи прекратятся</td>
+<td data-label="Издержки">Ничем — и ничего не обещает в промежутке</td>
 <td data-label="Доступность при partition"><strong>totally available</strong></td>
-<td data-label="Где встречается">Cassandra по умолчанию, DNS, кэши, S3 в прошлом</td>
+<td data-label="Встречается">Cassandra по умолчанию, DNS, кэши, S3 в прошлом</td>
 </tr>
 </tbody>
 </table>
@@ -948,34 +948,34 @@ https://www.cs.cornell.edu/lorenzo/papers/cac-tr.pdf">Consistency, Availability,
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th><strong>C в CAP</strong></th>
 <th><strong>C в ACID</strong></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Что это</td>
+<td data-label="Критерий">Что это</td>
 <td data-label="C в CAP">Линеаризуемость: свойство <strong>порядка</strong> операций над объектом</td>
 <td data-label="C в ACID">Соблюдение <strong>инвариантов приложения</strong>: ограничения целостности, <code>CHECK</code>, внешние ключи, «сумма дебета равна сумме кредита»</td>
 </tr>
 <tr>
-<td data-label="">Кто обеспечивает</td>
+<td data-label="Критерий">Кто обеспечивает</td>
 <td data-label="C в CAP">Система (протокол репликации/консенсус)</td>
 <td data-label="C в ACID">Совместно приложение и СУБД: СУБД обещает не нарушить инварианты, <strong>которые вы объявили</strong></td>
 </tr>
 <tr>
-<td data-label="">Про сколько объектов</td>
+<td data-label="Критерий">Про сколько объектов</td>
 <td data-label="C в CAP">Один объект</td>
 <td data-label="C в ACID">Любое множество, затронутое транзакцией</td>
 </tr>
 <tr>
-<td data-label="">Нарушается при</td>
+<td data-label="Критерий">Нарушается при</td>
 <td data-label="C в CAP">Асинхронной репликации, кворумных чтениях, split brain</td>
 <td data-label="C в ACID">Неверно написанной бизнес-логике, отсутствующих ограничениях</td>
 </tr>
 <tr>
-<td data-label="">Аналог в теории изоляции</td>
+<td data-label="Критерий">Аналог в теории изоляции</td>
 <td data-label="C в CAP">—</td>
 <td data-label="C в ACID">Не имеет отношения к уровням изоляции; это I, не C</td>
 </tr>
@@ -1002,7 +1002,7 @@ https://www.cs.cornell.edu/lorenzo/papers/cac-tr.pdf">Consistency, Availability,
 <thead>
 <tr>
 <th>Режим</th>
-<th>Когда лидер отвечает клиенту</th>
+<th>Ответ лидера клиенту</th>
 <th>Потеря данных при падении лидера</th>
 <th>Латентность записи</th>
 </tr>
@@ -1010,19 +1010,19 @@ https://www.cs.cornell.edu/lorenzo/papers/cac-tr.pdf">Consistency, Availability,
 <tbody>
 <tr>
 <td data-label="Режим">Асинхронный</td>
-<td data-label="Когда лидер отвечает клиенту">Сразу после локальной фиксации</td>
+<td data-label="Ответ лидера клиенту">Сразу после локальной фиксации</td>
 <td data-label="Потеря данных при падении лидера">Да, всё, что не долетело</td>
 <td data-label="Латентность записи">Минимальная</td>
 </tr>
 <tr>
 <td data-label="Режим">Синхронный</td>
-<td data-label="Когда лидер отвечает клиенту">После подтверждения от реплики</td>
+<td data-label="Ответ лидера клиенту">После подтверждения от реплики</td>
 <td data-label="Потеря данных при падении лидера">Нет (если реплика жива)</td>
 <td data-label="Латентность записи">+RTT, и запись стоит при недоступности реплики</td>
 </tr>
 <tr>
 <td data-label="Режим">Полусинхронный</td>
-<td data-label="Когда лидер отвечает клиенту">После подтверждения от <strong>одной из</strong> N реплик</td>
+<td data-label="Ответ лидера клиенту">После подтверждения от <strong>одной из</strong> N реплик</td>
 <td data-label="Потеря данных при падении лидера">Нет для одной реплики</td>
 <td data-label="Латентность записи">+RTT до ближайшей</td>
 </tr>
@@ -1232,58 +1232,58 @@ https://github.com/hibari/hibari">github.com/hibari/hibari</a>). ⚠️ Не п�
 <thead>
 <tr>
 <th>Тип</th>
-<th>Что хранит</th>
-<th>Как сливается</th>
+<th>Содержимое</th>
+<th>Слияние</th>
 <th>Ограничение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Тип"><strong>G-Counter</strong></td>
-<td data-label="Что хранит">вектор счётчиков по репликам</td>
-<td data-label="Как сливается">поэлементный <code>max</code>, значение = сумма</td>
+<td data-label="Содержимое">вектор счётчиков по репликам</td>
+<td data-label="Слияние">поэлементный <code>max</code>, значение = сумма</td>
 <td data-label="Ограничение">только инкремент</td>
 </tr>
 <tr>
 <td data-label="Тип"><strong>PN-Counter</strong></td>
-<td data-label="Что хранит">два G-Counter (плюсы и минусы)</td>
-<td data-label="Как сливается">покомпонентно</td>
+<td data-label="Содержимое">два G-Counter (плюсы и минусы)</td>
+<td data-label="Слияние">покомпонентно</td>
 <td data-label="Ограничение">нельзя проверить «не ушёл ли ниже нуля»</td>
 </tr>
 <tr>
 <td data-label="Тип"><strong>G-Set</strong></td>
-<td data-label="Что хранит">множество</td>
-<td data-label="Как сливается">объединение</td>
+<td data-label="Содержимое">множество</td>
+<td data-label="Слияние">объединение</td>
 <td data-label="Ограничение">нельзя удалять</td>
 </tr>
 <tr>
 <td data-label="Тип"><strong>2P-Set</strong></td>
-<td data-label="Что хранит">добавленные + удалённые (tombstones)</td>
-<td data-label="Как сливается">объединение обоих</td>
+<td data-label="Содержимое">добавленные + удалённые (tombstones)</td>
+<td data-label="Слияние">объединение обоих</td>
 <td data-label="Ограничение">элемент, удалённый однажды, нельзя добавить снова</td>
 </tr>
 <tr>
 <td data-label="Тип"><strong>OR-Set</strong></td>
-<td data-label="Что хранит">элементы с уникальными тегами добавления</td>
-<td data-label="Как сливается">объединение тегов минус удалённые теги</td>
+<td data-label="Содержимое">элементы с уникальными тегами добавления</td>
+<td data-label="Слияние">объединение тегов минус удалённые теги</td>
 <td data-label="Ограничение">метаданные растут с числом операций</td>
 </tr>
 <tr>
 <td data-label="Тип"><strong>LWW-Register</strong></td>
-<td data-label="Что хранит">значение + timestamp</td>
-<td data-label="Как сливается">побеждает больший timestamp</td>
+<td data-label="Содержимое">значение + timestamp</td>
+<td data-label="Слияние">побеждает больший timestamp</td>
 <td data-label="Ограничение"><strong>теряет данные</strong> при рассинхроне часов</td>
 </tr>
 <tr>
 <td data-label="Тип"><strong>MV-Register</strong></td>
-<td data-label="Что хранит">множество concurrent-значений с version vector</td>
-<td data-label="Как сливается">сохраняет все несравнимые</td>
+<td data-label="Содержимое">множество concurrent-значений с version vector</td>
+<td data-label="Слияние">сохраняет все несравнимые</td>
 <td data-label="Ограничение">разрешение конфликта отдано приложению</td>
 </tr>
 <tr>
 <td data-label="Тип"><strong>RGA / Logoot / YATA</strong></td>
-<td data-label="Что хранит">последовательность символов с идентификаторами позиций</td>
-<td data-label="Как сливается">по идентификаторам</td>
+<td data-label="Содержимое">последовательность символов с идентификаторами позиций</td>
+<td data-label="Слияние">по идентификаторам</td>
 <td data-label="Ограничение">метаданные на символ; основа совместного редактирования</td>
 </tr>
 </tbody>
@@ -1307,13 +1307,13 @@ https://github.com/hibari/hibari">github.com/hibari/hibari</a>). ⚠️ Не п�
 <span class="p">}</span>
 </code></pre></div>
 
-<p><strong>Чем платите.</strong> Статей расходов три, и ни одна не проявляется сразу.</p>
+<p><strong>Издержки.</strong> Статей расходов три, и ни одна не проявляется сразу.</p>
 <ol>
 <li><strong>Метаданные.</strong> OR-Set хранит тег на каждое добавление, RGA — идентификатор на каждый символ, и документ совместного редактирования на 100 КБ текста легко весит мегабайты в состоянии CRDT. Лечат это уплотнением и сжатием идентификаторов, но это отдельная и непростая работа.</li>
 <li><strong>Метки удаления</strong> (<em>tombstones</em>). Чтобы удаление не отменилось операцией добавления, прилетевшей позже, удалённый элемент нельзя просто выбросить: надо помнить, что он удалён. Метку нельзя убрать, пока не доказано, что все реплики её увидели, а в открытой системе это доказать невозможно. Поэтому состояние монотонно растёт, и это классическая эксплуатационная боль CRDT-систем. Та же беда есть у Cassandra: удалённые записи хранятся метками до истечения <code>gc_grace_seconds</code>, и чтение, которому приходится перебирать множество меток, резко замедляется («tombstone hell»).</li>
 <li><strong>Ограниченная выразительность.</strong> CRDT гарантируют <strong>сходимость</strong>, а не <strong>соблюдение бизнес-инварианта</strong>. PN-Counter сойдётся, но не удержит «баланс ≥ 0»: две реплики независимо разрешат списание, и после слияния баланс станет отрицательным. Инварианты с глобальным ограничением требуют координации либо заранее разделённой между репликами квоты. Так работают escrow-транзакции: каждая реплика владеет своей долей лимита и может тратить только её без согласования с другими.</li>
 </ol>
-<p><strong>Где CRDT реально применяют.</strong> Они работают в Redis/Valkey Active-Active (режим, в котором несколько кластеров в разных регионах принимают запись; CRDT-типы в Redis Enterprise), в Riak (counters, sets, maps), в библиотеках совместного редактирования Automerge и Yjs, в клиентских приложениях Figma и Linear. Встречаются они и в счётчиках лайков и просмотров, индикаторах присутствия («собеседник в сети»), корзинах покупок и синхронизации настроек между устройствами. В типовом банковском бэкенде их применяют редко, потому что движение денег по определению требует координации. Но там, где нужен мобильный клиент, который работает без сети и синхронизируется потом, или запись одновременно в нескольких регионах, CRDT остаются единственной альтернативой LWW.</p>
+<p><strong>Реальное применение CRDT.</strong> Они работают в Redis/Valkey Active-Active (режим, в котором несколько кластеров в разных регионах принимают запись; CRDT-типы в Redis Enterprise), в Riak (counters, sets, maps), в библиотеках совместного редактирования Automerge и Yjs, в клиентских приложениях Figma и Linear. Встречаются они и в счётчиках лайков и просмотров, индикаторах присутствия («собеседник в сети»), корзинах покупок и синхронизации настроек между устройствами. В типовом банковском бэкенде их применяют редко, потому что движение денег по определению требует координации. Но там, где нужен мобильный клиент, который работает без сети и синхронизируется потом, или запись одновременно в нескольких регионах, CRDT остаются единственной альтернативой LWW.</p>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> Из того, что «мы взяли CRDT», не следует, что «конфликтов нет». Конфликтов нет <strong>на уровне структуры данных</strong>, а на уровне смысла они остаются. Если два пользователя одновременно удалили и отредактировали один пункт списка, OR-Set детерминированно сойдётся к одному из исходов, но пользователю всё равно придётся объяснить, куда делось его изменение. CRDT устраняет расхождение реплик, но не избавляет от необходимости продумать смысл одновременных изменений.</p>
 </blockquote>
@@ -1345,7 +1345,7 @@ https://github.com/hibari/hibari">github.com/hibari/hibari</a>). ⚠️ Не п�
 <th>Размер</th>
 <th>Сортируемость по времени</th>
 <th>Требует координации</th>
-<th>Что ломается</th>
+<th>Поломка</th>
 </tr>
 </thead>
 <tbody>
@@ -1354,7 +1354,7 @@ https://github.com/hibari/hibari">github.com/hibari/hibari</a>). ⚠️ Не п�
 <td data-label="Размер">128 бит</td>
 <td data-label="Сортируемость по времени">нет</td>
 <td data-label="Требует координации">нет</td>
-<td data-label="Что ломается">Случайные вставки по всему B-tree: раздувание индекса, падение buffer hit ratio (см. главу <a href="19-schema-design-migrations.html" data-tip="19. Проектирование схем и миграции">19</a>)</td>
+<td data-label="Поломка">Случайные вставки по всему B-tree: раздувание индекса, падение buffer hit ratio (см. главу <a href="19-schema-design-migrations.html" data-tip="19. Проектирование схем и миграции">19</a>)</td>
 </tr>
 <tr>
 <td data-label="Схема"><strong>UUIDv7</strong> (<a href="https://datatracker.ietf.org/doc/html/rfc9562" data-tip="Внешний сайт · datatracker.ietf.org
@@ -1362,35 +1362,35 @@ https://datatracker.ietf.org/doc/html/rfc9562">RFC 9562</a>)</td>
 <td data-label="Размер">128 бит</td>
 <td data-label="Сортируемость по времени">да (48 бит unix-мс в старших битах)</td>
 <td data-label="Требует координации">нет</td>
-<td data-label="Что ломается">Утечка времени создания; при скачке часов назад порядок нарушается</td>
+<td data-label="Поломка">Утечка времени создания; при скачке часов назад порядок нарушается</td>
 </tr>
 <tr>
 <td data-label="Схема"><strong>ULID</strong></td>
 <td data-label="Размер">128 бит, Base32-строка 26 символов</td>
 <td data-label="Сортируемость по времени">да (48 бит мс + 80 бит случайности)</td>
 <td data-label="Требует координации">нет</td>
-<td data-label="Что ломается">То же + строковое представление занимает больше места в текстовых колонках</td>
+<td data-label="Поломка">То же + строковое представление занимает больше места в текстовых колонках</td>
 </tr>
 <tr>
 <td data-label="Схема"><strong>Snowflake</strong></td>
 <td data-label="Размер">64 бита: 41 бит мс + 10 бит node + 12 бит seq</td>
 <td data-label="Сортируемость по времени">да, строго монотонна в пределах узла</td>
 <td data-label="Требует координации">да — нужен уникальный node id</td>
-<td data-label="Что ломается">Перевод часов назад (генератор обязан ждать); исчерпание 4096 id/мс на узел; переполнение 41-битной эпохи</td>
+<td data-label="Поломка">Перевод часов назад (генератор обязан ждать); исчерпание 4096 id/мс на узел; переполнение 41-битной эпохи</td>
 </tr>
 <tr>
 <td data-label="Схема"><strong>Sequence / BIGSERIAL</strong></td>
 <td data-label="Размер">64 бита</td>
 <td data-label="Сортируемость по времени">да</td>
 <td data-label="Требует координации">да — один владелец</td>
-<td data-label="Что ломается">Узкое место записи, сетевой раунд за значением; лечится hi/lo-блоками</td>
+<td data-label="Поломка">Узкое место записи, сетевой раунд за значением; лечится hi/lo-блоками</td>
 </tr>
 <tr>
 <td data-label="Схема"><strong>Составной ключ <code>(shard_id, local_seq)</code></strong></td>
 <td data-label="Размер">64–128 бит</td>
 <td data-label="Сортируемость по времени">в пределах шарда</td>
 <td data-label="Требует координации">локально</td>
-<td data-label="Что ломается">Кросс-шардовая сортировка невозможна</td>
+<td data-label="Поломка">Кросс-шардовая сортировка невозможна</td>
 </tr>
 </tbody>
 </table>
@@ -1612,56 +1612,56 @@ https://etcd.io/docs/v3.6/faq/">etcd FAQ</a>).</p>
 <tr>
 <th>Компонент</th>
 <th>Алгоритм</th>
-<th>Что даёт вам</th>
+<th>Польза</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Компонент"><strong>etcd</strong></td>
 <td data-label="Алгоритм">Raft</td>
-<td data-label="Что даёт вам">Линеаризуемый KV, lease, watch, CAS. Рекомендуется нечётное число узлов, в проде — пять (<a href="https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/" data-tip="Внешний сайт · kubernetes.io
+<td data-label="Польза">Линеаризуемый KV, lease, watch, CAS. Рекомендуется нечётное число узлов, в проде — пять (<a href="https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/">Kubernetes docs</a>); не более семи (<a href="https://etcd.io/docs/v3.6/faq/" data-tip="Внешний сайт · etcd.io
 https://etcd.io/docs/v3.6/faq/">etcd FAQ</a>)</td>
 </tr>
 <tr>
 <td data-label="Компонент"><strong>Kubernetes</strong></td>
 <td data-label="Алгоритм">через etcd</td>
-<td data-label="Что даёт вам">Вся координация: лидер-элекция контроллеров (<code>coordination.k8s.io/Lease</code>), конфиги, состояние</td>
+<td data-label="Польза">Вся координация: лидер-элекция контроллеров (<code>coordination.k8s.io/Lease</code>), конфиги, состояние</td>
 </tr>
 <tr>
 <td data-label="Компонент"><strong>ZooKeeper</strong></td>
 <td data-label="Алгоритм">ZAB</td>
-<td data-label="Что даёт вам">Ephemeral-узлы, последовательные узлы, watch, sequential consistency + <code>sync()</code></td>
+<td data-label="Польза">Ephemeral-узлы, последовательные узлы, watch, sequential consistency + <code>sync()</code></td>
 </tr>
 <tr>
 <td data-label="Компонент"><strong>Kafka (KRaft)</strong></td>
 <td data-label="Алгоритм">Raft</td>
-<td data-label="Что даёт вам">Кворум контроллеров вместо ZooKeeper, метаданные как реплицированный лог. ZooKeeper удалён в Kafka 4.0</td>
+<td data-label="Польза">Кворум контроллеров вместо ZooKeeper, метаданные как реплицированный лог. ZooKeeper удалён в Kafka 4.0</td>
 </tr>
 <tr>
 <td data-label="Компонент"><strong>RabbitMQ quorum queues</strong></td>
 <td data-label="Алгоритм">Raft</td>
-<td data-label="Что даёт вам">Очереди с кворумной репликацией; классические зеркалированные удалены в 4.0</td>
+<td data-label="Польза">Очереди с кворумной репликацией; классические зеркалированные удалены в 4.0</td>
 </tr>
 <tr>
 <td data-label="Компонент"><strong>PostgreSQL + Patroni</strong></td>
 <td data-label="Алгоритм">через etcd/Consul/ZooKeeper</td>
-<td data-label="Что даёт вам">Failover без split brain: лидерство — это ключ с TTL во внешнем консенсусе</td>
+<td data-label="Польза">Failover без split brain: лидерство — это ключ с TTL во внешнем консенсусе</td>
 </tr>
 <tr>
 <td data-label="Компонент"><strong>Consul</strong></td>
 <td data-label="Алгоритм">Raft</td>
-<td data-label="Что даёт вам">Service discovery, KV, sessions</td>
+<td data-label="Польза">Service discovery, KV, sessions</td>
 </tr>
 <tr>
 <td data-label="Компонент"><strong>Redis Sentinel</strong></td>
 <td data-label="Алгоритм">не консенсус в строгом смысле</td>
-<td data-label="Что даёт вам">Кворум сентинелов для failover; гарантий консенсуса на данных не даёт</td>
+<td data-label="Польза">Кворум сентинелов для failover; гарантий консенсуса на данных не даёт</td>
 </tr>
 </tbody>
 </table>
 <p>Watch в таблице — подписка на изменения ключа: клиент получает уведомление, когда значение меняется. Redis Sentinel — набор процессов-наблюдателей, которые следят за мастером Redis и по голосованию большинства переключают его на реплику; но решают они только вопрос переключения, а сами данные Redis при этом реплицируются асинхронно.</p>
-<p><strong>Почему число узлов нечётное.</strong> Кворум равен <code>(n/2)+1</code>, поэтому при n=4 он составляет 3, и кластер переживает 1 отказ. Это ровно столько же, сколько при n=3, но вы платите за четвёртую машину и даёте ей возможность сломаться. etcd формулирует это так: «кластер нечётного размера переносит столько же отказов, сколько чётного, но с меньшим числом узлов». К тому же при разделении сети пополам у чётного кластера может не оказаться большинства ни с одной стороны. В таблице ниже видно, что отказоустойчивость растёт только при переходе к следующему нечётному числу.</p>
+<p><strong>Нечётное число узлов.</strong> Кворум равен <code>(n/2)+1</code>, поэтому при n=4 он составляет 3, и кластер переживает 1 отказ. Это ровно столько же, сколько при n=3, но вы платите за четвёртую машину и даёте ей возможность сломаться. etcd формулирует это так: «кластер нечётного размера переносит столько же отказов, сколько чётного, но с меньшим числом узлов». К тому же при разделении сети пополам у чётного кластера может не оказаться большинства ни с одной стороны. В таблице ниже видно, что отказоустойчивость растёт только при переходе к следующему нечётному числу.</p>
 <table class="rt">
 <thead>
 <tr>
@@ -1716,7 +1716,7 @@ https://etcd.io/docs/v3.6/faq/">etcd FAQ</a>)</td>
 <blockquote class="cb-warn">
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> Забытая подготовленная транзакция в PostgreSQL опаснее, чем просто «висящая запись». Её номер транзакции (xid) не даёт продвигаться горизонту видимости, то есть границе, старше которой версии строк уже никому не нужны. Поэтому vacuum не может очистить мёртвые версии строк <strong>во всей базе</strong>, таблицы разбухают, а в пределе приближается переполнение счётчика транзакций (<em>wraparound</em>), при котором PostgreSQL останавливает запись. Если 2PC вообще включён, мониторинг <code>pg_prepared_xacts</code> с оповещением на возраст транзакции обязателен.</p>
 </blockquote>
-<p><strong>Чем 2PC отличается от консенсуса.</strong> В консенсусе решение принимает <strong>большинство</strong>, поэтому отказ меньшинства не мешает системе двигаться дальше. В 2PC требуется <strong>единогласие</strong>, и любой недоступный участник блокирует всех. Поэтому 2PC атомарен, но не обладает живучестью, то есть не отказоустойчив. Отказоустойчивый вариант получается, если сделать сам <strong>координатор</strong> реплицируемой машиной состояний поверх консенсуса. Так устроены распределённые транзакции в Spanner: между шардами идёт 2PC, но каждый участник и координатор представлены группами реплик, которые договариваются через Paxos.</p>
+<p><strong>2PC и консенсус.</strong> В консенсусе решение принимает <strong>большинство</strong>, поэтому отказ меньшинства не мешает системе двигаться дальше. В 2PC требуется <strong>единогласие</strong>, и любой недоступный участник блокирует всех. Поэтому 2PC атомарен, но не обладает живучестью, то есть не отказоустойчив. Отказоустойчивый вариант получается, если сделать сам <strong>координатор</strong> реплицируемой машиной состояний поверх консенсуса. Так устроены распределённые транзакции в Spanner: между шардами идёт 2PC, но каждый участник и координатор представлены группами реплик, которые договариваются через Paxos.</p>
 <p><strong>Трёхфазная фиксация (3PC)</strong> добавляет фазу предварительной фиксации (<em>pre-commit</em>), чтобы участники могли завершить транзакцию без координатора. Это не помогает: корректность 3PC опирается на надёжный детектор отказов, то есть на синхронную модель из 1.5. При разделении сети 3PC может дать расхождение, когда одна часть фиксирует транзакцию, а другая откатывает, и в реальных СУБД его не используют.</p>
 <p><strong>Практический вывод для бэкенда.</strong> В микросервисной архитектуре 2PC (в виде XA) применяют редко и осознанно. Он требует поддержки от всех ресурсов, держит блокировки на время сетевых раундов и превращает доступность системы в произведение доступностей участников. Стандартный ответ здесь другой. Сага (<em>Saga</em>) разбивает операцию на локальные транзакции, у каждой из которых есть компенсирующая операция на случай отката. Outbox (транзакционный «исходящий ящик») делает атомарной пару «изменил состояние и отправил событие»: событие записывается в таблицу той же базы в той же транзакции, а отдельный процесс публикует его. Подробно оба приёма разобраны в главе <a href="31-integration-patterns-consistency.html" data-tip="31. Паттерны интеграции и согласованность">31</a> (<a href="31-integration-patterns-consistency.html" data-tip="31. Паттерны интеграции и согласованность"><code>31-integration-patterns-consistency.md</code></a>). Законный сценарий для XA остаётся один: связка «одна база и один брокер» внутри одного сервиса при жёстком требовании атомарности, но и там Outbox обычно оказывается проще и надёжнее.</p>
 <h3 id="57-xa-в-java-jta-xaresource-и-heuristic-outcomes">5.7 XA в Java: JTA, <code>XAResource</code> и heuristic outcomes</h3>
@@ -1756,7 +1756,7 @@ https://jakarta.ee/specifications/transactions/2.0/apidocs/jakarta/transaction/h
 <li><strong>Не все ресурсы честно реализуют XA.</strong> Часть JDBC-драйверов реализует <code>XAResource</code> лишь частично, а брокеры вроде Kafka XA не поддерживают вовсе (у Kafka своя транзакционная модель, глава <a href="29-kafka-internals.html" data-tip="29. Apache Kafka изнутри">29</a>). Связка «Kafka и база через XA» технически невозможна, и отсюда популярность Outbox.</li>
 <li><strong>Двойная стоимость.</strong> Каждая фаза требует сетевого раунда и <code>fsync</code> журнала на каждом участнике, так что задержка распределённой транзакции составляет 2 × (максимальный RTT + fsync), и всё это время держатся блокировки. На нагруженной таблице это прямой путь к лавине конфликтов.</li>
 </ol>
-<p><strong>Когда XA всё-таки оправдан.</strong> Таких случаев три: интеграция старой системы с MQ-брокером и базой внутри одного сервиса при жёстком регуляторном требовании атомарности; миграция монолита, где XA уже есть и работает; связка двух реляционных баз в одном контуре под управлением одного сервера приложений. Во всех остальных случаях берите Outbox и Saga из главы <a href="31-integration-patterns-consistency.html" data-tip="31. Паттерны интеграции и согласованность">31</a> (<a href="31-integration-patterns-consistency.html" data-tip="31. Паттерны интеграции и согласованность"><code>31-integration-patterns-consistency.md</code></a>). Таблица ниже сравнивает три подхода по шести критериям; решающими обычно оказываются строки про доступность и восстановление.</p>
+<p><strong>Оправданный XA.</strong> Таких случаев три: интеграция старой системы с MQ-брокером и базой внутри одного сервиса при жёстком регуляторном требовании атомарности; миграция монолита, где XA уже есть и работает; связка двух реляционных баз в одном контуре под управлением одного сервера приложений. Во всех остальных случаях берите Outbox и Saga из главы <a href="31-integration-patterns-consistency.html" data-tip="31. Паттерны интеграции и согласованность">31</a> (<a href="31-integration-patterns-consistency.html" data-tip="31. Паттерны интеграции и согласованность"><code>31-integration-patterns-consistency.md</code></a>). Таблица ниже сравнивает три подхода по шести критериям; решающими обычно оказываются строки про доступность и восстановление.</p>
 <table class="rt">
 <thead>
 <tr>
@@ -1897,7 +1897,7 @@ https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html">How 
 </ol>
 <p><strong>Ответ antirez</strong> (<a href="http://antirez.com/news/101" data-tip="Внешний сайт · antirez.com
 http://antirez.com/news/101">antirez.com/news/101</a>) состоит из нескольких возражений. Алгоритм проверяет затраченное время уже после того, как собрал большинство, и поэтому длинные задержки выявляет. Вместо монотонных токенов можно использовать уникальный случайный идентификатор владения, и это практичнее: многие охраняемые ресурсы (внешние API, физические устройства) сравнивать числа вообще не умеют. Наконец, antirez соглашается перейти на монотонные часы и признаёт, что любая блокировка с автоматическим освобождением по определению держится на таймаутах.</p>
-<p><strong>Что из спора следует на практике.</strong> Выводов три, и первый важнее двух других.</p>
+<p><strong>Практический вывод из спора.</strong> Выводов три, и первый важнее двух других.</p>
 <ul>
 <li>Спор идёт не про Redis и не про число узлов, а про то, что <strong>никакая блокировка с TTL не может гарантировать взаимное исключение на стороне ресурса</strong>, если сам ресурс в проверке не участвует. Это касается и ZooKeeper, и etcd, и строки в базе.</li>
 <li>Уникальный случайный токен, который предлагает antirez, защищает от ситуации «чужой снял мою блокировку», но <strong>не</strong> от ситуации «два владельца одновременно пишут». Чтобы отличить старого владельца от нового, нужен <strong>порядок</strong>, а его даёт только монотонный счётчик.</li>
@@ -1991,7 +1991,7 @@ http://antirez.com/news/101">antirez.com/news/101</a>) состоит из не�
 <th>Семантика</th>
 <th>Механизм</th>
 <th>Риск</th>
-<th>Когда применима</th>
+<th>Применение</th>
 </tr>
 </thead>
 <tbody>
@@ -1999,23 +1999,23 @@ http://antirez.com/news/101">antirez.com/news/101</a>) состоит из не�
 <td data-label="Семантика"><strong>At-most-once</strong></td>
 <td data-label="Механизм">Отправил и забыл, повторов нет</td>
 <td data-label="Риск">Потеря</td>
-<td data-label="Когда применима">Метрики, телеметрия, необязательные уведомления</td>
+<td data-label="Применение">Метрики, телеметрия, необязательные уведомления</td>
 </tr>
 <tr>
 <td data-label="Семантика"><strong>At-least-once</strong></td>
 <td data-label="Механизм">Повторы до подтверждения</td>
 <td data-label="Риск">Дубли</td>
-<td data-label="Когда применима">Практически всё остальное</td>
+<td data-label="Применение">Практически всё остальное</td>
 </tr>
 <tr>
 <td data-label="Семантика"><strong>Exactly-once</strong></td>
 <td data-label="Механизм">Не существует на уровне доставки</td>
 <td data-label="Риск">—</td>
-<td data-label="Когда применима">—</td>
+<td data-label="Применение">—</td>
 </tr>
 </tbody>
 </table>
-<h3 id="72-что-обеспечивают-реализации-exactly-once">7.2 Что обеспечивают реализации «exactly-once»</h3>
+<h3 id="72-реализации-exactly-once-и-их-обещания">7.2 Реализации «exactly-once» и их обещания</h3>
 <p>Реализации «exactly-once» — это механизмы, которые продают под этим именем, хотя доставить сообщение ровно один раз невозможно. На деле они гарантируют другое, и честных вариантов здесь два. Оба полезны, но у каждого есть граница, за которой гарантия кончается, и именно её важно знать.</p>
 <ol>
 <li><strong>Доставка хотя бы один раз и дедупликация у получателя.</strong> Сообщение может прийти пять раз, но <strong>эффект</strong> применяется один раз, потому что получатель помнит ключ уже обработанного сообщения. Формально это обработка с однократным эффектом (<em>effectively-once processing</em>), а не доставка ровно один раз.</li>
@@ -2061,36 +2061,36 @@ http://antirez.com/news/101">antirez.com/news/101</a>) состоит из не�
 <table class="rt">
 <thead>
 <tr>
-<th>Где</th>
+<th>Место</th>
 <th>Плюс</th>
 <th>Минус</th>
-<th>Когда брать</th>
+<th>Применение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="Где"><strong>Та же БД, та же транзакция, что и эффект</strong></td>
+<td data-label="Место"><strong>Та же БД, та же транзакция, что и эффект</strong></td>
 <td data-label="Плюс">Атомарность бесплатно; дубль физически невозможен</td>
 <td data-label="Минус">Растёт таблица; нужна партиционированная ретенция</td>
-<td data-label="Когда брать">Выбор по умолчанию для всего, где эффект — запись в эту же БД</td>
+<td data-label="Применение">Выбор по умолчанию для всего, где эффект — запись в эту же БД</td>
 </tr>
 <tr>
-<td data-label="Где"><strong>Redis с TTL</strong></td>
+<td data-label="Место"><strong>Redis с TTL</strong></td>
 <td data-label="Плюс">Дёшево, быстро, ретенция автоматическая</td>
 <td data-label="Минус">Не в одной транзакции с эффектом → окно, в котором маркер есть, а эффекта нет (или наоборот); потеря при failover Redis</td>
-<td data-label="Когда брать">Дедупликация ради экономии работы, не ради корректности</td>
+<td data-label="Применение">Дедупликация ради экономии работы, не ради корректности</td>
 </tr>
 <tr>
-<td data-label="Где"><strong>Состояние стрим-процессора</strong> (Kafka Streams / Flink)</td>
+<td data-label="Место"><strong>Состояние стрим-процессора</strong> (Kafka Streams / Flink)</td>
 <td data-label="Плюс">Масштабируется с партициями; восстанавливается из changelog</td>
 <td data-label="Минус">Границы окна и время задержки надо явно настраивать; эффект наружу всё равно не защищён</td>
-<td data-label="Когда брать">Потоковая обработка с большим объёмом ключей</td>
+<td data-label="Применение">Потоковая обработка с большим объёмом ключей</td>
 </tr>
 <tr>
-<td data-label="Где"><strong>Уникальный индекс по бизнес-ключу</strong></td>
+<td data-label="Место"><strong>Уникальный индекс по бизнес-ключу</strong></td>
 <td data-label="Плюс">Не требует отдельного хранилища; проверку невозможно обойти</td>
 <td data-label="Минус">Работает только если бизнес-ключ есть</td>
-<td data-label="Когда брать">Всегда, когда возможно — самый надёжный вариант</td>
+<td data-label="Применение">Всегда, когда возможно — самый надёжный вариант</td>
 </tr>
 </tbody>
 </table>
@@ -2534,5 +2534,5 @@ https://commons.wikimedia.org/wiki/File:Birds_on_wires_in_Pakistan.jpg">Птиц
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-модель-распределённой-системы">1. Модель распределённой системы</a></li><li><a href="#2-время-и-порядок">2. Время и порядок</a></li><li><a href="#3-модели-согласованности">3. Модели согласованности</a></li><li><a href="#4-репликация-и-шардирование">4. Репликация и шардирование</a></li><li><a href="#5-консенсус">5. Консенсус</a></li><li><a href="#6-распределённые-блокировки-и-координация">6. Распределённые блокировки и координация</a></li><li><a href="#7-гарантии-доставки-и-идемпотентность">7. Гарантии доставки и идемпотентность</a></li><li><a href="#8-наблюдаемость-распределённых-систем">8. Наблюдаемость распределённых систем</a></li><li><a href="#9-свод-практических-правил">9. Свод практических правил</a></li><li><a href="#10-ошибки-и-антипаттерны">10. Ошибки и антипаттерны</a></li><li><a href="#11-диагностика-распределённого-инцидента">11. Диагностика распределённого инцидента</a></li><li><a href="#12-вопросы-на-интервью">12. Вопросы на интервью</a></li><li><a href="#13-попробовать-руками">13. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>

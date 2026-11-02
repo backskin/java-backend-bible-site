@@ -15,13 +15,13 @@
 <header class="topbar"><div class="topbar-in"><button class="btn menu-btn" id="menu" aria-label="Оглавление книги" aria-expanded="false" aria-controls="side">☰ Главы</button><div class="crumb"><a href="index.html">Оглавление</a> / Часть X. Эксплуатация</div><div class="search"><input id="q" type="search" placeholder="Поиск по книге  /" autocomplete="off" aria-label="Поиск по книге"><div class="results" id="res" role="listbox"></div></div><div class="zoom" role="group" aria-label="Масштаб текста"><button type="button" data-z="-1" title="Мельче" aria-label="Мельче">A−</button><button type="button" class="zv" data-z="0" title="Вернуть 100%">100%</button><button type="button" data-z="1" title="Крупнее" aria-label="Крупнее">A+</button></div><button class="btn bm-btn" id="bm" type="button" title="Закладка на этой строке" aria-label="Закладка на этой строке"><svg class="svg-ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="btn" id="theme" type="button"><span class="ic" aria-hidden="true">☾</span><span class="tx">Тёмная тема</span></button><button class="btn fs-btn" id="fs" type="button" title="Во весь экран" aria-label="Во весь экран"></button></div></header>
 <div class="doc">
 <main class="main" id="content"><article class="prose">
-<h1><img class="xp-ic-h" src="img/ic/48.svg" width="48" height="48" alt="" loading="lazy">48. Kubernetes изнутри: устройство оркестратора</h1><div class="meta"><span class="part-tag">Часть X. Эксплуатация</span><span>38 381 слов</span><span>≈ 3 ч 35 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
+<h1><img class="xp-ic-h" src="img/ic/48.svg" width="48" height="48" alt="" loading="lazy">48. Kubernetes изнутри: устройство оркестратора</h1><div class="meta"><span class="part-tag">Часть X. Эксплуатация</span><span>38 355 слов</span><span>≈ 3 ч 35 мин чтения</span></div><details class="why"><summary>Зачем это знать</summary>
 <p>Между <code>kubectl apply -f deployment.yaml</code> и работающим java-процессом лежит примерно десять подсистем, и каждая из них способна тихо не сработать. Пока всё идёт хорошо, разбираться в них не обязательно, но рано или поздно под четвёртый час висит в <code>Pending</code>, деплой не применяется без единой ошибки, namespace не удаляется неделю, а <code>kubectl get pods</code> отвечает за восемь секунд, и без модели того, как всё устроено внутри, вам останется только гадать. На интервью на позицию сеньора в компанию, которая живёт в k8s, вопрос «что происходит после <code>kubectl apply</code>» задают почти всегда, и вопрос этот хороший: по глубине ответа сразу видно, разворачивает человек по инструкции или понимает систему. Кроме того, ровно эти механизмы понадобятся, когда придётся написать собственный оператор, а на Java сегодня это вполне рабочая история.</p>
 </details>
 <nav class="toc" id="chapter-toc" aria-label="В этой главе"><div class="toc-header"><div class="t">14 разделов<b id="toc-cur"></b></div><button class="toc-toggle" type="button" aria-expanded="false">Показать</button></div><div class="toc-list"><ol><li><a href="#1-декларативная-модель-и-цикл-согласования-reconciliation" data-tip="Раздел этой главы: 1. Декларативная модель и цикл согласования (reconciliation)">1. Декларативная модель и цикл согласования (reconciliation)</a></li><li><a href="#2-путь-kubectl-apply-от-начала-до-конца" data-tip="Раздел этой главы: 2. Путь kubectl apply от начала до конца">2. Путь kubectl apply от начала до конца</a></li><li><a href="#3-etcd-и-api-машинерия" data-tip="Раздел этой главы: 3. etcd и API-машинерия">3. etcd и API-машинерия</a></li><li><a href="#4-планировщик" data-tip="Раздел этой главы: 4. Планировщик">4. Планировщик</a></li><li><a href="#5-kubelet-и-жизнь-пода-на-узле" data-tip="Раздел этой главы: 5. kubelet и жизнь пода на узле">5. kubelet и жизнь пода на узле</a></li><li><a href="#6-контроллеры" data-tip="Раздел этой главы: 6. Контроллеры">6. Контроллеры</a></li><li><a href="#7-crd-и-операторы" data-tip="Раздел этой главы: 7. CRD и операторы">7. CRD и операторы</a></li><li><a href="#8-расширение-kubernetes-и-его-пределы" data-tip="Раздел этой главы: 8. Расширение Kubernetes и его пределы">8. Расширение Kubernetes и его пределы</a></li><li><a href="#9-разобранные-инциденты" data-tip="Раздел этой главы: 9. Разобранные инциденты">9. Разобранные инциденты</a></li><li><a href="#10-ошибки-и-антипаттерны" data-tip="Раздел этой главы: 10. Ошибки и антипаттерны">10. Ошибки и антипаттерны</a></li><li><a href="#11-диагностика" data-tip="Раздел этой главы: 11. Диагностика">11. Диагностика</a></li><li><a href="#12-вопросы-на-интервью" data-tip="Раздел этой главы: 12. Вопросы на интервью">12. Вопросы на интервью</a></li><li><a href="#13-попробовать-руками" data-tip="Раздел этой главы: 13. Попробовать руками">13. Попробовать руками</a></li><li><a href="#источники" data-tip="Раздел этой главы: Источники">Источники</a></li></ol></div></nav>
 <p>Глава опирается на <strong>Kubernetes 1.37</strong> (релиз 26.08.2026) как на текущую минорную версию (<a href="https://kubernetes.io/releases/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/releases/">kubernetes.io/releases</a>). Там, где поведение менялось от версии к версии, это оговорено явно.</p>
-<p><strong>Чего в этой главе нет.</strong> О том, как разворачивать свой Spring-сервис (объекты, probes, requests/limits, graceful shutdown, HPA, OpenShift), рассказывает глава <a href="47-kubernetes-openshift.html" data-tip="47. Kubernetes и OpenShift для разработчика">47</a> (<a href="47-kubernetes-openshift.html" data-tip="47. Kubernetes и OpenShift для разработчика"><code>47-kubernetes-openshift.md</code></a>). Сеть кластера, kube-proxy, DNS, NetworkPolicy и Istio разобраны в главе <a href="49-service-mesh-networking.html" data-tip="49. Service mesh и сетевое взаимодействие">49</a> (<a href="49-service-mesh-networking.html" data-tip="49. Service mesh и сетевое взаимодействие"><code>49-service-mesh-networking.md</code></a>), контейнеры, namespaces, cgroups, OCI и runc — в главе <a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений">46</a> (<a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений"><code>46-docker-jvm.md</code></a>), CI/CD и GitOps (Argo CD) — в главе <a href="53-cicd-process.html" data-tip="53. CI/CD и инженерный процесс">53</a> (<a href="53-cicd-process.html" data-tip="53. CI/CD и инженерный процесс"><code>53-cicd-process.md</code></a>), а Prometheus, Loki и сбор метрик control plane — в главе <a href="52-observability-stack.html" data-tip="52. Эксплуатация observability-стека">52</a> (<a href="52-observability-stack.html" data-tip="52. Эксплуатация observability-стека"><code>52-observability-stack.md</code></a>). Здесь речь идёт только о внутреннем устройстве оркестратора и о том, что из этого устройства следует для разработчика.</p>
+<p><strong>За рамками главы.</strong> О том, как разворачивать свой Spring-сервис (объекты, probes, requests/limits, graceful shutdown, HPA, OpenShift), рассказывает глава <a href="47-kubernetes-openshift.html" data-tip="47. Kubernetes и OpenShift для разработчика">47</a> (<a href="47-kubernetes-openshift.html" data-tip="47. Kubernetes и OpenShift для разработчика"><code>47-kubernetes-openshift.md</code></a>). Сеть кластера, kube-proxy, DNS, NetworkPolicy и Istio разобраны в главе <a href="49-service-mesh-networking.html" data-tip="49. Service mesh и сетевое взаимодействие">49</a> (<a href="49-service-mesh-networking.html" data-tip="49. Service mesh и сетевое взаимодействие"><code>49-service-mesh-networking.md</code></a>), контейнеры, namespaces, cgroups, OCI и runc — в главе <a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений">46</a> (<a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений"><code>46-docker-jvm.md</code></a>), CI/CD и GitOps (Argo CD) — в главе <a href="53-cicd-process.html" data-tip="53. CI/CD и инженерный процесс">53</a> (<a href="53-cicd-process.html" data-tip="53. CI/CD и инженерный процесс"><code>53-cicd-process.md</code></a>), а Prometheus, Loki и сбор метрик control plane — в главе <a href="52-observability-stack.html" data-tip="52. Эксплуатация observability-стека">52</a> (<a href="52-observability-stack.html" data-tip="52. Эксплуатация observability-стека"><code>52-observability-stack.md</code></a>). Здесь речь идёт только о внутреннем устройстве оркестратора и о том, что из этого устройства следует для разработчика.</p>
 <h2 id="1-декларативная-модель-и-цикл-согласования-reconciliation">1. Декларативная модель и цикл согласования (reconciliation)</h2>
 <p>Декларативная модель означает, что пользователь не приказывает кластеру что-то сделать, а описывает, каким кластер должен быть, и дальше система сама добивается этого описания. Весь Kubernetes построен вокруг одной этой идеи, и если её понять как следует, то большая часть «мистики» — откат ручных правок, самовосстановление, бездействие контроллера — перестаёт быть мистикой и становится предсказуемым поведением. Практическая проблема в том, что разработчик обычно мыслит командами («задеплой», «перезапусти»), а кластер мыслит состояниями, и именно из этого расхождения рождаются почти все недоразумения с k8s. Дальше разберём, как устроен цикл согласования, почему он реагирует на уровень, а не на событие, зачем ему идемпотентность, что значит согласованность «в конечном счёте» и почему у манифеста нет транзакции, а в конце сведём в одну таблицу, что происходит с ручными правками.</p>
 <h3 id="11-желаемое-и-фактическое-состояние">1.1 Желаемое и фактическое состояние</h3>
@@ -102,7 +102,7 @@ https://kubernetes.io/docs/concepts/architecture/controller/">Controllers</a>).<
 <thead>
 <tr>
 <th class="num">Шаг</th>
-<th>Кто делает</th>
+<th>Исполнитель</th>
 <th>Результат</th>
 <th>Типичная задержка</th>
 </tr>
@@ -110,49 +110,49 @@ https://kubernetes.io/docs/concepts/architecture/controller/">Controllers</a>).<
 <tbody>
 <tr>
 <td data-label="Шаг" class="num">1</td>
-<td data-label="Кто делает">kubectl → API server</td>
+<td data-label="Исполнитель">kubectl → API server</td>
 <td data-label="Результат">объект <code>Deployment</code> в etcd</td>
 <td data-label="Типичная задержка">десятки мс</td>
 </tr>
 <tr>
 <td data-label="Шаг" class="num">2</td>
-<td data-label="Кто делает">deployment-controller</td>
+<td data-label="Исполнитель">deployment-controller</td>
 <td data-label="Результат">создан <code>ReplicaSet</code></td>
 <td data-label="Типичная задержка">~10–100 мс после watch-события</td>
 </tr>
 <tr>
 <td data-label="Шаг" class="num">3</td>
-<td data-label="Кто делает">replicaset-controller</td>
+<td data-label="Исполнитель">replicaset-controller</td>
 <td data-label="Результат">созданы объекты <code>Pod</code> без <code>nodeName</code></td>
 <td data-label="Типичная задержка">~10–100 мс</td>
 </tr>
 <tr>
 <td data-label="Шаг" class="num">4</td>
-<td data-label="Кто делает">kube-scheduler</td>
+<td data-label="Исполнитель">kube-scheduler</td>
 <td data-label="Результат">у пода проставлен <code>spec.nodeName</code> (Binding)</td>
 <td data-label="Типичная задержка">десятки мс — секунды при загруженном кластере</td>
 </tr>
 <tr>
 <td data-label="Шаг" class="num">5</td>
-<td data-label="Кто делает">kubelet на узле</td>
+<td data-label="Исполнитель">kubelet на узле</td>
 <td data-label="Результат">sandbox, pull образа, старт контейнеров</td>
 <td data-label="Типичная задержка">от 1 с до нескольких минут (pull)</td>
 </tr>
 <tr>
 <td data-label="Шаг" class="num">6</td>
-<td data-label="Кто делает">kubelet</td>
+<td data-label="Исполнитель">kubelet</td>
 <td data-label="Результат"><code>status.conditions</code> пода → <code>Ready</code></td>
 <td data-label="Типичная задержка">после прохождения readiness</td>
 </tr>
 <tr>
 <td data-label="Шаг" class="num">7</td>
-<td data-label="Кто делает">endpointslice-controller</td>
+<td data-label="Исполнитель">endpointslice-controller</td>
 <td data-label="Результат">адрес пода добавлен в <code>EndpointSlice</code></td>
 <td data-label="Типичная задержка">~10–100 мс после Ready</td>
 </tr>
 <tr>
 <td data-label="Шаг" class="num">8</td>
-<td data-label="Кто делает">kube-proxy / CNI на каждом узле</td>
+<td data-label="Исполнитель">kube-proxy / CNI на каждом узле</td>
 <td data-label="Результат">правила маршрутизации обновлены</td>
 <td data-label="Типичная задержка">сотни мс — секунды (см. гл. 49)</td>
 </tr>
@@ -172,61 +172,61 @@ https://kubernetes.io/docs/concepts/architecture/controller/">Controllers</a>).<
 <table class="rt">
 <thead>
 <tr>
-<th>Что вы изменили</th>
-<th>Кто это заметит</th>
-<th>Что произойдёт</th>
+<th>Изменение</th>
+<th>Заметит</th>
+<th>Последствие</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="Что вы изменили"><code>spec.replicas</code> у ReplicaSet, созданного Deployment</td>
-<td data-label="Кто это заметит">deployment-controller</td>
-<td data-label="Что произойдёт">вернёт значение из Deployment за ~секунду</td>
+<td data-label="Изменение"><code>spec.replicas</code> у ReplicaSet, созданного Deployment</td>
+<td data-label="Заметит">deployment-controller</td>
+<td data-label="Последствие">вернёт значение из Deployment за ~секунду</td>
 </tr>
 <tr>
-<td data-label="Что вы изменили">Удалили Pod, принадлежащий ReplicaSet</td>
-<td data-label="Кто это заметит">replicaset-controller</td>
-<td data-label="Что произойдёт">создаст новый Pod с другим именем</td>
+<td data-label="Изменение">Удалили Pod, принадлежащий ReplicaSet</td>
+<td data-label="Заметит">replicaset-controller</td>
+<td data-label="Последствие">создаст новый Pod с другим именем</td>
 </tr>
 <tr>
-<td data-label="Что вы изменили">Изменили label на поде так, что он выпал из селектора RS</td>
-<td data-label="Кто это заметит">replicaset-controller</td>
-<td data-label="Что произойдёт">создаст новый под взамен «потерянного»; старый останется жить сиротой</td>
+<td data-label="Изменение">Изменили label на поде так, что он выпал из селектора RS</td>
+<td data-label="Заметит">replicaset-controller</td>
+<td data-label="Последствие">создаст новый под взамен «потерянного»; старый останется жить сиротой</td>
 </tr>
 <tr>
-<td data-label="Что вы изменили">Изменили label на поде, и он попал в селектор другого RS</td>
-<td data-label="Кто это заметит">тот RS</td>
-<td data-label="Что произойдёт">усыновит под (adoption) через ownerReference, может удалить лишний</td>
+<td data-label="Изменение">Изменили label на поде, и он попал в селектор другого RS</td>
+<td data-label="Заметит">тот RS</td>
+<td data-label="Последствие">усыновит под (adoption) через ownerReference, может удалить лишний</td>
 </tr>
 <tr>
-<td data-label="Что вы изменили"><code>spec.template</code> у Deployment через <code>kubectl edit</code></td>
-<td data-label="Кто это заметит">deployment-controller</td>
-<td data-label="Что произойдёт">создаст новый ReplicaSet, покатит rolling update</td>
+<td data-label="Изменение"><code>spec.template</code> у Deployment через <code>kubectl edit</code></td>
+<td data-label="Заметит">deployment-controller</td>
+<td data-label="Последствие">создаст новый ReplicaSet, покатит rolling update</td>
 </tr>
 <tr>
-<td data-label="Что вы изменили">То же поле потом через <code>kubectl apply</code> со старым файлом</td>
-<td data-label="Кто это заметит">—</td>
-<td data-label="Что произойдёт"><strong>откатит вашу правку</strong>, см. раздел 2.7 про three-way merge</td>
+<td data-label="Изменение">То же поле потом через <code>kubectl apply</code> со старым файлом</td>
+<td data-label="Заметит">—</td>
+<td data-label="Последствие"><strong>откатит вашу правку</strong>, см. раздел 2.7 про three-way merge</td>
 </tr>
 <tr>
-<td data-label="Что вы изменили"><code>status</code> любого объекта через <code>kubectl edit</code></td>
-<td data-label="Кто это заметит">—</td>
-<td data-label="Что произойдёт">не применится: <code>edit</code> шлёт патч на основной ресурс, <code>status</code> — subresource</td>
+<td data-label="Изменение"><code>status</code> любого объекта через <code>kubectl edit</code></td>
+<td data-label="Заметит">—</td>
+<td data-label="Последствие">не применится: <code>edit</code> шлёт патч на основной ресурс, <code>status</code> — subresource</td>
 </tr>
 <tr>
-<td data-label="Что вы изменили">Поле, помеченное неизменяемым (<code>spec.selector</code> Deployment, <code>spec.clusterIP</code> Service, большинство полей PVC)</td>
-<td data-label="Кто это заметит">API server (validation)</td>
-<td data-label="Что произойдёт">422 Invalid, изменение отвергнуто</td>
+<td data-label="Изменение">Поле, помеченное неизменяемым (<code>spec.selector</code> Deployment, <code>spec.clusterIP</code> Service, большинство полей PVC)</td>
+<td data-label="Заметит">API server (validation)</td>
+<td data-label="Последствие">422 Invalid, изменение отвергнуто</td>
 </tr>
 <tr>
-<td data-label="Что вы изменили"><code>nodeName</code> у уже запущенного пода</td>
-<td data-label="Кто это заметит">API server</td>
-<td data-label="Что произойдёт">отвергнуто, поле неизменяемо после привязки</td>
+<td data-label="Изменение"><code>nodeName</code> у уже запущенного пода</td>
+<td data-label="Заметит">API server</td>
+<td data-label="Последствие">отвергнуто, поле неизменяемо после привязки</td>
 </tr>
 <tr>
-<td data-label="Что вы изменили">Ресурсы контейнера у работающего пода</td>
-<td data-label="Кто это заметит">зависит от версии</td>
-<td data-label="Что произойдёт">до 1.27 отвергалось; <strong>in-place resize стабилен с 1.35</strong>, его feature gate зафиксирован во включённом положении, изменение идёт через subresource <code>pods/resize</code> (<a href="https://kubernetes.io/docs/tasks/configure-pod-container/resize-container-resources/" data-tip="Внешний сайт · kubernetes.io
+<td data-label="Изменение">Ресурсы контейнера у работающего пода</td>
+<td data-label="Заметит">зависит от версии</td>
+<td data-label="Последствие">до 1.27 отвергалось; <strong>in-place resize стабилен с 1.35</strong>, его feature gate зафиксирован во включённом положении, изменение идёт через subresource <code>pods/resize</code> (<a href="https://kubernetes.io/docs/tasks/configure-pod-container/resize-container-resources/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/tasks/configure-pod-container/resize-container-resources/">resize-container-resources</a>)</td>
 </tr>
 </tbody>
@@ -360,7 +360,7 @@ HTTP-запрос → │ authn → authz                                │
               └──────────────────────────────────────────────┘
 </code></pre></div>
 
-<p><strong>Почему mutating всегда идёт раньше validating.</strong> Проверять имеет смысл только окончательный объект: будь порядок обратным, любой мутатор мог бы после проверки подставить что угодно, и все политики потеряли бы смысл. Документация описывает это как двухфазный процесс: «the mutating phase is executed first, then the validating phase» (<a href="https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/" data-tip="Внешний сайт · kubernetes.io
+<p><strong>Mutating раньше validating.</strong> Проверять имеет смысл только окончательный объект: будь порядок обратным, любой мутатор мог бы после проверки подставить что угодно, и все политики потеряли бы смысл. Документация описывает это как двухфазный процесс: «the mutating phase is executed first, then the validating phase» (<a href="https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/">Admission Controllers</a>). Внутри validating-фазы webhook вызываются <strong>параллельно</strong>, и это безопасно, потому что они ничего не меняют, а mutating-webhook вызываются <strong>последовательно</strong>, потому что каждый должен видеть результат предыдущего.</p>
 <p><strong>Reinvocation.</strong> Если mutating-webhook что-то изменил, часть уже отработавших webhook API server может вызвать повторно; управляет этим поле <code>reinvocationPolicy: Never | IfNeeded</code>. Гарантии, что webhook вызовут ровно один раз, нет, как нет и гарантии, что его вызовут ровно два раза, поэтому <strong>mutating-webhook обязан быть идемпотентным</strong>. Классический баг здесь — механизм внедрения sidecar (<em>injector</em>), который не проверяет, вставлял ли он уже свой контейнер: при повторном вызове в поде оказываются два одинаковых контейнера, и API server отвергает объект с <code>Duplicate value: "istio-proxy"</code>.</p>
 <p><strong>Встроенные плагины, которые вы видите каждый день.</strong> В таблице для каждого плагина указаны его тип и то, что он делает, а в последнем столбце — как его работа выглядит со стороны, когда вы о нём не знаете.</p>
@@ -369,76 +369,76 @@ https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/">
 <tr>
 <th>Плагин</th>
 <th>Тип</th>
-<th>Что делает</th>
-<th>Как проявляется</th>
+<th>Действие</th>
+<th>Проявление</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Плагин"><code>ServiceAccount</code></td>
 <td data-label="Тип">mutating</td>
-<td data-label="Что делает">подставляет <code>spec.serviceAccountName: default</code>, если не указан; добавляет projected-том с токеном, <code>imagePullSecrets</code> из SA</td>
-<td data-label="Как проявляется">в манифесте нет тома, а в поде он есть</td>
+<td data-label="Действие">подставляет <code>spec.serviceAccountName: default</code>, если не указан; добавляет projected-том с токеном, <code>imagePullSecrets</code> из SA</td>
+<td data-label="Проявление">в манифесте нет тома, а в поде он есть</td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>LimitRanger</code></td>
 <td data-label="Тип">mutating + validating</td>
-<td data-label="Что делает">проставляет <code>requests</code>/<code>limits</code> из объекта <code>LimitRange</code> namespace'а, если их нет; отвергает выходящие за <code>min</code>/<code>max</code></td>
-<td data-label="Как проявляется">«я не указывал limits, откуда 512Mi?»</td>
+<td data-label="Действие">проставляет <code>requests</code>/<code>limits</code> из объекта <code>LimitRange</code> namespace'а, если их нет; отвергает выходящие за <code>min</code>/<code>max</code></td>
+<td data-label="Проявление">«я не указывал limits, откуда 512Mi?»</td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>DefaultStorageClass</code></td>
 <td data-label="Тип">mutating</td>
-<td data-label="Что делает">ставит <code>storageClassName</code> у PVC без класса</td>
-<td data-label="Как проявляется">том для PVC внезапно создаётся не в том классе хранилища</td>
+<td data-label="Действие">ставит <code>storageClassName</code> у PVC без класса</td>
+<td data-label="Проявление">том для PVC внезапно создаётся не в том классе хранилища</td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>ResourceQuota</code></td>
 <td data-label="Тип">validating</td>
-<td data-label="Что делает">считает суммарное потребление namespace и отвергает создание</td>
-<td data-label="Как проявляется"><code>exceeded quota: cpu limited to 10</code></td>
+<td data-label="Действие">считает суммарное потребление namespace и отвергает создание</td>
+<td data-label="Проявление"><code>exceeded quota: cpu limited to 10</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>PodSecurity</code></td>
 <td data-label="Тип">validating</td>
-<td data-label="Что делает">применяет Pod Security Standards (<code>privileged</code>/<code>baseline</code>/<code>restricted</code>) по меткам namespace</td>
-<td data-label="Как проявляется"><code>violates PodSecurity "restricted:latest"</code></td>
+<td data-label="Действие">применяет Pod Security Standards (<code>privileged</code>/<code>baseline</code>/<code>restricted</code>) по меткам namespace</td>
+<td data-label="Проявление"><code>violates PodSecurity "restricted:latest"</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>NamespaceLifecycle</code></td>
 <td data-label="Тип">validating</td>
-<td data-label="Что делает">запрещает создавать объекты в несуществующем и в <code>Terminating</code> namespace</td>
-<td data-label="Как проявляется"><code>namespace is being terminated</code></td>
+<td data-label="Действие">запрещает создавать объекты в несуществующем и в <code>Terminating</code> namespace</td>
+<td data-label="Проявление"><code>namespace is being terminated</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>DefaultTolerationSeconds</code></td>
 <td data-label="Тип">mutating</td>
-<td data-label="Что делает">добавляет tolerations на <code>node.kubernetes.io/not-ready</code> и <code>unreachable</code> с <code>tolerationSeconds: 300</code></td>
-<td data-label="Как проявляется">под живёт 5 минут после падения узла</td>
+<td data-label="Действие">добавляет tolerations на <code>node.kubernetes.io/not-ready</code> и <code>unreachable</code> с <code>tolerationSeconds: 300</code></td>
+<td data-label="Проявление">под живёт 5 минут после падения узла</td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>TaintNodesByCondition</code></td>
 <td data-label="Тип">mutating</td>
-<td data-label="Что делает">вешает на новые узлы taint <code>node.kubernetes.io/not-ready:NoSchedule</code> до готовности</td>
-<td data-label="Как проявляется">поды не едут на только что добавленный узел</td>
+<td data-label="Действие">вешает на новые узлы taint <code>node.kubernetes.io/not-ready:NoSchedule</code> до готовности</td>
+<td data-label="Проявление">поды не едут на только что добавленный узел</td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>Priority</code></td>
 <td data-label="Тип">mutating + validating</td>
-<td data-label="Что делает">разворачивает <code>priorityClassName</code> в числовой <code>spec.priority</code></td>
-<td data-label="Как проявляется">без PriorityClass приоритет 0</td>
+<td data-label="Действие">разворачивает <code>priorityClassName</code> в числовой <code>spec.priority</code></td>
+<td data-label="Проявление">без PriorityClass приоритет 0</td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>NodeRestriction</code></td>
 <td data-label="Тип">validating</td>
-<td data-label="Что делает">ограничивает, что kubelet может менять</td>
-<td data-label="Как проявляется">защита от компрометации узла</td>
+<td data-label="Действие">ограничивает, что kubelet может менять</td>
+<td data-label="Проявление">защита от компрометации узла</td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>CertificateApproval</code>, <code>CertificateSigning</code>, <code>CertificateSubjectRestriction</code></td>
 <td data-label="Тип">validating</td>
-<td data-label="Что делает">защита API подписи сертификатов</td>
-<td data-label="Как проявляется">редко видно</td>
+<td data-label="Действие">защита API подписи сертификатов</td>
+<td data-label="Проявление">редко видно</td>
 </tr>
 </tbody>
 </table>
@@ -820,7 +820,7 @@ kubectl get --raw <span class="se">\</span>
 <p>Клиент начинает watch с определённого <code>resourceVersion</code> и получает всё, что случилось после него. Если клиент отстал настолько, что нужную ревизию уже убрала уплотнение, сервер возвращает <strong>410 Gone</strong> (<code>too old resource version</code>), и клиенту приходится начинать заново: <code>LIST</code> и затем <code>watch</code> от новой версии. Эта операция называется <strong>relist</strong>, и в жизни informer'а она самая дорогая.</p>
 <p><strong>Watch cache.</strong> API server держит в памяти кольцевой буфер последних событий и снимок состояния по каждому типу ресурса, и большинство watch'ей и <code>LIST</code>-ов с <code>resourceVersion=0</code> он обслуживает оттуда, не обращаясь к etcd. Для масштабируемости это критично: тысяча kubelet'ов, подписанных на поды, не порождает тысячу подписок в etcd.</p>
 <p><strong>Bookmarks.</strong> Представьте клиента, подписанного на редко меняющийся ресурс, в то время как ревизии в кластере растут за счёт других ресурсов. Когда такому клиенту придётся переподключиться, его <code>resourceVersion</code> окажется древним, и он получит 410. Чтобы этого не было, сервер периодически шлёт событие типа <code>BOOKMARK</code> — пустое, с одним лишь актуальным <code>resourceVersion</code>; клиент запоминает эту версию и при переподключении стартует с неё. Включается механизм параметром <code>allowWatchBookmarks=true</code>, и client-go делает это сам.</p>
-<p><strong>Почему <code>list</code> тяжёлый.</strong> <code>kubectl get pods -A</code> в кластере с 50 000 подов означает сериализацию десятков или сотен мегабайт JSON, выделения памяти в API server, передачу по сети и десериализацию у клиента. Стоит выполнить несколько таких запросов подряд — например, кривым скриптом в цикле или контроллером, который вместо informer'а делает <code>list</code> каждую секунду, — и API server упирается в GC и CPU. Так можно положить control plane без всякого злого умысла.</p>
+<p><strong>Тяжесть <code>list</code>.</strong> <code>kubectl get pods -A</code> в кластере с 50 000 подов означает сериализацию десятков или сотен мегабайт JSON, выделения памяти в API server, передачу по сети и десериализацию у клиента. Стоит выполнить несколько таких запросов подряд — например, кривым скриптом в цикле или контроллером, который вместо informer'а делает <code>list</code> каждую секунду, — и API server упирается в GC и CPU. Так можно положить control plane без всякого злого умысла.</p>
 <p>Смягчают эту проблему три механизма:</p>
 <ol>
 <li><strong>Пагинация</strong> (<code>limit</code> + <code>continue</code>): <code>kubectl get pods -A --chunk-size=500</code>; client-go пользуется ею по умолчанию.</li>
@@ -921,25 +921,25 @@ kubectl get --raw /metrics <span class="p">|</span> grep -E <span class="se">\</
 <thead>
 <tr>
 <th>Режим</th>
-<th>Что происходит</th>
-<th>Когда используется</th>
+<th>Поведение</th>
+<th>Применение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Режим"><code>Background</code> (<strong>по умолчанию</strong>)</td>
-<td data-label="Что происходит">владелец удаляется сразу, зависимые подчищаются асинхронно GC-контроллером</td>
-<td data-label="Когда используется">обычный <code>kubectl delete</code></td>
+<td data-label="Поведение">владелец удаляется сразу, зависимые подчищаются асинхронно GC-контроллером</td>
+<td data-label="Применение">обычный <code>kubectl delete</code></td>
 </tr>
 <tr>
 <td data-label="Режим"><code>Foreground</code></td>
-<td data-label="Что происходит">владельцу ставится <code>deletionTimestamp</code> и финализатор <code>foregroundDeletion</code>; он остаётся видимым в API, пока не удалены все зависимые с <code>blockOwnerDeletion: true</code></td>
-<td data-label="Когда используется">когда важен порядок (сначала поды, потом Deployment)</td>
+<td data-label="Поведение">владельцу ставится <code>deletionTimestamp</code> и финализатор <code>foregroundDeletion</code>; он остаётся видимым в API, пока не удалены все зависимые с <code>blockOwnerDeletion: true</code></td>
+<td data-label="Применение">когда важен порядок (сначала поды, потом Deployment)</td>
 </tr>
 <tr>
 <td data-label="Режим"><code>Orphan</code></td>
-<td data-label="Что происходит">ownerReferences у зависимых вычищаются, они остаются жить</td>
-<td data-label="Когда используется"><code>kubectl delete deployment x --cascade=orphan</code></td>
+<td data-label="Поведение">ownerReferences у зависимых вычищаются, они остаются жить</td>
+<td data-label="Применение"><code>kubectl delete deployment x --cascade=orphan</code></td>
 </tr>
 </tbody>
 </table>
@@ -1112,64 +1112,64 @@ https://kubernetes.io/docs/concepts/scheduling-eviction/scheduling-framework/">S
 <thead>
 <tr>
 <th>Плагин</th>
-<th>Что проверяет</th>
+<th>Проверка</th>
 <th>Типичное сообщение об отказе</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Плагин"><code>NodeResourcesFit</code></td>
-<td data-label="Что проверяет">хватает ли <strong>requests</strong> (не limits!) CPU, памяти, ephemeral-storage, extended resources</td>
+<td data-label="Проверка">хватает ли <strong>requests</strong> (не limits!) CPU, памяти, ephemeral-storage, extended resources</td>
 <td data-label="Типичное сообщение об отказе"><code>Insufficient cpu</code>, <code>Insufficient memory</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>NodeUnschedulable</code></td>
-<td data-label="Что проверяет">не помечена ли узел <code>spec.unschedulable</code> (<code>kubectl cordon</code>)</td>
+<td data-label="Проверка">не помечена ли узел <code>spec.unschedulable</code> (<code>kubectl cordon</code>)</td>
 <td data-label="Типичное сообщение об отказе"><code>node(s) were unschedulable</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>TaintToleration</code></td>
-<td data-label="Что проверяет">есть ли толерантность ко всем <code>NoSchedule</code>/<code>NoExecute</code> таинтам</td>
+<td data-label="Проверка">есть ли толерантность ко всем <code>NoSchedule</code>/<code>NoExecute</code> таинтам</td>
 <td data-label="Типичное сообщение об отказе"><code>node(s) had untolerated taint(s)</code> начиная с 1.34; до этого сообщение называло сам taint: <code>had untolerated taint {node-role.kubernetes.io/control-plane: }</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>NodeAffinity</code></td>
-<td data-label="Что проверяет"><code>nodeSelector</code> и <code>requiredDuringSchedulingIgnoredDuringExecution</code></td>
+<td data-label="Проверка"><code>nodeSelector</code> и <code>requiredDuringSchedulingIgnoredDuringExecution</code></td>
 <td data-label="Типичное сообщение об отказе"><code>didn't match Pod's node affinity/selector</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>NodeName</code></td>
-<td data-label="Что проверяет">совпадает ли имя узла с <code>spec.nodeName</code></td>
+<td data-label="Проверка">совпадает ли имя узла с <code>spec.nodeName</code></td>
 <td data-label="Типичное сообщение об отказе"><code>node(s) didn't match the requested node name</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>NodePorts</code></td>
-<td data-label="Что проверяет">свободен ли запрошенный <code>hostPort</code></td>
+<td data-label="Проверка">свободен ли запрошенный <code>hostPort</code></td>
 <td data-label="Типичное сообщение об отказе"><code>node(s) didn't have free ports for the requested pod ports</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>PodTopologySpread</code></td>
-<td data-label="Что проверяет">не нарушается ли <code>maxSkew</code> при <code>whenUnsatisfiable: DoNotSchedule</code></td>
+<td data-label="Проверка">не нарушается ли <code>maxSkew</code> при <code>whenUnsatisfiable: DoNotSchedule</code></td>
 <td data-label="Типичное сообщение об отказе"><code>node(s) didn't match pod topology spread constraints</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>InterPodAffinity</code></td>
-<td data-label="Что проверяет">required-правила pod affinity/anti-affinity</td>
+<td data-label="Проверка">required-правила pod affinity/anti-affinity</td>
 <td data-label="Типичное сообщение об отказе"><code>node(s) didn't satisfy existing pods anti-affinity rules</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>VolumeBinding</code></td>
-<td data-label="Что проверяет">можно ли привязать PVC на этом узле (учитывая топологию PV и <code>WaitForFirstConsumer</code>)</td>
+<td data-label="Проверка">можно ли привязать PVC на этом узле (учитывая топологию PV и <code>WaitForFirstConsumer</code>)</td>
 <td data-label="Типичное сообщение об отказе"><code>pod has unbound immediate PersistentVolumeClaims</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>VolumeRestrictions</code>, <code>VolumeZone</code>, <code>NodeVolumeLimits</code> (лимиты CSI; отдельных in-tree плагинов вроде <code>EBSLimits</code> в текущем планировщике уже нет)</td>
-<td data-label="Что проверяет">ограничения тома: zone, максимум томов на узел</td>
+<td data-label="Проверка">ограничения тома: zone, максимум томов на узел</td>
 <td data-label="Типичное сообщение об отказе"><code>node(s) exceed max volume count</code></td>
 </tr>
 <tr>
 <td data-label="Плагин"><code>SchedulingGates</code> (точка <code>PreEnqueue</code>; <code>PodSchedulingReadiness</code> — имя feature gate, а не плагина)</td>
-<td data-label="Что проверяет">пустой ли <code>spec.schedulingGates</code></td>
+<td data-label="Проверка">пустой ли <code>spec.schedulingGates</code></td>
 <td data-label="Типичное сообщение об отказе">condition <code>PodScheduled=False</code> с reason <code>SchedulingGated</code> и сообщением <code>Scheduling is blocked due to non-empty scheduling gates</code>, статус <code>SchedulingGated</code> в <code>kubectl get pod</code></td>
 </tr>
 </tbody>
@@ -1181,44 +1181,44 @@ https://kubernetes.io/docs/concepts/scheduling-eviction/scheduling-framework/">S
 <thead>
 <tr>
 <th>Score-плагин</th>
-<th>Что поощряет</th>
+<th>Поощряет</th>
 <th class="num">Вес по умолчанию</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Score-плагин"><code>NodeResourcesFit</code> (стратегия <code>LeastAllocated</code> по умолчанию)</td>
-<td data-label="Что поощряет">узлы с бо́льшим запасом → <strong>spreading</strong></td>
+<td data-label="Поощряет">узлы с бо́льшим запасом → <strong>spreading</strong></td>
 <td data-label="Вес по умолчанию" class="num">1</td>
 </tr>
 <tr>
 <td data-label="Score-плагин"><code>NodeResourcesBalancedAllocation</code></td>
-<td data-label="Что поощряет">равномерность CPU и памяти на узле (чтобы не остался узел с кучей CPU и нулём памяти)</td>
+<td data-label="Поощряет">равномерность CPU и памяти на узле (чтобы не остался узел с кучей CPU и нулём памяти)</td>
 <td data-label="Вес по умолчанию" class="num">1</td>
 </tr>
 <tr>
 <td data-label="Score-плагин"><code>ImageLocality</code></td>
-<td data-label="Что поощряет">узел, где образ уже скачан (учитывается размер образа)</td>
+<td data-label="Поощряет">узел, где образ уже скачан (учитывается размер образа)</td>
 <td data-label="Вес по умолчанию" class="num">1</td>
 </tr>
 <tr>
 <td data-label="Score-плагин"><code>InterPodAffinity</code></td>
-<td data-label="Что поощряет">preferred affinity/anti-affinity</td>
+<td data-label="Поощряет">preferred affinity/anti-affinity</td>
 <td data-label="Вес по умолчанию" class="num">2 (обычно)</td>
 </tr>
 <tr>
 <td data-label="Score-плагин"><code>NodeAffinity</code></td>
-<td data-label="Что поощряет"><code>preferredDuringSchedulingIgnoredDuringExecution</code></td>
+<td data-label="Поощряет"><code>preferredDuringSchedulingIgnoredDuringExecution</code></td>
 <td data-label="Вес по умолчанию" class="num">2</td>
 </tr>
 <tr>
 <td data-label="Score-плагин"><code>PodTopologySpread</code></td>
-<td data-label="Что поощряет"><code>whenUnsatisfiable: ScheduleAnyway</code></td>
+<td data-label="Поощряет"><code>whenUnsatisfiable: ScheduleAnyway</code></td>
 <td data-label="Вес по умолчанию" class="num">2</td>
 </tr>
 <tr>
 <td data-label="Score-плагин"><code>TaintToleration</code></td>
-<td data-label="Что поощряет">узлы с меньшим числом нетолерируемых <code>PreferNoSchedule</code></td>
+<td data-label="Поощряет">узлы с меньшим числом нетолерируемых <code>PreferNoSchedule</code></td>
 <td data-label="Вес по умолчанию" class="num">3</td>
 </tr>
 </tbody>
@@ -1255,75 +1255,75 @@ https://kubernetes.io/docs/concepts/scheduling-eviction/scheduling-framework/">S
 <thead>
 <tr>
 <th>Точка</th>
-<th>Когда вызывается</th>
-<th>Зачем бывает нужна</th>
+<th>Момент вызова</th>
+<th>Назначение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Точка"><code>QueueSort</code></td>
-<td data-label="Когда вызывается">сортировка очереди</td>
-<td data-label="Зачем бывает нужна">свой порядок (по приоритету, по времени ожидания); <strong>активен ровно один плагин</strong></td>
+<td data-label="Момент вызова">сортировка очереди</td>
+<td data-label="Назначение">свой порядок (по приоритету, по времени ожидания); <strong>активен ровно один плагин</strong></td>
 </tr>
 <tr>
 <td data-label="Точка"><code>PreEnqueue</code></td>
-<td data-label="Когда вызывается">до попадания в активную очередь</td>
-<td data-label="Зачем бывает нужна">не пускать в планирование, пока не выполнено условие (так работают <code>schedulingGates</code>)</td>
+<td data-label="Момент вызова">до попадания в активную очередь</td>
+<td data-label="Назначение">не пускать в планирование, пока не выполнено условие (так работают <code>schedulingGates</code>)</td>
 </tr>
 <tr>
 <td data-label="Точка"><code>PreFilter</code></td>
-<td data-label="Когда вызывается">один раз на под</td>
-<td data-label="Зачем бывает нужна">предвычисления и ранний отказ «ни один узел не подойдёт»</td>
+<td data-label="Момент вызова">один раз на под</td>
+<td data-label="Назначение">предвычисления и ранний отказ «ни один узел не подойдёт»</td>
 </tr>
 <tr>
 <td data-label="Точка"><code>Filter</code></td>
-<td data-label="Когда вызывается">на каждый узел</td>
-<td data-label="Зачем бывает нужна">собственно отсев</td>
+<td data-label="Момент вызова">на каждый узел</td>
+<td data-label="Назначение">собственно отсев</td>
 </tr>
 <tr>
 <td data-label="Точка"><code>PostFilter</code></td>
-<td data-label="Когда вызывается">если подходящих узлов нет</td>
-<td data-label="Зачем бывает нужна"><strong>здесь живёт preemption</strong></td>
+<td data-label="Момент вызова">если подходящих узлов нет</td>
+<td data-label="Назначение"><strong>здесь живёт preemption</strong></td>
 </tr>
 <tr>
 <td data-label="Точка"><code>PreScore</code></td>
-<td data-label="Когда вызывается">один раз перед скорингом</td>
-<td data-label="Зачем бывает нужна">подготовка общего состояния</td>
+<td data-label="Момент вызова">один раз перед скорингом</td>
+<td data-label="Назначение">подготовка общего состояния</td>
 </tr>
 <tr>
 <td data-label="Точка"><code>Score</code></td>
-<td data-label="Когда вызывается">на каждый прошедшего узел</td>
-<td data-label="Зачем бывает нужна">оценка</td>
+<td data-label="Момент вызова">на каждый прошедшего узел</td>
+<td data-label="Назначение">оценка</td>
 </tr>
 <tr>
 <td data-label="Точка"><code>NormalizeScore</code></td>
-<td data-label="Когда вызывается">после Score</td>
-<td data-label="Зачем бывает нужна">приведение к 0–100</td>
+<td data-label="Момент вызова">после Score</td>
+<td data-label="Назначение">приведение к 0–100</td>
 </tr>
 <tr>
 <td data-label="Точка"><code>Reserve</code> / <code>Unreserve</code></td>
-<td data-label="Когда вызывается">резервирование ресурсов в кеше планировщика</td>
-<td data-label="Зачем бывает нужна">не дать двум подам «занять» одно и то же, пока идёт привязка</td>
+<td data-label="Момент вызова">резервирование ресурсов в кеше планировщика</td>
+<td data-label="Назначение">не дать двум подам «занять» одно и то же, пока идёт привязка</td>
 </tr>
 <tr>
 <td data-label="Точка"><code>Permit</code></td>
-<td data-label="Когда вызывается">перед binding cycle</td>
-<td data-label="Зачем бывает нужна"><strong>approve / deny / wait</strong> — точка для gang scheduling</td>
+<td data-label="Момент вызова">перед binding cycle</td>
+<td data-label="Назначение"><strong>approve / deny / wait</strong> — точка для gang scheduling</td>
 </tr>
 <tr>
 <td data-label="Точка"><code>PreBind</code></td>
-<td data-label="Когда вызывается">в binding cycle</td>
-<td data-label="Зачем бывает нужна">привязка PV, подготовка сети</td>
+<td data-label="Момент вызова">в binding cycle</td>
+<td data-label="Назначение">привязка PV, подготовка сети</td>
 </tr>
 <tr>
 <td data-label="Точка"><code>Bind</code></td>
-<td data-label="Когда вызывается">в binding cycle</td>
-<td data-label="Зачем бывает нужна">собственно Binding (можно заменить своим)</td>
+<td data-label="Момент вызова">в binding cycle</td>
+<td data-label="Назначение">собственно Binding (можно заменить своим)</td>
 </tr>
 <tr>
 <td data-label="Точка"><code>PostBind</code></td>
-<td data-label="Когда вызывается">после успеха</td>
-<td data-label="Зачем бывает нужна">уведомления, очистка</td>
+<td data-label="Момент вызова">после успеха</td>
+<td data-label="Назначение">уведомления, очистка</td>
 </tr>
 </tbody>
 </table>
@@ -1345,7 +1345,7 @@ kubectl get events -n &lt;ns&gt; --sort-by<span class="o">=</span>.lastTimestamp
 <thead>
 <tr>
 <th>Сообщение в <code>FailedScheduling</code></th>
-<th>Что произошло</th>
+<th>Последствие</th>
 <th>Диагностика</th>
 <th>Лечение</th>
 </tr>
@@ -1353,97 +1353,97 @@ kubectl get events -n &lt;ns&gt; --sort-by<span class="o">=</span>.lastTimestamp
 <tbody>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>Insufficient cpu</code> / <code>Insufficient memory</code></td>
-<td data-label="Что произошло">сумма <strong>requests</strong> размещённых подов + ваш request &gt; allocatable</td>
+<td data-label="Последствие">сумма <strong>requests</strong> размещённых подов + ваш request &gt; allocatable</td>
 <td data-label="Диагностика"><code>kubectl describe node &lt;n&gt;</code> → блок <code>Allocated resources</code>; <code>kubectl get pods -A -o custom-columns</code> с requests</td>
 <td data-label="Лечение">уменьшить requests; добавить узлы; проверить, нет ли подов с абсурдными requests («8 CPU на Spring-сервис»)</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>Insufficient ephemeral-storage</code></td>
-<td data-label="Что произошло">не хватает места по запросу эфемерного хранилища</td>
+<td data-label="Последствие">не хватает места по запросу эфемерного хранилища</td>
 <td data-label="Диагностика">там же</td>
 <td data-label="Лечение">уменьшить request, увеличить диск узлов</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>Insufficient nvidia.com/gpu</code> (или другой extended resource)</td>
-<td data-label="Что произошло">нет свободных устройств</td>
+<td data-label="Последствие">нет свободных устройств</td>
 <td data-label="Диагностика"><code>kubectl describe node</code> → <code>Capacity</code>/<code>Allocatable</code> по ресурсу</td>
 <td data-label="Лечение">дождаться освобождения, добавить GPU-узла; проверить, жив ли device plugin</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>had untolerated taint {key: value}</code> (с 1.34 без имени таинта: <code>node(s) had untolerated taint(s)</code>)</td>
-<td data-label="Что произошло">на узлах taint, у пода нет toleration</td>
+<td data-label="Последствие">на узлах taint, у пода нет toleration</td>
 <td data-label="Диагностика"><code>kubectl get nodes -o json \| jq '.items[].spec.taints'</code></td>
 <td data-label="Лечение">добавить toleration или снять taint (<code>kubectl taint node n key-</code>)</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>node(s) were unschedulable</code></td>
-<td data-label="Что произошло">узел в <code>cordon</code></td>
+<td data-label="Последствие">узел в <code>cordon</code></td>
 <td data-label="Диагностика"><code>kubectl get nodes</code> → <code>SchedulingDisabled</code></td>
 <td data-label="Лечение"><code>kubectl uncordon</code></td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>didn't match Pod's node affinity/selector</code></td>
-<td data-label="Что произошло"><code>nodeSelector</code>/<code>nodeAffinity</code> не совпал ни с одним узлом</td>
+<td data-label="Последствие"><code>nodeSelector</code>/<code>nodeAffinity</code> не совпал ни с одним узлом</td>
 <td data-label="Диагностика">сравнить метки: <code>kubectl get nodes --show-labels</code></td>
 <td data-label="Лечение">поправить селектор; часто виновата опечатка или метка, которую автомасштабировщик навешивает только после старта узла</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>node(s) didn't match pod topology spread constraints</code></td>
-<td data-label="Что произошло"><code>maxSkew</code> нарушен, <code>whenUnsatisfiable: DoNotSchedule</code></td>
+<td data-label="Последствие"><code>maxSkew</code> нарушен, <code>whenUnsatisfiable: DoNotSchedule</code></td>
 <td data-label="Диагностика">посчитать распределение по <code>topologyKey</code>; проверить <code>minDomains</code></td>
 <td data-label="Лечение">увеличить <code>maxSkew</code>, сменить на <code>ScheduleAnyway</code>, добавить домены (зоны или узлы)</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>node(s) didn't satisfy existing pods anti-affinity rules</code></td>
-<td data-label="Что произошло">required anti-affinity: в домене уже есть под с теми же метками</td>
+<td data-label="Последствие">required anti-affinity: в домене уже есть под с теми же метками</td>
 <td data-label="Диагностика"><code>kubectl get pods -o wide</code> по селектору</td>
 <td data-label="Лечение">обычно это симптом «реплик больше, чем узлов»; уменьшить реплики или сменить на preferred</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>pod has unbound immediate PersistentVolumeClaims</code></td>
-<td data-label="Что произошло">PVC не привязан, <code>volumeBindingMode: Immediate</code> и PV нет</td>
+<td data-label="Последствие">PVC не привязан, <code>volumeBindingMode: Immediate</code> и PV нет</td>
 <td data-label="Диагностика"><code>kubectl describe pvc</code></td>
 <td data-label="Лечение">проверить StorageClass, провижинер, квоты в облаке</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>node(s) had volume node affinity conflict</code></td>
-<td data-label="Что произошло">PV привязан к зоне A, а под тянет на узел в зоне B</td>
+<td data-label="Последствие">PV привязан к зоне A, а под тянет на узел в зоне B</td>
 <td data-label="Диагностика"><code>kubectl get pv &lt;pv&gt; -o yaml</code> → <code>spec.nodeAffinity</code></td>
 <td data-label="Лечение">StorageClass с <code>volumeBindingMode: WaitForFirstConsumer</code>; либо разместить под в нужной зоне</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>node(s) exceed max volume count</code></td>
-<td data-label="Что произошло">лимит томов на узел (у AWS/GCP/Azure свои лимиты)</td>
+<td data-label="Последствие">лимит томов на узел (у AWS/GCP/Azure свои лимиты)</td>
 <td data-label="Диагностика"><code>kubectl describe node</code></td>
 <td data-label="Лечение">разнести поды, использовать узлы побольше</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>Too many pods</code></td>
-<td data-label="Что произошло">достигнут <code>maxPods</code> kubelet (<strong>по умолчанию 110</strong>)</td>
+<td data-label="Последствие">достигнут <code>maxPods</code> kubelet (<strong>по умолчанию 110</strong>)</td>
 <td data-label="Диагностика"><code>kubectl describe node</code> → <code>Capacity: pods</code></td>
 <td data-label="Лечение">поднять <code>maxPods</code> (осторожно: упирается в CNI и в число IP), добавить узлы</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>node(s) didn't have free ports for the requested pod ports</code></td>
-<td data-label="Что произошло">занят <code>hostPort</code></td>
+<td data-label="Последствие">занят <code>hostPort</code></td>
 <td data-label="Диагностика"><code>kubectl get pods -A -o json \| jq</code> по hostPort</td>
 <td data-label="Лечение">не использовать hostPort; это почти всегда антипаттерн</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>Scheduling is blocked due to non-empty scheduling gates</code> (reason <code>SchedulingGated</code>)</td>
-<td data-label="Что произошло">под намеренно задержан gate'ом</td>
+<td data-label="Последствие">под намеренно задержан gate'ом</td>
 <td data-label="Диагностика"><code>kubectl get pod -o jsonpath='{.spec.schedulingGates}'</code></td>
 <td data-label="Лечение">ждать, пока контроллер снимет gate (так задумано, это не поломка)</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><code>exceeded quota: ...</code> (в момент создания, под вообще не создался)</td>
-<td data-label="Что произошло">ResourceQuota namespace'а</td>
+<td data-label="Последствие">ResourceQuota namespace'а</td>
 <td data-label="Диагностика"><code>kubectl describe quota -n &lt;ns&gt;</code></td>
 <td data-label="Лечение">увеличить квоту или освободить</td>
 </tr>
 <tr>
 <td data-label="Сообщение в FailedScheduling"><strong>Событий вообще нет</strong>, под висит в Pending</td>
-<td data-label="Что произошло">планировщик его не видел: указан несуществующий <code>schedulerName</code>, или проставлен <code>nodeName</code> на несуществующий узел</td>
+<td data-label="Последствие">планировщик его не видел: указан несуществующий <code>schedulerName</code>, или проставлен <code>nodeName</code> на несуществующий узел</td>
 <td data-label="Диагностика"><code>kubectl get pod -o yaml \| grep -E 'schedulerName\|nodeName'</code>; логи планировщика</td>
 <td data-label="Лечение">исправить поле</td>
 </tr>
@@ -1519,32 +1519,32 @@ https://github.com/kubernetes-sigs/descheduler">github.com/kubernetes-sigs/desch
 <thead>
 <tr>
 <th>Решение</th>
-<th>Как работает</th>
-<th>Когда брать</th>
+<th>Механизм</th>
+<th>Применение</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Решение"><strong>Kueue</strong> (<a href="https://kueue.sigs.k8s.io/" data-tip="Внешний сайт · kueue.sigs.k8s.io
 https://kueue.sigs.k8s.io/">kueue.sigs.k8s.io</a>)</td>
-<td data-label="Как работает">не планирует сам, а <strong>придерживает</strong> поды через <code>schedulingGates</code>/suspend у Job, пока не убедится, что квоты и ресурсов хватит на всю группу; затем отпускает</td>
-<td data-label="Когда брать">штатный путь сегодня; работает с обычным планировщиком, есть ClusterQueue/LocalQueue и иерархия квот</td>
+<td data-label="Механизм">не планирует сам, а <strong>придерживает</strong> поды через <code>schedulingGates</code>/suspend у Job, пока не убедится, что квоты и ресурсов хватит на всю группу; затем отпускает</td>
+<td data-label="Применение">штатный путь сегодня; работает с обычным планировщиком, есть ClusterQueue/LocalQueue и иерархия квот</td>
 </tr>
 <tr>
 <td data-label="Решение"><strong>Volcano</strong> (<a href="https://volcano.sh/" data-tip="Внешний сайт · volcano.sh
 https://volcano.sh/">volcano.sh</a>)</td>
-<td data-label="Как работает">полноценный второй планировщик с <code>PodGroup</code> и <code>minAvailable</code>, fair-share, gang</td>
-<td data-label="Когда брать">тяжёлые ML/HPC-кластеры, где нужен весь набор</td>
+<td data-label="Механизм">полноценный второй планировщик с <code>PodGroup</code> и <code>minAvailable</code>, fair-share, gang</td>
+<td data-label="Применение">тяжёлые ML/HPC-кластеры, где нужен весь набор</td>
 </tr>
 <tr>
 <td data-label="Решение">Плагин <code>coscheduling</code> (scheduler-plugins)</td>
-<td data-label="Как работает">использует точку <code>Permit</code>: под ждёт, пока соберётся вся группа, затем все биндятся</td>
-<td data-label="Когда брать">если можно подложить свой планировщик</td>
+<td data-label="Механизм">использует точку <code>Permit</code>: под ждёт, пока соберётся вся группа, затем все биндятся</td>
+<td data-label="Применение">если можно подложить свой планировщик</td>
 </tr>
 <tr>
 <td data-label="Решение">Ручной «привратник»</td>
-<td data-label="Как работает">оператор создаёт Job только когда посчитал, что ресурсов хватит</td>
-<td data-label="Когда брать">хрупко, гонки; не рекомендуется</td>
+<td data-label="Механизм">оператор создаёт Job только когда посчитал, что ресурсов хватит</td>
+<td data-label="Применение">хрупко, гонки; не рекомендуется</td>
 </tr>
 </tbody>
 </table>
@@ -1582,7 +1582,7 @@ https://volcano.sh/">volcano.sh</a>)</td>
 </code></pre></div>
 
 <p><strong>Сначала создаются sandbox и сеть, а уже потом скачиваются образы.</strong> Поэтому под, у которого не скачивается образ, уже имеет IP и виден в <code>kubectl get pod -o wide</code>, а статус контейнера у него — <code>ImagePullBackOff</code>.</p>
-<p><strong>Зачем нужен pause-контейнер.</strong> Это крошечный контейнер (образ <code>registry.k8s.io/pause</code>, порядка 300–700 КБ), который в подавляющем большинстве случаев ничего не делает: он запускает процесс, который вызывает <code>pause()</code> и ждёт сигналов.</p>
+<p><strong>Назначение pause-контейнера.</strong> Это крошечный контейнер (образ <code>registry.k8s.io/pause</code>, порядка 300–700 КБ), который в подавляющем большинстве случаев ничего не делает: он запускает процесс, который вызывает <code>pause()</code> и ждёт сигналов.</p>
 <p>Его задача — <strong>держать namespaces</strong>. Всем контейнерам пода нужно видеть один сетевой namespace (общий IP и localhost), один IPC и один UTS, а namespace в Linux живёт, пока в нём есть хотя бы один процесс. Если бы namespace держал первый контейнер приложения, то его перезапуск (упал, получил OOMKilled, обновился) уничтожил бы namespace, под потерял бы IP, а остальные контейнеры остались бы в вакууме. pause живёт весь срок жизни пода и умирает последним, поэтому IP пода стабилен, пока под жив, и меняется, только когда под пересоздают.</p>
 <p>Вторая задача pause — <strong>подбирать зомби</strong>: если включён <code>shareProcessNamespace</code>, он становится PID 1 в PID namespace пода и подбирает осиротевших потомков.</p>
 <p>Всё это можно посмотреть на узле руками; команды ниже показывают песочницы, их namespaces, контейнеры внутри, образы и логи.</p>
@@ -1743,7 +1743,7 @@ kubectl -n kube-system logs -l <span class="nv">app</span><span class="o">=</spa
 </code></pre></div>
 
 <p>Уровней четыре: <code>kubepods</code> → QoS-класс → под → контейнер, и на каждом выставлены свои значения, что принципиально важно.</p>
-<p><strong>Как транслируются поля манифеста (cgroups v2).</strong> Таблица показывает, в какой файл cgroup попадает каждое поле и что это значение означает для ядра.</p>
+<p><strong>Трансляция полей манифеста (cgroups v2).</strong> Таблица показывает, в какой файл cgroup попадает каждое поле и что это значение означает для ядра.</p>
 <table class="rt">
 <thead>
 <tr>
@@ -1838,24 +1838,24 @@ https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/"
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Hard</th>
 <th>Soft</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Срабатывание</td>
+<td data-label="Критерий">Срабатывание</td>
 <td data-label="Hard">немедленно при пересечении порога</td>
 <td data-label="Soft">только если порог держится дольше <code>evictionSoftGracePeriod</code></td>
 </tr>
 <tr>
-<td data-label="">Grace period пода</td>
+<td data-label="Критерий">Grace period пода</td>
 <td data-label="Hard"><strong>1 секунда</strong> (константа <code>immediateEvictionGracePeriodSeconds</code> в eviction manager), <code>terminationGracePeriodSeconds</code> игнорируется</td>
 <td data-label="Soft"><code>min(terminationGracePeriodSeconds, evictionMaxPodGracePeriod)</code>, а значение последнего по умолчанию равно 0, так что без явной настройки и soft-выселение почти не оставляет поду времени</td>
 </tr>
 <tr>
-<td data-label="">Флаг</td>
+<td data-label="Критерий">Флаг</td>
 <td data-label="Hard"><code>--eviction-hard</code></td>
 <td data-label="Soft"><code>--eviction-soft</code> + <code>--eviction-soft-grace-period</code></td>
 </tr>
@@ -1924,59 +1924,59 @@ https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/"
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>Node-pressure eviction</th>
 <th>OOMKilled</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td data-label="">Кто инициирует</td>
+<td data-label="Критерий">Кто инициирует</td>
 <td data-label="Node-pressure eviction"><strong>kubelet</strong></td>
 <td data-label="OOMKilled"><strong>ядро Linux</strong> (cgroup memory controller)</td>
 </tr>
 <tr>
-<td data-label="">Причина</td>
+<td data-label="Критерий">Причина</td>
 <td data-label="Node-pressure eviction">нехватка ресурса <strong>на уровне узла</strong></td>
 <td data-label="OOMKilled">контейнер превысил <strong>свой</strong> <code>memory.max</code></td>
 </tr>
 <tr>
-<td data-label="">Проактивность</td>
+<td data-label="Критерий">Проактивность</td>
 <td data-label="Node-pressure eviction">проактивно, до исчерпания</td>
 <td data-label="OOMKilled">реактивно, в момент превышения</td>
 </tr>
 <tr>
-<td data-label="">Что убивают</td>
+<td data-label="Критерий">Что убивают</td>
 <td data-label="Node-pressure eviction"><strong>весь под</strong> (все контейнеры)</td>
 <td data-label="OOMKilled"><strong>один контейнер</strong> (процессы его cgroup)</td>
 </tr>
 <tr>
-<td data-label="">Graceful</td>
+<td data-label="Критерий">Graceful</td>
 <td data-label="Node-pressure eviction">soft — да; hard — нет</td>
 <td data-label="OOMKilled">нет, SIGKILL</td>
 </tr>
 <tr>
-<td data-label="">Фаза пода после</td>
+<td data-label="Критерий">Фаза пода после</td>
 <td data-label="Node-pressure eviction"><code>Failed</code>, reason <code>Evicted</code></td>
 <td data-label="OOMKilled">под остаётся <code>Running</code>, контейнер рестартует по <code>restartPolicy</code></td>
 </tr>
 <tr>
-<td data-label="">Видно в</td>
+<td data-label="Критерий">Видно в</td>
 <td data-label="Node-pressure eviction"><code>kubectl get pods</code> → статус <code>Evicted</code>; Event <code>Evicted</code></td>
 <td data-label="OOMKilled"><code>kubectl describe pod</code> → <code>Last State: Terminated, Reason: OOMKilled, Exit Code: 137</code></td>
 </tr>
 <tr>
-<td data-label="">Перепланирование</td>
+<td data-label="Критерий">Перепланирование</td>
 <td data-label="Node-pressure eviction">контроллер создаёт <strong>новый под</strong> (старый остаётся как объект-огрызок)</td>
 <td data-label="OOMKilled">тот же под, счётчик <code>RESTARTS</code> растёт</td>
 </tr>
 <tr>
-<td data-label="">Лечится</td>
+<td data-label="Критерий">Лечится</td>
 <td data-label="Node-pressure eviction">requests/limits, ёмкость узлов, уборка диска</td>
 <td data-label="OOMKilled">лимит памяти, настройка кучи JVM (<code>MaxRAMPercentage</code>), утечки</td>
 </tr>
 <tr>
-<td data-label="">Метрика</td>
+<td data-label="Критерий">Метрика</td>
 <td data-label="Node-pressure eviction"><code>kubelet_evictions{eviction_signal=...}</code></td>
 <td data-label="OOMKilled"><code>container_oom_events_total</code>, <code>memory.events</code> в cgroup</td>
 </tr>
@@ -2064,7 +2064,7 @@ journalctl -u kubelet -n <span class="m">200</span> --no-pager
 <li>ждёт событий от подов и повторяет.</li>
 </ol>
 <p>В нашем примере это выглядит так: 4 старых → создаём 1 новый (всего 5) → новый стал Ready (доступно 5) → убираем 1 старый (4: 3 старых + 1 новый) → создаём новый (5) → ... и так далее.</p>
-<p><strong>Что значит «доступен».</strong> Доступен не тот под, что Ready, а тот, что <strong>пробыл в Ready дольше <code>minReadySeconds</code></strong> (по умолчанию 0). Это поле — ваш главный инструмент против ситуации «деплой прошёл, всё упало»: поставьте 10–30 с, и контроллер не станет убивать следующий старый под, пока новый не проживёт это время. Без него под, который проходит readiness за 2 секунды и падает на 5-й, каскадом переведёт в неработоспособное состояние все реплики.</p>
+<p><strong>Смысл «доступен».</strong> Доступен не тот под, что Ready, а тот, что <strong>пробыл в Ready дольше <code>minReadySeconds</code></strong> (по умолчанию 0). Это поле — ваш главный инструмент против ситуации «деплой прошёл, всё упало»: поставьте 10–30 с, и контроллер не станет убивать следующий старый под, пока новый не проживёт это время. Без него под, который проходит readiness за 2 секунды и падает на 5-й, каскадом переведёт в неработоспособное состояние все реплики.</p>
 <p><strong><code>progressDeadlineSeconds</code></strong> (по умолчанию 600 с). Если за это время выкат не продвинулся, контроллер выставляет condition <code>Progressing=False, reason=ProgressDeadlineExceeded</code>. Заметьте, что <strong>деплой при этом автоматически не откатывается</strong>: контроллер только ставит отметку. Автоотката в Kubernetes нет, это задача CI/CD (гл. 53) или Argo Rollouts.</p>
 <p><strong><code>revisionHistoryLimit</code></strong> (по умолчанию 10) определяет, сколько старых ReplicaSet с нулём реплик хранить для отката. Каждый пустой RS — объект в etcd, и в кластере с сотней сервисов и частыми деплоями их набираются тысячи, поэтому ставьте 2–3.</p>
 <p><strong>Пауза и откат.</strong> Команды ниже управляют выкатом, а последняя показывает, что реально происходит с ReplicaSet'ами:</p>
@@ -2257,7 +2257,7 @@ kubectl -n kube-system get lease kube-scheduler -o yaml
 <p><strong>Subresource <code>scale</code>.</strong> Он даёт команду <code>kubectl scale paymentsdb x --replicas=3</code> и, что важнее, позволяет навесить на ваш CR обычный <strong>HPA</strong>. Весь контракт сводится к трём jsonPath.</p>
 <p><strong><code>additionalPrinterColumns</code></strong> превращают вывод <code>kubectl get</code> из бесполезного в полезный, поэтому обязательно выводите в них главное состояние и возраст.</p>
 <p><strong><code>categories</code></strong> позволяют одной командой <code>kubectl get payments</code> увидеть все ваши типы разом. Это мелочь, но она экономит время дежурному.</p>
-<h3 id="72-когда-нужен-оператор">7.2 Когда нужен оператор</h3>
+<h3 id="72-применение-оператора">7.2 Применение оператора</h3>
 <p>Оператор — это контроллер для custom resource, в который зашиты знания эксплуатанта о конкретной системе. Решение написать оператор кажется естественным для любой автоматизации в k8s, но оператор — ещё один долгоживущий компонент с высокими правами, и во многих случаях он оказывается лишним. Ниже разберём определение, ситуации, в которых оператор оправдан и в которых нет, честную цену решения и модель зрелости, по которой удобно понять, что ваш оператор умеет, а чего нет.</p>
 <p>Документация определяет оператор так: «Operators are software extensions to Kubernetes that make use of custom resources to manage applications and their components. Operators follow Kubernetes principles, notably the control loop» (<a href="https://kubernetes.io/docs/concepts/extend-kubernetes/operator/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/concepts/extend-kubernetes/operator/">Operator pattern</a>).</p>
@@ -2283,34 +2283,34 @@ https://kubernetes.io/docs/concepts/extend-kubernetes/operator/">Operator patter
 <tr>
 <th class="num">Уровень</th>
 <th>Название</th>
-<th>Что умеет</th>
+<th>Возможности</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Уровень" class="num">1</td>
 <td data-label="Название">Basic Install</td>
-<td data-label="Что умеет">установка и базовая конфигурация</td>
+<td data-label="Возможности">установка и базовая конфигурация</td>
 </tr>
 <tr>
 <td data-label="Уровень" class="num">2</td>
 <td data-label="Название">Seamless Upgrades</td>
-<td data-label="Что умеет">обновление самого приложения и оператора</td>
+<td data-label="Возможности">обновление самого приложения и оператора</td>
 </tr>
 <tr>
 <td data-label="Уровень" class="num">3</td>
 <td data-label="Название">Full Lifecycle</td>
-<td data-label="Что умеет">бэкап, восстановление, отказоустойчивость, failover</td>
+<td data-label="Возможности">бэкап, восстановление, отказоустойчивость, failover</td>
 </tr>
 <tr>
 <td data-label="Уровень" class="num">4</td>
 <td data-label="Название">Deep Insights</td>
-<td data-label="Что умеет">метрики, оповещения, логи, анализ состояния</td>
+<td data-label="Возможности">метрики, оповещения, логи, анализ состояния</td>
 </tr>
 <tr>
 <td data-label="Уровень" class="num">5</td>
 <td data-label="Название">Auto Pilot</td>
-<td data-label="Что умеет">автомасштабирование, автоматическая настройка, автовосстановление по аномалиям</td>
+<td data-label="Возможности">автомасштабирование, автоматическая настройка, автовосстановление по аномалиям</td>
 </tr>
 </tbody>
 </table>
@@ -2594,7 +2594,7 @@ https://github.com/open-policy-agent/gatekeeper">github.com/open-policy-agent/ga
 <table class="rt">
 <thead>
 <tr>
-<th></th>
+<th>Критерий</th>
 <th>ValidatingAdmissionPolicy</th>
 <th>Kyverno</th>
 <th>Gatekeeper</th>
@@ -2602,49 +2602,49 @@ https://github.com/open-policy-agent/gatekeeper">github.com/open-policy-agent/ga
 </thead>
 <tbody>
 <tr>
-<td data-label="">Где выполняется</td>
+<td data-label="Критерий">Где выполняется</td>
 <td data-label="ValidatingAdmissionPolicy">в API server</td>
 <td data-label="Kyverno">webhook (свой под)</td>
 <td data-label="Gatekeeper">webhook (свой под)</td>
 </tr>
 <tr>
-<td data-label="">Язык</td>
+<td data-label="Критерий">Язык</td>
 <td data-label="ValidatingAdmissionPolicy">CEL</td>
 <td data-label="Kyverno">YAML-паттерны + JMESPath + CEL</td>
 <td data-label="Gatekeeper">Rego</td>
 </tr>
 <tr>
-<td data-label="">Может мутировать</td>
+<td data-label="Критерий">Может мутировать</td>
 <td data-label="ValidatingAdmissionPolicy">нет (для этого MutatingAdmissionPolicy)</td>
 <td data-label="Kyverno">да</td>
 <td data-label="Gatekeeper">да (отдельные Assign-ресурсы)</td>
 </tr>
 <tr>
-<td data-label="">Может генерировать объекты</td>
+<td data-label="Критерий">Может генерировать объекты</td>
 <td data-label="ValidatingAdmissionPolicy">нет</td>
 <td data-label="Kyverno"><strong>да</strong></td>
 <td data-label="Gatekeeper">нет</td>
 </tr>
 <tr>
-<td data-label="">Аудит существующих объектов</td>
+<td data-label="Критерий">Аудит существующих объектов</td>
 <td data-label="ValidatingAdmissionPolicy">только через Audit-режим новых запросов</td>
 <td data-label="Kyverno">да (<code>background</code>, PolicyReport)</td>
 <td data-label="Gatekeeper">да (audit-контроллер)</td>
 </tr>
 <tr>
-<td data-label="">Доступ к другим объектам кластера</td>
+<td data-label="Критерий">Доступ к другим объектам кластера</td>
 <td data-label="ValidatingAdmissionPolicy">нет (только <code>params</code>)</td>
 <td data-label="Kyverno">да (API calls, context)</td>
 <td data-label="Gatekeeper">да (синхронизированный кеш)</td>
 </tr>
 <tr>
-<td data-label="">Точка отказа</td>
+<td data-label="Критерий">Точка отказа</td>
 <td data-label="ValidatingAdmissionPolicy">нет</td>
 <td data-label="Kyverno">есть</td>
 <td data-label="Gatekeeper">есть</td>
 </tr>
 <tr>
-<td data-label="">Порог входа</td>
+<td data-label="Критерий">Порог входа</td>
 <td data-label="ValidatingAdmissionPolicy">низкий</td>
 <td data-label="Kyverno">низкий</td>
 <td data-label="Gatekeeper">высокий</td>
@@ -3164,69 +3164,69 @@ kubectl get pod p -o <span class="nv">jsonpath</span><span class="o">=</span><sp
 <tr>
 <th>Объект</th>
 <th>Condition</th>
-<th>Что означает <code>False</code></th>
+<th>Смысл <code>False</code></th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td data-label="Объект">Pod</td>
 <td data-label="Condition"><code>PodScheduled</code></td>
-<td data-label="Что означает False">не нашлось узла</td>
+<td data-label="Смысл False">не нашлось узла</td>
 </tr>
 <tr>
 <td data-label="Объект">Pod</td>
 <td data-label="Condition"><code>Initialized</code></td>
-<td data-label="Что означает False">init-контейнеры не завершились</td>
+<td data-label="Смысл False">init-контейнеры не завершились</td>
 </tr>
 <tr>
 <td data-label="Объект">Pod</td>
 <td data-label="Condition"><code>ContainersReady</code></td>
-<td data-label="Что означает False">контейнеры не прошли readiness</td>
+<td data-label="Смысл False">контейнеры не прошли readiness</td>
 </tr>
 <tr>
 <td data-label="Объект">Pod</td>
 <td data-label="Condition"><code>Ready</code></td>
-<td data-label="Что означает False">под не в эндпоинтах (учитывает ещё и readiness gates)</td>
+<td data-label="Смысл False">под не в эндпоинтах (учитывает ещё и readiness gates)</td>
 </tr>
 <tr>
 <td data-label="Объект">Pod</td>
 <td data-label="Condition"><code>PodResizePending</code> / <code>PodResizeInProgress</code></td>
-<td data-label="Что означает False">in-place resize не применён (<code>Infeasible</code> — не влезает на узел, <code>Deferred</code> — пока нельзя, повторим)</td>
+<td data-label="Смысл False">in-place resize не применён (<code>Infeasible</code> — не влезает на узел, <code>Deferred</code> — пока нельзя, повторим)</td>
 </tr>
 <tr>
 <td data-label="Объект">Deployment</td>
 <td data-label="Condition"><code>Progressing</code></td>
-<td data-label="Что означает False">выкат встал; смотрите <code>reason</code></td>
+<td data-label="Смысл False">выкат встал; смотрите <code>reason</code></td>
 </tr>
 <tr>
 <td data-label="Объект">Deployment</td>
 <td data-label="Condition"><code>Available</code></td>
-<td data-label="Что означает False">доступных реплик меньше минимума</td>
+<td data-label="Смысл False">доступных реплик меньше минимума</td>
 </tr>
 <tr>
 <td data-label="Объект">Deployment</td>
 <td data-label="Condition"><code>ReplicaFailure</code></td>
-<td data-label="Что означает False">RS не может создать поды (квота, лимиты, PSA)</td>
+<td data-label="Смысл False">RS не может создать поды (квота, лимиты, PSA)</td>
 </tr>
 <tr>
 <td data-label="Объект">Node</td>
 <td data-label="Condition"><code>Ready</code></td>
-<td data-label="Что означает False">kubelet не отвечает / среда выполнения или сеть не готовы</td>
+<td data-label="Смысл False">kubelet не отвечает / среда выполнения или сеть не готовы</td>
 </tr>
 <tr>
 <td data-label="Объект">Node</td>
 <td data-label="Condition"><code>MemoryPressure</code>/<code>DiskPressure</code>/<code>PIDPressure</code> = <code>True</code></td>
-<td data-label="Что означает False">идёт или скоро начнётся eviction</td>
+<td data-label="Смысл False">идёт или скоро начнётся eviction</td>
 </tr>
 <tr>
 <td data-label="Объект">PVC</td>
 <td data-label="Condition">— (используйте <code>status.phase</code> и события)</td>
-<td data-label="Что означает False"></td>
+<td data-label="Смысл False"></td>
 </tr>
 <tr>
 <td data-label="Объект">Namespace</td>
 <td data-label="Condition"><code>NamespaceDeletionDiscoveryFailure</code> и др.</td>
-<td data-label="Что означает False">причина зависания в Terminating</td>
+<td data-label="Смысл False">причина зависания в Terminating</td>
 </tr>
 </tbody>
 </table>
@@ -3672,5 +3672,5 @@ https://commons.wikimedia.org/wiki/File:Harbor_rope.jpg">Швартовный к
 <aside class="rail" aria-label="В этой главе"><div class="rail-in"><div class="t">В этой главе</div><ol><li><a href="#1-декларативная-модель-и-цикл-согласования-reconciliation">1. Декларативная модель и цикл согласования (reconciliation)</a></li><li><a href="#2-путь-kubectl-apply-от-начала-до-конца">2. Путь kubectl apply от начала до конца</a></li><li><a href="#3-etcd-и-api-машинерия">3. etcd и API-машинерия</a></li><li><a href="#4-планировщик">4. Планировщик</a></li><li><a href="#5-kubelet-и-жизнь-пода-на-узле">5. kubelet и жизнь пода на узле</a></li><li><a href="#6-контроллеры">6. Контроллеры</a></li><li><a href="#7-crd-и-операторы">7. CRD и операторы</a></li><li><a href="#8-расширение-kubernetes-и-его-пределы">8. Расширение Kubernetes и его пределы</a></li><li><a href="#9-разобранные-инциденты">9. Разобранные инциденты</a></li><li><a href="#10-ошибки-и-антипаттерны">10. Ошибки и антипаттерны</a></li><li><a href="#11-диагностика">11. Диагностика</a></li><li><a href="#12-вопросы-на-интервью">12. Вопросы на интервью</a></li><li><a href="#13-попробовать-руками">13. Попробовать руками</a></li><li><a href="#источники">Источники</a></li></ol><a class="top" href="#content">Наверх</a></div></aside>
 </div>
 </div></div>
-<script src="app.js?v=9b85aad1e0"></script>
+<script src="app.js?v=c19a2f4838"></script>
 <script>if('serviceWorker' in navigator){var jbbHad=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(jbbHad){jbbHad=false;location.reload();}});addEventListener('load',function(){navigator.serviceWorker.register('sw.js')})}</script></body></html>
