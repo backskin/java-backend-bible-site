@@ -22,12 +22,12 @@
 <p>Глава написана под конкретный угол: <strong>что нужно Java-разработчику, чтобы самостоятельно разобрать инцидент на сервере</strong>. Это не курс системного администрирования — здесь нет настройки systemd-юнитов, сборки ядра и управления пакетами. Здесь есть то, что происходит <em>под</em> приложением и что приложение ломает.</p>
 <p>Соседние темы разнесены по другим главам и не дублируются:</p>
 <ul>
-<li>сеть Kubernetes, CNI, kube-proxy, NetworkPolicy, Istio и ambient mode — глава 49 (<code>49-service-mesh-networking.md</code>);</li>
-<li>контейнеры, образы, cgroups в контексте <code>MaxRAMPercentage</code> и сборки — глава 46 (<code>46-docker-jvm.md</code>);</li>
-<li>GC, heap, off-heap и heap dump — глава 07 (<code>07-memory-and-gc.md</code>);</li>
-<li>профилирование Java (async-profiler, JFR, flame graphs) — глава 45 (<code>45-performance.md</code>);</li>
-<li>HTTP как протокол (семантика, версии, кэш) — глава 27 (<code>27-http-and-rest.md</code>);</li>
-<li>probes, graceful shutdown и <code>terminationGracePeriodSeconds</code> — глава 47 (<code>47-kubernetes-openshift.md</code>).</li>
+<li>сеть Kubernetes, CNI, kube-proxy, NetworkPolicy, Istio и ambient mode — глава <a href="49-service-mesh-networking.html" data-tip="49. Service mesh и сетевое взаимодействие">49</a> (<a href="49-service-mesh-networking.html" data-tip="49. Service mesh и сетевое взаимодействие"><code>49-service-mesh-networking.md</code></a>);</li>
+<li>контейнеры, образы, cgroups в контексте <code>MaxRAMPercentage</code> и сборки — глава <a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений">46</a> (<a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений"><code>46-docker-jvm.md</code></a>);</li>
+<li>GC, heap, off-heap и heap dump — глава <a href="07-memory-and-gc.html" data-tip="7. Память и GC">07</a> (<a href="07-memory-and-gc.html" data-tip="7. Память и GC"><code>07-memory-and-gc.md</code></a>);</li>
+<li>профилирование Java (async-profiler, JFR, flame graphs) — глава <a href="45-performance.html" data-tip="45. Производительность">45</a> (<a href="45-performance.html" data-tip="45. Производительность"><code>45-performance.md</code></a>);</li>
+<li>HTTP как протокол (семантика, версии, кэш) — глава <a href="27-http-and-rest.html" data-tip="27. HTTP и REST">27</a> (<a href="27-http-and-rest.html" data-tip="27. HTTP и REST"><code>27-http-and-rest.md</code></a>);</li>
+<li>probes, graceful shutdown и <code>terminationGracePeriodSeconds</code> — глава <a href="47-kubernetes-openshift.html" data-tip="47. Kubernetes и OpenShift для разработчика">47</a> (<a href="47-kubernetes-openshift.html" data-tip="47. Kubernetes и OpenShift для разработчика"><code>47-kubernetes-openshift.md</code></a>).</li>
 </ul>
 <h2 id="1-процессы-и-их-жизненный-цикл">1. Процессы и их жизненный цикл</h2>
 <h3 id="11-pid-ppid-и-дерево-процессов">1.1 PID, PPID и дерево процессов</h3>
@@ -59,7 +59,7 @@ PPid:   1
 Threads:    287
 </code></pre></div>
 
-<p><code>PPid: 1</code> в контейнере означает, что процесс — прямой потомок PID 1, а если ещё и <code>Pid: 1</code>, то JVM сама является init-процессом со всеми вытекающими (не пожинает сирот, игнорирует сигналы без явного обработчика). Подробности про PID 1, <code>--init</code>, tini и зомби — в главе 46 (<code>46-docker-jvm.md</code>).</p>
+<p><code>PPid: 1</code> в контейнере означает, что процесс — прямой потомок PID 1, а если ещё и <code>Pid: 1</code>, то JVM сама является init-процессом со всеми вытекающими (не пожинает сирот, игнорирует сигналы без явного обработчика). Подробности про PID 1, <code>--init</code>, tini и зомби — в главе <a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений">46</a> (<a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений"><code>46-docker-jvm.md</code></a>).</p>
 <h3 id="12-состояния-процесса-r-s-d-z-t">1.2 Состояния процесса: R, S, D, Z, T</h3>
 <p>Колонка <code>STAT</code> в <code>ps</code> и <code>S</code> в <code>top</code> — одна буква, которая часто решает инцидент. Значения документированы в <code>proc_pid_stat(5)</code> (<a href="https://man7.org/linux/man-pages/man5/proc_pid_stat.5.html" data-tip="Внешний сайт · man7.org
 https://man7.org/linux/man-pages/man5/proc_pid_stat.5.html">man7.org</a>):</p>
@@ -434,7 +434,7 @@ jcmd <span class="m">12345</span> VM.flags -all
 <p><strong><span class="ic">⚠️</span> Осторожно.</strong> <code>kill -3</code> в цикле каждую секунду — плохая идея: печать thread dump останавливает все потоки в safepoint. На приложении с 2000 потоков дамп занимает сотни миллисекунд. Три дампа с интервалом 5–10 секунд дают достаточно информации для поиска «залипшего» потока; больше не нужно.</p>
 </blockquote>
 <h3 id="17-shutdown-hooks-в-jvm">1.7 Shutdown hooks в JVM</h3>
-<p><code>SIGTERM</code> в JVM приводит к запуску shutdown hooks, зарегистрированных через <code>Runtime.getRuntime().addShutdownHook(Thread)</code>. Spring Boot регистрирует свой хук, который закрывает <code>ApplicationContext</code>; с версии 3.4 graceful shutdown включён по умолчанию (см. FACTS и главу 10).</p>
+<p><code>SIGTERM</code> в JVM приводит к запуску shutdown hooks, зарегистрированных через <code>Runtime.getRuntime().addShutdownHook(Thread)</code>. Spring Boot регистрирует свой хук, который закрывает <code>ApplicationContext</code>; с версии 3.4 graceful shutdown включён по умолчанию (см. FACTS и главу <a href="10-spring-boot.html" data-tip="10. Spring Boot">10</a>).</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">GracefulShutdown</span> <span class="p">{</span>
 
     <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">install</span><span class="p">(</span><span class="n">ExecutorService</span> <span class="n">pool</span><span class="p">,</span> <span class="n">Duration</span> <span class="n">grace</span><span class="p">)</span> <span class="p">{</span>
@@ -463,7 +463,7 @@ jcmd <span class="m">12345</span> VM.flags -all
 <li><strong>Нельзя рассчитывать, что хук вообще выполнится.</strong> <code>SIGKILL</code>, <code>kill -9</code>, OOM killer, падение хоста, <code>Runtime.halt()</code> — всё это проходит мимо хуков.</li>
 </ol>
 <blockquote class="cb-num">
-<p><strong><span class="ic">📊</span> Цифры.</strong> В Kubernetes типовой контракт такой: <code>preStop</code> (выполняется <strong>до</strong> <code>SIGTERM</code>) → <code>SIGTERM</code> → ожидание до <code>terminationGracePeriodSeconds</code> (значение по умолчанию 30 с) → <code>SIGKILL</code>. Удаление пода из эндпоинтов и отправка <code>SIGTERM</code> идут <strong>параллельно и без синхронизации</strong> — отсюда стандартная рекомендация ставить <code>preStop: sleep 5–15 с</code>, чтобы балансировщики успели перестать слать трафик. Детали — глава 47.</p>
+<p><strong><span class="ic">📊</span> Цифры.</strong> В Kubernetes типовой контракт такой: <code>preStop</code> (выполняется <strong>до</strong> <code>SIGTERM</code>) → <code>SIGTERM</code> → ожидание до <code>terminationGracePeriodSeconds</code> (значение по умолчанию 30 с) → <code>SIGKILL</code>. Удаление пода из эндпоинтов и отправка <code>SIGTERM</code> идут <strong>параллельно и без синхронизации</strong> — отсюда стандартная рекомендация ставить <code>preStop: sleep 5–15 с</code>, чтобы балансировщики успели перестать слать трафик. Детали — глава <a href="47-kubernetes-openshift.html" data-tip="47. Kubernetes и OpenShift для разработчика">47</a>.</p>
 </blockquote>
 <p>Проверить, что происходит на самом деле, можно вручную:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Отправить SIGTERM и засечь, сколько процесс умирает</span>
@@ -820,9 +820,9 @@ cat /proc/12345/oom_score_adj    <span class="c1"># корректировка</
 <span class="k">done</span> <span class="p">|</span> sort -rn <span class="p">|</span> head -5
 </code></pre></div>
 
-<p>В Kubernetes <code>oom_score_adj</code> выставляется автоматически по QoS-классу: <code>Guaranteed</code> получает −997, <code>BestEffort</code> — 1000, <code>Burstable</code> — значение между 2 и 999, обратно пропорциональное отношению request к памяти узла. То есть <strong>Guaranteed-под почти никогда не убивается при глобальной нехватке</strong>, но всё равно убивается при превышении собственного <code>memory.max</code>. Детали QoS — глава 47.</p>
+<p>В Kubernetes <code>oom_score_adj</code> выставляется автоматически по QoS-классу: <code>Guaranteed</code> получает −997, <code>BestEffort</code> — 1000, <code>Burstable</code> — значение между 2 и 999, обратно пропорциональное отношению request к памяти узла. То есть <strong>Guaranteed-под почти никогда не убивается при глобальной нехватке</strong>, но всё равно убивается при превышении собственного <code>memory.max</code>. Детали QoS — глава <a href="47-kubernetes-openshift.html" data-tip="47. Kubernetes и OpenShift для разработчика">47</a>.</p>
 <blockquote class="cb-warn">
-<p><strong><span class="ic">⚠️</span> Осторожно.</strong> Если в Kubernetes под перезапустился с <code>exitCode: 137</code> и <code>reason: OOMKilled</code>, это <strong>не</strong> <code>OutOfMemoryError</code>. Heap dump не появится, shutdown hooks не выполнятся, в логах приложения — обрыв на полуслове. Диагностика: смотреть <code>container_memory_working_set_bytes</code> в метриках и сравнивать с <code>-Xmx</code> + non-heap. Почти всегда причина — non-heap: metaspace, direct buffers, потоки или нативные выделения памяти, о которых забыли при расчёте <code>MaxRAMPercentage</code>. Расчёт — глава 46.</p>
+<p><strong><span class="ic">⚠️</span> Осторожно.</strong> Если в Kubernetes под перезапустился с <code>exitCode: 137</code> и <code>reason: OOMKilled</code>, это <strong>не</strong> <code>OutOfMemoryError</code>. Heap dump не появится, shutdown hooks не выполнятся, в логах приложения — обрыв на полуслове. Диагностика: смотреть <code>container_memory_working_set_bytes</code> в метриках и сравнивать с <code>-Xmx</code> + non-heap. Почти всегда причина — non-heap: metaspace, direct buffers, потоки или нативные выделения памяти, о которых забыли при расчёте <code>MaxRAMPercentage</code>. Расчёт — глава <a href="46-docker-jvm.html" data-tip="46. Docker и сборка JVM-приложений">46</a>.</p>
 </blockquote>
 <h3 id="27-арены-glibc-malloc-и-рост-rss-без-роста-кучи">2.7 Арены glibc malloc и рост RSS без роста кучи</h3>
 <p>Классический инцидент: heap стабильно 2 ГБ по метрикам JVM, метаспейс 200 МБ, а RSS процесса растёт неделями и доходит до 8 ГБ. Native memory leak? Часто — нет. Часто это <strong>арены glibc</strong>.</p>
@@ -1358,7 +1358,7 @@ https://man7.org/linux/man-pages/man7/epoll.7.html">man7.org</a>). Три выз
 <li><strong>Level-triggered</strong> (по умолчанию) — «epoll is simply a faster poll(2), and can be used wherever the latter is used since it shares the same semantics». Пока в буфере есть данные, <code>epoll_wait</code> будет их возвращать снова и снова.</li>
 <li><strong>Edge-triggered</strong> (<code>EPOLLET</code>) — «delivers events only when changes occur on the monitored file descriptor». Событие приходит один раз на изменение состояния; не вычитал всё — следующего события не будет. Требование: «An application that employs the EPOLLET flag should use nonblocking file descriptors to avoid having a blocking read or write starve a task that is handling multiple file descriptors», и читать в цикле до <code>EAGAIN</code>.</li>
 </ul>
-<p>Java NIO <code>Selector</code> на Linux реализован через <code>epoll</code> в <strong>level-triggered</strong> режиме. Netty с <code>EpollEventLoopGroup</code> (нативный транспорт) использует <code>EPOLLET</code> и даёт заметно меньше системных вызовов. Подробности реактивной модели и event loop — глава 11 (<code>11-reactive.md</code>).</p>
+<p>Java NIO <code>Selector</code> на Linux реализован через <code>epoll</code> в <strong>level-triggered</strong> режиме. Netty с <code>EpollEventLoopGroup</code> (нативный транспорт) использует <code>EPOLLET</code> и даёт заметно меньше системных вызовов. Подробности реактивной модели и event loop — глава <a href="11-reactive.html" data-tip="11. Реактивное программирование">11</a> (<a href="11-reactive.html" data-tip="11. Реактивное программирование"><code>11-reactive.md</code></a>).</p>
 <p>Диагностика epoll изнутри:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Сколько fd отслеживает epoll-инстанс fd=7 процесса 12345</span>
 cat /proc/12345/fdinfo/7
@@ -1417,7 +1417,7 @@ fio --name<span class="o">=</span>fsynctest --rw<span class="o">=</span>write --
 <li><strong>Тип FS</strong>: ext4 и XFS — рабочие лошадки. XFS лучше на больших файлах и параллельной записи, ext4 — на множестве мелких. Btrfs/ZFS с CoW дают неожиданную фрагментацию под нагрузкой БД; для PostgreSQL на ZFS обязательно <code>recordsize=8K</code> и отключение <code>full_page_writes</code>.</li>
 <li><strong>overlayfs</strong> (файловая система Docker) — copy-on-write при первой записи в файл из нижнего слоя. Пишешь 1 байт в 500-мегабайтный файл из образа — копируется весь файл. Поэтому данные и логи всегда выносят на volume.</li>
 </ul>
-<p>Подробности durability в PostgreSQL — глава 17 (<code>17-postgresql-internals.md</code>).</p>
+<p>Подробности durability в PostgreSQL — глава <a href="17-postgresql-internals.html" data-tip="17. PostgreSQL изнутри">17</a> (<a href="17-postgresql-internals.html" data-tip="17. PostgreSQL изнутри"><code>17-postgresql-internals.md</code></a>).</p>
 <h3 id="46-исчерпание-диска-место-и-inodes">4.6 Исчерпание диска: место и inodes</h3>
 <p>Классика, которую нужно уметь разобрать за 30 секунд.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>df -h          <span class="c1"># свободное место в байтах</span>
@@ -1482,7 +1482,7 @@ sudo lsof -nP +L1 <span class="p">|</span> head -20
 
 <p><code>totalSizeCap</code> — обязательный параметр, который забывают. Без него <code>maxHistory</code> ограничивает только по времени, и всплеск логирования (например, при шторме исключений) забивает диск за час.</p>
 <blockquote class="cb-warn">
-<p><strong><span class="ic">⚠️</span> Осторожно.</strong> В Kubernetes логи контейнера пишет kubelet в <code>/var/log/pods/...</code> и ротирует по <code>containerLogMaxSize</code> (значение по умолчанию 10 Mi) и <code>containerLogMaxFiles</code> (значение по умолчанию 5). Итого 50 МБ на контейнер. Приложение, логирующее в stdout со скоростью 5 МБ/с, переживает ротацию каждые две секунды, и <code>kubectl logs</code> показывает последние 10 секунд. Диагностика «что было час назад» становится невозможной — отсюда требование отправлять логи в централизованное хранилище (см. главу 51).</p>
+<p><strong><span class="ic">⚠️</span> Осторожно.</strong> В Kubernetes логи контейнера пишет kubelet в <code>/var/log/pods/...</code> и ротирует по <code>containerLogMaxSize</code> (значение по умолчанию 10 Mi) и <code>containerLogMaxFiles</code> (значение по умолчанию 5). Итого 50 МБ на контейнер. Приложение, логирующее в stdout со скоростью 5 МБ/с, переживает ротацию каждые две секунды, и <code>kubectl logs</code> показывает последние 10 секунд. Диагностика «что было час назад» становится невозможной — отсюда требование отправлять логи в централизованное хранилище (см. главу <a href="51-observability.html" data-tip="51. Observability">51</a>).</p>
 </blockquote>
 <hr>
 <h2 id="5-cpu-и-планировщик">5. CPU и планировщик</h2>
@@ -1778,7 +1778,7 @@ asprof -e wall -d <span class="m">30</span> -f /tmp/wall.html <span class="m">12
 asprof -e alloc -d <span class="m">30</span> -f /tmp/alloc.html <span class="m">12345</span>  <span class="c1"># профиль аллокаций</span>
 </code></pre></div>
 
-<p>Детали профилирования, flame graph и async-profiler — глава 45 (<code>45-performance.md</code>). Здесь важно другое: <code>perf</code> нужен тогда, когда проблема <strong>вне Java</strong> — в ядре, в нативной библиотеке, в драйвере.</p>
+<p>Детали профилирования, flame graph и async-profiler — глава <a href="45-performance.html" data-tip="45. Производительность">45</a> (<a href="45-performance.html" data-tip="45. Производительность"><code>45-performance.md</code></a>). Здесь важно другое: <code>perf</code> нужен тогда, когда проблема <strong>вне Java</strong> — в ядре, в нативной библиотеке, в драйвере.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Где время в ядре: топ функций ядра</span>
 sudo perf record -F <span class="m">99</span> -a -g -- sleep <span class="m">20</span>
 sudo perf report --stdio --sort symbol <span class="p">|</span> grep -E <span class="s1">'^\s+[0-9.]+%.*\[k\]'</span> <span class="p">|</span> head -20
@@ -2073,7 +2073,7 @@ ss -tan <span class="p">|</span> awk <span class="s1">'NR&gt;1 {split($3,a,":");
 
 <p>Что делать, по убыванию правильности:</p>
 <ol>
-<li><strong>Использовать keep-alive и пул соединений.</strong> Это не обходной путь, это правильное решение. Соединение, которое повторно используется, не закрывается и не попадает в <code>TIME_WAIT</code>. Настройка пулов HTTP-клиентов — глава 27.</li>
+<li><strong>Использовать keep-alive и пул соединений.</strong> Это не обходной путь, это правильное решение. Соединение, которое повторно используется, не закрывается и не попадает в <code>TIME_WAIT</code>. Настройка пулов HTTP-клиентов — глава <a href="27-http-and-rest.html" data-tip="27. HTTP и REST">27</a>.</li>
 <li><strong>Сделать так, чтобы первым закрывал сервер, а не клиент</strong> — тогда <code>TIME_WAIT</code> накапливается на сервере, где портов сколько угодно (порт сервера один, различаются клиентские четвёрки). Именно так работает HTTP keep-alive с <code>Connection: close</code> от сервера.</li>
 <li><strong>Расширить диапазон портов:</strong>
    <code>bash
@@ -2356,7 +2356,7 @@ sudo iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN <span class="s
      -j TCPMSS --clamp-mss-to-pmtu
 </code></pre></div>
 
-<p>В Kubernetes MTU задаётся CNI-плагином; несогласованность MTU между CNI и физической сетью — стандартная причина «странных зависаний» в новом кластере. Детали — глава 49.</p>
+<p>В Kubernetes MTU задаётся CNI-плагином; несогласованность MTU между CNI и физической сетью — стандартная причина «странных зависаний» в новом кластере. Детали — глава <a href="49-service-mesh-networking.html" data-tip="49. Service mesh и сетевое взаимодействие">49</a>.</p>
 <h3 id="610-управление-перегрузкой-cubic-и-bbr">6.10 Управление перегрузкой: cubic и BBR</h3>
 <p>Алгоритм управления перегрузкой определяет, как быстро наращивать окно и как реагировать на потери.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code>sysctl net.ipv4.tcp_congestion_control       <span class="c1"># cubic</span>
@@ -2465,7 +2465,7 @@ sysctl -w net.core.default_qdisc<span class="o">=</span>fq          <span class=
    <code>bash
    sysctl net.ipv4.tcp_syn_retries    # 6 -&gt; ~127 с до отказа connect()</code></li>
 <li><strong>Idle timeout клиента &lt; idle timeout сервера &lt; idle timeout сетевого оборудования.</strong></li>
-<li><strong>HTTP/2 мультиплексирование</strong> решает часть проблемы: один TCP-коннект несёт сотни параллельных стримов. Цена — head-of-line blocking на уровне TCP (потеря одного пакета тормозит все стримы), что и решает HTTP/3 поверх QUIC. Детали — глава 27.</li>
+<li><strong>HTTP/2 мультиплексирование</strong> решает часть проблемы: один TCP-коннект несёт сотни параллельных стримов. Цена — head-of-line blocking на уровне TCP (потеря одного пакета тормозит все стримы), что и решает HTTP/3 поверх QUIC. Детали — глава <a href="27-http-and-rest.html" data-tip="27. HTTP и REST">27</a>.</li>
 </ol>
 <hr>
 <h2 id="7-dns">7. DNS</h2>
@@ -2559,7 +2559,7 @@ https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/InetAddres
 </tr>
 </tbody>
 </table>
-<p>Исторический контекст, который важен: раньше при установленном SecurityManager значение по умолчанию <code>networkaddress.cache.ttl</code> было «вечно». SecurityManager удалён (JDK 24, см. главу 02), и в современных JDK кеш успешных разрешений имён ограничен (в HotSpot — 30 секунд, но это <strong>implementation specific</strong> и формально не гарантировано). ⚠️ Полагаться на конкретное число нельзя — задавай явно.</p>
+<p>Исторический контекст, который важен: раньше при установленном SecurityManager значение по умолчанию <code>networkaddress.cache.ttl</code> было «вечно». SecurityManager удалён (JDK 24, см. главу <a href="02-modern-java.html" data-tip="2. Современная Java 17→25">02</a>), и в современных JDK кеш успешных разрешений имён ограничен (в HotSpot — 30 секунд, но это <strong>implementation specific</strong> и формально не гарантировано). ⚠️ Полагаться на конкретное число нельзя — задавай явно.</p>
 <p><strong>Почему это критично.</strong> Сценарий: приложение разрешает <code>payments-db.internal</code> в 10.20.3.44 и кеширует «навсегда». DBA делает failover, DNS-запись переезжает на 10.20.3.55 с TTL 30 секунд. Все клиенты переключаются за полминуты — кроме твоей JVM, которая продолжает долбиться в мёртвый IP до рестарта. То же самое при смене IP у AWS RDS, при переезде сервиса, при смене IP у внешнего API.</p>
 <p>Задавать явно — двумя способами:</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># 1. Системное свойство (работает с JDK 8u and later; официально документированный путь — java.security)</span>
@@ -2662,7 +2662,7 @@ dig @8.8.8.8 api.example.com +short
 </code></pre></div>
 
 <p>Первый вызов — сетевой (десятки мс), последующие — из кеша JVM (0 мс). Если все пять по 20 мс, кеш выключен; если через минуту всё ещё 0 мс — кеш вечный.</p>
-<p>Про <code>search</code>-домены в Kubernetes, CoreDNS, headless-сервисы и SRV-записи — глава 49 (<code>49-service-mesh-networking.md</code>).</p>
+<p>Про <code>search</code>-домены в Kubernetes, CoreDNS, headless-сервисы и SRV-записи — глава <a href="49-service-mesh-networking.html" data-tip="49. Service mesh и сетевое взаимодействие">49</a> (<a href="49-service-mesh-networking.html" data-tip="49. Service mesh и сетевое взаимодействие"><code>49-service-mesh-networking.md</code></a>).</p>
 <hr>
 <h2 id="8-инструменты-диагностики">8. Инструменты диагностики</h2>
 <p>Для каждого инструмента: что показывает, типовой вызов, как читать вывод.</p>
@@ -3455,7 +3455,7 @@ cat /sys/fs/cgroup/cpu.max
 <li>Метрика <code>coredns_dns_request_count_total</code> и <code>coredns_dns_request_duration_seconds</code> с оповещением на p99 &gt; 20 мс.</li>
 <li>В шаблон Deployment — <code>dnsConfig</code> с <code>ndots:2</code> по умолчанию для сервисов, которые ходят во внешний мир.</li>
 <li><code>networkaddress.cache.ttl</code> задан явно в базовом образе.</li>
-<li>В чеклист «первые 5 минут после деплоя» (глава 51) — разложить один запрос через <code>curl -w</code> и убедиться, что <code>time_namelookup</code> &lt; 5 мс.</li>
+<li>В чеклист «первые 5 минут после деплоя» (глава <a href="51-observability.html" data-tip="51. Observability">51</a>) — разложить один запрос через <code>curl -w</code> и убедиться, что <code>time_namelookup</code> &lt; 5 мс.</li>
 </ul>
 <h3 id="95-closewait-растёт-и-упирается-в-лимит">9.5 <code>CLOSE_WAIT</code> растёт и упирается в лимит</h3>
 <p><strong>Симптом.</strong> Раз в 8–10 дней сервис интеграции падает с <code>Too many open files</code>. Между падениями — идеальная работа. Утечки памяти нет, потоков нет, число запросов стабильно.</p>
@@ -3692,7 +3692,7 @@ grep -A <span class="m">1</span> <span class="s1">'NullPointerException'</span> 
 </code></pre></div>
 
 <h3 id="104-разбор-json-логов-с-помощью-jq">10.4 Разбор JSON-логов с помощью <code>jq</code></h3>
-<p>Структурное логирование (глава 51) означает, что логи — JSON. <code>grep</code> по ним работает плохо, <code>jq</code> — хорошо.</p>
+<p>Структурное логирование (глава <a href="51-observability.html" data-tip="51. Observability">51</a>) означает, что логи — JSON. <code>grep</code> по ним работает плохо, <code>jq</code> — хорошо.</p>
 <div class="hl"><div class="hl-bar"><span></span><div class="hl-tools"><button type="button" class="hl-mode hl-wrap">↩ Переносить строки</button><button type="button" class="hl-mode">☀ Светлый код</button><button type="button" class="hl-copy">Копировать</button></div></div><pre><span></span><code><span class="c1"># Только ошибки, компактно</span>
 jq -c <span class="s1">'select(.level == "ERROR")'</span> app.json.log
 
@@ -3951,7 +3951,7 @@ python3 -c <span class="s2">"</span>
 <p><strong>Использовать <code>%CPU</code> из <code>top</code> для Java без <code>-H</code>.</strong> Суммарный процент по процессу не показывает, какой поток горит. <code>top -H -p &lt;pid&gt;</code> + перевод TID в hex + поиск в thread dump.</p>
 </li>
 <li>
-<p><strong>Писать логи в файл внутри контейнера без volume.</strong> overlayfs с CoW, неограниченный рост, потеря при рестарте. Лечение: stdout + централизованный сбор (глава 51).</p>
+<p><strong>Писать логи в файл внутри контейнера без volume.</strong> overlayfs с CoW, неограниченный рост, потеря при рестарте. Лечение: stdout + централизованный сбор (глава <a href="51-observability.html" data-tip="51. Observability">51</a>).</p>
 </li>
 <li>
 <p><strong>Забыть <code>totalSizeCap</code> в Logback rolling policy.</strong> Симптом: диск заполнен за час при шторме исключений.</p>
@@ -4336,7 +4336,7 @@ https://docs.kernel.org/admin-guide/mm/transhuge.html">Transparent Hugepage Supp
 https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/InetAddress.html">InetAddress (Java SE 21 API)</a> — первичный. Свойства networkaddress.cache.ttl (значение по умолчанию implementation-specific, −1 = вечно), negative.ttl (значение по умолчанию 10), stale.ttl (JDK 21+). Проверено: 2026-09-21.</li><li><a href="https://www.brendangregg.com/blog/2017-08-08/linux-load-averages.html" data-tip="Внешний сайт · brendangregg.com
 https://www.brendangregg.com/blog/2017-08-08/linux-load-averages.html">Linux Load Averages: Solving the Mystery — Brendan Gregg</a> — блог автора-эксперта. Включение TASK_UNINTERRUPTIBLE в LA на Linux, экспоненциально затухающие суммы, рекомендация смотреть per-CPU utilization и run queue latency вместо LA. Проверено: 2026-09-21.</li><li><a href="https://github.com/bpftrace/bpftrace" data-tip="Внешний сайт · github.com
 https://github.com/bpftrace/bpftrace">bpftrace — GitHub</a> — первичный. Назначение («general purpose tracing tool and language for Linux», eBPF, «minimal overhead»), происхождение языка от awk/C/DTrace/SystemTap, типы проб (kprobe, uprobe, USDT, tracepoint, perf events). Проверено: 2026-09-21.</li><li><a href="https://www.brendangregg.com/usemethod.html" data-tip="Внешний сайт · brendangregg.com
-https://www.brendangregg.com/usemethod.html">The USE Method — Brendan Gregg</a> — блог автора-эксперта. «For every resource, check utilization, saturation, and errors»; определения utilization и saturation; предупреждение о всплесках. Взято через FACTS.md (проверено при работе над главой 45). Проверено: 2026-09-21.</li><li class="src-grp"><div class="src-head"><span class="src-host">kubernetes.io</span> <span class="src-n">3 источника</span></div><div class="src-titles"><a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/" data-tip="Внешний сайт · kubernetes.io
+https://www.brendangregg.com/usemethod.html">The USE Method — Brendan Gregg</a> — блог автора-эксперта. «For every resource, check utilization, saturation, and errors»; определения utilization и saturation; предупреждение о всплесках. Взято через FACTS.md (проверено при работе над главой <a href="45-performance.html" data-tip="45. Производительность">45</a>). Проверено: 2026-09-21.</li><li class="src-grp"><div class="src-head"><span class="src-host">kubernetes.io</span> <span class="src-n">3 источника</span></div><div class="src-titles"><a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">Managing Resources for Containers — Kubernetes</a> · <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/">Pod Lifecycle — Kubernetes</a> · <a href="https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/" data-tip="Внешний сайт · kubernetes.io
 https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/">DNS for Services and Pods — Kubernetes</a></div><details><summary>Пометки о проверке</summary><ul><li><a href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/" data-tip="Внешний сайт · kubernetes.io
