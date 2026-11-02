@@ -533,6 +533,8 @@
         if(swapped||busy!==my) return; swapped=true;   // устаревшая подмена не перебивает новую
         document.title=nd.title;
         document.body.setAttribute('data-title',nd.body.getAttribute('data-title')||'');
+        // переход по закладке: текст закрыт размытием до вставки, скрипт закладок проявит его уже на нужной строке
+        if(/^#bm-\d+$/.test(u.hash))document.documentElement.classList.add('bm-going');
         doc.innerHTML=ndoc.innerHTML; curPath=u.pathname;
         // фото-шапка стоит выше всего, вне .doc: меняем её вместе с главой (или убираем, если у новой страницы её нет)
         // быстрое переключение: прежняя «следующая» шапка ещё проявляется — убираем её, остаётся одна шапка
@@ -1028,29 +1030,37 @@
     bt.title=on?'Закладка на этой строке':'Мои закладки';bt.setAttribute('aria-label',bt.title);}
 
   // ---------- возврат к строке: адрес вида глава.html#bm-<время сохранения> ----------
-  var going=0;
+  var going=0,root=document.documentElement;
+  function reveal(){root.classList.remove('bm-going');}
   function go(){
-    var m=location.hash.match(/^#bm-(\d+)$/);if(!m)return;
+    var m=location.hash.match(/^#bm-(\d+)$/);if(!m){reveal();return;}
+    root.classList.add('bm-going');
     var id=+m[1],p=load().filter(function(q){return q.d===id;})[0];
     history.replaceState(null,'',location.pathname+location.search);
-    if(!p){info('Закладка не найдена','<p>Этой закладки нет в этом браузере: её удалили, очистили данные сайта или ссылку открыли в другом браузере.</p>');return;}
-    if(p.u!==(location.pathname.split('/').pop()||'index.html'))return;
+    if(!p){reveal();info('Закладка не найдена','<p>Этой закладки нет в этом браузере: её удалили, очистили данные сайта или ссылку открыли в другом браузере.</p>');return;}
+    if(p.u!==(location.pathname.split('/').pop()||'index.html')){reveal();return;}
     var all=flat(),b=all[p.b],key=(p.x||'').slice(0,30);
     function has(e){return key&&norm(e.textContent).indexOf(key)>=0;}
     // главу могли дописать: если блок по номеру не содержит запомненной строки, ищем блок по тексту, ближайший к прежнему номеру
     if(key&&(!b||!has(b))){b=null;var best=1e9;all.forEach(function(e,i){if(has(e)&&Math.abs(i-p.b)<best){best=Math.abs(i-p.b);b=e;}});}
-    if(!b){info('Место не найдено','<p>Текст главы изменился, и запомненной строки в нём больше нет. Глава открыта с начала.</p>');return;}
+    if(!b){reveal();info('Место не найдено','<p>Текст главы изменился, и запомненной строки в нём больше нет. Глава открыта с начала.</p>');return;}
     var off=p.o|0;
     if(key){var t=b.textContent;if(norm(t.slice(off,off+200)).indexOf(key)!==0){   // смещение сдвинулось внутри блока — уточняем по тексту
       var re=new RegExp(key.split(' ').map(function(w){return w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}).join('\\s+')),mm=re.exec(t);if(mm)off=mm.index;}}
     var d=b;while(d&&d!==document.body){if(d.tagName==='DETAILS'&&!d.open)d.open=true;d=d.parentElement;}   // строка внутри свёрнутого блока
-    wakeAround(b);
+    // блоки отрисовываются лениво (content-visibility), и до отрисовки их высота приблизительная. Будим все блоки
+    // выше закладки и несколько ниже: высоты над строкой становятся точными, и первый же прыжок попадает почти в цель
+    var pr0=prose(),top0=b;while(top0.parentElement&&top0.parentElement!==pr0)top0=top0.parentElement;
+    for(var e0=pr0.firstElementChild;e0;e0=e0.nextElementSibling){e0.style.contentVisibility='visible';if(e0===top0)break;}
+    wakeAround(b);void pr0.offsetHeight;
     var tok=++going,lh=lineH(b);
-    // блоки отрисовываются лениво (content-visibility): после прыжка соседние меняют высоту — пересчитываем, пока не устоится
-    function place(){var r=rectAt(b,off),t=r.top+scrollY;scrollTo({top:Math.max(0,t-readY()+8),behavior:'auto'});return {t:t,h:r.height||lh};}
-    place();var n=0;
+    function place(){var r=rectAt(b,off),t=r.top+scrollY;scrollTo({top:Math.max(0,t-readY()+8),behavior:'instant'});return {t:t,h:r.height||lh};}
+    // пока текст размыт, подгоняем позицию под шрифты и картинки; как только две проверки подряд дали одно место — проявляем
     // setTimeout, а не requestAnimationFrame: в фоновой вкладке (ссылку открыли в новой вкладке) кадры не рисуются, таймеры идут
-    (function again(){setTimeout(function(){if(tok!==going)return;place();if(++n<10)again();else flash();},120);})();
+    var last=place().t,same=0,n=0;
+    (function again(){setTimeout(function(){if(tok!==going)return;var g=place();
+      same=Math.abs(g.t-last)<1?same+1:0;last=g.t;
+      if(same>=2||++n>=15){reveal();flash();}else again();},60);})();
     function flash(){
       var g=place(),pr=prose(),f=document.createElement('div');f.className='bm-flash';
       if(getComputedStyle(pr).position==='static')pr.style.position='relative';
