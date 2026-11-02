@@ -1031,7 +1031,8 @@
 
   // ---------- возврат к строке: адрес вида глава.html#bm-<время сохранения> ----------
   var going=0,root=document.documentElement;
-  function reveal(){root.classList.remove('bm-going');}
+  function reveal(){if(!root.classList.contains('bm-going'))return;root.classList.remove('bm-going');
+    root.classList.add('bm-in');setTimeout(function(){root.classList.remove('bm-in');},400);}
   function go(){
     var m=location.hash.match(/^#bm-(\d+)$/);if(!m){reveal();return;}
     root.classList.add('bm-going');
