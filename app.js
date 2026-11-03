@@ -7,7 +7,7 @@
   var sState=typeof SEARCH!=='undefined'?2:0;
   function needIndex(){
     if(sState) return; sState=1;
-    var sc=document.createElement('script'); sc.src='search-index.js?v=01e8ce896d';
+    var sc=document.createElement('script'); sc.src='search-index.js?v=896746f0ef';
     sc.onload=function(){ sState=2; run(); }; sc.onerror=function(){ sState=0; };
     document.head.appendChild(sc);
   }
