@@ -368,7 +368,7 @@
     // аббревиатура (ACID, GC, JDBC) размечается один раз на страницу, понятие — один раз на раздел ##
     var abbr={};
     G.forEach(function(e,i){ if(/^[A-Z][A-Z0-9/+&-]*$/.test(e.t))abbr[i]=1; });
-    G.forEach(function(e,i){ var inCh=e.r.some(function(r){return r[0]===chap;}); e.f.forEach(function(f){
+    G.forEach(function(e,i){ var inCh=!!e.j||e.r.some(function(r){return r[0]===chap;}); e.f.forEach(function(f){
       // однословное понятие («страница», «снимок») — только в своих главах, иначе слишком часто значит другое;
       // многословное («закон Литтла», «оконная функция») однозначно и размечается везде
       if(f.length<2||(!codeLike(f)&&!inCh&&!/\s/.test(f))||TRIVIAL[f])return;
@@ -434,7 +434,7 @@
     if(gcur&&gcur!==el)gcur.classList.remove('on'); gcur=el; el.classList.add('on');
     var alt=e.f.slice(1).join(', ');
     var lk=e.r.map(function(r){return '<a href="'+r[1]+'">Подробнее: гл. '+r[0]+'. '+r[2]+'</a>';}).join('');
-    pop.innerHTML='<b></b>'+(alt?'<span class="alt"></span>':'')+'<p></p><div class="lk">'+lk+'<a href="'+e.a+'">Весь словарь</a></div>';
+    pop.innerHTML='<b></b>'+(alt?'<span class="alt"></span>':'')+'<p></p><div class="lk">'+lk+'<a href="'+e.a+'">'+(e.j?'Весь жаргон':'Весь словарь')+'</a></div>';
     pop.querySelector('b').textContent=e.t; if(alt)pop.querySelector('.alt').textContent=alt; pop.querySelector('p').textContent=e.d;
     pop.hidden=false;
     var r=el.getBoundingClientRect(), pw=pop.offsetWidth, ph=pop.offsetHeight, m=12;
