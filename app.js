@@ -1,3 +1,4 @@
+(function(){try{var M=[["60-algorithms-analysis", "63-algorithms-analysis"], ["61-arrays-hashing-two-pointers", "64-arrays-hashing-two-pointers"], ["62-sorting-and-searching", "65-sorting-and-searching"], ["63-lists-stacks-queues", "66-lists-stacks-queues"], ["64-heaps-intervals-greedy", "67-heaps-intervals-greedy"], ["65-trees-bst", "68-trees-bst"], ["66-advanced-data-structures", "69-advanced-data-structures"], ["67-graphs-traversal", "70-graphs-traversal"], ["68-graphs-shortest-paths-mst", "71-graphs-shortest-paths-mst"], ["69-recursion-backtracking", "72-recursion-backtracking"], ["70-dynamic-programming", "73-dynamic-programming"], ["71-string-algorithms", "74-string-algorithms"], ["72-math-bits-probability", "75-math-bits-probability"], ["73-algorithms-in-backend", "76-algorithms-in-backend"], ["74-interview-problem-sets", "77-interview-problem-sets"], ["75-llm-in-backend", "78-llm-in-backend"], ["76-llm-agents-quality", "79-llm-agents-quality"], ["77-enterprise-llm-platform", "80-enterprise-llm-platform"], ["78-ai-assisted-development", "81-ai-assisted-development"], ["79-mcp-and-agents-in-production", "82-mcp-and-agents-in-production"], ["81-practicum-backend-portfolio", "84-practicum-backend-portfolio"], ["82-practicum-ai-portfolio", "85-practicum-ai-portfolio"]],V='jbb-renames-v',done=+(localStorage.getItem(V)||0);if(done>=M.length)return;var todo=M.slice(done),keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('jbb')===0)keys.push(k);}keys.forEach(function(k){var v=localStorage.getItem(k),nk=k,nv=v;todo.forEach(function(r){nk=nk.split(r[0]).join(r[1]);if(nv)nv=nv.split(r[0]).join(r[1]);});if(nk!==k){localStorage.removeItem(k);}if(nk!==k||nv!==v)localStorage.setItem(nk,nv);});localStorage.setItem(V,String(M.length));}catch(e){}})();
 
 (function(){
   var inp=document.getElementById('q'), box=document.getElementById('res');
@@ -7,7 +8,7 @@
   var sState=typeof SEARCH!=='undefined'?2:0;
   function needIndex(){
     if(sState) return; sState=1;
-    var sc=document.createElement('script'); sc.src='search-index.js?v=58a590effd';
+    var sc=document.createElement('script'); sc.src='search-index.js?v=1b42d2ef50';
     sc.onload=function(){ sState=2; run(); }; sc.onerror=function(){ sState=0; };
     document.head.appendChild(sc);
   }
