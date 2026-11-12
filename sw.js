@@ -1,33 +1,26 @@
-const CACHE = 'jbb-20261111193217';
-const CORE = ['./', 'index.html', 'style.css', 'app.js', 'glossary.js', 'search-index.js', 'manifest.webmanifest',
-  'icons/icon.svg', 'icons/icon-small.svg', 'icons/icon-192.png', 'fonts/lora-cyr-italic.woff2', 'fonts/lora-cyr.woff2', 'fonts/lora-lat-italic.woff2', 'fonts/lora-lat.woff2', 'fonts/mono-cyr-italic.woff2', 'fonts/mono-cyr.woff2', 'fonts/mono-lat-italic.woff2', 'fonts/mono-lat.woff2', 'fonts/plex-cyr-italic.woff2', 'fonts/plex-cyr.woff2', 'fonts/plex-lat-italic.woff2', 'fonts/plex-lat.woff2', 'fonts/ptsans-cyr-400-italic.woff2', 'fonts/ptsans-cyr-400.woff2', 'fonts/ptsans-cyr-700.woff2', 'fonts/ptsans-lat-400-italic.woff2', 'fonts/ptsans-lat-400.woff2', 'fonts/ptsans-lat-700.woff2', 'fonts/ptserif-cyr-400-italic.woff2', 'fonts/ptserif-cyr-400.woff2', 'fonts/ptserif-cyr-700-italic.woff2', 'fonts/ptserif-cyr-700.woff2', 'fonts/ptserif-lat-400-italic.woff2', 'fonts/ptserif-lat-400.woff2', 'fonts/ptserif-lat-700-italic.woff2', 'fonts/ptserif-lat-700.woff2'];
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE.map(f => new Request(f, {cache: 'reload'})))).then(() => self.skipWaiting()));
+const CACHE = 'jbb-20261111195356';
+const CORE = ["./","index.html","glossary.json","manifest.webmanifest","icons/icon.svg","icons/icon-small.svg","icons/icon-192.png","_astro/BookmarkList.DMjnpeB2.js","_astro/ChapterMark.B5xISDFM.js","_astro/chrome.BW3qPf2V.js","_astro/client.C5tmiID1.js","_astro/client.CzWaolnw.js","_astro/ClientRouter.astro_astro_type_script_index_0_lang.CARLn6B5.js","_astro/dialog.w8MP7sLv.js","_astro/DocLayout.astro_astro_type_script_index_0_lang.CcxIjLI1.js","_astro/ImageCredit.DQu3IlP8.css","_astro/index.astro_astro_type_script_index_0_lang.BTW5CmSZ.js","_astro/index.taBZvwEL.css","_astro/jsx-runtime.CVFlYIZn.js","_astro/layout.1-tUEc6G.css","_astro/mono-cyr-italic.D480shVt.woff2","_astro/mono-cyr.Buze_B52.woff2","_astro/mono-lat-italic.IQ9T9Kz-.woff2","_astro/mono-lat.6fWv1k7M.woff2","_astro/planCore.Bly-WcE1.js","_astro/planStore.nfpBdOJL.js","_astro/PrepPlan.-6Awzs0l.js","_astro/ptsans-cyr-400-italic.Bz2mnFoX.woff2","_astro/ptsans-cyr-400.BgFH0IXl.woff2","_astro/ptsans-cyr-700.TNhnPAH_.woff2","_astro/ptsans-lat-400-italic.BbeYrS_i.woff2","_astro/ptsans-lat-400.Cwy9XeGQ.woff2","_astro/ptsans-lat-700.DmHhLLdt.woff2","_astro/ptserif-cyr-400-italic.Bicg0I0x.woff2","_astro/ptserif-cyr-400.B-euljER.woff2","_astro/ptserif-cyr-700-italic.DIh_UURn.woff2","_astro/ptserif-cyr-700.DvVvs_4R.woff2","_astro/ptserif-lat-400-italic.zg5EJ2cW.woff2","_astro/ptserif-lat-400.Cx0mQj7e.woff2","_astro/ptserif-lat-700-italic.1LPsH2tA.woff2","_astro/ptserif-lat-700.Bsuo9jes.woff2","_astro/react.C1eXT9gT.js","_astro/Refresh.CqagsY45.js","_astro/rolldown-runtime.DN1TCW_I.js","_astro/Search.DEDoz9JE.js","_astro/tool.QUUPibZf.css","_astro/vacancy-refresh.Bt-L9AaM.css"];
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE.map((f) => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('jbb-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('jbb-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
-self.addEventListener('fetch', e => {
+const store = (req, res) => {
+  if (res && res.ok && res.type === 'basic') { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+  return res;
+};
+self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  // страницы глав — сначала из сети (3 с), иначе первый заход после выката показывает прошлую сборку;
-  // без сети или при медленной сети — из кэша
-  if (req.mode === 'navigate') {
-    const net = fetch(req).then(res => {
-      if (res && res.ok && res.type === 'basic') { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
-      return res;
-    });
-    const slow = new Promise(r => setTimeout(r, 3000)).then(() => caches.match(req, {ignoreSearch: true}));
-    e.respondWith(Promise.race([net, slow.then(hit => hit || net)]).then(r => r || net)
-      .catch(() => caches.match(req, {ignoreSearch: true}).then(hit => hit || caches.match('index.html'))));
+  // страница и ее содержимое для перехода без перезагрузки - сначала из сети, через 3 с - из кэша
+  const page = req.mode === 'navigate' || /\.html$|\/$/.test(new URL(req.url).pathname);
+  if (page) {
+    const net = fetch(req).then((res) => store(req, res));
+    const slow = new Promise((r) => setTimeout(r, 3000)).then(() => caches.match(req, { ignoreSearch: true }));
+    e.respondWith(Promise.race([net, slow.then((hit) => hit || net)]).then((r) => r || net)
+      .catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || caches.match('index.html'))));
     return;
   }
-  // файл с меткой сборки (?v=…) берём из кэша только при точном совпадении адреса: страница новой сборки,
-  // пришедшая из сети, иначе получала стили и скрипты прошлой сборки из старого кэша, пока не встанет новый
-  // воркер (2026-10-28 так «не чинился» выпадающий список поиска). Без метки — как раньше, без учёта запроса
-  const versioned = new URL(req.url).searchParams.has('v');
-  e.respondWith(caches.match(req, {ignoreSearch: !versioned}).then(hit => hit || fetch(req).then(res => {
-    if (res && res.ok && res.type === 'basic') { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
-    return res;
-  }).catch(() => req.mode === 'navigate' ? caches.match('index.html') : Response.error())));
+  e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => store(req, res))));
 });
