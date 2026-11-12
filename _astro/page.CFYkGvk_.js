@@ -1,0 +1,1 @@
+import{t as e}from"./prefetch.ColS803j.js";e();
